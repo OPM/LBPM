@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -l walltime=00:10:00
+#PBS -l nodes=1:ppn=8
+# Access group, queue, and accounting project
+#PBS -W group_list=hokiespeed
+# Queue name. Replace normal_q with long_q to submit a job to the long queue.
+#PBS -q normal_q
+#PBS -A hokiespeed
+
+echo "------------------------------------------"
+echo "Running Color LBM using MPI!" 
+echo "Number of processors = " $PBS_NP
+echo "------------------------------------------"
+
+module purge
+#module load intel mvapich2
+module load gcc cuda mvapich2/1.9rc1
+
+cd $PBS_O_WORKDIR
+
+export MV2_CPU_BINDING_POLICY=scatter
+#export VIADEV_CPU_MAPPING=0:2:3:4:1:5:6:7
+export MV2_SHOW_CPU_BINDING=1
+
+mpirun -np $PBS_NP ~/LBPM-WIA/cpu/ColorLBM-cpu
+
+exit;

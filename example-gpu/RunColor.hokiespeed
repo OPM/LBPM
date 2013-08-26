@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#PBS -l walltime=00:10:00
+# Set the number of nodes, and the number of processors per node (generally should be 6)
+#PBS -l nodes=8:ppn=1
+#PBS -A hokiespeed
+# Access group, queue, and accounting project
+#PBS -W group_list=hokiespeed
+
+module purge
+module load gcc cuda mvapich2/1.9rc1
+
+cd $PBS_O_WORKDIR
+
+echo "------------------------------------------"
+echo "Running LBM using MPI!" 
+echo "Number of processors = " $PBS_NP
+echo "------------------------------------------"
+
+mpirun_rsh -np $PBS_NP -hostfile $PBS_NODEFILE  MV2_USE_CUDA=1 ~/LBPM-WIA/bin/ColorLBM
+
+exit;
