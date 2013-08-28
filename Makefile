@@ -8,9 +8,9 @@ bin/ColorLBM:gpu/lb2_Color_mpi.cpp lib/libcuColor.a lib/libcuD3Q19.a lib/libcuD3
 #	mkdir -p bin
 #	nvcc -O3 -o bin/gpuMRT $(CUDA_FLAGS) gpu/lb1_MRT.cu -lcuMRT -lcuD3Q19 -Llib
 
-bin/gpuColor:gpu/lb2_Color.cu lib/libcuColor.a lib/libcuD3Q19.a
+bin/gpuColor:gpu/lb2_Color.cu lib/libcuColor.a lib/libcuD3Q19.a lib/libcuExtras.a lib/libcuD3Q7.a
 	mkdir -p bin
-	nvcc -o bin/gpuColor $(CUDA_FLAGS) gpu/lb2_Color.cu -lcuColor -lcuD3Q19 -Llib
+	nvcc -o bin/gpuColor $(CUDA_FLAGS) gpu/lb2_Color.cu -lcuColor -lcuD3Q19 -lcuD3Q7 -lcuExtras -Llib
 
 lib/libcuExtras.a: gpu/CudaExtras.cu
 	mkdir -p lib
