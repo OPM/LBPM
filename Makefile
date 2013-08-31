@@ -1,4 +1,5 @@
 CUDA_FLAGS=-arch sm_20
+CUDA_LIB=/opt/apps/cuda/5.0.35/lib64
 
 bin/ColorLBM:gpu/lb2_Color_mpi.cpp lib/libcuColor.a lib/libcuD3Q19.a lib/libcuD3Q7.a lib/libcuExtras.a
 	mkdir -p bin
@@ -6,7 +7,7 @@ bin/ColorLBM:gpu/lb2_Color_mpi.cpp lib/libcuColor.a lib/libcuD3Q19.a lib/libcuD3
 
 bin/gpu-Color:gpu/lb2_Color.cpp lib/libcuColor.a lib/libcuD3Q19.a lib/libcuD3Q7.a lib/libcuExtras.a
 	mkdir -p bin
-	g++ -O3 -o bin/gpu-Color gpu/lb2_Color.cpp -lcudart -lcuColor -lcuD3Q19 -lcuD3Q7 -lcuExtras -Llib -L/usr/local/cuda-5.0/lib64
+	g++ -O3 -o bin/gpu-Color gpu/lb2_Color.cpp -lcudart -lcuColor -lcuD3Q19 -lcuD3Q7 -lcuExtras -Llib -L$(CUDA_LIB)
 
 #bin/gpuMRT:gpu/lb1_MRT.cu lib/libcuMRT.a lib/libcuD3Q19.a
 #	mkdir -p bin
