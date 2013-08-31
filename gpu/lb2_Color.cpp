@@ -340,11 +340,11 @@ int main(int argc, char **argv)
 		//...................................................................
 	}
 	//************************************************************************/
-
+	dvc_Barrier();
 	stop = clock();
 
 //	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
-	walltime = (start - stop)/CLOCKS_PER_SEC;
+	walltime = (stop - start)/CLOCKS_PER_SEC;
 //	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
 	double MLUPS = double(Nx*Ny*Nz*timestep)/walltime/1000000;
 	if (rank==0) printf("********************************************************\n");
