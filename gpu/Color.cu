@@ -644,8 +644,10 @@ __global__ void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 				//....Instantiate the density distributions
 				// Generate Equilibrium Distributions and stream
 				// Stationary value - distribution 0
-				Den[2*n] += 0.3333333333333333*na;
-				Den[2*n+1] += 0.3333333333333333*nb;
+	//			Den[2*n] += 0.3333333333333333*na;
+	//			Den[2*n+1] += 0.3333333333333333*nb;
+				atomicAdd(&Den[2*n], 0.3333333333333333*na);
+				atomicAdd(&Den[2*n+1], 0.3333333333333333*nb);
 				// Non-Stationary equilibrium distributions
 				feq[0] = 0.1111111111111111*(1+3*ux);
 				feq[1] = 0.1111111111111111*(1-3*ux);

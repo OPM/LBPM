@@ -9,7 +9,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Variable declaration
 	//.......................................................................
-	int i,j,k,N;
+	int i,j,k,n,N;
 	int Nx,Ny,Nz;
 	int nspheres;
 	double Lx,Ly,Lz;
@@ -32,6 +32,7 @@ int main(int argc, char **argv)
 	domain >> Lx;
 	domain >> Ly;
 	domain >> Lz;
+	//.......................................................................
 
 	//.......................................................................
 	printf("********************************************************\n");
@@ -48,6 +49,9 @@ int main(int argc, char **argv)
 
 	char *id;
 	id = new char[N];
+	
+	double *SignDist;
+	SignDist = new double[N];
 	//.......................................................................
 	// Read from a sphere packing
 	//.......................................................................
@@ -60,7 +64,7 @@ int main(int argc, char **argv)
 	printf("Reading the sphere packing \n");
 	ReadSpherePacking(nspheres,cx,cy,cz,r);
 	//.......................................................................
-
+	
 	//.......................................................................
 	// Write out the files
 	//.......................................................................
@@ -77,13 +81,21 @@ int main(int argc, char **argv)
 				sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 				//.......................................................................
 //				printf("Assigning the local phase ID \n");
-				AssignLocalSolidID(id,nspheres,cx,cy,cz,r,Lx,Ly,Lz,Nx,Ny,Nz,
+				SignedDistance(SignDist,nspheres,cx,cy,cz,r,Lx,Ly,Lz,Nx,Ny,Nz,
 								   i,j,k,nprocx,nprocy,nprocz);
+				
+				for (n=0; n<N; n++){
+					if (SignDist[n] < 0.0)	id[n] = 0;
+					else					id[n] = 1;
+				}
 				//.......................................................................
 //				printf("Generating residual NWP \n");
 				GenerateResidual(id,Nx,Ny,Nz,0.3);
 				//.......................................................................
 				WriteLocalSolidID(LocalRankFilename, id, N);
+				//.......................................................................
+				sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+				WriteLocalSolidDistance(LocalRankFilename, SignDist, N);
 				//.......................................................................
 				printf("Finished rank = %i \n",rank);
 			}
