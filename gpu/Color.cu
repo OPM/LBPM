@@ -13,14 +13,21 @@ old = atomicCAS(address_as_ull, assumed,
     } while (assumed != old);
     return __longlong_as_double(old);
 }
-__global__ void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int N, int S)
+__global__ void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz, int S)
 {
-	int n;
+	int i,j,k,n,N;
+
+	N = Nx*Ny*Nz;
 
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
+			//.......Back out the 3-D indices for node n..............
+			k = n/(Nx*Ny);
+			j = (n-Nx*Ny*k)/Nx;
+			i = n-Nx*Ny*k-Nx*j;
+
 			if ( ID[n] == 1){
 				Den[2*n] = 1.0;
 				Den[2*n+1] = 0.0;
@@ -35,6 +42,11 @@ __global__ void InitDenColor(char *ID, double *Den, double *Phi, double das, dou
 				Den[2*n] = das;
 				Den[2*n+1] = dbs;
 				Phi[n] = (das-dbs)/(das+dbs);
+			}
+
+			if (i == 0 || j == 0 || k == 0 || i == Nx-1 || j == Ny-1 || k == Nz-1){
+				Den[2*n] = 0.0;
+				Den[2*n+1] = 0.0;
 			}
 		}
 	}
@@ -688,12 +700,12 @@ __global__ void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 					kn = k+Cqz;
 
 					// Adjust for periodic BC, if necessary
-					if (in<0) in+= Nx;
-					if (jn<0) jn+= Ny;
-					if (kn<0) kn+= Nz;
-					if (!(in<Nx)) in-= Nx;
-					if (!(jn<Ny)) jn-= Ny;
-					if (!(kn<Nz)) kn-= Nz;
+	//				if (in<0) in+= Nx;
+	//				if (jn<0) jn+= Ny;
+	//				if (kn<0) kn+= Nz;
+	//				if (!(in<Nx)) in-= Nx;
+	//				if (!(jn<Ny)) jn-= Ny;
+	//				if (!(kn<Nz)) kn-= Nz;
 					// Perform streaming or bounce-back as needed
 					id = ID[kn*Nx*Ny+jn*Nx+in];
 					if (id == 0){							//.....Bounce-back Rule...........
@@ -720,12 +732,12 @@ __global__ void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 					jn = j-Cqy;
 					kn = k-Cqz;
 					// Adjust for periodic BC, if necessary
-					if (in<0) in+= Nx;
-					if (jn<0) jn+= Ny;
-					if (kn<0) kn+= Nz;
-					if (!(in<Nx)) in-= Nx;
-					if (!(jn<Ny)) jn-= Ny;
-					if (!(kn<Nz)) kn-= Nz;
+	//				if (in<0) in+= Nx;
+	//				if (jn<0) jn+= Ny;
+	//				if (kn<0) kn+= Nz;
+	//				if (!(in<Nx)) in-= Nx;
+	//				if (!(jn<Ny)) jn-= Ny;
+	//				if (!(kn<Nz)) kn-= Nz;
 					// Perform streaming or bounce-back as needed
 					id = ID[kn*Nx*Ny+jn*Nx+in];
 					if (id == 0){
@@ -780,9 +792,9 @@ __global__ void ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int
 }
 //*************************************************************************
 extern "C" void dvc_InitDenColor( int nblocks, int nthreads, int S,
-		char *ID, double *Den, double *Phi, double das, double dbs, int N)
+		char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
-	InitDenColor <<<nblocks, nthreads>>>  (ID, Den, Phi, das, dbs, N, S);
+	InitDenColor <<<nblocks, nthreads>>>  (ID, Den, Phi, das, dbs, Nx, Ny, Nz, S);
 }
 //*************************************************************************
 extern "C" void dvc_ComputeColorGradient(int nBlocks, int nthreads, int S,
