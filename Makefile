@@ -1,5 +1,7 @@
 CUDA_FLAGS=-arch sm_35
 
+all:bin/Color-WIA bin/Color-WIA-CBUB
+
 bin/Color-WIA:gpu/lb2_Color_wia_mpi.o lib/libcuColor.a lib/libcuD3Q19.a lib/libcuD3Q7.a lib/libcuExtras.a
 	mkdir -p bin
 	CC -O3 -o bin/Color-WIA gpu/lb2_Color_wia_mpi.o -lcuColor -lcuD3Q19 -lcuD3Q7 -lcuExtras -Llib -Iinclude

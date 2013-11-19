@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -A GEO019
+#PBS -N LB-WIA-Color
+#PBS -j oe
+#PBS -l walltime=0:30:00,nodes=27
+#PBS -l gres=widow2%widow3
+##PBS -q killable
+#PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap cray-mpich2 cray-mpich2/5.6.3
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+export MPICH_RDMA_ENABLED_CUDA=1
+aprun -n 27 -N 1 ~/LBPM-WIA/bin/Color-WIA

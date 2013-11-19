@@ -1,0 +1,8 @@
+# INSTRUCTIONS FOR COMPILING AND RUNNING ON TITAN
+
+# load the module for cuda
+module load cudatoolkit
+
+# build executables
+make all
+
