@@ -3220,6 +3220,41 @@ inline void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
 		//*******************************************************************
 	}
 }
+//--------------------------------------------------------------------------------------------------------
+inline void MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArray &GaussCurvature,
+							int Nx, int Ny, int Nz)
+{
+	// Mesh spacing is taken to be one to simplify the calculation
+	int i,j,k;
+	double denominator;
+	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 
+	// Compute the curvature everywhere except the halo region
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				// Compute all of the derivatives using finite differences
+				fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
+				fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
+				fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
+				fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
+				fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
+				fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
+				fxy = 0.25*(f(i+1,j+1,k) - f(i-1,j-1,k) - f(i-1,j+1,k) + f(i+1,j-1,k));
+				fxz = 0.25*(f(i+1,j,k+1) - f(i-1,j,k-1) - f(i-1,j,k+1) + f(i+1,j,k-1));
+				fyz = 0.25*(f(i,j+1,k+1) - f(i,j-1,k-1) - f(i,j-1,k+1) + f(i,j+1,k-1));
+				// Evaluate the Mean Curvature
+				denominator = sqrt(pow(fx*fx + fy*fy + fz*fz,3));
+				MeanCurvature(i,j,k)=(1.0/denominator)*((fyy+fzz)*fx*fx + (fxx+fzz)*fy*fy + (fxx+fyy)*fz*fz
+										-2.0*fx*fy*fxy  - 2.0*fx*fz*fxz - 2.0*fy*fz*fyz);
+				// Evaluate the Gaussian Curvature
+				denominator = pow(fx*fx + fy*fy + fz*fz,2);
+				GaussCurvature(i,j,k) = (1.0/denominator)*(fx*fx*(fyy*fzz-fyz*fyz) + fy*fy*(fxx*fzz-fxz*fxz) + fz*fz*(fxx*fyy-fxy*fxy)
+															+2.0*(fx*fy*(fxz*fyz-fxy*fzz) + fy*fz*(fxy*fxz-fyz*fxx)
+																	+ fx*fz*(fxy*fyz-fxz*fyy)));
+			}
+		}
+	}
+}
 //--------------------------------------------------------------------------------------------------------
 

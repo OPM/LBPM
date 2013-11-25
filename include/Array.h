@@ -2,6 +2,7 @@
 #define ARRAY_H_INC
 
 #include <iostream>
+#include <string.h>
 
 // ********** ARRAY CLASS INFO **************************************
 /*
