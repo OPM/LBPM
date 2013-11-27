@@ -3221,7 +3221,148 @@ inline void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
 	}
 }
 //--------------------------------------------------------------------------------------------------------
-inline void MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArray &GaussCurvature,
+inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, double fluid_isovalue, double solid_isovalue,
+									DTMutableList<Point> &nw_pts, IntArray &nw_tris, DoubleArray &values,
+									DTMutableList<Point> &ns_pts, IntArray &ns_tris,
+									DTMutableList<Point> &ws_pts, IntArray &ws_tris,
+									DTMutableList<Point> &local_nws_pts, DTMutableList<Point> &nws_pts, IntArray &nws_seg,
+									DTMutableList<Point> &local_sol_pts, IntArray &local_sol_tris,
+									int &n_local_sol_tris, int &n_local_sol_pts, int &n_nw_pts, int n_nw_tris,
+									int &n_ws_pts, int &n_ws_tris, int &n_ns_tris, int &n_ns_pts,
+									int &n_local_nws_pts, int &n_nws_pts, int &n_nws_seg,
+									int i, int j, int k, int Nx, int Ny, int Nz)
+{
+
+	int p,q,map;
+	Point A,B,C,P;
+
+	// Only the local values are constructed and retained! (set counts to zero to force this)
+	n_local_sol_tris = 0;
+	n_local_sol_pts = 0;
+	n_local_nws_pts = 0;
+
+	n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+	n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
+
+	// if there is a solid phase interface in the grid cell
+	if (Interface(SignDist,solid_isovalue,i,j,k) == 1){
+
+		/////////////////////////////////////////
+		/// CONSTRUCT THE LOCAL SOLID SURFACE ///
+		/////////////////////////////////////////
+
+		// find the local solid surface using the regular Marching Cubes algorithm
+		SolidMarchingCubes(SignDist,0.0,Phase,fluid_isovalue,i,j,k,Nx,Ny,Nz,local_sol_pts,n_local_sol_pts,
+						   local_sol_tris,n_local_sol_tris,values);
+
+		/////////////////////////////////////////
+		//////// TRIM THE SOLID SURFACE /////////
+		/////////////////////////////////////////
+		TRIM(local_sol_pts, n_local_sol_pts, fluid_isovalue,local_sol_tris, n_local_sol_tris,
+			 ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
+			 ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts);
+
+		/////////////////////////////////////////
+		//////// WRITE COMMON LINE POINTS ///////
+		////////      TO MAIN ARRAYS      ///////
+		/////////////////////////////////////////
+		// SORT THE LOCAL COMMON LINE POINTS
+		/////////////////////////////////////////
+		// Make sure the first common line point is on a face
+		// Common curve points are located pairwise and must
+		// be searched and rearranged accordingly
+		for (p=0; p<n_local_nws_pts-1; p++){
+			P = local_nws_pts(p);
+			if ( P.x == 1.0*i || P.x ==1.0*(i+1)||
+				P.y == 1.0*j || P.y == 1.0*(j+1) ||
+				P.z == 1.0*k || P.z == 1.0*(k+1) ){
+				if (p%2 == 0){
+					// even points
+					// Swap the pair of points
+					local_nws_pts(p) = local_nws_pts(0);
+					local_nws_pts(0) = P;
+					P = local_nws_pts(p+1);
+					local_nws_pts(p+1) = local_nws_pts(1);
+					local_nws_pts(1) = P;
+					p = n_local_nws_pts;
+
+				}
+				else{
+					// odd points - flip the order
+					local_nws_pts(p) = local_nws_pts(p-1);
+					local_nws_pts(p-1) = P;
+					p-=2;
+				}
+				// guarantee exit from the loop
+			}
+			}
+		// Two common curve points per triangle
+		// 0-(1=2)-(3=4)-...
+		for (p=1; p<n_local_nws_pts-1; p+=2){
+			A = local_nws_pts(p);
+			for (q=p+1; q<n_local_nws_pts; q++){
+				B = local_nws_pts(q);
+				if ( A.x == B.x && A.y == B.y && A.z == B.z){
+					if (q%2 == 0){
+						// even points
+						// Swap the pair of points
+						local_nws_pts(q) = local_nws_pts(p+1);
+						local_nws_pts(p+1) = B;
+						B = local_nws_pts(q+1);
+						local_nws_pts(q+1) = local_nws_pts(p+2);
+						local_nws_pts(p+2) = B;
+						q = n_local_nws_pts;
+
+					}
+					else{
+						// odd points - flip the order
+						local_nws_pts(q) = local_nws_pts(q-1);
+						local_nws_pts(q-1) = B;
+						q-=2;
+					}
+				}
+			}
+		}
+		map = n_nws_pts = 0;
+		nws_pts(n_nws_pts++) = local_nws_pts(0);
+		for (p=2; p < n_local_nws_pts; p+=2){
+			nws_pts(n_nws_pts++) = local_nws_pts(p);
+
+		}
+		nws_pts(n_nws_pts++) = local_nws_pts(n_local_nws_pts-1);
+
+		for (q=0; q < n_nws_pts-1; q++){
+			nws_seg(0,n_nws_seg) = map+q;
+			nws_seg(1,n_nws_seg) = map+q+1;
+			n_nws_seg++;
+		}
+		// End of the common line sorting algorithm
+		/////////////////////////////////////////
+
+
+		/////////////////////////////////////////
+		////// CONSTRUCT THE nw SURFACE /////////
+		/////////////////////////////////////////
+		if ( n_local_nws_pts > 0){
+			n_nw_tris =0;
+			EDGE(Phase, fluid_isovalue, SignDist, i,j,k, Nx, Ny, Nz, nw_pts, n_nw_pts, nw_tris, n_nw_tris,
+				 nws_pts, n_nws_pts);
+		}
+		else {
+			MC(Phase, fluid_isovalue, SignDist, i,j,k, nw_pts, n_nw_pts, nw_tris, n_nw_tris);
+		}
+	}
+
+	/////////////////////////////////////////
+	////// CONSTRUCT THE nw SURFACE /////////
+	/////////////////////////////////////////
+
+	else if (Fluid_Interface(Phase,SignDist,fluid_isovalue,i,j,k) == 1){
+		MC(Phase, fluid_isovalue, SignDist, i,j,k, nw_pts, n_nw_pts, nw_tris, n_nw_tris);
+	}
+}
+//--------------------------------------------------------------------------------------------------------
+inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArray &GaussCurvature,
 							int Nx, int Ny, int Nz)
 {
 	// Mesh spacing is taken to be one to simplify the calculation
@@ -3256,5 +3397,101 @@ inline void MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArr
 		}
 	}
 }
+//--------------------------------------------------------------------------------------------------------
+inline int pmmc_CubeListFromMesh(IntArray &cubeList, int ncubes, int Nx, int Ny, int Nz)
+{
+	int i,j,k,nc;
+	nc=0;
+	//...........................................................................
+	// Set up the cube list (very regular in this case due to lack of blob-ID)
+	for (k=0; k<Nz-2; k++){
+		for (j=0; j<Ny-2; j++){
+			for (i=0; i<Nx-2; i++){
+				cubeList(0,nc) = i;
+				cubeList(1,nc) = j;
+				cubeList(2,nc) = k;
+				nc++;
+			}
+		}
+	}
+	return nc;
+}
+//--------------------------------------------------------------------------------------------------------
+inline void pmmc_CubeListFromBlobs()
+{
+
+
+}
+inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Triangles, int ntris)
+{
+	int r;
+	double temp,area,s,s1,s2,s3;
+	Point A,B,C;
+	area = 0.0;
+	for (r=0;r<ntris;r++){
+		A = Points(Triangles(0,r));
+		B = Points(Triangles(1,r));
+		C = Points(Triangles(2,r));
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
+		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s = 0.5*(s1+s2+s3);
+		temp = s*(s-s1)*(s-s2)*(s-s3);
+		if (temp > 0.0) area += sqrt(temp);
+	}
+	return area;
+}
+//--------------------------------------------------------------------------------------------------------
+inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
+									  DoubleArray &SurfaceValues, int npts, int ntris)
+{
+	Point A,B,C;
+	double vA,vB,vC;
+	double s,s1,s2,s3,temp;
+	double a,b,c,d,e,f,g,h;
+	double integral;
+
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (int i=0; i<npts; i++){
+		A = Points(i);
+		SurfaceValues(i) = a + b*A.x + c*A.y+d*A.z + e*A.x*A.y + f*A.x*A.z + g*A.y*A.z + h*A.x*A.y*A.z;
+	}
+
+	integral = 0.0;
+	for (int r=0; r<ntris; r++){
+		A = Points(Triangles(0,r));
+		B = Points(Triangles(1,r));
+		C = Points(Triangles(2,r));
+		vA = SurfaceValues(Triangles(0,r));
+		vB = SurfaceValues(Triangles(1,r));
+		vC = SurfaceValues(Triangles(2,r));
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
+		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s = 0.5*(s1+s2+s3);
+		temp = s*(s-s1)*(s-s2)*(s-s3);
+		if (temp > 0.0) integral += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+	}
+	return integral;
+}
+//--------------------------------------------------------------------------------------------------------
+inline void pmmc_CubeCurveInterpValue()
+{
+
+}
+//--------------------------------------------------------------------------------------------------------
+
 //--------------------------------------------------------------------------------------------------------
 
