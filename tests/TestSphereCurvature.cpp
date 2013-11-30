@@ -13,13 +13,14 @@ using namespace std;
 int main(int argc, char **argv)
 {
 	int i,j,k;
-	int Nx,Ny,Nz;
+	int Nx,Ny,Nz,N;
 	double Lx,Ly,Lz;
 	double fluid_isovalue=0.0;
 	double solid_isovalue=0.0;
 
 	Lx = Ly = Lz = 1.0;
 	Nx = Ny = Nz = 102;
+	N = Nx*Ny*Nz;
 
 	//...........................................................................
 	// Set up the cube list
@@ -70,6 +71,7 @@ int main(int argc, char **argv)
 
 	// Sphere in the middle of the domain
 	cx[0] = cy[0] = cz[0] = 0.5;
+	rad[0] = 0.3;
 
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Phase(Nx,Ny,Nz);
@@ -113,11 +115,24 @@ int main(int argc, char **argv)
 		// Interpolate the curvature onto the surface
 		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, local_sol_pts, local_sol_tris,
 									wn_curvature, n_local_sol_pts, n_local_sol_tris);
+	
 
 		wn_area_sum += pmmc_CubeSurfaceArea(local_sol_pts, local_sol_tris, n_local_sol_tris);
-
-
+		
 	}
 
-	printf("Curvature value =  %f \n", wn_curvature_sum/wn_area_sum);
+	printf("Area value =  %f \n", wn_area_sum);
+	printf("Curvature sum =  %f \n", wn_curvature_sum);
+	printf("Curvature value =  %f, Analytical = %f \n", wn_curvature_sum/wn_area_sum, 2.0/rad[0]/101 );
+	
+	FILE *CURVATURE;
+	CURVATURE = fopen("Curvature.dat","wb");
+	fwrite(MeanCurvature.data,8,N,CURVATURE);
+	fclose(CURVATURE);
+	
+	FILE *DISTANCE;
+	DISTANCE = fopen("SignDist.dat","wb");
+	fwrite(SignDist.data,8,N,DISTANCE);
+	fclose(DISTANCE);
+	
 }

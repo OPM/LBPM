@@ -3362,6 +3362,22 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 	}
 }
 //--------------------------------------------------------------------------------------------------------
+inline void pmmc_MeshGradient(DoubleArray &f, DoubleArray &fx, DoubleArray &fy, DoubleArray &fz, int Nx, int Ny, int Nz)
+{
+	int i,j,k;	
+	// Compute the Gradient everywhere except the halo region
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				// Compute all of the derivatives using finite differences
+				fx(i,j,k) = 0.5*(f(i+1,j,k) - f(i-1,j,k));
+				fy(i,j,k) = 0.5*(f(i,j+1,k) - f(i,j-1,k));
+				fz(i,j,k) = 0.5*(f(i,j,k+1) - f(i,j,k-1));
+			}
+		}
+	}
+}
+//--------------------------------------------------------------------------------------------------------
 inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArray &GaussCurvature,
 							int Nx, int Ny, int Nz)
 {
@@ -3487,11 +3503,109 @@ inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList
 	return integral;
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_CubeCurveInterpValue()
+inline double pmmc_CubeCurveInterpValue(DoubleArray &CubeValues, DoubleArray &CurveValues, 
+										DTMutableList<Point> &Points, int npts)
 {
+	int p;
+	Point A,B;
+	double vA,vB;
+	double s,s1,s2,s3,temp;
+	double a,b,c,d,e,f,g,h;
+	double integral;
+	double length;
 
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (int p=0; p<npts; p++){
+		A = Points(p);
+		CurveValues(p) = a + b*A.x + c*A.y+d*A.z + e*A.x*A.y + f*A.x*A.z + g*A.y*A.z + h*A.x*A.y*A.z;
+	}
+	
+	integral = 0.0;
+	for (p=0; p < npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		// Compute the length of the segment
+		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		integral += 0.5*length*(CurveValues(p) + CurveValues(p+1));
+	}
+	return integral;
 }
 //--------------------------------------------------------------------------------------------------------
+inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveValues, 
+									DoubleArray &Fx, DoubleArray &Fy, DoubleArray &Fz,
+									DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,							
+									DTMutableList<Point> &Points, int i, int j, int k, int npts)
+{
+	int p;
+	Point A,B;
+	double vA,vB;
+	double s,s1,s2,s3,temp;
+	double a,b,c,d,e,f,g,h;
+	double integral;
+	double length;
 
-//--------------------------------------------------------------------------------------------------------
+	// theta = acos ( -(gradF*gradS) / (|gradF| |gradS|) )
+	CubeValues(0,0,0) = -( Fx(i,j,k)*Sx(i,j,k)+Fy(i,j,k)*Sy(i,j,k)+Fz(i,j,k)*Sz(i,j,k) )
+					   /( sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2))
+						  *sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2)) );
+	CubeValues(1,0,0) = -( Fx(i+1,j,k)*Sx(i+1,j,k)+Fy(i+1,j,k)*Sy(i+1,j,k)+Fz(i+1,j,k)*Sz(i+1,j,k) )
+					   /( sqrt(pow(Fx(i+1,j,k),2)+pow(Fy(i+1,j,k),2)+pow(Fz(i+1,j,k),2))
+						  *sqrt(pow(Sx(i+1,j,k),2)+pow(Sy(i+1,j,k),2)+pow(Sz(i+1,j,k),2)) );
+	CubeValues(0,1,0) = -( Fx(i,j+1,k)*Sx(i,j+1,k)+Fy(i,j+1,k)*Sy(i,j+1,k)+Fz(i,j+1,k)*Sz(i,j+1,k) )
+					   /( sqrt(pow(Fx(i,j+1,k),2)+pow(Fy(i,j+1,k),2)+pow(Fz(i,j+1,k),2))
+						  *sqrt(pow(Sx(i,j+1,k),2)+pow(Sy(i,j+1,k),2)+pow(Sz(i,j+1,k),2)) );
+	CubeValues(0,0,1) = -( Fx(i,j,k+1)*Sx(i,j,k+1)+Fy(i,j,k+1)*Sy(i,j,k+1)+Fz(i,j,k+1)*Sz(i,j,k+1) )
+					   /( sqrt(pow(Fx(i,j,k+1),2)+pow(Fy(i,j,k+1),2)+pow(Fz(i,j,k+1),2))
+						  *sqrt(pow(Sx(i,j,k+1),2)+pow(Sy(i,j,k+1),2)+pow(Sz(i,j,k+1),2)) );
+	CubeValues(1,1,0) = -( Fx(i+1,j+1,k)*Sx(i+1,j+1,k)+Fy(i+1,j+1,k)*Sy(i+1,j+1,k)+Fz(i+1,j+1,k)*Sz(i+1,j+1,k) )
+					   /( sqrt(pow(Fx(i+1,j+1,k),2)+pow(Fy(i+1,j+1,k),2)+pow(Fz(i+1,j+1,k),2))
+						  *sqrt(pow(Sx(i+1,j+1,k),2)+pow(Sy(i+1,j+1,k),2)+pow(Sz(i+1,j+1,k),2)) );
+	CubeValues(1,0,1) = -( Fx(i+1,j,k+1)*Sx(i+1,j,k+1)+Fy(i+1,j,k+1)*Sy(i+1,j,k+1)+Fz(i+1,j,k+1)*Sz(i+1,j,k+1) )
+					   /( sqrt(pow(Fx(i+1,j,k+1),2)+pow(Fy(i+1,j,k+1),2)+pow(Fz(i+1,j,k+1),2))
+						  *sqrt(pow(Sx(i+1,j,k+1),2)+pow(Sy(i+1,j,k+1),2)+pow(Sz(i+1,j,k+1),2)) );
+	CubeValues(0,1,1) = -( Fx(i,j+1,k+1)*Sx(i,j+1,k+1)+Fy(i,j+1,k+1)*Sy(i,j+1,k+1)+Fz(i,j+1,k+1)*Sz(i,j+1,k+1) )
+					   /( sqrt(pow(Fx(i,j+1,k+1),2)+pow(Fy(i,j+1,k+1),2)+pow(Fz(i,j+1,k+1),2))
+						  *sqrt(pow(Sx(i,j+1,k+1),2)+pow(Sy(i,j+1,k+1),2)+pow(Sz(i,j+1,k+1),2)) );
+	CubeValues(1,1,1) = -( Fx(i+1,j+1,k+1)*Sx(i+1,j+1,k+1)+Fy(i+1,j+1,k+1)*Sy(i+1,j+1,k+1)+Fz(i+1,j+1,k+1)*Sz(i+1,j+1,k+1) )
+					   /( sqrt(pow(Fx(i+1,j+1,k+1),2)+pow(Fy(i+1,j+1,k+1),2)+pow(Fz(i+1,j+1,k+1),2))
+						  *sqrt(pow(Sx(i+1,j+1,k+1),2)+pow(Sy(i+1,j+1,k+1),2)+pow(Sz(i+1,j+1,k+1),2)) );
+	
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
 
+	for (int p=0; p<npts; p++){
+		A = Points(p);
+		CurveValues(p) = a + b*A.x + c*A.y+d*A.z + e*A.x*A.y + f*A.x*A.z + g*A.y*A.z + h*A.x*A.y*A.z;
+	}
+	
+	integral = 0.0;
+	for (p=0; p < npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		// Compute the length of the segment
+		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		integral += 0.5*length*(CurveValues(p) + CurveValues(p+1));
+	}
+	
+	return integral;
+}//--------------------------------------------------------------------------------------------------------
