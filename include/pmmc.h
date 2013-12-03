@@ -3221,13 +3221,13 @@ inline void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
 	}
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, double fluid_isovalue, double solid_isovalue,
+inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, double solid_isovalue, double fluid_isovalue,
 									DTMutableList<Point> &nw_pts, IntArray &nw_tris, DoubleArray &values,
 									DTMutableList<Point> &ns_pts, IntArray &ns_tris,
 									DTMutableList<Point> &ws_pts, IntArray &ws_tris,
 									DTMutableList<Point> &local_nws_pts, DTMutableList<Point> &nws_pts, IntArray &nws_seg,
 									DTMutableList<Point> &local_sol_pts, IntArray &local_sol_tris,
-									int &n_local_sol_tris, int &n_local_sol_pts, int &n_nw_pts, int n_nw_tris,
+									int &n_local_sol_tris, int &n_local_sol_pts, int &n_nw_pts, int &n_nw_tris,
 									int &n_ws_pts, int &n_ws_tris, int &n_ns_tris, int &n_ns_pts,
 									int &n_local_nws_pts, int &n_nws_pts, int &n_nws_seg,
 									int i, int j, int k, int Nx, int Ny, int Nz)
@@ -3253,14 +3253,14 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 
 		// find the local solid surface using the regular Marching Cubes algorithm
 		SolidMarchingCubes(SignDist,0.0,Phase,fluid_isovalue,i,j,k,Nx,Ny,Nz,local_sol_pts,n_local_sol_pts,
-						   local_sol_tris,n_local_sol_tris,values);
+				local_sol_tris,n_local_sol_tris,values);
 
 		/////////////////////////////////////////
 		//////// TRIM THE SOLID SURFACE /////////
 		/////////////////////////////////////////
 		TRIM(local_sol_pts, n_local_sol_pts, fluid_isovalue,local_sol_tris, n_local_sol_tris,
-			 ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
-			 ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts);
+				ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
+				ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts);
 
 		/////////////////////////////////////////
 		//////// WRITE COMMON LINE POINTS ///////
@@ -3274,8 +3274,8 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 		for (p=0; p<n_local_nws_pts-1; p++){
 			P = local_nws_pts(p);
 			if ( P.x == 1.0*i || P.x ==1.0*(i+1)||
-				P.y == 1.0*j || P.y == 1.0*(j+1) ||
-				P.z == 1.0*k || P.z == 1.0*(k+1) ){
+					P.y == 1.0*j || P.y == 1.0*(j+1) ||
+					P.z == 1.0*k || P.z == 1.0*(k+1) ){
 				if (p%2 == 0){
 					// even points
 					// Swap the pair of points
@@ -3295,7 +3295,7 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 				}
 				// guarantee exit from the loop
 			}
-			}
+		}
 		// Two common curve points per triangle
 		// 0-(1=2)-(3=4)-...
 		for (p=1; p<n_local_nws_pts-1; p+=2){
@@ -3378,7 +3378,7 @@ inline void pmmc_MeshGradient(DoubleArray &f, DoubleArray &fx, DoubleArray &fy, 
 	}
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, DoubleArray &GaussCurvature,
+inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray &MeanCurvature, DoubleArray &GaussCurvature,
 							int Nx, int Ny, int Nz)
 {
 	// Mesh spacing is taken to be one to simplify the calculation
@@ -3397,15 +3397,17 @@ inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray  &MeanCurvature, Doub
 				fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
 				fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
 				fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
-				fxy = 0.25*(f(i+1,j+1,k) - f(i-1,j-1,k) - f(i-1,j+1,k) + f(i+1,j-1,k));
-				fxz = 0.25*(f(i+1,j,k+1) - f(i-1,j,k-1) - f(i-1,j,k+1) + f(i+1,j,k-1));
-				fyz = 0.25*(f(i,j+1,k+1) - f(i,j-1,k-1) - f(i,j-1,k+1) + f(i,j+1,k-1));
+				fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
+				fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
+				fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
 				// Evaluate the Mean Curvature
-				denominator = sqrt(pow(fx*fx + fy*fy + fz*fz,3));
+				denominator = pow(sqrt(fx*fx + fy*fy + fz*fz),3);
+				if (denominator == 0.0) denominator = 1.0;
 				MeanCurvature(i,j,k)=(1.0/denominator)*((fyy+fzz)*fx*fx + (fxx+fzz)*fy*fy + (fxx+fyy)*fz*fz
 										-2.0*fx*fy*fxy  - 2.0*fx*fz*fxz - 2.0*fy*fz*fyz);
 				// Evaluate the Gaussian Curvature
 				denominator = pow(fx*fx + fy*fy + fz*fz,2);
+				if (denominator == 0.0) denominator = 1.0;
 				GaussCurvature(i,j,k) = (1.0/denominator)*(fx*fx*(fyy*fzz-fyz*fyz) + fy*fy*(fxx*fzz-fxz*fxz) + fz*fz*(fxx*fyy-fxy*fxy)
 															+2.0*(fx*fy*(fxz*fyz-fxy*fzz) + fy*fz*(fxy*fxz-fyz*fxx)
 																	+ fx*fz*(fxy*fyz-fxz*fyy)));
@@ -3460,10 +3462,12 @@ inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Trian
 }
 //--------------------------------------------------------------------------------------------------------
 inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
-									  DoubleArray &SurfaceValues, int npts, int ntris)
+									  DoubleArray &SurfaceValues, int i, int j, int k, int npts, int ntris)
 {
 	Point A,B,C;
+	int p;
 	double vA,vB,vC;
+	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double integral;
@@ -3479,9 +3483,12 @@ inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList
 	g = CubeValues(0,1,1)-a-c-d;
 	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
 
-	for (int i=0; i<npts; i++){
-		A = Points(i);
-		SurfaceValues(i) = a + b*A.x + c*A.y+d*A.z + e*A.x*A.y + f*A.x*A.z + g*A.y*A.z + h*A.x*A.y*A.z;
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		SurfaceValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 	}
 
 	integral = 0.0;
@@ -3509,6 +3516,7 @@ inline double pmmc_CubeCurveInterpValue(DoubleArray &CubeValues, DoubleArray &Cu
 	int p;
 	Point A,B;
 	double vA,vB;
+	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double integral;
@@ -3525,7 +3533,7 @@ inline double pmmc_CubeCurveInterpValue(DoubleArray &CubeValues, DoubleArray &Cu
 	g = CubeValues(0,1,1)-a-c-d;
 	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
 
-	for (int p=0; p<npts; p++){
+	for (p=0; p<npts; p++){
 		A = Points(p);
 		CurveValues(p) = a + b*A.x + c*A.y+d*A.z + e*A.x*A.y + f*A.x*A.z + g*A.y*A.z + h*A.x*A.y*A.z;
 	}

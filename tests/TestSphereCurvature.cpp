@@ -80,12 +80,23 @@ int main(int argc, char **argv)
 	DoubleArray CubeValues(2,2,2);
 
 	// Compute the signed distance function
-	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
+	SignedDistance(Phase.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
 
-	pmmc_MeshCurvature(SignDist, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SignDist(i,j,k) = 100.0;
+				Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*j-0.5*Ny)*(1.0*j-0.5*Ny)+(1.0*k-0.5*Nz)*(1.0*k-0.5*Nz))-0.3*Nx;
+			}
+		}
+	}
+	SignedDistance(SignDist.data,0,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
+
+	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 
 	double wn_curvature_sum = 0.0;
 	double wn_area_sum = 0.0;
+
 
 	for (int c=0;c<ncubes;c++){
 
@@ -93,6 +104,22 @@ int main(int argc, char **argv)
 		i = cubeList(0,c);
 		j = cubeList(1,c);
 		k = cubeList(2,c);
+
+		// Run PMMC
+		n_local_sol_tris = 0;
+		n_local_sol_pts = 0;
+		n_local_nws_pts = 0;
+
+		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
+
+		// Construct the interfaces and common curve
+		pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+				nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
+				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+				i, j, k, Nx, Ny, Nz);
 
 		// Copy the curvature values for the cube
 		CubeValues(0,0,0) = MeanCurvature(i,j,k);
@@ -104,26 +131,15 @@ int main(int argc, char **argv)
 		CubeValues(0,1,1) = MeanCurvature(i,j+1,k+1);
 		CubeValues(1,1,1) = MeanCurvature(i+1,j+1,k+1);
 
-		// Construct the interfaces and common curve
-		pmmc_ConstructLocalCube(SignDist, Phase, fluid_isovalue, solid_isovalue,
-				nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
-				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris, n_ws_pts, n_ws_tris,
-				n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-				i, j, k, Nx, Ny, Nz);
-
 		// Interpolate the curvature onto the surface
-		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, local_sol_pts, local_sol_tris,
-									wn_curvature, n_local_sol_pts, n_local_sol_tris);
-	
+		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, nw_pts, nw_tris,
+									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
 
-		wn_area_sum += pmmc_CubeSurfaceArea(local_sol_pts, local_sol_tris, n_local_sol_tris);
-		
+		wn_area_sum += pmmc_CubeSurfaceArea(nw_pts, nw_tris, n_nw_tris);
+
 	}
 
-	printf("Area value =  %f \n", wn_area_sum);
-	printf("Curvature sum =  %f \n", wn_curvature_sum);
-	printf("Curvature value =  %f, Analytical = %f \n", wn_curvature_sum/wn_area_sum, 2.0/rad[0]/101 );
+	printf("Mean Curvature Average =  %f, Analytical = %f \n", wn_curvature_sum/wn_area_sum, 2.0/rad[0]/101 );
 	
 	FILE *CURVATURE;
 	CURVATURE = fopen("Curvature.dat","wb");
@@ -132,7 +148,7 @@ int main(int argc, char **argv)
 	
 	FILE *DISTANCE;
 	DISTANCE = fopen("SignDist.dat","wb");
-	fwrite(SignDist.data,8,N,DISTANCE);
+	fwrite(Phase.data,8,N,DISTANCE);
 	fclose(DISTANCE);
 	
 }
