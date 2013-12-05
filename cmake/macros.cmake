@@ -1,7 +1,13 @@
-
-
-
 INCLUDE(CheckCSourceCompiles)
+
+
+# Macro to print all variables
+MACRO( PRINT_ALL_VARIABLES )
+    GET_CMAKE_PROPERTY(_variableNames VARIABLES)
+    FOREACH(_variableName ${_variableNames})
+        message(STATUS "${_variableName}=${${_variableName}}")
+    ENDFOREACH()
+ENDMACRO()
 
 
 # Add a package to the LBPM library
@@ -24,6 +30,7 @@ MACRO (BEGIN_PACKAGE_CONFIG PACKAGE)
     SET( CSOURCES "" )
     SET( FSOURCES "" )
     SET( M4FSOURCES "" )
+    SET( CUSOURCES "" )
     SET( SOURCES "" )
     SET( CURPACKAGE ${PACKAGE} )
 ENDMACRO ()
@@ -40,11 +47,15 @@ MACRO (FIND_FILES)
     # Find the C++ sources
     SET( T_CXXSOURCES "" )
     FILE( GLOB T_CXXSOURCES "*.cc" "*.cpp" "*.cxx" "*.C" )
+    # Find the C++ sources
+    SET( T_CXXSOURCES "" )
+    FILE( GLOB T_CXXSOURCES "*.cu" )
     # Add all found files to the current lists
     SET( HEADERS ${HEADERS} ${T_HEADERS} )
     SET( CXXSOURCES ${CXXSOURCES} ${T_CXXSOURCES} )
     SET( CSOURCES ${CSOURCES} ${T_CSOURCES} )
     SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} )
+    SET( CUSOURCES ${SOURCES} ${T_CUSOURCES} )
 ENDMACRO()
 
 
@@ -59,11 +70,15 @@ MACRO (FIND_FILES_PATH IN_PATH)
     # Find the C++ sources
     SET( T_CXXSOURCES "" )
     FILE( GLOB T_CXXSOURCES "${IN_PATH}/*.cc" "${IN_PATH}/*.cpp" "${IN_PATH}/*.cxx" "${IN_PATH}/*.C" )
+    # Find the CUDA sources
+    SET( T_CUSOURCES "" )
+    FILE( GLOB T_CUSOURCES "${IN_PATH}/*.cu" )
     # Add all found files to the current lists
     SET( HEADERS ${HEADERS} ${T_HEADERS} )
     SET( CXXSOURCES ${CXXSOURCES} ${T_CXXSOURCES} )
     SET( CSOURCES ${CSOURCES} ${T_CSOURCES} )
-    SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} )
+    SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} ${T_CUSOURCES} )
+    SET( CUSOURCES ${SOURCES} ${T_CUSOURCES} )
 ENDMACRO()
 
 
@@ -90,8 +105,10 @@ MACRO( INSTALL_LBPM_TARGET PACKAGE )
         #CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/${HFILE} ${LBPM_INSTALL_DIR}/include/${CURPACKAGE}/${HFILE} COPYONLY )
         CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/${HFILE} ${LBPM_INSTALL_DIR}/include/${HFILE} COPYONLY )
     ENDFOREACH()
+    # Configure the CUDA files
+    CUDA_COMPILE( CUOBJS ${CUSOURCES} )
     # Add the library
-    ADD_LIBRARY( ${PACKAGE} ${LIB_TYPE} ${SOURCES} )
+    ADD_LIBRARY( ${PACKAGE} ${LIB_TYPE} ${SOURCES} ${CUOBJS} )
     SET( TEST_DEP_LIST ${PACKAGE} ${TEST_DEP_LIST} )
     TARGET_LINK_LIBRARIES( ${PACKAGE} ${COVERAGE_LIBS} ${SYSTEM_LIBS} ${LDLIBS} )
     TARGET_LINK_LIBRARIES( ${PACKAGE} ${LAPACK_LIBS} ${BLAS_LIBS} )
@@ -204,12 +221,12 @@ MACRO( SET_COMPILE_FLAGS )
         ENDIF()
     ELSEIF ( ${CMAKE_BUILD_TYPE} STREQUAL "Release" )
         IF ( USING_MICROSOFT )
-            SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} /O2" )
-            SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} /O2" )
+            SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} /O3" )
+            SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} /O3" )
             SET(CONFIGURATION Release )
         ELSE()
-            SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} -O2" )
-            SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -O2" )
+            SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} -O3" )
+            SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -O3" )
         ENDIF()
     ELSE()
         MESSAGE(FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}")
@@ -233,6 +250,7 @@ MACRO( ADD_LBPM_EXE_DEP EXE )
     # Add the libraries
     TARGET_LINK_LIBRARIES( ${EXE} ${LBPM_LIBS} )
     # Add external libraries
+    TARGET_LINK_LIBRARIES( ${EXE} ${EXTERNAL_LIBS} )
     IF ( USE_MPI )
         TARGET_LINK_LIBRARIES( ${EXE} ${MPI_LINK_FLAGS} ${MPI_LIBRARIES} )
     ENDIF()

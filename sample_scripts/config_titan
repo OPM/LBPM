@@ -1,0 +1,15 @@
+cmake                                    \
+    -D CMAKE_C_COMPILER:PATH=cc          \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_C_FLAGS="-DCBUB"            \
+    -D CMAKE_CXX_FLAGS="-DCBUB"          \
+    -D MPI_COMPILER:BOOL=TRUE            \
+    -D MPIEXEC=aprun                     \
+    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D CMAKE_BUILD_TYPE:STRING=Debug     \
+    -D CUDA_FLAGS="-arch sm_35"          \
+    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_CUDA=1                        \
+    ${HOME}/LBPM-WIA
+

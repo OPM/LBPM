@@ -22,7 +22,7 @@ CHECK_ENABLE_FLAG( ONLY_BUILD_DOCS 0 )
 # Set testing paramaters
 SET( DROP_METHOD "http" )
 SET( DROP_SITE "oblivion.engr.colostate.edu" )
-SET( DROP_LOCATION "/CDash/submit.php?project=AMR-MHD" )
+SET( DROP_LOCATION "/CDash/submit.php?project=LBPM-WIA" )
 SET( TRIGGER_SITE "" )
 SET( DROP_SITE_CDASH TRUE )
 ENABLE_TESTING()
@@ -86,6 +86,7 @@ ENDIF()
 # Configure external packages
 IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_MPI()     # MPI must be before other libraries
+    CONFIGURE_CUDA()
     CONFIGURE_LBPM()
     CONFIGURE_LINE_COVERAGE()
 ENDIF()

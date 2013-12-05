@@ -7,6 +7,39 @@ MACRO ( CONFIGURE_LINE_COVERAGE )
 ENDMACRO ()
 
 
+# Macro to configure CUDA
+MACRO ( CONFIGURE_CUDA )
+    SET(CUDA_FLAGS ${CUDA_NVCC_FLAGS})
+    SET( CUDA_FIND_QUIETLY 1)
+    IF(USE_CUDA)
+        INCLUDE ( FindCUDA )
+        IF ( NOT CUDA_FOUND )
+            MESSAGE ( FATAL_ERROR "CUDA not found" )
+        ENDIF()
+        SET(CUDA_NVCC_FLAGS ${CUDA_FLAGS})
+        IF(NOT CUDA_NVCC_FLAGS)
+            # Set minimum requirements
+            SET(CUDA_NVCC_FLAGS "-arch=sm_20")
+        ELSE()
+            STRING(REPLACE " " ";" CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
+        ENDIF()
+    ENDIF()
+  
+    IF ( NOT USE_CUDA )
+        MESSAGE ( "Not using CUDA" ) 
+    ELSE ()
+        INCLUDE_DIRECTORIES ( ${CUDA_INCLUDE_DIRS} )
+        ADD_DEFINITIONS ( "-D USE_CUDA" ) 
+        MESSAGE ( "Using CUDA " ${CUDA_VERSION} ) 
+	    MESSAGE ( "  CUDA_LIBRARIES = " ${CUDA_LIBRARIES} )
+	    MESSAGE ( "  CUDA_INCLUDE   = " ${CUDA_INCLUDE_DIRS} )
+	    MESSAGE ( "  CUDA_NVCC_FLAGS = " ${CUDA_NVCC_FLAGS} )
+	    MESSAGE ( "  CUDA_TOOLKIT_ROOT = " ${CUDA_TOOLKIT_ROOT_DIR} )
+        SET (EXTERNAL_LIBS ${EXTERNAL_LIBS} ${CUDA_LIBRARIES} )
+    ENDIF ()
+ENDMACRO ()
+
+
 # Macro to find and configure the MPI libraries
 MACRO ( CONFIGURE_MPI )
     # Determine if we want to use MPI
@@ -44,6 +77,9 @@ MACRO ( CONFIGURE_MPI )
             ENDIF()
         ELSEIF ( MPI_COMPILER )
             # The mpi compiler should take care of everything
+            IF ( NOT MPIEXEC )
+                MESSAGE( FATAL_ERROR "MPI_EXEC should be set" )
+            ENDIF()
         ELSE()
             # Perform the default search for MPI
             INCLUDE ( FindMPI )
@@ -52,6 +88,10 @@ MACRO ( CONFIGURE_MPI )
             ENDIF ()
             INCLUDE_DIRECTORIES ( ${MPI_INCLUDE_PATH} )
             SET ( MPI_INCLUDE ${MPI_INCLUDE_PATH} )
+        ENDIF()
+        # Set defaults
+        IF ( NOT MPIEXEC_NUMPROC_FLAG )
+            SET(MPIEXEC_NUMPROC_FLAG "-n")
         ENDIF()
         # Check if we need to use MPI for serial tests
         CHECK_ENABLE_FLAG( USE_MPI_FOR_SERIAL_TESTS 0 )

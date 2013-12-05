@@ -1,0 +1,11 @@
+# Sample script to configure, build, run, and submit the results
+
+# Set the modules and enviornmental variables
+source $MODULESHOME/init/bash
+module load cudatoolkit
+module load cmake
+export MPICH_RDMA_ENABLED_CUDA=1
+module swap cray-mpich2 cray-mpich2/5.6.3
+
+# Configure and run ctest
+ctest -S ctest_titan.ctest -VV

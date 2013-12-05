@@ -1,8 +1,49 @@
 # INSTRUCTIONS FOR COMPILING AND RUNNING ON TITAN
+# Note: there are 3 directories of interest:
+#    source directory - assumed to be located at ${HOME}/LBPM-WIA for these instructions, but may be anywhere
+#    build directory  - current directory used for building, may not be the source directory, generally should be on lustre
+#    install directory - installation directory, optional, may be the same as the build directory, 
+#                        generally should be on lustre, specified with "-D LBPM_INSTALL_DIR:PATH="path_tot_install"
+
 
 # load the module for cuda
 module load cudatoolkit
 
-# build executables
-make all
+
+# load the module for cmake
+module load cmake
+
+
+# configure
+rm -rf CMake*
+cmake                                    \
+    -D CMAKE_C_COMPILER:PATH=cc          \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_C_FLAGS="-DCBUB"            \
+    -D CMAKE_CXX_FLAGS="-DCBUB"          \
+    -D MPI_COMPILER:BOOL=TRUE            \
+    -D MPIEXEC=aprun                     \
+    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D CMAKE_BUILD_TYPE:STRING=Debug     \
+    -D CUDA_FLAGS="-arch sm_35"          \
+    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_CUDA=1                        \
+    ${HOME}/LBPM-WIA
+
+
+# Build and install (may be done in parallel)
+make install -j 8
+
+
+# Run the tests (optional, requires that were are in an interactive session)
+# Note: to run the tests and submit the results to CDash, see "run_ctest_titan"
+#    in sample_scripts, which uses the "config_titan" and "ctest_titan.ctest"
+# Run the fast tests:
+ctest -E WEEKLY
+# Run all tests
+ctest
+
+
+
 
