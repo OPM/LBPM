@@ -1,17 +1,43 @@
+//*************************************************************************
+// Lattice Boltzmann Simulator for Single Phase Flow in Porous Media
+// James E. McCLure
+//*************************************************************************
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include "D3Q19.h"
-#include "D3Q7.h"
-#include "Color.h"
+#include <string.h>
 #include <mpi.h>
+#include <stdlib.h>
 
 using namespace std;
 
 //*************************************************************************
-// Implementation of Two-Phase Immiscible LBM using CUDA
+// MRT implementation of the LBM using CUDA
 //*************************************************************************
-
+//*************************************************************************
+//*************************************************************************
+extern "C" void dvc_AllocateDeviceMemory(void** address, size_t size);
+//*************************************************************************
+extern "C" void dvc_CopyToDevice(void* dest, void* source, size_t size);
+//*************************************************************************
+extern "C" void dvc_Barrier();
+//*************************************************************************
+extern "C" void dvc_InitD3Q19(int nblocks, int nthreads, int S, char *ID,
+		double *f_even, double *f_odd, int Nx, int Ny, int Nz);
+//*************************************************************************
+extern "C" void dvc_SwapD3Q19( int nblocks, int nthreads, int S,
+		char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz);
+//*************************************************************************
+extern "C" void dvc_MRT( int nblocks, int nthreads, int S,
+		char *ID, double *f_even, double *f_odd, double rlxA, double rlxB,
+		double Fx, double Fy, double Fz, int Nx, int Ny, int Nz);
+//*************************************************************************
+extern "C" void dvc_PackDist(int grid, int threads, int q, int *SendList, int start,
+		int sendCount, double *sendbuf, double *Dist, int N);
+//*************************************************************************
+extern "C" void dvc_UnpackDist(int grid, int threads, int q, int Cqx, int Cqy, int Cqz, int *RecvList, int start,
+		int recvCount, double *recvbuf, double *Dist, int Nx, int Ny, int Nz);
+//*************************************************************************
 inline void PackID(int *list, int count, char *sendbuf, char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This packs up the values that need to be sent from one processor to another
@@ -22,7 +48,7 @@ inline void PackID(int *list, int count, char *sendbuf, char *ID){
 		sendbuf[idx] = ID[n];
 	}
 }
-//***************************************************************************************
+//*************************************************************************
 inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This unpacks the values once they have been recieved from neighbors
@@ -33,7 +59,9 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 		ID[n] = recvbuf[idx];
 	}
 }
-//***************************************************************************************
+//*************************************************************************
+
+
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -58,60 +86,53 @@ int main(int argc, char **argv)
 	//**********************************
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
+	//**********************************
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//!!!!!!!!!!! Random debugging communications!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//	rank_X = rank+1;
+//	if (!(rank_X < nprocs)) rank_X-=nprocs;
+//	rank_x = rank-1;
+//	if (rank_x < 0) rank_x +=nprocs;
+//	rank_y = rank_z = rank_xy = rank_Xy = rank_xz = rank_Xz = rank_yz = rank_Yz = rank_x;
+//	rank_Y = rank_Z = rank_XY = rank_xY = rank_XZ = rank_xZ = rank_YZ = rank_yZ = rank_X;
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-	if (rank == 0){
-		printf("********************************************************\n");
-		printf("Running Hybrid Implementation of Color LBM	\n");
-		printf("********************************************************\n");
-	}
-	// Color Model parameters
+//	int deviceCount;
+//	cudaGetDeviceCount(&deviceCount);
+//	int device = 1;
+//	if (rank==0)	printf("Number of devices = %i \n", deviceCount);
+//	if (rank==0)	printf("Current device is = %i \n", device);
+//	cudaSetDevice(device);
+
+	// BGK Model parameters
 	string FILENAME;
 	unsigned int nBlocks, nthreads;
-	int Nx,Ny,Nz;
 	int timestepMax, interval;
 	double tau,Fx,Fy,Fz,tol;
-	double alpha, beta;
-	double das, dbs;
-	double din,dout;
-	bool pBC;
+	// Domain variables
+	int Nx,Ny,Nz;
 	int i,j,k,n;
 
 	if (rank==0){
-		//.............................................................
-		//		READ SIMULATION PARMAETERS FROM INPUT FILE
-		//.............................................................
-		ifstream input("Color.in");
-		// Line 1: Name of the phase indicator file (s=0,w=1,n=2)
-		input >> FILENAME;
-		// Line 2: domain size (Nx, Ny, Nz)
-		input >> Nz;				// number of nodes (x,y,z)
+		ifstream input("MRT.in");
+		input >> FILENAME;		// name of the input file
+		input >> Nz;			// number of nodes (x,y,z)
 		input >> nBlocks;
 		input >> nthreads;
-		// Line 3: model parameters (tau, alpha, beta, das, dbs)
-		input >> tau;
-		input >> alpha;
-		input >> beta;
-		input >> das;
-		input >> dbs;
-		// Line 4: External force components (Fx,Fy, Fz)
-		input >> Fx;
+		input >> tau;				// relaxation time
+		input >> Fx;			// External force components (x,y,z)
 		input >> Fy;
 		input >> Fz;
-		// Line 5: Pressure Boundary conditions
-		input >> pBC;
-		input >> din;
-		input >> dout;
-		// Line 6: time-stepping criteria
 		input >> timestepMax;			// max no. of timesteps
 		input >> interval;			// error interval
 		input >> tol;				// error tolerance
-		//.............................................................
 
 		ifstream domain("Domain.in");
 		domain >> nprocx;
 		domain >> nprocy;
 		domain >> nprocz;
 	}
+
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -119,17 +140,10 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nBlocks,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nthreads,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
-	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&timestepMax,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&interval,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&tol,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -140,10 +154,9 @@ int main(int argc, char **argv)
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	// **************************************************************
-	// **************************************************************
 
-	double rlxA = 1.f/tau;
-	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
+	double rlx_setA = 1.f/tau;
+	double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("Fatal error in processor number! \n");
@@ -153,19 +166,13 @@ int main(int argc, char **argv)
 	}
 
 	if (rank==0){
-		printf("********************************************************\n");
 		printf("tau = %f \n", tau);
-		printf("alpha = %f \n", alpha);
-		printf("beta = %f \n", beta);
-		printf("das = %f \n", das);
-		printf("dbs = %f \n", dbs);
+		printf("Set A = %f \n", rlx_setA);
+		printf("Set B = %f \n", rlx_setB);
 		printf("Force(x) = %f \n", Fx);
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
 		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
-		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
-		printf("********************************************************\n");
-
 	}
 
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -411,7 +418,6 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Sweeps per thread = %i \n", S);
 	if (rank==0) printf("Number of nodes per side = %i \n", Nx);
 	if (rank==0) printf("Total Number of nodes = %i \n", N);
-	if (rank==0) printf("********************************************************\n");
 
 	//.......................................................................
 	if (rank == 0)	printf("Read input media... \n");
@@ -420,7 +426,7 @@ int main(int argc, char **argv)
 	char LocalRankFilename[40];
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-//	printf("Local File Name =  %s \n",LocalRankFilename);
+	printf("Local File Name =  %s \n",LocalRankFilename);
 	// .......... READ THE INPUT FILE .......................................
 	char value;
 	char *id;
@@ -454,7 +460,7 @@ int main(int argc, char **argv)
 	if (rank == 0) cout << "Domain set." << endl;
 	//...........................................................................
 	// Write the communcation structure into a file for debugging
-/*	char LocalCommFile[40];
+	char LocalCommFile[40];
 	sprintf(LocalCommFile,"%s%s","Comm.",LocalRankString);
 	FILE *CommFile;
 	CommFile = fopen(LocalCommFile,"w");
@@ -480,7 +486,7 @@ int main(int argc, char **argv)
 	fprintf(CommFile,"Yz=%d, ",rank_Yz);
 	fprintf(CommFile,"\n");
 	fclose(CommFile);
-*/	//...........................................................................
+	//...........................................................................
 
 	// Set up MPI communication structures
 	if (rank==0)	printf ("Setting up communication control structures \n");
@@ -711,28 +717,6 @@ int main(int argc, char **argv)
 	MPI_Waitall(18,req2,stat2);
 	MPI_Barrier(MPI_COMM_WORLD);
 	//......................................................................................
-	for (int idx=0; idx<recvCount_x; idx++)	recvList_x[idx] -= (Nx-2);
-	for (int idx=0; idx<recvCount_X; idx++)	recvList_X[idx] += (Nx-2);
-	for (int idx=0; idx<recvCount_y; idx++)	recvList_y[idx] -= (Ny-2)*Nx;
-	for (int idx=0; idx<recvCount_Y; idx++)	recvList_Y[idx] += (Ny-2)*Nx;
-	for (int idx=0; idx<recvCount_z; idx++)	recvList_z[idx] -= (Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_Z; idx++)	recvList_Z[idx] += (Nz-2)*Nx*Ny;
-
-	for (int idx=0; idx<recvCount_xy; idx++)	recvList_xy[idx] -= (Nx-2)+(Ny-2)*Nx;
-	for (int idx=0; idx<recvCount_XY; idx++)	recvList_XY[idx] += (Nx-2)+(Ny-2)*Nx;
-	for (int idx=0; idx<recvCount_xY; idx++)	recvList_xY[idx] -= (Nx-2)-(Ny-2)*Nx;
-	for (int idx=0; idx<recvCount_Xy; idx++)	recvList_Xy[idx] += (Nx-2)-(Ny-2)*Nx;
-
-	for (int idx=0; idx<recvCount_xz; idx++)	recvList_xz[idx] -= (Nx-2)+(Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_XZ; idx++)	recvList_XZ[idx] += (Nx-2)+(Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_xZ; idx++)	recvList_xZ[idx] -= (Nx-2)-(Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_Xz; idx++)	recvList_Xz[idx] += (Nx-2)-(Nz-2)*Nx*Ny;
-
-	for (int idx=0; idx<recvCount_yz; idx++)	recvList_yz[idx] -= (Ny-2)*Nx + (Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_YZ; idx++)	recvList_YZ[idx] += (Ny-2)*Nx + (Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_yZ; idx++)	recvList_yZ[idx] -= (Ny-2)*Nx - (Nz-2)*Nx*Ny;
-	for (int idx=0; idx<recvCount_Yz; idx++)	recvList_Yz[idx] += (Ny-2)*Nx - (Nz-2)*Nx*Ny;
-	//......................................................................................
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
 	double *sendbuf_xy, *sendbuf_yz, *sendbuf_xz, *sendbuf_Xy, *sendbuf_Yz, *sendbuf_xZ;
 	double *sendbuf_xY, *sendbuf_yZ, *sendbuf_Xz, *sendbuf_XY, *sendbuf_YZ, *sendbuf_XZ;
@@ -740,43 +724,128 @@ int main(int argc, char **argv)
 	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
-	sendbuf_x= new double[ 5*sendCount_x];	// Allocate device memory
-	sendbuf_X= new double[ 5*sendCount_X];	// Allocate device memory
-	sendbuf_y= new double[ 5*sendCount_y];	// Allocate device memory
-	sendbuf_Y= new double[ 5*sendCount_Y];	// Allocate device memory
-	sendbuf_z= new double[ 5*sendCount_z];	// Allocate device memory
-	sendbuf_Z= new double[ 5*sendCount_Z];	// Allocate device memory
-	sendbuf_xy= new double[ sendCount_xy];	// Allocate device memory
-	sendbuf_xY= new double[ sendCount_xY];	// Allocate device memory
-	sendbuf_Xy= new double[ sendCount_Xy];	// Allocate device memory
-	sendbuf_XY= new double[ sendCount_XY];	// Allocate device memory
-	sendbuf_xz= new double[ sendCount_xz];	// Allocate device memory
-	sendbuf_xZ= new double[ sendCount_xZ];	// Allocate device memory
-	sendbuf_Xz= new double[ sendCount_Xz];	// Allocate device memory
-	sendbuf_XZ= new double[ sendCount_XZ];	// Allocate device memory
-	sendbuf_yz= new double[ sendCount_yz];	// Allocate device memory
-	sendbuf_yZ= new double[ sendCount_yZ];	// Allocate device memory
-	sendbuf_Yz= new double[ sendCount_Yz];	// Allocate device memory
-	sendbuf_YZ= new double[ sendCount_YZ];	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
-	recvbuf_x= new double[ 5*recvCount_x];	// Allocate device memory
-	recvbuf_X= new double[ 5*recvCount_X];	// Allocate device memory
-	recvbuf_y= new double[ 5*recvCount_y];	// Allocate device memory
-	recvbuf_Y= new double[ 5*recvCount_Y];	// Allocate device memory
-	recvbuf_z= new double[ 5*recvCount_z];	// Allocate device memory
-	recvbuf_Z= new double[ 5*recvCount_Z];	// Allocate device memory
-	recvbuf_xy= new double[ recvCount_xy];	// Allocate device memory
-	recvbuf_xY= new double[ recvCount_xY];	// Allocate device memory
-	recvbuf_Xy= new double[ recvCount_Xy];	// Allocate device memory
-	recvbuf_XY= new double[ recvCount_XY];	// Allocate device memory
-	recvbuf_xz= new double[ recvCount_xz];	// Allocate device memory
-	recvbuf_xZ= new double[ recvCount_xZ];	// Allocate device memory
-	recvbuf_Xz= new double[ recvCount_Xz];	// Allocate device memory
-	recvbuf_XZ= new double[ recvCount_XZ];	// Allocate device memory
-	recvbuf_yz= new double[ recvCount_yz];	// Allocate device memory
-	recvbuf_yZ= new double[ recvCount_yZ];	// Allocate device memory
-	recvbuf_Yz= new double[ recvCount_Yz];	// Allocate device memory
-	recvbuf_YZ= new double[ recvCount_YZ];	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
+	//......................................................................................
+	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
+	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;
+	int *dvcSendList_xY, *dvcSendList_yZ, *dvcSendList_Xz, *dvcSendList_XY, *dvcSendList_YZ, *dvcSendList_XZ;
+	//......................................................................................
+	int *dvcRecvList_x, *dvcRecvList_y, *dvcRecvList_z, *dvcRecvList_X, *dvcRecvList_Y, *dvcRecvList_Z;
+	int *dvcRecvList_xy, *dvcRecvList_yz, *dvcRecvList_xz, *dvcRecvList_Xy, *dvcRecvList_Yz, *dvcRecvList_xZ;
+	int *dvcRecvList_xY, *dvcRecvList_yZ, *dvcRecvList_Xz, *dvcRecvList_XY, *dvcRecvList_YZ, *dvcRecvList_XZ;
+	//......................................................................................
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
+	//......................................................................................
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
+	//......................................................................................
+	if (rank==0)	printf ("Prepare to copy send/recv Lists to device \n");
+	dvc_CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_y,sendList_y,sendCount_y*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Y,sendList_Y,sendCount_Y*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_z,sendList_z,sendCount_z*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Z,sendList_Z,sendCount_Z*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xy,sendList_xy,sendCount_xy*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_XY,sendList_XY,sendCount_XY*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xY,sendList_xY,sendCount_xY*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Xy,sendList_Xy,sendCount_Xy*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xz,sendList_xz,sendCount_xz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_XZ,sendList_XZ,sendCount_XZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xZ,sendList_xZ,sendCount_xZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Xz,sendList_Xz,sendCount_Xz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_yz,sendList_yz,sendCount_yz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_YZ,sendList_YZ,sendCount_YZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_yZ,sendList_yZ,sendCount_yZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Yz,sendList_Yz,sendCount_Yz*sizeof(int));
+	//......................................................................................
+	dvc_CopyToDevice(dvcRecvList_x,recvList_x,recvCount_x*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_X,recvList_X,recvCount_X*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_y,recvList_y,recvCount_y*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Y,recvList_Y,recvCount_Y*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_z,recvList_z,recvCount_z*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Z,recvList_Z,recvCount_Z*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xy,recvList_xy,recvCount_xy*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_XY,recvList_XY,recvCount_XY*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xY,recvList_xY,recvCount_xY*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Xy,recvList_Xy,recvCount_Xy*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xz,recvList_xz,recvCount_xz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_XZ,recvList_XZ,recvCount_XZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xZ,recvList_xZ,recvCount_xZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Xz,recvList_Xz,recvCount_Xz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_yz,recvList_yz,recvCount_yz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_YZ,recvList_YZ,recvCount_YZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_yZ,recvList_yZ,recvCount_yZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Yz,recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
 	// Fill in the phase ID from neighboring processors
 	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
@@ -902,7 +971,7 @@ int main(int argc, char **argv)
 	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
 	//.....................................................................................
 	// Once the ID is saved, free memory allocated to the buffers (no longer needed)
-/*	//......................................................................................
+	//......................................................................................
 	free(sendID_x); free(sendID_X); free(sendID_y); free(sendID_Y); free(sendID_z); free(sendID_Z);
 	free(sendID_xy); free(sendID_XY); free(sendID_xY); free(sendID_Xy);
 	free(sendID_xz); free(sendID_XZ); free(sendID_xZ); free(sendID_Xz);
@@ -911,249 +980,158 @@ int main(int argc, char **argv)
 	free(recvID_xy); free(recvID_XY); free(recvID_xY); free(recvID_Xy);
 	free(recvID_xz); free(recvID_XZ); free(recvID_xZ); free(recvID_Xz);
 	free(recvID_yz); free(recvID_YZ); free(recvID_yZ); free(recvID_Yz);
-*/	//......................................................................................
+	//......................................................................................
 	if (rank==0)	printf ("Devices are ready to communicate. \n");
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
-	ID = new char[N];
-	for (n=0; n<N; n++) ID[n] = id[n];
-	//..............................................
+	dvc_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	// Copy to the device
+	dvc_CopyToDevice(ID, id, N);
+	//...........................................................................
 
 	if (rank==0)	printf ("Allocating distributions \n");
 	//......................device distributions.................................
 	double *f_even,*f_odd;
 	//...........................................................................
-	f_even = new double [10*N];
-	f_odd = new double [9*N];
-	//...........................................................................
-
-	//...........................................................................
-	//				MAIN  VARIABLES ALLOCATED HERE
-	//...........................................................................
-	double *Phi,*Den,*Copy;
-	double *ColorGrad, *Velocity;
-	//...........................................................................
-	Phi = new double [N];
-	Den = new double [2*N];
-	Copy = new double [2*N];
-	Velocity = new double [3*N];
-	ColorGrad = new double [3*N];
+	dvc_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 
 	if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
 	//...........................................................................
-	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-	InitDenColor(ID, Den, Phi,  das, dbs, N);
-/*	for (n=0; n<N; n++){
+	dvc_InitD3Q19(ID,f_even,f_odd,Nx,Ny,Nz,nBlocks,nthreads,S);
+	//...........................................................................
 
-		if ( ID[n] == 1){
-			Den[2*n] = 1.0;
-			Den[2*n+1] = 0.0;
-			Phi[n] = 1.0;
-		}
-		else if ( ID[n] == 2){
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 1.0;
-			Phi[n] = -1.0;
-		}
-		else{
-			Den[2*n] = das;
-			Den[2*n+1] = dbs;
-			Phi[n] = (das-dbs)/(das+dbs);
-		}
-	}
-*/	//...........................................................................
-	//...................................................................................
-	//*************************************************************************
-	// 		Compute the phase indicator field and reset Copy, Den
-	//*************************************************************************
-	ComputePhi(ID, Phi, Copy, Den, N);
-	//*************************************************************************
-	//...................................................................................
-	PackValues(sendList_x, sendCount_x,sendbuf_x, Phi, N);
-	PackValues(sendList_y, sendCount_y,sendbuf_y, Phi, N);
-	PackValues(sendList_z, sendCount_z,sendbuf_z, Phi, N);
-	PackValues(sendList_X, sendCount_X,sendbuf_X, Phi, N);
-	PackValues(sendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-	PackValues(sendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-	PackValues(sendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-	PackValues(sendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-	PackValues(sendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-	PackValues(sendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-	PackValues(sendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-	PackValues(sendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-	PackValues(sendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-	PackValues(sendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-	PackValues(sendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-	PackValues(sendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-	PackValues(sendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-	PackValues(sendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
-	//...................................................................................
-	// Send / Recv all the phase indcator field values
-	MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_WORLD,&req1[0]);
-	MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_WORLD,&req2[0]);
-	MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_WORLD,&req1[1]);
-	MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_WORLD,&req2[1]);
-	MPI_Isend(sendbuf_y, sendCount_y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_WORLD,&req1[2]);
-	MPI_Irecv(recvbuf_Y, recvCount_Y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_WORLD,&req2[2]);
-	MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_WORLD,&req1[3]);
-	MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_WORLD,&req2[3]);
-	MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_WORLD,&req1[4]);
-	MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[4]);
-	MPI_Isend(sendbuf_Z, sendCount_Z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_WORLD,&req1[5]);
-	MPI_Irecv(recvbuf_z, recvCount_z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_WORLD,&req2[5]);
-	MPI_Isend(sendbuf_xy, sendCount_xy,MPI_DOUBLE,rank_XY,sendtag,MPI_COMM_WORLD,&req1[6]);
-	MPI_Irecv(recvbuf_XY, recvCount_XY,MPI_DOUBLE,rank_xy,recvtag,MPI_COMM_WORLD,&req2[6]);
-	MPI_Isend(sendbuf_XY, sendCount_XY,MPI_DOUBLE,rank_xy,sendtag,MPI_COMM_WORLD,&req1[7]);
-	MPI_Irecv(recvbuf_xy, recvCount_xy,MPI_DOUBLE,rank_XY,recvtag,MPI_COMM_WORLD,&req2[7]);
-	MPI_Isend(sendbuf_Xy, sendCount_Xy,MPI_DOUBLE,rank_xY,sendtag,MPI_COMM_WORLD,&req1[8]);
-	MPI_Irecv(recvbuf_xY, recvCount_xY,MPI_DOUBLE,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[8]);
-	MPI_Isend(sendbuf_xY, sendCount_xY,MPI_DOUBLE,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[9]);
-	MPI_Irecv(recvbuf_Xy, recvCount_Xy,MPI_DOUBLE,rank_xY,recvtag,MPI_COMM_WORLD,&req2[9]);
-	MPI_Isend(sendbuf_xz, sendCount_xz,MPI_DOUBLE,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[10]);
-	MPI_Irecv(recvbuf_XZ, recvCount_XZ,MPI_DOUBLE,rank_xz,recvtag,MPI_COMM_WORLD,&req2[10]);
-	MPI_Isend(sendbuf_XZ, sendCount_XZ,MPI_DOUBLE,rank_xz,sendtag,MPI_COMM_WORLD,&req1[11]);
-	MPI_Irecv(recvbuf_xz, recvCount_xz,MPI_DOUBLE,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[11]);
-	MPI_Isend(sendbuf_Xz, sendCount_Xz,MPI_DOUBLE,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[12]);
-	MPI_Irecv(recvbuf_xZ, recvCount_xZ,MPI_DOUBLE,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[12]);
-	MPI_Isend(sendbuf_xZ, sendCount_xZ,MPI_DOUBLE,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[13]);
-	MPI_Irecv(recvbuf_Xz, recvCount_Xz,MPI_DOUBLE,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[13]);
-	MPI_Isend(sendbuf_yz, sendCount_yz,MPI_DOUBLE,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[14]);
-	MPI_Irecv(recvbuf_YZ, recvCount_YZ,MPI_DOUBLE,rank_yz,recvtag,MPI_COMM_WORLD,&req2[14]);
-	MPI_Isend(sendbuf_YZ, sendCount_YZ,MPI_DOUBLE,rank_yz,sendtag,MPI_COMM_WORLD,&req1[15]);
-	MPI_Irecv(recvbuf_yz, recvCount_yz,MPI_DOUBLE,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[15]);
-	MPI_Isend(sendbuf_Yz, sendCount_Yz,MPI_DOUBLE,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[16]);
-	MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[16]);
-	MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[17]);
-	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[17]);
-	//...................................................................................
-	//...................................................................................
-	//...................................................................................
-	// Wait for completion of Indicator Field communication
-	MPI_Waitall(18,req1,stat1);
-	MPI_Waitall(18,req2,stat2);
-	//...................................................................................
-	//...................................................................................
-	UnpackValues(recvList_x, recvCount_x,recvbuf_x, Phi, N);
-	UnpackValues(recvList_y, recvCount_y,recvbuf_y, Phi, N);
-	UnpackValues(recvList_z, recvCount_z,recvbuf_z, Phi, N);
-	UnpackValues(recvList_X, recvCount_X,recvbuf_X, Phi, N);
-	UnpackValues(recvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-	UnpackValues(recvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-	UnpackValues(recvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-	UnpackValues(recvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-	UnpackValues(recvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-	UnpackValues(recvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-	UnpackValues(recvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-	UnpackValues(recvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-	UnpackValues(recvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-	UnpackValues(recvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-	UnpackValues(recvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-	UnpackValues(recvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-	UnpackValues(recvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-	UnpackValues(recvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
-	//...................................................................................
+	//...........................................................................
+	// Grids used to pack faces on the GPU for MPI
+	int faceGrid,edgeGrid,packThreads;
+	packThreads=512;
+	edgeGrid=1;
+	faceGrid=Nx*Ny/packThreads;
+	//...........................................................................
 
 	int timestep = 0;
-	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
+
+	//.......create a stream for the LB calculation.......
+//	cudaStream_t stream;
+//	cudaStreamCreate(&stream);
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	MPI_Barrier(MPI_COMM_WORLD);
 	starttime = MPI_Wtime();
+	// Old cuda timer is below
+//	cudaEvent_t start, stop;
+//	float time;
+//	cudaEventCreate(&start);
+//	cudaEventCreate(&stop);
+//	cudaEventRecord( start, 0 );
 	//.........................................
 
 	sendtag = recvtag = 5;
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
-
-		//*************************************************************************
-		// 		Compute the color gradient
-		//*************************************************************************
-		ComputeColorGradient(ID, Phi, ColorGrad, Nx, Ny, Nz);
-		//*************************************************************************
-
-		//*************************************************************************
-		// 		Perform collision step for the momentum transport
-		//*************************************************************************
-		ColorCollide(ID, f_even, f_odd, ColorGrad, Velocity, Nz, Ny, Nz,
-				rlxA, rlxB,alpha, beta, Fx, Fy, Fz, pBC);
-		//*************************************************************************
-
-		//...................................................................................
-		PackDist(1,sendList_x,0,sendCount_x,sendbuf_x,f_even,N);
-		PackDist(4,sendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		PackDist(5,sendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		PackDist(6,sendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		PackDist(7,sendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+	//...................................................................................
+		dvc_PackDist(faceGrid,packThreads,1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
 		//...Packing for X face(faceGrid,packThreads,1,7,9,11,13)................................
-		PackDist(0,sendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
-		PackDist(3,sendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		PackDist(4,sendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		PackDist(5,sendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		PackDist(6,sendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,0,dvcSendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
 		//...Packing for y face(faceGrid,packThreads,4,8,9,16,18).................................
-		PackDist(2,sendList_y,0,sendCount_y,sendbuf_y,f_even,N);
-		PackDist(4,sendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-		PackDist(4,sendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
-		PackDist(8,sendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-		PackDist(9,sendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,2,dvcSendList_y,0,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,9,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
 		//...Packing for Y face(faceGrid,packThreads,3,7,10,15,17).................................
-		PackDist(1,sendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
-		PackDist(3,sendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-		PackDist(5,sendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
-		PackDist(7,sendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-		PackDist(8,sendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
 		//...Packing for z face(faceGrid,packThreads,6,12,13,16,17)................................
-		PackDist(3,sendList_z,0,sendCount_z,sendbuf_z,f_even,N);
-		PackDist(6,sendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-		PackDist(6,sendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
-		PackDist(8,sendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-		PackDist(8,sendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_z,0,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
 		//...Packing for Z face(faceGrid,packThreads,5,11,14,15,18)................................
-		PackDist(2,sendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
-		PackDist(5,sendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-		PackDist(7,sendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
-		PackDist(7,sendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-		PackDist(9,sendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(faceGrid,packThreads,9,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
 		//...Pack the xy edge (edgeGrid,packThreads,8)................................
-		PackDist(4,sendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,4,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
 		//...Pack the Xy edge (edgeGrid,packThreads,9)................................
-		PackDist(4,sendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,4,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
 		//...Pack the xY edge (edgeGrid,packThreads,10)................................
-		PackDist(5,sendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,5,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
 		//...Pack the XY edge (edgeGrid,packThreads,7)................................
-		PackDist(3,sendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,3,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
 		//...Pack the xz edge (edgeGrid,packThreads,12)................................
-		PackDist(6,sendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
 		//...Pack the xZ edge (edgeGrid,packThreads,14)................................
-		PackDist(7,sendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
 		//...Pack the Xz edge (edgeGrid,packThreads,13)................................
-		PackDist(6,sendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
 		//...Pack the XZ edge (edgeGrid,packThreads,11)................................
-		PackDist(5,sendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
 		//...Pack the xz edge (edgeGrid,packThreads,12)................................
-		PackDist(6,sendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
 		//...Pack the xZ edge (edgeGrid,packThreads,14)................................
-		PackDist(7,sendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
 		//...Pack the Xz edge (edgeGrid,packThreads,13)................................
-		PackDist(6,sendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
 		//...Pack the XZ edge (edgeGrid,packThreads,11)................................
-		PackDist(5,sendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
 		//...Pack the yz edge (edgeGrid,packThreads,16)................................
-		PackDist(8,sendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,8,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
 		//...Pack the yZ edge (edgeGrid,packThreads,18)................................
-		PackDist(9,sendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
+		dvc_PackDist(edgeGrid,packThreads,9,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
 		//...Pack the Yz edge (edgeGrid,packThreads,17)................................
-		PackDist(8,sendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,8,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
 		//...Pack the YZ edge (edgeGrid,packThreads,15)................................
-		PackDist(7,sendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
+		dvc_PackDist(edgeGrid,packThreads,7,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
 		//...................................................................................
+
+
+/*		dvc_PackD3Q19(faceGrid, edgeGrid, packThreads,f_even, f_odd, N,
+				dvcSendList_x, dvcSendList_y, dvcSendList_z, dvcSendList_X, dvcSendList_Y, dvcSendList_Z,
+				dvcSendList_xy, dvcSendList_XY, dvcSendList_xY, dvcSendList_Xy,
+				dvcSendList_xz, dvcSendList_XZ, dvcSendList_xZ, dvcSendList_Xz,
+				dvcSendList_yz, dvcSendList_YZ, dvcSendList_yZ, dvcSendList_Yz,
+				sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z,
+				sendCount_xy, sendCount_XY, sendCount_xY, sendCount_Xy,
+				sendCount_xz, sendCount_XZ, sendCount_xZ, sendCount_Xz,
+				sendCount_yz, sendCount_YZ, sendCount_yZ, sendCount_Yz,
+				sendbuf_x, sendbuf_y, sendbuf_z, sendbuf_X, sendbuf_Y, sendbuf_Z,
+				sendbuf_xy, sendbuf_XY, sendbuf_xY, sendbuf_Xy,
+				sendbuf_xz, sendbuf_XZ, sendbuf_xZ, sendbuf_Xz,
+				sendbuf_yz, sendbuf_YZ, sendbuf_yZ, sendbuf_Yz);
+*/
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
+		//........ Execute the swap kernel (device) .........................
+		//*****************************************************************************
+		//*****************************************************************************
+		dvc_SwapD3Q19(nBlocks,nthreads,S,ID,f_even,f_odd,Nx,Ny,Nz);
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
 
 		//...................................................................................
 		// Send all the distributions
@@ -1195,19 +1173,6 @@ int main(int argc, char **argv)
 		MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[17]);
 		//...................................................................................
 
-		//*************************************************************************
-		// 		Carry out the density streaming step for mass transport
-		//*************************************************************************
-		DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity,beta, Nx, Ny, Nz, pBC);
-		//*************************************************************************
-
-
-		//*************************************************************************
-		// 		Swap the distributions for momentum transport
-		//*************************************************************************
-		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-		//*************************************************************************
-		
 		//...................................................................................
 		// Wait for completion of D3Q19 communication
 		MPI_Waitall(18,req1,stat1);
@@ -1216,270 +1181,156 @@ int main(int argc, char **argv)
 		// Unpack the distributions on the device
 		//...................................................................................
 		//...Map recieve list for the X face: q=2,8,10,12,13 .................................
-		MapRecvDist(0,-1,0,0,recvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		MapRecvDist(3,-1,-1,0,recvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		MapRecvDist(4,-1,1,0,recvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		MapRecvDist(5,-1,0,-1,recvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		MapRecvDist(6,-1,0,1,recvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,3,-1,-1,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,4,-1,1,0,dvcRecvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,5,-1,0,-1,dvcRecvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,6,-1,0,1,dvcRecvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the x face: q=1,7,9,11,13..................................
-		MapRecvDist(1,1,0,0,recvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		MapRecvDist(4,1,1,0,recvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		MapRecvDist(5,1,-1,0,recvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		MapRecvDist(6,1,0,1,recvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		MapRecvDist(7,1,0,-1,recvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,4,1,1,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,5,1,-1,0,dvcRecvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,6,1,0,1,dvcRecvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,7,1,0,-1,dvcRecvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-		MapRecvDist(1,0,-1,0,recvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		MapRecvDist(3,-1,-1,0,recvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		MapRecvDist(5,1,-1,0,recvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
-		MapRecvDist(7,0,-1,-1,recvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		MapRecvDist(8,0,-1,1,recvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,3,-1,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,5,1,-1,0,dvcRecvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,7,0,-1,-1,dvcRecvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,8,0,-1,1,dvcRecvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-		MapRecvDist(2,0,1,0,recvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		MapRecvDist(4,1,1,0,recvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		MapRecvDist(4,-1,1,0,recvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
-		MapRecvDist(8,0,1,1,recvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		MapRecvDist(9,0,1,-1,recvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,4,1,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,4,-1,1,0,dvcRecvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,8,0,1,1,dvcRecvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,9,0,1,-1,dvcRecvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the z face<<<faceGrid,packThreads,6,12,13,16,17)..............................................
-		MapRecvDist(2,0,0,-1,recvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		MapRecvDist(5,-1,0,-1,recvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		MapRecvDist(7,1,0,-1,recvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
-		MapRecvDist(7,0,-1,-1,recvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		MapRecvDist(9,0,1,-1,recvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,5,-1,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,7,1,0,-1,dvcRecvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,7,0,-1,-1,dvcRecvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,9,0,1,-1,dvcRecvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the Z face<<<faceGrid,packThreads,5,11,14,15,18)..............................................
-		MapRecvDist(3,0,0,1,recvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		MapRecvDist(6,1,0,1,recvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		MapRecvDist(6,-1,0,1,recvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
-		MapRecvDist(8,0,1,1,recvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		MapRecvDist(8,0,-1,1,recvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,6,1,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,6,-1,0,1,dvcRecvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,8,0,1,1,dvcRecvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(faceGrid,packThreads,8,0,-1,1,dvcRecvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
 		//..................................................................................
 		//...Map recieve list for the xy edge <<<edgeGrid,packThreads,8)................................
-		MapRecvDist(3,-1,-1,0,recvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,3,-1,-1,0,dvcRecvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the Xy edge <<<edgeGrid,packThreads,9)................................
-		MapRecvDist(5,1,-1,0,recvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,5,1,-1,0,dvcRecvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the xY edge <<<edgeGrid,packThreads,10)................................
-		MapRecvDist(4,-1,1,0,recvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,4,-1,1,0,dvcRecvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the XY edge <<<edgeGrid,packThreads,7)................................
-		MapRecvDist(4,1,1,0,recvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,4,1,1,0,dvcRecvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the xz edge <<<edgeGrid,packThreads,12)................................
-		MapRecvDist(5,-1,0,-1,recvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,5,-1,0,-1,dvcRecvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the xZ edge <<<edgeGrid,packThreads,14)................................
-		MapRecvDist(6,-1,0,1,recvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,6,-1,0,1,dvcRecvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the Xz edge <<<edgeGrid,packThreads,13)................................
-		MapRecvDist(7,1,0,-1,recvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,7,1,0,-1,dvcRecvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the XZ edge <<<edgeGrid,packThreads,11)................................
-		MapRecvDist(6,1,0,1,recvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the yz edge <<<edgeGrid,packThreads,16)................................
-		MapRecvDist(7,0,-1,-1,recvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the yZ edge <<<edgeGrid,packThreads,18)................................
-		MapRecvDist(8,0,-1,1,recvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the Yz edge <<<edgeGrid,packThreads,17)................................
-		MapRecvDist(9,0,1,-1,recvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the YZ edge <<<edgeGrid,packThreads,15)................................
-		MapRecvDist(8,0,1,1,recvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(edgeGrid,packThreads,8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 		//...................................................................................
-		
-		//...................................................................................
-		PackDenD3Q7(recvList_x,recvCount_x,recvbuf_x,2,Den,N);
-		PackDenD3Q7(recvList_y,recvCount_y,recvbuf_y,2,Den,N);
-		PackDenD3Q7(recvList_z,recvCount_z,recvbuf_z,2,Den,N);
-		PackDenD3Q7(recvList_X,recvCount_X,recvbuf_X,2,Den,N);
-		PackDenD3Q7(recvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
-		PackDenD3Q7(recvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
-		//...................................................................................
-		//...................................................................................
-		// Send all the D3Q7 distributions
-		MPI_Isend(recvbuf_x, 2*recvCount_x,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_WORLD,&req1[0]);
-		MPI_Irecv(sendbuf_X, 2*sendCount_X,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_WORLD,&req2[0]);
-		MPI_Isend(recvbuf_X, 2*recvCount_X,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_WORLD,&req1[1]);
-		MPI_Irecv(sendbuf_x, 2*sendCount_x,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_WORLD,&req2[1]);
-		MPI_Isend(recvbuf_y, 2*recvCount_y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_WORLD,&req1[2]);
-		MPI_Irecv(sendbuf_Y, 2*sendCount_Y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_WORLD,&req2[2]);
-		MPI_Isend(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_WORLD,&req1[3]);
-		MPI_Irecv(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_WORLD,&req2[3]);
-		MPI_Isend(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_WORLD,&req1[4]);
-		MPI_Irecv(sendbuf_Z, 2*sendCount_Z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[4]);
-		MPI_Isend(recvbuf_Z, 2*recvCount_Z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_WORLD,&req1[5]);
-		MPI_Irecv(sendbuf_z, 2*sendCount_z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_WORLD,&req2[5]);
-		//...................................................................................
-		//...................................................................................
-		// Wait for completion of D3Q7 communication
-		MPI_Waitall(6,req1,stat1);
-		MPI_Waitall(6,req2,stat2);
-		//...................................................................................
-		//...................................................................................
-		UnpackDenD3Q7(sendList_x,sendCount_x,sendbuf_x,2,Den,N);
-		UnpackDenD3Q7(sendList_y,sendCount_y,sendbuf_y,2,Den,N);
-		UnpackDenD3Q7(sendList_z,sendCount_z,sendbuf_z,2,Den,N);
-		UnpackDenD3Q7(sendList_X,sendCount_X,sendbuf_X,2,Den,N);
-		UnpackDenD3Q7(sendList_Y,sendCount_Y,sendbuf_Y,2,Den,N);
-		UnpackDenD3Q7(sendList_Z,sendCount_Z,sendbuf_Z,2,Den,N);
-		//...................................................................................
-		//*************************************************************************
-		// 		Compute the phase indicator field and reset Copy, Den
-		//*************************************************************************
-		ComputePhi(ID, Phi, Copy, Den, N);
-		//*************************************************************************
-		//...................................................................................
-		PackValues(sendList_x, sendCount_x,sendbuf_x, Phi, N);
-		PackValues(sendList_y, sendCount_y,sendbuf_y, Phi, N);
-		PackValues(sendList_z, sendCount_z,sendbuf_z, Phi, N);
-		PackValues(sendList_X, sendCount_X,sendbuf_X, Phi, N);
-		PackValues(sendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-		PackValues(sendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-		PackValues(sendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-		PackValues(sendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-		PackValues(sendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-		PackValues(sendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-		PackValues(sendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-		PackValues(sendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-		PackValues(sendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-		PackValues(sendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-		PackValues(sendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-		PackValues(sendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-		PackValues(sendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-		PackValues(sendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
-		//...................................................................................
-		// Send / Recv all the phase indcator field values
-		MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_WORLD,&req1[0]);
-		MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_WORLD,&req2[0]);
-		MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_WORLD,&req1[1]);
-		MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_WORLD,&req2[1]);
-		MPI_Isend(sendbuf_y, sendCount_y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_WORLD,&req1[2]);
-		MPI_Irecv(recvbuf_Y, recvCount_Y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_WORLD,&req2[2]);
-		MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_WORLD,&req1[3]);
-		MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_WORLD,&req2[3]);
-		MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_WORLD,&req1[4]);
-		MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[4]);
-		MPI_Isend(sendbuf_Z, sendCount_Z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_WORLD,&req1[5]);
-		MPI_Irecv(recvbuf_z, recvCount_z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_WORLD,&req2[5]);
-		MPI_Isend(sendbuf_xy, sendCount_xy,MPI_DOUBLE,rank_XY,sendtag,MPI_COMM_WORLD,&req1[6]);
-		MPI_Irecv(recvbuf_XY, recvCount_XY,MPI_DOUBLE,rank_xy,recvtag,MPI_COMM_WORLD,&req2[6]);
-		MPI_Isend(sendbuf_XY, sendCount_XY,MPI_DOUBLE,rank_xy,sendtag,MPI_COMM_WORLD,&req1[7]);
-		MPI_Irecv(recvbuf_xy, recvCount_xy,MPI_DOUBLE,rank_XY,recvtag,MPI_COMM_WORLD,&req2[7]);
-		MPI_Isend(sendbuf_Xy, sendCount_Xy,MPI_DOUBLE,rank_xY,sendtag,MPI_COMM_WORLD,&req1[8]);
-		MPI_Irecv(recvbuf_xY, recvCount_xY,MPI_DOUBLE,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[8]);
-		MPI_Isend(sendbuf_xY, sendCount_xY,MPI_DOUBLE,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[9]);
-		MPI_Irecv(recvbuf_Xy, recvCount_Xy,MPI_DOUBLE,rank_xY,recvtag,MPI_COMM_WORLD,&req2[9]);
-		MPI_Isend(sendbuf_xz, sendCount_xz,MPI_DOUBLE,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[10]);
-		MPI_Irecv(recvbuf_XZ, recvCount_XZ,MPI_DOUBLE,rank_xz,recvtag,MPI_COMM_WORLD,&req2[10]);
-		MPI_Isend(sendbuf_XZ, sendCount_XZ,MPI_DOUBLE,rank_xz,sendtag,MPI_COMM_WORLD,&req1[11]);
-		MPI_Irecv(recvbuf_xz, recvCount_xz,MPI_DOUBLE,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[11]);
-		MPI_Isend(sendbuf_Xz, sendCount_Xz,MPI_DOUBLE,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[12]);
-		MPI_Irecv(recvbuf_xZ, recvCount_xZ,MPI_DOUBLE,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[12]);
-		MPI_Isend(sendbuf_xZ, sendCount_xZ,MPI_DOUBLE,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[13]);
-		MPI_Irecv(recvbuf_Xz, recvCount_Xz,MPI_DOUBLE,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[13]);
-		MPI_Isend(sendbuf_yz, sendCount_yz,MPI_DOUBLE,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[14]);
-		MPI_Irecv(recvbuf_YZ, recvCount_YZ,MPI_DOUBLE,rank_yz,recvtag,MPI_COMM_WORLD,&req2[14]);
-		MPI_Isend(sendbuf_YZ, sendCount_YZ,MPI_DOUBLE,rank_yz,sendtag,MPI_COMM_WORLD,&req1[15]);
-		MPI_Irecv(recvbuf_yz, recvCount_yz,MPI_DOUBLE,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[15]);
-		MPI_Isend(sendbuf_Yz, sendCount_Yz,MPI_DOUBLE,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[16]);
-		MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[16]);
-		MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[17]);
-		MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[17]);
-		//...................................................................................
-		//...................................................................................
-		//...................................................................................
-		// Wait for completion of Indicator Field communication
-		MPI_Waitall(18,req1,stat1);
-		MPI_Waitall(18,req2,stat2);
-		//...................................................................................
-		//...................................................................................
-		UnpackValues(recvList_x, recvCount_x,recvbuf_x, Phi, N);
-		UnpackValues(recvList_y, recvCount_y,recvbuf_y, Phi, N);
-		UnpackValues(recvList_z, recvCount_z,recvbuf_z, Phi, N);
-		UnpackValues(recvList_X, recvCount_X,recvbuf_X, Phi, N);
-		UnpackValues(recvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-		UnpackValues(recvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-		UnpackValues(recvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-		UnpackValues(recvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-		UnpackValues(recvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-		UnpackValues(recvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-		UnpackValues(recvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-		UnpackValues(recvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-		UnpackValues(recvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-		UnpackValues(recvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-		UnpackValues(recvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-		UnpackValues(recvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-		UnpackValues(recvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-		UnpackValues(recvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
-		//...................................................................................
+
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
+		//........ Execute the collision kernel (device) ....................
+		//*****************************************************************************
+		//*****************************************************************************
+		dvc_MRT(nBlocks,nthreads,S,ID, f_even, f_odd, rlx_setA, rlx_setB, Fx, Fy, Fz,Nx,Ny,Nz);
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
+		//*****************************************************************************
 
 		MPI_Barrier(MPI_COMM_WORLD);
 		// Iteration completed!
 		timestep++;
-		
-		for (n=0; n<N; n++){
-			if (Phi[n] < -1.0 || Phi[n] > 1.0){
-				timestep = timestepMax;
-				
-				printf("exiting loop due to phase indicator field from rank = %i \n",rank);
-				printf("local site n = %i \n",n);
-				n=N;
-			}
-			if (Den[2*n] < 0.0 || Den[2*n+1] < 0.0){
-				timestep = timestepMax;
-		 		printf("exiting loop due to density value from rank = %i \n",rank);
-				printf("local site n = %i \n",n);
-				n=N;
-			}
-			if (Den[2*n]+ Den[2*n+1] < 0.1){
-				timestep = timestepMax;
-				//				n = N;
-				printf("exiting loop due to density sum from rank = %i \n",rank);
-				printf("local site n = %i \n",n);
-				n=N;
-			}
-		}
 		//...................................................................
 	}
 	//************************************************************************/
 
+//	cudaThreadSynchronize();
+	dvc_Barrier();
+	MPI_Barrier(MPI_COMM_WORLD);
 	stoptime = MPI_Wtime();
 //	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 	cputime = stoptime - starttime;
 //	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
 	double MLUPS = double(Nx*Ny*Nz*timestep)/cputime/1000000;
-	if (rank==0) printf("********************************************************\n");
+
 	if (rank==0) printf("CPU time = %f \n", cputime);
-	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
-	MLUPS *= nprocs;
-	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
-	if (rank==0) printf("********************************************************\n");
-	
-	// Write output files
-	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
-//	printf("Local File Name =  %s \n",LocalRankFilename);
-	
-	FILE *PHASE;
-	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Phi,8,N,PHASE);
-	fclose(PHASE);	
-	
-	double *pressure;
-	pressure = new double[N];
-	for (n=0; n<N; n++){
-		pressure[n] = f_even[n];
-		for (int q=0; q<9; q++){
-			pressure[n] += f_even[(q+1)*N+n];
-			pressure[n] += f_odd[q*N+n];
-		}
-		if (pressure[n] < 0.f) pressure[n] = 0.f;
-	}
-	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
-	FILE *PRESSURE;
-	PRESSURE = fopen(LocalRankFilename,"wb");
-	fwrite(pressure,8,N,PRESSURE);
-	fclose(PRESSURE);
-	
-	sprintf(LocalRankFilename,"%s%s","ColorGrad.",LocalRankString);
-	FILE *COLORGRAD;
-	COLORGRAD = fopen(LocalRankFilename,"wb");
-	fwrite(ColorGrad,8,3*N,COLORGRAD);
-	fclose(COLORGRAD);
+	if (rank==0) printf("Lattice update rate = %f MLUPS \n", MLUPS);
+	//.......... stop and destroy timer.............................
+//	cudaEventRecord( stop, stream);
+//	cudaEventSynchronize( stop );
+//	cudaEventElapsedTime( &time, start, stop );
+//	printf("CPU time = %f \n", time);
+//	float MLUPS = 0.001*float(Nx*Ny*Nz)*timestep/time;
+//	printf("MLUPS = %f \n", MLUPS);
+
+//	cudaStreamDestroy(stream);
+//	cudaEventDestroy( start );
+//	cudaEventDestroy( stop );
+	//..............................................................
+
+	//..............................................................
+	//.........Compute the velocity and copy result to host ........
+//	double *velocity;
+//	velocity = new double[3*N];
+	//......................device distributions....................................
+//	double *vel;
+	//..............................................................................
+//	dvc_AllocateDeviceMemory((void **) &vel, 3*dist_mem_size);	// Allocate device memory
+	//..............................................................................
+	//..............................................................................
+//	dvc_CopyToDevice(velocity, vel, 3*dist_mem_size, dvc_CopyToDeviceDeviceToHost);
+	//..............................................................................
+//	cudaThreadSynchronize();
+//	MPI_Barrier(MPI_COMM_WORLD);
+	//............................................................
+	//....Write the z-velocity to test poiseuille flow............
+//	double vz,vz_avg;
+//	vz_avg = 0.0;
+
+//	FILE *output;
+//	output = fopen("velocity.out","w");
+//	for (int k=0; k<1; k++){
+//		for (int j=0; j<1; j++){
+//			for (int i=0; i<Nx; i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//				//.....print value........
+//				vz = velocity[2*N+n];
+//				vz_avg += vz;
+//				fprintf(output, " %e",vz);
+//			}
+//		}
+//	}
+//	fclose(output);
+
+//	vz = vz_avg/double(sum);
+//	printf("Average Velocity = %e\n", vz);
+
+	// cleanup
+//	cudaFree(f_even);	cudaFree(f_odd);	cudaFree(vel);	cudaFree(ID);
+//	free (velocity);	free(id);
+
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();

@@ -1,3 +1,4 @@
+#if 0
 #include "Array.h"
 /*
  *  Array.cpp
@@ -254,3 +255,4 @@ DoubleArray DoubleArray::Copy()
     return CopyInto;
 }
 
+#endif
