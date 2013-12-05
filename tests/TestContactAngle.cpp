@@ -145,6 +145,7 @@ int main (int argc, char *argv[])
 				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
+
 		
 		//*******************************************************************
 		// Compute the Interfacial Areas, Common Line length for blob p
