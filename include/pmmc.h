@@ -3759,47 +3759,32 @@ inline void pmmc_CubeSurfaceInterpVector(DoubleArray &Vec_x, DoubleArray &Vec_y,
 	}
 }
 //--------------------------------------------------------------------------------------------------------
-inline double pmmc_CubeCurveInterpVector(DoubleArray &CubeValues, DoubleArray &CurveValues,
-										DTMutableList<Point> &Points, int i, int j, int k, int npts)
+inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, IntArray &Triangles, int ntris)
 {
-	int p;
-	Point A,B;
-	double vA,vB;
-	double x,y,z;
-	double s,s1,s2,s3,temp;
-	double a,b,c,d,e,f,g,h;
-	double integral;
-	double length;
-
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	// Evaluate the coefficients
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-
-	for (p=0; p<npts; p++){
-		A = Points(p);
-		x = A.x-1.0*i;
-		y = A.y-1.0*j;
-		z = A.z-1.0*k;
-		CurveValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	int r;
+	double temp,area,s,s1,s2,s3;
+	double nx,ny,nz,norm;
+	Point A,B,C;
+	area = 0.0;
+	for (r=0;r<ntris;r++){
+		A = Points(Triangles(0,r));
+		B = Points(Triangles(1,r));
+		C = Points(Triangles(2,r));
+		// Compute the triangle normal vector
+		nx = (B.y-A.y)*(C.z-A.z) - (B.z-A.z)*(C.y-A.y);
+		ny = (B.z-A.z)*(C.x-A.x) - (B.x-A.x)*(C.z-A.z);
+		nz = (B.x-A.x)*(C.y-A.y) - (B.y-A.y)*(C.x-A.x);
+		norm = sqrt(nx*nx+ny*ny+nz*nz);
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
+		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s = 0.5*(s1+s2+s3);
+		temp = s*(s-s1)*(s-s2)*(s-s3);
+		if (temp > 0.0){
+			temp = sqrt(temp);
+			area += temp;
+		}
 	}
-
-	integral = 0.0;
-	for (p=0; p < npts-1; p++){
-		// Extract the line segment
-		A = Points(p);
-		B = Points(p+1);
-		vA = CurveValues(p);
-		vB = CurveValues(p+1);
-		// Compute the length of the segment
-		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-		integral += 0.5*length*(vA + vB);
-	}
-	return integral;
+	return area;
 }
