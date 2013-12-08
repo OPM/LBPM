@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
 	DoubleArray CubeValues(2,2,2);
+	DoubleArray Orientation(6);
 
 	// Compute the signed distance function
 	SignedDistance(Phase.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
@@ -96,7 +97,9 @@ int main(int argc, char **argv)
 	double Gxx_sum,Gyy_sum,Gzz_sum,Gxy_sum,Gxz_sum,Gyz_sum;
 	double wn_curvature_sum = 0.0;
 	double wn_area_sum = 0.0;
-
+	Orientation(0) = Orientation(1) = Orientation(2) = 0.0;
+	Orientation(3) = Orientation(4) = Orientation(5) = 0.0;
+	
 	pmmc_MeshGradient(Phase, Phase_x, Phase_y, Phase_z, Nx, Ny, Nz);
 
 	for (int c=0;c<ncubes;c++){
@@ -122,24 +125,16 @@ int main(int argc, char **argv)
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
-		// Copy the curvature values for the cube
-		CubeValues(0,0,0) = Phase_x(i,j,k);
-		CubeValues(1,0,0) = Phase_x(i+1,j,k);
-		CubeValues(0,1,0) = Phase_x(i,j+1,k);
-		CubeValues(1,1,0) = Phase_x(i+1,j+1,k);
-		CubeValues(0,0,1) = Phase_x(i,j,k+1);
-		CubeValues(1,0,1) = Phase_x(i+1,j,k+1);
-		CubeValues(0,1,1) = Phase_x(i,j+1,k+1);
-		CubeValues(1,1,1) = Phase_x(i+1,j+1,k+1);
 
-		// Interpolate the curvature onto the surface
-//		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, nw_pts, nw_tris,
-//									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
-
-		wn_area_sum += pmmc_CubeSurfaceArea(nw_pts, nw_tris, n_nw_tris);
+		wn_area_sum += pmmc_CubeSurfaceOrientation(Orientation,nw_pts,nw_tris,n_nw_tris);
 
 	}
 
-	printf("Gxx =  %f, Analytical = 1/3 \n", wn_curvature_sum/wn_area_sum);
+	printf("Gxx =  %f, Analytical = 1/3 \n", Orientation(0)/wn_area_sum);
+	printf("Gyy =  %f, Analytical = 1/3 \n", Orientation(1)/wn_area_sum);
+	printf("Gzz =  %f, Analytical = 1/3 \n", Orientation(2)/wn_area_sum);
+	printf("Gxy =  %f, Analytical = 0 \n", Orientation(3)/wn_area_sum);
+	printf("Gxz =  %f, Analytical = 0 \n", Orientation(4)/wn_area_sum);
+	printf("Gyz =  %f, Analytical = 0 \n", Orientation(5)/wn_area_sum);
 	
 }

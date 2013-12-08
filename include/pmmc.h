@@ -3784,6 +3784,12 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 		if (temp > 0.0){
 			temp = sqrt(temp);
 			area += temp;
+			Orientation(0) += temp*nx*nx;	// Gxx
+			Orientation(1) += temp*ny*ny;	// Gyy
+			Orientation(2) += temp*nz*nz;	// Gzz
+			Orientation(3) += temp*nx*ny;	// Gxy
+			Orientation(4) += temp*nx*nz;	// Gxz
+			Orientation(5) += temp*ny*nz;	// Gyz
 		}
 	}
 	return area;
