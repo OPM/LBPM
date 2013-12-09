@@ -121,18 +121,8 @@ int main(int argc, char **argv)
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
-		// Copy the curvature values for the cube
-		CubeValues(0,0,0) = MeanCurvature(i,j,k);
-		CubeValues(1,0,0) = MeanCurvature(i+1,j,k);
-		CubeValues(0,1,0) = MeanCurvature(i,j+1,k);
-		CubeValues(1,1,0) = MeanCurvature(i+1,j+1,k);
-		CubeValues(0,0,1) = MeanCurvature(i,j,k+1);
-		CubeValues(1,0,1) = MeanCurvature(i+1,j,k+1);
-		CubeValues(0,1,1) = MeanCurvature(i,j+1,k+1);
-		CubeValues(1,1,1) = MeanCurvature(i+1,j+1,k+1);
-
 		// Interpolate the curvature onto the surface
-		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, nw_pts, nw_tris,
+		wn_curvature_sum += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
 
 		wn_area_sum += pmmc_CubeSurfaceArea(nw_pts, nw_tris, n_nw_tris);

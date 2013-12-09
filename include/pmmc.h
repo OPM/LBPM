@@ -3440,6 +3440,7 @@ inline void pmmc_CubeListFromBlobs()
 
 
 }
+//--------------------------------------------------------------------------------------------------------
 inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Triangles, int ntris)
 {
 	int r;
@@ -3460,6 +3461,7 @@ inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Trian
 	}
 	return area;
 }
+//--------------------------------------------------------------------------------------------------------
 inline double pmmc_CubeCurveLength(DTMutableList<Point> &Points, int npts)
 {
 	int p;
@@ -3477,8 +3479,8 @@ inline double pmmc_CubeCurveLength(DTMutableList<Point> &Points, int npts)
 	}
 	return lwns;
 }
-//--------------------------------------------------------------------------------------------------------
-inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
+
+inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DoubleArray &MeshValues, DTMutableList<Point> &Points, IntArray &Triangles,
 									  DoubleArray &SurfaceValues, int i, int j, int k, int npts, int ntris)
 {
 	Point A,B,C;
@@ -3489,6 +3491,16 @@ inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList
 	double a,b,c,d,e,f,g,h;
 	double integral;
 
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = MeshValues(i,j,k);
+	CubeValues(1,0,0) = MeshValues(i+1,j,k);
+	CubeValues(0,1,0) = MeshValues(i,j+1,k);
+	CubeValues(1,1,0) = MeshValues(i+1,j+1,k);
+	CubeValues(0,0,1) = MeshValues(i,j,k+1);
+	CubeValues(1,0,1) = MeshValues(i+1,j,k+1);
+	CubeValues(0,1,1) = MeshValues(i,j+1,k+1);
+	CubeValues(1,1,1) = MeshValues(i+1,j+1,k+1);
+	
 	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
 	// Evaluate the coefficients
 	a = CubeValues(0,0,0);

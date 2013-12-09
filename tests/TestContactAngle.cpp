@@ -110,21 +110,6 @@ int main (int argc, char *argv[])
 	pmmc_MeshGradient(Phase,Fx,Fy,Fz,Nx,Ny,Nz);
 	pmmc_MeshGradient(SignDist,Sx,Sy,Sz,Nx,Ny,Nz);
 	
-	FILE *STRIS;
-	STRIS = fopen("solid-triangles.out","w");
-	
-	FILE *WN_TRIS;
-	WN_TRIS = fopen("wn-tris.out","w");
-	
-	FILE *NS_TRIS;
-	NS_TRIS = fopen("ns-tris.out","w");
-	
-	FILE *WS_TRIS;
-	WS_TRIS = fopen("ws-tris.out","w");
-	
-	FILE *WNS_PTS;
-	WNS_PTS = fopen("wns-pts.out","w");
-	
 	// End of the loop to set the values
 	awn = aws = ans = lwns = 0.0;
 	nwp_volume = 0.0;
@@ -169,53 +154,8 @@ int main (int argc, char *argv[])
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 
-		//.......................................................................................
-		// Write the triangle lists to text file
-		for (r=0;r<n_nw_tris;r++){
-			A = nw_pts(nw_tris(0,r));
-			B = nw_pts(nw_tris(1,r));
-			C = nw_pts(nw_tris(2,r));
-			fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}		
-		for (r=0;r<n_ws_tris;r++){
-			A = ws_pts(ws_tris(0,r));
-			B = ws_pts(ws_tris(1,r));
-			C = ws_pts(ws_tris(2,r));
-			fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		for (r=0;r<n_ns_tris;r++){
-			A = ns_pts(ns_tris(0,r));
-			B = ns_pts(ns_tris(1,r));
-			C = ns_pts(ns_tris(2,r));
-			fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		for (p=0; p < n_nws_pts; p++){
-			P = nws_pts(p);
-			fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
-		}
-		
-		//.......................................................................................
-		
-		for (r=0;r<n_local_sol_tris;r++){
-			A = local_sol_pts(local_sol_tris(0,r));
-			B = local_sol_pts(local_sol_tris(1,r));
-			C = local_sol_pts(local_sol_tris(2,r));
-			fprintf(STRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		//*******************************************************************
-		// Reset the triangle counts to zero
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
-		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-		//	n_ns_tris_beg = 0;//n_ns_tris;
-		//	n_ws_tris_beg = 0;//n_ws_tris;
-		//	n_nws_seg_beg = n_nws_seg;
-		//*******************************************************************
 	}
-	fclose(WN_TRIS);
-	fclose(NS_TRIS);
-	fclose(WS_TRIS);
-	fclose(WNS_PTS);
-	fclose(STRIS);
+
 
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
@@ -224,7 +164,7 @@ int main (int argc, char *argv[])
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
-	printf("Cos(theta_wns) = %f, Analytical = %f \n", efawns/lwns,1.0*RADIUS/CAPRAD);
+	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("-------------------------------- \n");	
 	//.........................................................................
 	
