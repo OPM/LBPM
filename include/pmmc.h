@@ -3460,6 +3460,23 @@ inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Trian
 	}
 	return area;
 }
+inline double pmmc_CubeCurveLength(DTMutableList<Point> &Points, int npts)
+{
+	int p;
+	double s,lwns;
+	Point A,B;
+	lwns = 0.0;
+	for (p=0; p < npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		// Compute the length of the segment
+		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		// Add the length to the common line 
+		lwns += s;
+	}
+	return lwns;
+}
 //--------------------------------------------------------------------------------------------------------
 inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
 									  DoubleArray &SurfaceValues, int i, int j, int k, int npts, int ntris)
