@@ -1282,14 +1282,13 @@ int main(int argc, char **argv)
 	cDistOdd = new double[9*N];
 
 	// data needed to perform CPU-based averaging
-	double *Vel,*Press,*Norm_x,*Norm_y,*Norm_z,*Curvature,*dphidt;
+	double *Vel,*Press,*dphidt;
 	Vel = new double[3*N];		// fluid velocity
 	Press = new double[N];		// fluid pressure
 	dphidt = new double[N];		// d phi / dt
-	Norm_x = new double[N];		// normal in the x direction
-	Norm_y = new double[N];		// normal in the y direction
-	Norm_z = new double[N];		// normal in the z direction
-	Curvature = new double[N];	// curvature of phi
+
+	DoubleArray MeanCurvature(Nx,Ny,Nz);
+	DoubleArray GaussCurvature(Nx,Ny,Nz);
 	/*****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
@@ -1298,8 +1297,8 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// local averages (to each MPI process)
 	double awn,ans,aws,lwns,nwp_volume;
-	double vol_w, vol_n;						// volumes the exclude the interfacial region
 	double As;
+	double vol_w, vol_n;						// volumes the exclude the interfacial region
 	double sat_w;
 	double p_n,p_w;								// local phase averaged pressure
 	double vx_w,vy_w,vz_w,vx_n,vy_n,vz_n;  		// local phase averaged velocity
@@ -1307,6 +1306,11 @@ int main(int argc, char **argv)
 	double vol_w_global, vol_n_global;			// volumes the exclude the interfacial region
 	double awn_global,ans_global,aws_global;
 	double lwns_global;
+	double efawns,efawns_global;				// averaged contact angle
+	double Jwn,Jwn_global;						// average mean curavture - wn interface
+	double Gwnxx,Gwnyy,Gwnzz,Gwnxy,Gwnxz,Gwnyz;	// average orientation tensor - wn interface
+	double Gwsxx,Gwsyy,Gwszz,Gwsxy,Gwsxz,Gwsyz;	// average orientation tensor - ws interface
+	double Gnsxx,Gnsyy,Gnszz,Gnsxy,Gnsxz,Gnsyz;	// average orientation tensor - ns interface
 	double nwp_volume_global;					// volume for the wetting phase (for saturation)
 	double p_n_global,p_w_global;				// global phase averaged pressure
 	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
@@ -1317,6 +1321,7 @@ int main(int argc, char **argv)
 
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
+	DoubleArray CubeValues(2,2,2);
 //	int count_in=0,count_out=0;
 //	int nodx,nody,nodz;
 	// initialize lists for vertices for surfaces, common line
@@ -1330,8 +1335,8 @@ int main(int argc, char **argv)
 	IntArray ws_tris(3,20);
 	// initialize list for line segments
 	IntArray nws_seg(2,20);
-	
 	DTMutableList<Point> tmp(20);
+	DoubleArray Values(20);
 	//	IntArray store;
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
@@ -1912,6 +1917,9 @@ int main(int argc, char **argv)
 				Norm_y[n] = 0.0;
 				Norm_z[n] = 0.0;				
 			}
+			
+			// Compute the mesh curvature of the phase indicator field 
+			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 
 			// Compute phase averages
 			p_n = p_w = 0.0;
@@ -1963,221 +1971,25 @@ int main(int argc, char **argv)
 					}
 				}
 				//...........................................................................
-
 				
-				// Run PMMC
-				n_local_sol_tris = 0;
-				n_local_sol_pts = 0;
-				n_local_nws_pts = 0;
-				
-				n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
-				n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-				
-				//n_nw_tris_beg = 0;// n_nw_tris;
-				//n_ns_tris_beg = 0;//n_ns_tris;
-				//n_ws_tris_beg = 0;//n_ws_tris;
+				// Construct the interfaces and common curve
+				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
+						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+						i, j, k, Nx, Ny, Nz);
 
-				// if there is a solid phase interface in the grid cell
-				if (Interface(SignDist,solid_isovalue,i,j,k) == 1){
-					
-					/////////////////////////////////////////
-					/// CONSTRUCT THE LOCAL SOLID SURFACE ///
-					/////////////////////////////////////////
-					
-					// find the local solid surface
-				//	SOL_SURF(SignDist,0.0,Phase,fluid_isovalue,i,j,k, Nx,Ny,Nz,local_sol_pts,n_local_sol_pts,
-				//			 local_sol_tris,n_local_sol_tris,values);
-					
-					// find the local solid surface using the regular Marching Cubes algorithm
-					SolidMarchingCubes(SignDist,0.0,Phase,fluid_isovalue,i,j,k,Nx,Ny,Nz,local_sol_pts,n_local_sol_pts,
-									   local_sol_tris,n_local_sol_tris,values);
-					
-					/////////////////////////////////////////
-					//////// TRIM THE SOLID SURFACE /////////
-					/////////////////////////////////////////
-					/*					TRIM(local_sol_pts, n_local_sol_pts, fluid_isovalue,local_sol_tris, n_local_sol_tris,
-					 ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
-					 ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts,
-					 Phase, SignDist, i, j, k, newton_steps);
-					 */					
-					TRIM(local_sol_pts, n_local_sol_pts, fluid_isovalue,local_sol_tris, n_local_sol_tris,
-						 ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
-						 ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts);
-					
-					/////////////////////////////////////////
-					//////// WRITE COMMON LINE POINTS ///////
-					////////      TO MAIN ARRAYS      ///////
-					/////////////////////////////////////////
-					// SORT THE LOCAL COMMON LINE POINTS
-					/////////////////////////////////////////
-					// Make sure the first common line point is on a face
-					// Common curve points are located pairwise and must
-					// be searched and rearranged accordingly
-					for (p=0; p<n_local_nws_pts-1; p++){
-						P = local_nws_pts(p);
-						if ( P.x == 1.0*i || P.x ==1.0*(i+1)|| 
-							P.y == 1.0*j || P.y == 1.0*(j+1) || 
-							P.z == 1.0*k || P.z == 1.0*(k+1) ){
-							if (p%2 == 0){
-								// even points
-								// Swap the pair of points
-								local_nws_pts(p) = local_nws_pts(0);
-								local_nws_pts(0) = P;
-								P = local_nws_pts(p+1);
-								local_nws_pts(p+1) = local_nws_pts(1);
-								local_nws_pts(1) = P;
-								p = n_local_nws_pts; 
-
-							}
-							else{
-								// odd points - flip the order
-								local_nws_pts(p) = local_nws_pts(p-1);
-								local_nws_pts(p-1) = P;
-								p-=2;
-							}
-							// guarantee exit from the loop
-						}
-		 			}
-					// Two common curve points per triangle
-					// 0-(1=2)-(3=4)-...
-					for (p=1; p<n_local_nws_pts-1; p+=2){
-						A = local_nws_pts(p);
-						for (q=p+1; q<n_local_nws_pts; q++){
-							B = local_nws_pts(q);
-							if ( A.x == B.x && A.y == B.y && A.z == B.z){
-								if (q%2 == 0){
-									// even points
-									// Swap the pair of points
-									local_nws_pts(q) = local_nws_pts(p+1);
-									local_nws_pts(p+1) = B;
-									B = local_nws_pts(q+1);
-									local_nws_pts(q+1) = local_nws_pts(p+2);
-									local_nws_pts(p+2) = B;
-									q = n_local_nws_pts;
-									
-								}
-								else{
-									// odd points - flip the order
-									local_nws_pts(q) = local_nws_pts(q-1);
-									local_nws_pts(q-1) = B;
-									q-=2;
-								}
-							}
-						}
-					}
-					map = n_nws_pts = 0;			
-					nws_pts(n_nws_pts++) = local_nws_pts(0);
-					for (p=2; p < n_local_nws_pts; p+=2){
-						nws_pts(n_nws_pts++) = local_nws_pts(p);
-
-					}
-					nws_pts(n_nws_pts++) = local_nws_pts(n_local_nws_pts-1);
-
-					for (q=0; q < n_nws_pts-1; q++){
-						nws_seg(0,n_nws_seg) = map+q;
-						nws_seg(1,n_nws_seg) = map+q+1;
-						n_nws_seg++;
-					}
-					// End of the common line sorting algorithm
-					/////////////////////////////////////////
-
-					
-					/////////////////////////////////////////
-					////// CONSTRUCT THE nw SURFACE /////////
-					/////////////////////////////////////////
-					if ( n_local_nws_pts > 0){
-						n_nw_tris =0;
-						EDGE(Phase, fluid_isovalue, SignDist, i,j,k, Nx, Ny, Nz, nw_pts, n_nw_pts, nw_tris, n_nw_tris,
-							 nws_pts, n_nws_pts);
-					}
-					else {
-						MC(Phase, fluid_isovalue, SignDist, i,j,k, nw_pts, n_nw_pts, nw_tris, n_nw_tris);
-					}
-				}
-				
-				/////////////////////////////////////////
-				////// CONSTRUCT THE nw SURFACE /////////
-				/////////////////////////////////////////
-				
-				else if (Fluid_Interface(Phase,SignDist,fluid_isovalue,i,j,k) == 1){
-					MC(Phase, fluid_isovalue, SignDist, i,j,k, nw_pts, n_nw_pts, nw_tris, n_nw_tris);
-				}
-				//******END OF BLOB PMMC*********************************************
+				efawns += pmmc_CubeContactAngle(CubeValues,Values,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
+				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 				
 				//*******************************************************************
-				// Compute the Interfacial Areas, Common Line length for blob p
-				// nw surface
-				double temp;
-				for (r=0;r<n_nw_tris;r++){
-					A = nw_pts(nw_tris(0,r));
-					B = nw_pts(nw_tris(1,r));
-					C = nw_pts(nw_tris(2,r));
-					// Compute length of sides (assume dx=dy=dz)
-					s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-					s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-					s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-					s = 0.5*(s1+s2+s3);
-					temp = s*(s-s1)*(s-s2)*(s-s3);
-					if (temp > 0.0) awn += sqrt(temp);
-					
-				}
-				for (r=0;r<n_ns_tris;r++){
-					A = ns_pts(ns_tris(0,r));
-					B = ns_pts(ns_tris(1,r));
-					C = ns_pts(ns_tris(2,r));
-					// Compute length of sides (assume dx=dy=dz)
-					s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-					s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-					s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-					s = 0.5*(s1+s2+s3);
-					//ans=ans+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					temp = s*(s-s1)*(s-s2)*(s-s3);
-					if (temp > 0.0) ans += sqrt(temp);
-				}
-				for (r=0;r<n_ws_tris;r++){
-					A = ws_pts(ws_tris(0,r));
-					B = ws_pts(ws_tris(1,r));
-					C = ws_pts(ws_tris(2,r));
-					// Compute length of sides (assume dx=dy=dz)
-					s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-					s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-					s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-					s = 0.5*(s1+s2+s3);
-					//aws=aws+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					temp = s*(s-s1)*(s-s2)*(s-s3);
-					if (temp > 0.0) aws += sqrt(temp);
-				}
-				for (r=0;r<n_local_sol_tris;r++){
-					A = local_sol_pts(local_sol_tris(0,r));
-					B = local_sol_pts(local_sol_tris(1,r));
-					C = local_sol_pts(local_sol_tris(2,r));
-					// Compute length of sides (assume dx=dy=dz)
-					s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-					s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-					s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-					s = 0.5*(s1+s2+s3);
-					//aws=aws+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					temp = s*(s-s1)*(s-s2)*(s-s3);
-					if (temp > 0.0) As += sqrt(temp);
-				}
-				for (p=0; p < n_local_nws_pts-1; p++){
-					// Extract the line segment
-					A = local_nws_pts(p);
-					B = local_nws_pts(p+1);
-					// Compute the length of the segment
-					s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-					// Add the length to the common line 
-					lwns += s;
-				}
-				//*******************************************************************
-				// Reset the triangle counts to zero
-				n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
-				n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-				//n_nw_tris_beg = 0;// n_nw_tris;
-				//	n_ns_tris_beg = 0;//n_ns_tris;
-				//	n_ws_tris_beg = 0;//n_ws_tris;
-				//	n_nws_seg_beg = n_nws_seg;
-				//*******************************************************************
+				// Compute the Interfacial Areas, Common Line length
+				awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
+				ans += pmmc_CubeSurfaceArea(ns_pts,ns_tris,n_ns_tris);
+				aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
+				As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+				lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 			}
 			//...........................................................................
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -2187,6 +1999,8 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			// Phase averages
 			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
