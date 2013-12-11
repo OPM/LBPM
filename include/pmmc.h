@@ -3823,3 +3823,135 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 	}
 	return area;
 }
+//--------------------------------------------------------------------------------------------------------
+inline void pmmc_InterfaceSpeed(DoubleArray &dPdT, DoubleArray &Px, DoubleArray &Py, DoubleArray &Pz,
+									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
+									  DoubleArray &SurfaceVector, DoubleArray &VecAvg, int i, int j, int k, int npts, int ntris)
+{
+	Point A,B,C;
+	int p;
+	double vA,vB,vC;
+	double x,y,z;
+	double s,s1,s2,s3,temp;
+	double a,b,c,d,e,f,g,h;
+	double integral;
+
+	// ................x component .............................
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = P_x(i,j,k);
+	CubeValues(1,0,0) = P_x(i+1,j,k);
+	CubeValues(0,1,0) = P_x(i,j+1,k);
+	CubeValues(1,1,0) = P_x(i+1,j+1,k);
+	CubeValues(0,0,1) = P_x(i,j,k+1);
+	CubeValues(1,0,1) = P_x(i+1,j,k+1);
+	CubeValues(0,1,1) = P_x(i,j+1,k+1);
+	CubeValues(1,1,1) = P_x(i+1,j+1,k+1);
+
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		SurfaceVector(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+
+	// ................y component .............................
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = P_y(i,j,k);
+	CubeValues(1,0,0) = P_y(i+1,j,k);
+	CubeValues(0,1,0) = P_y(i,j+1,k);
+	CubeValues(1,1,0) = P_y(i+1,j+1,k);
+	CubeValues(0,0,1) = P_y(i,j,k+1);
+	CubeValues(1,0,1) = P_y(i+1,j,k+1);
+	CubeValues(0,1,1) = P_y(i,j+1,k+1);
+	CubeValues(1,1,1) = P_y(i+1,j+1,k+1);
+
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		SurfaceVector(npts+p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+
+	// ................z component .............................
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = P_z(i,j,k);
+	CubeValues(1,0,0) = P_z(i+1,j,k);
+	CubeValues(0,1,0) = P_z(i,j+1,k);
+	CubeValues(1,1,0) = P_z(i+1,j+1,k);
+	CubeValues(0,0,1) = P_z(i,j,k+1);
+	CubeValues(1,0,1) = P_z(i+1,j,k+1);
+	CubeValues(0,1,1) = P_z(i,j+1,k+1);
+	CubeValues(1,1,1) = P_z(i+1,j+1,k+1);
+
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		SurfaceVector(2*npts+p) = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+	//.............................................................................
+
+	for (int r=0; r<ntris; r++){
+		A = Points(Triangles(0,r));
+		B = Points(Triangles(1,r));
+		C = Points(Triangles(2,r));
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
+		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s = 0.5*(s1+s2+s3);
+		temp = s*(s-s1)*(s-s2)*(s-s3);
+		if (temp > 0.0){
+			// Increment the averaged values
+			// x component
+			vA = SurfaceVector(Triangles(0,r));
+			vB = SurfaceVector(Triangles(1,r));
+			vC = SurfaceVector(Triangles(2,r));
+			VecAvg(0) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			// y component
+			vA = SurfaceVector(npts+Triangles(0,r));
+			vB = SurfaceVector(npts+Triangles(1,r));
+			vC = SurfaceVector(npts+Triangles(2,r));
+			VecAvg(1) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			// z component
+			vA = SurfaceVector(2*npts+Triangles(0,r));
+			vB = SurfaceVector(2*npts+Triangles(1,r));
+			vC = SurfaceVector(2*npts+Triangles(2,r));
+			VecAvg(2) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+		}
+	}
+}
+//--------------------------------------------------------------------------------------------------------

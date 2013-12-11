@@ -574,7 +574,7 @@ int main(int argc, char **argv)
 #ifdef CBUB
 	// Initializes a constrained bubble test
 	double BubbleBot = 20.0;  // How big to make the NWP bubble
-	double BubbleTop =60.0;  // How big to make the NWP bubble
+	double BubbleTop = 60.0;  // How big to make the NWP bubble
 	double TubeRadius = 15.0; // Radius of the capillary tube
 	sum=0;
 	for (k=0;k<Nz;k++){
@@ -1268,12 +1268,11 @@ int main(int argc, char **argv)
 	dvc_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
-	DoubleArray Phase(Nx,Ny,Nz);
 
 	// Extra copies of phi needed to compute time derivatives on CPU
-	double *Phi_tminus,*Phi_tplus;
-	Phi_tminus = new double[N];
-	Phi_tplus = new double[N];
+	DoubleArray Phase_tminus(Nx,Ny,Nz);
+	DoubleArray Phase_tplus(Nx,Ny,Nz);
+	DoubleArray dPdt(Nx,Ny,Nz);
 
 	//copies of data needed to perform checkpointing from cpu
 	double *cDen, *cDistEven, *cDistOdd;
@@ -1282,13 +1281,19 @@ int main(int argc, char **argv)
 	cDistOdd = new double[9*N];
 
 	// data needed to perform CPU-based averaging
-	double *Vel,*Press,*dphidt;
+	double *Vel,*Press;
 	Vel = new double[3*N];		// fluid velocity
 	Press = new double[N];		// fluid pressure
-	dphidt = new double[N];		// d phi / dt
 
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
+	DoubleArray SignDist_x(Nx,Ny,Nz);		// Gradient of the signed distance
+	DoubleArray SignDist_y(Nx,Ny,Nz);
+	DoubleArray SignDist_z(Nx,Ny,Nz);
+	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
+	DoubleArray Phase_y(Nx,Ny,Nz);
+	DoubleArray Phase_z(Nx,Ny,Nz);
+
 	/*****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
@@ -1520,7 +1525,6 @@ int main(int argc, char **argv)
 //	cudaStream_t stream;
 //	cudaStreamCreate(&stream);
 	
-
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -1775,7 +1779,6 @@ int main(int argc, char **argv)
 		// Wait for completion of D3Q7 communication
 		MPI_Waitall(6,req1,stat1);
 		MPI_Waitall(6,req2,stat2);
-
 		//...................................................................................
 		//...................................................................................
 		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_x,sendCount_x,sendbuf_x,2,Den,N);
@@ -1785,7 +1788,6 @@ int main(int argc, char **argv)
 		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_Y,sendCount_Y,sendbuf_Y,2,Den,N);
 		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_Z,sendCount_Z,sendbuf_Z,2,Den,N);
 		//...................................................................................
-
 		
 		//*************************************************************************
 		// 		Compute the phase indicator field and reset Copy, Den
@@ -1891,8 +1893,16 @@ int main(int argc, char **argv)
 		// Iteration completed!
 		timestep++;
 		//...................................................................
-		
+		if (timestep%995 == 0){
+			//...........................................................................
+			// Copy the phase indicator field for the earlier timestep
+			dvc_Barrier();
+			dvc_CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+			//...........................................................................
+		}
 		if (timestep%1000 == 0){
+			//...........................................................................
+			// Copy the data for for the analysis timestep
 			//...........................................................................
 			// Copy the phase from the GPU -> CPU
 			//...........................................................................
@@ -1901,8 +1911,25 @@ int main(int argc, char **argv)
 			dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 			dvc_CopyToHost(Press,Pressure,N*sizeof(double));
 			dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
-
 			MPI_Barrier(MPI_COMM_WORLD);
+		}
+		if (timestep%1005 == 0){
+			//...........................................................................
+			// Copy the phase indicator field for the later timestep
+			dvc_Barrier();
+			dvc_CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
+			//...........................................................................
+			// Calculate the time derivative of the phase indicator field
+			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_plus(n) - Phase_tminus(n));
+			//...........................................................................
+			// Compute the gradients of the phase indicator and signed distance fields
+			pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
+			pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
+			//...........................................................................
+			// Compute the mesh curvature of the phase indicator field
+			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+			//...........................................................................
+
 			//...........................................................................
 			// Compute areas using porous medium marching cubes algorithm
 			// McClure, Adalsteinsson, et al. (2007)
@@ -1910,16 +1937,7 @@ int main(int argc, char **argv)
 			awn = aws = ans = lwns = 0.0;
 			nwp_volume = 0.0;
 			As = 0.0;
-			
-			// Compute the normal vector
-			for (n=0; n<N; n++){
-				Norm_x[n] = 0.0;
-				Norm_y[n] = 0.0;
-				Norm_z[n] = 0.0;				
-			}
-			
-			// Compute the mesh curvature of the phase indicator field 
-			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+
 
 			// Compute phase averages
 			p_n = p_w = 0.0;
@@ -1970,8 +1988,8 @@ int main(int argc, char **argv)
 						}
 					}
 				}
+
 				//...........................................................................
-				
 				// Construct the interfaces and common curve
 				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
@@ -1980,16 +1998,22 @@ int main(int argc, char **argv)
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
-				efawns += pmmc_CubeContactAngle(CubeValues,Values,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
+				// Integrate the contact angle
+				efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,
+												local_nws_pts,i,j,k,n_local_nws_pts);
+
+				// Integrate the mean curvature
 				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-				
-				//*******************************************************************
+
+				//...........................................................................
 				// Compute the Interfacial Areas, Common Line length
 				awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
 				ans += pmmc_CubeSurfaceArea(ns_pts,ns_tris,n_ns_tris);
 				aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
-				As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 				lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+				//...........................................................................
+
 			}
 			//...........................................................................
 			MPI_Barrier(MPI_COMM_WORLD);
