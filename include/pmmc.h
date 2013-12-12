@@ -3824,9 +3824,10 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 	return area;
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_InterfaceSpeed(DoubleArray &dPdT, DoubleArray &Px, DoubleArray &Py, DoubleArray &Pz,
+inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
 									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
-									  DoubleArray &SurfaceVector, DoubleArray &VecAvg, int i, int j, int k, int npts, int ntris)
+									  DoubleArray &SurfaceVector, DoubleArray &SurfaceValues, DoubleArray &AvgVel, 
+									  int i, int j, int k, int npts, int ntris)
 {
 	Point A,B,C;
 	int p;
@@ -3834,7 +3835,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdT, DoubleArray &Px, DoubleArray 
 	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
-	double integral;
+	double norm, zeta;
 
 	// ................x component .............................
 	// Copy the curvature values for the cube
@@ -3923,7 +3924,47 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdT, DoubleArray &Px, DoubleArray 
 		SurfaceVector(2*npts+p) = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 	}
 	//.............................................................................
+	// Compute the normal and the speed at points on the interface
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = dPdt(i,j,k);
+	CubeValues(1,0,0) = dPdt(i+1,j,k);
+	CubeValues(0,1,0) = dPdt(i,j+1,k);
+	CubeValues(1,1,0) = dPdt(i+1,j+1,k);
+	CubeValues(0,0,1) = dPdt(i,j,k+1);
+	CubeValues(1,0,1) = dPdt(i+1,j,k+1);
+	CubeValues(0,1,1) = dPdt(i,j+1,k+1);
+	CubeValues(1,1,1) = dPdt(i+1,j+1,k+1);
 
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+			
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		// evaluate time derivative on the surface
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		zeta = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+		// compute the normal
+		x = SurfaceVector(p);
+		y = SurfaceVector(npts+p);
+		z = SurfaceVector(2*npts+p);
+		norm = sqrt(x*x+y*y+z*z);
+		// Save the surface values and normal vector
+		SurfaceValues(p) = -zeta/norm;
+		SurfaceVector(p) = 			x/norm;
+		SurfaceVector(npts+p) = 	y/norm;
+		SurfaceVector(2*npts+p) = 	z/norm;
+	}
+	//.............................................................................
+	// Compute the average speed of the interface
 	for (int r=0; r<ntris; r++){
 		A = Points(Triangles(0,r));
 		B = Points(Triangles(1,r));
@@ -3937,21 +3978,22 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdT, DoubleArray &Px, DoubleArray 
 		if (temp > 0.0){
 			// Increment the averaged values
 			// x component
-			vA = SurfaceVector(Triangles(0,r));
-			vB = SurfaceVector(Triangles(1,r));
-			vC = SurfaceVector(Triangles(2,r));
-			VecAvg(0) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vA = SurfaceVector(Triangles(0,r))*SurfaceValues(Triangles(0,r));
+			vB = SurfaceVector(Triangles(1,r))*SurfaceValues(Triangles(1,r));
+			vC = SurfaceVector(Triangles(2,r))*SurfaceValues(Triangles(2,r));
+			AvgVel(0) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
 			// y component
-			vA = SurfaceVector(npts+Triangles(0,r));
-			vB = SurfaceVector(npts+Triangles(1,r));
-			vC = SurfaceVector(npts+Triangles(2,r));
-			VecAvg(1) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vA = SurfaceVector(npts+Triangles(0,r))*SurfaceValues(Triangles(0,r));
+			vB = SurfaceVector(npts+Triangles(1,r))*SurfaceValues(Triangles(1,r));
+			vC = SurfaceVector(npts+Triangles(2,r))*SurfaceValues(Triangles(2,r));
+			AvgVel(1) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
 			// z component
-			vA = SurfaceVector(2*npts+Triangles(0,r));
-			vB = SurfaceVector(2*npts+Triangles(1,r));
-			vC = SurfaceVector(2*npts+Triangles(2,r));
-			VecAvg(2) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vA = SurfaceVector(2*npts+Triangles(0,r))*SurfaceValues(Triangles(0,r));
+			vB = SurfaceVector(2*npts+Triangles(1,r))*SurfaceValues(Triangles(1,r));
+			vC = SurfaceVector(2*npts+Triangles(2,r))*SurfaceValues(Triangles(2,r));
+			AvgVel(2) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
 		}
 	}
+	//.............................................................................
 }
 //--------------------------------------------------------------------------------------------------------
