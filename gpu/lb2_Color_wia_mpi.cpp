@@ -9,7 +9,6 @@
 
 using namespace std;
 
-
 //*************************************************************************
 // Functions defined in Color.cu
 //*************************************************************************
@@ -96,6 +95,7 @@ inline void PackID(int *list, int count, char *sendbuf, char *ID){
 	}
 }
 //***************************************************************************************
+
 inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This unpacks the values once they have been recieved from neighbors
@@ -106,7 +106,110 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 		ID[n] = recvbuf[idx];
 	}
 }
+
 //***************************************************************************************
+inline void PackMeshData(int *list, int count, double *sendbuf, DoubleArray &Values){
+	// Fill in the phase ID values from neighboring processors
+	// This packs up the values that need to be sent from one processor to another
+	int idx,n;
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		sendbuf[idx] = Values.data[n];
+	}
+}
+inline void UnpackMeshData(int *list, int count, double *recvbuf, DoubleArray &Values){
+	// Fill in the phase ID values from neighboring processors
+	// This unpacks the values once they have been recieved from neighbors
+	int idx,n;
+
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		Values.data[n] = recvbuf[idx];
+	}
+}
+//***************************************************************************************
+inline void CommunicateMeshHalo()
+{
+	sendtag = recvtag = 7;
+	PackID(sendList_x, sendCount_x ,sendID_x, id);
+	PackID(sendList_X, sendCount_X ,sendID_X, id);
+	PackID(sendList_y, sendCount_y ,sendID_y, id);
+	PackID(sendList_Y, sendCount_Y ,sendID_Y, id);
+	PackID(sendList_z, sendCount_z ,sendID_z, id);
+	PackID(sendList_Z, sendCount_Z ,sendID_Z, id);
+	PackID(sendList_xy, sendCount_xy ,sendID_xy, id);
+	PackID(sendList_Xy, sendCount_Xy ,sendID_Xy, id);
+	PackID(sendList_xY, sendCount_xY ,sendID_xY, id);
+	PackID(sendList_XY, sendCount_XY ,sendID_XY, id);
+	PackID(sendList_xz, sendCount_xz ,sendID_xz, id);
+	PackID(sendList_Xz, sendCount_Xz ,sendID_Xz, id);
+	PackID(sendList_xZ, sendCount_xZ ,sendID_xZ, id);
+	PackID(sendList_XZ, sendCount_XZ ,sendID_XZ, id);
+	PackID(sendList_yz, sendCount_yz ,sendID_yz, id);
+	PackID(sendList_Yz, sendCount_Yz ,sendID_Yz, id);
+	PackID(sendList_yZ, sendCount_yZ ,sendID_yZ, id);
+	PackID(sendList_YZ, sendCount_YZ ,sendID_YZ, id);
+	//......................................................................................
+	MPI_Sendrecv(sendID_x,sendCount_x,MPI_CHAR,rank_x,sendtag,
+			recvID_X,recvCount_X,MPI_CHAR,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_X,sendCount_X,MPI_CHAR,rank_X,sendtag,
+			recvID_x,recvCount_x,MPI_CHAR,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_y,sendCount_y,MPI_CHAR,rank_y,sendtag,
+			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Y,sendCount_Y,MPI_CHAR,rank_Y,sendtag,
+			recvID_y,recvCount_y,MPI_CHAR,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_z,sendCount_z,MPI_CHAR,rank_z,sendtag,
+			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Z,sendCount_Z,MPI_CHAR,rank_Z,sendtag,
+			recvID_z,recvCount_z,MPI_CHAR,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xy,sendCount_xy,MPI_CHAR,rank_xy,sendtag,
+			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XY,sendCount_XY,MPI_CHAR,rank_XY,sendtag,
+			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xy,sendCount_Xy,MPI_CHAR,rank_Xy,sendtag,
+			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xY,sendCount_xY,MPI_CHAR,rank_xY,sendtag,
+			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xz,sendCount_xz,MPI_CHAR,rank_xz,sendtag,
+			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XZ,sendCount_XZ,MPI_CHAR,rank_XZ,sendtag,
+			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xz,sendCount_Xz,MPI_CHAR,rank_Xz,sendtag,
+			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xZ,sendCount_xZ,MPI_CHAR,rank_xZ,sendtag,
+			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yz,sendCount_yz,MPI_CHAR,rank_yz,sendtag,
+			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_YZ,sendCount_YZ,MPI_CHAR,rank_YZ,sendtag,
+			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Yz,sendCount_Yz,MPI_CHAR,rank_Yz,sendtag,
+			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yZ,sendCount_yZ,MPI_CHAR,rank_yZ,sendtag,
+			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	//......................................................................................
+	UnpackID(recvList_x, recvCount_x ,recvID_x, id);
+	UnpackID(recvList_X, recvCount_X ,recvID_X, id);
+	UnpackID(recvList_y, recvCount_y ,recvID_y, id);
+	UnpackID(recvList_Y, recvCount_Y ,recvID_Y, id);
+	UnpackID(recvList_z, recvCount_z ,recvID_z, id);
+	UnpackID(recvList_Z, recvCount_Z ,recvID_Z, id);
+	UnpackID(recvList_xy, recvCount_xy ,recvID_xy, id);
+	UnpackID(recvList_Xy, recvCount_Xy ,recvID_Xy, id);
+	UnpackID(recvList_xY, recvCount_xY ,recvID_xY, id);
+	UnpackID(recvList_XY, recvCount_XY ,recvID_XY, id);
+	UnpackID(recvList_xz, recvCount_xz ,recvID_xz, id);
+	UnpackID(recvList_Xz, recvCount_Xz ,recvID_Xz, id);
+	UnpackID(recvList_xZ, recvCount_xZ ,recvID_xZ, id);
+	UnpackID(recvList_XZ, recvCount_XZ ,recvID_XZ, id);
+	UnpackID(recvList_yz, recvCount_yz ,recvID_yz, id);
+	UnpackID(recvList_Yz, recvCount_Yz ,recvID_Yz, id);
+	UnpackID(recvList_yZ, recvCount_yZ ,recvID_yZ, id);
+	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
+
+}
+
+//***************************************************************************************
+
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -1223,18 +1326,53 @@ int main(int argc, char **argv)
 	UnpackID(recvList_Yz, recvCount_Yz ,recvID_Yz, id);
 	UnpackID(recvList_yZ, recvCount_yZ ,recvID_yZ, id);
 	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
-	//.....................................................................................
-/*	// Once the ID is saved, free memory allocated to the buffers (no longer needed)
 	//......................................................................................
-	free(sendID_x); free(sendID_X); free(sendID_y); free(sendID_Y); free(sendID_z); free(sendID_Z);
-	free(sendID_xy); free(sendID_XY); free(sendID_xY); free(sendID_Xy);
-	free(sendID_xz); free(sendID_XZ); free(sendID_xZ); free(sendID_Xz);
-	free(sendID_yz); free(sendID_YZ); free(sendID_yZ); free(sendID_Yz);
-	free(recvID_x); free(recvID_X); free(recvID_y); free(recvID_Y); free(recvID_z); free(recvID_Z);
-	free(recvID_xy); free(recvID_XY); free(recvID_xY); free(recvID_Xy);
-	free(recvID_xz); free(recvID_XZ); free(recvID_xZ); free(recvID_Xz);
-	free(recvID_yz); free(recvID_YZ); free(recvID_yZ); free(recvID_Yz);
-*/	//......................................................................................
+	// Fill in the phase MeshData from neighboring processors
+	double *sendMeshData_x, *sendMeshData_y, *sendMeshData_z, *sendMeshData_X, *sendMeshData_Y, *sendMeshData_Z;
+	double *sendMeshData_xy, *sendMeshData_yz, *sendMeshData_xz, *sendMeshData_Xy, *sendMeshData_Yz, *sendMeshData_xZ;
+	double *sendMeshData_xY, *sendMeshData_yZ, *sendMeshData_Xz, *sendMeshData_XY, *sendMeshData_YZ, *sendMeshData_XZ;
+	double *recvMeshData_x, *recvMeshData_y, *recvMeshData_z, *recvMeshData_X, *recvMeshData_Y, *recvMeshData_Z;
+	double *recvMeshData_xy, *recvMeshData_yz, *recvMeshData_xz, *recvMeshData_Xy, *recvMeshData_Yz, *recvMeshData_xZ;
+	double *recvMeshData_xY, *recvMeshData_yZ, *recvMeshData_Xz, *recvMeshData_XY, *recvMeshData_YZ, *recvMeshData_XZ;
+	// send buffers
+	sendMeshData_x = new double [sendCount_x];
+	sendMeshData_y = new double [sendCount_y];
+	sendMeshData_z = new double [sendCount_z];
+	sendMeshData_X = new double [sendCount_X];
+	sendMeshData_Y = new double [sendCount_Y];
+	sendMeshData_Z = new double [sendCount_Z];
+	sendMeshData_xy = new double [sendCount_xy];
+	sendMeshData_yz = new double [sendCount_yz];
+	sendMeshData_xz = new double [sendCount_xz];
+	sendMeshData_Xy = new double [sendCount_Xy];
+	sendMeshData_Yz = new double [sendCount_Yz];
+	sendMeshData_xZ = new double [sendCount_xZ];
+	sendMeshData_xY = new double [sendCount_xY];
+	sendMeshData_yZ = new double [sendCount_yZ];
+	sendMeshData_Xz = new double [sendCount_Xz];
+	sendMeshData_XY = new double [sendCount_XY];
+	sendMeshData_YZ = new double [sendCount_YZ];
+	sendMeshData_XZ = new double [sendCount_XZ];
+	//......................................................................................
+	// recv buffers
+	recvMeshData_x = new double [recvCount_x];
+	recvMeshData_y = new double [recvCount_y];
+	recvMeshData_z = new double [recvCount_z];
+	recvMeshData_X = new double [recvCount_X];
+	recvMeshData_Y = new double [recvCount_Y];
+	recvMeshData_Z = new double [recvCount_Z];
+	recvMeshData_xy = new double [recvCount_xy];
+	recvMeshData_yz = new double [recvCount_yz];
+	recvMeshData_xz = new double [recvCount_xz];
+	recvMeshData_Xy = new double [recvCount_Xy];
+	recvMeshData_xZ = new double [recvCount_xZ];
+	recvMeshData_xY = new double [recvCount_xY];
+	recvMeshData_yZ = new double [recvCount_yZ];
+	recvMeshData_Yz = new double [recvCount_Yz];
+	recvMeshData_Xz = new double [recvCount_Xz];
+	recvMeshData_XY = new double [recvCount_XY];
+	recvMeshData_YZ = new double [recvCount_YZ];
+	recvMeshData_XZ = new double [recvCount_XZ];
 	if (rank==0)	printf ("Devices are ready to communicate. \n");
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1342,6 +1480,9 @@ int main(int argc, char **argv)
 	IntArray nws_seg(2,20);
 	DTMutableList<Point> tmp(20);
 	DoubleArray Values(20);
+	DoubleArray InterfaceSpeed(20);
+	DoubleArray NormalVector(60);
+	DoubleArray vawn(3);
 	//	IntArray store;
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
@@ -1922,6 +2063,7 @@ int main(int argc, char **argv)
 			// Calculate the time derivative of the phase indicator field
 			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_plus(n) - Phase_tminus(n));
 			//...........................................................................
+
 			// Compute the gradients of the phase indicator and signed distance fields
 			pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
 			pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
@@ -1929,7 +2071,9 @@ int main(int argc, char **argv)
 			// Compute the mesh curvature of the phase indicator field
 			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 			//...........................................................................
-
+			// Fill in the halo region for the mesh gradients and curvature
+			
+			
 			//...........................................................................
 			// Compute areas using porous medium marching cubes algorithm
 			// McClure, Adalsteinsson, et al. (2007)
@@ -1937,8 +2081,7 @@ int main(int argc, char **argv)
 			awn = aws = ans = lwns = 0.0;
 			nwp_volume = 0.0;
 			As = 0.0;
-
-
+			
 			// Compute phase averages
 			p_n = p_w = 0.0;
 			vx_w = vy_w = vz_w = 0.0;
@@ -2004,6 +2147,9 @@ int main(int argc, char **argv)
 
 				// Integrate the mean curvature
 				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+				
+				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
+									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 
 				//...........................................................................
 				// Compute the Interfacial Areas, Common Line length

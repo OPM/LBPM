@@ -3792,7 +3792,7 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 {
 	int r;
 	double temp,area,s,s1,s2,s3;
-	double nx,ny,nz,norm;
+	double nx,ny,nz,normsq;
 	Point A,B,C;
 	area = 0.0;
 	for (r=0;r<ntris;r++){
@@ -3803,7 +3803,7 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 		nx = (B.y-A.y)*(C.z-A.z) - (B.z-A.z)*(C.y-A.y);
 		ny = (B.z-A.z)*(C.x-A.x) - (B.x-A.x)*(C.z-A.z);
 		nz = (B.x-A.x)*(C.y-A.y) - (B.y-A.y)*(C.x-A.x);
-		norm = sqrt(nx*nx+ny*ny+nz*nz);
+		normsq = 1.0/(nx*nx+ny*ny+nz*nz);
 		// Compute length of sides (assume dx=dy=dz)
 		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
@@ -3813,12 +3813,12 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 		if (temp > 0.0){
 			temp = sqrt(temp);
 			area += temp;
-			Orientation(0) += temp*nx*nx;	// Gxx
-			Orientation(1) += temp*ny*ny;	// Gyy
-			Orientation(2) += temp*nz*nz;	// Gzz
-			Orientation(3) += temp*nx*ny;	// Gxy
-			Orientation(4) += temp*nx*nz;	// Gxz
-			Orientation(5) += temp*ny*nz;	// Gyz
+			Orientation(0) += temp*nx*nx*normsq;	// Gxx
+			Orientation(1) += temp*ny*ny*normsq;	// Gyy
+			Orientation(2) += temp*nz*nz*normsq;	// Gzz
+			Orientation(3) += temp*nx*ny*normsq;	// Gxy
+			Orientation(4) += temp*nx*nz*normsq;	// Gxz
+			Orientation(5) += temp*ny*nz*normsq;	// Gyz
 		}
 	}
 	return area;
