@@ -128,84 +128,101 @@ inline void UnpackMeshData(int *list, int count, double *recvbuf, DoubleArray &V
 	}
 }
 //***************************************************************************************
-inline void CommunicateMeshHalo()
+inline void CommunicateMeshHalo(DoubleArray &MeshData, MPI_Comm &MPI_COMM_WORLD,
+		double *sendbuf_x,double *sendbuf_y,double *sendbuf_z,double *sendbuf_X,double *sendbuf_Y,double *sendbuf_Z,
+		double *sendbuf_xy,double *sendbuf_XY,double *sendbuf_xY,double *sendbuf_Xy,
+		double *sendbuf_xz,double *sendbuf_XZ,double *sendbuf_xZ,double *sendbuf_Xz,
+		double *sendbuf_yz,double *sendbuf_YZ,double *sendbuf_yZ,double *sendbuf_Yz,
+		double *recvbuf_x,double *recvbuf_y,double *recvbuf_z,double *recvbuf_X,double *recvbuf_Y,double *recvbuf_Z,
+		double *recvbuf_xy,double *recvbuf_XY,double *recvbuf_xY,double *recvbuf_Xy,
+		double *recvbuf_xz,double *recvbuf_XZ,double *recvbuf_xZ,double *recvbuf_Xz,
+		double *recvbuf_yz,double *recvbuf_YZ,double *recvbuf_yZ,double *recvbuf_Yz,
+		int *sendList_x,int *sendList_y,int *sendList_z,int *sendList_X,int *sendList_Y,int *sendList_Z,
+		int *sendList_xy,int *sendList_XY,int *sendList_xY,int *sendList_Xy,
+		int *sendList_xz,int *sendList_XZ,int *sendList_xZ,int *sendList_Xz,
+		int *sendList_yz,int *sendList_YZ,int *sendList_yZ,int *sendList_Yz,
+		int sendCount_x,int sendCount_y,int sendCount_z,int sendCount_X,int sendCount_Y,int sendCount_Z,
+		int sendCount_xy,int sendCount_XY,int sendCount_xY,int sendCount_Xy,
+		int sendCount_xz,int sendCount_XZ,int sendCount_xZ,int sendCount_Xz,
+		int sendCount_yz,int sendCount_YZ,int sendCount_yZ,int sendCount_Yz,
+		int rank_x,int rank_y,int rank_z,int rank_X,int rank_Y,int rank_Z,int rank_xy,int rank_XY,int rank_xY,
+		int rank_Xy,int rank_xz,int rank_XZ,int rank_xZ,int rank_Xz,int rank_yz,int rank_YZ,int rank_yZ,int rank_Yz)
 {
 	sendtag = recvtag = 7;
-	PackID(sendList_x, sendCount_x ,sendID_x, id);
-	PackID(sendList_X, sendCount_X ,sendID_X, id);
-	PackID(sendList_y, sendCount_y ,sendID_y, id);
-	PackID(sendList_Y, sendCount_Y ,sendID_Y, id);
-	PackID(sendList_z, sendCount_z ,sendID_z, id);
-	PackID(sendList_Z, sendCount_Z ,sendID_Z, id);
-	PackID(sendList_xy, sendCount_xy ,sendID_xy, id);
-	PackID(sendList_Xy, sendCount_Xy ,sendID_Xy, id);
-	PackID(sendList_xY, sendCount_xY ,sendID_xY, id);
-	PackID(sendList_XY, sendCount_XY ,sendID_XY, id);
-	PackID(sendList_xz, sendCount_xz ,sendID_xz, id);
-	PackID(sendList_Xz, sendCount_Xz ,sendID_Xz, id);
-	PackID(sendList_xZ, sendCount_xZ ,sendID_xZ, id);
-	PackID(sendList_XZ, sendCount_XZ ,sendID_XZ, id);
-	PackID(sendList_yz, sendCount_yz ,sendID_yz, id);
-	PackID(sendList_Yz, sendCount_Yz ,sendID_Yz, id);
-	PackID(sendList_yZ, sendCount_yZ ,sendID_yZ, id);
-	PackID(sendList_YZ, sendCount_YZ ,sendID_YZ, id);
+	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, MeshData);
+	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, MeshData);
+	PackMeshData(sendList_y, sendCount_y ,sendbuf_y, MeshData);
+	PackMeshData(sendList_Y, sendCount_Y ,sendbuf_Y, MeshData);
+	PackMeshData(sendList_z, sendCount_z ,sendbuf_z, MeshData);
+	PackMeshData(sendList_Z, sendCount_Z ,sendbuf_Z, MeshData);
+	PackMeshData(sendList_xy, sendCount_xy ,sendbuf_xy, MeshData);
+	PackMeshData(sendList_Xy, sendCount_Xy ,sendbuf_Xy, MeshData);
+	PackMeshData(sendList_xY, sendCount_xY ,sendbuf_xY, MeshData);
+	PackMeshData(sendList_XY, sendCount_XY ,sendbuf_XY, MeshData);
+	PackMeshData(sendList_xz, sendCount_xz ,sendbuf_xz, MeshData);
+	PackMeshData(sendList_Xz, sendCount_Xz ,sendbuf_Xz, MeshData);
+	PackMeshData(sendList_xZ, sendCount_xZ ,sendbuf_xZ, MeshData);
+	PackMeshData(sendList_XZ, sendCount_XZ ,sendbuf_XZ, MeshData);
+	PackMeshData(sendList_yz, sendCount_yz ,sendbuf_yz, MeshData);
+	PackMeshData(sendList_Yz, sendCount_Yz ,sendbuf_Yz, MeshData);
+	PackMeshData(sendList_yZ, sendCount_yZ ,sendbuf_yZ, MeshData);
+	PackMeshData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, MeshData);
 	//......................................................................................
-	MPI_Sendrecv(sendID_x,sendCount_x,MPI_CHAR,rank_x,sendtag,
-			recvID_X,recvCount_X,MPI_CHAR,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_X,sendCount_X,MPI_CHAR,rank_X,sendtag,
-			recvID_x,recvCount_x,MPI_CHAR,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_y,sendCount_y,MPI_CHAR,rank_y,sendtag,
-			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Y,sendCount_Y,MPI_CHAR,rank_Y,sendtag,
-			recvID_y,recvCount_y,MPI_CHAR,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_z,sendCount_z,MPI_CHAR,rank_z,sendtag,
-			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Z,sendCount_Z,MPI_CHAR,rank_Z,sendtag,
-			recvID_z,recvCount_z,MPI_CHAR,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xy,sendCount_xy,MPI_CHAR,rank_xy,sendtag,
-			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_XY,sendCount_XY,MPI_CHAR,rank_XY,sendtag,
-			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Xy,sendCount_Xy,MPI_CHAR,rank_Xy,sendtag,
-			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xY,sendCount_xY,MPI_CHAR,rank_xY,sendtag,
-			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xz,sendCount_xz,MPI_CHAR,rank_xz,sendtag,
-			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_XZ,sendCount_XZ,MPI_CHAR,rank_XZ,sendtag,
-			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Xz,sendCount_Xz,MPI_CHAR,rank_Xz,sendtag,
-			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xZ,sendCount_xZ,MPI_CHAR,rank_xZ,sendtag,
-			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_yz,sendCount_yz,MPI_CHAR,rank_yz,sendtag,
-			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_YZ,sendCount_YZ,MPI_CHAR,rank_YZ,sendtag,
-			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Yz,sendCount_Yz,MPI_CHAR,rank_Yz,sendtag,
-			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_yZ,sendCount_yZ,MPI_CHAR,rank_yZ,sendtag,
-			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	//......................................................................................
-	UnpackID(recvList_x, recvCount_x ,recvID_x, id);
-	UnpackID(recvList_X, recvCount_X ,recvID_X, id);
-	UnpackID(recvList_y, recvCount_y ,recvID_y, id);
-	UnpackID(recvList_Y, recvCount_Y ,recvID_Y, id);
-	UnpackID(recvList_z, recvCount_z ,recvID_z, id);
-	UnpackID(recvList_Z, recvCount_Z ,recvID_Z, id);
-	UnpackID(recvList_xy, recvCount_xy ,recvID_xy, id);
-	UnpackID(recvList_Xy, recvCount_Xy ,recvID_Xy, id);
-	UnpackID(recvList_xY, recvCount_xY ,recvID_xY, id);
-	UnpackID(recvList_XY, recvCount_XY ,recvID_XY, id);
-	UnpackID(recvList_xz, recvCount_xz ,recvID_xz, id);
-	UnpackID(recvList_Xz, recvCount_Xz ,recvID_Xz, id);
-	UnpackID(recvList_xZ, recvCount_xZ ,recvID_xZ, id);
-	UnpackID(recvList_XZ, recvCount_XZ ,recvID_XZ, id);
-	UnpackID(recvList_yz, recvCount_yz ,recvID_yz, id);
-	UnpackID(recvList_Yz, recvCount_Yz ,recvID_Yz, id);
-	UnpackID(recvList_yZ, recvCount_yZ ,recvID_yZ, id);
-	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
-
+	MPI_Sendrecv(sendbuf_x,sendCount_x,MPI_CHAR,rank_x,sendtag,
+			recvbuf_X,recvCount_X,MPI_CHAR,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_X,sendCount_X,MPI_CHAR,rank_X,sendtag,
+			recvbuf_x,recvCount_x,MPI_CHAR,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_y,sendCount_y,MPI_CHAR,rank_y,sendtag,
+			recvbuf_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Y,sendCount_Y,MPI_CHAR,rank_Y,sendtag,
+			recvbuf_y,recvCount_y,MPI_CHAR,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_z,sendCount_z,MPI_CHAR,rank_z,sendtag,
+			recvbuf_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Z,sendCount_Z,MPI_CHAR,rank_Z,sendtag,
+			recvbuf_z,recvCount_z,MPI_CHAR,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xy,sendCount_xy,MPI_CHAR,rank_xy,sendtag,
+			recvbuf_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XY,sendCount_XY,MPI_CHAR,rank_XY,sendtag,
+			recvbuf_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xy,sendCount_Xy,MPI_CHAR,rank_Xy,sendtag,
+			recvbuf_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xY,sendCount_xY,MPI_CHAR,rank_xY,sendtag,
+			recvbuf_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xz,sendCount_xz,MPI_CHAR,rank_xz,sendtag,
+			recvbuf_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XZ,sendCount_XZ,MPI_CHAR,rank_XZ,sendtag,
+			recvbuf_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xz,sendCount_Xz,MPI_CHAR,rank_Xz,sendtag,
+			recvbuf_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xZ,sendCount_xZ,MPI_CHAR,rank_xZ,sendtag,
+			recvbuf_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yz,sendCount_yz,MPI_CHAR,rank_yz,sendtag,
+			recvbuf_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_YZ,sendCount_YZ,MPI_CHAR,rank_YZ,sendtag,
+			recvbuf_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Yz,sendCount_Yz,MPI_CHAR,rank_Yz,sendtag,
+			recvbuf_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yZ,sendCount_yZ,MPI_CHAR,rank_yZ,sendtag,
+			recvbuf_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	//........................................................................................
+	UnpackMeshData(recvList_x, recvCount_x ,recvbuf_x, MeshData);
+	UnpackMeshData(recvList_X, recvCount_X ,recvbuf_X, MeshData);
+	UnpackMeshData(recvList_y, recvCount_y ,recvbuf_y, MeshData);
+	UnpackMeshData(recvList_Y, recvCount_Y ,recvbuf_Y, MeshData);
+	UnpackMeshData(recvList_z, recvCount_z ,recvbuf_z, MeshData);
+	UnpackMeshData(recvList_Z, recvCount_Z ,recvbuf_Z, MeshData);
+	UnpackMeshData(recvList_xy, recvCount_xy ,recvbuf_xy, MeshData);
+	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvbuf_Xy, MeshData);
+	UnpackMeshData(recvList_xY, recvCount_xY ,recvbuf_xY, MeshData);
+	UnpackMeshData(recvList_XY, recvCount_XY ,recvbuf_XY, MeshData);
+	UnpackMeshData(recvList_xz, recvCount_xz ,recvbuf_xz, MeshData);
+	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvbuf_Xz, MeshData);
+	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvbuf_xZ, MeshData);
+	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvbuf_XZ, MeshData);
+	UnpackMeshData(recvList_yz, recvCount_yz ,recvbuf_yz, MeshData);
+	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvbuf_Yz, MeshData);
+	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvbuf_yZ, MeshData);
+	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvbuf_YZ, MeshData);
 }
 
 //***************************************************************************************
