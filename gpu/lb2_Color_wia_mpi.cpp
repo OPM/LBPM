@@ -128,7 +128,7 @@ inline void UnpackMeshData(int *list, int count, double *recvbuf, DoubleArray &V
 	}
 }
 //***************************************************************************************
-inline void CommunicateMeshHalo(DoubleArray &MeshData, MPI_Comm &MPI_COMM_WORLD,
+inline void CommunicateMeshHalo(DoubleArray &MeshData, MPI_Comm Communicator,
 		double *sendbuf_x,double *sendbuf_y,double *sendbuf_z,double *sendbuf_X,double *sendbuf_Y,double *sendbuf_Z,
 		double *sendbuf_xy,double *sendbuf_XY,double *sendbuf_xY,double *sendbuf_Xy,
 		double *sendbuf_xz,double *sendbuf_XZ,double *sendbuf_xZ,double *sendbuf_Xz,
@@ -145,9 +145,18 @@ inline void CommunicateMeshHalo(DoubleArray &MeshData, MPI_Comm &MPI_COMM_WORLD,
 		int sendCount_xy,int sendCount_XY,int sendCount_xY,int sendCount_Xy,
 		int sendCount_xz,int sendCount_XZ,int sendCount_xZ,int sendCount_Xz,
 		int sendCount_yz,int sendCount_YZ,int sendCount_yZ,int sendCount_Yz,
+		int *recvList_x,int *recvList_y,int *recvList_z,int *recvList_X,int *recvList_Y,int *recvList_Z,
+		int *recvList_xy,int *recvList_XY,int *recvList_xY,int *recvList_Xy,
+		int *recvList_xz,int *recvList_XZ,int *recvList_xZ,int *recvList_Xz,
+		int *recvList_yz,int *recvList_YZ,int *recvList_yZ,int *recvList_Yz,
+		int recvCount_x,int recvCount_y,int recvCount_z,int recvCount_X,int recvCount_Y,int recvCount_Z,
+		int recvCount_xy,int recvCount_XY,int recvCount_xY,int recvCount_Xy,
+		int recvCount_xz,int recvCount_XZ,int recvCount_xZ,int recvCount_Xz,
+		int recvCount_yz,int recvCount_YZ,int recvCount_yZ,int recvCount_Yz,
 		int rank_x,int rank_y,int rank_z,int rank_X,int rank_Y,int rank_Z,int rank_xy,int rank_XY,int rank_xY,
 		int rank_Xy,int rank_xz,int rank_XZ,int rank_xZ,int rank_Xz,int rank_yz,int rank_YZ,int rank_yZ,int rank_Yz)
 {
+	int sendtag, recvtag;
 	sendtag = recvtag = 7;
 	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, MeshData);
 	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, MeshData);
@@ -169,41 +178,41 @@ inline void CommunicateMeshHalo(DoubleArray &MeshData, MPI_Comm &MPI_COMM_WORLD,
 	PackMeshData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, MeshData);
 	//......................................................................................
 	MPI_Sendrecv(sendbuf_x,sendCount_x,MPI_CHAR,rank_x,sendtag,
-			recvbuf_X,recvCount_X,MPI_CHAR,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_X,recvCount_X,MPI_CHAR,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_X,sendCount_X,MPI_CHAR,rank_X,sendtag,
-			recvbuf_x,recvCount_x,MPI_CHAR,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_x,recvCount_x,MPI_CHAR,rank_x,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_y,sendCount_y,MPI_CHAR,rank_y,sendtag,
-			recvbuf_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_Y,sendCount_Y,MPI_CHAR,rank_Y,sendtag,
-			recvbuf_y,recvCount_y,MPI_CHAR,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_y,recvCount_y,MPI_CHAR,rank_y,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_z,sendCount_z,MPI_CHAR,rank_z,sendtag,
-			recvbuf_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_Z,sendCount_Z,MPI_CHAR,rank_Z,sendtag,
-			recvbuf_z,recvCount_z,MPI_CHAR,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_z,recvCount_z,MPI_CHAR,rank_z,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_xy,sendCount_xy,MPI_CHAR,rank_xy,sendtag,
-			recvbuf_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_XY,sendCount_XY,MPI_CHAR,rank_XY,sendtag,
-			recvbuf_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_Xy,sendCount_Xy,MPI_CHAR,rank_Xy,sendtag,
-			recvbuf_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_xY,sendCount_xY,MPI_CHAR,rank_xY,sendtag,
-			recvbuf_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_xz,sendCount_xz,MPI_CHAR,rank_xz,sendtag,
-			recvbuf_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_XZ,sendCount_XZ,MPI_CHAR,rank_XZ,sendtag,
-			recvbuf_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_Xz,sendCount_Xz,MPI_CHAR,rank_Xz,sendtag,
-			recvbuf_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_xZ,sendCount_xZ,MPI_CHAR,rank_xZ,sendtag,
-			recvbuf_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_yz,sendCount_yz,MPI_CHAR,rank_yz,sendtag,
-			recvbuf_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_YZ,sendCount_YZ,MPI_CHAR,rank_YZ,sendtag,
-			recvbuf_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_Yz,sendCount_Yz,MPI_CHAR,rank_Yz,sendtag,
-			recvbuf_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,Communicator,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendbuf_yZ,sendCount_yZ,MPI_CHAR,rank_yZ,sendtag,
-			recvbuf_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvbuf_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	//........................................................................................
 	UnpackMeshData(recvList_x, recvCount_x ,recvbuf_x, MeshData);
 	UnpackMeshData(recvList_X, recvCount_X ,recvbuf_X, MeshData);
@@ -1423,6 +1432,7 @@ int main(int argc, char **argv)
 	dvc_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
+	DoubleArray Phase(Nx,Ny,Nz);
 
 	// Extra copies of phi needed to compute time derivatives on CPU
 	DoubleArray Phase_tminus(Nx,Ny,Nz);
@@ -2078,7 +2088,7 @@ int main(int argc, char **argv)
 			dvc_CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
 			//...........................................................................
 			// Calculate the time derivative of the phase indicator field
-			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_plus(n) - Phase_tminus(n));
+			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 			//...........................................................................
 
 			// Compute the gradients of the phase indicator and signed distance fields
@@ -2089,7 +2099,27 @@ int main(int argc, char **argv)
 			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 			//...........................................................................
 			// Fill in the halo region for the mesh gradients and curvature
-			
+			CommunicateMeshHalo(Phase_x, MPI_COMM_WORLD,
+					sendbuf_x,sendbuf_y,sendbuf_z,sendbuf_X,sendbuf_Y,sendbuf_Z,
+					sendbuf_xy,sendbuf_XY,sendbuf_xY,sendbuf_Xy,sendbuf_xz,sendbuf_XZ,
+					sendbuf_xZ,sendbuf_Xz,sendbuf_yz,sendbuf_YZ,sendbuf_yZ,sendbuf_Yz,
+					recvbuf_x,recvbuf_y,recvbuf_z,recvbuf_X,recvbuf_Y,recvbuf_Z,
+					recvbuf_xy,recvbuf_XY,recvbuf_xY,recvbuf_Xy,recvbuf_xz,recvbuf_XZ,
+					recvbuf_xZ,recvbuf_Xz,recvbuf_yz,recvbuf_YZ,recvbuf_yZ,recvbuf_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 			
 			//...........................................................................
 			// Compute areas using porous medium marching cubes algorithm
