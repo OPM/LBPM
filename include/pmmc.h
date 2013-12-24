@@ -3546,7 +3546,7 @@ inline double pmmc_CubeCurveInterpValue(DoubleArray &CubeValues, DoubleArray &Cu
 	Point A,B;
 	double vA,vB;
 	double x,y,z;
-	double s,s1,s2,s3,temp;
+//	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double integral;
 	double length;
@@ -3593,7 +3593,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	Point A,B;
 	double vA,vB;
 	double x,y,z;
-	double s,s1,s2,s3,temp;
+//	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double integral;
 	double length;
@@ -3667,7 +3667,6 @@ inline void pmmc_CubeSurfaceInterpVector(DoubleArray &Vec_x, DoubleArray &Vec_y,
 	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
-	double integral;
 
 	// ................x component .............................
 	// Copy the curvature values for the cube
