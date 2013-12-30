@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 	double din,dout;
 	double wp_saturation;
 	bool pBC,Restart;
-	int i,j,k,p,q,r,n;
+	int i,j,k,p,n;
 
 	// pmmc threshold values
 	double fluid_isovalue,solid_isovalue;
@@ -1470,8 +1470,8 @@ int main(int argc, char **argv)
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
 	double sat_w;
-	double p_n,p_w;								// local phase averaged pressure
-	double vx_w,vy_w,vz_w,vx_n,vy_n,vz_n;  		// local phase averaged velocity
+	double pan,paw;								// local phase averaged pressure
+//	double vx_w,vy_w,vz_w,vx_n,vy_n,vz_n;  		// local phase averaged velocity
 	// Global averages (all processes)
 	double vol_w_global, vol_n_global;			// volumes the exclude the interfacial region
 	double awn_global,ans_global,aws_global;
@@ -1484,12 +1484,20 @@ int main(int argc, char **argv)
 	DoubleArray Gwn(6);
 	DoubleArray Gns(6);
 	DoubleArray Gws(6);
+	
 	double nwp_volume_global;					// volume for the wetting phase (for saturation)
-	double p_n_global,p_w_global;				// global phase averaged pressure
-	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
-	double vx_n_global,vy_n_global,vz_n_global;	// global phase averaged velocity
+//	double p_n_global,p_w_global;				// global phase averaged pressure
+//	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
+//	double vx_n_global,vy_n_global,vz_n_global;	// global phase averaged velocity
 	double As_global;
 	double dEs,dAwn,dAns;						// Global surface energy (calculated by rank=0)
+	double pan_global,paw_global;								// local phase averaged pressure
+	DoubleArray van_global(3);
+	DoubleArray vaw_global(3);
+	DoubleArray vawn_global(3);
+	DoubleArray Gwn_global(6);
+	DoubleArray Gns_global(6);
+	DoubleArray Gws_global(6);
 	//...........................................................................
 
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
@@ -1514,6 +1522,7 @@ int main(int argc, char **argv)
 	DoubleArray Curvature(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
+	
 	//	IntArray store;
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
@@ -1689,6 +1698,24 @@ int main(int argc, char **argv)
 	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 	//...................................................................................
 
+	//...........................................................................
+	// Copy the phase indicator field for the earlier timestep
+	dvc_Barrier();
+	dvc_CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+	//...........................................................................
+	//...........................................................................
+	// Copy the data for for the analysis timestep
+	//...........................................................................
+	// Copy the phase from the GPU -> CPU
+	//...........................................................................
+	dvc_Barrier();
+	dvc_ComputePressure(nBlocks,nthreads,S,ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
+	dvc_CopyToHost(Press,Pressure,N*sizeof(double));
+	dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
+	MPI_Barrier(MPI_COMM_WORLD);
+	//...........................................................................
+	
 	int timestep = 0;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
@@ -1704,9 +1731,16 @@ int main(int argc, char **argv)
 	//.........................................
 
 	sendtag = recvtag = 5;
-	if (rank==0) printf("-------------------------------------------------------------------\n");
-	if (rank==0) printf("timestep dEs sw Awn Ans Aws Lwns pw pn vwx vwy vwz vnx vny vnz \n");
-	if (rank==0) printf("-------------------------------------------------------------------\n");
+	if (rank==0){
+		printf("--------------------------------------------------------------------------------------\n");
+		printf("timestep dEs ");								// Timestep, Change in Surface Energy
+		printf("sw pw pn vw[x, y, z] vn[x, y, z] ");			// Volume averages
+		printf("awn ans aws Jwn vwn[x, y, z] lwns efawns ");	// Interface and common curve averages
+		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
+		printf("Gws [xx, yy, zz, xy, xz, yz] ");
+		printf("Gns [xx, yy, zz, xy, xz, yz] \n");
+		printf("--------------------------------------------------------------------------------------\n");
+	}
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
@@ -2065,7 +2099,7 @@ int main(int argc, char **argv)
 		// Iteration completed!
 		timestep++;
 		//...................................................................
-		if (timestep%995 == 0){
+		if (timestep%1000 == 995){
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			dvc_Barrier();
@@ -2085,7 +2119,7 @@ int main(int argc, char **argv)
 			dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		if (timestep%1005 == 0){
+		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			dvc_Barrier();
@@ -2131,7 +2165,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Gaussian Curvature
 			//...........................................................................
-			CommunicateMeshHalo(GaussianCurvature, MPI_COMM_WORLD,
+			CommunicateMeshHalo(GaussCurvature, MPI_COMM_WORLD,
 					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -2231,9 +2265,16 @@ int main(int argc, char **argv)
 			As = 0.0;
 			
 			// Compute phase averages
-			p_n = p_w = 0.0;
-			vx_w = vy_w = vz_w = 0.0;
-			vx_n = vy_n = vz_n = 0.0;
+			pan = paw = 0.0;
+			vaw(0) = vaw(1) = vaw(2) = 0.0;
+			van(0) = van(1) = van(2) = 0.0;
+			vawn(0) = vawn(1) = vawn(2) = 0.0;
+			Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
+			Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
+			Gws(0) = Gws(1) = Gws(2) = 0.0;
+			Gws(3) = Gws(4) = Gws(5) = 0.0;
+			Gns(0) = Gns(1) = Gns(2) = 0.0;
+			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
 
 			for (c=0;c<ncubes;c++){
@@ -2259,11 +2300,11 @@ int main(int argc, char **argv)
 							// volume the excludes the interfacial region
 							vol_n += 0.125;
 							// pressure
-							p_n += 0.125*Press[n];
+							pan += 0.125*Press[n];
 							// velocity
-							vx_n += 0.125*Vel[3*n];
-							vy_n += 0.125*Vel[3*n+1];
-							vz_n += 0.125*Vel[3*n+2];
+							van(0) += 0.125*Vel[3*n];
+							van(1) += 0.125*Vel[3*n+1];
+							van(2) += 0.125*Vel[3*n+2];
 						}
 
 						// volume averages over the wetting phase
@@ -2271,11 +2312,11 @@ int main(int argc, char **argv)
 							// volume the excludes the interfacial region
 							vol_w += 0.125;
 							// pressure
-							p_w += 0.125*Press[n];
+							paw += 0.125*Press[n];
 							// velocity
-							vx_w += 0.125*Vel[3*n];
-							vy_w += 0.125*Vel[3*n+1];
-							vz_w += 0.125*Vel[3*n+2];
+							vaw(0) += 0.125*Vel[3*n];
+							vaw(1) += 0.125*Vel[3*n+1];
+							vaw(2) += 0.125*Vel[3*n+2];
 						}
 					}
 				}
@@ -2301,13 +2342,18 @@ int main(int argc, char **argv)
 
 				//...........................................................................
 				// Compute the Interfacial Areas, Common Line length
-				awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
+		/*		awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
 				ans += pmmc_CubeSurfaceArea(ns_pts,ns_tris,n_ns_tris);
 				aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
+		*/
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+
+				// Compute the surface orientation and the interfacial area
+				awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+				ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+				aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 				lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 				//...........................................................................
-
 			}
 			//...........................................................................
 			MPI_Barrier(MPI_COMM_WORLD);
@@ -2322,14 +2368,14 @@ int main(int argc, char **argv)
 			// Phase averages
 			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&p_w,&p_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&p_n,&p_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vx_w,&vx_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vy_w,&vy_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vz_w,&vz_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vx_n,&vx_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vy_n,&vy_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vz_n,&vz_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Barrier(MPI_COMM_WORLD);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
@@ -2340,18 +2386,28 @@ int main(int argc, char **argv)
 			dEs = 6.01603*alpha*(dAwn + 1.05332*Ps*dAns);
 			dAwn = -awn_global;		// Get ready for the next analysis interval
 			dAns = -ans_global;
-			// Finalize the phase averages 
+			
+			// Normalize the phase averages 
 			// (density of both components = 1.0)
-			p_w_global = p_w_global / vol_w_global;
-			vx_w_global = vx_w_global / vol_w_global;
-			vy_w_global = vy_w_global / vol_w_global;
-			vz_w_global = vz_w_global / vol_w_global;
-			p_n_global = p_n_global / vol_n_global;
-			vx_n_global = vx_n_global / vol_n_global;
-			vy_n_global = vy_n_global / vol_n_global;
-			vz_n_global = vz_n_global / vol_n_global;
+			paw_global = paw_global / vol_w_global;
+			vaw_global(0) = vaw_global(0) / vol_w_global;
+			vaw_global(1) = vaw_global(1) / vol_w_global;
+			vaw_global(2) = vaw_global(2) / vol_w_global;
+			pan_global = pan_global / vol_n_global;
+			van_global(0) = van_global(0) / vol_n_global;
+			van_global(1) = van_global(1) / vol_n_global;
+			van_global(2) = van_global(2) / vol_n_global;
+			
+			// Normalize surface averages by the interfacial area
+			Jwn_global /= awn_global;
+			efawns_global /= lwns_global;
+			for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
+			for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
+			for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
+			for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+			
 			sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
-			// Area and common curve terms
+			// Compute the specific interfacial areas and common line length (per unit volume)
 			awn_global = awn_global*iVol_global;
 			ans_global = ans_global*iVol_global;
 			aws_global = aws_global*iVol_global;
@@ -2368,12 +2424,26 @@ int main(int argc, char **argv)
 				printf("Area ws = %f \n", aws_global);
 				printf("Change in surface energy = %f \n", dEs);
 				printf("-------------------------------- \n");	
-*/
+
 				printf("%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g \n",
 						timestep,dEs,sat_w,
 						awn_global,ans_global,aws_global, lwns_global, p_w_global, p_n_global, 
 						vx_w_global, vy_w_global, vz_w_global,
 						vx_n_global, vy_n_global, vz_n_global);
+*/
+				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
+				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
+				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));		// average velocity of w phase
+				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));		// average velocity of n phase
+				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);					// interfacial areas
+				printf("%.5g ",Jwn_global);													// curvature of wn interface
+				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));		// velocity of wn interface
+				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));		// orientation of wn interface
+				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));		// orientation of ns interface	
+				printf("%.5g %.5g %.5g %.5g %.5g %.5g \n",
+						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));		// orientation of ws interface
 			}
 		}
 		
@@ -2413,7 +2483,8 @@ int main(int argc, char **argv)
 //#ifdef WriteOutput	
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Phase.data,8,N,PHASE);
+//	fwrite(Phase.data,8,N,PHASE);
+	fwrite(MeanCurvature.data,8,N,PHASE);
 	fclose(PHASE);
 //#endif
 	
