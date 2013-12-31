@@ -3957,10 +3957,18 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 		z = SurfaceVector(2*npts+p);
 		norm = sqrt(x*x+y*y+z*z);
 		// Save the surface values and normal vector
-		SurfaceValues(p) = -zeta/norm;
-		SurfaceVector(p) = 			x/norm;
-		SurfaceVector(npts+p) = 	y/norm;
-		SurfaceVector(2*npts+p) = 	z/norm;
+		if (norm > 0.0){
+			SurfaceValues(p) = -zeta/norm;
+			SurfaceVector(p) = 			x/norm;
+			SurfaceVector(npts+p) = 	y/norm;
+			SurfaceVector(2*npts+p) = 	z/norm;
+		}
+		else{
+			SurfaceValues(p) = 0.0;
+			SurfaceVector(p) = 		 	0.0;
+			SurfaceVector(npts+p) = 	0.0;
+			SurfaceVector(2*npts+p) = 	0.0;
+		}
 	}
 	//.............................................................................
 	// Compute the average speed of the interface
