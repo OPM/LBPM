@@ -153,9 +153,7 @@ int main (int argc, char *argv[])
 		aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
-
 	}
-
 
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);

@@ -399,3 +399,18 @@ inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, doub
 	}
 	File.close();
 }
+
+inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
+{
+	int n;
+	double value;
+	ifstream File(FILENAME,ios::binary);
+	for (n=0; n<N; n++){
+		// Write the two density values
+		File.read((char*) &value, sizeof(value));
+		Data[n] = value;
+
+	}
+	File.close();
+}
+

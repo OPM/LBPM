@@ -8,7 +8,7 @@
 #define CAPRAD 20
 #define HEIGHT 15.5
 #define N 60
-#define SPEED 1
+#define SPEED -1
 #define PI 3.14159
 
 int main (int argc, char *argv[])
@@ -45,7 +45,7 @@ int main (int argc, char *argv[])
 	// Averaging variables
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
-	double efawns;
+	double efawns,Jwn;
 	double As;
 	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
 	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
@@ -87,9 +87,10 @@ int main (int argc, char *argv[])
 	
 	DoubleArray CubeValues(2,2,2);
 	DoubleArray ContactAngle(20);
+	DoubleArray wn_curvature(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
-	DoubleArray vawn(3);
+	DoubleArray vawn(6);
 	
 	int c;
 	//...........................................................................
@@ -212,9 +213,7 @@ int main (int argc, char *argv[])
 	
 	Jwn /= awn;
 	efawns /= lwns;
-	vawn(0) /= awn;
-	vawn(1) /= awn;
-	vawn(2) /= awn;
+	for (i=0;i<6;i++)	vawn(i) /= awn;
 	
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
@@ -224,7 +223,8 @@ int main (int argc, char *argv[])
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 //	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
-	printf("Interface Velocity = %f,%f,%f \n",vawn(0)/awn,vawn(1)/awn,vawn(2)/awn);
+	printf("Advancing Interface Velocity = %f,%f,%f \n",vawn(0),vawn(1),vawn(2));
+	printf("Receding Interface Velocity = %f,%f,%f \n",vawn(3),vawn(4),vawn(5));
 	printf("-------------------------------- \n");	
 	//.........................................................................	
 	

@@ -312,14 +312,14 @@ double DoubleArray::e(int i, int j, int k)
 extern DoubleArray IncreaseSize(DoubleArray &A, int addLength)
 {
     if (addLength<0) {
-        printf("IncreaseSize(Array,Length)","Length needs to be >0.");
+        printf("IncreaseSize(Array,Length) Length needs to be >0.");
         return DoubleArray();
     }
 
     int newM,newN,newO;
     if (A.o>1) {
         if (addLength%(A.m*A.n)!=0) {
-        	printf("IncreaseSize(Array,Length)","Length needs to be a multiple of m*n");
+        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m*n");
             return DoubleArray();
         }
         newM = A.m;
@@ -328,7 +328,7 @@ extern DoubleArray IncreaseSize(DoubleArray &A, int addLength)
     }
     else if (A.n>1) {
         if (addLength%(A.m)!=0) {
-        	printf("IncreaseSize(Array,Length)","Length needs to be a multiple of m");
+        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m");
             return DoubleArray();
         }
         newM = A.m;
@@ -348,14 +348,14 @@ extern DoubleArray IncreaseSize(DoubleArray &A, int addLength)
 extern IntArray IncreaseSize(IntArray &A, int addLength)
 {
     if (addLength<0) {
-        printf("IncreaseSize(Array,Length)","Length needs to be >0.");
+        printf("IncreaseSize(Array,Length) Length needs to be >0.");
         return IntArray();
     }
 
     int newM,newN,newO;
     if (A.o>1) {
         if (addLength%(A.m*A.n)!=0) {
-        	printf("IncreaseSize(Array,Length)","Length needs to be a multiple of m*n");
+        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m*n");
             return IntArray();
         }
         newM = A.m;
@@ -364,7 +364,7 @@ extern IntArray IncreaseSize(IntArray &A, int addLength)
     }
     else if (A.n>1) {
         if (addLength%(A.m)!=0) {
-        	printf("IncreaseSize(Array,Length)","Length needs to be a multiple of m");
+        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m");
             return IntArray();
         }
         newM = A.m;

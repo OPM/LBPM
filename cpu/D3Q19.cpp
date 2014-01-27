@@ -1,4 +1,4 @@
-extern void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+extern "C" void dvc_PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -10,9 +10,7 @@ extern void PackDist(int q, int *list, int start, int count, double *sendbuf, do
 	}
 }
 
-
-
-extern void MapRecvDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+extern "C" void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	//....................................................................................
 	// Unack distribution from the recv buffer
@@ -54,8 +52,46 @@ extern void MapRecvDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start,
 	}
 }
 
+extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz, int S)
+{
+	int n,N;
+	N = Nx*Ny*Nz;
+
+	for (n=0; n<N; n++){
+
+		if (ID[n] > 0){
+			f_even[n] = 0.3333333333333333;
+			f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
+			f_even[N+n] = 0.055555555555555555;	//double(100*n)+2.f;
+			f_odd[N+n] = 0.055555555555555555;	//double(100*n)+3.f;
+			f_even[2*N+n] = 0.055555555555555555;	//double(100*n)+4.f;
+			f_odd[2*N+n] = 0.055555555555555555;	//double(100*n)+5.f;
+			f_even[3*N+n] = 0.055555555555555555;	//double(100*n)+6.f;
+			f_odd[3*N+n] = 0.0277777777777778;   //double(100*n)+7.f;
+			f_even[4*N+n] = 0.0277777777777778;   //double(100*n)+8.f;
+			f_odd[4*N+n] = 0.0277777777777778;   //double(100*n)+9.f;
+			f_even[5*N+n] = 0.0277777777777778;  //double(100*n)+10.f;
+			f_odd[5*N+n] = 0.0277777777777778;  //double(100*n)+11.f;
+			f_even[6*N+n] = 0.0277777777777778;  //double(100*n)+12.f;
+			f_odd[6*N+n] = 0.0277777777777778;  //double(100*n)+13.f;
+			f_even[7*N+n] = 0.0277777777777778;  //double(100*n)+14.f;
+			f_odd[7*N+n] = 0.0277777777777778;  //double(100*n)+15.f;
+			f_even[8*N+n] = 0.0277777777777778;  //double(100*n)+16.f;
+			f_odd[8*N+n] = 0.0277777777777778;  //double(100*n)+17.f;
+			f_even[9*N+n] = 0.0277777777777778;  //double(100*n)+18.f;
+		}
+		else{
+			for(int q=0; q<9; q++){
+				f_even[q*N+n] = -1.0;
+				f_odd[q*N+n] = -1.0;
+			}
+			f_even[9*N+n] = -1.0;
+		}
+	}
+}
+
 //*************************************************************************
-extern void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz, int S)
 {
 	int n,nn,N;
 	// distributions

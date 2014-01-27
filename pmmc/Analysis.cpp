@@ -15,12 +15,17 @@ int main(int argc, char **argv)
 {
 	//.......................................................................
 	//  printf("Radius = %s \n,"RADIUS);  
-	int Nx,Ny,Nz;
+	int Nx,Ny,Nz,N;
 	int i,j,k,p,q,r,n;
 	int nspheres;
 	double Lx,Ly,Lz;
 	//.......................................................................
 	Nx = Ny = Nz = 60;
+	cout << "Enter Domain size " << endl;
+	cout << "Nx = " << endl;
+	cin >> Nx;
+	Ny = Nz = Nx;
+	N = Nx*Ny*Nz;
 	//.......................................................................
 	// Reading the domain information file
 /*	//.......................................................................
@@ -129,6 +134,8 @@ int main(int argc, char **argv)
 	DoubleArray Gns(6);
 	DoubleArray Gws(6);
 	
+	double iVol = 1.0/Nx/Ny/Nz;
+	
 	int c;
 	//...........................................................................
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
@@ -159,8 +166,8 @@ int main(int argc, char **argv)
 				dist1 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)) - RADIUS;
 				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
 
-				SignDist(i,j,k) = -dist1;
-				Phase(i,j,k) = dist2;
+				//SignDist(i,j,k) = -dist1;
+				//Phase(i,j,k) = dist2;
 			}
 		}   
 	}
@@ -175,7 +182,41 @@ int main(int argc, char **argv)
 		}   
 	}
 	
-	//...........................................................................
+	awn = aws = ans = lwns = 0.0;
+	nwp_volume = 0.0;
+	As = 0.0;
+	Jwn = 0.0;
+	efawns = 0.0;
+	// Compute phase averages
+	pan = paw = 0.0;
+	vaw(0) = vaw(1) = vaw(2) = 0.0;
+	van(0) = van(1) = van(2) = 0.0;
+	vawn(0) = vawn(1) = vawn(2) = 0.0;
+	Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
+	Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
+	Gws(0) = Gws(1) = Gws(2) = 0.0;
+	Gws(3) = Gws(4) = Gws(5) = 0.0;
+	Gns(0) = Gns(1) = Gns(2) = 0.0;
+	Gns(3) = Gns(4) = Gns(5) = 0.0;
+	vol_w = vol_n =0.0;
+	
+	// Read the input files for the phase, distance and pressure field
+	char PHASEFILE[16];
+	sprintf(PHASEFILE,"Phase.in");
+	ReadBinaryFile(PHASEFILE,Phase.data,Nx*Ny*Nz);
+	char DISTFILE[16];
+	sprintf(DISTFILE,"SignDist.in");
+	ReadBinaryFile(DISTFILE,SignDist.data,Nx*Ny*Nz);
+	/*	FILE *PRESS
+	PRESS = fopen("Pressure.in","wb");
+	fread(Phase.data,8,N,PRESS);
+	fclose(PRESS);
+	
+	FILE *VEL;
+	VEL = fopen("Pressure.in","wb");
+	fread(Phase.data,8,3*N,VEL);
+	fclose(VEL);
+*/	//...........................................................................
 	// Calculate the time derivative of the phase indicator field
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.5*(Phase_tplus(n) - Phase_tminus(n));
 	
@@ -237,6 +278,18 @@ int main(int argc, char **argv)
 
 	vol_w = vol_n =0.0;
 	
+	FILE *WN_TRIS;
+	WN_TRIS = fopen("wn-tris.out","w");
+	
+	FILE *NS_TRIS;
+	NS_TRIS = fopen("ns-tris.out","w");
+	
+	FILE *WS_TRIS;
+	WS_TRIS = fopen("ws-tris.out","w");
+	
+	FILE *WNS_PTS;
+	WNS_PTS = fopen("wns-pts.out","w");
+	
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
@@ -262,6 +315,10 @@ int main(int argc, char **argv)
 		pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 		
+//		pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
+//							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+		
+		
 		// Compute the average contact angle
 		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Phase_x,Phase_y,Phase_z,Sx,Sy,Sz,
 										local_nws_pts,i,j,k,n_local_nws_pts);
@@ -282,8 +339,44 @@ int main(int argc, char **argv)
 //		aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		
+		//.......................................................................................
+		// Write the triangle lists to text file
+		for (r=0;r<n_nw_tris;r++){
+			A = nw_pts(nw_tris(0,r));
+			B = nw_pts(nw_tris(1,r));
+			C = nw_pts(nw_tris(2,r));
+			fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+		}		
+		for (r=0;r<n_ws_tris;r++){
+			A = ws_pts(ws_tris(0,r));
+			B = ws_pts(ws_tris(1,r));
+			C = ws_pts(ws_tris(2,r));
+			fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+		}
+		for (r=0;r<n_ns_tris;r++){
+			A = ns_pts(ns_tris(0,r));
+			B = ns_pts(ns_tris(1,r));
+			C = ns_pts(ns_tris(2,r));
+			fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+		}
+		for (p=0; p < n_nws_pts; p++){
+			P = nws_pts(p);
+			fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
+		}
+		
 	}
-	
+	fclose(WN_TRIS);
+	fclose(NS_TRIS);
+	fclose(WS_TRIS);
+	fclose(WNS_PTS);
+
+	printf("Jwn = %f \n",Jwn);
+	printf("awn = %f \n",awn);
+	printf("efawns = %f \n",efawns);
+	printf("lwns = %f \n",lwns);
+	printf("efawns = %f \n",efawns/lwns);
+
 	Jwn /= awn;
 	efawns /= lwns;
 	for (i=0; i<3; i++)		vawn(i) /= awn;
@@ -291,6 +384,11 @@ int main(int argc, char **argv)
 	for (i=0; i<6; i++)		Gns(i) /= ans;
 	for (i=0; i<6; i++)		Gws(i) /= aws;
 	
+	awn = awn*iVol;
+	aws = aws*iVol;
+	ans = ans*iVol;
+	lwns = lwns*iVol;
+
 	printf("--------------------------------------------------------------------------------------\n");
 	printf("sw pw pn vw[x, y, z] vn[x, y, z] ");			// Volume averages
 	printf("awn ans aws Jwn vwn[x, y, z] lwns efawns ");	// Interface and common curve averages
@@ -303,12 +401,13 @@ int main(int argc, char **argv)
 	printf("%.5g %.5g %.5g ",van(0),van(1),van(2));			// average velocity of n phase
 	printf("%.5g %.5g %.5g ",awn,ans,aws);					// interfacial areas
 	printf("%.5g ",Jwn);									// curvature of wn interface
-	printf("%.5g %.5g %.5g ",vawn(0),vawn(1),vawn(2));		// velocity of wn interface
+	printf("%.5g ", lwns);									// common curve length
+	printf("%.5g ",efawns);									// average contact angle
 	printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 			Gwn(0),Gwn(1),Gwn(2),Gwn(3),Gwn(4),Gwn(5));		// orientation of wn interface
 	printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 			Gns(0),Gns(1),Gns(2),Gns(3),Gns(4),Gns(5));		// orientation of ns interface	
-	printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+	printf("%.5g %.5g %.5g %.5g %.5g %.5g \n",
 			Gws(0),Gws(1),Gws(2),Gws(3),Gws(4),Gws(5));		// orientation of ws interface
 
 
@@ -319,19 +418,19 @@ int main(int argc, char **argv)
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
-//	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
+//	printf("Cos(theta_wns) = %f,  Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("Interface Velocity = %f,%f,%f \n",vawn(0)/awn,vawn(1)/awn,vawn(2)/awn);
 	printf("-------------------------------- \n");	
 	//.........................................................................	
-	
+*/	
 	FILE *PHASE;
-	PHASE = fopen("Phase.in","wb");
-	fwrite(Phase,8,SIZE,PHASE);
+	PHASE = fopen("Phase.out","wb");
+	fwrite(Phase.data,8,N,PHASE);
 	fclose(PHASE);
 	
 	FILE *SOLID;
-	SOLID = fopen("Distance.in","wb");
-	fwrite(Solid,8,SIZE,SOLID);
+	SOLID = fopen("Distance.out","wb");
+	fwrite(SignDist.data,8,N,SOLID);
 	fclose(SOLID);
-*/
+
 }

@@ -3402,15 +3402,24 @@ inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray &MeanCurvature, Doubl
 				fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
 				// Evaluate the Mean Curvature
 				denominator = pow(sqrt(fx*fx + fy*fy + fz*fz),3);
-				if (denominator == 0.0) denominator = 1.0;
-				MeanCurvature(i,j,k)=(1.0/denominator)*((fyy+fzz)*fx*fx + (fxx+fzz)*fy*fy + (fxx+fyy)*fz*fz
-										-2.0*fx*fy*fxy  - 2.0*fx*fz*fxz - 2.0*fy*fz*fyz);
+				if (denominator == 0.0){
+					MeanCurvature(i,j,k) = 0.0;
+				}
+				else{
+					MeanCurvature(i,j,k)=(1.0/denominator)*((fyy+fzz)*fx*fx + (fxx+fzz)*fy*fy + (fxx+fyy)*fz*fz
+							-2.0*fx*fy*fxy  - 2.0*fx*fz*fxz - 2.0*fy*fz*fyz);
+				}
 				// Evaluate the Gaussian Curvature
 				denominator = pow(fx*fx + fy*fy + fz*fz,2);
-				if (denominator == 0.0) denominator = 1.0;
-				GaussCurvature(i,j,k) = (1.0/denominator)*(fx*fx*(fyy*fzz-fyz*fyz) + fy*fy*(fxx*fzz-fxz*fxz) + fz*fz*(fxx*fyy-fxy*fxy)
-															+2.0*(fx*fy*(fxz*fyz-fxy*fzz) + fy*fz*(fxy*fxz-fyz*fxx)
-																	+ fx*fz*(fxy*fyz-fxz*fyy)));
+				if (denominator == 0.0){
+					GaussCurvature(i,j,k) = 0.0;
+				}
+				else{
+
+					GaussCurvature(i,j,k) = (1.0/denominator)*(fx*fx*(fyy*fzz-fyz*fyz) + fy*fy*(fxx*fzz-fxz*fxz) + fz*fz*(fxx*fyy-fxy*fxy)
+							+2.0*(fx*fy*(fxz*fyz-fxy*fzz) + fy*fz*(fxy*fxz-fyz*fxx)
+									+ fx*fz*(fxy*fyz-fxz*fyy)));
+				}
 			}
 		}
 	}
@@ -3831,13 +3840,14 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	Point A,B,C;
 	int p;
 	double vA,vB,vC;
+	double vAx,vBx,vCx,vAy,vBy,vCy,vAz,vBz,vCz;
 	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double norm, zeta;
 
 	// ................x component .............................
-	// Copy the curvature values for the cube
+	// Copy the x derivative values for the cube
 	CubeValues(0,0,0) = P_x(i,j,k);
 	CubeValues(1,0,0) = P_x(i+1,j,k);
 	CubeValues(0,1,0) = P_x(i,j+1,k);
@@ -3866,7 +3876,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	}
 
 	// ................y component .............................
-	// Copy the curvature values for the cube
+	// Copy the y  derivative values for the cube
 	CubeValues(0,0,0) = P_y(i,j,k);
 	CubeValues(1,0,0) = P_y(i+1,j,k);
 	CubeValues(0,1,0) = P_y(i,j+1,k);
@@ -3895,7 +3905,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	}
 
 	// ................z component .............................
-	// Copy the curvature values for the cube
+	// Copy the z derivative values for the cube
 	CubeValues(0,0,0) = P_z(i,j,k);
 	CubeValues(1,0,0) = P_z(i+1,j,k);
 	CubeValues(0,1,0) = P_z(i,j+1,k);
@@ -3983,22 +3993,43 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 		s = 0.5*(s1+s2+s3);
 		temp = s*(s-s1)*(s-s2)*(s-s3);
 		if (temp > 0.0){
+			// Surface value (speed)
+			vA = SurfaceValues(Triangles(0,r));
+			vB = SurfaceValues(Triangles(1,r));
+			vC = SurfaceValues(Triangles(2,r));
 			// Increment the averaged values
 			// x component
-			vA = SurfaceVector(Triangles(0,r))*SurfaceValues(Triangles(0,r));
-			vB = SurfaceVector(Triangles(1,r))*SurfaceValues(Triangles(1,r));
-			vC = SurfaceVector(Triangles(2,r))*SurfaceValues(Triangles(2,r));
-			AvgVel(0) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vAx = SurfaceVector(Triangles(0,r))*vA;
+			vBx = SurfaceVector(Triangles(1,r))*vB;
+			vCx = SurfaceVector(Triangles(2,r))*vC;
 			// y component
-			vA = SurfaceVector(npts+Triangles(0,r))*SurfaceValues(Triangles(0,r));
-			vB = SurfaceVector(npts+Triangles(1,r))*SurfaceValues(Triangles(1,r));
-			vC = SurfaceVector(npts+Triangles(2,r))*SurfaceValues(Triangles(2,r));
-			AvgVel(1) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vAy = SurfaceVector(npts+Triangles(0,r))*vA;
+			vBy = SurfaceVector(npts+Triangles(1,r))*vB;
+			vCy = SurfaceVector(npts+Triangles(2,r))*vC;
 			// z component
-			vA = SurfaceVector(2*npts+Triangles(0,r))*SurfaceValues(Triangles(0,r));
-			vB = SurfaceVector(2*npts+Triangles(1,r))*SurfaceValues(Triangles(1,r));
-			vC = SurfaceVector(2*npts+Triangles(2,r))*SurfaceValues(Triangles(2,r));
-			AvgVel(2) += sqrt(temp)*0.33333333333333333*(vA+vB+vC);
+			vAz = SurfaceVector(2*npts+Triangles(0,r))*vA;
+			vBz = SurfaceVector(2*npts+Triangles(1,r))*vB;
+			vCz = SurfaceVector(2*npts+Triangles(2,r))*vC;
+
+			AvgVel(0) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
+			AvgVel(1) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
+			AvgVel(2) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
+							
+			// Update the Averages. Differentiate between advancing (0,1,2) and receding (3,4,5) interfaces
+			// All points on a triangle have the same orientation in the color gradient
+/*			if (vA > 0.0){
+				// Advancing interface
+				AvgVel(0) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
+				AvgVel(1) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
+				AvgVel(2) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
+			}
+			else{
+				// Receding interface
+				AvgVel(3) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
+				AvgVel(4) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
+				AvgVel(5) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
+			}	
+*/
 		}
 	}
 	//.............................................................................
