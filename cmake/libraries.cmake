@@ -11,6 +11,7 @@ ENDMACRO ()
 MACRO ( CONFIGURE_CUDA )
     SET(CUDA_FLAGS ${CUDA_NVCC_FLAGS})
     SET( CUDA_FIND_QUIETLY 1)
+    CHECK_ENABLE_FLAG( USE_CUDA 0 )
     IF(USE_CUDA)
         INCLUDE ( FindCUDA )
         IF ( NOT CUDA_FOUND )
@@ -24,7 +25,6 @@ MACRO ( CONFIGURE_CUDA )
             STRING(REPLACE " " ";" CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
         ENDIF()
     ENDIF()
-  
     IF ( NOT USE_CUDA )
         MESSAGE ( "Not using CUDA" ) 
     ELSE ()
@@ -38,6 +38,13 @@ MACRO ( CONFIGURE_CUDA )
         SET (EXTERNAL_LIBS ${EXTERNAL_LIBS} ${CUDA_LIBRARIES} )
     ENDIF ()
 ENDMACRO ()
+
+
+# Macro to configure CUDA
+MACRO ( CONFIGURE_MIC )
+    CHECK_ENABLE_FLAG( USE_MIC 0 )
+    ADD_DEFINITIONS ( "-D USE_MIC" ) 
+ENDMACRO() 
 
 
 # Macro to find and configure the MPI libraries

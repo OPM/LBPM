@@ -48,14 +48,14 @@ MACRO (FIND_FILES)
     SET( T_CXXSOURCES "" )
     FILE( GLOB T_CXXSOURCES "*.cc" "*.cpp" "*.cxx" "*.C" )
     # Find the C++ sources
-    SET( T_CXXSOURCES "" )
-    FILE( GLOB T_CXXSOURCES "*.cu" )
+    SET( T_CUSOURCES "" )
+    FILE( GLOB T_CUSOURCES "*.cu" )
     # Add all found files to the current lists
     SET( HEADERS ${HEADERS} ${T_HEADERS} )
     SET( CXXSOURCES ${CXXSOURCES} ${T_CXXSOURCES} )
     SET( CSOURCES ${CSOURCES} ${T_CSOURCES} )
+    SET( CUSOURCES ${CUSOURCES} ${T_CUSOURCES} )
     SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} )
-    SET( CUSOURCES ${SOURCES} ${T_CUSOURCES} )
 ENDMACRO()
 
 
@@ -77,8 +77,8 @@ MACRO (FIND_FILES_PATH IN_PATH)
     SET( HEADERS ${HEADERS} ${T_HEADERS} )
     SET( CXXSOURCES ${CXXSOURCES} ${T_CXXSOURCES} )
     SET( CSOURCES ${CSOURCES} ${T_CSOURCES} )
+    SET( CUSOURCES ${CUSOURCES} ${T_CUSOURCES} )
     SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} ${T_CUSOURCES} )
-    SET( CUSOURCES ${SOURCES} ${T_CUSOURCES} )
 ENDMACRO()
 
 
@@ -106,7 +106,9 @@ MACRO( INSTALL_LBPM_TARGET PACKAGE )
         CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/${HFILE} ${LBPM_INSTALL_DIR}/include/${HFILE} COPYONLY )
     ENDFOREACH()
     # Configure the CUDA files
-    CUDA_COMPILE( CUOBJS ${CUSOURCES} )
+    IF ( CUSOURCES )
+        CUDA_COMPILE( CUOBJS ${CUSOURCES} )
+    ENDIF()
     # Add the library
     ADD_LIBRARY( ${PACKAGE} ${LIB_TYPE} ${SOURCES} ${CUOBJS} )
     SET( TEST_DEP_LIST ${PACKAGE} ${TEST_DEP_LIST} )
@@ -471,6 +473,7 @@ MACRO( ADD_DISTCLEAN )
         liblbpm-wia.so
         cpu
         gpu
+        example
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)
