@@ -100,7 +100,7 @@ SET( LBPM_LIBS  lbpm-wia )
 # Add the src directories
 IF ( NOT ONLY_BUILD_DOCS )
     BEGIN_PACKAGE_CONFIG( lbpm-wia )
-    ADD_PACKAGE_SUBDIRECTORY( include )
+    ADD_PACKAGE_SUBDIRECTORY( common )
     IF ( USE_CUDA )
         ADD_PACKAGE_SUBDIRECTORY( gpu )
     ELSE()

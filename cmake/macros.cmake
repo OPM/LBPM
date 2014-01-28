@@ -474,6 +474,7 @@ MACRO( ADD_DISTCLEAN )
         cpu
         gpu
         example
+        common
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)
