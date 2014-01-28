@@ -5,6 +5,7 @@
 //#include "Array.h"
 
 #define RADIUS 15
+#define CAPRAD 20
 #define HEIGHT 15.5
 #define N 60
 #define PI 3.14159
@@ -24,6 +25,12 @@ int main (int argc, char *argv[])
 //	Phase = new double [SIZE];
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Phase(Nx,Ny,Nz);
+	DoubleArray Fx(Nx,Ny,Nz);
+	DoubleArray Fy(Nx,Ny,Nz);
+	DoubleArray Fz(Nx,Ny,Nz);
+	DoubleArray Sx(Nx,Ny,Nz);
+	DoubleArray Sy(Nx,Ny,Nz);
+	DoubleArray Sz(Nx,Ny,Nz);
 	double fluid_isovalue = 0.0;
 	double solid_isovalue = 0.0;
 
@@ -35,6 +42,7 @@ int main (int argc, char *argv[])
 	// Averaging variables
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
+	double efawns;
 	double As;
 	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
 	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
@@ -74,6 +82,9 @@ int main (int argc, char *argv[])
 	DTMutableList<Point> local_nws_pts(20);
 	int n_local_nws_pts;
 	
+	DoubleArray CubeValues(2,2,2);
+	DoubleArray ContactAngle(20);
+	
 	int c;
 	//...........................................................................
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
@@ -86,31 +97,18 @@ int main (int argc, char *argv[])
 	for (k=0; k<N; k++){
 		for (j=0; j<N; j++){
 			for (i=0; i<N; i++){
+				
 				dist1 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)) - RADIUS;
-				dist2 = fabs(Cz-k)-HEIGHT;
-				//	printf("distances = %f, %f \n",dist1,dist2);
-				//Solid.data[k*Nx*Ny+j*Nx+i] = dist1;
-				//Phase[k*Nx*Ny+j*Nx+i] = dist2;
+				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
+
 				SignDist(i,j,k) = -dist1;
 				Phase(i,j,k) = dist2;
 			}
 		}   
 	}
 
-	FILE *STRIS;
-	STRIS = fopen("solid-triangles.out","w");
-	
-	FILE *WN_TRIS;
-	WN_TRIS = fopen("wn-tris.out","w");
-	
-	FILE *NS_TRIS;
-	NS_TRIS = fopen("ns-tris.out","w");
-	
-	FILE *WS_TRIS;
-	WS_TRIS = fopen("ws-tris.out","w");
-	
-	FILE *WNS_PTS;
-	WNS_PTS = fopen("wns-pts.out","w");
+	pmmc_MeshGradient(Phase,Fx,Fy,Fz,Nx,Ny,Nz);
+	pmmc_MeshGradient(SignDist,Sx,Sy,Sz,Nx,Ny,Nz);
 	
 	// End of the loop to set the values
 	awn = aws = ans = lwns = 0.0;
@@ -145,119 +143,17 @@ int main (int argc, char *argv[])
 				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
+
+		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
 		
 		//*******************************************************************
-		// Compute the Interfacial Areas, Common Line length for blob p
-		// nw surface
-		double temp;
-		for (r=0;r<n_nw_tris;r++){
-			A = nw_pts(nw_tris(0,r));
-			B = nw_pts(nw_tris(1,r));
-			C = nw_pts(nw_tris(2,r));
-			// Compute length of sides (assume dx=dy=dz)
-			s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-			s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-			s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-			s = 0.5*(s1+s2+s3);
-			temp = s*(s-s1)*(s-s2)*(s-s3);
-			if (temp > 0.0) awn += sqrt(temp);
-			
-		}
-		for (r=0;r<n_ns_tris;r++){
-			A = ns_pts(ns_tris(0,r));
-			B = ns_pts(ns_tris(1,r));
-			C = ns_pts(ns_tris(2,r));
-			// Compute length of sides (assume dx=dy=dz)
-			s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-			s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-			s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-			s = 0.5*(s1+s2+s3);
-			//ans=ans+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-			temp = s*(s-s1)*(s-s2)*(s-s3);
-			if (temp > 0.0) ans += sqrt(temp);
-		}
-		for (r=0;r<n_ws_tris;r++){
-			A = ws_pts(ws_tris(0,r));
-			B = ws_pts(ws_tris(1,r));
-			C = ws_pts(ws_tris(2,r));
-			// Compute length of sides (assume dx=dy=dz)
-			s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-			s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-			s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-			s = 0.5*(s1+s2+s3);
-			//aws=aws+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-			temp = s*(s-s1)*(s-s2)*(s-s3);
-			if (temp > 0.0) aws += sqrt(temp);
-		}
-		for (r=0;r<n_local_sol_tris;r++){
-			A = local_sol_pts(local_sol_tris(0,r));
-			B = local_sol_pts(local_sol_tris(1,r));
-			C = local_sol_pts(local_sol_tris(2,r));
-			// Compute length of sides (assume dx=dy=dz)
-			s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-			s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-			s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
-			s = 0.5*(s1+s2+s3);
-			//aws=aws+sqrt(s*(s-s1)*(s-s2)*(s-s3));
-			temp = s*(s-s1)*(s-s2)*(s-s3);
-			if (temp > 0.0) As += sqrt(temp);
-		}
-		for (p=0; p < n_local_nws_pts-1; p++){
-			// Extract the line segment
-			A = local_nws_pts(p);
-			B = local_nws_pts(p+1);
-			// Compute the length of the segment
-			s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-			// Add the length to the common line 
-			lwns += s;
-		}
-		//.......................................................................................
-		// Write the triangle lists to text file
-		for (r=0;r<n_nw_tris;r++){
-			A = nw_pts(nw_tris(0,r));
-			B = nw_pts(nw_tris(1,r));
-			C = nw_pts(nw_tris(2,r));
-			fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}		
-		for (r=0;r<n_ws_tris;r++){
-			A = ws_pts(ws_tris(0,r));
-			B = ws_pts(ws_tris(1,r));
-			C = ws_pts(ws_tris(2,r));
-			fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		for (r=0;r<n_ns_tris;r++){
-			A = ns_pts(ns_tris(0,r));
-			B = ns_pts(ns_tris(1,r));
-			C = ns_pts(ns_tris(2,r));
-			fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		for (p=0; p < n_nws_pts; p++){
-			P = nws_pts(p);
-			fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
-		}
-		
-		//.......................................................................................
-		
-		for (r=0;r<n_local_sol_tris;r++){
-			A = local_sol_pts(local_sol_tris(0,r));
-			B = local_sol_pts(local_sol_tris(1,r));
-			C = local_sol_pts(local_sol_tris(2,r));
-			fprintf(STRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-		}
-		//*******************************************************************
-		// Reset the triangle counts to zero
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
-		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-		//	n_ns_tris_beg = 0;//n_ns_tris;
-		//	n_ws_tris_beg = 0;//n_ws_tris;
-		//	n_nws_seg_beg = n_nws_seg;
-		//*******************************************************************
+		// Compute the Interfacial Areas, Common Line length
+		awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
+		ans += pmmc_CubeSurfaceArea(ns_pts,ns_tris,n_ns_tris);
+		aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
+		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 	}
-	fclose(WN_TRIS);
-	fclose(NS_TRIS);
-	fclose(WS_TRIS);
-	fclose(WNS_PTS);
-	fclose(STRIS);
 
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
@@ -266,6 +162,7 @@ int main (int argc, char *argv[])
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
+	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("-------------------------------- \n");	
 	//.........................................................................
 	

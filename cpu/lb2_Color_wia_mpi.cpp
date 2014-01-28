@@ -6,84 +6,16 @@
 
 #include "pmmc.h"
 #include "Domain.h"
+#include "Extras.h"
+#include "D3Q19.h"
+#include "D3Q7.h"
+#include "Color.h"
 
 using namespace std;
 
 //*************************************************************************
-// Functions defined in Color.cu
-//*************************************************************************
-extern "C" void dvc_InitDenColor( int nblocks, int nthreads, int S,
-		char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz);
-//*************************************************************************
-extern "C" void dvc_ComputeColorGradient(int nBlocks, int nthreads, int S,
-		char *ID, double *Phi, double *ColorGrad, int Nx, int Ny, int Nz);
-//*************************************************************************
-extern "C" void dvc_ColorCollide(int nBlocks, int nthreads, int S,
-		char *ID, double *f_even, double *f_odd, double *ColorGrad, double *Velocity,
-		double rlxA, double rlxB,double alpha, double beta, double Fx, double Fy, double Fz,
-		int Nx, int Ny, int Nz, bool pBC);
-//*************************************************************************
-extern "C" void dvc_ColorCollideOpt(int nBlocks, int nthreads, int S,
-								char *ID, double *f_even, double *f_odd, double *Phi, double *ColorGrad,
-								double *Velocity, int Nx, int Ny, int Nz,double rlxA, double rlxB, 
-								double alpha, double beta, double Fx, double Fy, double Fz);
-//*************************************************************************
-extern "C" void dvc_DensityStreamD3Q7(int nBlocks, int nthreads, int S,
-		char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
-		double beta, int Nx, int Ny, int Nz, bool pBC);
-//*************************************************************************
-extern "C" void dvc_ComputePhi(int nBlocks, int nthreads, int S,
-		char *ID, double *Phi, double *Copy, double *Den, int N);
-//*************************************************************************
-extern "C" void dvc_ComputePressure(int nBlocks, int nthreads, int S,
-									char *ID, double *disteven, double *distodd, 
-									double *Pressure, int Nx, int Ny, int Nz);
-//*************************************************************************
-// Functions defined in D3Q19.cu
-//*************************************************************************
-extern "C" void dvc_InitD3Q19(int nblocks, int nthreads, int S, char *ID, double *f_even, double *f_odd, int Nx,
-							  int Ny, int Nz);
-//*************************************************************************
-extern "C" void dvc_SwapD3Q19(int nblocks, int nthreads, int S,
-		char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz);
-//*************************************************************************
-extern "C" void dvc_PackDist(int grid, int threads, int q, int *SendList, int start,
-		int sendCount, double *sendbuf, double *Dist, int N);
-//*************************************************************************
-extern "C" void dvc_UnpackDist(int grid, int threads, int q, int Cqx, int Cqy, int Cqz, int *RecvList, int start,
-		int recvCount, double *recvbuf, double *Dist, int Nx, int Ny, int Nz);
-//*************************************************************************
-//***************************************************************************************
-// Functions defined in D3Q7.cu
-//***************************************************************************************
-extern "C" void dvc_PackDenD3Q7(int grid, int threads, int *list, int count, double *sendbuf,
-		int number, double *Data, int N);
-//***************************************************************************************
-extern "C" void dvc_UnpackDenD3Q7(int grid, int threads, int *list, int count, double *recvbuf,
-		int number, double *Data, int N);
-//***************************************************************************************
-extern "C" void dvc_PackValues(int grid, int threads, int *list, int count, double *sendbuf,
-		double *Data, int N);
-//***************************************************************************************
-extern "C" void dvc_UnpackValues(int grid, int threads, int *list, int count, double *recvbuf,
-		double *Data, int N);
-//***************************************************************************************
-//*************************************************************************
-// Functions defined in CudaExtras.cu
-//*************************************************************************
-extern "C" void dvc_AllocateDeviceMemory(void** address, size_t size);
-//*************************************************************************
-extern "C" void dvc_CopyToDevice(void* dest, void* source, size_t size);
-//*************************************************************************
-extern "C" void dvc_CopyToHost(void* dest, void* source, size_t size);
-//*************************************************************************
-extern "C" void dvc_Barrier();
-//*************************************************************************
-
-//*************************************************************************
 // Implementation of Two-Phase Immiscible LBM using CUDA
 //*************************************************************************
-
 inline void PackID(int *list, int count, char *sendbuf, char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This packs up the values that need to be sent from one processor to another
@@ -277,7 +209,7 @@ int main(int argc, char **argv)
 	int timestepMax, interval;
 	double tau,Fx,Fy,Fz,tol;
 	double alpha, beta;
-	double das, dbs;
+	double das, dbs, xIntPos;
 	double din,dout;
 	double wp_saturation;
 	bool pBC,Restart;
@@ -304,11 +236,12 @@ int main(int argc, char **argv)
 //		input >> nBlocks;
 //		input >> nthreads;
 		// Line 3: model parameters (tau, alpha, beta, das, dbs)
-		input >> tau;
-		input >> alpha;
-		input >> beta;
-		input >> das;
-		input >> dbs;
+		input >> tau;			// Viscosity parameter
+		input >> alpha;			// Surface Tension parameter
+		input >> beta;			// Width of the interface
+		input >> xIntPos;		// Contact angle parameter
+//		input >> das;
+//		input >> dbs;
 		// Line 4: wetting phase saturation to initialize
 		input >> wp_saturation;
 		// Line 5: External force components (Fx,Fy, Fz)
@@ -325,7 +258,10 @@ int main(int argc, char **argv)
 		input >> interval;			// error interval
 		input >> tol;				// error tolerance
 		//.............................................................
-
+		das = 0.1; dbs = 0.9;	// hard coded for density initialization
+								// should be OK to remove these parameters
+								// they should have no impact with the 
+								// current boundary condition
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
@@ -351,6 +287,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&xIntPos,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
@@ -704,7 +641,7 @@ int main(int argc, char **argv)
 	// Initializes a constrained bubble test
 	double BubbleBot = 20.0;  // How big to make the NWP bubble
 	double BubbleTop = 60.0;  // How big to make the NWP bubble
-	double TubeRadius = 15.0; // Radius of the capillary tube
+	double TubeRadius = 15.5; // Radius of the capillary tube
 	sum=0;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -788,23 +725,11 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
-	//......................................................................	
-	// Once phase ID has been generated, map solid to account for 'smeared' interface
-	//......................................................................	
-	for (i=0; i<N; i++)	SignDist.data[i] -= 0.5; // Solid appears half a pixel bigger
-	//......................................................................	
+
 	// Generate the residual NWP 
 	if (rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 #endif
-	
-	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-	WriteLocalSolidID(LocalRankFilename, id, N);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
-	//.......................................................................
 
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
@@ -1111,7 +1036,7 @@ int main(int argc, char **argv)
 	dvc_AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
@@ -1574,10 +1499,25 @@ int main(int argc, char **argv)
 	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
-	dvc_InitD3Q19(nBlocks, nthreads, S, ID, f_even, f_odd, Nx, Ny, Nz);
-	dvc_InitDenColor(nBlocks, nthreads, S, ID, Copy, Phi,  das, dbs, Nx, Ny, Nz);
-	dvc_InitDenColor(nBlocks, nthreads, S, ID, Den, Phi,  das, dbs, Nx, Ny, Nz);
-
+	dvc_InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz, S);
+	dvc_InitDenColor(ID, Copy, Phi, das, dbs, Nx, Ny, Nz, S);
+	dvc_InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz, S);
+	//......................................................................
+//	xIntPos = 1.0;
+	dvc_InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+	dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+	//......................................................................
+	// Once phase has been initialized, map solid to account for 'smeared' interface
+	//......................................................................
+	for (i=0; i<N; i++)	SignDist.data[i] -= xIntPos; // Solid appears half a pixel bigger
+	//......................................................................
+	//.......................................................................
+	sprintf(LocalRankString,"%05d",rank);
+	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+	WriteLocalSolidID(LocalRankFilename, id, N);
+	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	//.......................................................................
 	if (Restart == true){
 		if (rank==0) printf("Reading restart file! \n");
 		// Read in the restart file to CPU buffers
@@ -1590,37 +1530,37 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	// Pack the buffers (zeros out the halo region)
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
-	dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
+	dvc_PackDenD3Q7(dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
 
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
 	//*************************************************************************
-	dvc_ComputePhi(nBlocks, nthreads, S,ID, Phi, Copy, Den, N);
+	dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
 	//*************************************************************************
 	//...................................................................................
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-	dvc_PackValues(faceGrid, packThreads, dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
+	dvc_PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+	dvc_PackValues(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+	dvc_PackValues(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+	dvc_PackValues(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+	dvc_PackValues(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+	dvc_PackValues(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+	dvc_PackValues(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
+	dvc_PackValues(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
+	dvc_PackValues(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
+	dvc_PackValues(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
+	dvc_PackValues(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
+	dvc_PackValues(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
+	dvc_PackValues(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
+	dvc_PackValues(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
+	dvc_PackValues(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
+	dvc_PackValues(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
+	dvc_PackValues(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
+	dvc_PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 	
 	dvc_Barrier();
 	//...................................................................................
@@ -1678,24 +1618,24 @@ int main(int argc, char **argv)
 	dvc_UnpackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
 	dvc_UnpackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
 */		
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-	dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
+	dvc_UnpackValues(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
+	dvc_UnpackValues(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
+	dvc_UnpackValues(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
+	dvc_UnpackValues(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
+	dvc_UnpackValues(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
+	dvc_UnpackValues(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
+	dvc_UnpackValues(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
+	dvc_UnpackValues(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
+	dvc_UnpackValues(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
+	dvc_UnpackValues(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
+	dvc_UnpackValues(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
+	dvc_UnpackValues(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
+	dvc_UnpackValues(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
+	dvc_UnpackValues(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
+	dvc_UnpackValues(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
+	dvc_UnpackValues(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
+	dvc_UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
+	dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 	//...................................................................................
 
 	//...........................................................................
@@ -1709,7 +1649,7 @@ int main(int argc, char **argv)
 	// Copy the phase from the GPU -> CPU
 	//...........................................................................
 	dvc_Barrier();
-	dvc_ComputePressure(nBlocks,nthreads,S,ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
 	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 	dvc_CopyToHost(Press,Pressure,N*sizeof(double));
 	dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
@@ -1734,11 +1674,11 @@ int main(int argc, char **argv)
 	if (rank==0){
 		printf("--------------------------------------------------------------------------------------\n");
 		printf("timestep dEs ");								// Timestep, Change in Surface Energy
-		printf("sw pw pn vw[x, y, z] vn[x, y, z] ");			// Volume averages
-		printf("awn ans aws Jwn vwn[x, y, z] lwns efawns ");	// Interface and common curve averages
+		printf("sw pw pn awn ans aws Jwn lwns efawns ");			// Scalar averages
+		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
 		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		printf("Gws [xx, yy, zz, xy, xz, yz] ");
-		printf("Gns [xx, yy, zz, xy, xz, yz] \n");
+		printf("Gns [xx, yy, zz, xy, xz, yz] \n"); 
 		printf("--------------------------------------------------------------------------------------\n");
 	}
 
@@ -1762,71 +1702,71 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
-		dvc_ColorCollideOpt( nBlocks,nthreads,S,ID,f_even,f_odd,Phi,ColorGrad,
-							 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
+		dvc_ColorCollideOpt( ID,f_even,f_odd,Phi,ColorGrad,
+							 Velocity,Nx,Ny,Nz,S,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
 		//*************************************************************************
 
 		//...................................................................................
-		dvc_PackDist(faceGrid,packThreads,1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-		//...Packing for X face(faceGrid,packThreads,1,7,9,11,13)................................
-		dvc_PackDist(faceGrid,packThreads,0,dvcSendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-		//...Packing for y face(faceGrid,packThreads,4,8,9,16,18).................................
-		dvc_PackDist(faceGrid,packThreads,2,dvcSendList_y,0,sendCount_y,sendbuf_y,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,9,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-		//...Packing for Y face(faceGrid,packThreads,3,7,10,15,17).................................
-		dvc_PackDist(faceGrid,packThreads,1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-		//...Packing for z face(faceGrid,packThreads,6,12,13,16,17)................................
-		dvc_PackDist(faceGrid,packThreads,3,dvcSendList_z,0,sendCount_z,sendbuf_z,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,8,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
-		//...Packing for Z face(faceGrid,packThreads,5,11,14,15,18)................................
-		dvc_PackDist(faceGrid,packThreads,2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
-		dvc_PackDist(faceGrid,packThreads,7,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-		dvc_PackDist(faceGrid,packThreads,9,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
-		//...Pack the xy edge (edgeGrid,packThreads,8)................................
-		dvc_PackDist(edgeGrid,packThreads,4,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
-		//...Pack the Xy edge (edgeGrid,packThreads,9)................................
-		dvc_PackDist(edgeGrid,packThreads,4,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
-		//...Pack the xY edge (edgeGrid,packThreads,10)................................
-		dvc_PackDist(edgeGrid,packThreads,5,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
-		//...Pack the XY edge (edgeGrid,packThreads,7)................................
-		dvc_PackDist(edgeGrid,packThreads,3,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
-		//...Pack the xz edge (edgeGrid,packThreads,12)................................
-		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
-		//...Pack the xZ edge (edgeGrid,packThreads,14)................................
-		dvc_PackDist(edgeGrid,packThreads,7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
-		//...Pack the Xz edge (edgeGrid,packThreads,13)................................
-		dvc_PackDist(edgeGrid,packThreads,6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
-		//...Pack the XZ edge (edgeGrid,packThreads,11)................................
-		dvc_PackDist(edgeGrid,packThreads,5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
-		//...Pack the xz edge (edgeGrid,packThreads,12)................................
-		//...Pack the yz edge (edgeGrid,packThreads,16)................................
-		dvc_PackDist(edgeGrid,packThreads,8,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
-		//...Pack the yZ edge (edgeGrid,packThreads,18)................................
-		dvc_PackDist(edgeGrid,packThreads,9,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
-		//...Pack the Yz edge (edgeGrid,packThreads,17)................................
-		dvc_PackDist(edgeGrid,packThreads,8,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
-		//...Pack the YZ edge (edgeGrid,packThreads,15)................................
-		dvc_PackDist(edgeGrid,packThreads,7,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
+		dvc_PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(5,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(6,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		dvc_PackDist(7,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+		//...Packing for X face(1,7,9,11,13)................................
+		dvc_PackDist(0,dvcSendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(3,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(4,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(5,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		dvc_PackDist(6,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+		//...Packing for y face(4,8,9,16,18).................................
+		dvc_PackDist(2,dvcSendList_y,0,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
+		dvc_PackDist(8,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		dvc_PackDist(9,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+		//...Packing for Y face(3,7,10,15,17).................................
+		dvc_PackDist(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(5,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
+		dvc_PackDist(7,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		dvc_PackDist(8,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+		//...Packing for z face(6,12,13,16,17)................................
+		dvc_PackDist(3,dvcSendList_z,0,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+		dvc_PackDist(8,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+		dvc_PackDist(8,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+		//...Packing for Z face(5,11,14,15,18)................................
+		dvc_PackDist(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(7,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+		dvc_PackDist(7,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+		dvc_PackDist(9,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+		//...Pack the xy edge (8)................................
+		dvc_PackDist(4,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
+		//...Pack the Xy edge (9)................................
+		dvc_PackDist(4,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
+		//...Pack the xY edge (10)................................
+		dvc_PackDist(5,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
+		//...Pack the XY edge (7)................................
+		dvc_PackDist(3,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
+		//...Pack the xz edge (12)................................
+		dvc_PackDist(6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
+		//...Pack the xZ edge (14)................................
+		dvc_PackDist(7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
+		//...Pack the Xz edge (13)................................
+		dvc_PackDist(6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
+		//...Pack the XZ edge (11)................................
+		dvc_PackDist(5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
+		//...Pack the xz edge (12)................................
+		//...Pack the yz edge (16)................................
+		dvc_PackDist(8,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
+		//...Pack the yZ edge (18)................................
+		dvc_PackDist(9,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
+		//...Pack the Yz edge (17)................................
+		dvc_PackDist(8,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
+		//...Pack the YZ edge (15)................................
+		dvc_PackDist(7,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
 		//...................................................................................
 
 		//...................................................................................
@@ -1872,14 +1812,13 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Carry out the density streaming step for mass transport
 		//*************************************************************************
-		dvc_DensityStreamD3Q7(nBlocks, nthreads, S,
-				ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC);
+		dvc_DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC, S);
 		//*************************************************************************
 
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
-		dvc_SwapD3Q19(nBlocks, nthreads, S, ID, f_even, f_odd, Nx, Ny, Nz);
+		dvc_SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz, S);
 		//*************************************************************************
 
 		//...................................................................................
@@ -1891,79 +1830,79 @@ int main(int argc, char **argv)
 		// Unpack the distributions on the device
 		//...................................................................................
 		//...Map recieve list for the X face: q=2,8,10,12,13 .................................
-		dvc_UnpackDist(faceGrid,packThreads,0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,3,-1,-1,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,4,-1,1,0,dvcRecvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,5,-1,0,-1,dvcRecvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,6,-1,0,1,dvcRecvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(3,-1,-1,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(4,-1,1,0,dvcRecvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(5,-1,0,-1,dvcRecvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(6,-1,0,1,dvcRecvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the x face: q=1,7,9,11,13..................................
-		dvc_UnpackDist(faceGrid,packThreads,1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,4,1,1,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,5,1,-1,0,dvcRecvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,6,1,0,1,dvcRecvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,7,1,0,-1,dvcRecvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(4,1,1,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(5,1,-1,0,dvcRecvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(6,1,0,1,dvcRecvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(7,1,0,-1,dvcRecvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-		dvc_UnpackDist(faceGrid,packThreads,1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,3,-1,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,5,1,-1,0,dvcRecvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,7,0,-1,-1,dvcRecvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,8,0,-1,1,dvcRecvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(3,-1,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(5,1,-1,0,dvcRecvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(7,0,-1,-1,dvcRecvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(8,0,-1,1,dvcRecvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-		dvc_UnpackDist(faceGrid,packThreads,2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,4,1,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,4,-1,1,0,dvcRecvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,8,0,1,1,dvcRecvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,9,0,1,-1,dvcRecvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(4,1,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(4,-1,1,0,dvcRecvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(8,0,1,1,dvcRecvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(9,0,1,-1,dvcRecvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
 		//...................................................................................
-		//...Map recieve list for the z face<<<faceGrid,packThreads,6,12,13,16,17)..............................................
-		dvc_UnpackDist(faceGrid,packThreads,2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,5,-1,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,7,1,0,-1,dvcRecvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,7,0,-1,-1,dvcRecvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,9,0,1,-1,dvcRecvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the Z face<<<faceGrid,packThreads,5,11,14,15,18)..............................................
-		dvc_UnpackDist(faceGrid,packThreads,3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,6,1,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,6,-1,0,1,dvcRecvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,8,0,1,1,dvcRecvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-		dvc_UnpackDist(faceGrid,packThreads,8,0,-1,1,dvcRecvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
+		dvc_UnpackDist(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(5,-1,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(7,1,0,-1,dvcRecvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(7,0,-1,-1,dvcRecvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(9,0,1,-1,dvcRecvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
+		dvc_UnpackDist(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(6,1,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(6,-1,0,1,dvcRecvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(8,0,1,1,dvcRecvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+		dvc_UnpackDist(8,0,-1,1,dvcRecvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
 		//..................................................................................
-		//...Map recieve list for the xy edge <<<edgeGrid,packThreads,8)................................
-		dvc_UnpackDist(edgeGrid,packThreads,3,-1,-1,0,dvcRecvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the Xy edge <<<edgeGrid,packThreads,9)................................
-		dvc_UnpackDist(edgeGrid,packThreads,5,1,-1,0,dvcRecvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the xY edge <<<edgeGrid,packThreads,10)................................
-		dvc_UnpackDist(edgeGrid,packThreads,4,-1,1,0,dvcRecvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the XY edge <<<edgeGrid,packThreads,7)................................
-		dvc_UnpackDist(edgeGrid,packThreads,4,1,1,0,dvcRecvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the xz edge <<<edgeGrid,packThreads,12)................................
-		dvc_UnpackDist(edgeGrid,packThreads,5,-1,0,-1,dvcRecvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the xZ edge <<<edgeGrid,packThreads,14)................................
-		dvc_UnpackDist(edgeGrid,packThreads,6,-1,0,1,dvcRecvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the Xz edge <<<edgeGrid,packThreads,13)................................
-		dvc_UnpackDist(edgeGrid,packThreads,7,1,0,-1,dvcRecvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the XZ edge <<<edgeGrid,packThreads,11)................................
-		dvc_UnpackDist(edgeGrid,packThreads,6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the yz edge <<<edgeGrid,packThreads,16)................................
-		dvc_UnpackDist(edgeGrid,packThreads,7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the yZ edge <<<edgeGrid,packThreads,18)................................
-		dvc_UnpackDist(edgeGrid,packThreads,8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the Yz edge <<<edgeGrid,packThreads,17)................................
-		dvc_UnpackDist(edgeGrid,packThreads,9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
-		//...Map recieve list for the YZ edge <<<edgeGrid,packThreads,15)................................
-		dvc_UnpackDist(edgeGrid,packThreads,8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the xy edge <<<8)................................
+		dvc_UnpackDist(3,-1,-1,0,dvcRecvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the Xy edge <<<9)................................
+		dvc_UnpackDist(5,1,-1,0,dvcRecvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the xY edge <<<10)................................
+		dvc_UnpackDist(4,-1,1,0,dvcRecvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the XY edge <<<7)................................
+		dvc_UnpackDist(4,1,1,0,dvcRecvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the xz edge <<<12)................................
+		dvc_UnpackDist(5,-1,0,-1,dvcRecvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the xZ edge <<<14)................................
+		dvc_UnpackDist(6,-1,0,1,dvcRecvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the Xz edge <<<13)................................
+		dvc_UnpackDist(7,1,0,-1,dvcRecvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the XZ edge <<<11)................................
+		dvc_UnpackDist(6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the yz edge <<<16)................................
+		dvc_UnpackDist(7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the yZ edge <<<18)................................
+		dvc_UnpackDist(8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
+		//...Map recieve list for the Yz edge <<<17)................................
+		dvc_UnpackDist(9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
+		//...Map recieve list for the YZ edge <<<15)................................
+		dvc_UnpackDist(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 		//...................................................................................
 
 		//...................................................................................
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
-		dvc_PackDenD3Q7(faceGrid,packThreads,dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
+		dvc_PackDenD3Q7(dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
 		//...................................................................................
 
 		//...................................................................................
@@ -1987,39 +1926,39 @@ int main(int argc, char **argv)
 		MPI_Waitall(6,req2,stat2);
 		//...................................................................................
 		//...................................................................................
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_x,sendCount_x,sendbuf_x,2,Den,N);
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_y,sendCount_y,sendbuf_y,2,Den,N);
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_z,sendCount_z,sendbuf_z,2,Den,N);
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_X,sendCount_X,sendbuf_X,2,Den,N);
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_Y,sendCount_Y,sendbuf_Y,2,Den,N);
-		dvc_UnpackDenD3Q7(faceGrid,packThreads,dvcSendList_Z,sendCount_Z,sendbuf_Z,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_x,sendCount_x,sendbuf_x,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_y,sendCount_y,sendbuf_y,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_z,sendCount_z,sendbuf_z,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_X,sendCount_X,sendbuf_X,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_Y,sendCount_Y,sendbuf_Y,2,Den,N);
+		dvc_UnpackDenD3Q7(dvcSendList_Z,sendCount_Z,sendbuf_Z,2,Den,N);
 		//...................................................................................
 		
 		//*************************************************************************
 		// 		Compute the phase indicator field and reset Copy, Den
 		//*************************************************************************
-		dvc_ComputePhi(nBlocks, nthreads, S,ID, Phi, Copy, Den, N);
+		dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
 		//*************************************************************************
 
 		//...................................................................................
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-		dvc_PackValues(faceGrid, packThreads, dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
+		dvc_PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+		dvc_PackValues(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+		dvc_PackValues(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+		dvc_PackValues(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+		dvc_PackValues(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+		dvc_PackValues(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+		dvc_PackValues(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
+		dvc_PackValues(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
+		dvc_PackValues(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
+		dvc_PackValues(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
+		dvc_PackValues(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
+		dvc_PackValues(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
+		dvc_PackValues(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
+		dvc_PackValues(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
+		dvc_PackValues(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
+		dvc_PackValues(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
+		dvc_PackValues(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
+		dvc_PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 		//...................................................................................
 		// Send / Recv all the phase indcator field values
 		//...................................................................................
@@ -2075,24 +2014,24 @@ int main(int argc, char **argv)
 		dvc_UnpackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
 		dvc_UnpackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
 */		
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-		dvc_UnpackValues(faceGrid, packThreads,dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
+		dvc_UnpackValues(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
+		dvc_UnpackValues(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
+		dvc_UnpackValues(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
+		dvc_UnpackValues(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
+		dvc_UnpackValues(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
+		dvc_UnpackValues(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
+		dvc_UnpackValues(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
+		dvc_UnpackValues(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
+		dvc_UnpackValues(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
+		dvc_UnpackValues(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
+		dvc_UnpackValues(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
+		dvc_UnpackValues(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
+		dvc_UnpackValues(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
+		dvc_UnpackValues(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
+		dvc_UnpackValues(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
+		dvc_UnpackValues(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
+		dvc_UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
+		dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 		//...................................................................................
 		MPI_Barrier(MPI_COMM_WORLD);
 
@@ -2113,7 +2052,7 @@ int main(int argc, char **argv)
 			// Copy the phase from the GPU -> CPU
 			//...........................................................................
 			dvc_Barrier();
-			dvc_ComputePressure(nBlocks,nthreads,S,ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+			dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
 			dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 			dvc_CopyToHost(Press,Pressure,N*sizeof(double));
 			dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
@@ -2276,6 +2215,7 @@ int main(int argc, char **argv)
 			Gns(0) = Gns(1) = Gns(2) = 0.0;
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
+			Jwn = efawns = 0.0;
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
@@ -2401,10 +2341,11 @@ int main(int argc, char **argv)
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
 			efawns_global /= lwns_global;
-			for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
-			for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
-			for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
-			for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+
+			if (awn_global > 0.0)	for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
+			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
+			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
+			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 			
 			sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			// Compute the specific interfacial areas and common line length (per unit volume)
@@ -2433,11 +2374,13 @@ int main(int argc, char **argv)
 */
 				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
 				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
-				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));		// average velocity of w phase
-				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));		// average velocity of n phase
-				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);					// interfacial areas
-				printf("%.5g ",Jwn_global);													// curvature of wn interface
-				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));		// velocity of wn interface
+				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
+				printf("%.5g ",Jwn_global);												// curvature of wn interface
+				printf("%.5g ",lwns_global);											// common curve length
+				printf("%.5g ",efawns_global);											// average contact angle
+				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
+				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
+				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));		// orientation of wn interface
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
@@ -2478,13 +2421,13 @@ int main(int argc, char **argv)
 	//************************************************************************/
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
-	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
+//	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 	
 //#ifdef WriteOutput	
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-//	fwrite(Phase.data,8,N,PHASE);
-	fwrite(MeanCurvature.data,8,N,PHASE);
+	fwrite(Phase.data,8,N,PHASE);
+//	fwrite(MeanCurvature.data,8,N,PHASE);
 	fclose(PHASE);
 //#endif
 	
