@@ -730,7 +730,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 #endif
-	
+
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
 	//......................................................................................
