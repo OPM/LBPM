@@ -6,6 +6,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_
 ADD_LBPM_TEST( pmmc_cylinder )
 ADD_LBPM_TEST( TestCylinderAreas )
 ADD_LBPM_TEST( TestSphereCurvature )
+ADD_LBPM_TEST_1_2_4( testCommunication )
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
 ADD_LBPM_TEST_1_2_4( hello_world )
