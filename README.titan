@@ -14,6 +14,10 @@ module load cudatoolkit
 module load cmake
 
 
+# Change to a directory build (outside the repository)
+cd BUILD_DIR
+
+
 # configure
 rm -rf CMake*
 cmake                                    \

@@ -6,46 +6,44 @@
 #include <fstream>
 #include <math.h>
 #include <time.h>
+#include <exception>      // std::exception
+#include <stdexcept>
+#include <stdio.h>
+
+
 
 using namespace std;
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
 {
 	// Read in the full sphere pack
-	int count;  
-	double x,y,z,r;
 	//...... READ IN THE SPHERES...................................
-	char * trsh;
-	trsh = new char[100];
 	cout << "Reading the packing file..." << endl;
-	ifstream pack ("pack.out");
+	FILE *fid = fopen("pack.out","rb");
+	if ( fid==NULL) {
+		throw logic_error("Error opening pack.out");
+	}
 	//.........Trash the header lines..........
-	pack.getline(trsh, 100);
-	pack.getline(trsh, 100);
-	pack.getline(trsh, 100);
-	pack.getline(trsh, 100);
-	pack.getline(trsh, 100);
+	char * line = new char[100];
+	fgets(line, 100, fid);
+	fgets(line, 100, fid);
+	fgets(line, 100, fid);
+	fgets(line, 100, fid);
+	fgets(line, 100, fid);
 	//........read the spheres..................
-	count = 0;
-	pack >> x;
-	pack >> y;
-	pack >> z;
-	pack >> r;
-	while (! pack.eof()){
-		List_cx[count] = x;
-		List_cy[count] = y;
-		List_cz[count] = z;
-		List_rad[count] = r;
-		pack >> x;
-		pack >> y;
-		pack >> z;
-		pack >> r;
+    // We will read until a blank like or end-of-file is reached
+	int count = 0;
+	while ( !feof(fid) && fgets(line,100,fid)>0 ) {
+		char* line2 = line;
+		List_cx[count] = strtod(line2,&line2);
+		List_cy[count] = strtod(line2,&line2);
+		List_cz[count] = strtod(line2,&line2);
+		List_rad[count] = strtod(line2,&line2);
 		count++;
 	}
-	pack.close();
-	cout << "Number of spheres extracted is: " << count << endl;
-	if (count != nspheres){
-		printf("Specified number of spheres is probably incorrect!");
+	cout << "Number of spheres extracted is: " << count/4 << endl;
+	if ( count != nspheres ) {
+		throw logic_error("Specified number of spheres is probably incorrect!");
 	}
 	// .............................................................
 }
