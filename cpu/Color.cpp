@@ -34,7 +34,7 @@ extern "C" void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das,
 		}
 	}
 }
-extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
+extern "C" void dvc_InitDenColorDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz, int S)
 {
 	int i,j,k,n,N;
@@ -54,6 +54,15 @@ extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, dou
 			Den[2*n+1] = 0.0;
 			Phi[n] = 1.0;
 		}
+		if (i == 0 || j == 0 || k == 0 || i == Nx-1 || j == Ny-1 || k == Nz-1){
+			Den[2*n] = 0.0;
+			Den[2*n+1] = 0.0;
+		}
+		else if ( ID[n] == 1){
+			Den[2*n] = 1.0;
+			Den[2*n+1] = 0.0;
+			Phi[n] = 1.0;
+		}
 		else if ( ID[n] == 2){
 			Den[2*n] = 0.0;
 			Den[2*n+1] = 1.0;
@@ -66,9 +75,40 @@ extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, dou
 			d = fabs(Distance[n]);
 			Phi[n] = (2.f*(exp(-2.f*beta*(d+xp)))/(1.f+exp(-2.f*beta*(d+xp))) - 1.f);
 		}
-		if (i == 0 || j == 0 || k == 0 || i == Nx-1 || j == Ny-1 || k == Nz-1){
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 0.0;
+	}
+}
+
+extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
+								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz, int S)
+{
+	int i,j,k,n,N;
+	double d;
+
+	N = Nx*Ny*Nz;
+
+	for (n=0; n<N; n++){
+
+		//.......Back out the 3-D indices for node n..............
+		k = n/(Nx*Ny);
+		j = (n-Nx*Ny*k)/Nx;
+		i = n-Nx*Ny*k-Nx*j;
+
+		if ( ID[n] == 1){
+			Den[n] = 1.0;
+			Den[N+n] = 0.0;
+			Phi[n] = 1.0;
+		}
+		else if ( ID[n] == 2){
+			Den[n] = 0.0;
+			Den[N+n] = 1.0;
+			Phi[n] = -1.0;
+		}
+		else{
+			Den[n] = das;
+			Den[N+n] = dbs;
+			Phi[n] = (das-dbs)/(das+dbs);
+			d = fabs(Distance[n]);
+			Phi[n] = (2.f*(exp(-2.f*beta*(d+xp)))/(1.f+exp(-2.f*beta*(d+xp))) - 1.f);
 		}
 	}
 }
@@ -1044,6 +1084,111 @@ extern "C" void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd
 	} // loop over n
 }
 
+extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
+		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC, int S)
+{
+	char id;
+
+	int idx,n,q,Cqx,Cqy,Cqz;
+	//	int sendLoc;
+
+	double f0,f1,f2,f3,f4,f5,f6;
+	double na,nb;		// density values
+	double ux,uy,uz;	// flow velocity
+	double nx,ny,nz,C;	// color gradient components
+	double a1,a2,b1,b2;
+	double sp,delta;
+	double feq[6];		// equilibrium distributions
+	// Set of Discrete velocities for the D3Q19 Model
+	int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+
+	for (n=0; n<N; n++){
+		id = ID[n];
+		if (id > 0 ){
+
+			//.....Load the Color gradient.........
+			nx = ColorGrad[n];
+			ny = ColorGrad[N+n];
+			nz = ColorGrad[2*N+n];
+			C = sqrt(nx*nx+ny*ny+nz*nz);
+			nx = nx/C;
+			ny = ny/C;
+			nz = nz/C;
+			//....Load the flow velocity...........
+			ux = Velocity[3*n];
+			uy = Velocity[3*n+1];
+			uz = Velocity[3*n+2];
+			//........................................................................
+			//					READ THE DISTRIBUTIONS
+			//		(read from opposite array due to previous swap operation)
+			//........................................................................
+			f2 = A_odd[n];
+			f4 = A_odd[N+n];
+			f6 = A_odd[2*N+n];
+			f0 = A_even[n];
+			f1 = A_even[N+n];
+			f3 = A_even[2*N+n];
+			f5 = A_even[3*N+n];
+			na = f0+f1+f2+f3+f4+f5+f6;
+			//........................................................................
+			f2 = B_odd[n];
+			f4 = B_odd[N+n];
+			f6 = B_odd[2*N+n];
+			f0 = B_even[n];
+			f1 = B_even[N+n];
+			f3 = B_even[2*N+n];
+			f5 = B_even[3*N+n];
+			nb = f0+f1+f2+f3+f4+f5+f6;
+			//........................................................................
+			//....Instantiate the density distributions
+			// Generate Equilibrium Distributions and stream
+			// Stationary value - distribution 0
+			A_even[n] = 0.3333333333333333*na;
+			B_even[n] = 0.3333333333333333*nb;
+			// Non-Stationary equilibrium distributions
+			feq[0] = 0.1111111111111111*(1+3*ux);
+			feq[1] = 0.1111111111111111*(1-3*ux);
+			feq[2] = 0.1111111111111111*(1+3*uy);
+			feq[3] = 0.1111111111111111*(1-3*uy);
+			feq[4] = 0.1111111111111111*(1+3*uz);
+			feq[5] = 0.1111111111111111*(1-3*uz);
+			// Construction and streaming for the components
+			for (idx=0; idx<3; idx++){
+				//...............................................
+				// Distribution index
+				q = 2*idx;
+				// Associated discrete velocity
+				Cqx = D3Q7[idx][0];
+				Cqy = D3Q7[idx][1];
+				Cqz = D3Q7[idx][2];
+				// Generate the Equilibrium Distribution
+				a1 = na*feq[q];
+				b1 = nb*feq[q];
+				a2 = na*feq[q+1];
+				b2 = nb*feq[q+1];
+				// Recolor the distributions
+				if (C > 0.0){
+					sp = nx*double(Cqx)+ny*double(Cqy)+nz*double(Cqz);
+					//if (idx > 2)	sp = 0.7071067811865475*sp;
+					//delta = sp*min( min(a1,a2), min(b1,b2) );
+					delta = na*nb/(na+nb)*0.1111111111111111*sp;
+					//if (a1>0 && b1>0){
+					a1 += beta*delta;
+					a2 -= beta*delta;
+					b1 -= beta*delta;
+					b2 += beta*delta;
+				}
+				// Save the re-colored distributions
+				A_odd[N*idx+n] 		= a1;
+				A_even[N*(idx+1)+n] = a2;
+				B_odd[N*idx+n] 		= b1;
+				B_even[N*(idx+1)+n] = b2;
+				//...............................................
+			}
+		}
+	}
+}
+
 //*************************************************************************
 extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC, int S)
@@ -1196,7 +1341,7 @@ extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doubl
 		}
 	}
 }
-
+/*
 extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S)
 {
 	int n;
@@ -1216,6 +1361,24 @@ extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den,
 			// Zero the Density value to get ready for the next streaming
 			Den[2*n] = 0.0;
 			Den[2*n+1] = 0.0;
+		}
+	}
+	//...................................................................
+}
+*/
+extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N, int S)
+{
+	int n;
+	double Na,Nb;
+	//...................................................................
+	// Update Phi
+	for (n=0; n<N; n++){
+
+		if (ID[n] > 0 && n<N){
+			// Get the density value (Streaming already performed)
+			Na = Den[n];
+			Nb = Den[N+n];
+			Phi[n] = (Na-Nb)/(Na+Nb);
 		}
 	}
 	//...................................................................

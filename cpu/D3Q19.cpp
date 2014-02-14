@@ -93,7 +93,7 @@ extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 //*************************************************************************
 extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz, int S)
 {
-	int n,nn,N;
+	int i,j,k,n,nn,N;
 	// distributions
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
@@ -102,9 +102,9 @@ extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int N
 	
 	for (n=0; n<N; n++){
 		//.......Back out the 3-D indices for node n..............
-		int	k = n/(Nx*Ny);
-		int j = (n-Nx*Ny*k)/Nx;
-		int i = n-Nx*Ny*k-Nz*j;
+		k = n/(Nx*Ny);
+		j = (n-Nx*Ny*k)/Nx;
+		i = n-Nx*Ny*k-Nz*j;
 		
 		if (ID[n] > 0){
 			//........................................................................

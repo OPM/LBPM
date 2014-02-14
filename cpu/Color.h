@@ -17,4 +17,8 @@ extern "C" void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd
 								double alpha, double beta, double Fx, double Fy, double Fz);
 extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC, int S);
-extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S);
+//extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S);
+// Added by J.E. McClure 2-12-2014
+extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N, int S);
+extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
+		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC, int S);

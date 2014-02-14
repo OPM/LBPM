@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <exception>
-#include <stdexcept>
 #include <fstream>
 #include <mpi.h>
 
@@ -12,7 +10,6 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "Communication.h"
 
 using namespace std;
 
@@ -42,6 +39,174 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 	}
 }
 
+//***************************************************************************************
+inline void PackMeshData(int *list, int count, double *sendbuf, double *data){
+	// Fill in the phase ID values from neighboring processors
+	// This packs up the values that need to be sent from one processor to another
+	int idx,n;
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		sendbuf[idx] = data[n];
+	}
+}
+inline void UnpackMeshData(int *list, int count, double *recvbuf, double *data){
+	// Fill in the phase ID values from neighboring processors
+	// This unpacks the values once they have been recieved from neighbors
+	int idx,n;
+
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		data[n] = recvbuf[idx];
+	}
+}
+inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
+{
+	int i,j,k,n;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			i=0;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+			i=Nx-1;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+		}
+	}
+
+	for (k=0;k<Nz;k++){
+		for (i=0;i<Nx;i++){
+			j=0;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+			j=Ny-1;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+		}
+	}
+
+	for (j=0;j<Ny;j++){
+		for (i=0;i<Nx;i++){
+			k=0;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+			k=Nz-1;
+			n = k*Nx*Ny+j*Nx+i;
+			Data[2*n] = 0.0;
+			Data[2*n+1] = 0.0;
+		}
+	}
+}
+//***************************************************************************************
+inline void CommunicateMeshHalo(DoubleArray &Mesh, MPI_Comm Communicator,
+		double *sendbuf_x,double *sendbuf_y,double *sendbuf_z,double *sendbuf_X,double *sendbuf_Y,double *sendbuf_Z,
+		double *sendbuf_xy,double *sendbuf_XY,double *sendbuf_xY,double *sendbuf_Xy,
+		double *sendbuf_xz,double *sendbuf_XZ,double *sendbuf_xZ,double *sendbuf_Xz,
+		double *sendbuf_yz,double *sendbuf_YZ,double *sendbuf_yZ,double *sendbuf_Yz,
+		double *recvbuf_x,double *recvbuf_y,double *recvbuf_z,double *recvbuf_X,double *recvbuf_Y,double *recvbuf_Z,
+		double *recvbuf_xy,double *recvbuf_XY,double *recvbuf_xY,double *recvbuf_Xy,
+		double *recvbuf_xz,double *recvbuf_XZ,double *recvbuf_xZ,double *recvbuf_Xz,
+		double *recvbuf_yz,double *recvbuf_YZ,double *recvbuf_yZ,double *recvbuf_Yz,
+		int *sendList_x,int *sendList_y,int *sendList_z,int *sendList_X,int *sendList_Y,int *sendList_Z,
+		int *sendList_xy,int *sendList_XY,int *sendList_xY,int *sendList_Xy,
+		int *sendList_xz,int *sendList_XZ,int *sendList_xZ,int *sendList_Xz,
+		int *sendList_yz,int *sendList_YZ,int *sendList_yZ,int *sendList_Yz,
+		int sendCount_x,int sendCount_y,int sendCount_z,int sendCount_X,int sendCount_Y,int sendCount_Z,
+		int sendCount_xy,int sendCount_XY,int sendCount_xY,int sendCount_Xy,
+		int sendCount_xz,int sendCount_XZ,int sendCount_xZ,int sendCount_Xz,
+		int sendCount_yz,int sendCount_YZ,int sendCount_yZ,int sendCount_Yz,
+		int *recvList_x,int *recvList_y,int *recvList_z,int *recvList_X,int *recvList_Y,int *recvList_Z,
+		int *recvList_xy,int *recvList_XY,int *recvList_xY,int *recvList_Xy,
+		int *recvList_xz,int *recvList_XZ,int *recvList_xZ,int *recvList_Xz,
+		int *recvList_yz,int *recvList_YZ,int *recvList_yZ,int *recvList_Yz,
+		int recvCount_x,int recvCount_y,int recvCount_z,int recvCount_X,int recvCount_Y,int recvCount_Z,
+		int recvCount_xy,int recvCount_XY,int recvCount_xY,int recvCount_Xy,
+		int recvCount_xz,int recvCount_XZ,int recvCount_xZ,int recvCount_Xz,
+		int recvCount_yz,int recvCount_YZ,int recvCount_yZ,int recvCount_Yz,
+		int rank_x,int rank_y,int rank_z,int rank_X,int rank_Y,int rank_Z,int rank_xy,int rank_XY,int rank_xY,
+		int rank_Xy,int rank_xz,int rank_XZ,int rank_xZ,int rank_Xz,int rank_yz,int rank_YZ,int rank_yZ,int rank_Yz)
+{
+	int sendtag, recvtag;
+	sendtag = recvtag = 7;
+	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, Mesh.data);
+	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, Mesh.data);
+	PackMeshData(sendList_y, sendCount_y ,sendbuf_y, Mesh.data);
+	PackMeshData(sendList_Y, sendCount_Y ,sendbuf_Y, Mesh.data);
+	PackMeshData(sendList_z, sendCount_z ,sendbuf_z, Mesh.data);
+	PackMeshData(sendList_Z, sendCount_Z ,sendbuf_Z, Mesh.data);
+	PackMeshData(sendList_xy, sendCount_xy ,sendbuf_xy, Mesh.data);
+	PackMeshData(sendList_Xy, sendCount_Xy ,sendbuf_Xy, Mesh.data);
+	PackMeshData(sendList_xY, sendCount_xY ,sendbuf_xY, Mesh.data);
+	PackMeshData(sendList_XY, sendCount_XY ,sendbuf_XY, Mesh.data);
+	PackMeshData(sendList_xz, sendCount_xz ,sendbuf_xz, Mesh.data);
+	PackMeshData(sendList_Xz, sendCount_Xz ,sendbuf_Xz, Mesh.data);
+	PackMeshData(sendList_xZ, sendCount_xZ ,sendbuf_xZ, Mesh.data);
+	PackMeshData(sendList_XZ, sendCount_XZ ,sendbuf_XZ, Mesh.data);
+	PackMeshData(sendList_yz, sendCount_yz ,sendbuf_yz, Mesh.data);
+	PackMeshData(sendList_Yz, sendCount_Yz ,sendbuf_Yz, Mesh.data);
+	PackMeshData(sendList_yZ, sendCount_yZ ,sendbuf_yZ, Mesh.data);
+	PackMeshData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, Mesh.data);
+	//......................................................................................
+	MPI_Sendrecv(sendbuf_x,sendCount_x,MPI_DOUBLE,rank_x,sendtag,
+			recvbuf_X,recvCount_X,MPI_DOUBLE,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_X,sendCount_X,MPI_DOUBLE,rank_X,sendtag,
+			recvbuf_x,recvCount_x,MPI_DOUBLE,rank_x,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_y,sendCount_y,MPI_DOUBLE,rank_y,sendtag,
+			recvbuf_Y,recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Y,sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,
+			recvbuf_y,recvCount_y,MPI_DOUBLE,rank_y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_z,sendCount_z,MPI_DOUBLE,rank_z,sendtag,
+			recvbuf_Z,recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Z,sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,
+			recvbuf_z,recvCount_z,MPI_DOUBLE,rank_z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xy,sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,
+			recvbuf_XY,recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XY,sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,
+			recvbuf_xy,recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xy,sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,
+			recvbuf_xY,recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xY,sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,
+			recvbuf_Xy,recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xz,sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,
+			recvbuf_XZ,recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XZ,sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,
+			recvbuf_xz,recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xz,sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,
+			recvbuf_xZ,recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xZ,sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,
+			recvbuf_Xz,recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yz,sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,
+			recvbuf_YZ,recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_YZ,sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,
+			recvbuf_yz,recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Yz,sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,
+			recvbuf_yZ,recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,
+			recvbuf_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	//........................................................................................
+	UnpackMeshData(recvList_x, recvCount_x ,recvbuf_x, Mesh.data);
+	UnpackMeshData(recvList_X, recvCount_X ,recvbuf_X, Mesh.data);
+	UnpackMeshData(recvList_y, recvCount_y ,recvbuf_y, Mesh.data);
+	UnpackMeshData(recvList_Y, recvCount_Y ,recvbuf_Y, Mesh.data);
+	UnpackMeshData(recvList_z, recvCount_z ,recvbuf_z, Mesh.data);
+	UnpackMeshData(recvList_Z, recvCount_Z ,recvbuf_Z, Mesh.data);
+	UnpackMeshData(recvList_xy, recvCount_xy ,recvbuf_xy, Mesh.data);
+	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvbuf_Xy, Mesh.data);
+	UnpackMeshData(recvList_xY, recvCount_xY ,recvbuf_xY, Mesh.data);
+	UnpackMeshData(recvList_XY, recvCount_XY ,recvbuf_XY, Mesh.data);
+	UnpackMeshData(recvList_xz, recvCount_xz ,recvbuf_xz, Mesh.data);
+	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvbuf_Xz, Mesh.data);
+	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvbuf_xZ, Mesh.data);
+	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvbuf_XZ, Mesh.data);
+	UnpackMeshData(recvList_yz, recvCount_yz ,recvbuf_yz, Mesh.data);
+	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvbuf_Yz, Mesh.data);
+	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvbuf_yZ, Mesh.data);
+	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvbuf_YZ, Mesh.data);
+}
 
 //***************************************************************************************
 
@@ -196,10 +361,10 @@ int main(int argc, char **argv)
 	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
 
 	if (nprocs != nprocx*nprocy*nprocz){
+		printf("Fatal error in processor number! \n");
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
 		printf("nprocz =  %i \n",nprocz);
-		throw std::logic_error("Fatal error in processor number! \n");
 	}
 
 	if (rank==0){
@@ -220,15 +385,230 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-    //**********************************
-    InitializeRanks( rank, nprocx, nprocy, nprocz,
-	    iproc, jproc, kproc, 
-        rank_x, rank_y, rank_z, 
-	    rank_X, rank_Y, rank_Z,
-	    rank_xy, rank_XY, rank_xY, rank_Xy,
-	    rank_xz, rank_XZ, rank_xZ, rank_Xz,
-	    rank_yz, rank_YZ, rank_yZ, rank_Yz );
-    MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
+	kproc = rank/(nprocx*nprocy);
+	jproc = (rank-nprocx*nprocy*kproc)/nprocx;
+	iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
+
+	//..........................................
+	// set up the neighbor ranks
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=1;
+	j+=0;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_X = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i-=1;
+	j+=0;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_x = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j+=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_Y = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j-=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_y = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j+=0;
+	k+=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-= nprocy;
+	if (!(k<nprocz)) k-= nprocz;
+	rank_Z = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j+=0;
+	k-=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-= nprocy;
+	if (!(k<nprocz)) k-= nprocz;
+	rank_z = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=1;
+	j+=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_XY = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i-=1;
+	j-=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_xy = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=1;
+	j-=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_Xy = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i-=1;
+	j+=1;
+	k+=0;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_xY = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=1;
+	j+=0;
+	k+=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_XZ = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i-=1;
+	j+=0;
+	k-=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_xz = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i-=1;
+	j+=0;
+	k+=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_xZ = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=1;
+	j+=0;
+	k-=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_Xz = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j+=1;
+	k+=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_YZ = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j-=1;
+	k-=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_yz = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k =kproc;
+	i+=0;
+	j-=1;
+	k+=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_yZ = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
+	i=iproc; j=jproc; k=kproc;
+	i+=0;
+	j+=1;
+	k-=1;
+	if (i<0)	i+=nprocx;
+	if (j<0)	j+=nprocy;
+	if (k<0)	k+=nprocz;
+	if (!(i<nprocx)) i-= nprocx;
+	if (!(j<nprocy)) j-=nprocy;
+	if (!(k<nprocz)) k-=nprocz;
+	rank_Yz = k*nprocx*nprocy+j*nprocx+i;
+	//..........................................
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -320,7 +700,7 @@ int main(int argc, char **argv)
 					id[n] = 2;
 					sum++;
 				}
-				else if (k<BubbleTop){
+				else if (k<BubbleTop && rank == 0){
 					id[n] = 1;
 					sum++;
 				}
@@ -334,7 +714,7 @@ int main(int argc, char **argv)
 	porosity = double(sum)/double(1.0*N);
 #else
 	// Read in sphere pack
-	if (rank==0) printf("nspheres =%i \n",nspheres);
+	if (rank==1) printf("nspheres =%i \n",nspheres);
 	//.......................................................................
 	double *cx,*cy,*cz,*rad;
 	cx = new double[nspheres];
@@ -377,12 +757,35 @@ int main(int argc, char **argv)
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
 				if (SignDist.data[n] > 0.0){ 
-					id[n] = 1;	
+					id[n] = 2;	
 					sum++;
 				}
 			}
 		}
 	}
+	//.........................................................
+	// If pressure boundary conditions are applied remove solid
+	if (pBC && kproc == 0){
+		for (k=0; k<3; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					id[n] = 1;
+				}					
+			}
+		}
+	}
+	if (pBC && kproc == nprocz-1){
+		for (k=Nz-3; k<Nz; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					id[n] = 2;
+				}					
+			}
+		}
+	}
+	//.........................................................
 	sum_local = 1.0*sum;
 	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 	porosity = porosity*iVol_global;
@@ -390,7 +793,7 @@ int main(int argc, char **argv)
 
 	// Generate the residual NWP 
 	if (rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+//	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 #endif
 
 	// Set up MPI communication structurese
@@ -509,20 +912,89 @@ int main(int argc, char **argv)
 	//**********************************************************************************
 	// Fill in the recieve counts using MPI
 	sendtag = recvtag = 3;
-    CommunicateSendRecvCounts( MPI_COMM_WORLD, sendtag, recvtag, 
-		rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-		rank_xy, rank_XY, rank_xY, rank_Xy,
-		rank_xz, rank_XZ, rank_xZ, rank_Xz,
-		rank_yz, rank_YZ, rank_yZ, rank_Yz,
-		sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z,
-		sendCount_xy, sendCount_XY, sendCount_xY, sendCount_Xy,
-		sendCount_xz, sendCount_XZ, sendCount_xZ, sendCount_Xz,
-		sendCount_yz, sendCount_YZ, sendCount_yZ, sendCount_Yz,
-		recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z,
-		recvCount_xy, recvCount_XY, recvCount_xY, recvCount_Xy,
-		recvCount_xz, recvCount_XZ, recvCount_xZ, recvCount_Xz,
-		recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz );
+	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
+	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
+	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
+	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
+	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
+	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
+	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
+	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
+	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
+	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
+	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
+	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
 
+	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD,&req1[6]);
+	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,&req2[6]);
+	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD,&req1[7]);
+	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,&req2[7]);
+	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[8]);
+	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,&req2[8]);
+	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD,&req1[9]);
+	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[9]);
+
+	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD,&req1[10]);
+	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[10]);
+	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[11]);
+	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,&req2[11]);
+	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[12]);
+	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[12]);
+	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[13]);
+	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[13]);
+
+	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD,&req1[14]);
+	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[14]);
+	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[15]);
+	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,&req2[15]);
+	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[16]);
+	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[16]);
+	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[17]);
+	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[17]);
+	MPI_Waitall(18,req1,stat1);
+	MPI_Waitall(18,req2,stat2);
+	MPI_Barrier(MPI_COMM_WORLD);
+/*	MPI_Send(&sendCount_x,1,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_X,1,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_X,1,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_x,1,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_y,1,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Y,1,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Y,1,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_y,1,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_z,1,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Z,1,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Z,1,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_z,1,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_xy,1,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_XY,1,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_XY,1,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xy,1,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Xy,1,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xY,1,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_xY,1,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Xy,1,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_xz,1,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_XZ,1,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_XZ,1,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xz,1,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Xz,1,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xZ,1,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_xZ,1,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Xz,1,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_yz,1,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_YZ,1,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_YZ,1,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_yz,1,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Yz,1,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_yZ,1,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_yZ,1,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Yz,1,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Barrier(MPI_COMM_WORLD);
+*/	//**********************************************************************************
 	//......................................................................................
 	int *recvList_x, *recvList_y, *recvList_z, *recvList_X, *recvList_Y, *recvList_Z;
 	int *recvList_xy, *recvList_yz, *recvList_xz, *recvList_Xy, *recvList_Yz, *recvList_xZ;
@@ -552,25 +1024,47 @@ int main(int argc, char **argv)
 	// Use MPI to fill in the appropriate values for recvList
 	// Fill in the recieve lists using MPI
 	sendtag = recvtag = 4;
-    CommunicateRecvLists( MPI_COMM_WORLD, sendtag, recvtag, 
-		sendList_x, sendList_y, sendList_z, sendList_X, sendList_Y, sendList_Z,
-		sendList_xy, sendList_XY, sendList_xY, sendList_Xy,
-		sendList_xz, sendList_XZ, sendList_xZ, sendList_Xz,
-		sendList_yz, sendList_YZ, sendList_yZ, sendList_Yz,
-		sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z,
-		sendCount_xy, sendCount_XY, sendCount_xY, sendCount_Xy,
-		sendCount_xz, sendCount_XZ, sendCount_xZ, sendCount_Xz,
-		sendCount_yz, sendCount_YZ, sendCount_yZ, sendCount_Yz,
-		recvList_x, recvList_y, recvList_z, recvList_X, recvList_Y, recvList_Z,
-		recvList_xy, recvList_XY, recvList_xY, recvList_Xy,
-		recvList_xz, recvList_XZ, recvList_xZ, recvList_Xz,
-		recvList_yz, recvList_YZ, recvList_yZ, recvList_Yz,
-		recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z,
-		recvCount_xy, recvCount_XY, recvCount_xY, recvCount_Xy,
-		recvCount_xz, recvCount_XZ, recvCount_xZ, recvCount_Xz,
-		recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz,
-		rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z, rank_xy, rank_XY, rank_xY,
-		rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz, rank_yz, rank_YZ, rank_yZ, rank_Yz );
+	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
+	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
+	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
+	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
+	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
+	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
+	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
+	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
+	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
+	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
+	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
+	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
+
+	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD,&req1[6]);
+	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,&req2[6]);
+	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD,&req1[7]);
+	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,&req2[7]);
+	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[8]);
+	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,&req2[8]);
+	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD,&req1[9]);
+	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[9]);
+
+	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD,&req1[10]);
+	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[10]);
+	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[11]);
+	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,&req2[11]);
+	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[12]);
+	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[12]);
+	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[13]);
+	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[13]);
+
+	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD,&req1[14]);
+	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[14]);
+	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[15]);
+	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,&req2[15]);
+	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[16]);
+	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[16]);
+	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[17]);
+	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[17]);
+	MPI_Waitall(18,req1,stat1);
+	MPI_Waitall(18,req2,stat2);
 	MPI_Barrier(MPI_COMM_WORLD);
 	//......................................................................................
 	for (int idx=0; idx<recvCount_x; idx++)	recvList_x[idx] -= (Nx-2);
@@ -607,7 +1101,7 @@ int main(int argc, char **argv)
 	dvc_AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
@@ -913,17 +1407,23 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Allocating distributions \n");
 	//......................device distributions.................................
 	double *f_even,*f_odd;
+	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
 	dvc_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
 	dvc_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
-	double *Phi,*Den,*Copy;
+	double *Phi,*Den;
+//	double *Copy;
 	double *ColorGrad, *Velocity, *Pressure;
 	//...........................................................................
 	dvc_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	dvc_AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
 	dvc_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-	dvc_AllocateDeviceMemory((void **) &Copy, 2*dist_mem_size);
+//	dvc_AllocateDeviceMemory((void **) &Copy, 2*dist_mem_size);
 	dvc_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	dvc_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
@@ -1046,9 +1546,9 @@ int main(int argc, char **argv)
 	int nc=0;
 	//...........................................................................
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	for (k=0; k<Nz-2; k++){
-		for (j=0; j<Ny-2; j++){
-			for (i=0; i<Nx-2; i++){
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				cubeList(0,nc) = i;
 				cubeList(1,nc) = j;
 				cubeList(2,nc) = k;
@@ -1071,12 +1571,11 @@ int main(int argc, char **argv)
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
 	dvc_InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz, S);
-	dvc_InitDenColor(ID, Copy, Phi, das, dbs, Nx, Ny, Nz, S);
-	dvc_InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz, S);
 	//......................................................................
-//	xIntPos = 1.0;
-	dvc_InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+//	dvc_InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
 	dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+	dvc_InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
+	dvc_InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
 	//......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
@@ -1100,18 +1599,12 @@ int main(int argc, char **argv)
 		dvc_Barrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-	// Pack the buffers (zeros out the halo region)
-	dvc_PackDenD3Q7(dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
-	dvc_PackDenD3Q7(dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
-	dvc_PackDenD3Q7(dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
-	dvc_PackDenD3Q7(dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
-	dvc_PackDenD3Q7(dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
-	dvc_PackDenD3Q7(dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
 
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
 	//*************************************************************************
-	dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
+//	dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
+	dvc_ComputePhi(ID, Phi, Den, N, S);
 	//*************************************************************************
 	//...................................................................................
 	dvc_PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
@@ -1209,6 +1702,37 @@ int main(int argc, char **argv)
 	dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 	//...................................................................................
 
+	if (pBC && kproc == 0)	{
+		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
+		
+		// Fill the inlet with component a
+		for (k=0; k<4; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = 1.0;
+					Den[n] = 1.0;
+					Den[N+n] = 0.0;
+				}					
+			}
+		}
+		
+	}
+	if (pBC && kproc == nprocz-1){
+		dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
+		
+		// Fill the outlet with component b
+		for (k=Nz-4; k<Nz; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = -1.0;
+					Den[n] = 0.0;
+					Den[N+n] = 1.0;
+				}					
+			}
+		}
+	}
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	dvc_Barrier();
@@ -1240,12 +1764,12 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	starttime = MPI_Wtime();
 	//.........................................
-
+	
 	sendtag = recvtag = 5;
 	if (rank==0){
 		printf("--------------------------------------------------------------------------------------\n");
 		printf("timestep dEs ");								// Timestep, Change in Surface Energy
-		printf("sw pw pn awn ans aws Jwn lwns efawns ");			// Scalar averages
+		printf("sw pw pn awn ans aws Jwn lwns efawns ");		// Scalar averages
 		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
 		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		printf("Gws [xx, yy, zz, xy, xz, yz] ");
@@ -1383,8 +1907,11 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Carry out the density streaming step for mass transport
 		//*************************************************************************
-		dvc_DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC, S);
+//		dvc_DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC, S);
 		//*************************************************************************
+		dvc_MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi, 
+								ColorGrad, Velocity, beta, N, pBC, S);
+			
 
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
@@ -1467,48 +1994,85 @@ int main(int argc, char **argv)
 		dvc_UnpackDist(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 		//...................................................................................
 
-		//...................................................................................
-		dvc_PackDenD3Q7(dvcRecvList_x,recvCount_x,recvbuf_x,2,Den,N);
-		dvc_PackDenD3Q7(dvcRecvList_y,recvCount_y,recvbuf_y,2,Den,N);
-		dvc_PackDenD3Q7(dvcRecvList_z,recvCount_z,recvbuf_z,2,Den,N);
-		dvc_PackDenD3Q7(dvcRecvList_X,recvCount_X,recvbuf_X,2,Den,N);
-		dvc_PackDenD3Q7(dvcRecvList_Y,recvCount_Y,recvbuf_Y,2,Den,N);
-		dvc_PackDenD3Q7(dvcRecvList_Z,recvCount_Z,recvbuf_Z,2,Den,N);
-		//...................................................................................
 
 		//...................................................................................
-		// Send all the D3Q7 distributions
-		MPI_Isend(recvbuf_x, 2*recvCount_x,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
-		MPI_Irecv(sendbuf_X, 2*sendCount_X,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
-		MPI_Isend(recvbuf_X, 2*recvCount_X,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
-		MPI_Irecv(sendbuf_x, 2*sendCount_x,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
-		MPI_Isend(recvbuf_y, 2*recvCount_y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
-		MPI_Irecv(sendbuf_Y, 2*sendCount_Y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
-		MPI_Isend(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
-		MPI_Irecv(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
-		MPI_Isend(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
-		MPI_Irecv(sendbuf_Z, 2*sendCount_Z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
-		MPI_Isend(recvbuf_Z, 2*recvCount_Z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
-		MPI_Irecv(sendbuf_z, 2*sendCount_z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
+		dvc_PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,A_even,N);
+		dvc_PackDist(1,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,B_even,N);
+		//...Packing for X face(1,7,9,11,13)................................
+		dvc_PackDist(0,dvcSendList_X,0,sendCount_X,sendbuf_X,A_odd,N);
+		dvc_PackDist(0,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,B_odd,N);
+		//...Packing for y face(4,8,9,16,18).................................
+		dvc_PackDist(2,dvcSendList_y,0,sendCount_y,sendbuf_y,A_even,N);
+		dvc_PackDist(2,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,B_even,N);
+		//...Packing for Y face(3,7,10,15,17).................................
+		dvc_PackDist(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,A_odd,N);
+		dvc_PackDist(1,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,B_odd,N);
+		//...Packing for z face(6,12,13,16,17)................................
+		dvc_PackDist(3,dvcSendList_z,0,sendCount_z,sendbuf_z,A_even,N);
+		dvc_PackDist(3,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,B_even,N);
+		//...Packing for Z face(5,11,14,15,18)................................
+		dvc_PackDist(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,A_odd,N);
+		dvc_PackDist(2,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,B_odd,N);
+
 		//...................................................................................
+		// Send all the distributions
+		MPI_Isend(sendbuf_x, 2*sendCount_x,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
+		MPI_Irecv(recvbuf_X, 2*recvCount_X,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
+		MPI_Isend(sendbuf_X, 2*sendCount_X,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
+		MPI_Irecv(recvbuf_x, 2*recvCount_x,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
+		MPI_Isend(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
+		MPI_Irecv(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
+		MPI_Isend(sendbuf_Y, 2*sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
+		MPI_Irecv(recvbuf_y, 2*recvCount_y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
+		MPI_Isend(sendbuf_z, 2*sendCount_z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
+		MPI_Irecv(recvbuf_Z, 2*recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
+		MPI_Isend(sendbuf_Z, 2*sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
+		MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
 		//...................................................................................
-		// Wait for completion of D3Q7 communication
+		
+		dvc_SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz, S);
+		dvc_SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz, S);
+		
+		//...................................................................................
+		// Wait for completion of D3Q19 communication
 		MPI_Waitall(6,req1,stat1);
 		MPI_Waitall(6,req2,stat2);
 		//...................................................................................
+		// Unpack the distributions on the device
 		//...................................................................................
-		dvc_UnpackDenD3Q7(dvcSendList_x,sendCount_x,sendbuf_x,2,Den,N);
-		dvc_UnpackDenD3Q7(dvcSendList_y,sendCount_y,sendbuf_y,2,Den,N);
-		dvc_UnpackDenD3Q7(dvcSendList_z,sendCount_z,sendbuf_z,2,Den,N);
-		dvc_UnpackDenD3Q7(dvcSendList_X,sendCount_X,sendbuf_X,2,Den,N);
-		dvc_UnpackDenD3Q7(dvcSendList_Y,sendCount_Y,sendbuf_Y,2,Den,N);
-		dvc_UnpackDenD3Q7(dvcSendList_Z,sendCount_Z,sendbuf_Z,2,Den,N);
+		//...Map recieve list for the X face: q=2,8,10,12,13 .................................
+		dvc_UnpackDist(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,A_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(0,-1,0,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,Nx,Ny,Nz);
 		//...................................................................................
+		//...Map recieve list for the x face: q=1,7,9,11,13..................................
+		dvc_UnpackDist(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,A_even,Nx,Ny,Nz);
+		dvc_UnpackDist(1,1,0,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,B_even,Nx,Ny,Nz);
+		//...................................................................................
+		//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
+		dvc_UnpackDist(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,A_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(1,0,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,Nx,Ny,Nz);
+		//...................................................................................
+		//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
+		dvc_UnpackDist(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,A_even,Nx,Ny,Nz);
+		dvc_UnpackDist(2,0,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,B_even,Nx,Ny,Nz);
+		//...................................................................................
+		//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
+		dvc_UnpackDist(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,A_odd,Nx,Ny,Nz);
+		dvc_UnpackDist(2,0,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,Nx,Ny,Nz);
+		//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
+		dvc_UnpackDist(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,A_even,Nx,Ny,Nz);
+		dvc_UnpackDist(3,0,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,B_even,Nx,Ny,Nz);
+		//..................................................................................
+
+		//..................................................................................
+		dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
+		dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
 		
 		//*************************************************************************
-		// 		Compute the phase indicator field and reset Copy, Den
+		// 		Compute the phase indicator field 
 		//*************************************************************************
-		dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
+//		dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
+		dvc_ComputePhi(ID, Phi, Den, N, S);
 		//*************************************************************************
 
 		//...................................................................................
@@ -1604,9 +2168,99 @@ int main(int argc, char **argv)
 		dvc_UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
 		dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 		//...................................................................................
+		
+		
+//		ZeroHalo(Den,Nx,Ny,Nz);
+//		ZeroHalo(Copy,Nx,Ny,Nz);
+		
+		if (pBC && kproc == 0)	{
+			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
+			
+			// Fill the inlet with component a
+			for (k=0; k<1; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						n = k*Nx*Ny+j*Nx+i;
+						Phi[n] = 1.0;
+					}					
+				}
+			}
+			
+			for (k=1; k<3; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						n = k*Nx*Ny+j*Nx+i;
+						Phi[n] = 1.0;
+						Den[n] = 1.0;
+						Den[N+n] = 0.0;
+
+						A_even[n] = 0.3333333333333333;
+						A_odd[n] = 0.1111111111111111;	
+						A_even[N+n] = 0.1111111111111111;
+						A_odd[N+n] = 0.1111111111111111;	
+						A_even[2*N+n] = 0.1111111111111111;
+						A_odd[2*N+n] = 0.1111111111111111;
+						A_even[3*N+n] = 0.1111111111111111;
+						
+						B_even[n] = 0.0;
+						B_odd[n] = 0.0;	
+						B_even[N+n] = 0.0;
+						B_odd[N+n] = 0.0;	
+						B_even[2*N+n] = 0.0;
+						B_odd[2*N+n] = 0.0;
+						B_even[3*N+n] = 0.0;
+					}					
+				}
+			}
+		}
+			
+		if (pBC && kproc == nprocz-1){
+			dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
+			
+			// Fill the outlet with component b
+			for (k=Nz-3; k<Nz-1; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+
+						n = k*Nx*Ny+j*Nx+i;
+						Phi[n] = -1.0;
+						Den[n] = 0.0;
+						Den[N+n] = 1.0;
+						
+						A_even[n] = 0.0;
+						A_odd[n] = 0.0;	
+						A_even[N+n] = 0.0;
+						A_odd[N+n] = 0.0;	
+						A_even[2*N+n] = 0.0;
+						A_odd[2*N+n] = 0.0;
+						A_even[3*N+n] = 0.0;
+						
+						B_even[n] = 0.3333333333333333;
+						B_odd[n] = 0.1111111111111111;	
+						B_even[N+n] = 0.1111111111111111;
+						B_odd[N+n] = 0.1111111111111111;	
+						B_even[2*N+n] = 0.1111111111111111;
+						B_odd[2*N+n] = 0.1111111111111111;
+						B_even[3*N+n] = 0.1111111111111111;
+						
+					}					
+				}
+			}
+			for (k=Nz-1; k<Nz; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						n = k*Nx*Ny+j*Nx+i;
+						Phi[n] = -1.0;
+					}					
+				}
+			}
+		}
+		
+		//...................................................................................
+
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		// Iteration completed!
+		// Timestep completed!
 		timestep++;
 		//...................................................................
 		if (timestep%1000 == 995){
@@ -1953,11 +2607,11 @@ int main(int argc, char **argv)
 				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
 				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));		// orientation of wn interface
+						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));		// orientation of ns interface	
+						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface	
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g \n",
-						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));		// orientation of ws interface
+						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 			}
 		}
 		
@@ -1965,7 +2619,7 @@ int main(int argc, char **argv)
 			// Copy the data to the CPU
 			dvc_CopyToHost(cDistEven,f_even,10*N*sizeof(double));
 			dvc_CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-			dvc_CopyToHost(cDen,Copy,2*N*sizeof(double));
+			dvc_CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 		}
@@ -1990,18 +2644,156 @@ int main(int argc, char **argv)
 	//************************************************************************/
 	// Write out the phase indicator field 
 	//************************************************************************/
-	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
 //	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 	
+	//!!!!!!!!DEBUG HERE!!!!!!!!!!!!!
+/*	dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+	dvc_InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
+	dvc_InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
+	dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
+	dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
+	dvc_ComputePhi(ID, Phi, Den, N, S);
+	
+	if (pBC && kproc == 0)	{
+		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
+		
+		// Fill the inlet with component a
+		for (k=0; k<1; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = 1.0;
+				}					
+			}
+		}
+		
+		for (k=1; k<4; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = 1.0;
+					Den[n] = 1.0;
+					Den[N+n] = 0.0;
+
+					A_even[n] = 0.3333333333333333;
+					A_odd[n] = 0.1111111111111111;	
+					A_even[N+n] = 0.1111111111111111;
+					A_odd[N+n] = 0.1111111111111111;	
+					A_even[2*N+n] = 0.1111111111111111;
+					A_odd[2*N+n] = 0.1111111111111111;
+					A_even[3*N+n] = 0.1111111111111111;
+					
+					B_even[n] = 0.0;
+					B_odd[n] = 0.0;	
+					B_even[N+n] = 0.0;
+					B_odd[N+n] = 0.0;	
+					B_even[2*N+n] = 0.0;
+					B_odd[2*N+n] = 0.0;
+					B_even[3*N+n] = 0.0;
+				}					
+			}
+		}
+	}
+		
+	if (pBC && kproc == nprocz-1){
+		dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
+		
+		// Fill the outlet with component b
+		for (k=Nz-4; k<Nz-1; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = -1.0;
+					Den[n] = 0.0;
+					Den[N+n] = 1.0;
+					
+					A_even[n] = 0.0;
+					A_odd[n] = 0.0;	
+					A_even[N+n] = 0.0;
+					A_odd[N+n] = 0.0;	
+					A_even[2*N+n] = 0.0;
+					A_odd[2*N+n] = 0.0;
+					A_even[3*N+n] = 0.0;
+					
+					B_even[n] = 0.3333333333333333;
+					B_odd[n] = 0.1111111111111111;	
+					B_even[N+n] = 0.1111111111111111;
+					B_odd[N+n] = 0.1111111111111111;	
+					B_even[2*N+n] = 0.1111111111111111;
+					B_odd[2*N+n] = 0.1111111111111111;
+					B_even[3*N+n] = 0.1111111111111111;
+					
+				}					
+			}
+		}
+		for (k=Nz-1; k<Nz; k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					Phi[n] = -1.0;
+				}					
+			}
+		}
+	}
+	
+	dvc_SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz, S);
+	dvc_SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz, S);
+	dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
+	dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
+*/	
+	
+	
 //#ifdef WriteOutput	
+	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
+	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(Phase.data,8,N,PHASE);
 //	fwrite(MeanCurvature.data,8,N,PHASE);
 	fclose(PHASE);
 //#endif
+	dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
+	dvc_CopyToHost(Press,Pressure,N*sizeof(double));
+	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
+	FILE *PRESS;
+	PRESS = fopen(LocalRankFilename,"wb");
+	fwrite(Press,8,N,PRESS);
+	fclose(PRESS);
 	
+/*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
+	FILE *SPEED;
+	SPEED = fopen(LocalRankFilename,"wb");
+	fwrite(dPdt.data,8,N,SPEED);
+	fclose(SPEED);
+*/
+	
+	sprintf(LocalRankFilename,"%s%s","DenA.",LocalRankString);
+	FILE *DENA;
+	DENA = fopen(LocalRankFilename,"wb");
+	fwrite(&Den[0],8,N,DENA);
+	fclose(DENA);
+	
+	sprintf(LocalRankFilename,"%s%s","DenB.",LocalRankString);
+	FILE *DENB;
+	DENB = fopen(LocalRankFilename,"wb");
+	fwrite(&Den[N],8,N,DENB);
+	fclose(DENB);
+	
+/*	sprintf(LocalRankFilename,"%s%s","GradMag.",LocalRankString);
+	FILE *GRAD;
+	GRAD = fopen(LocalRankFilename,"wb");
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				Phase(i,j,k) = sqrt(Phase_x(i,j,k)*Phase_x(i,j,k) + Phase_y(i,j,k)*Phase_y(i,j,k) + Phase_z(i,j,k)*Phase_z(i,j,k));
+			}
+		}
+	}
+	fwrite(Phase.data,8,N,GRAD);
+	fclose(GRAD);
+*/	
 /*	double *DensityValues;
 	DensityValues = new double [2*N];
 	dvc_CopyToHost(DensityValues,Copy,2*N*sizeof(double));
