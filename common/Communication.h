@@ -140,7 +140,7 @@ inline void CommunicateSendRecvCounts( MPI_Comm Communicator, int sendtag, int r
 	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ,sendtag+17,Communicator,&req1[17]);
 	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz,recvtag+17,Communicator,&req2[17]);
 	MPI_Waitall(18,req1,stat1);
-	MPI_Waitall(3,req2,stat2);
+	MPI_Waitall(18,req2,stat2);
 	MPI_Barrier(Communicator);
 }
 
