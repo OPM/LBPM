@@ -20,7 +20,7 @@ inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, do
 	//...... READ IN THE SPHERES...................................
 	cout << "Reading the packing file..." << endl;
 	FILE *fid = fopen("pack.out","rb");
-	INSIST(fid==NULL,"Error opening pack.out");
+	INSIST(fid!=NULL,"Error opening pack.out");
 	//.........Trash the header lines..........
 	char * line = new char[100];
 	fgets(line, 100, fid);
@@ -40,7 +40,7 @@ inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, do
 		count++;
 	}
 	cout << "Number of spheres extracted is: " << count/4 << endl;
-    INSIST( count != nspheres, "Specified number of spheres is probably incorrect!" );
+    INSIST( count==nspheres, "Specified number of spheres is probably incorrect!" );
 	// .............................................................
 }
 
