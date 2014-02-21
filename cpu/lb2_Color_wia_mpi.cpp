@@ -1271,36 +1271,15 @@ int main(int argc, char **argv)
 	//...................................................................................
 
 	if (pBC && kproc == 0)	{
-		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
-		
-		// Fill the inlet with component a
-		for (k=0; k<4; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = 1.0;
-					Den[n] = 1.0;
-					Den[N+n] = 0.0;
-				}					
-			}
-		}
-		
+		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
+		dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
 	}
+		
 	if (pBC && kproc == nprocz-1){
 		dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
-		
-		// Fill the outlet with component b
-		for (k=Nz-4; k<Nz; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = -1.0;
-					Den[n] = 0.0;
-					Den[N+n] = 1.0;
-				}					
-			}
-		}
+		dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
 	}
+
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	dvc_Barrier();
@@ -1742,10 +1721,11 @@ int main(int argc, char **argv)
 //		ZeroHalo(Copy,Nx,Ny,Nz);
 		
 		if (pBC && kproc == 0)	{
-			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
+			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
+			dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
 			
 			// Fill the inlet with component a
-			for (k=0; k<1; k++){
+/*			for (k=0; k<1; k++){
 				for (j=0;j<Ny;j++){
 					for (i=0;i<Nx;i++){
 						n = k*Nx*Ny+j*Nx+i;
@@ -1780,12 +1760,14 @@ int main(int argc, char **argv)
 					}					
 				}
 			}
+*/
 		}
 			
 		if (pBC && kproc == nprocz-1){
 			dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
-			
-			// Fill the outlet with component b
+			dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
+
+/*			// Fill the outlet with component b
 			for (k=Nz-3; k<Nz-1; k++){
 				for (j=0;j<Ny;j++){
 					for (i=0;i<Nx;i++){
@@ -1822,6 +1804,7 @@ int main(int argc, char **argv)
 					}					
 				}
 			}
+*/
 		}
 		
 		//...................................................................................

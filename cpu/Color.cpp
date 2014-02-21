@@ -207,6 +207,92 @@ extern "C" void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *dis
 }
 
 //*************************************************************************
+extern "C" void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
+								  double *B_even, double *B_odd, int Nx, int Ny, int Nz, int S)
+{
+	int i,j,k,n,N;
+	N = Nx*Ny*Nz;
+	// Fill the inlet with component a
+	for (k=0; k<1; k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				Phi[n] = 1.0;
+			}					
+		}
+	}
+	
+	for (k=1; k<3; k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				Phi[n] = 1.0;
+				Den[n] = 1.0;
+				Den[N+n] = 0.0;
+
+				A_even[n] = 0.3333333333333333;
+				A_odd[n] = 0.1111111111111111;	
+				A_even[N+n] = 0.1111111111111111;
+				A_odd[N+n] = 0.1111111111111111;	
+				A_even[2*N+n] = 0.1111111111111111;
+				A_odd[2*N+n] = 0.1111111111111111;
+				A_even[3*N+n] = 0.1111111111111111;
+				
+				B_even[n] = 0.0;
+				B_odd[n] = 0.0;	
+				B_even[N+n] = 0.0;
+				B_odd[N+n] = 0.0;	
+				B_even[2*N+n] = 0.0;
+				B_odd[2*N+n] = 0.0;
+				B_even[3*N+n] = 0.0;
+			}					
+		}
+	}
+}
+//*************************************************************************
+extern "C" void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
+								  double *B_even, double *B_odd, int Nx, int Ny, int Nz, int S)
+{
+	int i,j,k,n,N;
+	N = Nx*Ny*Nz;
+	// Fill the outlet with component b
+	for (k=Nz-3; k<Nz-1; k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+
+				n = k*Nx*Ny+j*Nx+i;
+				Phi[n] = -1.0;
+				Den[n] = 0.0;
+				Den[N+n] = 1.0;
+				
+				A_even[n] = 0.0;
+				A_odd[n] = 0.0;	
+				A_even[N+n] = 0.0;
+				A_odd[N+n] = 0.0;	
+				A_even[2*N+n] = 0.0;
+				A_odd[2*N+n] = 0.0;
+				A_even[3*N+n] = 0.0;
+				
+				B_even[n] = 0.3333333333333333;
+				B_odd[n] = 0.1111111111111111;	
+				B_even[N+n] = 0.1111111111111111;
+				B_odd[N+n] = 0.1111111111111111;	
+				B_even[2*N+n] = 0.1111111111111111;
+				B_odd[2*N+n] = 0.1111111111111111;
+				B_even[3*N+n] = 0.1111111111111111;
+				
+			}					
+		}
+	}
+	for (k=Nz-1; k<Nz; k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				Phi[n] = -1.0;
+			}					
+		}
+	}
+}
 //*************************************************************************
 extern "C" void dvc_PressureBC_inlet(double *disteven, double *distodd, double din,
 								  int Nx, int Ny, int Nz, int S)

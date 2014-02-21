@@ -22,3 +22,7 @@ extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doubl
 extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N, int S);
 extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC, int S);
+extern "C" void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
+								  double *B_even, double *B_odd, int Nx, int Ny, int Nz, int S);
+extern "C" void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
+								  double *B_even, double *B_odd, int Nx, int Ny, int Nz, int S);
