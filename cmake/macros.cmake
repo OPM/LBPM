@@ -491,8 +491,6 @@ MACRO( ADD_DISTCLEAN )
             *.vcxproj*
             ipch
             x64
-            atomic.lib
-            atomic.pdb
         )
         FILE(WRITE  ${CMAKE_CURRENT_BINARY_DIR}/distclean.bat "del /s /q /f " )
         FOREACH (fileToDelete ${DISTCLEANED})

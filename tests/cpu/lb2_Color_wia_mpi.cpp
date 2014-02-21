@@ -12,7 +12,8 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "Communication.h"
+#include "common/Communication.h"
+#include "common/Utilities.h"
 
 using namespace std;
 
@@ -99,6 +100,8 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    // Initialize error handlers
+    Utilities::setErrorHandlers();
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;

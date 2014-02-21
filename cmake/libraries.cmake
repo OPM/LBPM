@@ -172,7 +172,7 @@ MACRO ( CONFIGURE_SYSTEM )
 ENDMACRO ()
 
 
-# Macro to configure AtomicModel-specific options
+# Macro to configure LBPM specific options
 MACRO ( CONFIGURE_LBPM )
     # Set the maximum number of processors for the tests
     IF ( NOT TEST_MAX_PROCS )
