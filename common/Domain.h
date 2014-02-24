@@ -39,7 +39,7 @@ inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, do
 		List_rad[count] = strtod(line2,&line2);
 		count++;
 	}
-	cout << "Number of spheres extracted is: " << count/4 << endl;
+	cout << "Number of spheres extracted is: " << count << endl;
     INSIST( count==nspheres, "Specified number of spheres is probably incorrect!" );
 	// .............................................................
 }
