@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#PBS -l walltime=05:00:00
+#PBS -l nodes=1:ppn=1:mic
+#PBS -W group_list=arcadm
+#PBS -q normal_q
+#PBS -A blueridgetest
+
+cd $PBS_O_WORKDIR
+
+#mpirun -np 1 ~/save-LBPM-WIA/cpu/ColorLBM-CBUB
+mpirun -np 1 ~/install-LBPM-WIA/tests/TestBubble
+
+exit;
