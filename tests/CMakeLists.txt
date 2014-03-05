@@ -4,6 +4,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_
 
 # Add the tests
 ADD_LBPM_TEST( pmmc_cylinder )
+ADD_LBPM_TEST( TestBubble )
 ADD_LBPM_TEST( TestCylinderAreas )
 ADD_LBPM_TEST( TestSphereCurvature )
 ADD_LBPM_TEST_1_2_4( testCommunication )
