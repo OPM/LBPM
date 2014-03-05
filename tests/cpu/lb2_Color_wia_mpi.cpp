@@ -12,8 +12,9 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "common/Communication.h"
-#include "common/Utilities.h"
+#include "Communication.h"
+
+#define CBUB
 
 using namespace std;
 
@@ -100,8 +101,6 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    // Initialize error handlers
-    Utilities::setErrorHandlers();
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -133,7 +132,7 @@ int main(int argc, char **argv)
 	int timestepMax, interval;
 	double tau,Fx,Fy,Fz,tol;
 	double alpha, beta;
-	double das, dbs, xIntPos;
+	double das, dbs, phi_s;
 	double din,dout;
 	double wp_saturation;
 	bool pBC,Restart;
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
 		input >> tau;			// Viscosity parameter
 		input >> alpha;			// Surface Tension parameter
 		input >> beta;			// Width of the interface
-		input >> xIntPos;		// Contact angle parameter
+		input >> phi_s;			// value of phi at the solid surface
 //		input >> das;
 //		input >> dbs;
 		// Line 4: wetting phase saturation to initialize
@@ -211,7 +210,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&xIntPos,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
@@ -241,7 +240,9 @@ int main(int argc, char **argv)
 	double Ps = -(das-dbs)/(das+dbs);
 	double rlxA = 1.f/tau;
 	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
-
+	double xIntPos;
+	xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
+	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("Fatal error in processor number! \n");
 		printf("nprocx =  %i \n",nprocx);
@@ -256,9 +257,10 @@ int main(int argc, char **argv)
 		printf("beta = %f \n", beta);
 		printf("das = %f \n", das);
 		printf("dbs = %f \n", dbs);
-		printf("phi_s = %f \n", Ps);
-		printf("gamma_{wn} = %f \n", 6.01603*alpha);
-		printf("cos theta_c = %f \n", 1.05332*Ps);
+		printf("Value of phi at solid surface = %f \n", phi_s);
+		printf("Distance to phi = 0.0: %f \n", xIntPos);
+		printf("gamma_{wn} = %f \n", 5.796*alpha);
+//		printf("cos theta_c = %f \n", 1.05332*Ps);
 		printf("Force(x) = %f \n", Fx);
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
@@ -271,6 +273,7 @@ int main(int argc, char **argv)
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
+	 
 	 MPI_Barrier(MPI_COMM_WORLD);
 
 	Nz += 2;
@@ -1134,7 +1137,7 @@ int main(int argc, char **argv)
 	edgeGrid=1;
 	faceGrid=Nx*Ny/packThreads;
 	//...........................................................................
-	
+
 	//...........................................................................
 	//				MAIN  VARIABLES INITIALIZED HERE
 	//...........................................................................
@@ -1150,7 +1153,7 @@ int main(int argc, char **argv)
 	//......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= xIntPos; // Solid appears half a pixel bigger
+	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // Add half the interface width
 	//......................................................................
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
