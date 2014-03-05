@@ -366,7 +366,7 @@ int main(int argc, char **argv)
 					id[n] = 2;
 					sum++;
 				}
-				else if (k<BubbleTop && rank == 0){
+				else if (k<BubbleTop && rank == 0 && pBC == 0){
 					id[n] = 1;
 					sum++;
 				}
@@ -1153,7 +1153,7 @@ int main(int argc, char **argv)
 	//......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // Add half the interface width
+	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
 	//......................................................................
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
