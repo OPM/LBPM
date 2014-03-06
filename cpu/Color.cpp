@@ -305,7 +305,7 @@ extern "C" void dvc_PressureBC_inlet(double *disteven, double *distodd, double d
 
 	N = Nx*Ny*Nz;
 
-	for (n=0; n<Nx*Ny; n++){
+	for (n=Nx*Ny; n<2*Nx*Ny; n++){
 
 		//........................................................................
 		// Read distributions from "opposite" memory convention
@@ -375,7 +375,7 @@ extern "C" void dvc_PressureBC_outlet(double *disteven, double *distodd, double 
 	N = Nx*Ny*Nz;
 
 	// Loop over the boundary - threadblocks delineated by start...finish
-	for (n=outlet; n<N; n++){
+	for (n=outlet; n<N-Nx*Ny; n++){
 
 		//........................................................................
 		// Read distributions from "opposite" memory convention

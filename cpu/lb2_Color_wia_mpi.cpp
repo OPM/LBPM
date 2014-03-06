@@ -1730,7 +1730,7 @@ int main(int argc, char **argv)
 		dvc_UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
 		dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 		//...................................................................................
-		
+	
 		
 		if (pBC && kproc == 0)	{
 			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
