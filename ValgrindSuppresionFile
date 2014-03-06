@@ -1,0 +1,21 @@
+# ACML supressions
+{
+   IdentifyCPUCond
+   Memcheck:Cond
+   ...
+   fun:acmlcpuid2
+   ...
+}
+{
+   IdentifyCPUValue
+   Memcheck:Value8
+   ...
+   fun:acmlcpuid_once
+   fun:acmlcpuid2
+   ...
+}
+
+
+
+
+
