@@ -1016,10 +1016,11 @@ int main(int argc, char **argv)
 	cDistOdd = new double[9*N];
 
 	// data needed to perform CPU-based averaging
-	double *Vel,*Press;
-	Vel = new double[3*N];		// fluid velocity
-	Press = new double[N];		// fluid pressure
+//	double *Vel;
+//	Vel = new double[3*N];		// fluid velocity
+//	Press = new double[N];		// fluid pressure
 
+	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
 	DoubleArray SignDist_x(Nx,Ny,Nz);		// Gradient of the signed distance
@@ -1028,7 +1029,9 @@ int main(int argc, char **argv)
 	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
-
+	DoubleArray Vel_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
+	DoubleArray Vel_y(Nx,Ny,Nz);
+	DoubleArray Vel_z(Nx,Ny,Nz);
 	/*****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
@@ -1276,6 +1279,10 @@ int main(int argc, char **argv)
 	dvc_UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 	//...................................................................................
 
+	if (rank==0 && pBC){
+		printf("Setting inlet pressure = %f \n", din);
+		printf("Setting outlet pressure = %f \n", dout);
+	}
 	if (pBC && kproc == 0)	{
 		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
 		dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
@@ -1299,8 +1306,10 @@ int main(int argc, char **argv)
 	dvc_Barrier();
 	dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
 	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
-	dvc_CopyToHost(Press,Pressure,N*sizeof(double));
-	dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
+	dvc_CopyToHost(Press.data,Pressure,N*sizeof(double));
+	dvc_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
+	dvc_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
+	dvc_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
@@ -1723,94 +1732,14 @@ int main(int argc, char **argv)
 		//...................................................................................
 		
 		
-//		ZeroHalo(Den,Nx,Ny,Nz);
-//		ZeroHalo(Copy,Nx,Ny,Nz);
-		
 		if (pBC && kproc == 0)	{
 			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
 			dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
-			
-			// Fill the inlet with component a
-/*			for (k=0; k<1; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-						n = k*Nx*Ny+j*Nx+i;
-						Phi[n] = 1.0;
-					}					
-				}
-			}
-			
-			for (k=1; k<3; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-						n = k*Nx*Ny+j*Nx+i;
-						Phi[n] = 1.0;
-						Den[n] = 1.0;
-						Den[N+n] = 0.0;
-
-						A_even[n] = 0.3333333333333333;
-						A_odd[n] = 0.1111111111111111;	
-						A_even[N+n] = 0.1111111111111111;
-						A_odd[N+n] = 0.1111111111111111;	
-						A_even[2*N+n] = 0.1111111111111111;
-						A_odd[2*N+n] = 0.1111111111111111;
-						A_even[3*N+n] = 0.1111111111111111;
-						
-						B_even[n] = 0.0;
-						B_odd[n] = 0.0;	
-						B_even[N+n] = 0.0;
-						B_odd[N+n] = 0.0;	
-						B_even[2*N+n] = 0.0;
-						B_odd[2*N+n] = 0.0;
-						B_even[3*N+n] = 0.0;
-					}					
-				}
-			}
-*/
 		}
 			
 		if (pBC && kproc == nprocz-1){
 			dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
 			dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
-
-/*			// Fill the outlet with component b
-			for (k=Nz-3; k<Nz-1; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-
-						n = k*Nx*Ny+j*Nx+i;
-						Phi[n] = -1.0;
-						Den[n] = 0.0;
-						Den[N+n] = 1.0;
-						
-						A_even[n] = 0.0;
-						A_odd[n] = 0.0;	
-						A_even[N+n] = 0.0;
-						A_odd[N+n] = 0.0;	
-						A_even[2*N+n] = 0.0;
-						A_odd[2*N+n] = 0.0;
-						A_even[3*N+n] = 0.0;
-						
-						B_even[n] = 0.3333333333333333;
-						B_odd[n] = 0.1111111111111111;	
-						B_even[N+n] = 0.1111111111111111;
-						B_odd[N+n] = 0.1111111111111111;	
-						B_even[2*N+n] = 0.1111111111111111;
-						B_odd[2*N+n] = 0.1111111111111111;
-						B_even[3*N+n] = 0.1111111111111111;
-						
-					}					
-				}
-			}
-			for (k=Nz-1; k<Nz; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-						n = k*Nx*Ny+j*Nx+i;
-						Phi[n] = -1.0;
-					}					
-				}
-			}
-*/
 		}
 		
 		//...................................................................................
@@ -1836,8 +1765,10 @@ int main(int argc, char **argv)
 			dvc_Barrier();
 			dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
 			dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
-			dvc_CopyToHost(Press,Pressure,N*sizeof(double));
-			dvc_CopyToHost(Vel,Velocity,3*N*sizeof(double));
+			dvc_CopyToHost(Press.data,Pressure,N*sizeof(double));
+			dvc_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
+			dvc_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
+			dvc_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
@@ -1858,6 +1789,100 @@ int main(int argc, char **argv)
 			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 			//...........................................................................
 			// Fill in the halo region for the mesh gradients and curvature
+			//...........................................................................
+			// Pressure
+			//...........................................................................
+			CommunicateMeshHalo(Vel_x, MPI_COMM_WORLD,
+					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
+			//...........................................................................
+			// Velocity
+			//...........................................................................
+			CommunicateMeshHalo(Press, MPI_COMM_WORLD,
+					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
+			//...........................................................................
+			//...........................................................................
+			CommunicateMeshHalo(Vel_y, MPI_COMM_WORLD,
+					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
+			//...........................................................................
+			//...........................................................................
+			CommunicateMeshHalo(Vel_z, MPI_COMM_WORLD,
+					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 			//...........................................................................
 			// Mean Curvature
 			//...........................................................................
@@ -2022,11 +2047,11 @@ int main(int argc, char **argv)
 							// volume the excludes the interfacial region
 							vol_n += 0.125;
 							// pressure
-							pan += 0.125*Press[n];
+							pan += 0.125*Press.data[n];
 							// velocity
-							van(0) += 0.125*Vel[3*n];
-							van(1) += 0.125*Vel[3*n+1];
-							van(2) += 0.125*Vel[3*n+2];
+							van(0) += 0.125*Vel_x.data[n];
+							van(1) += 0.125*Vel_y.data[n];
+							van(2) += 0.125*Vel_z.data[n];
 						}
 
 						// volume averages over the wetting phase
@@ -2034,11 +2059,11 @@ int main(int argc, char **argv)
 							// volume the excludes the interfacial region
 							vol_w += 0.125;
 							// pressure
-							paw += 0.125*Press[n];
+							paw += 0.125*Press.data[n];
 							// velocity
-							vaw(0) += 0.125*Vel[3*n];
-							vaw(1) += 0.125*Vel[3*n+1];
-							vaw(2) += 0.125*Vel[3*n+2];
+							vaw(0) += 0.125*Vel_x.data[n];
+							vaw(1) += 0.125*Vel_y.data[n];
+							vaw(2) += 0.125*Vel_z.data[n];
 						}
 					}
 				}
@@ -2202,105 +2227,7 @@ int main(int argc, char **argv)
 	// Write out the phase indicator field 
 	//************************************************************************/
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
-//	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
-	
-	//!!!!!!!!DEBUG HERE!!!!!!!!!!!!!
-/*	dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
-	dvc_InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
-	dvc_InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
-	dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
-	dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
-	dvc_ComputePhi(ID, Phi, Den, N, S);
-	
-	if (pBC && kproc == 0)	{
-		dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);
-		
-		// Fill the inlet with component a
-		for (k=0; k<1; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = 1.0;
-				}					
-			}
-		}
-		
-		for (k=1; k<4; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = 1.0;
-					Den[n] = 1.0;
-					Den[N+n] = 0.0;
 
-					A_even[n] = 0.3333333333333333;
-					A_odd[n] = 0.1111111111111111;	
-					A_even[N+n] = 0.1111111111111111;
-					A_odd[N+n] = 0.1111111111111111;	
-					A_even[2*N+n] = 0.1111111111111111;
-					A_odd[2*N+n] = 0.1111111111111111;
-					A_even[3*N+n] = 0.1111111111111111;
-					
-					B_even[n] = 0.0;
-					B_odd[n] = 0.0;	
-					B_even[N+n] = 0.0;
-					B_odd[N+n] = 0.0;	
-					B_even[2*N+n] = 0.0;
-					B_odd[2*N+n] = 0.0;
-					B_even[3*N+n] = 0.0;
-				}					
-			}
-		}
-	}
-		
-	if (pBC && kproc == nprocz-1){
-		dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
-		
-		// Fill the outlet with component b
-		for (k=Nz-4; k<Nz-1; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = -1.0;
-					Den[n] = 0.0;
-					Den[N+n] = 1.0;
-					
-					A_even[n] = 0.0;
-					A_odd[n] = 0.0;	
-					A_even[N+n] = 0.0;
-					A_odd[N+n] = 0.0;	
-					A_even[2*N+n] = 0.0;
-					A_odd[2*N+n] = 0.0;
-					A_even[3*N+n] = 0.0;
-					
-					B_even[n] = 0.3333333333333333;
-					B_odd[n] = 0.1111111111111111;	
-					B_even[N+n] = 0.1111111111111111;
-					B_odd[N+n] = 0.1111111111111111;	
-					B_even[2*N+n] = 0.1111111111111111;
-					B_odd[2*N+n] = 0.1111111111111111;
-					B_even[3*N+n] = 0.1111111111111111;
-					
-				}					
-			}
-		}
-		for (k=Nz-1; k<Nz; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Phi[n] = -1.0;
-				}					
-			}
-		}
-	}
-	
-	dvc_SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz, S);
-	dvc_SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz, S);
-	dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
-	dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
-*/	
-	
 	
 //#ifdef WriteOutput	
 	dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
@@ -2312,11 +2239,11 @@ int main(int argc, char **argv)
 	fclose(PHASE);
 //#endif
 	dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
-	dvc_CopyToHost(Press,Pressure,N*sizeof(double));
+	dvc_CopyToHost(Press.data,Pressure,N*sizeof(double));
 	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Press,8,N,PRESS);
+	fwrite(Press.data,8,N,PRESS);
 	fclose(PRESS);
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
@@ -2324,7 +2251,6 @@ int main(int argc, char **argv)
 	SPEED = fopen(LocalRankFilename,"wb");
 	fwrite(dPdt.data,8,N,SPEED);
 	fclose(SPEED);
-*/
 	
 	sprintf(LocalRankFilename,"%s%s","DenA.",LocalRankString);
 	FILE *DENA;
@@ -2338,7 +2264,7 @@ int main(int argc, char **argv)
 	fwrite(&Den[N],8,N,DENB);
 	fclose(DENB);
 	
-/*	sprintf(LocalRankFilename,"%s%s","GradMag.",LocalRankString);
+	sprintf(LocalRankFilename,"%s%s","GradMag.",LocalRankString);
 	FILE *GRAD;
 	GRAD = fopen(LocalRankFilename,"wb");
 	for (k=0; k<Nz; k++){

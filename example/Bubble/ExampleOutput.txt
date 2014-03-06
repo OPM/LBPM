@@ -1,0 +1,46 @@
+********************************************************
+Running Hybrid Implementation of Color LBM	
+********************************************************
+********************************************************
+tau = 1.000000 
+alpha = 0.010000 
+beta = 0.950000 
+das = 0.100000 
+dbs = 0.900000 
+Value of phi at solid surface = 0.800000 
+Distance to phi = 0.0: 1.156434 
+gamma_{wn} = 0.057960 
+Force(x) = 0.000000 
+Force(y) = 0.000000 
+Force(z) = 0.000000 
+Sub-domain size = 80 x 80 x 80
+Parallel domain size = 1 x 1 x 1
+********************************************************
+Number of blocks = 32 
+Threads per block = 128 
+Sweeps per thread = 135 
+Number of nodes per side = 82 
+Total Number of nodes = 551368 
+********************************************************
+Read input media... 
+Setting up communication control structures 
+Preparing the sendlists 
+SendLists are ready on host
+Prepare to copy send/recv Lists to device 
+Devices are ready to communicate. 
+Copying phase ID to device 
+Allocating distributions 
+********************************************************
+No. of timesteps: 1000 
+--------------------------------------------------------------------------------------
+radius sw pw pn awn Jwn Gwn [xx, yy, zz, xy, xz, yz] --------------------------------------------------------------------------------------
+8 0.34906 0.33333 0.0013898 0.26946 0.33334 0.33333 0.33333 -5.3309e-06 1.1201e-05 -1.3209e-05 
+10 0.34568 0.33333 0.0022109 0.21364 0.33334 0.33333 0.33333 -4.1967e-06 1.0265e-05 -1.2941e-05 
+12 0.34355 0.33333 0.0031972 0.1779 0.33334 0.33333 0.33333 -5.6086e-06 1.1842e-05 -1.4445e-05 
+15 0.34143 0.33332 0.005043 0.14164 0.33334 0.33333 0.33333 -5.5737e-06 1.0229e-05 -1.2561e-05 
+-------------------------------------------------------------------
+********************************************************
+CPU time = inf 
+Lattice update rate (per core)= 0.000000 MLUPS 
+Lattice update rate (total)= 0.000000 MLUPS 
+********************************************************

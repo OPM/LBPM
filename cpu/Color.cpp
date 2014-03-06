@@ -756,10 +756,13 @@ extern "C" void dvc_ColorCollide( char *ID, double *disteven, double *distodd, d
 			distodd[8*N+n] = f17;
 
 			//...Store the Velocity..........................
-			Velocity[3*n] = jx;
+			Velocity[n] = jx;
+			Velocity[N+n] = jy;
+			Velocity[2*N+n] = jz;
+		/*	Velocity[3*n] = jx;
 			Velocity[3*n+1] = jy;
 			Velocity[3*n+2] = jz;
-			//...Store the Color Gradient....................
+		*/	//...Store the Color Gradient....................
 			//			ColorGrad[3*n] = nx*C;
 			//			ColorGrad[3*n+1] = ny*C;
 			//			ColorGrad[3*n+2] = nz*C;
@@ -1162,9 +1165,9 @@ extern "C" void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd
 			distodd[7*N+n] = f15;
 			distodd[8*N+n] = f17;
 			//...Store the Velocity..........................
-			Velocity[3*n] = jx;
-			Velocity[3*n+1] = jy;
-			Velocity[3*n+2] = jz;
+			Velocity[n] = jx;
+			Velocity[N+n] = jy;
+			Velocity[2*N+n] = jz;
 			//***************************************************************
 		}	// check if n is in the solid
 	} // loop over n
@@ -1201,9 +1204,9 @@ extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd
 			ny = ny/C;
 			nz = nz/C;
 			//....Load the flow velocity...........
-			ux = Velocity[3*n];
-			uy = Velocity[3*n+1];
-			uz = Velocity[3*n+2];
+			ux = Velocity[n];
+			uy = Velocity[N+n];
+			uz = Velocity[2*N+n];
 			//........................................................................
 			//					READ THE DISTRIBUTIONS
 			//		(read from opposite array due to previous swap operation)
@@ -1315,9 +1318,9 @@ extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doubl
 			ny = ny/C;
 			nz = nz/C;
 			//....Load the flow velocity...........
-			ux = Velocity[3*n];
-			uy = Velocity[3*n+1];
-			uz = Velocity[3*n+2];
+			ux = Velocity[n];
+			uy = Velocity[N+n];
+			uz = Velocity[2*N+n];
 			//....Instantiate the density distributions
 			// Generate Equilibrium Distributions and stream
 			// Stationary value - distribution 0
