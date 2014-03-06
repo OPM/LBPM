@@ -9,7 +9,7 @@
 #define N 60
 #define PI 3.14159
 
-int main (char *argc, char **argv)
+int main (int argc, char **argv)
 {
 	
 	//  printf("Radius = %s \n,"RADIUS);  

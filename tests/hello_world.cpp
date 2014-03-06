@@ -18,8 +18,6 @@ int main (int argc, char **argv)
     // set the error code
     // Note: the error code should be consistent across all processors
     int error = 0;
-    if ( nprocs==4 )
-        error = 1;
     
     // Finished
 	MPI_Barrier(MPI_COMM_WORLD);

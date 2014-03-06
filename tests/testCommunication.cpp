@@ -163,6 +163,20 @@ int test_communication( MPI_Comm comm, int nprocx, int nprocy, int nprocz )
     MPI_Barrier(comm);
     if (rank==0)    printf ("RecvLists finished\n");
     
+    // Free memory
+    delete [] sendList_x,  delete [] sendList_y,  delete [] sendList_z;
+    delete [] sendList_X,  delete [] sendList_Y,  delete [] sendList_Z;
+    delete [] sendList_xy, delete [] sendList_xz, delete [] sendList_yz;
+    delete [] sendList_xY, delete [] sendList_xZ, delete [] sendList_yZ;
+    delete [] sendList_Xy, delete [] sendList_Xz, delete [] sendList_Yz;
+    delete [] sendList_XY, delete [] sendList_XZ, delete [] sendList_YZ;
+    delete [] recvList_x,  delete [] recvList_y,  delete [] recvList_z;
+    delete [] recvList_X,  delete [] recvList_Y,  delete [] recvList_Z;
+    delete [] recvList_xy, delete [] recvList_xz, delete [] recvList_yz;
+    delete [] recvList_xY, delete [] recvList_xZ, delete [] recvList_yZ;
+    delete [] recvList_Xy, delete [] recvList_Xz, delete [] recvList_Yz;
+    delete [] recvList_XY, delete [] recvList_XZ, delete [] recvList_YZ;
+
     // Finished with no errors
     return 0;
 }
