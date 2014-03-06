@@ -85,7 +85,7 @@ MACRO ( CONFIGURE_MPI )
         ELSEIF ( MPI_COMPILER )
             # The mpi compiler should take care of everything
             IF ( NOT MPIEXEC )
-                MESSAGE( FATAL_ERROR "MPI_EXEC should be set" )
+                MESSAGE( FATAL_ERROR "MPIEXEC should be set" )
             ENDIF()
         ELSE()
             # Perform the default search for MPI
