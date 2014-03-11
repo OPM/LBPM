@@ -52,7 +52,7 @@ extern "C" void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int
 	}
 }
 
-extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz, int S)
+extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -91,7 +91,7 @@ extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 }
 
 //*************************************************************************
-extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz, int S)
+extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
