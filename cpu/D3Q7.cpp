@@ -52,7 +52,7 @@ extern  "C" void dvc_UnpackDenD3Q7(int *list, int count, double *recvbuf, int nu
 	}
 }
 
-extern "C" void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz, int S)
+extern "C" void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -81,7 +81,7 @@ extern "C" void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *De
 }
 
 //*************************************************************************
-extern "C" void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz, int S)
+extern "C" void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
@@ -143,7 +143,7 @@ extern "C" void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx
 
 //*************************************************************************
 extern "C" void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den, 
-										int Nx, int Ny, int Nz, int S)
+										int Nx, int Ny, int Nz)
 {
 	char id;
 	int n;
