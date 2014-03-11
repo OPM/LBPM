@@ -1172,12 +1172,12 @@ int main(int argc, char **argv)
 
 		//...........................................................................
 		//...........................................................................
-		dvc_InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz, S);
+		dvc_InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 		//......................................................................
 	//	dvc_InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
-		dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
-		dvc_InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
-		dvc_InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
+		dvc_InitDenColorDistance(ID, Den, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+		dvc_InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+		dvc_InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 		//......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
 		//......................................................................
@@ -1205,8 +1205,8 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Compute the phase indicator field and reset Copy, Den
 		//*************************************************************************
-	//	dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
-		dvc_ComputePhi(ID, Phi, Den, N, S);
+	//	dvc_ComputePhi(ID, Phi, Copy, Den, N);
+		dvc_ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 		//...................................................................................
 		dvc_PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
@@ -1309,13 +1309,13 @@ int main(int argc, char **argv)
 			printf("Setting outlet pressure = %f \n", dout);
 		}
 		if (pBC && kproc == 0)	{
-			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
-			dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
+			dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);			
+			dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 			
 		if (pBC && kproc == nprocz-1){
-			dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
-			dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
+			dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 
 		//...........................................................................
@@ -1329,7 +1329,7 @@ int main(int argc, char **argv)
 		// Copy the phase from the GPU -> CPU
 		//...........................................................................
 		dvc_Barrier();
-		dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
+		dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 		dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
 		dvc_CopyToHost(Press.data,Pressure,N*sizeof(double));
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -1346,7 +1346,7 @@ int main(int argc, char **argv)
 			// Fused Color Gradient and Collision 
 			//*************************************************************************
 			dvc_ColorCollideOpt( ID,f_even,f_odd,Phi,ColorGrad,
-								 Velocity,Nx,Ny,Nz,S,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
+								 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
 			//*************************************************************************
 
 			//...................................................................................
@@ -1455,16 +1455,16 @@ int main(int argc, char **argv)
 			//*************************************************************************
 			// 		Carry out the density streaming step for mass transport
 			//*************************************************************************
-	//		dvc_DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC, S);
+	//		dvc_DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC);
 			//*************************************************************************
 			dvc_MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi, 
-									ColorGrad, Velocity, beta, N, pBC, S);
+									ColorGrad, Velocity, beta, N, pBC);
 				
 
 			//*************************************************************************
 			// 		Swap the distributions for momentum transport
 			//*************************************************************************
-			dvc_SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz, S);
+			dvc_SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 			//*************************************************************************
 
 			//...................................................................................
@@ -1578,8 +1578,8 @@ int main(int argc, char **argv)
 			MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
 			//...................................................................................
 			
-			dvc_SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz, S);
-			dvc_SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz, S);
+			dvc_SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
+			dvc_SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
 			
 			//...................................................................................
 			// Wait for completion of D3Q19 communication
@@ -1613,14 +1613,14 @@ int main(int argc, char **argv)
 			//..................................................................................
 
 			//..................................................................................
-			dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz, S);
-			dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz, S);
+			dvc_ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+			dvc_ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 			
 			//*************************************************************************
 			// 		Compute the phase indicator field 
 			//*************************************************************************
-	//		dvc_ComputePhi(ID, Phi, Copy, Den, N, S);
-			dvc_ComputePhi(ID, Phi, Den, N, S);
+	//		dvc_ComputePhi(ID, Phi, Copy, Den, N);
+			dvc_ComputePhi(ID, Phi, Den, N);
 			//*************************************************************************
 
 			//...................................................................................
@@ -1718,13 +1718,13 @@ int main(int argc, char **argv)
 			//...................................................................................
 
 			if (pBC && kproc == 0)	{
-				dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz,S);			
-				dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
+				dvc_PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);			
+				dvc_ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 				
 			if (pBC && kproc == nprocz-1){
-				dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,S,Nx*Ny*(Nz-2));
-				dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz,S);
+				dvc_PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				dvc_ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 			
 			//...................................................................................
@@ -1747,7 +1747,7 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Copy the phase indicator field for the later timestep
 		dvc_Barrier();
-		dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz,S);
+		dvc_ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 		dvc_CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
 		dvc_CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
 		dvc_CopyToHost(Phase.data,Phi,N*sizeof(double));
