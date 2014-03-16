@@ -118,16 +118,17 @@ int main(int argc, char **argv)
 
 	if (rank == 0){
 		printf("********************************************************\n");
-		printf("Running Hybrid Implementation of Color LBM	\n");
+		printf("Running Color LBM	\n");
 		printf("********************************************************\n");
 	}
 
 	// Variables that specify the computational domain  
 	string FILENAME;
 	unsigned int nBlocks, nthreads;
-	int Nx,Ny,Nz;
-	int nspheres;
-	double Lx,Ly,Lz;
+	int Nx,Ny,Nz;		// local sub-domain size
+	int nspheres;		// number of spheres in the packing
+	double Lx,Ly,Lz;	// Domain length
+	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
 	int timestepMax, interval;
 	double tau,Fx,Fy,Fz,tol;
@@ -200,6 +201,7 @@ int main(int argc, char **argv)
 		domain >> Ly;
 		domain >> Lz;
 		//.......................................................................
+		
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
@@ -223,6 +225,8 @@ int main(int argc, char **argv)
 	MPI_Bcast(&interval,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&tol,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	// Computational domain
+	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
 //	MPI_Bcast(&nBlocks,1,MPI_INT,0,MPI_COMM_WORLD);
 //	MPI_Bcast(&nthreads,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -244,10 +248,10 @@ int main(int argc, char **argv)
 	xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
 	
 	if (nprocs != nprocx*nprocy*nprocz){
-		printf("Fatal error in processor number! \n");
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
 		printf("nprocz =  %i \n",nprocz);
+		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
 	}
 
 	if (rank==0){
@@ -255,8 +259,8 @@ int main(int argc, char **argv)
 		printf("tau = %f \n", tau);
 		printf("alpha = %f \n", alpha);		
 		printf("beta = %f \n", beta);
-		printf("das = %f \n", das);
-		printf("dbs = %f \n", dbs);
+//		printf("das = %f \n", das);
+//		printf("dbs = %f \n", dbs);
 		printf("Value of phi at solid surface = %f \n", phi_s);
 		printf("Distance to phi = 0.0: %f \n", xIntPos);
 		printf("gamma_{wn} = %f \n", 5.796*alpha);
@@ -399,6 +403,19 @@ int main(int argc, char **argv)
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
+	if (rank=0){
+		// Compute the Sauter mean diameter
+		double totVol = 0.0;
+		double totArea = 0.0;
+		// Compute the total volume and area of all spheres
+		for (i=0; i<nspheres; i++){
+			totVol += 1.3333333333333*3.14159265359*rad[i]*rad[i]*rad[i];
+			totArea += 4.0*3.14159265359*rad[i]*rad[i];
+		}
+		D = totVol / totArea;
+	}
+	MPI_Bcast(&D,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+
 	//.......................................................................
 //	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -2141,30 +2158,15 @@ int main(int argc, char **argv)
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 			
 			sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
-			// Compute the specific interfacial areas and common line length (per unit volume)
-			awn_global = awn_global*iVol_global;
-			ans_global = ans_global*iVol_global;
-			aws_global = aws_global*iVol_global;
-			lwns_global = lwns_global*iVol_global;
-			dEs = dEs*iVol_global;
+			// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
+			awn_global = awn_global*iVol_global*D;
+			ans_global = ans_global*iVol_global*D;
+			aws_global = aws_global*iVol_global*D;
+			dEs = dEs*iVol_global*D;
+			lwns_global = lwns_global*iVol_global*D*D;
 			
 			//.........................................................................
 			if (rank==0){
-/*				printf("-------------------------------- \n");
-				printf("Timestep = %i \n", timestep);
-				printf("NWP volume = %f \n", nwp_volume_global);
-				printf("Area wn = %f \n", awn_global);
-				printf("Area ns = %f \n", ans_global);
-				printf("Area ws = %f \n", aws_global);
-				printf("Change in surface energy = %f \n", dEs);
-				printf("-------------------------------- \n");	
-
-				printf("%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g \n",
-						timestep,dEs,sat_w,
-						awn_global,ans_global,aws_global, lwns_global, p_w_global, p_n_global, 
-						vx_w_global, vy_w_global, vz_w_global,
-						vx_n_global, vy_n_global, vz_n_global);
-*/
 				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
 				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
