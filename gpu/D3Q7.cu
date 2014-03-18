@@ -1,4 +1,9 @@
 // CPU Functions for D3Q7 Lattice Boltzmann Methods
+//int NBLOCKS = 32;
+//int NTHREADS = 128;
+
+#define NBLOCKS 32
+#define NTHREADS 128
 
 __global__  void dvc_PackValues(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
@@ -32,7 +37,7 @@ __global__  void dvc_PackDenD3Q7(int *list, int count, double *sendbuf, int numb
 	int idx,n,component;
 	idx = blockIdx.x*blockDim.x + threadIdx.x;
 	if (idx<count){
-			for (component=0; component<number; component++){
+		for (component=0; component<number; component++){
 			n = list[idx];
 			sendbuf[idx*number+component] = Data[number*n+component];
 			Data[number*n+component] = 0.0;	// Set the data value to zero once it's in the buffer!
@@ -62,29 +67,30 @@ __global__ void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *De
 	N = Nx*Ny*Nz;
 	double value;
 
-	for (int s=0; s*blockDim.x*<S; s++){
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-		
-		if (ID[n] > 0){
-			value = Den[n];
-			f_even[n] = 0.3333333333333333*value;
-			f_odd[n] = 0.1111111111111111*value;		//double(100*n)+1.f;
-			f_even[N+n] = 0.1111111111111111*value;	//double(100*n)+2.f;
-			f_odd[N+n] = 0.1111111111111111*value;	//double(100*n)+3.f;
-			f_even[2*N+n] = 0.1111111111111111*value;	//double(100*n)+4.f;
-			f_odd[2*N+n] = 0.1111111111111111*value;	//double(100*n)+5.f;
-			f_even[3*N+n] = 0.1111111111111111*value;	//double(100*n)+6.f;
-		}
-		else{
-			for(int q=0; q<2; q++){
-				f_even[q*N+n] = -1.0;
-				f_odd[q*N+n] = -1.0;
+
+			if (ID[n] > 0){
+				value = Den[n];
+				f_even[n] = 0.3333333333333333*value;
+				f_odd[n] = 0.1111111111111111*value;		//double(100*n)+1.f;
+				f_even[N+n] = 0.1111111111111111*value;	//double(100*n)+2.f;
+				f_odd[N+n] = 0.1111111111111111*value;	//double(100*n)+3.f;
+				f_even[2*N+n] = 0.1111111111111111*value;	//double(100*n)+4.f;
+				f_odd[2*N+n] = 0.1111111111111111*value;	//double(100*n)+5.f;
+				f_even[3*N+n] = 0.1111111111111111*value;	//double(100*n)+6.f;
 			}
-			f_even[3*N+n] = -1.0;
+			else{
+				for(int q=0; q<2; q++){
+					f_even[q*N+n] = -1.0;
+					f_odd[q*N+n] = -1.0;
+				}
+				f_even[3*N+n] = -1.0;
+			}
 		}
-	}
 	}
 }
 
@@ -93,18 +99,20 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 {
 	int i,j,k,n,nn,N;
 	// distributions
-	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	
+	double f1,f2,f3,f4,f5,f6;
+
 	N = Nx*Ny*Nz;
-	
-	for (n=0; n<N; n++){
-		//.......Back out the 3-D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nz*j;
-		
-		if (ID[n] > 0){
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+
+		if (n<N && ID[n] > 0){
+			//.......Back out the 3-D indices for node n..............
+			k = n/(Nx*Ny);
+			j = (n-Nx*Ny*k)/Nx;
+			i = n-Nx*Ny*k-Nz*j;
 			//........................................................................
 			// Retrieve even distributions from the local node (swap convention)
 			//		f0 = disteven[n];  // Does not particupate in streaming
@@ -112,7 +120,7 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 			f3 = distodd[N+n];
 			f5 = distodd[2*N+n];
 			//........................................................................
-			
+
 			//........................................................................
 			// Retrieve odd distributions from neighboring nodes (swap convention)
 			//........................................................................
@@ -151,16 +159,19 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 
 //*************************************************************************
 __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den, 
-										int Nx, int Ny, int Nz)
+		int Nx, int Ny, int Nz)
 {
 	char id;
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6;
 	int N = Nx*Ny*Nz;
-	
-	for (n=0; n<N; n++){
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		id = ID[n];
-		if (id > 0 ){
+		if (n<N && id > 0 ){
 			// Read the distributions
 			f0 = disteven[n];
 			f2 = disteven[N+n];
@@ -174,3 +185,36 @@ __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *dist
 		}
 	}
 }
+
+extern "C" void PackValues(int *list, int count, double *sendbuf, double *Data, int N){
+	int GRID = count / 512 + 1;
+	dvc_PackValues <<<GRID,512 >>>(list, count, sendbuf, Data, N);
+}
+
+extern "C" void UnpackValues(int *list, int count, double *recvbuf, double *Data, int N){
+	int GRID = count / 512 + 1;
+	dvc_UnpackValues <<<GRID,512 >>>(list, count, recvbuf, Data, N);
+}
+extern "C" void PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
+	int GRID = count / 512 + 1;
+	dvc_PackDenD3Q7 <<<GRID,512 >>>(list, count, sendbuf, number, Data, N);
+}
+
+extern "C" void UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
+	int GRID = count / 512 + 1;
+	dvc_UnpackDenD3Q7 <<<GRID,512 >>>(list, count, recvbuf, number, Data, N);
+}
+
+extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz){
+	dvc_InitD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Den, Nx, Ny, Nz);
+}
+
+extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
+	dvc_SwapD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
+}
+
+extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den,
+										int Nx, int Ny, int Nz){
+	dvc_ComputeDensityD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Den, Nx, Ny,  Nz);
+}
+
