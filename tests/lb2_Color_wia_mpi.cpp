@@ -403,7 +403,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
-	if (rank=0){
+	if (rank==0){
 		// Compute the Sauter mean diameter
 		double totVol = 0.0;
 		double totArea = 0.0;
