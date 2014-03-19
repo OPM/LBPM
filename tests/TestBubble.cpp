@@ -1198,7 +1198,7 @@ int main(int argc, char **argv)
 			CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
 			CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
 			CopyToDevice(Den,cDen,2*N*sizeof(double));
-			Barrier();
+			DeviceBarrier();
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 
@@ -1228,7 +1228,7 @@ int main(int argc, char **argv)
 		PackValues(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
 		PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 		
-		Barrier();
+		DeviceBarrier();
 		//...................................................................................
 		// Send / Recv all the phase indcator field values
 		//...................................................................................
@@ -1274,7 +1274,7 @@ int main(int argc, char **argv)
 		//...................................................................................
 		MPI_Waitall(18,req1,stat1);
 		MPI_Waitall(18,req2,stat2);
-		Barrier();
+		DeviceBarrier();
 		//...................................................................................
 		//...................................................................................
 	/*		UnpackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
@@ -1320,7 +1320,7 @@ int main(int argc, char **argv)
 
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
-		Barrier();
+		DeviceBarrier();
 		CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
 		//...........................................................................
 		//...........................................................................
@@ -1328,7 +1328,7 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Copy the phase from the GPU -> CPU
 		//...........................................................................
-		Barrier();
+		DeviceBarrier();
 		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 		CopyToHost(Phase.data,Phi,N*sizeof(double));
 		CopyToHost(Press.data,Pressure,N*sizeof(double));
@@ -1687,7 +1687,7 @@ int main(int argc, char **argv)
 			//...................................................................................
 			MPI_Waitall(18,req1,stat1);
 			MPI_Waitall(18,req2,stat2);
-			Barrier();
+			DeviceBarrier();
 			//...................................................................................
 			//...................................................................................
 	/*		UnpackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
@@ -1746,7 +1746,7 @@ int main(int argc, char **argv)
 		// End the bubble loop
 		//...........................................................................
 		// Copy the phase indicator field for the later timestep
-		Barrier();
+		DeviceBarrier();
 		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 		CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
 		CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
@@ -2081,7 +2081,7 @@ int main(int argc, char **argv)
 		
 	}
 	//************************************************************************/
-	Barrier();
+	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
