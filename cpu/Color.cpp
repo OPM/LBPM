@@ -648,9 +648,9 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
 			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
-			m10 = m10 + rlx_setA*(-0.5*((2*jx*jx-jy*jy-jz*jz)/rho) - m10);
+			m10 = m10 + rlx_setA*( - m10);
 			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
-			m12 = m12 + rlx_setA*( -0.5*((jy*jy-jz*jz)/rho) - m12);
+			m12 = m12 + rlx_setA*( - m12);
 			m13 = m13 + rlx_setA*( (jx*jy/rho) + 0.5*alpha*C*nx*ny - m13);
 			m14 = m14 + rlx_setA*( (jy*jz/rho) + 0.5*alpha*C*ny*nz - m14);
 			m15 = m15 + rlx_setA*( (jx*jz/rho) + 0.5*alpha*C*nx*nz - m15);
