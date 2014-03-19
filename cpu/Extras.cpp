@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-extern "C" void dvc_AllocateDeviceMemory(void** address, size_t size){
+extern "C" void AllocateDeviceMemory(void** address, size_t size){
 	//cudaMalloc(address,size);
 	(*address) = malloc(size);
 	
@@ -12,17 +12,17 @@ extern "C" void dvc_AllocateDeviceMemory(void** address, size_t size){
 	}
 }
 
-extern "C" void dvc_CopyToDevice(void* dest, void* source, size_t size){
+extern "C" void CopyToDevice(void* dest, void* source, size_t size){
 //	cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
 	memcpy(dest, source, size);
 }
 
 
-extern "C" void dvc_CopyToHost(void* dest, void* source, size_t size){
+extern "C" void CopyToHost(void* dest, void* source, size_t size){
 //	cudaMemcpy(dest,source,size,cudaMemcpyDeviceToHost);
 	memcpy(dest, source, size);
 }
 
-extern "C" void dvc_Barrier(){
+extern "C" void Barrier(){
 //	cudaDeviceSynchronize();
 }

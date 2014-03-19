@@ -1,6 +1,6 @@
 #include <math.h>
 
-extern "C" void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
+extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
 
@@ -34,7 +34,7 @@ extern "C" void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das,
 		}
 	}
 }
-extern "C" void dvc_InitDenColorDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
+extern "C" void InitDenColorDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -78,7 +78,7 @@ extern "C" void dvc_InitDenColorDistancePacked(char *ID, double *Den, double *Ph
 	}
 }
 
-extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
+extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -114,7 +114,7 @@ extern "C" void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, dou
 }
 
 
-extern "C" void dvc_Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz, int S)
+extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz, int S)
 {
 	int n,N;
 	// distributions
@@ -162,7 +162,7 @@ extern "C" void dvc_Compute_VELOCITY(char *ID, double *disteven, double *distodd
 	}
 }
 
-extern "C" void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
+extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
 									int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -207,7 +207,7 @@ extern "C" void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *dis
 }
 
 //*************************************************************************
-extern "C" void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -250,7 +250,7 @@ extern "C" void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, doub
 	}
 }
 //*************************************************************************
-extern "C" void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -294,7 +294,7 @@ extern "C" void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, dou
 	}
 }
 //*************************************************************************
-extern "C" void dvc_PressureBC_inlet(double *disteven, double *distodd, double din,
+extern "C" void PressureBC_inlet(double *disteven, double *distodd, double din,
 								  int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -363,7 +363,7 @@ extern "C" void dvc_PressureBC_inlet(double *disteven, double *distodd, double d
 	}
 }
 
-extern "C" void dvc_PressureBC_outlet(double *disteven, double *distodd, double dout,
+extern "C" void PressureBC_outlet(double *disteven, double *distodd, double dout,
 								   int Nx, int Ny, int Nz, int outlet)
 {
 	int n,N;
@@ -430,7 +430,7 @@ extern "C" void dvc_PressureBC_outlet(double *disteven, double *distodd, double 
 	}
 }
 //*************************************************************************
-extern "C" void dvc_ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz)
+extern "C" void ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz)
 {
 	int n,N,i,j,k,nn;
 	// distributions
@@ -557,7 +557,7 @@ extern "C" void dvc_ComputeColorGradient(char *ID, double *phi, double *ColorGra
 	}
 }
 //*************************************************************************
-extern "C" void dvc_ColorCollide( char *ID, double *disteven, double *distodd, double *ColorGrad,
+extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz, double rlx_setA, double rlx_setB,
 								double alpha, double beta, double Fx, double Fy, double Fz, bool pBC)
 {
@@ -772,7 +772,7 @@ extern "C" void dvc_ColorCollide( char *ID, double *disteven, double *distodd, d
 	} // loop over n
 }
 
-extern "C" void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
+extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz, double rlx_setA, double rlx_setB, 
 								double alpha, double beta, double Fx, double Fy, double Fz)
 {
@@ -1173,7 +1173,7 @@ extern "C" void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd
 	} // loop over n
 }
 
-extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
+extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
 	char id;
@@ -1279,7 +1279,7 @@ extern "C" void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd
 }
 
 //*************************************************************************
-extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
+extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC, int S)
 {
 	char id;
@@ -1431,7 +1431,7 @@ extern "C" void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doubl
 	}
 }
 /*
-extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S)
+extern "C" void ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S)
 {
 	int n;
 	double Na,Nb;
@@ -1455,7 +1455,7 @@ extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Copy, double *Den,
 	//...................................................................
 }
 */
-extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
+extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 {
 	int n;
 	double Na,Nb;
@@ -1475,19 +1475,19 @@ extern "C" void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 
 /*
 //*************************************************************************
-extern "C" void dvc_InitDenColor( int nblocks, int nthreads, int S,
+extern "C" void InitDenColor( int nblocks, int nthreads, int S,
 		char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	InitDenColor <<<nblocks, nthreads>>>  (ID, Den, Phi, das, dbs, Nx, Ny, Nz, S);
 }
 //*************************************************************************
-extern "C" void dvc_ComputeColorGradient(int nBlocks, int nthreads, int S,
+extern "C" void ComputeColorGradient(int nBlocks, int nthreads, int S,
 		char *ID, double *Phi, double *ColorGrad, int Nx, int Ny, int Nz)
 {
 	ComputeColorGradient<<<nBlocks,nthreads>>>(ID, Phi, ColorGrad, Nx, Ny, Nz, S);
 }
 //*************************************************************************
-extern "C" void dvc_ColorCollide(int nBlocks, int nthreads, int S,
+extern "C" void ColorCollide(int nBlocks, int nthreads, int S,
 		char *ID, double *f_even, double *f_odd, double *ColorGrad, double *Velocity,
 		double rlxA, double rlxB,double alpha, double beta, double Fx, double Fy, double Fz,
 		int Nx, int Ny, int Nz, bool pBC)
@@ -1496,7 +1496,7 @@ extern "C" void dvc_ColorCollide(int nBlocks, int nthreads, int S,
 							 rlxA, rlxB, alpha, beta, Fx, Fy, Fz, pBC);
 }
 //*************************************************************************
-extern "C" void dvc_ColorCollideOpt(int nBlocks, int nthreads, int S,
+extern "C" void ColorCollideOpt(int nBlocks, int nthreads, int S,
 								char *ID, double *f_even, double *f_odd, double *Phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz,double rlxA, double rlxB, 
 								double alpha, double beta, double Fx, double Fy, double Fz)
@@ -1509,20 +1509,20 @@ extern "C" void dvc_ColorCollideOpt(int nBlocks, int nthreads, int S,
 }
 
 //*************************************************************************
-extern "C" void dvc_DensityStreamD3Q7(int nBlocks, int nthreads, int S,
+extern "C" void DensityStreamD3Q7(int nBlocks, int nthreads, int S,
 		char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC)
 {
 	DensityStreamD3Q7<<<nBlocks, nthreads>>>(ID,Den,Copy,Phi,ColorGrad,Velocity,beta,Nx,Ny,Nz,pBC,S);
 }
 //*************************************************************************
-extern "C" void dvc_ComputePhi(int nBlocks, int nthreads, int S,
+extern "C" void ComputePhi(int nBlocks, int nthreads, int S,
 		char *ID, double *Phi, double *Copy, double *Den, int N)
 {
 	ComputePhi<<<nBlocks, nthreads>>>(ID,Phi,Copy,Den,N,S);
 }
 //*************************************************************************
-extern "C" void dvc_ComputePressure(int nBlocks, int nthreads, int S,
+extern "C" void ComputePressure(int nBlocks, int nthreads, int S,
 									char *ID, double *disteven, double *distodd, 
 									double *Pressure, int Nx, int Ny, int Nz)
 {

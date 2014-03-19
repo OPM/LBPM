@@ -1,4 +1,4 @@
-extern "C" void dvc_PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -10,7 +10,7 @@ extern "C" void dvc_PackDist(int q, int *list, int start, int count, double *sen
 	}
 }
 
-extern "C" void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	//....................................................................................
 	// Unack distribution from the recv buffer
@@ -52,7 +52,7 @@ extern "C" void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int
 	}
 }
 
-extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
+extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -91,7 +91,7 @@ extern "C" void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 }
 
 //*************************************************************************
-extern "C" void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
