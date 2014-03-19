@@ -1,3 +1,6 @@
+#define NBLOCKS 32
+#define NTHREADS 128
+
 __global__  void dvc_PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
@@ -58,10 +61,11 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 {
 	int n,N;
 	N = Nx*Ny*Nz;
-
-	for (n=0; n<N; n++){
-
-		if (ID[n] > 0){
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N && ID[n] > 0){
 			f_even[n] = 0.3333333333333333;
 			f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
 			f_even[N+n] = 0.055555555555555555;	//double(100*n)+2.f;
@@ -102,13 +106,15 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 	
 	N = Nx*Ny*Nz;
 	
-	for (n=0; n<N; n++){
-		//.......Back out the 3-D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nz*j;
-		
-		if (ID[n] > 0){
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N && ID[n] > 0){
+			//.......Back out the 3-D indices for node n..............
+			k = n/(Nx*Ny);
+			j = (n-Nx*Ny*k)/Nx;
+			i = n-Nx*Ny*k-Nz*j;
 			//........................................................................
 			// Retrieve even distributions from the local node (swap convention)
 			//		f0 = disteven[n];  // Does not particupate in streaming
@@ -226,3 +232,22 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 		}
 	}
 }
+
+extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+	int GRID = count / 512 + 1;
+	dvc_PackDist <<<GRID,512 >>>(q, list, start, count, sendbuf, dist, N);
+}
+extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+			double *recvbuf, double *dist, int Nx, int Ny, int Nz){
+	int GRID = count / 512 + 1;
+	dvc_UnpackDist <<<GRID,512 >>>(q, Cqx, Cqy, Cqz, list, start, count, recvbuf, dist, Nx, Ny, Nz);
+}
+//*************************************************************************
+extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz){
+	dvc_InitD3Q19<<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Nx, Ny, Nz);
+}
+extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
+	dvc_SwapD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
+
+}
+

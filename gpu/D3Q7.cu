@@ -1,6 +1,4 @@
-// CPU Functions for D3Q7 Lattice Boltzmann Methods
-//int NBLOCKS = 32;
-//int NTHREADS = 128;
+// GPU Functions for D3Q7 Lattice Boltzmann Methods
 
 #define NBLOCKS 32
 #define NTHREADS 128
