@@ -1,0 +1,39 @@
+# Set the modules and enviornmental variables
+source $MODULESHOME/init/bash
+module load cudatoolkit
+module load cmake
+export MPICH_RDMA_ENABLED_CUDA=1
+module swap cray-mpich2 cray-mpich2/5.6.3
+
+
+# Remove CMake files from previous configures
+rm -rf CMake*
+
+
+# Configure
+cmake                                    \
+    -D CMAKE_C_COMPILER:PATH=cc          \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_C_FLAGS="-DCBUB"            \
+    -D CMAKE_CXX_FLAGS="-DCBUB"          \
+    -D MPI_COMPILER:BOOL=TRUE            \
+    -D MPIEXEC=aprun                     \
+    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D CMAKE_BUILD_TYPE:STRING=Debug     \
+    -D CUDA_FLAGS="-arch sm_35"          \
+    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_CUDA=1                        \
+    ../../LBPM-WIA
+
+
+# Build the code
+make install -j 8
+
+
+# Run the fast tests
+ctest -E WEEKLY
+
+
+# Run the slow tests
+# ctest -R WEEKLY -VV
