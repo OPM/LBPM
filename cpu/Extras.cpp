@@ -23,6 +23,6 @@ extern "C" void CopyToHost(void* dest, void* source, size_t size){
 	memcpy(dest, source, size);
 }
 
-extern "C" void Barrier(){
+extern "C" void DeviceBarrier(){
 //	cudaDeviceSynchronize();
 }
