@@ -1,4 +1,6 @@
 # Copy files for the tests
+INSTALL_LBPM_EXE( lb2_Color_wia_mpi )
+
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
 
