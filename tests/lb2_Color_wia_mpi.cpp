@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 			totVol += 1.3333333333333*3.14159265359*rad[i]*rad[i]*rad[i];
 			totArea += 4.0*3.14159265359*rad[i]*rad[i];
 		}
-		D = 6.0*Nx*totVol / totArea / Lx;
+		D = 6.0*(Nx-2)*nprocx*totVol / totArea / Lx;
 		printf("Sauter Mean Diameter (computed from sphere packing) %f \n = ",D);
 	}
 	MPI_Bcast(&D,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
