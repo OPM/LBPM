@@ -403,7 +403,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
-	if (rank==0){
+	if (rank == 0){
 		// Compute the Sauter mean diameter
 		double totVol = 0.0;
 		double totArea = 0.0;
@@ -412,8 +412,8 @@ int main(int argc, char **argv)
 			totVol += 1.3333333333333*3.14159265359*rad[i]*rad[i]*rad[i];
 			totArea += 4.0*3.14159265359*rad[i]*rad[i];
 		}
-		D = 6.0* totVol / totArea;
-		printf("Sauter Mean Diameter (computed from sphere packing) %f /n = ",D);
+		D = 6.0*Nx*totVol / totArea / Lx;
+		printf("Sauter Mean Diameter (computed from sphere packing) %f \n = ",D);
 	}
 	MPI_Bcast(&D,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
