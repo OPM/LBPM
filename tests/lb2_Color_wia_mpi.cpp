@@ -596,20 +596,89 @@ int main(int argc, char **argv)
 	//**********************************************************************************
 	// Fill in the recieve counts using MPI
 	sendtag = recvtag = 3;
-	CommunicateSendRecvCounts( MPI_COMM_WORLD, sendtag, recvtag, 
-			rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-			rank_xy, rank_XY, rank_xY, rank_Xy,
-			rank_xz, rank_XZ, rank_xZ, rank_Xz,
-			rank_yz, rank_YZ, rank_yZ, rank_Yz,
-			sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z,
-			sendCount_xy, sendCount_XY, sendCount_xY, sendCount_Xy,
-			sendCount_xz, sendCount_XZ, sendCount_xZ, sendCount_Xz,
-			sendCount_yz, sendCount_YZ, sendCount_yZ, sendCount_Yz,
-			recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z,
-			recvCount_xy, recvCount_XY, recvCount_xY, recvCount_Xy,
-			recvCount_xz, recvCount_XZ, recvCount_xZ, recvCount_Xz,
-			recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz );
-	//**********************************************************************************
+	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
+	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
+	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
+	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
+	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
+	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
+	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
+	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
+	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
+	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
+	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
+	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
+
+	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD,&req1[6]);
+	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,&req2[6]);
+	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD,&req1[7]);
+	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,&req2[7]);
+	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[8]);
+	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,&req2[8]);
+	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD,&req1[9]);
+	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[9]);
+
+	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD,&req1[10]);
+	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[10]);
+	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[11]);
+	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,&req2[11]);
+	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[12]);
+	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[12]);
+	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[13]);
+	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[13]);
+
+	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD,&req1[14]);
+	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[14]);
+	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[15]);
+	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,&req2[15]);
+	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[16]);
+	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[16]);
+	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[17]);
+	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[17]);
+	MPI_Waitall(18,req1,stat1);
+	MPI_Waitall(18,req2,stat2);
+	MPI_Barrier(MPI_COMM_WORLD);
+/*	MPI_Send(&sendCount_x,1,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_X,1,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_X,1,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_x,1,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_y,1,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Y,1,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Y,1,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_y,1,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_z,1,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Z,1,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Z,1,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_z,1,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_xy,1,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_XY,1,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_XY,1,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xy,1,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Xy,1,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xY,1,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_xY,1,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Xy,1,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_xz,1,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_XZ,1,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_XZ,1,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xz,1,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Xz,1,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_xZ,1,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_xZ,1,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Xz,1,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+
+	MPI_Send(&sendCount_yz,1,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_YZ,1,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_YZ,1,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_yz,1,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_Yz,1,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_yZ,1,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Send(&sendCount_yZ,1,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD);
+	MPI_Recv(&recvCount_Yz,1,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	MPI_Barrier(MPI_COMM_WORLD);
+*/	//**********************************************************************************
 	//......................................................................................
 	int *recvList_x, *recvList_y, *recvList_z, *recvList_X, *recvList_Y, *recvList_Z;
 	int *recvList_xy, *recvList_yz, *recvList_xz, *recvList_Xy, *recvList_Yz, *recvList_xZ;
@@ -639,25 +708,48 @@ int main(int argc, char **argv)
 	// Use MPI to fill in the appropriate values for recvList
 	// Fill in the recieve lists using MPI
 	sendtag = recvtag = 4;
-	CommunicateRecvLists( MPI_COMM_WORLD, sendtag, recvtag, 
-			sendList_x, sendList_y, sendList_z, sendList_X, sendList_Y, sendList_Z,
-			sendList_xy, sendList_XY, sendList_xY, sendList_Xy,
-			sendList_xz, sendList_XZ, sendList_xZ, sendList_Xz,
-			sendList_yz, sendList_YZ, sendList_yZ, sendList_Yz,
-			sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z,
-			sendCount_xy, sendCount_XY, sendCount_xY, sendCount_Xy,
-			sendCount_xz, sendCount_XZ, sendCount_xZ, sendCount_Xz,
-			sendCount_yz, sendCount_YZ, sendCount_yZ, sendCount_Yz,
-			recvList_x, recvList_y, recvList_z, recvList_X, recvList_Y, recvList_Z,
-			recvList_xy, recvList_XY, recvList_xY, recvList_Xy,
-			recvList_xz, recvList_XZ, recvList_xZ, recvList_Xz,
-			recvList_yz, recvList_YZ, recvList_yZ, recvList_Yz,
-			recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z,
-			recvCount_xy, recvCount_XY, recvCount_xY, recvCount_Xy,
-			recvCount_xz, recvCount_XZ, recvCount_xZ, recvCount_Xz,
-			recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz,
-			rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z, rank_xy, rank_XY, rank_xY,
-			rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz, rank_yz, rank_YZ, rank_yZ, rank_Yz );
+	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x,sendtag,MPI_COMM_WORLD,&req1[0]);
+	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X,recvtag,MPI_COMM_WORLD,&req2[0]);
+	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X,sendtag,MPI_COMM_WORLD,&req1[1]);
+	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x,recvtag,MPI_COMM_WORLD,&req2[1]);
+	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y,sendtag,MPI_COMM_WORLD,&req1[2]);
+	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y,recvtag,MPI_COMM_WORLD,&req2[2]);
+	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y,sendtag,MPI_COMM_WORLD,&req1[3]);
+	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y,recvtag,MPI_COMM_WORLD,&req2[3]);
+	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z,sendtag,MPI_COMM_WORLD,&req1[4]);
+	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z,recvtag,MPI_COMM_WORLD,&req2[4]);
+	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z,sendtag,MPI_COMM_WORLD,&req1[5]);
+	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z,recvtag,MPI_COMM_WORLD,&req2[5]);
+
+	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy,sendtag,MPI_COMM_WORLD,&req1[6]);
+	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY,recvtag,MPI_COMM_WORLD,&req2[6]);
+	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY,sendtag,MPI_COMM_WORLD,&req1[7]);
+	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy,recvtag,MPI_COMM_WORLD,&req2[7]);
+	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy,sendtag,MPI_COMM_WORLD,&req1[8]);
+	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY,recvtag,MPI_COMM_WORLD,&req2[8]);
+	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY,sendtag,MPI_COMM_WORLD,&req1[9]);
+	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy,recvtag,MPI_COMM_WORLD,&req2[9]);
+
+	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz,sendtag,MPI_COMM_WORLD,&req1[10]);
+	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ,recvtag,MPI_COMM_WORLD,&req2[10]);
+	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ,sendtag,MPI_COMM_WORLD,&req1[11]);
+	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz,recvtag,MPI_COMM_WORLD,&req2[11]);
+	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz,sendtag,MPI_COMM_WORLD,&req1[12]);
+	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ,recvtag,MPI_COMM_WORLD,&req2[12]);
+	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ,sendtag,MPI_COMM_WORLD,&req1[13]);
+	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz,recvtag,MPI_COMM_WORLD,&req2[13]);
+
+	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz,sendtag,MPI_COMM_WORLD,&req1[14]);
+	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ,recvtag,MPI_COMM_WORLD,&req2[14]);
+	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ,sendtag,MPI_COMM_WORLD,&req1[15]);
+	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz,recvtag,MPI_COMM_WORLD,&req2[15]);
+	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz,sendtag,MPI_COMM_WORLD,&req1[16]);
+	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ,recvtag,MPI_COMM_WORLD,&req2[16]);
+	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[17]);
+	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[17]);
+	MPI_Waitall(18,req1,stat1);
+	MPI_Waitall(18,req2,stat2);
+	MPI_Barrier(MPI_COMM_WORLD);
 	//......................................................................................
 	for (int idx=0; idx<recvCount_x; idx++)	recvList_x[idx] -= (Nx-2);
 	for (int idx=0; idx<recvCount_X; idx++)	recvList_X[idx] += (Nx-2);
@@ -688,43 +780,43 @@ int main(int argc, char **argv)
 	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
-	AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
-	AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
-	AllocateDeviceMemory((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
 	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
 	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;
@@ -734,83 +826,83 @@ int main(int argc, char **argv)
 	int *dvcRecvList_xy, *dvcRecvList_yz, *dvcRecvList_xz, *dvcRecvList_Xy, *dvcRecvList_Yz, *dvcRecvList_xZ;
 	int *dvcRecvList_xY, *dvcRecvList_yZ, *dvcRecvList_Xz, *dvcRecvList_XY, *dvcRecvList_YZ, *dvcRecvList_XZ;
 	//......................................................................................
-	AllocateDeviceMemory((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
-	AllocateDeviceMemory((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
+	dvc_AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank==0)	printf ("Prepare to copy send/recv Lists to device \n");
-	CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
-	CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
-	CopyToDevice(dvcSendList_y,sendList_y,sendCount_y*sizeof(int));
-	CopyToDevice(dvcSendList_Y,sendList_Y,sendCount_Y*sizeof(int));
-	CopyToDevice(dvcSendList_z,sendList_z,sendCount_z*sizeof(int));
-	CopyToDevice(dvcSendList_Z,sendList_Z,sendCount_Z*sizeof(int));
-	CopyToDevice(dvcSendList_xy,sendList_xy,sendCount_xy*sizeof(int));
-	CopyToDevice(dvcSendList_XY,sendList_XY,sendCount_XY*sizeof(int));
-	CopyToDevice(dvcSendList_xY,sendList_xY,sendCount_xY*sizeof(int));
-	CopyToDevice(dvcSendList_Xy,sendList_Xy,sendCount_Xy*sizeof(int));
-	CopyToDevice(dvcSendList_xz,sendList_xz,sendCount_xz*sizeof(int));
-	CopyToDevice(dvcSendList_XZ,sendList_XZ,sendCount_XZ*sizeof(int));
-	CopyToDevice(dvcSendList_xZ,sendList_xZ,sendCount_xZ*sizeof(int));
-	CopyToDevice(dvcSendList_Xz,sendList_Xz,sendCount_Xz*sizeof(int));
-	CopyToDevice(dvcSendList_yz,sendList_yz,sendCount_yz*sizeof(int));
-	CopyToDevice(dvcSendList_YZ,sendList_YZ,sendCount_YZ*sizeof(int));
-	CopyToDevice(dvcSendList_yZ,sendList_yZ,sendCount_yZ*sizeof(int));
-	CopyToDevice(dvcSendList_Yz,sendList_Yz,sendCount_Yz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_y,sendList_y,sendCount_y*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Y,sendList_Y,sendCount_Y*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_z,sendList_z,sendCount_z*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Z,sendList_Z,sendCount_Z*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xy,sendList_xy,sendCount_xy*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_XY,sendList_XY,sendCount_XY*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xY,sendList_xY,sendCount_xY*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Xy,sendList_Xy,sendCount_Xy*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xz,sendList_xz,sendCount_xz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_XZ,sendList_XZ,sendCount_XZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_xZ,sendList_xZ,sendCount_xZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Xz,sendList_Xz,sendCount_Xz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_yz,sendList_yz,sendCount_yz*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_YZ,sendList_YZ,sendCount_YZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_yZ,sendList_yZ,sendCount_yZ*sizeof(int));
+	dvc_CopyToDevice(dvcSendList_Yz,sendList_Yz,sendCount_Yz*sizeof(int));
 	//......................................................................................
-	CopyToDevice(dvcRecvList_x,recvList_x,recvCount_x*sizeof(int));
-	CopyToDevice(dvcRecvList_X,recvList_X,recvCount_X*sizeof(int));
-	CopyToDevice(dvcRecvList_y,recvList_y,recvCount_y*sizeof(int));
-	CopyToDevice(dvcRecvList_Y,recvList_Y,recvCount_Y*sizeof(int));
-	CopyToDevice(dvcRecvList_z,recvList_z,recvCount_z*sizeof(int));
-	CopyToDevice(dvcRecvList_Z,recvList_Z,recvCount_Z*sizeof(int));
-	CopyToDevice(dvcRecvList_xy,recvList_xy,recvCount_xy*sizeof(int));
-	CopyToDevice(dvcRecvList_XY,recvList_XY,recvCount_XY*sizeof(int));
-	CopyToDevice(dvcRecvList_xY,recvList_xY,recvCount_xY*sizeof(int));
-	CopyToDevice(dvcRecvList_Xy,recvList_Xy,recvCount_Xy*sizeof(int));
-	CopyToDevice(dvcRecvList_xz,recvList_xz,recvCount_xz*sizeof(int));
-	CopyToDevice(dvcRecvList_XZ,recvList_XZ,recvCount_XZ*sizeof(int));
-	CopyToDevice(dvcRecvList_xZ,recvList_xZ,recvCount_xZ*sizeof(int));
-	CopyToDevice(dvcRecvList_Xz,recvList_Xz,recvCount_Xz*sizeof(int));
-	CopyToDevice(dvcRecvList_yz,recvList_yz,recvCount_yz*sizeof(int));
-	CopyToDevice(dvcRecvList_YZ,recvList_YZ,recvCount_YZ*sizeof(int));
-	CopyToDevice(dvcRecvList_yZ,recvList_yZ,recvCount_yZ*sizeof(int));
-	CopyToDevice(dvcRecvList_Yz,recvList_Yz,recvCount_Yz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_x,recvList_x,recvCount_x*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_X,recvList_X,recvCount_X*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_y,recvList_y,recvCount_y*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Y,recvList_Y,recvCount_Y*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_z,recvList_z,recvCount_z*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Z,recvList_Z,recvCount_Z*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xy,recvList_xy,recvCount_xy*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_XY,recvList_XY,recvCount_XY*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xY,recvList_xY,recvCount_xY*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Xy,recvList_Xy,recvCount_Xy*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xz,recvList_xz,recvCount_xz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_XZ,recvList_XZ,recvCount_XZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_xZ,recvList_xZ,recvCount_xZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Xz,recvList_Xz,recvCount_Xz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_yz,recvList_yz,recvCount_yz*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_YZ,recvList_YZ,recvCount_YZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_yZ,recvList_yZ,recvCount_yZ*sizeof(int));
+	dvc_CopyToDevice(dvcRecvList_Yz,recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
 	// Fill in the phase ID from neighboring processors
 	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
@@ -1294,6 +1386,7 @@ int main(int argc, char **argv)
 	PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 	
 	DeviceBarrier();
+	
 	//...................................................................................
 	// Send / Recv all the phase indcator field values
 	//...................................................................................
