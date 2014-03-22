@@ -2235,7 +2235,10 @@ int main(int argc, char **argv)
 				printf("vaw_global(1) = %f \n", vaw_global(1));
 				printf("vaw_global(2) = %f \n", vaw_global(2));
 			}
-			
+			if (rank==25){
+				printf("rank25: vol_w = %f \n", vol_w);
+				printf("rank25: paw = %f \n", paw);
+			}
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
 			efawns_global /= lwns_global;
@@ -2315,6 +2318,7 @@ int main(int argc, char **argv)
 	fclose(PHASE);
 //#endif
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	CopyToHost(Press.data,Pressure,N*sizeof(double));
 	CommunicateMeshHalo(Press, MPI_COMM_WORLD,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
@@ -2336,8 +2340,6 @@ int main(int argc, char **argv)
 			recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
 			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
 			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-	
-	CopyToHost(Press.data,Pressure,N*sizeof(double));
 	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
