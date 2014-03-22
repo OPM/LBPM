@@ -2226,6 +2226,16 @@ int main(int argc, char **argv)
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
 			
+			if (rank==0){
+				printf("vol_w = %f /n", vol_w);
+				printf("paw = %f /n", paw);
+				printf("vol_w_global = %f /n", vol_w_global);
+				printf("paw_global = %f /n", paw_global);
+				printf("vaw_global(0) = %f /n", vaw_global(0));
+				printf("vaw_global(1) = %f /n", vaw_global(1));
+				printf("vaw_global(2) = %f /n", vaw_global(2));
+			}
+			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
 			efawns_global /= lwns_global;
