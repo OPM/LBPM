@@ -3668,6 +3668,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 		// Compute the length of the segment
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		integral += 0.5*length*(vA + vB);
+	}
 	
 	return integral;
 }
