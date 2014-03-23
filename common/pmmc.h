@@ -3608,56 +3608,52 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	double magGradF,magGradS;
 	double length;
 	
-	magGradF = sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2));
-	magGradS = sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2));
 
 	// theta = acos ( -(gradF*gradS) / (|gradF| |gradS|) )
-	if ( magGradF*magGradS > 0.0){
-		CubeValues(0,0,0) = -( Fx(i,j,k)*Sx(i,j,k)+Fy(i,j,k)*Sy(i,j,k)+Fz(i,j,k)*Sz(i,j,k) )
-							   /( sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2))
-									   *sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2)) );
-		CubeValues(1,0,0) = -( Fx(i+1,j,k)*Sx(i+1,j,k)+Fy(i+1,j,k)*Sy(i+1,j,k)+Fz(i+1,j,k)*Sz(i+1,j,k) )
-							   /( sqrt(pow(Fx(i+1,j,k),2)+pow(Fy(i+1,j,k),2)+pow(Fz(i+1,j,k),2))
-									   *sqrt(pow(Sx(i+1,j,k),2)+pow(Sy(i+1,j,k),2)+pow(Sz(i+1,j,k),2)) );
-		CubeValues(0,1,0) = -( Fx(i,j+1,k)*Sx(i,j+1,k)+Fy(i,j+1,k)*Sy(i,j+1,k)+Fz(i,j+1,k)*Sz(i,j+1,k) )
-							   /( sqrt(pow(Fx(i,j+1,k),2)+pow(Fy(i,j+1,k),2)+pow(Fz(i,j+1,k),2))
-									   *sqrt(pow(Sx(i,j+1,k),2)+pow(Sy(i,j+1,k),2)+pow(Sz(i,j+1,k),2)) );
-		CubeValues(0,0,1) = -( Fx(i,j,k+1)*Sx(i,j,k+1)+Fy(i,j,k+1)*Sy(i,j,k+1)+Fz(i,j,k+1)*Sz(i,j,k+1) )
-							   /( sqrt(pow(Fx(i,j,k+1),2)+pow(Fy(i,j,k+1),2)+pow(Fz(i,j,k+1),2))
-									   *sqrt(pow(Sx(i,j,k+1),2)+pow(Sy(i,j,k+1),2)+pow(Sz(i,j,k+1),2)) );
-		CubeValues(1,1,0) = -( Fx(i+1,j+1,k)*Sx(i+1,j+1,k)+Fy(i+1,j+1,k)*Sy(i+1,j+1,k)+Fz(i+1,j+1,k)*Sz(i+1,j+1,k) )
-							   /( sqrt(pow(Fx(i+1,j+1,k),2)+pow(Fy(i+1,j+1,k),2)+pow(Fz(i+1,j+1,k),2))
-									   *sqrt(pow(Sx(i+1,j+1,k),2)+pow(Sy(i+1,j+1,k),2)+pow(Sz(i+1,j+1,k),2)) );
-		CubeValues(1,0,1) = -( Fx(i+1,j,k+1)*Sx(i+1,j,k+1)+Fy(i+1,j,k+1)*Sy(i+1,j,k+1)+Fz(i+1,j,k+1)*Sz(i+1,j,k+1) )
-							   /( sqrt(pow(Fx(i+1,j,k+1),2)+pow(Fy(i+1,j,k+1),2)+pow(Fz(i+1,j,k+1),2))
-									   *sqrt(pow(Sx(i+1,j,k+1),2)+pow(Sy(i+1,j,k+1),2)+pow(Sz(i+1,j,k+1),2)) );
-		CubeValues(0,1,1) = -( Fx(i,j+1,k+1)*Sx(i,j+1,k+1)+Fy(i,j+1,k+1)*Sy(i,j+1,k+1)+Fz(i,j+1,k+1)*Sz(i,j+1,k+1) )
-							   /( sqrt(pow(Fx(i,j+1,k+1),2)+pow(Fy(i,j+1,k+1),2)+pow(Fz(i,j+1,k+1),2))
-									   *sqrt(pow(Sx(i,j+1,k+1),2)+pow(Sy(i,j+1,k+1),2)+pow(Sz(i,j+1,k+1),2)) );
-		CubeValues(1,1,1) = -( Fx(i+1,j+1,k+1)*Sx(i+1,j+1,k+1)+Fy(i+1,j+1,k+1)*Sy(i+1,j+1,k+1)+Fz(i+1,j+1,k+1)*Sz(i+1,j+1,k+1) )
-							   /( sqrt(pow(Fx(i+1,j+1,k+1),2)+pow(Fy(i+1,j+1,k+1),2)+pow(Fz(i+1,j+1,k+1),2))
-									   *sqrt(pow(Sx(i+1,j+1,k+1),2)+pow(Sy(i+1,j+1,k+1),2)+pow(Sz(i+1,j+1,k+1),2)) );
+	CubeValues(0,0,0) = -( Fx(i,j,k)*Sx(i,j,k)+Fy(i,j,k)*Sy(i,j,k)+Fz(i,j,k)*Sz(i,j,k) )
+									   /( sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2))
+											   *sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2)) );
+	CubeValues(1,0,0) = -( Fx(i+1,j,k)*Sx(i+1,j,k)+Fy(i+1,j,k)*Sy(i+1,j,k)+Fz(i+1,j,k)*Sz(i+1,j,k) )
+									   /( sqrt(pow(Fx(i+1,j,k),2)+pow(Fy(i+1,j,k),2)+pow(Fz(i+1,j,k),2))
+											   *sqrt(pow(Sx(i+1,j,k),2)+pow(Sy(i+1,j,k),2)+pow(Sz(i+1,j,k),2)) );
+	CubeValues(0,1,0) = -( Fx(i,j+1,k)*Sx(i,j+1,k)+Fy(i,j+1,k)*Sy(i,j+1,k)+Fz(i,j+1,k)*Sz(i,j+1,k) )
+									   /( sqrt(pow(Fx(i,j+1,k),2)+pow(Fy(i,j+1,k),2)+pow(Fz(i,j+1,k),2))
+											   *sqrt(pow(Sx(i,j+1,k),2)+pow(Sy(i,j+1,k),2)+pow(Sz(i,j+1,k),2)) );
+	CubeValues(0,0,1) = -( Fx(i,j,k+1)*Sx(i,j,k+1)+Fy(i,j,k+1)*Sy(i,j,k+1)+Fz(i,j,k+1)*Sz(i,j,k+1) )
+									   /( sqrt(pow(Fx(i,j,k+1),2)+pow(Fy(i,j,k+1),2)+pow(Fz(i,j,k+1),2))
+											   *sqrt(pow(Sx(i,j,k+1),2)+pow(Sy(i,j,k+1),2)+pow(Sz(i,j,k+1),2)) );
+	CubeValues(1,1,0) = -( Fx(i+1,j+1,k)*Sx(i+1,j+1,k)+Fy(i+1,j+1,k)*Sy(i+1,j+1,k)+Fz(i+1,j+1,k)*Sz(i+1,j+1,k) )
+									   /( sqrt(pow(Fx(i+1,j+1,k),2)+pow(Fy(i+1,j+1,k),2)+pow(Fz(i+1,j+1,k),2))
+											   *sqrt(pow(Sx(i+1,j+1,k),2)+pow(Sy(i+1,j+1,k),2)+pow(Sz(i+1,j+1,k),2)) );
+	CubeValues(1,0,1) = -( Fx(i+1,j,k+1)*Sx(i+1,j,k+1)+Fy(i+1,j,k+1)*Sy(i+1,j,k+1)+Fz(i+1,j,k+1)*Sz(i+1,j,k+1) )
+									   /( sqrt(pow(Fx(i+1,j,k+1),2)+pow(Fy(i+1,j,k+1),2)+pow(Fz(i+1,j,k+1),2))
+											   *sqrt(pow(Sx(i+1,j,k+1),2)+pow(Sy(i+1,j,k+1),2)+pow(Sz(i+1,j,k+1),2)) );
+	CubeValues(0,1,1) = -( Fx(i,j+1,k+1)*Sx(i,j+1,k+1)+Fy(i,j+1,k+1)*Sy(i,j+1,k+1)+Fz(i,j+1,k+1)*Sz(i,j+1,k+1) )
+									   /( sqrt(pow(Fx(i,j+1,k+1),2)+pow(Fy(i,j+1,k+1),2)+pow(Fz(i,j+1,k+1),2))
+											   *sqrt(pow(Sx(i,j+1,k+1),2)+pow(Sy(i,j+1,k+1),2)+pow(Sz(i,j+1,k+1),2)) );
+	CubeValues(1,1,1) = -( Fx(i+1,j+1,k+1)*Sx(i+1,j+1,k+1)+Fy(i+1,j+1,k+1)*Sy(i+1,j+1,k+1)+Fz(i+1,j+1,k+1)*Sz(i+1,j+1,k+1) )
+									   /( sqrt(pow(Fx(i+1,j+1,k+1),2)+pow(Fy(i+1,j+1,k+1),2)+pow(Fz(i+1,j+1,k+1),2))
+											   *sqrt(pow(Sx(i+1,j+1,k+1),2)+pow(Sy(i+1,j+1,k+1),2)+pow(Sz(i+1,j+1,k+1),2)) );
 
-		// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-		// Evaluate the coefficients
-		a = CubeValues(0,0,0);
-		b = CubeValues(1,0,0)-a;
-		c = CubeValues(0,1,0)-a;
-		d = CubeValues(0,0,1)-a;
-		e = CubeValues(1,1,0)-a-b-c;
-		f = CubeValues(1,0,1)-a-b-d;
-		g = CubeValues(0,1,1)-a-c-d;
-		h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
 
-		for (p=0; p<npts; p++){
-			A = Points(p);
-			x = A.x-1.0*i;
-			y = A.y-1.0*j;
-			z = A.z-1.0*k;
-			CurveValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-		}
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		CurveValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 	}
-	
+
 	integral = 0.0;
 	for (p=0; p < npts-1; p++){
 		// Extract the line segment
