@@ -304,8 +304,8 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 					
 					n = kk*Nx*Ny+jj*Nx+ii;
 					
-					if (ID[n] == 1){
-						ID[n] = 2;
+					if (ID[n] == 2){
+						ID[n] = 1;
 						count++;
 					}
 				}
