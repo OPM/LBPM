@@ -1860,6 +1860,28 @@ int main(int argc, char **argv)
 			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 			//...........................................................................
 
+			//...........................................................................
+			CommunicateMeshHalo(Phase, MPI_COMM_WORLD,
+					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
+					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
+					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
+					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
+					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
+					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
+					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
+					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
+					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
+					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
+					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
+					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
+					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
+					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 			// Compute the gradients of the phase indicator and signed distance fields
 			pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
 //			pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
