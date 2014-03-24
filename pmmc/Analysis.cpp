@@ -218,6 +218,7 @@ int main(int argc, char **argv)
 	fclose(VEL);
 */	//...........................................................................
 	// Calculate the time derivative of the phase indicator field
+	
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.5*(Phase_tplus(n) - Phase_tminus(n));
 	
 	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
@@ -228,17 +229,16 @@ int main(int argc, char **argv)
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if ( SignDist(i,j,k) > 0 ){
+				if ( SignDist(i,j,k) > 0.0 ){
 
 					// 1-D index for this cube corner
 					n = i + j*Nx + k*Nx*Ny;
-
 					// Compute the non-wetting phase volume contribution
 					if ( Phase(i,j,k) > 0.0 )
 						nwp_volume += 1.0;
 
 					// volume averages over the non-wetting phase
-					if ( Phase(i,j,k) > 0.9999 ){
+					if ( Phase(i,j,k) > 0.99 ){
 						// volume the excludes the interfacial region
 						vol_n += 1.0;
 						// pressure
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
 					}
 
 					// volume averages over the wetting phase
-					if ( Phase(i,j,k) < -0.9999 ){
+					if ( Phase(i,j,k) < -0.99 ){
 						// volume the excludes the interfacial region
 						vol_w += 1.0;
 						// pressure
@@ -264,6 +264,9 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	
+	printf("vol_n = %f \n",vol_n);
+	printf("vol_w = %f \n",vol_w);
 	
 	// End of the loop to set the values
 	awn = aws = ans = lwns = 0.0;
@@ -289,6 +292,8 @@ int main(int argc, char **argv)
 	
 	FILE *WNS_PTS;
 	WNS_PTS = fopen("wns-pts.out","w");
+	
+	printf("ncubes = %i,\n",ncubes);
 	
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
@@ -322,7 +327,11 @@ int main(int argc, char **argv)
 		// Compute the average contact angle
 		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Phase_x,Phase_y,Phase_z,Sx,Sy,Sz,
 										local_nws_pts,i,j,k,n_local_nws_pts);
-
+		
+	//	printf("efawns= %f \n", efawns);
+		if (isnan(efawns))
+			c = ncubes;
+		
 		// Compute the curvature of the wn interface
 		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 											Curvature, i, j, k, n_nw_pts, n_nw_tris);

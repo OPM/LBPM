@@ -3431,9 +3431,9 @@ inline int pmmc_CubeListFromMesh(IntArray &cubeList, int ncubes, int Nx, int Ny,
 	nc=0;
 	//...........................................................................
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	for (k=0; k<Nz-2; k++){
-		for (j=0; j<Ny-2; j++){
-			for (i=0; i<Nx-2; i++){
+	for (k=1; k<Nz-2; k++){
+		for (j=1; j<Ny-2; j++){
+			for (i=1; i<Nx-2; i++){
 				cubeList(0,nc) = i;
 				cubeList(1,nc) = j;
 				cubeList(2,nc) = k;
@@ -3645,13 +3645,14 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	f = CubeValues(1,0,1)-a-b-d;
 	g = CubeValues(0,1,1)-a-c-d;
 	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-
+	
 	for (p=0; p<npts; p++){
 		A = Points(p);
 		x = A.x-1.0*i;
 		y = A.y-1.0*j;
 		z = A.z-1.0*k;
 		CurveValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+//		printf("grad F = %f \n", sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2)));
 	}
 
 	integral = 0.0;
@@ -3664,8 +3665,12 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 		// Compute the length of the segment
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		integral += 0.5*length*(vA + vB);
+///		printf("cos phi = %f, ", vA);
+//		printf("length = %f \n", length);
+//		printf("i,j,k = %i, %i, %i \n", i,j,k);
 	}
-	
+	if (npts > 0)
+//		printf("integral =%f \n",integral);
 	return integral;
 }
 //--------------------------------------------------------------------------------------------------------
