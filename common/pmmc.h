@@ -3656,6 +3656,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	}
 
 	integral = 0.0;
+
 	for (p=0; p < npts-1; p++){
 		// Extract the line segment
 		A = Points(p);
@@ -3665,12 +3666,10 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 		// Compute the length of the segment
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		integral += 0.5*length*(vA + vB);
-///		printf("cos phi = %f, ", vA);
-//		printf("length = %f \n", length);
-//		printf("i,j,k = %i, %i, %i \n", i,j,k);
 	}
-	if (npts > 0)
-//		printf("integral =%f \n",integral);
+
+	if (isnan(integral))	integral = 0.0;
+	
 	return integral;
 }
 //--------------------------------------------------------------------------------------------------------
