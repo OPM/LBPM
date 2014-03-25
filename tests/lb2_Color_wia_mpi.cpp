@@ -469,7 +469,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	// don't perform computations in the corners
+	//.........................................................
+	// don't perform computations at the eight corners
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
@@ -2130,6 +2131,45 @@ int main(int argc, char **argv)
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
 			Jwn = efawns = 0.0;
+			
+			/// Compute volume averages
+			for (k=1; k<Nz-1; k++){
+				for (j=1; j<Ny-1; j++){
+					for (i=1; i<Nx-1; i++){
+						if ( SignDist(i,j,k) > 0.0 ){
+
+							// 1-D index for this cube corner
+							n = i + j*Nx + k*Nx*Ny;
+							// Compute the non-wetting phase volume contribution
+							if ( Phase(i,j,k) > 0.0 )
+								nwp_volume += 1.0;
+
+							// volume averages over the non-wetting phase
+							if ( Phase(i,j,k) > 0.99 ){
+								// volume the excludes the interfacial region
+								vol_n += 1.0;
+								// pressure
+								pan += Press(i,j,k);
+								// velocity
+								van(0) += Vel_x(i,j,k);
+								van(1) += Vel_y(i,j,k);
+								van(2) += Vel_z(i,j,k);
+							}
+
+							// volume averages over the wetting phase
+							if ( Phase(i,j,k) < -0.99 ){
+								// volume the excludes the interfacial region
+								vol_w += 1.0;
+								// pressure
+								paw += Press(i,j,k);
+								// velocity
+								vaw(0) += Vel_x(i,j,k);
+								vaw(1) += Vel_y(i,j,k);
+								vaw(2) += Vel_z(i,j,k);
+							}
+						}
+					}
+				}
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
@@ -2138,7 +2178,7 @@ int main(int argc, char **argv)
 				k = cubeList(2,c);
 				
 				//...........................................................................
-				// Compute volume averages
+/*				// Compute volume averages
 				for (p=0;p<8;p++){
 					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 
@@ -2175,7 +2215,7 @@ int main(int argc, char **argv)
 					}
 				}
 
-				//...........................................................................
+*/				//...........................................................................
 				// Construct the interfaces and common curve
 				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
