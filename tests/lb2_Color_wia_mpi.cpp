@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 	nBlocks = 32;
 	nthreads = 128;
 	
-	int RESTART_INTERVAL=1000;
+	int RESTART_INTERVAL=20000;
 	
 	if (rank==0){
 		//.............................................................
