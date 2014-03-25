@@ -2170,7 +2170,7 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-
+			}
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
 				i = cubeList(0,c);
