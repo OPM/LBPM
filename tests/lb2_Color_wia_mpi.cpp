@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 		input >> dout;
 		// Line 7: time-stepping criteria
 		input >> timestepMax;		// max no. of timesteps
-		input >> interval;			// error interval
+		input >> interval;			// restart interval
 		input >> tol;				// error tolerance
 		//.............................................................
 		das = 0.1; dbs = 0.9;	// hard coded for density initialization
@@ -239,6 +239,8 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
+	
+	RESTART_INTERVAL=interval;
 	// **************************************************************
 	// **************************************************************
 	double Ps = -(das-dbs)/(das+dbs);
