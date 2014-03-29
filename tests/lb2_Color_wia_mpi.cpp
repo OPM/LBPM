@@ -2147,7 +2147,7 @@ int main(int argc, char **argv)
 								nwp_volume += 1.0;
 
 							// volume averages over the non-wetting phase
-							if ( Phase(i,j,k) > 0.99 ){
+							if ( Phase(i,j,k) > 0.999 ){
 								// volume the excludes the interfacial region
 								vol_n += 1.0;
 								// pressure
@@ -2159,7 +2159,7 @@ int main(int argc, char **argv)
 							}
 
 							// volume averages over the wetting phase
-							if ( Phase(i,j,k) < -0.99 ){
+							if ( Phase(i,j,k) < -0.999 ){
 								// volume the excludes the interfacial region
 								vol_w += 1.0;
 								// pressure
