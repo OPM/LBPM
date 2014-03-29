@@ -1177,9 +1177,27 @@ int main(int argc, char **argv)
 	//......................................................................
 //	InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
 	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+	//......................................................................
+	//.......................................................................
+	sprintf(LocalRankString,"%05d",rank);
+	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+	WriteLocalSolidID(LocalRankFilename, id, N);
+	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	//.......................................................................
+	if (Restart == true){
+		if (rank==0) printf("Reading restart file! \n");
+		// Read in the restart file to CPU buffers
+		ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
+		// Copy the restart data to the GPU
+		CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
+		CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
+		CopyToDevice(Den,cDen,2*N*sizeof(double));
+		DeviceBarrier();
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	//......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
 	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
@@ -1256,24 +1274,6 @@ int main(int argc, char **argv)
 			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 	//...........................................................................
 	//......................................................................
-	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-	WriteLocalSolidID(LocalRankFilename, id, N);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
-	//.......................................................................
-	if (Restart == true){
-		if (rank==0) printf("Reading restart file! \n");
-		// Read in the restart file to CPU buffers
-		ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-		// Copy the restart data to the GPU
-		CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
-		CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
-		CopyToDevice(Den,cDen,2*N*sizeof(double));
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
 
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
