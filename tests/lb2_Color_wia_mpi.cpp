@@ -1077,6 +1077,7 @@ int main(int argc, char **argv)
 	double lwns_global;
 	double efawns,efawns_global;				// averaged contact angle
 	double Jwn,Jwn_global;						// average mean curavture - wn interface
+	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
 	DoubleArray van(3);
 	DoubleArray vaw(3);
 	DoubleArray vawn(3);
@@ -1430,7 +1431,7 @@ int main(int argc, char **argv)
 	if (rank==0){
 		printf("--------------------------------------------------------------------------------------\n");
 		printf("timestep dEs ");								// Timestep, Change in Surface Energy
-		printf("sw pw pn awn ans aws Jwn lwns efawns ");		// Scalar averages
+		printf("sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
 		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
 		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		printf("Gws [xx, yy, zz, xy, xz, yz] ");
@@ -2132,7 +2133,7 @@ int main(int argc, char **argv)
 			Gns(0) = Gns(1) = Gns(2) = 0.0;
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
-			Jwn = efawns = 0.0;
+			Jwn = Kwn = efawns = 0.0;
 			
 			/// Compute volume averages
 			for (k=1; k<Nz-1; k++){
@@ -2232,6 +2233,7 @@ int main(int argc, char **argv)
 
 				// Integrate the mean curvature
 				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+				Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 				
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
@@ -2260,6 +2262,7 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			// Phase averages
 			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -2296,6 +2299,7 @@ int main(int argc, char **argv)
 			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
+			Kwn_global /= awn_global;
 			efawns_global /= lwns_global;
 
 			if (awn_global > 0.0)	for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
@@ -2316,7 +2320,7 @@ int main(int argc, char **argv)
 				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
 				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				printf("%.5g ",Jwn_global);												// curvature of wn interface
+				printf("%.5g %5g",Jwn_global, Kwn_global);								// curvature of wn interface
 				printf("%.5g ",lwns_global);											// common curve length
 				printf("%.5g ",efawns_global);											// average contact angle
 				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
