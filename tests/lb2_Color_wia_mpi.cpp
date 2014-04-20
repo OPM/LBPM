@@ -1078,6 +1078,8 @@ int main(int argc, char **argv)
 	double efawns,efawns_global;				// averaged contact angle
 	double Jwn,Jwn_global;						// average mean curavture - wn interface
 	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
+	double trawn,trawn_global;					// trimmed interfacial area
+	double trJwn,trJwn_global;					// trimmed interfacial area	
 	DoubleArray van(3);
 	DoubleArray vaw(3);
 	DoubleArray vawn(3);
@@ -1436,6 +1438,7 @@ int main(int argc, char **argv)
 		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		printf("Gws [xx, yy, zz, xy, xz, yz] ");
 		printf("Gns [xx, yy, zz, xy, xz, yz] \n"); 
+		printf("trJwn trawn ");									// trimmed curvature for wn surface
 		printf("--------------------------------------------------------------------------------------\n");
 	}
 
@@ -2134,6 +2137,7 @@ int main(int argc, char **argv)
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
 			Jwn = Kwn = efawns = 0.0;
+			trJwn = trawn = 0.0;
 			
 			/// Compute volume averages
 			for (k=1; k<Nz-1; k++){
@@ -2234,7 +2238,11 @@ int main(int argc, char **argv)
 				// Integrate the mean curvature
 				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 				Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+
+				// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris,4.0,trawn,trJwn)
 				
+				// Compute the normal speed of the interface
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 
@@ -2275,6 +2283,8 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Barrier(MPI_COMM_WORLD);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
@@ -2301,12 +2311,15 @@ int main(int argc, char **argv)
 			Jwn_global /= awn_global;
 			Kwn_global /= awn_global;
 			efawns_global /= lwns_global;
+			
+			if (trawn_global > 0.0)	trJwn_global /= trawn_global;
 
 			if (awn_global > 0.0)	for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
 			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 			
+
 			sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
 			awn_global = awn_global*iVol_global*D;
@@ -2330,8 +2343,9 @@ int main(int argc, char **argv)
 						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface	
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g \n",
+				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
+				printf("%.5g %5g /n",trawn_global, trJwn_global);						// Trimmed curvature
 			}
 		}
 		
