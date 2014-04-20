@@ -3489,7 +3489,7 @@ inline double pmmc_CubeCurveLength(DTMutableList<Point> &Points, int npts)
 	return lwns;
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_CubeTrimSurfaceInterpValue(DoubleArray &CubeValues, DoubleArray &MeshValues, DoubleArray &SignDist, 
+inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArray &MeshValues, DoubleArray &SignDist, 
 												DTMutableList<Point> &Points, IntArray &Triangles, 
 									  DoubleArray &SurfaceValues, DoubleArray &DistanceValues, int i, int j, int k, int npts, int ntris,
 									  	 double mindist, double area, double integral)
