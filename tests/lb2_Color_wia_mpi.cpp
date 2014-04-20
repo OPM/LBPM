@@ -1065,6 +1065,7 @@ int main(int argc, char **argv)
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
+	double trimdist=4.0; 						// pixel distance to trim surface for specified averages
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
@@ -2246,7 +2247,8 @@ int main(int argc, char **argv)
 				Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
 				// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris,4.0,trawn,trJwn)
+				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
 				
 				// Compute the normal speed of the interface
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
