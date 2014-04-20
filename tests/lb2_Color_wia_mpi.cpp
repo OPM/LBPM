@@ -1065,7 +1065,7 @@ int main(int argc, char **argv)
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
-	double trimdist=4.0; 						// pixel distance to trim surface for specified averages
+	double trimdist=3.0; 						// pixel distance to trim surface for specified averages
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
@@ -2354,7 +2354,7 @@ int main(int argc, char **argv)
 						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface	
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-				printf("%.5g %5g /n",trawn_global, trJwn_global);						// Trimmed curvature
+				printf("%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
 			}
 		}
 		
