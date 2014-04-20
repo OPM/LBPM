@@ -1123,6 +1123,7 @@ int main(int argc, char **argv)
 	DoubleArray Values(20);
 	DoubleArray ContactAngle(20);
 	DoubleArray Curvature(20);
+	DoubleArray DistValues(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
 	
