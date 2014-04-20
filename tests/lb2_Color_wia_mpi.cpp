@@ -1152,7 +1152,13 @@ int main(int argc, char **argv)
 	int nc=0;
 	//...........................................................................
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	for (k=1; k<Nz-1; k++){
+	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
+	int kstart,kfinish;
+	kstart = 1;
+	kfinish = Nz-1;
+	if (pBC && kproc==0)		kstart = 4;
+	if (pBC && kproc==nprocz-1)	kstart = Nz-4;
+	for (k=kstart; k<kfinish; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 				cubeList(0,nc) = i;
@@ -2140,7 +2146,7 @@ int main(int argc, char **argv)
 			trJwn = trawn = 0.0;
 			
 			/// Compute volume averages
-			for (k=1; k<Nz-1; k++){
+			for (k=kstart; k<kfinish; k++){
 				for (j=1; j<Ny-1; j++){
 					for (i=1; i<Nx-1; i++){
 						if ( SignDist(i,j,k) > 0.0 ){
