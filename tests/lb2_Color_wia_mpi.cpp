@@ -2297,7 +2297,7 @@ int main(int argc, char **argv)
 			MPI_Barrier(MPI_COMM_WORLD);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
-			// See McClure, Prins and Miller (2013) 
+			// See McClure, Prins and Miller (2014) 
 			//.........................................................................
 			dAwn += awn_global;
 			dAns += ans_global;
@@ -2316,6 +2316,14 @@ int main(int argc, char **argv)
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
 			
+			if(rank==0){
+				printf("awn_global = %f \n",awn_global);
+				printf("trawn_global = %f \n",trawn_global);
+				printf("Jwn_global = %f \n",Jwn_global);
+				printf("trJwn_global = %f \n",trJwn_global);
+			}
+			
+			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
 			Kwn_global /= awn_global;
@@ -2327,7 +2335,6 @@ int main(int argc, char **argv)
 			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
-			
 
 			sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
