@@ -3492,7 +3492,7 @@ inline double pmmc_CubeCurveLength(DTMutableList<Point> &Points, int npts)
 inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArray &MeshValues, DoubleArray &SignDist, 
 												DTMutableList<Point> &Points, IntArray &Triangles, 
 									  DoubleArray &SurfaceValues, DoubleArray &DistanceValues, int i, int j, int k, int npts, int ntris,
-									  	 double mindist, double area, double integral)
+									  	 double mindist, double &area, double &integral)
 {
 	// mindist - minimum distance to consider in the average (in voxel lengths)
 	Point A,B,C;
