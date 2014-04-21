@@ -3498,6 +3498,7 @@ inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArra
 	Point A,B,C;
 	int p;
 	double vA,vB,vC;
+	double dA,dB,dC;
 	double x,y,z;
 	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
@@ -3564,9 +3565,14 @@ inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArra
 		A = Points(Triangles(0,r));
 		B = Points(Triangles(1,r));
 		C = Points(Triangles(2,r));
+		
 		vA = SurfaceValues(Triangles(0,r));
 		vB = SurfaceValues(Triangles(1,r));
 		vC = SurfaceValues(Triangles(2,r));
+		
+		dA = DistanceValues(Triangles(0,r));
+		dB = DistanceValues(Triangles(1,r));
+		dC = DistanceValues(Triangles(2,r));
 		
 		// Compute length of sides (assume dx=dy=dz)
 		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
@@ -3574,16 +3580,17 @@ inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArra
 		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
 		s = 0.5*(s1+s2+s3);
 		temp = s*(s-s1)*(s-s2)*(s-s3);
+
 		if (temp > 0.0){
-			if (DistanceValues(Triangles(0,r)) > mindist){
+			if (dA > mindist){
 				integral += sqrt(temp)*0.33333333333333333*(vA);
 				area += sqrt(temp)*0.33333333333333333;
 			}
-			if (DistanceValues(Triangles(1,r)) > mindist){
+			if (dB > mindist){
 				integral += sqrt(temp)*0.33333333333333333*(vB);
 				area += sqrt(temp)*0.33333333333333333;
 			}
-			if (DistanceValues(Triangles(2,r)) > mindist){
+			if (dC > mindist){
 				integral += sqrt(temp)*0.33333333333333333*(vC);
 				area += sqrt(temp)*0.33333333333333333;
 			}
