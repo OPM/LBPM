@@ -1065,7 +1065,7 @@ int main(int argc, char **argv)
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
-	double trimdist=3.0; 						// pixel distance to trim surface for specified averages
+	double trimdist=2.0; 						// pixel distance to trim surface for specified averages
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
@@ -2316,12 +2316,12 @@ int main(int argc, char **argv)
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
 			
-//			if(rank==0){
-//				printf("awn_global = %f \n",awn_global);
-//				printf("trawn_global = %f \n",trawn_global);
-//				printf("Jwn_global = %f \n",Jwn_global);
-//				printf("trJwn_global = %f \n",trJwn_global);
-//			}
+			if(rank==0){
+				printf("awn_global = %f \n",awn_global);
+				printf("trawn_global = %f \n",trawn_global);
+				printf("Jwn_global = %f \n",Jwn_global);
+				printf("trJwn_global = %f \n",trJwn_global);
+			}
 			
 			
 			// Normalize surface averages by the interfacial area
@@ -2349,7 +2349,7 @@ int main(int argc, char **argv)
 				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
 				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				printf("%.5g %5g",Jwn_global, Kwn_global);								// curvature of wn interface
+				printf("%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
 				printf("%.5g ",lwns_global);											// common curve length
 				printf("%.5g ",efawns_global);											// average contact angle
 				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
