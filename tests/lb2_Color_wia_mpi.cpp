@@ -1065,7 +1065,7 @@ int main(int argc, char **argv)
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
-	double trimdist=2.0; 						// pixel distance to trim surface for specified averages
+	double trimdist=1.0; 						// pixel distance to trim surface for specified averages
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
