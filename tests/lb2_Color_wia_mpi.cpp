@@ -2316,13 +2316,13 @@ int main(int argc, char **argv)
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
 			
-			if(rank==0){
+	/*		if(rank==0){
 				printf("awn_global = %f \n",awn_global);
 				printf("trawn_global = %f \n",trawn_global);
 				printf("Jwn_global = %f \n",Jwn_global);
 				printf("trJwn_global = %f \n",trJwn_global);
 			}
-			
+	*/		
 			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
