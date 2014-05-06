@@ -159,6 +159,7 @@ int main(int argc, char **argv)
 
 	printf("Nx, Ny, Nz: %i, %i %i \n", Nx,Ny,Nz);
 	printf("Filename = %s \n",LocalRestartFile);
+	printf("Number of components = %i \n",NC);
 
 	N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -228,7 +229,7 @@ int main(int argc, char **argv)
 			for (int i=1; i<Nx-1; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				short int img_val;
-				//img_val = Data[n];
+				img_val = Data[n];
 				for (int nc=0; nc<NC; nc++){
 					Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
 				}
@@ -236,12 +237,15 @@ int main(int argc, char **argv)
 		}
 	}
 	//..............................................
+	printf("Initialize density \n");
 
 	InitD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 
 	int timestep=0;
 	int timestepMax=0;
+	printf("# timesteps for the LBM = %i \n",timestepMax);
+
 	while (timestep < timestepMax){
 		
 		ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
@@ -329,6 +333,7 @@ int main(int argc, char **argv)
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 	}
+	printf("Write density values \n");
 
 	double *DensityValues;
 	DensityValues = new double [2*N];
