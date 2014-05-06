@@ -156,7 +156,7 @@ int main(int argc, char **argv)
  	mu[0] = 27200;	sigma[0] = 1500;
  	mu[1] = -29000;	sigma[2] = 1200;
 
-	int N = Nx*Ny*Nz;
+	N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
 
 /*	//......................device distributions.................................
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	double *Phi,*Den;
+	double *Phi,*Den, *ColorGrad;
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	AllocateDeviceMemory((void **) &Den, NC*dist_mem_size);
 	AllocateDeviceMemory((void **) &ColorGrad, dist_mem_size);
