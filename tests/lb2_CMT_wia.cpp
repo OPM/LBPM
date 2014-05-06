@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 
 	int timestep=0;
-	int timestepMax=0;
+	int timestepMax=5;
 	printf("# timesteps for the LBM = %i \n",timestepMax);
 
 	while (timestep < timestepMax){
