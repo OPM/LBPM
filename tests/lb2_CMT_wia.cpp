@@ -139,6 +139,8 @@ int main(int argc, char **argv)
 {
 	int n,N,Nx,Ny,Nz;
 
+	Nx = Ny = Nz = 202;
+
 	int rank = 24;
 	char LocalRankString[8];
 	char LocalRankFilename[40];
