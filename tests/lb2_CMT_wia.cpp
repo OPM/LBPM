@@ -137,6 +137,8 @@ extern "C" void CMT_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd
 
 int main(int argc, char **argv)
 {
+	int n,N,Nx,Ny,Nz;
+
 	int rank = 0;
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -145,12 +147,14 @@ int main(int argc, char **argv)
 	sprintf(LocalRestartFile,"%s%s","Solid.",LocalRankString);
 
 	// Peaks of the standard normal distributions that approximate the data distribution
+	double beta = 0.8;
 	short int *mu;
 	short int *sigma;
 	mu = new short int [NC];
 	sigma = new short int [NC];
 
-	mu[0] = 0
+ 	mu[0] = 27200;	sigma[0] = 1500;
+ 	mu[1] = -29000;	sigma[2] = 1200;
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -188,7 +192,7 @@ int main(int argc, char **argv)
 	double *Phi,*Den;
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	AllocateDeviceMemory((void **) &Den, NC*dist_mem_size);
-	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
+	AllocateDeviceMemory((void **) &ColorGrad, dist_mem_size);
 	
 	double *packed_even,*packed_odd;
 	AllocateDeviceMemory((void **) &packed_even, 4*dist_mem_size*NC);	// Allocate device memory
@@ -317,7 +321,7 @@ int main(int argc, char **argv)
 
 	double *DensityValues;
 	DensityValues = new double [2*N];
-	CopyToHost(DensityValues,Copy,2*N*sizeof(double));
+	CopyToHost(DensityValues,Den,2*N*sizeof(double));
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(DensityValues,8,2*N,PHASE);
