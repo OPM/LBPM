@@ -228,6 +228,7 @@ int main(int argc, char **argv)
 			for (int i=1; i<Nx-1; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				short int img_val;
+				printf("n=%i \n",n);
 				for (int nc=0; nc<NC; nc++){
 					img_val = Data[n];
 					Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
