@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRestartFile,"%s%s","Solid.",LocalRankString);
 
 	// Peaks of the standard normal distributions that approximate the data distribution
-	double beta = 0.8;
+	double beta = 0.9;
 	short int *mu;
 	short int *sigma;
 	mu = new short int [NC];
@@ -230,8 +230,18 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 				short int img_val;
 				img_val = Data[n];
+				double sum = 0.0;
 				for (int nc=0; nc<NC; nc++){
-					Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
+					m = double(mu[nc]);
+					s = double(sigma[nc]);
+					sum += exp(-(value-m)*(value-m)/(2.0*s*s));
+				}
+				for (int nc=0; nc<NC; nc++){
+					m = double(mu[nc]);
+					s = double(sigma[nc]);
+					Den[N*nc+n] =  exp(-(value-m)*(value-m)/(2.0*s*s)) / sum;
+
+					//Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
 				}
 			}
 		}
