@@ -158,7 +158,7 @@ int main(int argc, char **argv)
  	mu[1] = -29000;	sigma[2] = 1200;
 
 	printf("Nx, Ny, Nz: %i, %i %i \n", Nx,Ny,Nz);
-	printf("Filename = %s \n",LocalRankString);
+	printf("Filename = %s \n",LocalRestartFile);
 
 	N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
