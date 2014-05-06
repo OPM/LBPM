@@ -140,7 +140,6 @@ int main(int argc, char **argv)
 	int n,N,Nx,Ny,Nz;
 
 	Nx = Ny = Nz = 202;
-
 	int rank = 24;
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -158,6 +157,9 @@ int main(int argc, char **argv)
  	mu[0] = 27200;	sigma[0] = 1500;
  	mu[1] = -29000;	sigma[2] = 1200;
 
+	printf("Nx, Ny, Nz: %i, %i %i \n", Nx,Ny,Nz);
+	printf("Filename = %s \n",LocalRankString);
+
 	N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
 
@@ -172,6 +174,7 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
 	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 */	
+	printf("Set up ID/n");
 	char *ID;
 	AllocateDeviceMemory((void **) &ID, N);
 	for (int k=0; k<Nz; k++){
@@ -191,6 +194,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+	printf("Allocate memory /n");
+
 	double *Phi,*Den, *ColorGrad;
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	AllocateDeviceMemory((void **) &Den, NC*dist_mem_size);
@@ -203,6 +208,7 @@ int main(int argc, char **argv)
 	//..............................................
 	// Read the input file
 	//..............................................
+	printf("Read files /n");
 	short int value;
 	short int *Data;
 	Data = new short int [N];
@@ -216,6 +222,7 @@ int main(int argc, char **argv)
 	//..............................................
 	// Initialize the density from the input file
 	//..............................................
+	printf("Initialize density /n");
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
@@ -230,6 +237,8 @@ int main(int argc, char **argv)
 	}
 	//..............................................
 
+	InitD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
+	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 
 	int timestep=0;
 	int timestepMax=0;
