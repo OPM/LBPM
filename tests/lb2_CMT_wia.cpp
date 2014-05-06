@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRestartFile,"%s%s","Solid.",LocalRankString);
 
 	// Peaks of the standard normal distributions that approximate the data distribution
-	double beta = 0.9;
+	double beta = 0.5;
 	short int *mu;
 	short int *sigma;
 	mu = new short int [NC];
@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	ComputePhi(ID, Phi, Den, N);
 
 	int timestep=0;
-	int timestepMax=5;
+	int timestepMax=15;
 	printf("# timesteps for the LBM = %i \n",timestepMax);
 
 	while (timestep < timestepMax){
