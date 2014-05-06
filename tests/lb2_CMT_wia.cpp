@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 				short int img_val;
 				img_val = Data[n];
 				for (int nc=0; nc<NC; nc++){
-					Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
+					Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
 				}
 			}
 		}
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 
 	int timestep=0;
-	int timestepMax=5;
+	int timestepMax=0;
 	printf("# timesteps for the LBM = %i \n",timestepMax);
 
 	while (timestep < timestepMax){
