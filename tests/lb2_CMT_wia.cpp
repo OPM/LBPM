@@ -331,6 +331,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
+		timestep++;
 	}
 	printf("Write density values \n");
 	FILE *PHASE;
