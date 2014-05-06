@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	sigma = new short int [NC];
 
  	mu[0] = 27200;	sigma[0] = 1500;
- 	mu[1] = -29000;	sigma[2] = 1200;
+ 	mu[1] = -29000;	sigma[1] = 1200;
 
 	printf("Nx, Ny, Nz: %i, %i %i \n", Nx,Ny,Nz);
 	printf("Filename = %s \n",LocalRestartFile);
