@@ -137,12 +137,20 @@ extern "C" void CMT_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd
 
 int main(int argc, char **argv)
 {
+	int rank = 0;
+	char LocalRankString[8];
+	char LocalRankFilename[40];
+	char LocalRestartFile[40];
+	sprintf(LocalRankString,"%05d",rank);
+	sprintf(LocalRestartFile,"%s%s","Solid.",LocalRankString);
 
 	// Peaks of the standard normal distributions that approximate the data distribution
 	short int *mu;
 	short int *sigma;
 	mu = new short int [NC];
 	sigma = new short int [NC];
+
+	mu[0] = 0
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -164,7 +172,7 @@ int main(int argc, char **argv)
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
-				ID[n] = 1;	
+				ID[n] = 0;
 			}
 		}
 	}
@@ -192,7 +200,7 @@ int main(int argc, char **argv)
 	short int value;
 	short int *Data;
 	Data = new short int [N];
-	ifstream File(FILENAME,ios::binary);
+	ifstream File(LocalRestartFile,ios::binary);
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
@@ -200,8 +208,25 @@ int main(int argc, char **argv)
 	}
 	File.close();
 	//..............................................
-	
-		
+	// Initialize the density from the input file
+	//..............................................
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				n = k*Nx*Ny+j*Nx+i;
+				short int img_val;
+				for (int nc=0; nc<NC; nc++){
+					img_val = Data[n];
+					Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
+				}
+			}
+		}
+	}
+	//..............................................
+
+
+	int timestep=0;
+	int timestepMax=0;
 	while (timestep < timestepMax){
 		
 		ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
@@ -289,6 +314,12 @@ int main(int argc, char **argv)
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 	}
-	
-	
+
+	double *DensityValues;
+	DensityValues = new double [2*N];
+	CopyToHost(DensityValues,Copy,2*N*sizeof(double));
+	FILE *PHASE;
+	PHASE = fopen(LocalRankFilename,"wb");
+	fwrite(DensityValues,8,2*N,PHASE);
+	fclose(PHASE);
 }
