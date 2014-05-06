@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
 	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 */	
-	printf("Set up ID/n");
+	printf("Set up ID \n");
 	char *ID;
 	AllocateDeviceMemory((void **) &ID, N);
 	for (int k=0; k<Nz; k++){
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	printf("Allocate memory /n");
+	printf("Allocate memory \n");
 
 	double *Phi,*Den, *ColorGrad;
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 	//..............................................
 	// Read the input file
 	//..............................................
-	printf("Read files /n");
+	printf("Read files \n");
 	short int value;
 	short int *Data;
 	Data = new short int [N];
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 	//..............................................
 	// Initialize the density from the input file
 	//..............................................
-	printf("Initialize density /n");
+	printf("Initialize density \n");
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
