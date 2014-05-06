@@ -237,8 +237,7 @@ int main(int argc, char **argv)
 		}
 	}
 	//..............................................
-	printf("Initialize density \n");
-
+	printf("Initialize distribution \n");
 	InitD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 
@@ -334,12 +333,8 @@ int main(int argc, char **argv)
 		//*************************************************************************
 	}
 	printf("Write density values \n");
-
-	double *DensityValues;
-	DensityValues = new double [2*N];
-	CopyToHost(DensityValues,Den,2*N*sizeof(double));
 	FILE *PHASE;
-	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(DensityValues,8,2*N,PHASE);
+	PHASE = fopen("Density.out","wb");
+	fwrite(Den,8,2*N,PHASE);
 	fclose(PHASE);
 }
