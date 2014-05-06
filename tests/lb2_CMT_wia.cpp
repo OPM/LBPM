@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 {
 	int n,N,Nx,Ny,Nz;
 
-	int rank = 0;
+	int rank = 24;
 	char LocalRankString[8];
 	char LocalRankFilename[40];
 	char LocalRestartFile[40];
