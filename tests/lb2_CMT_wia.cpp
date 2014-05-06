@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRestartFile,"%s%s","Solid.",LocalRankString);
 
 	// Peaks of the standard normal distributions that approximate the data distribution
-	double beta = 0.95;
+	double beta = 0.99;
 	short int *mu;
 	short int *sigma;
 	mu = new short int [NC];
