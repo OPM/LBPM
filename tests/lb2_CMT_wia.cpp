@@ -224,6 +224,7 @@ int main(int argc, char **argv)
 	// Initialize the density from the input file
 	//..............................................
 	printf("Initialize density... \n");
+	double m,s;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
