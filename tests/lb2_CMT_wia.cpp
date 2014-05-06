@@ -228,9 +228,9 @@ int main(int argc, char **argv)
 			for (int i=1; i<Nx-1; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				short int img_val;
-				img_val = Data[n];
+				//img_val = Data[n];
 				for (int nc=0; nc<NC; nc++){
-					//Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
+					Den[N*nc+n] = NormProb(img_val, mu, sigma, nc);
 				}
 			}
 		}
