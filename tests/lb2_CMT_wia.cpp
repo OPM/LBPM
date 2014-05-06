@@ -241,6 +241,7 @@ int main(int argc, char **argv)
 				for (int nc=0; nc<NC; nc++){
 					m = double(mu[nc]);
 					s = double(sigma[nc]);
+					if
 					Den[N*nc+n] =  exp(-(val-m)*(val-m)/(2.0*s*s)) / sum;
 
 					//Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
@@ -252,9 +253,10 @@ int main(int argc, char **argv)
 	printf("Initialize distribution \n");
 	InitD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
+	ComputePhi(ID, Phi, Den, N);
 
 	int timestep=0;
-	int timestepMax=5;
+	int timestepMax=0;
 	printf("# timesteps for the LBM = %i \n",timestepMax);
 
 	while (timestep < timestepMax){
