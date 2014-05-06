@@ -224,23 +224,24 @@ int main(int argc, char **argv)
 	// Initialize the density from the input file
 	//..............................................
 	printf("Initialize density... \n");
-	double m,s;
+	double m,s,val;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				short int img_val;
 				img_val = Data[n];
+				val = double(img_val);
 				double sum = 0.0;
 				for (int nc=0; nc<NC; nc++){
 					m = double(mu[nc]);
 					s = double(sigma[nc]);
-					sum += exp(-(value-m)*(value-m)/(2.0*s*s));
+					sum += exp(-(val-m)*(val-m)/(2.0*s*s));
 				}
 				for (int nc=0; nc<NC; nc++){
 					m = double(mu[nc]);
 					s = double(sigma[nc]);
-					Den[N*nc+n] =  exp(-(value-m)*(value-m)/(2.0*s*s)) / sum;
+					Den[N*nc+n] =  exp(-(val-m)*(val-m)/(2.0*s*s)) / sum;
 
 					//Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
 				}
