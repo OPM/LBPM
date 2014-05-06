@@ -241,8 +241,9 @@ int main(int argc, char **argv)
 				for (int nc=0; nc<NC; nc++){
 					m = double(mu[nc]);
 					s = double(sigma[nc]);
-					if
-					Den[N*nc+n] =  exp(-(val-m)*(val-m)/(2.0*s*s)) / sum;
+					if (sum != 0.0)
+						Den[N*nc+n] =  exp(-(val-m)*(val-m)/(2.0*s*s)) / sum;
+					else Den[N*nc+n] = 0.0;
 
 					//Den[N*nc+n] = 1.0*img_val;//NormProb(img_val, mu, sigma, nc);
 				}
