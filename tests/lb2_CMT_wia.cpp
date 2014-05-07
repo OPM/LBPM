@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 	ComputePhi(ID, Phi, Den, N);
 
 	int timestep=0;
-	int timestepMax=100;
+	int timestepMax=10;
 	printf("# timesteps for the LBM = %i \n",timestepMax);
 
 	while (timestep < timestepMax){
