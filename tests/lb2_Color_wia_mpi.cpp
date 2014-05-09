@@ -1046,6 +1046,7 @@ int main(int argc, char **argv)
 //	Vel = new double[3*N];		// fluid velocity
 //	Press = new double[N];		// fluid pressure
 
+	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
@@ -1128,8 +1129,6 @@ int main(int argc, char **argv)
 	DoubleArray NormalVector(60);
 	
 	//	IntArray store;
-	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
 //	double s,s1,s2,s3;		// Triangle sides (lengths)
@@ -1444,14 +1443,13 @@ int main(int argc, char **argv)
 		fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
 		fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
-		fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
+		fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z] ");			// Velocity averages
 		fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
-		fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] \n");
-		fprintf(TIMELOG,"trJwn trawn ");									// trimmed curvature for wn surface
+		fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] ");
+		fprintf(TIMELOG,"trJwn trawn \n");									// trimmed curvature for wn surface
 		fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 	}
-
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
@@ -2400,6 +2398,7 @@ int main(int argc, char **argv)
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
 	FILE *FINALSTATE;
 	if (rank==0){
+		fclose(TIMELOG);
 		FINALSTATE= fopen("TCAT.finalstate","w");
 		fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
