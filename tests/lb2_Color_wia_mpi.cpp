@@ -1438,17 +1438,20 @@ int main(int argc, char **argv)
 	//.........................................
 	
 	sendtag = recvtag = 5;
+	FILE *TIMELOG;
 	if (rank==0){
-		printf("--------------------------------------------------------------------------------------\n");
-		printf("timestep dEs ");								// Timestep, Change in Surface Energy
-		printf("sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
-		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
-		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
-		printf("Gws [xx, yy, zz, xy, xz, yz] ");
-		printf("Gns [xx, yy, zz, xy, xz, yz] \n"); 
-		printf("trJwn trawn ");									// trimmed curvature for wn surface
+		TIMELOG= fopen("TCAT.timelog","w");
+		printf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+		printf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
+		printf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
+		printf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
+		printf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
+		printf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
+		printf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] \n");
+		printf(TIMELOG,"trJwn trawn ");									// trimmed curvature for wn surface
 		printf("--------------------------------------------------------------------------------------\n");
 	}
+
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
@@ -2346,22 +2349,22 @@ int main(int argc, char **argv)
 			
 			//.........................................................................
 			if (rank==0){
-				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
-				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
-				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				printf("%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
-				printf("%.5g ",lwns_global);											// common curve length
-				printf("%.5g ",efawns_global);											// average contact angle
-				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
-				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
-				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+				printf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+				printf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
+				printf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
+				printf(TIMELOG,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+				printf(TIMELOG,"%.5g ",lwns_global);											// common curve length
+				printf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
+				printf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
+				printf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
+				printf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+				printf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+				printf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface	
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
+				printf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-				printf("%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+				printf(TIMELOG,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
 			}
 		}
 		
