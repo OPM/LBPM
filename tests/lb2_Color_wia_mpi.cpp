@@ -2398,7 +2398,26 @@ int main(int argc, char **argv)
 	// Write out the phase indicator field 
 	//************************************************************************/
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
-
+	FILE *FINALSTATE;
+	if (rank==0){
+		FINALSTATE= fopen("TCAT.finalstate","w");
+		printf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+		printf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
+		printf(FINALSTATE,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
+		printf(FINALSTATE,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+		printf(FINALSTATE,"%.5g ",lwns_global);											// common curve length
+		printf(FINALSTATE,"%.5g ",efawns_global);											// average contact angle
+		printf(FINALSTATE,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
+		printf(FINALSTATE,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
+		printf(FINALSTATE,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+		printf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
+		printf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
+		printf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
+		printf(FINALSTATE,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+	}
 	
 //#ifdef WriteOutput	
 	CopyToHost(Phase.data,Phi,N*sizeof(double));
