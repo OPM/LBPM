@@ -1129,6 +1129,7 @@ int main(int argc, char **argv)
 	DoubleArray NormalVector(60);
 	
 	//	IntArray store;
+	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
 //	double s,s1,s2,s3;		// Triangle sides (lengths)
@@ -1450,6 +1451,7 @@ int main(int argc, char **argv)
 		fprintf(TIMELOG,"trJwn trawn \n");									// trimmed curvature for wn surface
 		fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 	}
+
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
