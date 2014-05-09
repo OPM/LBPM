@@ -1449,7 +1449,7 @@ int main(int argc, char **argv)
 		fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
 		fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] \n");
 		fprintf(TIMELOG,"trJwn trawn ");									// trimmed curvature for wn surface
-		fprintf("--------------------------------------------------------------------------------------\n");
+		fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 	}
 
 
