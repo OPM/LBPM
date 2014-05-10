@@ -2398,7 +2398,6 @@ int main(int argc, char **argv)
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
 	FILE *FINALSTATE;
 	if (rank==0){
-		fclose(TIMELOG);
 		FINALSTATE= fopen("TCAT.finalstate","w");
 		fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
