@@ -1046,7 +1046,6 @@ int main(int argc, char **argv)
 //	Vel = new double[3*N];		// fluid velocity
 //	Press = new double[N];		// fluid pressure
 
-	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
@@ -1129,6 +1128,7 @@ int main(int argc, char **argv)
 	DoubleArray NormalVector(60);
 	
 	//	IntArray store;
+	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
@@ -1442,14 +1442,13 @@ int main(int argc, char **argv)
 		printf("--------------------------------------------------------------------------------------\n");
 		printf("timestep dEs ");								// Timestep, Change in Surface Energy
 		printf("sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
-		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z] ");			// Velocity averages
+		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
 		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 		printf("Gws [xx, yy, zz, xy, xz, yz] ");
-		printf("Gns [xx, yy, zz, xy, xz, yz] ");
-		printf("trJwn trawn \n");									// trimmed curvature for wn surface
+		printf("Gns [xx, yy, zz, xy, xz, yz] \n"); 
+		printf("trJwn trawn ");									// trimmed curvature for wn surface
 		printf("--------------------------------------------------------------------------------------\n");
 	}
-
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax){
@@ -2392,9 +2391,6 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 	
-	//************************************************************************/
-	// Write out the phase indicator field 
-	//************************************************************************/
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
 	FILE *FINALSTATE;
 	if (rank==0){
@@ -2416,6 +2412,12 @@ int main(int argc, char **argv)
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(FINALSTATE,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
 	}
+	
+	//************************************************************************/
+	// Write out the phase indicator field 
+	//************************************************************************/
+	//	printf("Local File Name =  %s \n",LocalRankFilename);
+
 	
 //#ifdef WriteOutput	
 	CopyToHost(Phase.data,Phi,N*sizeof(double));
