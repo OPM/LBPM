@@ -2378,19 +2378,19 @@ int main(int argc, char **argv)
 #ifdef WRITE_SURFACES
 			FILE *WN_TRIS;
 			sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
-			WN_TRIS = fopen(LocalRankFilename,"w");
+			WN_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *NS_TRIS;
 			sprintf(LocalRankFilename,"%s%s","ns-tris.",LocalRankString);
-			NS_TRIS = fopen("ns-tris.tri","w");
+			NS_TRIS = fopen("ns-tris.tri","wb");
 
 			FILE *WS_TRIS;
 			sprintf(LocalRankFilename,"%s%s","ws-tris.",LocalRankString);
-			WS_TRIS = fopen(LocalRankFilename,"w");
+			WS_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *WNS_PTS;
 			sprintf(LocalRankFilename,"%s%s","wns-crv.",LocalRankString);
-			WNS_PTS = fopen(LocalRankFilename,"w");
+			WNS_PTS = fopen(LocalRankFilename,"wb");
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
@@ -2429,20 +2429,43 @@ int main(int argc, char **argv)
 						A = C;
 						C = P;
 					}
-					fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+					//fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
 				}		
 				for (int r=0;r<n_ws_tris;r++){
 					A = ws_pts(ws_tris(0,r));
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
-					fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-				}
+					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);				}
 				for (int r=0;r<n_ns_tris;r++){
 					A = ns_pts(ns_tris(0,r));
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
-					fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-				}
+					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);				}
 				for (int p=0; p < n_nws_pts; p++){
 					P = nws_pts(p);
 					fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
