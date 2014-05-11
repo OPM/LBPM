@@ -2134,15 +2134,15 @@ int main(int argc, char **argv)
 					C = P;
 				}
 				//fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-				fwrite(A.x,sizeof(A.x),1,WN_TRIS);
-				fwrite(A.y,sizeof(A.y),1,WN_TRIS);
-				fwrite(A.z,sizeof(A.z),1,WN_TRIS);
-				fwrite(B.x,sizeof(B.x),1,WN_TRIS);
-				fwrite(B.y,sizeof(B.y),1,WN_TRIS);
-				fwrite(B.z,sizeof(B.z),1,WN_TRIS);
-				fwrite(C.x,sizeof(C.x),1,WN_TRIS);
-				fwrite(C.y,sizeof(C.y),1,WN_TRIS);
-				fwrite(C.z,sizeof(C.z),1,WN_TRIS);
+				fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+				fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+				fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+				fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+				fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+				fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+				fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+				fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+				fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
 			}		
 		}
 		fclose(WN_TRIS);
