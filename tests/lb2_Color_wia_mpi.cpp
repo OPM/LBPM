@@ -15,6 +15,7 @@
 #include "Communication.h"
 
 //#define CBUB
+#define WRITE_SURFACES
 
 using namespace std;
 
@@ -2376,18 +2377,20 @@ int main(int argc, char **argv)
 
 #ifdef WRITE_SURFACES
 			FILE *WN_TRIS;
-			WN_TRIS = fopen("wn-tris.out","w");
+			sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
+			WN_TRIS = fopen(LocalRankFilename,"w");
 
 			FILE *NS_TRIS;
-			NS_TRIS = fopen("ns-tris.out","w");
+			sprintf(LocalRankFilename,"%s%s","ns-tris.",LocalRankString);
+			NS_TRIS = fopen("ns-tris.tri","w");
 
 			FILE *WS_TRIS;
-			WS_TRIS = fopen("ws-tris.out","w");
+			sprintf(LocalRankFilename,"%s%s","ws-tris.",LocalRankString);
+			WS_TRIS = fopen(LocalRankFilename,"w");
 
 			FILE *WNS_PTS;
-			WNS_PTS = fopen("wns-pts.out","w");
-
-			printf("ncubes = %i,\n",ncubes);
+			sprintf(LocalRankFilename,"%s%s","wns-crv.",LocalRankString);
+			WNS_PTS = fopen(LocalRankFilename,"w");
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
@@ -2427,7 +2430,6 @@ int main(int argc, char **argv)
 						C = P;
 					}
 					fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-
 				}		
 				for (r=0;r<n_ws_tris;r++){
 					A = ws_pts(ws_tris(0,r));
@@ -2445,7 +2447,6 @@ int main(int argc, char **argv)
 					P = nws_pts(p);
 					fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
 				}
-
 			}
 			fclose(WN_TRIS);
 			fclose(NS_TRIS);
