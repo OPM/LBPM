@@ -2429,7 +2429,17 @@ int main(int argc, char **argv)
 						A = C;
 						C = P;
 					}
-					//fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+					// Remap the points
+					A.x += 1.0*iproc*(Nx-2);
+					A.y += 1.0*jproc*(Nx-2);
+					A.z += 1.0*kproc*(Nx-2);
+					B.x += 1.0*iproc*(Nx-2);
+					B.y += 1.0*jproc*(Nx-2);
+					B.z += 1.0*kproc*(Nx-2);
+					C.x += 1.0*iproc*(Nx-2);
+					C.y += 1.0*jproc*(Nx-2);
+					C.z += 1.0*kproc*(Nx-2);
+					// write the triangle
 					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
 					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
 					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
@@ -2444,6 +2454,17 @@ int main(int argc, char **argv)
 					A = ws_pts(ws_tris(0,r));
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
+					// Remap the points
+					A.x += 1.0*iproc*(Nx-2);
+					A.y += 1.0*jproc*(Nx-2);
+					A.z += 1.0*kproc*(Nx-2);
+					B.x += 1.0*iproc*(Nx-2);
+					B.y += 1.0*jproc*(Nx-2);
+					B.z += 1.0*kproc*(Nx-2);
+					C.x += 1.0*iproc*(Nx-2);
+					C.y += 1.0*jproc*(Nx-2);
+					C.z += 1.0*kproc*(Nx-2);
+					// write the triangle
 					fwrite(&A.x,sizeof(A.x),1,WS_TRIS);
 					fwrite(&A.y,sizeof(A.y),1,WS_TRIS);
 					fwrite(&A.z,sizeof(A.z),1,WS_TRIS);
@@ -2458,6 +2479,17 @@ int main(int argc, char **argv)
 					A = ns_pts(ns_tris(0,r));
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
+					// Remap the points
+					A.x += 1.0*iproc*(Nx-2);
+					A.y += 1.0*jproc*(Nx-2);
+					A.z += 1.0*kproc*(Nx-2);
+					B.x += 1.0*iproc*(Nx-2);
+					B.y += 1.0*jproc*(Nx-2);
+					B.z += 1.0*kproc*(Nx-2);
+					C.x += 1.0*iproc*(Nx-2);
+					C.y += 1.0*jproc*(Nx-2);
+					C.z += 1.0*kproc*(Nx-2);
+					// write the triangle
 					fwrite(&A.x,sizeof(A.x),1,NS_TRIS);
 					fwrite(&A.y,sizeof(A.y),1,NS_TRIS);
 					fwrite(&A.z,sizeof(A.z),1,NS_TRIS);
