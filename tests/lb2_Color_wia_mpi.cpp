@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <direct.h>
 #include <iostream>
 #include <exception>
 #include <stdexcept>
