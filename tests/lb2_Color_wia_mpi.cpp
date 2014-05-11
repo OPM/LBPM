@@ -2444,31 +2444,36 @@ int main(int argc, char **argv)
 					A = ws_pts(ws_tris(0,r));
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
-					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
-					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
-					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
-					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
-					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
-					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
-					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
-					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
-					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);				}
+					fwrite(&A.x,sizeof(A.x),1,WS_TRIS);
+					fwrite(&A.y,sizeof(A.y),1,WS_TRIS);
+					fwrite(&A.z,sizeof(A.z),1,WS_TRIS);
+					fwrite(&B.x,sizeof(B.x),1,WS_TRIS);
+					fwrite(&B.y,sizeof(B.y),1,WS_TRIS);
+					fwrite(&B.z,sizeof(B.z),1,WS_TRIS);
+					fwrite(&C.x,sizeof(C.x),1,WS_TRIS);
+					fwrite(&C.y,sizeof(C.y),1,WS_TRIS);
+					fwrite(&C.z,sizeof(C.z),1,WS_TRIS);	
+				}
 				for (int r=0;r<n_ns_tris;r++){
 					A = ns_pts(ns_tris(0,r));
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
-					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
-					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
-					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
-					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
-					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
-					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
-					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
-					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
-					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);				}
+					fwrite(&A.x,sizeof(A.x),1,NS_TRIS);
+					fwrite(&A.y,sizeof(A.y),1,NS_TRIS);
+					fwrite(&A.z,sizeof(A.z),1,NS_TRIS);
+					fwrite(&B.x,sizeof(B.x),1,NS_TRIS);
+					fwrite(&B.y,sizeof(B.y),1,NS_TRIS);
+					fwrite(&B.z,sizeof(B.z),1,NS_TRIS);
+					fwrite(&C.x,sizeof(C.x),1,NS_TRIS);
+					fwrite(&C.y,sizeof(C.y),1,NS_TRIS);
+					fwrite(&C.z,sizeof(C.z),1,NS_TRIS);
+				}
 				for (int p=0; p < n_nws_pts; p++){
 					P = nws_pts(p);
-					fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
+				//	fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
+					fwrite(&P.x,sizeof(P.x),1,WNS_PTS);
+					fwrite(&P.y,sizeof(P.y),1,WNS_PTS);
+					fwrite(&P.z,sizeof(P.z),1,WNS_PTS);
 				}
 			}
 			fclose(WN_TRIS);
