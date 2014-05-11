@@ -2082,19 +2082,7 @@ int main(int argc, char **argv)
 		
 		FILE *WN_TRIS;
 		sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
-		WN_TRIS = fopen(LocalRankFilename,"w");
-
-		FILE *NS_TRIS;
-		sprintf(LocalRankFilename,"%s%s","ns-tris.",LocalRankString);
-		NS_TRIS = fopen("ns-tris.tri","w");
-
-		FILE *WS_TRIS;
-		sprintf(LocalRankFilename,"%s%s","ws-tris.",LocalRankString);
-		WS_TRIS = fopen(LocalRankFilename,"w");
-
-		FILE *WNS_PTS;
-		sprintf(LocalRankFilename,"%s%s","wns-crv.",LocalRankString);
-		WNS_PTS = fopen(LocalRankFilename,"w");
+		WN_TRIS = fopen(LocalRankFilename,"wb");
 
 		for (c=0;c<ncubes;c++){
 			// Get cube from the list
@@ -2146,9 +2134,6 @@ int main(int argc, char **argv)
 			}		
 		}
 		fclose(WN_TRIS);
-		fclose(NS_TRIS);
-		fclose(WS_TRIS);
-		fclose(WNS_PTS);
 		
 	}
 	//************************************************************************/
