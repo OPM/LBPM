@@ -242,23 +242,21 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	//.......................................................................
 	N = Nx*Ny*Nz;
 	
-	int binCount=1;
+	int binCount;	
+	ifstream Dist("BlobSize.in");
+	Dist >> binCount;
+	printf("Number of blob sizes: %i \n",binCount);
 	SizeX = new int [binCount];
 	SizeY = new int [binCount];
 	SizeZ = new int [binCount];
-	
-	SizeX[0] = 32;
-	SizeY[0] = 32;
-	SizeZ[0] = 32;
-	
-/*	ifstream Dist("distribution.in");
 	for (int bin=0; bin<binCount; bin++){
 		Dist >> SizeX[bin];
 		Dist >> SizeY[bin];
 		Dist >> SizeZ[bin];
+		printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
 	}
 	Dist.close();
-*/	//.......................................................................
+	//.......................................................................
 //	cout << "Generating blocks... " << endl;	
 	// Count for the total number of oil nodes 
 	int count = 0;
@@ -268,9 +266,6 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 		if (ID[i] != 0) total++;
 	}
 	
-	sizeX = sizeY = sizeZ = 32;
-	
-	//	for (int feature = 0; feature < Number; feature++){
 	float sat = 0.f;
 	Number = 0;		// number of features
 	while (sat < Saturation){
@@ -280,10 +275,10 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 		y = Ny*float(rand())/float(RAND_MAX);
 		z = Nz*float(rand())/float(RAND_MAX);
 		
-//		bin = binCount*float(rand())/float(RAND_MAX);
-//		sizeX = SizeX[int(floor(bin))];
-//		sizeY = SizeY[int(floor(bin))];
-//		sizeZ = SizeZ[int(floor(bin))];
+		bin = binCount*float(rand())/float(RAND_MAX);
+		sizeX = SizeX[int(floor(bin))];
+		sizeY = SizeY[int(floor(bin))];
+		sizeZ = SizeZ[int(floor(bin))];
 		
 //		cout << "Sampling from bin no. " << floor(bin) << endl; 
 //		cout << "Feature size is: " << sizeX << "x" << sizeY << "x" << sizeZ << endl; 
