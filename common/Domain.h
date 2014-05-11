@@ -242,14 +242,14 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	//.......................................................................
 	N = Nx*Ny*Nz;
 	
-	int binCount;	
+	int bin, binCount;	
 	ifstream Dist("BlobSize.in");
 	Dist >> binCount;
 	printf("Number of blob sizes: %i \n",binCount);
 	SizeX = new int [binCount];
 	SizeY = new int [binCount];
 	SizeZ = new int [binCount];
-	for (int bin=0; bin<binCount; bin++){
+	for (bin=0; bin<binCount; bin++){
 		Dist >> SizeX[bin];
 		Dist >> SizeY[bin];
 		Dist >> SizeZ[bin];
@@ -275,10 +275,10 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 		y = Ny*float(rand())/float(RAND_MAX);
 		z = Nz*float(rand())/float(RAND_MAX);
 		
-		bin = binCount*float(rand())/float(RAND_MAX);
-		sizeX = SizeX[int(floor(bin))];
-		sizeY = SizeY[int(floor(bin))];
-		sizeZ = SizeZ[int(floor(bin))];
+		bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
+		sizeX = SizeX[bin];
+		sizeY = SizeY[bin];
+		sizeZ = SizeZ[bin];
 		
 //		cout << "Sampling from bin no. " << floor(bin) << endl; 
 //		cout << "Feature size is: " << sizeX << "x" << sizeY << "x" << sizeZ << endl; 
