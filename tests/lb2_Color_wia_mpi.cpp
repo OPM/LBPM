@@ -1046,6 +1046,7 @@ int main(int argc, char **argv)
 //	Vel = new double[3*N];		// fluid velocity
 //	Press = new double[N];		// fluid pressure
 
+	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
@@ -2372,7 +2373,87 @@ int main(int argc, char **argv)
 			CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
+
+#ifdef WRITE_SURFACES
+			FILE *WN_TRIS;
+			WN_TRIS = fopen("wn-tris.out","w");
+
+			FILE *NS_TRIS;
+			NS_TRIS = fopen("ns-tris.out","w");
+
+			FILE *WS_TRIS;
+			WS_TRIS = fopen("ws-tris.out","w");
+
+			FILE *WNS_PTS;
+			WNS_PTS = fopen("wns-pts.out","w");
+
+			printf("ncubes = %i,\n",ncubes);
+
+			for (c=0;c<ncubes;c++){
+				// Get cube from the list
+				i = cubeList(0,c);
+				j = cubeList(1,c);
+				k = cubeList(2,c);
+				//...........................................................................
+				// Construct the interfaces and common curve
+				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
+						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+						i, j, k, Nx, Ny, Nz);
+
+				//.......................................................................................
+				// Write the triangle lists to text file
+				for (r=0;r<n_nw_tris;r++){
+					A = nw_pts(nw_tris(0,r));
+					B = nw_pts(nw_tris(1,r));
+					C = nw_pts(nw_tris(2,r));
+					// compare the trianlge orientation against the color gradient
+					// Orientation of the triangle
+					double tri_normal_x = (A.y-B.y)*(B.z-C.z) - (A.z-B.z)*(B.y-C.y);
+					double tri_normal_y = (A.z-B.z)*(B.x-C.x) - (A.x-B.x)*(B.z-C.z);
+					double tri_normal_z = (A.x-B.x)*(B.y-C.y) - (A.y-B.y)*(B.x-C.x);
+
+					double normal_x = Phase_x(i,j,k);
+					double normal_y = Phase_y(i,j,k);
+					double normal_z = Phase_z(i,j,k);
+
+					// If the normals don't point in the same direction, flip the orientation of the triangle
+					// Right hand rule for triangle orientation is used to determine rendering for most software
+					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0){
+						P = A;
+						A = C;
+						C = P;
+					}
+					fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+
+				}		
+				for (r=0;r<n_ws_tris;r++){
+					A = ws_pts(ws_tris(0,r));
+					B = ws_pts(ws_tris(1,r));
+					C = ws_pts(ws_tris(2,r));
+					fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+				}
+				for (r=0;r<n_ns_tris;r++){
+					A = ns_pts(ns_tris(0,r));
+					B = ns_pts(ns_tris(1,r));
+					C = ns_pts(ns_tris(2,r));
+					fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+				}
+				for (p=0; p < n_nws_pts; p++){
+					P = nws_pts(p);
+					fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
+				}
+
+			}
+			fclose(WN_TRIS);
+			fclose(NS_TRIS);
+			fclose(WS_TRIS);
+			fclose(WNS_PTS);
+#endif 
 		}
+
 	}
 	//************************************************************************/
 	DeviceBarrier();
