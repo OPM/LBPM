@@ -312,6 +312,7 @@ int main(int argc, char **argv)
 	char LocalRankString[8];
 	char LocalRankFilename[40];
 	char LocalRestartFile[40];
+	char tmpstr[10];
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
@@ -1180,6 +1181,8 @@ int main(int argc, char **argv)
 	faceGrid=Nx*Ny/packThreads;
 	//...........................................................................
 
+	int logcount = 0; // number of surface write-outs
+	
 	//...........................................................................
 	//				MAIN  VARIABLES INITIALIZED HERE
 	//...........................................................................
@@ -2376,20 +2379,27 @@ int main(int argc, char **argv)
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 
 #ifdef WRITE_SURFACES
+			
+			sprintf(tmpstr,"vis%03d",logcount);
+			if (rank==0){
+				mkdir(tmpstr);
+			}
+			MPI_Barrier(MPI_COMM_WORLD);
+			
 			FILE *WN_TRIS;
-			sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
+			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wn-tris.",LocalRankString);
 			WN_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *NS_TRIS;
-			sprintf(LocalRankFilename,"%s%s","ns-tris.",LocalRankString);
+			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ns-tris.",LocalRankString);
 			NS_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *WS_TRIS;
-			sprintf(LocalRankFilename,"%s%s","ws-tris.",LocalRankString);
+			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ws-tris.",LocalRankString);
 			WS_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *WNS_PTS;
-			sprintf(LocalRankFilename,"%s%s","wns-crv.",LocalRankString);
+			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wns-crv.",LocalRankString);
 			WNS_PTS = fopen(LocalRankFilename,"wb");
 
 			for (c=0;c<ncubes;c++){
@@ -2512,6 +2522,7 @@ int main(int argc, char **argv)
 			fclose(NS_TRIS);
 			fclose(WS_TRIS);
 			fclose(WNS_PTS);
+			logcount++;
 #endif 
 		}
 
