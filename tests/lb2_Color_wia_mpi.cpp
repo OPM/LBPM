@@ -2382,7 +2382,7 @@ int main(int argc, char **argv)
 
 			FILE *NS_TRIS;
 			sprintf(LocalRankFilename,"%s%s","ns-tris.",LocalRankString);
-			NS_TRIS = fopen("ns-tris.tri","wb");
+			NS_TRIS = fopen(LocalRankFilename,"wb");
 
 			FILE *WS_TRIS;
 			sprintf(LocalRankFilename,"%s%s","ws-tris.",LocalRankString);
