@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <direct.h>
+#include <sys/stat.h>
 #include <iostream>
 #include <exception>
 #include <stdexcept>
@@ -2383,7 +2383,7 @@ int main(int argc, char **argv)
 			
 			sprintf(tmpstr,"vis%03d",logcount);
 			if (rank==0){
-				mkdir(tmpstr);
+				mkdir(tmpstr,0777);
 			}
 			MPI_Barrier(MPI_COMM_WORLD);
 			
