@@ -2408,7 +2408,7 @@ int main(int argc, char **argv)
 
 				//.......................................................................................
 				// Write the triangle lists to text file
-				for (r=0;r<n_nw_tris;r++){
+				for (int r=0;r<n_nw_tris;r++){
 					A = nw_pts(nw_tris(0,r));
 					B = nw_pts(nw_tris(1,r));
 					C = nw_pts(nw_tris(2,r));
@@ -2431,19 +2431,19 @@ int main(int argc, char **argv)
 					}
 					fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
 				}		
-				for (r=0;r<n_ws_tris;r++){
+				for (int r=0;r<n_ws_tris;r++){
 					A = ws_pts(ws_tris(0,r));
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
 					fprintf(WS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
 				}
-				for (r=0;r<n_ns_tris;r++){
+				for (int r=0;r<n_ns_tris;r++){
 					A = ns_pts(ns_tris(0,r));
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
 					fprintf(NS_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
 				}
-				for (p=0; p < n_nws_pts; p++){
+				for (int p=0; p < n_nws_pts; p++){
 					P = nws_pts(p);
 					fprintf(WNS_PTS,"%f %f %f \n",P.x, P.y, P.z);
 				}
