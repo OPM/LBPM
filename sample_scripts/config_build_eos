@@ -1,0 +1,51 @@
+# Clear all modules (except modules)
+for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
+source $MODULESHOME/init/bash
+
+# Set the modules and enviornmental variables
+module load DefApps
+module load PrgEnv-gnu 
+module unload cray-libsci
+module load cray-mpich ugni xpmem udreg altd
+module load moab torque
+module load mercurial git
+module load cmake
+
+export MPICH_RDMA_ENABLED_CUDA=0
+
+
+# Remove CMake files from previous configures
+rm -rf CMake*
+
+
+# Configure
+cmake                                        \
+    -D CMAKE_BUILD_TYPE:STRING=Release       \
+    -D CMAKE_C_COMPILER:PATH=cc              \
+    -D CMAKE_CXX_COMPILER:PATH=CC            \
+    -D CMAKE_CXX_COMPILER:PATH=CC            \
+    -D CMAKE_C_FLAGS="-DCBUB"                \
+    -D CMAKE_CXX_FLAGS="-DCBUB"              \
+    -D MPI_COMPILER:BOOL=TRUE                \
+       -D MPIEXEC=aprun                      \
+       -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D USE_CUDA=0                            \
+       -D CUDA_FLAGS="-arch sm_35"           \
+    -D PREFIX=$PROJWORK/geo106/eos-LBPM-WIA  \
+    ../../LBPM-WIA_master
+#-D CUDA_HOST_COMPILER="/usr/bin/gcc"  \
+
+
+# Build the code
+make install -j 8
+
+# Fix permissions
+chmod -R g+w $PROJWORK/geo106/eos-LBPM-WIA
+
+
+# Run the fast tests
+# ctest -E WEEKLY
+
+
+# Run the slow tests
+# ctest -R WEEKLY -VV
