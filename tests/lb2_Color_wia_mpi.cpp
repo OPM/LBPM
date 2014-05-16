@@ -1444,16 +1444,21 @@ int main(int argc, char **argv)
 	//.........................................
 	
 	sendtag = recvtag = 5;
+	FILE *TIMELOG;
 	if (rank==0){
-		printf("--------------------------------------------------------------------------------------\n");
-		printf("timestep dEs ");								// Timestep, Change in Surface Energy
-		printf("sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
-		printf("vw[x, y, z] vn[x, y, z] vwn[x, y, z]");			// Velocity averages
-		printf("Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
-		printf("Gws [xx, yy, zz, xy, xz, yz] ");
-		printf("Gns [xx, yy, zz, xy, xz, yz] \n"); 
-		printf("trJwn trawn ");									// trimmed curvature for wn surface
-		printf("--------------------------------------------------------------------------------------\n");
+		TIMELOG= fopen("timelog.tcat","a");
+		if (TIMELOG==NULL){
+			// If timelog is empty, write a short header to list the averages
+			printf("--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
+			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
+			fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");		// Velocity averages
+			fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
+			fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
+			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] \n");
+			fprintf(TIMELOG,"trJwn trawn ");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+		}
 	}
 
 	//************ MAIN ITERATION LOOP ***************************************/
@@ -2352,7 +2357,7 @@ int main(int argc, char **argv)
 			
 			//.........................................................................
 			if (rank==0){
-				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
+/*				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
 				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
 				printf("%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
@@ -2368,6 +2373,25 @@ int main(int argc, char **argv)
 				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 				printf("%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+
+*/
+				fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
+				fprintf(TIMELOG,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+				fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
+				fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
+				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
+				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
+				fprintf(TIMELOG,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+				fflush(TIMELOG);
 			}
 		}
 		
@@ -2548,6 +2572,7 @@ int main(int argc, char **argv)
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
 	FILE *FINALSTATE;
 	if (rank==0){
+		fclose(TIMELOG);
 		FINALSTATE= fopen("finalstate.tcat","a");
 		fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
@@ -2565,6 +2590,7 @@ int main(int argc, char **argv)
 		fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(FINALSTATE,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+		fclose(FINALSTATE);
 	}
 	
 	//************************************************************************/
