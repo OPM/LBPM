@@ -1449,14 +1449,14 @@ int main(int argc, char **argv)
 		TIMELOG= fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
 			// If timelog is empty, write a short header to list the averages
-			printf("--------------------------------------------------------------------------------------\n");
+			printf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
 			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
 			fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");		// Velocity averages
 			fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 			fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
-			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] \n");
-			fprintf(TIMELOG,"trJwn trawn ");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] ");
+			fprintf(TIMELOG,"trJwn trawn \n");								// trimmed curvature for wn surface
 			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 	}
