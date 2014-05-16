@@ -1446,8 +1446,8 @@ int main(int argc, char **argv)
 	sendtag = recvtag = 5;
 	FILE *TIMELOG;
 	if (rank==0){
-		TIMELOG= fopen("timelog.tcat","a");
-		if (TIMELOG==NULL){
+		TIMELOG= fopen("timelog.tcat","a+");
+		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
 			// If timelog is empty, write a short header to list the averages
 			printf("--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
