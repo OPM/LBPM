@@ -1449,7 +1449,7 @@ int main(int argc, char **argv)
 		TIMELOG= fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
 			// If timelog is empty, write a short header to list the averages
-			printf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
 			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
 			fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");		// Velocity averages
@@ -2265,13 +2265,7 @@ int main(int argc, char **argv)
 				// Compute the normal speed of the interface
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
-
-				//...........................................................................
-				// Compute the Interfacial Areas, Common Line length
-		/*		awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
-				ans += pmmc_CubeSurfaceArea(ns_pts,ns_tris,n_ns_tris);
-				aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
-		*/
+				
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 				// Compute the surface orientation and the interfacial area
