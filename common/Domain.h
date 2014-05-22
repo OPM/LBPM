@@ -245,7 +245,7 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	int bin, binCount;	
 	ifstream Dist("BlobSize.in");
 	Dist >> binCount;
-	printf("Number of blob sizes: %i \n",binCount);
+//	printf("Number of blob sizes: %i \n",binCount);
 	SizeX = new int [binCount];
 	SizeY = new int [binCount];
 	SizeZ = new int [binCount];
@@ -253,7 +253,7 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 		Dist >> SizeX[bin];
 		Dist >> SizeY[bin];
 		Dist >> SizeZ[bin];
-		printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
+	//	printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
 	}
 	Dist.close();
 	//.......................................................................
