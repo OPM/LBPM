@@ -184,10 +184,7 @@ int main(int argc, char **argv)
 		input >> interval;			// restart interval
 		input >> tol;				// error tolerance
 		//.............................................................
-		das = 0.1; dbs = 0.9;	// hard coded for density initialization
-								// should be OK to remove these parameters
-								// they should have no impact with the 
-								// current boundary condition
+
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
@@ -251,6 +248,10 @@ int main(int argc, char **argv)
 	double xIntPos;
 	xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
 	
+	// Set the density values inside the solid based on the input value phi_s
+ 	das = (phi_s+1.0)*0.5;
+	dbs = 1.0 - das;
+	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
@@ -263,8 +264,8 @@ int main(int argc, char **argv)
 		printf("tau = %f \n", tau);
 		printf("alpha = %f \n", alpha);		
 		printf("beta = %f \n", beta);
-//		printf("das = %f \n", das);
-//		printf("dbs = %f \n", dbs);
+		printf("das = %f \n", das);
+		printf("dbs = %f \n", dbs);
 		printf("Value of phi at solid surface = %f \n", phi_s);
 		printf("Distance to phi = 0.0: %f \n", xIntPos);
 		printf("gamma_{wn} = %f \n", 5.796*alpha);
@@ -1192,8 +1193,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	//......................................................................
-//	InitDenColorDistance(ID, Copy, Phi, SignDist.data, das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+#ifdef USE_EXP_CONTACT_ANGLE
 	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+#else
+	InitDenColorDistance(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+#endif
 	//......................................................................
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
