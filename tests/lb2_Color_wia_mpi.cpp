@@ -1196,7 +1196,7 @@ int main(int argc, char **argv)
 #ifdef USE_EXP_CONTACT_ANGLE
 	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
 #else
-	InitDenColorDistance(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 #endif
 	//......................................................................
 	//.......................................................................
