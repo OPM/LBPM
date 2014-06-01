@@ -14,23 +14,19 @@ extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, dou
 		i = n-Nx*Ny*k-Nx*j;
 
 		if ( ID[n] == 1){
-			Den[2*n] = 1.0;
-			Den[2*n+1] = 0.0;
+			Den[n] = 1.0;
+			Den[N+n] = 0.0;
 			Phi[n] = 1.0;
 		}
 		else if ( ID[n] == 2){
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 1.0;
+			Den[n] = 0.0;
+			Den[N+n] = 1.0;
 			Phi[n] = -1.0;
 		}
 		else{
 			Den[2*n] = das;
 			Den[2*n+1] = dbs;
 			Phi[n] = (das-dbs)/(das+dbs);
-		}
-		if (i == 0 || j == 0 || k == 0 || i == Nx-1 || j == Ny-1 || k == Nz-1){
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 0.0;
 		}
 	}
 }
