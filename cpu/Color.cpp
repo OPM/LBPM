@@ -24,8 +24,8 @@ extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, dou
 			Phi[n] = -1.0;
 		}
 		else{
-			Den[2*n] = das;
-			Den[2*n+1] = dbs;
+			Den[n] = das;
+			Den[N+n] = dbs;
 			Phi[n] = (das-dbs)/(das+dbs);
 		}
 	}
