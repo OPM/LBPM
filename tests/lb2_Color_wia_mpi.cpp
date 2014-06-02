@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	id = new char[N];
 	int sum = 0;
 	double sum_local;
-	double iVol_global = 1.0/(1.0*Nx*Ny*Nz*nprocs);
+	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 	double porosity;
 /*	//.......................................................................
 	ifstream PM(LocalRankFilename,ios::binary);
