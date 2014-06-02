@@ -237,7 +237,11 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	int sizeX,sizeY,sizeZ;
 	int *SizeX, *SizeY, *SizeZ;
 
+#ifdef NORANDOM
 	srand(10009);
+#else
+	srand(time(NULL));
+#endif
 //	float bin;
 	//.......................................................................
 	N = Nx*Ny*Nz;
@@ -310,6 +314,8 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	}
 	//.......................................................................
 }
+
+
 
 inline void WriteLocalSolidID(char *FILENAME, char *ID, int N)
 {
