@@ -450,7 +450,10 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 				if (SignDist.data[n] > 0.0){ 
 					id[n] = 2;	
-					sum++;
+				}
+				// compute the porosity (actual interface location used)
+				if (SignDist.data[n] > 1.0){ 
+					sum++;	
 				}
 			}
 		}
