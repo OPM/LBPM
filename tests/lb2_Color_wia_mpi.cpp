@@ -427,9 +427,11 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	//.......................................................................
+	for (i=0; i<N; i++)	SignDist.data[i] += (1.0); // map by a pixel to account for interface width
+
 	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
-
+	
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
