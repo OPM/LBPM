@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	double din,dout;
 	double wp_saturation;
 	bool pBC,Restart;
-	int i,j,k,p,n;
+	int i,j,k,n;
 
 	// pmmc threshold values
 	double fluid_isovalue,solid_isovalue;
@@ -2332,14 +2332,6 @@ int main(int argc, char **argv)
 			van_global(0) = van_global(0) / vol_n_global;
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
-			
-			if(rank==0){
-				printf("awn_global = %f \n",awn);
-				printf("trawn_global = %f \n",awn_global);
-				printf("Jwn_global = %f \n",Jwn);
-				printf("trJwn_global = %f \n",Jwn_global);
-			}
-			
 			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
