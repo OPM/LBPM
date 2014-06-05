@@ -452,7 +452,7 @@ int main(int argc, char **argv)
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (SignDist.data[n] > -1.0){ 
+				if (SignDist.data[n] > 1.0){ 
 					sum++;	
 				}
 			}
@@ -499,6 +499,7 @@ int main(int argc, char **argv)
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
 		dbs = 1.0 - das;
+		printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
 	}
 #endif
