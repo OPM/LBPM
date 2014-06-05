@@ -2400,7 +2400,7 @@ int main(int argc, char **argv)
 			if (pBC){
 				err = fabs(sat_w - sat_w_prev);
 				sat_w_prev = sat_w;
-				if (rank==0) fprintf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
+				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
 			}
 			else{
 				// Not clear yet
