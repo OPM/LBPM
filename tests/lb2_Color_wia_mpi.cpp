@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	
-	for (i=0; i<N; i++)	SignDist.data[i] += (1.0); // map by a pixel to account for interface width
+	for (n=0; n<N; n++)	SignDist.data[n] += (1.0); // map by a pixel to account for interface width
 
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
@@ -499,7 +499,7 @@ int main(int argc, char **argv)
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
 		dbs = 1.0 - das;
-		printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
+		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
 	}
 #endif
@@ -2339,13 +2339,13 @@ int main(int argc, char **argv)
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
 			
-	/*		if(rank==0){
-				printf("awn_global = %f \n",awn_global);
-				printf("trawn_global = %f \n",trawn_global);
-				printf("Jwn_global = %f \n",Jwn_global);
-				printf("trJwn_global = %f \n",trJwn_global);
+			if(rank==0){
+				printf("awn_global = %f \n",awn);
+				printf("trawn_global = %f \n",wn_global);
+				printf("Jwn_global = %f \n",Jwn);
+				printf("trJwn_global = %f \n",Jwn_global);
 			}
-	*/		
+			
 			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
