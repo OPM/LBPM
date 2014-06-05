@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	
-	for (n=0; n<N; n++)	SignDist.data[n] += (1.0); // map by a pixel to account for interface width
+	for (n=0; n<Nx*Ny*Nz; n++)	SignDist.data[n] += (1.0); // map by a pixel to account for interface width
 
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
