@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
 	int timestepMax, interval;
-	double tau,Fx,Fy,Fz,tol;
+	double tau,Fx,Fy,Fz,tol,err;
 	double alpha, beta;
 	double das, dbs, phi_s;
 	double din,dout;
@@ -1088,7 +1088,7 @@ int main(int argc, char **argv)
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
-	double sat_w;
+	double sat_w, sat_w_previous;
 	double pan,paw;								// local phase averaged pressure
 //	double vx_w,vy_w,vz_w,vx_n,vy_n,vz_n;  		// local phase averaged velocity
 	// Global averages (all processes)
@@ -1473,8 +1473,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+	err = 1.0; 	
+	sat_w_previous = 1.01; // slightly impossible value! 
+	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
-	while (timestep < timestepMax){
+	while (timestep < timestepMax && err > tol){
 
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
@@ -2394,6 +2397,9 @@ int main(int argc, char **argv)
 		}
 		
 		if (timestep%RESTART_INTERVAL == 0){
+			err = fabs(sat_w - sat_w_prev);
+			sat_w_prev = sat_w;
+			if (rank==0) fprintf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
 			// Copy the data to the CPU
 			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
 			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
