@@ -2399,7 +2399,7 @@ int main(int argc, char **argv)
 		if (timestep%RESTART_INTERVAL == 0){
 			if (pBC){
 				err = fabs(sat_w - sat_w_previous);
-				sat_w_prev = sat_w;
+				sat_w_previous = sat_w;
 				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
 			}
 			else{
