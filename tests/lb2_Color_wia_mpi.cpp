@@ -2397,9 +2397,14 @@ int main(int argc, char **argv)
 		}
 		
 		if (timestep%RESTART_INTERVAL == 0){
-			err = fabs(sat_w - sat_w_prev);
-			sat_w_prev = sat_w;
-			if (rank==0) fprintf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
+			if (pBC){
+				err = fabs(sat_w - sat_w_prev);
+				sat_w_prev = sat_w;
+				if (rank==0) fprintf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
+			}
+			else{
+				// Not clear yet
+			}
 			// Copy the data to the CPU
 			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
 			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
