@@ -3714,7 +3714,6 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 //	double s,s1,s2,s3,temp;
 	double a,b,c,d,e,f,g,h;
 	double integral;
-	double magGradF,magGradS;
 	double length;
 	
 

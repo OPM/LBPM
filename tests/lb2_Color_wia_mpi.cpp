@@ -1189,13 +1189,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	//...........................................................................
-	// Grids used to pack faces on the GPU for MPI
-	int faceGrid,edgeGrid,packThreads;
-	packThreads=512;
-	edgeGrid=1;
-	faceGrid=Nx*Ny/packThreads;
-	//...........................................................................
+
 
 	int logcount = 0; // number of surface write-outs
 	
