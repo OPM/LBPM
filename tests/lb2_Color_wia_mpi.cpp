@@ -2341,7 +2341,7 @@ int main(int argc, char **argv)
 			
 			if(rank==0){
 				printf("awn_global = %f \n",awn);
-				printf("trawn_global = %f \n",wn_global);
+				printf("trawn_global = %f \n",awn_global);
 				printf("Jwn_global = %f \n",Jwn);
 				printf("trJwn_global = %f \n",Jwn_global);
 			}
