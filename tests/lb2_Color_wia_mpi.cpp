@@ -1086,7 +1086,7 @@ int main(int argc, char **argv)
 	// local averages (to each MPI process)
 	double trimdist=1.0; 						// pixel distance to trim surface for specified averages
 	double awn,ans,aws,lwns,nwp_volume;
-	double As;
+	double As, dummy;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
 	double sat_w, sat_w_previous;
 	double pan,paw;								// local phase averaged pressure
@@ -1100,6 +1100,7 @@ int main(int argc, char **argv)
 	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
 	double trawn,trawn_global;					// trimmed interfacial area
 	double trJwn,trJwn_global;					// trimmed interfacial area	
+	double trRwn,trRwn_global;					// trimmed interfacial area	
 	DoubleArray van(3);
 	DoubleArray vaw(3);
 	DoubleArray vawn(3);
@@ -1468,7 +1469,7 @@ int main(int argc, char **argv)
 			fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 			fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
 			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] ");
-			fprintf(TIMELOG,"trJwn trawn \n");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"trJwn trawn trRwn\n");								// trimmed curvature for wn surface
 			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 	}
@@ -2171,7 +2172,7 @@ int main(int argc, char **argv)
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
 			Jwn = Kwn = efawns = 0.0;
-			trJwn = trawn = 0.0;
+			trJwn = trawn = trRwn = 0.0;
 			
 			/// Compute volume averages
 			for (k=kstart; k<kfinish; k++){
@@ -2277,6 +2278,9 @@ int main(int argc, char **argv)
 				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
 							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
 				
+				pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+				
 				// Compute the normal speed of the interface
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
@@ -2314,6 +2318,7 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Barrier(MPI_COMM_WORLD);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
@@ -2391,7 +2396,7 @@ int main(int argc, char **argv)
 						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-				fprintf(TIMELOG,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+				fprintf(TIMELOG,"%.5g %5g %5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 				fflush(TIMELOG);
 			}
 		}
@@ -2598,7 +2603,7 @@ int main(int argc, char **argv)
 				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 		fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-		fprintf(FINALSTATE,"%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
+		fprintf(FINALSTATE,"%.5g %5g %5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 		fclose(FINALSTATE);
 	}
 	

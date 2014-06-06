@@ -3597,6 +3597,114 @@ inline void pmmc_CubeTrimSurfaceInterpValues(DoubleArray &CubeValues, DoubleArra
 		}		
 	}
 }
+inline void pmmc_CubeTrimSurfaceInterpInverseValues(DoubleArray &CubeValues, DoubleArray &MeshValues, DoubleArray &SignDist, 
+												DTMutableList<Point> &Points, IntArray &Triangles, 
+									  DoubleArray &SurfaceValues, DoubleArray &DistanceValues, int i, int j, int k, int npts, int ntris,
+									  	 double mindist, double &area, double &integral)
+{
+	// mindist - minimum distance to consider in the average (in voxel lengths)
+	Point A,B,C;
+	int p;
+	double vA,vB,vC;
+	double dA,dB,dC;
+	double x,y,z;
+	double s,s1,s2,s3,temp;
+	double a,b,c,d,e,f,g,h;
+
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = MeshValues(i,j,k);
+	CubeValues(1,0,0) = MeshValues(i+1,j,k);
+	CubeValues(0,1,0) = MeshValues(i,j+1,k);
+	CubeValues(1,1,0) = MeshValues(i+1,j+1,k);
+	CubeValues(0,0,1) = MeshValues(i,j,k+1);
+	CubeValues(1,0,1) = MeshValues(i+1,j,k+1);
+	CubeValues(0,1,1) = MeshValues(i,j+1,k+1);
+	CubeValues(1,1,1) = MeshValues(i+1,j+1,k+1);
+	
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		SurfaceValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+
+	// Copy the signed distance values for the cube
+	CubeValues(0,0,0) = SignDist(i,j,k);
+	CubeValues(1,0,0) = SignDist(i+1,j,k);
+	CubeValues(0,1,0) = SignDist(i,j+1,k);
+	CubeValues(1,1,0) = SignDist(i+1,j+1,k);
+	CubeValues(0,0,1) = SignDist(i,j,k+1);
+	CubeValues(1,0,1) = SignDist(i+1,j,k+1);
+	CubeValues(0,1,1) = SignDist(i,j+1,k+1);
+	CubeValues(1,1,1) = SignDist(i+1,j+1,k+1);
+	
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	// Evaluate the coefficients
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+
+	for (p=0; p<npts; p++){
+		A = Points(p);
+		x = A.x-1.0*i;
+		y = A.y-1.0*j;
+		z = A.z-1.0*k;
+		DistanceValues(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+	
+	for (int r=0; r<ntris; r++){
+		A = Points(Triangles(0,r));
+		B = Points(Triangles(1,r));
+		C = Points(Triangles(2,r));
+		
+		vA = SurfaceValues(Triangles(0,r));
+		vB = SurfaceValues(Triangles(1,r));
+		vC = SurfaceValues(Triangles(2,r));
+		
+		dA = DistanceValues(Triangles(0,r));
+		dB = DistanceValues(Triangles(1,r));
+		dC = DistanceValues(Triangles(2,r));
+		
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
+		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s = 0.5*(s1+s2+s3);
+		temp = s*(s-s1)*(s-s2)*(s-s3);
+
+		if (temp > 0.0){
+			if (dA > mindist){
+				integral += sqrt(temp)*0.33333333333333333*(1.0/vA);
+				area += sqrt(temp)*0.33333333333333333;
+			}
+			if (dB > mindist){
+				integral += sqrt(temp)*0.33333333333333333*(1.0/vB);
+				area += sqrt(temp)*0.33333333333333333;
+			}
+			if (dC > mindist){
+				integral += sqrt(temp)*0.33333333333333333*(1.0/vC);
+				area += sqrt(temp)*0.33333333333333333;
+			}
+		}		
+	}
+}
 
 inline double pmmc_CubeSurfaceInterpValue(DoubleArray &CubeValues, DoubleArray &MeshValues, DTMutableList<Point> &Points, IntArray &Triangles,
 									  DoubleArray &SurfaceValues, int i, int j, int k, int npts, int ntris)
