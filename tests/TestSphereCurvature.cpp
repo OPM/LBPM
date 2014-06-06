@@ -131,14 +131,11 @@ int main(int argc, char **argv)
 
 	printf("Mean Curvature Average =  %f, Analytical = %f \n", wn_curvature_sum/wn_area_sum, 2.0/rad[0]/101 );
 	
-/*	FILE *CURVATURE;
-	CURVATURE = fopen("Curvature.dat","wb");
-	fwrite(MeanCurvature.data,8,N,CURVATURE);
-	fclose(CURVATURE);
-	
-	FILE *DISTANCE;
-	DISTANCE = fopen("SignDist.dat","wb");
-	fwrite(Phase.data,8,N,DISTANCE);
-	fclose(DISTANCE);
-*/
+
+	int toReturn = 0;
+	if ( fabs(wn_curvature_sum/wn_area_sum -2.0/rad[0]/101)*rad[0]*101.0(0.5) > 0.01 ){
+		toReturn = 1;
+		printf("Mean curvature test error exceeds relative error tolerance \n );
+	}
+	return toReturn;
 }
