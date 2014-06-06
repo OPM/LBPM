@@ -2346,6 +2346,11 @@ int main(int argc, char **argv)
 			Kwn_global /= awn_global;
 			efawns_global /= lwns_global;
 			
+			if (rank==0){
+				printf("trawn = %f \n", trawn);
+				printf("trRwn = %f \n", trRwn);
+				printf("trRwn_global = %f \n", trRwn_global);
+			}
 			
 			if (trawn_global > 0.0)	trJwn_global /= trawn_global;
 			if (trawn_global > 0.0)	trRwn_global /= trawn_global;
