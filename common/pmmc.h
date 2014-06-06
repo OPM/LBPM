@@ -3690,15 +3690,15 @@ inline void pmmc_CubeTrimSurfaceInterpInverseValues(DoubleArray &CubeValues, Dou
 		temp = s*(s-s1)*(s-s2)*(s-s3);
 
 		if (temp > 0.0){
-			if (dA > mindist){
+			if (dA > mindist && vA != 0.0){
 				integral += sqrt(temp)*0.33333333333333333*(1.0/vA);
 				area += sqrt(temp)*0.33333333333333333;
 			}
-			if (dB > mindist){
+			if (dB > mindist && vB != 0.0){
 				integral += sqrt(temp)*0.33333333333333333*(1.0/vB);
 				area += sqrt(temp)*0.33333333333333333;
 			}
-			if (dC > mindist){
+			if (dC > mindist && vC != 0.0){
 				integral += sqrt(temp)*0.33333333333333333*(1.0/vC);
 				area += sqrt(temp)*0.33333333333333333;
 			}
