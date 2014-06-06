@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 	int toReturn = 0;
 	if ( fabs(wn_curvature_sum/wn_area_sum -2.0/rad[0]/101)*rad[0]*101.0(0.5) > 0.01 ){
 		toReturn = 1;
-		printf("Mean curvature test error exceeds relative error tolerance \n );
+		printf("Mean curvature test error exceeds relative error tolerance \n ");
 	}
 	return toReturn;
 }
