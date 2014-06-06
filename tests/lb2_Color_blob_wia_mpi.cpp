@@ -1092,6 +1092,24 @@ int main(int argc, char **argv)
 	DoubleArray Gns(6);
 	DoubleArray Gws(6);
 	
+	// Local blob averages
+	double blob_awn,blob_ans,blob_aws,blob_lwns,blob_nwp_volume;
+	double blob_As;
+	double blob_vol_w, blob_vol_n;						// volumes the exclude the interfacial region
+	double blob_pan,blob_paw;								// local phase averaged pressure
+	double blob_efawns;				// averaged contact angle
+	double blob_Jwn;						// average mean curavture - wn interface
+	double blob_Kwn;						// average Gaussian curavture - wn interface
+	double blob_trawn;					// trimmed interfacial area
+	double blob_trJwn;					// trimmed interfacial area	
+	DoubleArray blob_van(3);
+	DoubleArray blob_vaw(3);
+	DoubleArray blob_vawn(3);
+	DoubleArray blob_Gwn(6);
+	DoubleArray blob_Gns(6);
+	DoubleArray blob_Gws(6);
+	
+	
 	double nwp_volume_global;					// volume for the wetting phase (for saturation)
 //	double p_n_global,p_w_global;				// global phase averaged pressure
 //	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
@@ -1162,57 +1180,7 @@ int main(int argc, char **argv)
 	IntArray Blobs(MAX_LOCAL_BLOB_COUNT);				// number of nodes in each blob
 	int nc=0;
 	//...........................................................................
-	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
-	int kstart,kfinish;
-	kstart = 1;
-	kfinish = Nz-1;
-	for (k=0;k<Nz-1;k++){
-		for (j=0;j<Ny-1;j++){
-			for (i=0;i<Nx-1;i++){
-				if ( LocalBlobID(i,j,k) == -1 ){
-					if ( Phase(i,j,k) > 0.0 ){
-						if ( SignDist(i,j,k) > 0.0 ){
-							// node i,j,k is in the porespace
-							Blobs(nblobs) = ComputeBlob(LocalBlobCubeList,nblobs,ncubes,LocalBlobID,Phase,SignDist,0.0,0.0,i,j,k,temp);
-							nblobs++;
-							INSIST(nblobs < MAX_LOCAL_BLOB_COUNT,"Not enough to store the local blobs!");
 
-						}
-					}
-				}
-			}
-		}
-	}
-	int count_in=0,count_out=0;
-	int nodx,nody,nodz;
-	for (k=0;k<Nz-1;k++){
-		for (j=0;j<Ny-1;j++){
-			for (i=0;i<Nx-1;i++){
-				// Loop over cube corners
-				add=1;				// initialize to true - add unless corner occupied by nw-phase
-				for (p=0;p<8;p++){
-					nodx=i+cube[p][0];
-					nody=j+cube[p][1];
-					nodz=k+cube[p][2];
-					if ( indicator(nodx,nody,nodz) > -1 ){
-						// corner occupied by nw-phase  -> do not add
-						add = 0;
-					}
-				}
-				if ( add == 1 ){
-					blobs(0,ncubes) = i;
-					blobs(1,ncubes) = j;
-					blobs(2,ncubes) = k;
-					ncubes++;
-					count_in++;
-				}
-				else { count_out++; }
-			}
-		}
-	}
-	b(nblobs) = count_in;
-	nblobs++;
 	//...........................................................................
 	// Grids used to pack faces on the GPU for MPI
 	int faceGrid,edgeGrid,packThreads;
@@ -1252,6 +1220,58 @@ int main(int argc, char **argv)
 		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+	// Set up the cube list (very regular in this case due to lack of blob-ID)
+	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
+	int kstart,kfinish;
+	kstart = 1;
+	kfinish = Nz-1;
+	nc = 0;
+	for (k=0;k<Nz-1;k++){
+		for (j=0;j<Ny-1;j++){
+			for (i=0;i<Nx-1;i++){
+				if ( LocalBlobID(i,j,k) == -1 ){
+					if ( Phase(i,j,k) > 0.0 ){
+						if ( SignDist(i,j,k) > 0.0 ){
+							// node i,j,k is in the porespace
+							Blobs(nblobs) = ComputeBlob(LocalBlobCubeList,nblobs,nc,LocalBlobID,Phase,SignDist,0.0,0.0,i,j,k,temp);
+							nblobs++;
+							INSIST(nblobs < MAX_LOCAL_BLOB_COUNT,"Not enough to store the local blobs!");
+
+						}
+					}
+				}
+			}
+		}
+	}
+	int count_in=0,count_out=0;
+	int nodx,nody,nodz;
+	for (k=0;k<Nz-1;k++){
+		for (j=0;j<Ny-1;j++){
+			for (i=0;i<Nx-1;i++){
+				// Loop over cube corners
+				add=1;				// initialize to true - add unless corner occupied by nw-phase
+				for (p=0;p<8;p++){
+					nodx=i+cube[p][0];
+					nody=j+cube[p][1];
+					nodz=k+cube[p][2];
+					if ( indicator(nodx,nody,nodz) > -1 ){
+						// corner occupied by nw-phase  -> do not add
+						add = 0;
+					}
+				}
+				if ( add == 1 ){
+					blobs(0,ncubes) = i;
+					blobs(1,ncubes) = j;
+					blobs(2,ncubes) = k;
+					ncubes++;
+					count_in++;
+				}
+				else { count_out++; }
+			}
+		}
+	}
+	b(nblobs) = count_in;
+	nblobs++;
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -2171,7 +2191,52 @@ int main(int argc, char **argv)
 					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
 					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 			//...........................................................................
+			nc = 0;	nblobs = 0;
+			for (k=0;k<Nz-1;k++){
+				for (j=0;j<Ny-1;j++){
+					for (i=0;i<Nx-1;i++){
+						if ( LocalBlobID(i,j,k) == -1 ){
+							if ( Phase(i,j,k) > 0.0 ){
+								if ( SignDist(i,j,k) > 0.0 ){
+									// node i,j,k is in the porespace
+									Blobs(nblobs) = ComputeBlob(LocalBlobCubeList,nblobs,nc,LocalBlobID,Phase,SignDist,0.0,0.0,i,j,k,temp);
+									nblobs++;
+									INSIST(nblobs < MAX_LOCAL_BLOB_COUNT,"Not enough to store the local blobs!");
 
+								}
+							}
+						}
+					}
+				}
+			}
+			count_in=0,count_out=0;
+			for (k=0;k<Nz-1;k++){
+				for (j=0;j<Ny-1;j++){
+					for (i=0;i<Nx-1;i++){
+						// Loop over cube corners
+						add=1;				// initialize to true - add unless corner occupied by nw-phase
+						for (p=0;p<8;p++){
+							nodx=i+cube[p][0];
+							nody=j+cube[p][1];
+							nodz=k+cube[p][2];
+							if ( indicator(nodx,nody,nodz) > -1 ){
+								// corner occupied by nw-phase  -> do not add
+								add = 0;
+							}
+						}
+						if ( add == 1 ){
+							blobs(0,ncubes) = i;
+							blobs(1,ncubes) = j;
+							blobs(2,ncubes) = k;
+							ncubes++;
+							count_in++;
+						}
+						else { count_out++; }
+					}
+				}
+			}
+			b(nblobs) = count_in;
+			nblobs++;
 			//...........................................................................
 
 			//...........................................................................
@@ -2197,7 +2262,6 @@ int main(int argc, char **argv)
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = 0.0;
 			
-
 			start = 0;
 			for (a=0;a<nblobs;a++){
 				finish = start+cubes_in_blob(a);
@@ -2206,6 +2270,26 @@ int main(int argc, char **argv)
 					i = LocalBlobCubeList(0,c);
 					j = LocalBlobCubeList(1,c);
 					k = LocalBlobCubeList(2,c);
+
+					//...........................................................................
+					// Initialize local blob averages
+					blob_awn = blob_aws = blob_ans = blob_lwns = 0.0;
+					blob_nwp_volume = 0.0;
+					blob_As = 0.0;
+					blob_pan = blob_paw = 0.0;
+					blob_vaw(0) = blob_vaw(1) = blob_vaw(2) = 0.0;
+					blob_van(0) = blob_van(1) = blob_van(2) = 0.0;
+					blob_vawn(0) = blob_vawn(1) = blob_vawn(2) = 0.0;
+					blob_Gwn(0) = blob_Gwn(1) = blob_Gwn(2) = 0.0;
+					blob_Gwn(3) = blob_Gwn(4) = blob_Gwn(5) = 0.0;
+					blob_Gws(0) = blob_Gws(1) = blob_Gws(2) = 0.0;
+					blob_Gws(3) = blob_Gws(4) = blob_Gws(5) = 0.0;
+					blob_Gns(0) = blob_Gns(1) = blob_Gns(2) = 0.0;
+					blob_Gns(3) = blob_Gns(4) = blob_Gns(5) = 0.0;
+					blob_vol_w = blob_vol_n =0.0;
+					blob_Jwn = blob_Kwn = blob_efawns = 0.0;
+					blob_trJwn = blob_trawn = 0.0;
+					//...........................................................................
 
 					//...........................................................................
 					// Compute volume averages
@@ -2217,30 +2301,30 @@ int main(int argc, char **argv)
 
 							// Compute the non-wetting phase volume contribution
 							if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
-								nwp_volume += 0.125;
+								blob_nwp_volume += 0.125;
 
 							// volume averages over the non-wetting phase
 							if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.99 ){
 								// volume the excludes the interfacial region
-								vol_n += 0.125;
+								blob_vol_n += 0.125;
 								// pressure
-								pan += 0.125*Press.data[n];
+								blob_pan += 0.125*Press.data[n];
 								// velocity
-								van(0) += 0.125*Vel_x.data[n];
-								van(1) += 0.125*Vel_y.data[n];
-								van(2) += 0.125*Vel_z.data[n];
+								blob_van(0) += 0.125*Vel_x.data[n];
+								blob_van(1) += 0.125*Vel_y.data[n];
+								blob_van(2) += 0.125*Vel_z.data[n];
 							}
 
 							// volume averages over the wetting phase
 							if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < -0.99 ){
 								// volume the excludes the interfacial region
-								vol_w += 0.125;
+								blob_vol_w += 0.125;
 								// pressure
-								paw += 0.125*Press.data[n];
+								blob_paw += 0.125*Press.data[n];
 								// velocity
-								vaw(0) += 0.125*Vel_x.data[n];
-								vaw(1) += 0.125*Vel_y.data[n];
-								vaw(2) += 0.125*Vel_z.data[n];
+								blob_vaw(0) += 0.125*Vel_x.data[n];
+								blob_vaw(1) += 0.125*Vel_y.data[n];
+								blob_vaw(2) += 0.125*Vel_z.data[n];
 							}
 						}
 					}
@@ -2255,31 +2339,104 @@ int main(int argc, char **argv)
 							i, j, k, Nx, Ny, Nz);
 
 					// Integrate the contact angle
-					efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,
+					blob_efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
 
 					// Integrate the mean curvature
-					Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-					Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+					blob_Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+					blob_Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
 					// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
 					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
-							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,blob_trawn,blob_trJwn);
 
 					// Compute the normal speed of the interface
 					pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
-							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+							NormalVector, InterfaceSpeed, blob_vawn, i, j, k, n_nw_pts, n_nw_tris);
 
-					As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+					blob_As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 					// Compute the surface orientation and the interfacial area
-					awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-					ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-					aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-					lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+					blob_awn += pmmc_CubeSurfaceOrientation(blob_Gwn,nw_pts,nw_tris,n_nw_tris);
+					blob_ans += pmmc_CubeSurfaceOrientation(blob_Gns,ns_pts,ns_tris,n_ns_tris);
+					blob_aws += pmmc_CubeSurfaceOrientation(blob_Gws,ws_pts,ws_tris,n_ws_tris);
+					blob_lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 					//...........................................................................
 				}
+				// Save blob averages to the table
+				LocalBlobTable(0,a) = blob_vol_n;
+				LocalBlobTable(1,a) = blob_pan;
+				LocalBlobTable(2,a) = blob_awn;
+				LocalBlobTable(3,a) = blob_ans;
+				LocalBlobTable(4,a) = blob_lwns;
+				LocalBlobTable(5,a) = blob_Jwn/blob_awn;
+				LocalBlobTable(6,a) = blob_trJwn/blob_trawn;
+				LocalBlobTable(7,a) = blob_Kwn/blob_awn;
+				LocalBlobTable(8,a) = blob_efawns/blob_lwns;
+				LocalBlobTable(9,a) = blob_van(0);
+				LocalBlobTable(10,a) = blob_van(1);
+				LocalBlobTable(11,a) = blob_van(2);
+				LocalBlobTable(12,a) = blob_vawn(0);
+				LocalBlobTable(13,a) = blob_vawn(1);
+				LocalBlobTable(14,a) = blob_vawn(2);	
+				LocalBlobTable(15,a) = blob_Gwn(0);
+				LocalBlobTable(16,a) = blob_Gwn(1);
+				LocalBlobTable(17,a) = blob_Gwn(2);
+				LocalBlobTable(18,a) = blob_Gwn(3);
+				LocalBlobTable(19,a) = blob_Gwn(4);
+				LocalBlobTable(20,a) = blob_Gwn(5);
+				LocalBlobTable(21,a) = blob_Gns(0);
+				LocalBlobTable(22,a) = blob_Gns(1);
+				LocalBlobTable(23,a) = blob_Gns(2);
+				LocalBlobTable(24,a) = blob_Gns(3);
+				LocalBlobTable(25,a) = blob_Gns(4);
+				LocalBlobTable(26,a) = blob_Gns(5);
+				
+				// Update the local averages from the blob averages
+				awn += blob_awn;
+				aws += blob_aws;
+				ans += blob_ans;
+				lwns += blob_lwns;
+				nwp_volume += blob_nwp_volume;
+				As += blob_As;
+				pan += blob_pan;
+				paw += blob_paw;
+				vaw(0) += blob_vaw(0);
+				vaw(1) += blob_vaw(1);
+				vaw(2) += blob_vaw(2);
+				van(0) += blob_van(0);
+				van(1) += blob_van(1);
+				van(2) += blob_van(2);
+				vawn(0) += blob_vawn(0);
+				vawn(1) += blob_vawn(1);
+				vawn(2) += blob_vawn(2);
+				Gwn(0) += blob_Gwn(0);
+				Gwn(1) += blob_Gwn(1);
+				Gwn(2) += blob_Gwn(2);
+				Gwn(3) += blob_Gwn(3);
+				Gwn(4) += blob_Gwn(4); 
+				Gwn(5) += blob_Gwn(5);
+				Gws(0) += blob_Gws(0);
+				Gws(1) += blob_Gws(1);
+				Gws(2) += blob_Gws(2);
+				Gws(3) += blob_Gws(3);
+				Gws(4) += blob_Gws(4);
+				Gws(5) += blob_Gws(5);
+				Gns(0) += blob_Gns(0);
+				Gns(1) += blob_Gns(1);
+				Gns(2) += blob_Gns(2);
+				Gns(3) += blob_Gns(3);
+				Gns(4) += blob_Gns(4); 
+				Gns(5) += blob_Gns(5);
+				vol_w += blob_vol_w;
+				vol_n += blob_vol_n;
+				Jwn += blob_Jwn;
+				Kwn += blob_Kwn;
+				efawns += blob_efawns;
+				trJwn += blob_trJwn;
+				trawn += blob_trawn;
 			}
+			
 			//...........................................................................
 			MPI_Barrier(MPI_COMM_WORLD);
 			MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -2325,14 +2482,6 @@ int main(int argc, char **argv)
 			van_global(0) = van_global(0) / vol_n_global;
 			van_global(1) = van_global(1) / vol_n_global;
 			van_global(2) = van_global(2) / vol_n_global;
-			
-	/*		if(rank==0){
-				printf("awn_global = %f \n",awn_global);
-				printf("trawn_global = %f \n",trawn_global);
-				printf("Jwn_global = %f \n",Jwn_global);
-				printf("trJwn_global = %f \n",trJwn_global);
-			}
-	*/		
 			
 			// Normalize surface averages by the interfacial area
 			Jwn_global /= awn_global;
