@@ -2347,6 +2347,7 @@ int main(int argc, char **argv)
 			efawns_global /= lwns_global;
 			
 			if (trawn_global > 0.0)	trJwn_global /= trawn_global;
+			if (trawn_global > 0.0)	trRwn_global /= trawn_global;
 
 			if (awn_global > 0.0)	for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
 			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
