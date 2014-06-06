@@ -137,4 +137,13 @@ int main(int argc, char **argv)
 	printf("Gxz =  %f, Analytical = 0 \n", Orientation(4)/wn_area_sum);
 	printf("Gyz =  %f, Analytical = 0 \n", Orientation(5)/wn_area_sum);
 	
+	int toReturn=0;
+	if (fabs(Orientation(0)/wn_area_sum - 0.3333333333333) > 0.01 )	toReturn = 1;
+	if (fabs(Orientation(1)/wn_area_sum - 0.3333333333333) > 0.01 )	toReturn = 2;
+	if (fabs(Orientation(2)/wn_area_sum - 0.3333333333333) > 0.01 )	toReturn = 3;
+	if (fabs(Orientation(3)/wn_area_sum ) > 0.01 )	toReturn = 4;
+	if (fabs(Orientation(4)/wn_area_sum ) > 0.01 )	toReturn = 5;
+	if (fabs(Orientation(5)/wn_area_sum ) > 0.01 )	toReturn = 6;
+	
+	return toReturn;
 }
