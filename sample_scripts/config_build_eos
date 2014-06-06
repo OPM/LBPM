@@ -4,7 +4,7 @@ source $MODULESHOME/init/bash
 
 # Set the modules and enviornmental variables
 module load DefApps
-module load PrgEnv-gnu 
+module load PrgEnv-pgi 
 module unload cray-libsci
 module load cray-mpich ugni xpmem udreg altd
 module load moab torque
@@ -24,15 +24,13 @@ cmake                                        \
     -D CMAKE_C_COMPILER:PATH=cc              \
     -D CMAKE_CXX_COMPILER:PATH=CC            \
     -D CMAKE_CXX_COMPILER:PATH=CC            \
-    -D CMAKE_C_FLAGS="-DCBUB"                \
-    -D CMAKE_CXX_FLAGS="-DCBUB"              \
     -D MPI_COMPILER:BOOL=TRUE                \
        -D MPIEXEC=aprun                      \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
-    -D PREFIX=$PROJWORK/geo106/eos-LBPM-WIA  \
-    ../../LBPM-WIA_master
+    -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \
+    ~/LBPM-WIA
 #-D CUDA_HOST_COMPILER="/usr/bin/gcc"  \
 
 
@@ -40,7 +38,7 @@ cmake                                        \
 make install -j 8
 
 # Fix permissions
-chmod -R g+w $PROJWORK/geo106/eos-LBPM-WIA
+#chmod -R g+w $PROJWORK/geo106/eos-LBPM-WIA
 
 
 # Run the fast tests
