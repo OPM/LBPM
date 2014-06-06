@@ -228,14 +228,6 @@ int main (int argc, char *argv[])
 	printf("-------------------------------- \n");	
 	//.........................................................................	
 	
-/*	FILE *PHASE;
-	PHASE = fopen("Phase.in","wb");
-	fwrite(Phase,8,SIZE,PHASE);
-	fclose(PHASE);
-	
-	FILE *SOLID;
-	SOLID = fopen("Distance.in","wb");
-	fwrite(Solid,8,SIZE,SOLID);
-	fclose(SOLID);
-*/
+	int toReturn = 0;
+	return toReturn;
 }
