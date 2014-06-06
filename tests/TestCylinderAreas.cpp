@@ -269,14 +269,27 @@ int main (int argc, char *argv[])
 	printf("-------------------------------- \n");	
 	//.........................................................................
 	
-/*	FILE *PHASE;
-	PHASE = fopen("Phase.in","wb");
-	fwrite(Phase,8,SIZE,PHASE);
-	fclose(PHASE);
+	int toReturn = 0;
+	if (fabs(awn - 2*PI*RADIUS*RADIUS)/(2*PI*RADIUS*RADIUS) > 0.01){	
+		toReturn += 1;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for wn area \n");
+	}
+	if (fabs(ans - 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT)/(2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT) > 0.01 ){
+		toReturn += 2;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for ns area \n");
+	}
+	if (fabs(aws - 4*PI*RADIUS*HEIGHT)/(4*PI*RADIUS*HEIGHT) > 0.01 ){
+		toReturn += 3;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for ws area \n");
+	}
+	if (fabs(As - 2*PI*RADIUS*(N-2))/(2*PI*RADIUS*(N-2)) > 0.01 ){
+		toReturn += 4;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for solid area \n");
+	}
+	if (fabs(lwns - 4*PI*RADIUS)/(4*PI*RADIUS) > 0.01 ){
+		toReturn += 5;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for common curve length \n");
+	}
 	
-	FILE *SOLID;
-	SOLID = fopen("Distance.in","wb");
-	fwrite(Solid,8,SIZE,SOLID);
-	fclose(SOLID);
-*/
+	return toReturn;
 }
