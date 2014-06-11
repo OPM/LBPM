@@ -1155,10 +1155,19 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny + j*Nz + i;
+					int iglobal= i+(Nx-2)*iproc;
+					int jglobal= j+(Ny-2)*jproc;
+					int kglobal= k+(Nz-2)*kproc;
 					// Cylindrical capillary tube aligned with the z direction
 					SignDist(i,j,k) = 100;
 					// Initialize phase positions field
-					if ((i-0.5*Nx)*(i-0.5*Nx)+(j-0.5*Ny)*(j-0.5*Ny)+(k-0.5*Nz)*(k-0.5*Nz) < BubbleRadius*BubbleRadius){
+			//		if ((i-0.5*Nx)*(i-0.5*Nx)+(j-0.5*Ny)*(j-0.5*Ny)+(k-0.5*Nz)*(k-0.5*Nz) < BubbleRadius*BubbleRadius){
+			//			id[n] = 2;
+			//		}
+					// Initialize phase position field for parallel bubble test
+					if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
+							+(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
+							+(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
 						id[n] = 2;
 					}
 					else{
