@@ -1174,10 +1174,11 @@ int main(int argc, char **argv)
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
 //	IntArray cubeList(3,ncubes);
 	IntArray LocalBlobID(Nx,Ny,Nz);
-	IntArray LocalBlobTable(100,MAX_LOCAL_BLOB_COUNT); 	// hold the neighboring ranks and the local blob averages (tcat)
 	IntArray LocalBlobCubeList(3,ncubes);				// store indices for blobs (cubes)
 	IntArray temp(3,ncubes);							// temporary storage array
 	IntArray Blobs(MAX_LOCAL_BLOB_COUNT);				// number of nodes in each blob
+	IntArray LocalBlobTable(20,MAX_LOCAL_BLOB_COUNT); 			// hold the neighboring ranks
+	DoubleArray LocalBlobAverages(30,MAX_LOCAL_BLOB_COUNT); 	// hold the local blob averages (tcat)
 	int nc=0;
 	//...........................................................................
 
@@ -2238,6 +2239,8 @@ int main(int argc, char **argv)
 			b(nblobs) = count_in;
 			nblobs++;
 			//...........................................................................
+			// Fill in the connected components graph in LocalBlobTable
+			//...........................................................................
 
 			//...........................................................................
 			// Compute areas using porous medium marching cubes algorithm
@@ -2364,33 +2367,33 @@ int main(int argc, char **argv)
 					//...........................................................................
 				}
 				// Save blob averages to the table
-				LocalBlobTable(0,a) = blob_vol_n;
-				LocalBlobTable(1,a) = blob_pan;
-				LocalBlobTable(2,a) = blob_awn;
-				LocalBlobTable(3,a) = blob_ans;
-				LocalBlobTable(4,a) = blob_lwns;
-				LocalBlobTable(5,a) = blob_Jwn/blob_awn;
-				LocalBlobTable(6,a) = blob_trJwn/blob_trawn;
-				LocalBlobTable(7,a) = blob_Kwn/blob_awn;
-				LocalBlobTable(8,a) = blob_efawns/blob_lwns;
-				LocalBlobTable(9,a) = blob_van(0);
-				LocalBlobTable(10,a) = blob_van(1);
-				LocalBlobTable(11,a) = blob_van(2);
-				LocalBlobTable(12,a) = blob_vawn(0);
-				LocalBlobTable(13,a) = blob_vawn(1);
-				LocalBlobTable(14,a) = blob_vawn(2);	
-				LocalBlobTable(15,a) = blob_Gwn(0);
-				LocalBlobTable(16,a) = blob_Gwn(1);
-				LocalBlobTable(17,a) = blob_Gwn(2);
-				LocalBlobTable(18,a) = blob_Gwn(3);
-				LocalBlobTable(19,a) = blob_Gwn(4);
-				LocalBlobTable(20,a) = blob_Gwn(5);
-				LocalBlobTable(21,a) = blob_Gns(0);
-				LocalBlobTable(22,a) = blob_Gns(1);
-				LocalBlobTable(23,a) = blob_Gns(2);
-				LocalBlobTable(24,a) = blob_Gns(3);
-				LocalBlobTable(25,a) = blob_Gns(4);
-				LocalBlobTable(26,a) = blob_Gns(5);
+				LocalBlobAverages(0,a) = blob_vol_n;
+				LocalBlobAverages(1,a) = blob_pan;
+				LocalBlobAverages(2,a) = blob_awn;
+				LocalBlobAverages(3,a) = blob_ans;
+				LocalBlobAverages(4,a) = blob_lwns;
+				LocalBlobAverages(5,a) = blob_Jwn/blob_awn;
+				LocalBlobAverages(6,a) = blob_trJwn/blob_trawn;
+				LocalBlobAverages(7,a) = blob_Kwn/blob_awn;
+				LocalBlobAverages(8,a) = blob_efawns/blob_lwns;
+				LocalBlobAverages(9,a) = blob_van(0);
+				LocalBlobAverages(10,a) = blob_van(1);
+				LocalBlobAverages(11,a) = blob_van(2);
+				LocalBlobAverages(12,a) = blob_vawn(0);
+				LocalBlobAverages(13,a) = blob_vawn(1);
+				LocalBlobAverages(14,a) = blob_vawn(2);	
+				LocalBlobAverages(15,a) = blob_Gwn(0);
+				LocalBlobAverages(16,a) = blob_Gwn(1);
+				LocalBlobAverages(17,a) = blob_Gwn(2);
+				LocalBlobAverages(18,a) = blob_Gwn(3);
+				LocalBlobAverages(19,a) = blob_Gwn(4);
+				LocalBlobAverages(20,a) = blob_Gwn(5);
+				LocalBlobAverages(21,a) = blob_Gns(0);
+				LocalBlobAverages(22,a) = blob_Gns(1);
+				LocalBlobAverages(23,a) = blob_Gns(2);
+				LocalBlobAverages(24,a) = blob_Gns(3);
+				LocalBlobAverages(25,a) = blob_Gns(4);
+				LocalBlobAverages(26,a) = blob_Gns(5);
 				
 				// Update the local averages from the blob averages
 				awn += blob_awn;
@@ -2435,6 +2438,8 @@ int main(int argc, char **argv)
 				efawns += blob_efawns;
 				trJwn += blob_trJwn;
 				trawn += blob_trawn;
+				
+				
 			}
 			
 			//...........................................................................
