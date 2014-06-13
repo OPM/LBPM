@@ -2203,7 +2203,6 @@ int main(int argc, char **argv)
 									Blobs(nblobs) = ComputeBlob(LocalBlobCubeList,nblobs,nc,LocalBlobID,Phase,SignDist,0.0,0.0,i,j,k,temp);
 									nblobs++;
 									INSIST(nblobs < MAX_LOCAL_BLOB_COUNT,"Not enough to store the local blobs!");
-
 								}
 							}
 						}
