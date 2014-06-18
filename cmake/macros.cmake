@@ -296,9 +296,9 @@ FUNCTION( ADD_LBPM_PROVISIONAL_TEST EXEFILE )
         # The correct target has already been added
     ELSE()
         # We are trying to add 2 different tests with the same name
-        MESSAGE ( "Existing test: ${tmp}" )
-        MESSAGE ( "New test:      ${CMAKE_CURRENT_BINARY_DIR}/${EXEFILE}" )
-        MESSAGE ( FATAL_ERROR "Trying to add 2 different tests with the same name" )
+        MESSAGE( "Existing test: ${tmp}" )
+        MESSAGE( "New test:      ${CMAKE_CURRENT_BINARY_DIR}/${EXEFILE}" )
+        MESSAGE( FATAL_ERROR "Trying to add 2 different tests with the same name" )
     ENDIF()
 ENDFUNCTION()
 
@@ -385,6 +385,27 @@ MACRO( ADD_LBPM_TEST_THREAD_MPI EXEFILE PROCS THREADS ${ARGN} )
         ADD_TEST ( ${TESTNAME} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} ${EXE} ${ARGN} )
     ENDIF()
     SET_TESTS_PROPERTIES ( ${TESTNAME} PROPERTIES FAIL_REGULAR_EXPRESSION ".*FAILED.*" PROCESSORS ${TOT_PROCS} )
+ENDMACRO()
+
+
+# Copy an example folder
+MACRO( INSTALL_EXAMPLE EXAMPLE )
+    INSTALL( DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}" DESTINATION "${LBPM_INSTALL_DIR}/example" )
+ENDMACRO()
+
+
+# Copy an example folder
+MACRO( TEST_EXAMPLE EXAMPLE EXEFILE PROCS ${ARGN} )
+    ADD_CUSTOM_TARGET(
+        ${EXAMPLE} ALL
+        ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}" "${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}"
+        DEPENDS ${EXEFILE}
+    )
+    ADD_TEST( 
+        NAME example--${EXAMPLE} 
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}" 
+        COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} "${LBPM_INSTALL_DIR}/bin/${EXEFILE}" ${ARGN} )
+    SET_TESTS_PROPERTIES( ${TESTNAME} PROPERTIES FAIL_REGULAR_EXPRESSION ".*FAILED.*" PROCESSORS 1 )
 ENDMACRO()
 
 
