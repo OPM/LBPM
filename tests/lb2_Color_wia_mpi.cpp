@@ -1491,7 +1491,7 @@ int main(int argc, char **argv)
 	sat_w_previous = 1.01; // slightly impossible value! 
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
-	while (timestep < timestepMax && err > tol){
+	while (timestep < timestepMax && err > tol ){
 
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
@@ -2414,13 +2414,15 @@ int main(int argc, char **argv)
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 				fprintf(TIMELOG,"%.5g %5g %5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 				fflush(TIMELOG);
+				
+				if (timestep > 100) err = (pan_global - paw_global)*D/(5.796*alpha) - Jwn_global*D;
 			}
 		}
 		
 		if (timestep%RESTART_INTERVAL == 0){
 			if (pBC){
-				err = fabs(sat_w - sat_w_previous);
-				sat_w_previous = sat_w;
+				//err = fabs(sat_w - sat_w_previous);
+				//sat_w_previous = sat_w;
 				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
 			}
 			else{
@@ -2666,6 +2668,7 @@ int main(int argc, char **argv)
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Press.data,8,N,PRESS);
 	fclose(PRESS);
+
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	FILE *SPEED;

@@ -318,7 +318,7 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 inline void FlipID(char *ID, int N)
 {
 	for (int n=0; n<N; n++){
-		if  (ID[n] == 1)	ID[n] = 2;
+		if  	 (ID[n] == 1)	ID[n] = 2;
 		else if  (ID[n] == 2)	ID[n] = 1;
 	}
 }
