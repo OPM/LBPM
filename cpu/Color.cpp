@@ -1,5 +1,7 @@
 #include <math.h>
 
+#define STOKES
+
 extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -638,6 +640,23 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			m18 = f11-f12-f13+f14-f15+f16+f17-f18;
 			//..........Toelke, Fruediger et. al. 2006...............
 			if (C == 0.0)	nx = ny = nz = 1.0;
+#ifdef STOKES
+			m1 = m1 + rlx_setA*(- 11*rho -alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - m2);
+			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
+			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
+			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
+			m9 = m9 + rlx_setA*( 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m10 = m10 + rlx_setA*( - m10);
+			m11 = m11 + rlx_setA*( 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m12 = m12 + rlx_setA*( - m12);
+			m13 = m13 + rlx_setA*(  0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*(  0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*(  0.5*alpha*C*nx*nz - m15);
+			m16 = m16 + rlx_setB*( - m16);
+			m17 = m17 + rlx_setB*( - m17);
+			m18 = m18 + rlx_setB*( - m18);
+#else
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
@@ -653,6 +672,7 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
+#endif
 			//.................inverse transformation......................................................
 			f0 = 0.05263157894736842*rho-0.012531328320802*m1+0.04761904761904762*m2;
 			f1 = 0.05263157894736842*rho-0.004594820384294068*m1-0.01587301587301587*m2
