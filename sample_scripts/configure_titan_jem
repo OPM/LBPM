@@ -22,7 +22,9 @@ cmake                                    \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_CUDA=1                        \
-    /ccs/home/mcclurej/LBPM-WIA
+    /lustre/atlas/proj-shared/geo106/titan/install-LBPM-WIA
+
+#    /ccs/home/mcclurej/LBPM-WIA
 
 
 # Build the code
