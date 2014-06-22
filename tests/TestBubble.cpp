@@ -245,9 +245,10 @@ int main(int argc, char **argv)
 	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("Fatal error in processor number! \n");
-		printf("nprocx =  %i \n",nprocx);
-		printf("nprocy =  %i \n",nprocy);
-		printf("nprocz =  %i \n",nprocz);
+		printf("   nprocx =  %i \n",nprocx);
+		printf("   nprocy =  %i \n",nprocy);
+		printf("   nprocz =  %i \n",nprocz);
+        return 1;
 	}
 
 	if (rank==0){
