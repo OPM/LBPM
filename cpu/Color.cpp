@@ -642,7 +642,7 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			if (C == 0.0)	nx = ny = nz = 1.0;
 #ifdef STOKES
 			m1 = m1 + rlx_setA*(- 11*rho -alpha*C - m1);
-			m2 = m2 + rlx_setA*((3*rho - m2);
+			m2 = m2 + rlx_setA*(3*rho - m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
