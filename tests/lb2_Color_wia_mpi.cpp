@@ -467,6 +467,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
+					SignDist.data[n] =  max(SignDist.data[n],1.0*(2.5-k));
 				}					
 			}
 		}
@@ -477,6 +478,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 2;
+					SignDist.data[n] = max(SignDist.data[n],1.0*(k-Nz+2.5));
 				}					
 			}
 		}
