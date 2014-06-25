@@ -2316,7 +2316,7 @@ int main(int argc, char **argv)
 				}
 			}
 			
-			nblobs=0;
+			nblobs=0, nc=0;
 			double vF,vS;
 			vF = vS = 0.0;
 			for (k=0;k<Nz-1;k++){
@@ -2327,7 +2327,7 @@ int main(int argc, char **argv)
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
 			//						printf("Compute blob %i, \n",nblobs);
-									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
+									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,nc,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
 									nblobs++;
 								}
 							}
