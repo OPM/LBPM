@@ -22,6 +22,35 @@
 
 using namespace std;
 
+struct Domain{
+	
+	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
+			double lx, double ly, double lz){
+		Nx = nx; Ny = ny; Nz = nz; 
+		Lx = lx, Ly = ly, Lz = lz;
+		rank = rnk;
+		nprocx=npx; nprocy=npy; nprocz=npz;
+		N = Nx*Ny*Nz;
+		ID = new char [N];
+		Blobs.New(Nx,Ny,Nz);
+	}
+	
+	// Basic domain information
+	int Nx,Ny,Nz;
+	int rank;
+	int iproc,jproc,kproc;
+	int nprocx,nprocy,nprocz;
+	double Lx,Ly,Lz;
+	char *ID;
+	// Neighbors and MPI information
+	int rank;
+	int rank_x,rank_X;
+	
+	// Blob information
+	IntArray Blobs;
+	
+};
+
 struct BlobInfo{
 	
 	BlobInfo(int Nx, int Ny,int Nz){
@@ -29,6 +58,11 @@ struct BlobInfo{
 	}
 	IntArray ID;
 	
+	void GenerateTable();
+	void CommunicateHalo();
+	
+	void Pack(int *list, int count, int *sendbuf, int *data);
+	void UnpackBlobData(int *list, int count, int *recvbuf, int *data);
 	
 };
 
@@ -544,6 +578,8 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
+	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz);
+	
 	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
@@ -1330,7 +1366,6 @@ int main(int argc, char **argv)
 //	Vel = new double[3*N];		// fluid velocity
 //	Press = new double[N];		// fluid pressure
 	
-	BlobInfo LocalBlobs(Nx,Ny,Nz);
 
 	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
@@ -2449,7 +2484,7 @@ int main(int argc, char **argv)
 			for (k=0;k<Nz;k++){
 				for (j=0;j<Ny;j++){
 					for (i=0;i<Nx;i++){
-						LocalBlobs.ID(i,j,k) = -1;	// Initialize each time
+						Dm.Blobs(i,j,k) = -1;	// Initialize each time
 					}
 				}
 			}
@@ -2460,12 +2495,12 @@ int main(int argc, char **argv)
 			for (k=0;k<Nz-1;k++){
 				for (j=0;j<Ny-1;j++){
 					for (i=0;i<Nx-1;i++){
-						if ( LocalBlobID(i,j,k) == -1 ){
+						if ( LocalBlobs.ID(i,j,k) == -1 ){
 							if ( Phase(i,j,k) > 0.0 ){
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
 			//						printf("Compute blob %i, \n",nblobs);
-									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,nc,LocalBlobs.ID,Phase,SignDist,vF,vS,i,j,k,temp);
+									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,nc,Dm.Blobs,Phase,SignDist,vF,vS,i,j,k,temp);
 									nblobs++;
 								}
 							}
@@ -2960,7 +2995,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"%s%s","BlobID.",LocalRankString);
 	FILE *BLOB;
 	BLOB = fopen(LocalRankFilename,"wb");
-	fwrite(LocalBlobs.ID.data,4,N,BLOB);
+	fwrite(Dm.Blobs.data,4,N,BLOB);
 	fclose(BLOB);
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
