@@ -22,8 +22,6 @@
 
 using namespace std;
 
-
-
 struct BlobInfo{
 	
 	BlobInfo(int Nx, int Ny,int Nz){

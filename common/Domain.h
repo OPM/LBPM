@@ -18,7 +18,7 @@ struct Domain{
 	
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
 			double lx, double ly, double lz){
-		Nx = nx; Ny = ny; Nz = nz; 
+		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
 		Lx = lx, Ly = ly, Lz = lz;
 		rank = rnk;
 		nprocx=npx; nprocy=npy; nprocz=npz;
@@ -26,7 +26,6 @@ struct Domain{
 		ID = new char [N];
 		Blobs.New(Nx,Ny,Nz);
 	}
-
 
 	// Basic domain information
 	int Nx,Ny,Nz,N;
