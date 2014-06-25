@@ -36,7 +36,7 @@ struct Domain{
 	}
 	
 	// Basic domain information
-	int Nx,Ny,Nz;
+	int Nx,Ny,Nz,N;
 	int rank;
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
@@ -2495,7 +2495,7 @@ int main(int argc, char **argv)
 			for (k=0;k<Nz-1;k++){
 				for (j=0;j<Ny-1;j++){
 					for (i=0;i<Nx-1;i++){
-						if ( LocalBlobs.ID(i,j,k) == -1 ){
+						if ( Dm.Blobs(i,j,k) == -1 ){
 							if ( Phase(i,j,k) > 0.0 ){
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
