@@ -14,6 +14,82 @@
 
 using namespace std;
 
+struct Domain{
+	
+	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
+			double lx, double ly, double lz){
+		Nx = nx; Ny = ny; Nz = nz; 
+		Lx = lx, Ly = ly, Lz = lz;
+		rank = rnk;
+		nprocx=npx; nprocy=npy; nprocz=npz;
+		N = Nx*Ny*Nz;
+		ID = new char [N];
+		Blobs.New(Nx,Ny,Nz);
+	}
+
+
+	// Basic domain information
+	int Nx,Ny,Nz,N;
+	int iproc,jproc,kproc;
+	int nprocx,nprocy,nprocz;
+	double Lx,Ly,Lz;
+	int rank;
+	//**********************************
+	// MPI ranks for all 18 neighbors
+	//**********************************
+	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
+	int rank_xy,rank_XY,rank_xY,rank_Xy;
+	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
+	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
+	//**********************************
+	
+	// Solid indicator function
+	char *ID;
+	// Blob information
+	IntArray Blobs;
+	
+	void InitializeRanks()
+	{
+		// map the rank to the block index
+		iproc = rank%nprocx;
+		jproc = (rank/nprocx)%nprocy;
+		kproc = rank/(nprocx*nprocy);
+
+		// set up the neighbor ranks
+	    int i = iproc;
+	    int j = jproc;
+	    int k = kproc;
+		rank_X = getRankForBlock(i+1,j,k);
+		rank_x = getRankForBlock(i-1,j,k);
+		rank_Y = getRankForBlock(i,j+1,k);
+		rank_y = getRankForBlock(i,j-1,k);
+		rank_Z = getRankForBlock(i,j,k+1);
+		rank_z = getRankForBlock(i,j,k-1);
+		rank_XY = getRankForBlock(i+1,j+1,k);
+		rank_xy = getRankForBlock(i-1,j-1,k);
+		rank_Xy = getRankForBlock(i+1,j-1,k);
+		rank_xY = getRankForBlock(i-1,j+1,k);
+		rank_XZ = getRankForBlock(i+1,j,k+1);
+		rank_xz = getRankForBlock(i-1,j,k-1);
+		rank_Xz = getRankForBlock(i+1,j,k-1);
+		rank_xZ = getRankForBlock(i-1,j,k+1);
+		rank_YZ = getRankForBlock(i,j+1,k+1);
+		rank_yz = getRankForBlock(i,j-1,k-1);
+		rank_Yz = getRankForBlock(i,j+1,k-1);
+		rank_yZ = getRankForBlock(i,j-1,k+1);
+	}
+	
+private:
+	int getRankForBlock( int i, int j, int k )
+	{
+		int i2 = (i+nprocx)%nprocx;
+		int j2 = (j+nprocy)%nprocy;
+		int k2 = (k+nprocz)%nprocz;
+		return i2 + j2*nprocx + k2*nprocx*nprocy;
+	}
+	
+};
+
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
 {
 	// Read in the full sphere pack
