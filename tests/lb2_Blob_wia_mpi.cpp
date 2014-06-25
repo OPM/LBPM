@@ -37,12 +37,10 @@ struct Domain{
 	
 	// Basic domain information
 	int Nx,Ny,Nz,N;
-	int rank;
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 	char *ID;
-	// Neighbors and MPI information
 	int rank;
 	int rank_x,rank_X;
 	
