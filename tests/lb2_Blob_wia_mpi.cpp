@@ -1254,6 +1254,7 @@ int main(int argc, char **argv)
 	DoubleArray Gws_global(6);
 	//...........................................................................
 
+	
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	DoubleArray CubeValues(2,2,2);
@@ -1321,7 +1322,9 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	IntArray BlobList(3,ncubes);	// store indices for blobs (cubes)
+	IntArray temp(3,ncubes);		// temporary storage array
+	IntArray BlobSizes(MAX_LOCAL_BLOB_COUNT);			// number of nodes in each blob
 
 	int logcount = 0; // number of surface write-outs
 	
@@ -2304,6 +2307,26 @@ int main(int argc, char **argv)
 			vol_w = vol_n =0.0;
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
+			
+			nblobs=0;
+			double vF,vS;
+			vF = vS = 0.0;
+			for (k=0;k<Nz;k++){
+				for (j=0;j<Ny;j++){
+					for (i=1;i<Nx;i++){
+						if ( indicator(i,j,k) == -1 ){
+							if ( Phase(i,j,k) > 0.0 ){
+								if ( SignDist(i,j,k) > 0.0 ){
+									// node i,j,k is in the porespace
+									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
+									nblobs++;
+								}
+							}
+						}
+
+					}
+				}
+			}
 			
 			/// Compute volume averages
 			for (k=kstart; k<kfinish; k++){
