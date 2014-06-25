@@ -2326,7 +2326,7 @@ int main(int argc, char **argv)
 							if ( Phase(i,j,k) > 0.0 ){
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
-									printf("Compute blob %i, \n",nblobs);
+			//						printf("Compute blob %i, \n",nblobs);
 									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
 									nblobs++;
 								}
@@ -2336,7 +2336,9 @@ int main(int argc, char **argv)
 					}
 				}
 			}
-			
+			printf("Number of blobs %i, Rank = %i \n",nblobs,rank);
+			MPI_Barrier(MPI_COMM_WORLD);
+
 			/// Compute volume averages
 			for (k=kstart; k<kfinish; k++){
 				for (j=1; j<Ny-1; j++){
