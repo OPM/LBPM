@@ -1322,6 +1322,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	int nblobs = 0;
 	IntArray BlobList(3,ncubes);	// store indices for blobs (cubes)
 	IntArray temp(3,ncubes);		// temporary storage array
 	IntArray BlobSizes(MAX_LOCAL_BLOB_COUNT);			// number of nodes in each blob
@@ -2308,13 +2309,21 @@ int main(int argc, char **argv)
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
 			
+			for (k=0;k<Nz;k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						LocalBlobID(i,j,k) = -1;	// Initialize each time
+					}
+				}
+			}
+			
 			nblobs=0;
 			double vF,vS;
 			vF = vS = 0.0;
 			for (k=0;k<Nz;k++){
 				for (j=0;j<Ny;j++){
-					for (i=1;i<Nx;i++){
-						if ( indicator(i,j,k) == -1 ){
+					for (i=0;i<Nx;i++){
+						if ( LocalBlobID(i,j,k) == -1 ){
 							if ( Phase(i,j,k) > 0.0 ){
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
