@@ -96,7 +96,6 @@ inline int ComputeLocalBlob(IntArray blobs, int &nblobs, int &ncubes, IntArray i
 					printf("Error in blob search algorithm!");
 				}
 			}
-
 		}
 		if ( nrecent == 0){
 			status = 0;
@@ -2320,13 +2319,14 @@ int main(int argc, char **argv)
 			nblobs=0;
 			double vF,vS;
 			vF = vS = 0.0;
-			for (k=0;k<Nz;k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
+			for (k=0;k<Nz-1;k++){
+				for (j=0;j<Ny-1;j++){
+					for (i=0;i<Nx-1;i++){
 						if ( LocalBlobID(i,j,k) == -1 ){
 							if ( Phase(i,j,k) > 0.0 ){
 								if ( SignDist(i,j,k) > 0.0 ){
 									// node i,j,k is in the porespace
+									printf();
 									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
 									nblobs++;
 								}
