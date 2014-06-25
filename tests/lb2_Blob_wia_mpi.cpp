@@ -24,7 +24,7 @@ using namespace std;
 
 struct BlobInfo{
 	
-	BlobInfo(int Nx,int Ny,int Nz){
+	void BlobInfo(int Nx, int Ny,int Nz){
 		IntArray.New(Nx,Ny,Nz);
 	}
 	IntArray ID;
