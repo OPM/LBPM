@@ -2960,7 +2960,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"%s%s","BlobID.",LocalRankString);
 	FILE *BLOB;
 	BLOB = fopen(LocalRankFilename,"wb");
-	fwrite(LocalBlobID.data,4,N,BLOB);
+	fwrite(LocalBlobs.ID.data,4,N,BLOB);
 	fclose(BLOB);
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
