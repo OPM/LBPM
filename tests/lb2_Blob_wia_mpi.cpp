@@ -2817,6 +2817,12 @@ int main(int argc, char **argv)
 	fwrite(Press.data,8,N,PRESS);
 	fclose(PRESS);
 	
+	sprintf(LocalRankFilename,"%s%s","BlobID.",LocalRankString);
+	FILE *BLOB;
+	BLOB = fopen(LocalRankFilename,"wb");
+	fwrite(LocalBlobID.data,4,N,BLOB);
+	fclose(BLOB);
+	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	FILE *SPEED;
 	SPEED = fopen(LocalRankFilename,"wb");
