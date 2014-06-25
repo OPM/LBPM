@@ -34,18 +34,65 @@ struct Domain{
 		ID = new char [N];
 		Blobs.New(Nx,Ny,Nz);
 	}
-	
+
+	void InitializeRanks()
+	{
+		// map the rank to the block index
+		iproc = rank%nprocx;
+		jproc = (rank/nprocx)%nprocy;
+		kproc = rank/(nprocx*nprocy);
+
+		// set up the neighbor ranks
+	    int i = iproc;
+	    int j = jproc;
+	    int k = kproc;
+		rank_X = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k);
+		rank_x = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k);
+		rank_Y = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k);
+		rank_y = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k);
+		rank_Z = getRankForBlock(nprocx,nprocy,nprocz,i,j,k+1);
+		rank_z = getRankForBlock(nprocx,nprocy,nprocz,i,j,k-1);
+		rank_XY = getRankForBlock(nprocx,nprocy,nprocz,i+1,j+1,k);
+		rank_xy = getRankForBlock(nprocx,nprocy,nprocz,i-1,j-1,k);
+		rank_Xy = getRankForBlock(nprocx,nprocy,nprocz,i+1,j-1,k);
+		rank_xY = getRankForBlock(nprocx,nprocy,nprocz,i-1,j+1,k);
+		rank_XZ = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k+1);
+		rank_xz = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k-1);
+		rank_Xz = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k-1);
+		rank_xZ = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k+1);
+		rank_YZ = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k+1);
+		rank_yz = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k-1);
+		rank_Yz = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k-1);
+		rank_yZ = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k+1);
+	}
 	// Basic domain information
 	int Nx,Ny,Nz,N;
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
-	char *ID;
 	int rank;
-	int rank_x,rank_X;
+	//**********************************
+	// MPI ranks for all 18 neighbors
+	//**********************************
+	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
+	int rank_xy,rank_XY,rank_xY,rank_Xy;
+	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
+	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
+	//**********************************
 	
+	// Solid indicator function
+	char *ID;
 	// Blob information
 	IntArray Blobs;
+	
+private:
+	int getRankForBlock( int i, int j, int k )
+	{
+		int i2 = (i+nprocx)%nprocx;
+		int j2 = (j+nprocy)%nprocy;
+		int k2 = (k+nprocz)%nprocz;
+		return i2 + j2*nprocx + k2*nprocx*nprocy;
+	}
 	
 };
 
