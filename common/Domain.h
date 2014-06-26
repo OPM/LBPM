@@ -16,7 +16,7 @@ int MAX_BLOB_COUNT=500;
 using namespace std;
 
 struct Domain{
-	
+
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
 			double lx, double ly, double lz){
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
@@ -28,7 +28,7 @@ struct Domain{
 		Blobs.New(Nx,Ny,Nz);
 		BlobGraph.New(18,MAX_BLOB_COUNT);
 	}
-		
+
 	// Basic domain information
 	int Nx,Ny,Nz,N;
 	int iproc,jproc,kproc;
@@ -72,21 +72,26 @@ struct Domain{
 	int *recvBuf_xy, *recvBuf_yz, *recvBuf_xz, *recvBuf_Xy, *recvBuf_Yz, *recvBuf_xZ;
 	int *recvBuf_xY, *recvBuf_yZ, *recvBuf_Xz, *recvBuf_XY, *recvBuf_YZ, *recvBuf_XZ;
 	//......................................................................................	
-	
+
 	// Solid indicator function
 	char *id;
 	// Blob information
 	IntArray Blobs;
 	IntArray BlobGraph;
-	
+
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
 	void BlobComm(MPI_Comm comm);
-		
+
 	void getBlobConnections();
-	
+
 private:
-	int getRankForBlock( int i, int j, int k )
+	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+			{1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
+			{1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
+			{1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
+
+			int getRankForBlock( int i, int j, int k )
 	{
 		int i2 = (i+nprocx)%nprocx;
 		int j2 = (j+nprocy)%nprocy;
@@ -110,6 +115,25 @@ private:
 			n = list[idx];
 			data[n] = recvbuf[idx];
 		}
+	}
+	int VoxelConnection(int x, int y, int z){
+		int returnVal = -1;
+		int nodx,nody,nodz;
+		for (int p=0;p<26;p++){
+			nodx=x+d[p][0];
+			// Get the neighbor and guarantee it is in the domain 
+			if (nodx < 0 ){ nodx = 0; }		
+			if (nodx > Nx-1 ){ nodx = Nx-1; }
+			nody=y+d[p][1];
+			if (nody < 0 ){ nody = 0; }		
+			if (nody > Ny-1 ){ nody = Ny-1; }
+			nodz=z+d[p][2];
+			if (nodz < 0 ){ nodz = 0; }		
+			if (nodz > Nz-1 ){ nodz = Nz-1; }
+			
+			if (Blobs(nodx,nody,nodz) > returnVal )	returnVal = Blobs(nodx,nody,nodz);
+		}
+		return returnVal;
 	}
 	
 };
