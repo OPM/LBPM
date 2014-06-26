@@ -11,6 +11,7 @@
 #include <mpi.h>
 #include "common/Utilities.h"
 
+int MAX_BLOB_COUNT=500;
 
 using namespace std;
 
@@ -25,6 +26,7 @@ struct Domain{
 		N = Nx*Ny*Nz;
 		id = new char [N];
 		Blobs.New(Nx,Ny,Nz);
+		BlobGraph.New(18,MAX_BLOB_COUNT);
 	}
 		
 	// Basic domain information
@@ -33,7 +35,6 @@ struct Domain{
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 	int rank;
-	MPI_Comm Communicator;
 
 	//**********************************
 	// MPI ranks for all 18 neighbors
@@ -76,12 +77,23 @@ struct Domain{
 	char *id;
 	// Blob information
 	IntArray Blobs;
+	IntArray BlobGraph;
 	
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
 	void BlobComm(MPI_Comm comm);
+		
+	void getBlobConnections();
+}
 	
 private:
+	int getRankForBlock( int i, int j, int k )
+	{
+		int i2 = (i+nprocx)%nprocx;
+		int j2 = (j+nprocy)%nprocy;
+		int k2 = (k+nprocz)%nprocz;
+		return i2 + j2*nprocx + k2*nprocx*nprocy;
+	}
 	void PackBlobData(int *list, int count, int *sendbuf, int *data){
 		// Fill in the phase ID values from neighboring processors
 		// This packs up the values that need to be sent from one processor to another
@@ -99,13 +111,6 @@ private:
 			n = list[idx];
 			data[n] = recvbuf[idx];
 		}
-	}
-	int getRankForBlock( int i, int j, int k )
-	{
-		int i2 = (i+nprocx)%nprocx;
-		int j2 = (j+nprocy)%nprocy;
-		int k2 = (k+nprocz)%nprocz;
-		return i2 + j2*nprocx + k2*nprocx*nprocy;
 	}
 	
 };
@@ -481,6 +486,13 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, Blobs.data);
 	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, Blobs.data);
 	//......................................................................................
+}
+
+Domain::getBlobConnections(){
+	
+	BlobGraph(0,nblob) = rank of the connecting blob;
+	BlobGraph(1,nblob) = ID of the connecting blob;
+	
 }
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
