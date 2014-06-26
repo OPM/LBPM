@@ -401,7 +401,7 @@ void Domain::CommInit(MPI_Comm Communicator){
 
 }
 
-Domain::BlobComm(MPI_Comm Communicator){
+void Domain::BlobComm(MPI_Comm Communicator){
 	//......................................................................................
 	int sendtag, recvtag;
 	sendtag = recvtag = 51;
