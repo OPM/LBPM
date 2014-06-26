@@ -84,7 +84,6 @@ struct Domain{
 	void BlobComm(MPI_Comm comm);
 		
 	void getBlobConnections();
-}
 	
 private:
 	int getRankForBlock( int i, int j, int k )
