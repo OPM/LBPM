@@ -551,6 +551,7 @@ int main(int argc, char **argv)
 
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz);
 	Dm.InitializeRanks();
+	Dm.CommInit(MPI_COMM_WORLD);
 	
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
