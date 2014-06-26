@@ -23,7 +23,7 @@ struct Domain{
 		rank = rnk;
 		nprocx=npx; nprocy=npy; nprocz=npz;
 		N = Nx*Ny*Nz;
-		ID = new char [N];
+		id = new char [N];
 		Blobs.New(Nx,Ny,Nz);
 	}
 
