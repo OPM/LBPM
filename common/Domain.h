@@ -41,42 +41,25 @@ struct Domain{
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
+	//......................................................................................
+	// Get the actual D3Q19 communication counts (based on location of solid phase)
+	// Discrete velocity set symmetry implies the sendcount = recvcount
+	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
+	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
+	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
+	//......................................................................................
+	int *sendList_x, *sendList_y, *sendList_z, *sendList_X, *sendList_Y, *sendList_Z;
+	int *sendList_xy, *sendList_yz, *sendList_xz, *sendList_Xy, *sendList_Yz, *sendList_xZ;
+	int *sendList_xY, *sendList_yZ, *sendList_Xz, *sendList_XY, *sendList_YZ, *sendList_XZ;
+	//......................................................................................
 	
 	// Solid indicator function
-	char *ID;
+	char *id;
 	// Blob information
 	IntArray Blobs;
 	
-	void InitializeRanks()
-	{
-		// map the rank to the block index
-		iproc = rank%nprocx;
-		jproc = (rank/nprocx)%nprocy;
-		kproc = rank/(nprocx*nprocy);
-
-		// set up the neighbor ranks
-	    int i = iproc;
-	    int j = jproc;
-	    int k = kproc;
-		rank_X = getRankForBlock(i+1,j,k);
-		rank_x = getRankForBlock(i-1,j,k);
-		rank_Y = getRankForBlock(i,j+1,k);
-		rank_y = getRankForBlock(i,j-1,k);
-		rank_Z = getRankForBlock(i,j,k+1);
-		rank_z = getRankForBlock(i,j,k-1);
-		rank_XY = getRankForBlock(i+1,j+1,k);
-		rank_xy = getRankForBlock(i-1,j-1,k);
-		rank_Xy = getRankForBlock(i+1,j-1,k);
-		rank_xY = getRankForBlock(i-1,j+1,k);
-		rank_XZ = getRankForBlock(i+1,j,k+1);
-		rank_xz = getRankForBlock(i-1,j,k-1);
-		rank_Xz = getRankForBlock(i+1,j,k-1);
-		rank_xZ = getRankForBlock(i-1,j,k+1);
-		rank_YZ = getRankForBlock(i,j+1,k+1);
-		rank_yz = getRankForBlock(i,j-1,k-1);
-		rank_Yz = getRankForBlock(i,j+1,k-1);
-		rank_yZ = getRankForBlock(i,j-1,k+1);
-	}
+	void InitializeRanks();
+	void CommInit();
 	
 private:
 	int getRankForBlock( int i, int j, int k )
@@ -88,6 +71,132 @@ private:
 	}
 	
 };
+
+void Domain::InitializeRanks()
+{
+	// map the rank to the block index
+	iproc = rank%nprocx;
+	jproc = (rank/nprocx)%nprocy;
+	kproc = rank/(nprocx*nprocy);
+
+	// set up the neighbor ranks
+    int i = iproc;
+    int j = jproc;
+    int k = kproc;
+	rank_X = getRankForBlock(i+1,j,k);
+	rank_x = getRankForBlock(i-1,j,k);
+	rank_Y = getRankForBlock(i,j+1,k);
+	rank_y = getRankForBlock(i,j-1,k);
+	rank_Z = getRankForBlock(i,j,k+1);
+	rank_z = getRankForBlock(i,j,k-1);
+	rank_XY = getRankForBlock(i+1,j+1,k);
+	rank_xy = getRankForBlock(i-1,j-1,k);
+	rank_Xy = getRankForBlock(i+1,j-1,k);
+	rank_xY = getRankForBlock(i-1,j+1,k);
+	rank_XZ = getRankForBlock(i+1,j,k+1);
+	rank_xz = getRankForBlock(i-1,j,k-1);
+	rank_Xz = getRankForBlock(i+1,j,k-1);
+	rank_xZ = getRankForBlock(i-1,j,k+1);
+	rank_YZ = getRankForBlock(i,j+1,k+1);
+	rank_yz = getRankForBlock(i,j-1,k-1);
+	rank_Yz = getRankForBlock(i,j+1,k-1);
+	rank_yZ = getRankForBlock(i,j-1,k+1);
+}
+
+
+void Domain::CommInit(){
+	int i,j,k,n;
+	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
+	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
+	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
+	//......................................................................................
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				// Check the phase ID
+				if (id[k*Nx*Ny+j*Nx+i] != 0){
+					// Counts for the six faces
+					if (i==1)	sendCount_x++;
+					if (j==1)	sendCount_y++;
+					if (k==1)	sendCount_z++;
+					if (i==Nx-2)	sendCount_X++;
+					if (j==Ny-2)	sendCount_Y++;
+					if (k==Nz-2)	sendCount_Z++;
+					// Counts for the twelve edges
+					if (i==1 && j==1)	sendCount_xy++;
+					if (i==1 && j==Ny-2)	sendCount_xY++;
+					if (i==Nx-2 && j==1)	sendCount_Xy++;
+					if (i==Nx-2 && j==Ny-2)	sendCount_XY++;
+
+					if (i==1 && k==1)	sendCount_xz++;
+					if (i==1 && k==Nz-2)	sendCount_xZ++;
+					if (i==Nx-2 && k==1)	sendCount_Xz++;
+					if (i==Nx-2 && k==Nz-2)	sendCount_XZ++;
+
+					if (j==1 && k==1)	sendCount_yz++;
+					if (j==1 && k==Nz-2)	sendCount_yZ++;
+					if (j==Ny-2 && k==1)	sendCount_Yz++;
+					if (j==Ny-2 && k==Nz-2)	sendCount_YZ++;
+				}
+			}
+		}
+	}
+	// allocate send buffers
+	sendList_x = new int [sendCount_x];
+	sendList_y = new int [sendCount_y];
+	sendList_z = new int [sendCount_z];
+	sendList_X = new int [sendCount_X];
+	sendList_Y = new int [sendCount_Y];
+	sendList_Z = new int [sendCount_Z];
+	sendList_xy = new int [sendCount_xy];
+	sendList_yz = new int [sendCount_yz];
+	sendList_xz = new int [sendCount_xz];
+	sendList_Xy = new int [sendCount_Xy];
+	sendList_Yz = new int [sendCount_Yz];
+	sendList_xZ = new int [sendCount_xZ];
+	sendList_xY = new int [sendCount_xY];
+	sendList_yZ = new int [sendCount_yZ];
+	sendList_Xz = new int [sendCount_Xz];
+	sendList_XY = new int [sendCount_XY];
+	sendList_YZ = new int [sendCount_YZ];
+	sendList_XZ = new int [sendCount_XZ];
+	// Populate the send list
+	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
+	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
+	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				// Local value to send
+				n = k*Nx*Ny+j*Nx+i;
+				if (id[n] != 0){
+					// Counts for the six faces
+					if (i==1)		sendList_x[sendCount_x++]=n;
+					if (j==1)		sendList_y[sendCount_y++]=n;
+					if (k==1)		sendList_z[sendCount_z++]=n;
+					if (i==Nx-2)	sendList_X[sendCount_X++]=n;
+					if (j==Ny-2)	sendList_Y[sendCount_Y++]=n;
+					if (k==Nz-2)	sendList_Z[sendCount_Z++]=n;
+					// Counts for the twelve edges
+					if (i==1 && j==1)		sendList_xy[sendCount_xy++]=n;
+					if (i==1 && j==Ny-2)	sendList_xY[sendCount_xY++]=n;
+					if (i==Nx-2 && j==1)	sendList_Xy[sendCount_Xy++]=n;
+					if (i==Nx-2 && j==Ny-2)	sendList_XY[sendCount_XY++]=n;
+
+					if (i==1 && k==1)		sendList_xz[sendCount_xz++]=n;
+					if (i==1 && k==Nz-2)	sendList_xZ[sendCount_xZ++]=n;
+					if (i==Nx-2 && k==1)	sendList_Xz[sendCount_Xz++]=n;
+					if (i==Nx-2 && k==Nz-2)	sendList_XZ[sendCount_XZ++]=n;
+
+					if (j==1 && k==1)		sendList_yz[sendCount_yz++]=n;
+					if (j==1 && k==Nz-2)	sendList_yZ[sendCount_yZ++]=n;
+					if (j==Ny-2 && k==1)	sendList_Yz[sendCount_Yz++]=n;
+					if (j==Ny-2 && k==Nz-2)	sendList_YZ[sendCount_YZ++]=n;
+				}
+			}
+		}
+	}
+}
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
 {
