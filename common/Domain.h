@@ -240,8 +240,7 @@ void Domain::CommInit(MPI_Comm Communicator){
 	sendBuf_Xz = new int [sendCount_Xz];
 	sendBuf_XY = new int [sendCount_XY];
 	sendBuf_YZ = new int [sendCount_YZ];
-	sendBuf_XZ = new int [sendCount_XZ];
-	
+	sendBuf_XZ = new int [sendCount_XZ];	
 	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x,sendtag+0,Communicator,&req1[0]);
 	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X,recvtag+0,Communicator,&req2[0]);
 	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X,sendtag+1,Communicator,&req1[1]);
@@ -359,6 +358,26 @@ void Domain::CommInit(MPI_Comm Communicator){
 	for (int idx=0; idx<recvCount_YZ; idx++)	recvList_YZ[idx] += (Ny-2)*Nx + (Nz-2)*Nx*Ny;
 	for (int idx=0; idx<recvCount_yZ; idx++)	recvList_yZ[idx] -= (Ny-2)*Nx - (Nz-2)*Nx*Ny;
 	for (int idx=0; idx<recvCount_Yz; idx++)	recvList_Yz[idx] += (Ny-2)*Nx - (Nz-2)*Nx*Ny;
+	//......................................................................................
+	// allocate recv buffers
+	recvBuf_x = new int [recvCount_x];
+	recvBuf_y = new int [recvCount_y];
+	recvBuf_z = new int [recvCount_z];
+	recvBuf_X = new int [recvCount_X];
+	recvBuf_Y = new int [recvCount_Y];
+	recvBuf_Z = new int [recvCount_Z];
+	recvBuf_xy = new int [recvCount_xy];
+	recvBuf_yz = new int [recvCount_yz];
+	recvBuf_xz = new int [recvCount_xz];
+	recvBuf_Xy = new int [recvCount_Xy];
+	recvBuf_Yz = new int [recvCount_Yz];
+	recvBuf_xZ = new int [recvCount_xZ];
+	recvBuf_xY = new int [recvCount_xY];
+	recvBuf_yZ = new int [recvCount_yZ];
+	recvBuf_Xz = new int [recvCount_Xz];
+	recvBuf_XY = new int [recvCount_XY];
+	recvBuf_YZ = new int [recvCount_YZ];
+	recvBuf_XZ = new int [recvCount_XZ];
 	//......................................................................................
 
 }
