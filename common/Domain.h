@@ -116,8 +116,13 @@ private:
 			data[n] = recvbuf[idx];
 		}
 	}
-	int VoxelConnection(int x, int y, int z){
+	int VoxelConnection(int n){
 		int returnVal = -1;
+		int x,y,z;
+		// Get the 3-D indices
+		x = n%Nx;
+		y = (n/Nx)%Ny;
+		z = n/(Nx*Ny);
 		int nodx,nody,nodz;
 		for (int p=0;p<26;p++){
 			nodx=x+d[p][0];
@@ -512,9 +517,10 @@ void Domain::BlobComm(MPI_Comm Communicator){
 }
 
 void Domain::getBlobConnections(){
-	
 //	BlobGraph(0,nblob) = rank of the connecting blob;
 //	BlobGraph(1,nblob) = ID of the connecting blob;
+	
+	
 	
 }
 
