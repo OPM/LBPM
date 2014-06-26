@@ -44,6 +44,7 @@ struct Domain{
 	//......................................................................................
 	// Get the actual D3Q19 communication counts (based on location of solid phase)
 	// Discrete velocity set symmetry implies the sendcount = recvcount
+	//......................................................................................
 	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
 	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
 	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
@@ -52,6 +53,10 @@ struct Domain{
 	int *sendList_xy, *sendList_yz, *sendList_xz, *sendList_Xy, *sendList_Yz, *sendList_xZ;
 	int *sendList_xY, *sendList_yZ, *sendList_Xz, *sendList_XY, *sendList_YZ, *sendList_XZ;
 	//......................................................................................
+	int *sendBuf_x, *sendBuf_y, *sendBuf_z, *sendBuf_X, *sendBuf_Y, *sendBuf_Z;
+	int *sendBuf_xy, *sendBuf_yz, *sendBuf_xz, *sendBuf_Xy, *sendBuf_Yz, *sendBuf_xZ;
+	int *sendBuf_xY, *sendBuf_yZ, *sendBuf_Xz, *sendBuf_XY, *sendBuf_YZ, *sendBuf_XZ;
+	//......................................................................................	
 	
 	// Solid indicator function
 	char *id;
@@ -141,7 +146,7 @@ void Domain::CommInit(){
 			}
 		}
 	}
-	// allocate send buffers
+	// allocate send lists
 	sendList_x = new int [sendCount_x];
 	sendList_y = new int [sendCount_y];
 	sendList_z = new int [sendCount_z];
@@ -196,6 +201,25 @@ void Domain::CommInit(){
 			}
 		}
 	}
+	// allocate send buffers
+	sendBuf_x = new int [sendCount_x];
+	sendBuf_y = new int [sendCount_y];
+	sendBuf_z = new int [sendCount_z];
+	sendBuf_X = new int [sendCount_X];
+	sendBuf_Y = new int [sendCount_Y];
+	sendBuf_Z = new int [sendCount_Z];
+	sendBuf_xy = new int [sendCount_xy];
+	sendBuf_yz = new int [sendCount_yz];
+	sendBuf_xz = new int [sendCount_xz];
+	sendBuf_Xy = new int [sendCount_Xy];
+	sendBuf_Yz = new int [sendCount_Yz];
+	sendBuf_xZ = new int [sendCount_xZ];
+	sendBuf_xY = new int [sendCount_xY];
+	sendBuf_yZ = new int [sendCount_yZ];
+	sendBuf_Xz = new int [sendCount_Xz];
+	sendBuf_XY = new int [sendCount_XY];
+	sendBuf_YZ = new int [sendCount_YZ];
+	sendBuf_XZ = new int [sendCount_XZ];
 }
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
