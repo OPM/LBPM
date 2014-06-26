@@ -16,10 +16,280 @@
 #include "Communication.h"
 
 //#define CBUB
-//#define WRITE_SURFACES
 #define USE_EXP_CONTACT_ANGLE
+#define WRITE_SURFACES
+#define MAX_LOCAL_BLOB_COUNT 500
 
 using namespace std;
+
+struct BlobInfo{
+	
+	BlobInfo(int Nx, int Ny,int Nz){
+		ID.New(Nx,Ny,Nz);
+	}
+	IntArray ID;
+	
+	void GenerateTable();
+	void CommunicateHalo();
+	
+	void Pack(int *list, int count, int *sendbuf, int *data);
+	void UnpackBlobData(int *list, int count, int *recvbuf, int *data);
+	
+};
+
+inline void PackBlobData(int *list, int count, int *sendbuf, int *data){
+	// Fill in the phase ID values from neighboring processors
+	// This packs up the values that need to be sent from one processor to another
+	int idx,n;
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		sendbuf[idx] = data[n];
+	}
+}
+inline void UnpackBlobData(int *list, int count, int *recvbuf, int *data){
+	// Fill in the phase ID values from neighboring processors
+	// This unpacks the values once they have been recieved from neighbors
+	int idx,n;
+
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		data[n] = recvbuf[idx];
+	}
+}
+
+inline void CommunicateBlobHalo(IntArray &Mesh, MPI_Comm Communicator,
+		int *sendbuf_x,int *sendbuf_y,int *sendbuf_z,int *sendbuf_X,int *sendbuf_Y,int *sendbuf_Z,
+		int *sendbuf_xy,int *sendbuf_XY,int *sendbuf_xY,int *sendbuf_Xy,
+		int *sendbuf_xz,int *sendbuf_XZ,int *sendbuf_xZ,int *sendbuf_Xz,
+		int *sendbuf_yz,int *sendbuf_YZ,int *sendbuf_yZ,int *sendbuf_Yz,
+		int *recvbuf_x,int *recvbuf_y,int *recvbuf_z,int *recvbuf_X,int *recvbuf_Y,int *recvbuf_Z,
+		int *recvbuf_xy,int *recvbuf_XY,int *recvbuf_xY,int *recvbuf_Xy,
+		int *recvbuf_xz,int *recvbuf_XZ,int *recvbuf_xZ,int *recvbuf_Xz,
+		int *recvbuf_yz,int *recvbuf_YZ,int *recvbuf_yZ,int *recvbuf_Yz,
+		int *sendList_x,int *sendList_y,int *sendList_z,int *sendList_X,int *sendList_Y,int *sendList_Z,
+		int *sendList_xy,int *sendList_XY,int *sendList_xY,int *sendList_Xy,
+		int *sendList_xz,int *sendList_XZ,int *sendList_xZ,int *sendList_Xz,
+		int *sendList_yz,int *sendList_YZ,int *sendList_yZ,int *sendList_Yz,
+		int sendCount_x,int sendCount_y,int sendCount_z,int sendCount_X,int sendCount_Y,int sendCount_Z,
+		int sendCount_xy,int sendCount_XY,int sendCount_xY,int sendCount_Xy,
+		int sendCount_xz,int sendCount_XZ,int sendCount_xZ,int sendCount_Xz,
+		int sendCount_yz,int sendCount_YZ,int sendCount_yZ,int sendCount_Yz,
+		int *recvList_x,int *recvList_y,int *recvList_z,int *recvList_X,int *recvList_Y,int *recvList_Z,
+		int *recvList_xy,int *recvList_XY,int *recvList_xY,int *recvList_Xy,
+		int *recvList_xz,int *recvList_XZ,int *recvList_xZ,int *recvList_Xz,
+		int *recvList_yz,int *recvList_YZ,int *recvList_yZ,int *recvList_Yz,
+		int recvCount_x,int recvCount_y,int recvCount_z,int recvCount_X,int recvCount_Y,int recvCount_Z,
+		int recvCount_xy,int recvCount_XY,int recvCount_xY,int recvCount_Xy,
+		int recvCount_xz,int recvCount_XZ,int recvCount_xZ,int recvCount_Xz,
+		int recvCount_yz,int recvCount_YZ,int recvCount_yZ,int recvCount_Yz,
+		int rank_x,int rank_y,int rank_z,int rank_X,int rank_Y,int rank_Z,int rank_xy,int rank_XY,int rank_xY,
+		int rank_Xy,int rank_xz,int rank_XZ,int rank_xZ,int rank_Xz,int rank_yz,int rank_YZ,int rank_yZ,int rank_Yz)
+{
+	int sendtag, recvtag;
+	sendtag = recvtag = 12;
+	PackBlobData(sendList_x, sendCount_x ,sendbuf_x, Mesh.data);
+	PackBlobData(sendList_X, sendCount_X ,sendbuf_X, Mesh.data);
+	PackBlobData(sendList_y, sendCount_y ,sendbuf_y, Mesh.data);
+	PackBlobData(sendList_Y, sendCount_Y ,sendbuf_Y, Mesh.data);
+	PackBlobData(sendList_z, sendCount_z ,sendbuf_z, Mesh.data);
+	PackBlobData(sendList_Z, sendCount_Z ,sendbuf_Z, Mesh.data);
+	PackBlobData(sendList_xy, sendCount_xy ,sendbuf_xy, Mesh.data);
+	PackBlobData(sendList_Xy, sendCount_Xy ,sendbuf_Xy, Mesh.data);
+	PackBlobData(sendList_xY, sendCount_xY ,sendbuf_xY, Mesh.data);
+	PackBlobData(sendList_XY, sendCount_XY ,sendbuf_XY, Mesh.data);
+	PackBlobData(sendList_xz, sendCount_xz ,sendbuf_xz, Mesh.data);
+	PackBlobData(sendList_Xz, sendCount_Xz ,sendbuf_Xz, Mesh.data);
+	PackBlobData(sendList_xZ, sendCount_xZ ,sendbuf_xZ, Mesh.data);
+	PackBlobData(sendList_XZ, sendCount_XZ ,sendbuf_XZ, Mesh.data);
+	PackBlobData(sendList_yz, sendCount_yz ,sendbuf_yz, Mesh.data);
+	PackBlobData(sendList_Yz, sendCount_Yz ,sendbuf_Yz, Mesh.data);
+	PackBlobData(sendList_yZ, sendCount_yZ ,sendbuf_yZ, Mesh.data);
+	PackBlobData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, Mesh.data);
+	//......................................................................................
+	MPI_Sendrecv(sendbuf_x,sendCount_x,MPI_INT,rank_x,sendtag,
+			recvbuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_X,sendCount_X,MPI_INT,rank_X,sendtag,
+			recvbuf_x,recvCount_x,MPI_INT,rank_x,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_y,sendCount_y,MPI_INT,rank_y,sendtag,
+			recvbuf_Y,recvCount_Y,MPI_INT,rank_Y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Y,sendCount_Y,MPI_INT,rank_Y,sendtag,
+			recvbuf_y,recvCount_y,MPI_INT,rank_y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_z,sendCount_z,MPI_INT,rank_z,sendtag,
+			recvbuf_Z,recvCount_Z,MPI_INT,rank_Z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Z,sendCount_Z,MPI_INT,rank_Z,sendtag,
+			recvbuf_z,recvCount_z,MPI_INT,rank_z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xy,sendCount_xy,MPI_INT,rank_xy,sendtag,
+			recvbuf_XY,recvCount_XY,MPI_INT,rank_XY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XY,sendCount_XY,MPI_INT,rank_XY,sendtag,
+			recvbuf_xy,recvCount_xy,MPI_INT,rank_xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xy,sendCount_Xy,MPI_INT,rank_Xy,sendtag,
+			recvbuf_xY,recvCount_xY,MPI_INT,rank_xY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xY,sendCount_xY,MPI_INT,rank_xY,sendtag,
+			recvbuf_Xy,recvCount_Xy,MPI_INT,rank_Xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xz,sendCount_xz,MPI_INT,rank_xz,sendtag,
+			recvbuf_XZ,recvCount_XZ,MPI_INT,rank_XZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_XZ,sendCount_XZ,MPI_INT,rank_XZ,sendtag,
+			recvbuf_xz,recvCount_xz,MPI_INT,rank_xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Xz,sendCount_Xz,MPI_INT,rank_Xz,sendtag,
+			recvbuf_xZ,recvCount_xZ,MPI_INT,rank_xZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_xZ,sendCount_xZ,MPI_INT,rank_xZ,sendtag,
+			recvbuf_Xz,recvCount_Xz,MPI_INT,rank_Xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yz,sendCount_yz,MPI_INT,rank_yz,sendtag,
+			recvbuf_YZ,recvCount_YZ,MPI_INT,rank_YZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_YZ,sendCount_YZ,MPI_INT,rank_YZ,sendtag,
+			recvbuf_yz,recvCount_yz,MPI_INT,rank_yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_Yz,sendCount_Yz,MPI_INT,rank_Yz,sendtag,
+			recvbuf_yZ,recvCount_yZ,MPI_INT,rank_yZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendbuf_yZ,sendCount_yZ,MPI_INT,rank_yZ,sendtag,
+			recvbuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	//........................................................................................
+	UnpackBlobData(recvList_x, recvCount_x ,recvbuf_x, Mesh.data);
+	UnpackBlobData(recvList_X, recvCount_X ,recvbuf_X, Mesh.data);
+	UnpackBlobData(recvList_y, recvCount_y ,recvbuf_y, Mesh.data);
+	UnpackBlobData(recvList_Y, recvCount_Y ,recvbuf_Y, Mesh.data);
+	UnpackBlobData(recvList_z, recvCount_z ,recvbuf_z, Mesh.data);
+	UnpackBlobData(recvList_Z, recvCount_Z ,recvbuf_Z, Mesh.data);
+	UnpackBlobData(recvList_xy, recvCount_xy ,recvbuf_xy, Mesh.data);
+	UnpackBlobData(recvList_Xy, recvCount_Xy ,recvbuf_Xy, Mesh.data);
+	UnpackBlobData(recvList_xY, recvCount_xY ,recvbuf_xY, Mesh.data);
+	UnpackBlobData(recvList_XY, recvCount_XY ,recvbuf_XY, Mesh.data);
+	UnpackBlobData(recvList_xz, recvCount_xz ,recvbuf_xz, Mesh.data);
+	UnpackBlobData(recvList_Xz, recvCount_Xz ,recvbuf_Xz, Mesh.data);
+	UnpackBlobData(recvList_xZ, recvCount_xZ ,recvbuf_xZ, Mesh.data);
+	UnpackBlobData(recvList_XZ, recvCount_XZ ,recvbuf_XZ, Mesh.data);
+	UnpackBlobData(recvList_yz, recvCount_yz ,recvbuf_yz, Mesh.data);
+	UnpackBlobData(recvList_Yz, recvCount_Yz ,recvbuf_Yz, Mesh.data);
+	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvbuf_yZ, Mesh.data);
+	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvbuf_YZ, Mesh.data);
+}
+
+
+inline int ComputeLocalBlob(IntArray blobs, int &nblobs, int &ncubes, IntArray indicator,
+					   DoubleArray F, DoubleArray S, double vf, double vs, int startx, int starty,
+					   int startz, IntArray temp)
+{
+	// Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
+	// F>vf => oil phase S>vs => in porespace
+	// update the list of blobs, indicator mesh
+	int m = F.m;  // maxima for the meshes
+	int n = F.n;
+	int o = F.o;
+
+	int cubes_in_blob=0;
+	int nrecent = 1;						// number of nodes added at most recent sweep
+	temp(0,0) = startx;				// Set the initial point as a "seed" for the sweeps
+	temp(1,0) = starty;
+	temp(2,0) = startz;
+	int ntotal = 1;					// total number of nodes in blob
+	indicator(startx,starty,startz) = nblobs;
+
+	int p,s,x,y,z,start,finish,nodx,nody,nodz;
+	int imin=startx,imax=startx,jmin=starty,jmax=starty;	// initialize maxima / minima
+	int kmin=startz,kmax=startz;
+	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+	{1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
+	{1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
+	{1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
+	{-1,-1,1},{-1,-1,-1}};   // directions to neighbors
+	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
+	bool status = 1;						// status == true => continue to look for points
+	while (status == 1){
+		start = ntotal - nrecent;
+		finish = ntotal;
+		nrecent = 0;						// set recent points back to zero for next sweep through
+		for (s=start;s<finish;s++){
+			// Loop over recent points; look for new points
+			x = temp(0,s);
+			y = temp(1,s);
+			z = temp(2,s);
+			// Looop over the directions
+			for (p=0;p<26;p++){
+				nodx=x+d[p][0];
+				if (nodx < 0 ){ nodx = m-1; }		// Periodic BC for x
+				if (nodx > m-1 ){ nodx = 0; }
+				nody=y+d[p][1];
+				if (nody < 0 ){ nody = n-1; }	// Periodic BC for y
+				if (nody > n-1 ){ nody = 0; }
+				nodz=z+d[p][2];
+				if (nodz < 0 ){ nodz = 0; }		// No periodic BC for z
+				if (nodz > o-1 ){ nodz = o-1; }
+				if ( F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
+					 && indicator(nodx,nody,nodz) == -1 ){
+					// Node is a part of the blob - add it to the list
+					temp(0,ntotal) = nodx;
+					temp(1,ntotal) = nody;
+					temp(2,ntotal) = nodz;
+					ntotal++;
+					nrecent++;
+					// Update the indicator map
+					indicator(nodx,nody,nodz) = nblobs;
+					// Update the min / max for the cube loop
+					if ( nodx < imin ){ imin = nodx; }
+					if ( nodx > imax ){ imax = nodx; }
+					if ( nody < jmin ){ jmin = nody; }
+					if ( nody > jmax ){ jmax = nody; }
+					if ( nodz < kmin ){ kmin = nodz; }
+					if ( nodz > kmax ){ kmax = nodz; }
+				}
+				else if (F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
+						 && indicator(nodx,nody,nodz) > -1 &&  indicator(nodx,nody,nodz) != nblobs){
+					// Some kind of error in algorithm
+					printf("Error in blob search algorithm!");
+				}
+			}
+		}
+		if ( nrecent == 0){
+			status = 0;
+		}
+	}
+	// Use points in temporary storage array to add cubes to the list of blobs
+	if ( imin > 0) { imin = imin-1; }
+//	if ( imax < m-1) { imax = imax+1; }
+	if ( jmin > 0) { jmin = jmin-1; }
+//	if ( jmax < n-1) { jmax = jmax+1; }
+	if ( kmin > 0) { kmin = kmin-1; }
+//	if ( kmax < o-1) { kmax = kmax+1; }
+	int i,j,k;
+	bool add;
+	for (k=kmin;k<kmax;k++){
+		for (j=jmin;j<jmax;j++){
+			for (i=imin;i<imax;i++){
+				// If cube(i,j,k) has any nodes in blob, add it to the list
+				// Loop over cube edges
+				add = 0;
+				for (p=0;p<8;p++){
+					nodx = i+cube[p][0];
+					nody = j+cube[p][1];
+					nodz = k+cube[p][2];
+					if ( indicator(nodx,nody,nodz) == nblobs ){
+						// Cube corner is in this blob
+						add = 1;
+					}
+				}
+				if (add == 1){
+					// Add cube to the list
+					blobs(0,ncubes) = i;
+					blobs(1,ncubes) = j;
+					blobs(2,ncubes) = k;
+					ncubes++;
+					cubes_in_blob++;
+					// Loop again to check for overlap
+					for (p=0;p<8;p++){
+						nodx = i+cube[p][0];
+						nody = j+cube[p][1];
+						nodz = k+cube[p][2];
+						if (indicator(nodx,nody,nodz) > -1 && indicator(nodx,nody,nodz) != nblobs){
+							printf("Overlapping cube!");
+							cout << i << ", " << j << ", " << k << endl;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return cubes_in_blob;
+}
 
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM using CUDA
@@ -279,7 +549,11 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
+	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz);
+	Dm.InitializeRanks();
+	Dm.CommInit(MPI_COMM_WORLD);
+	
+	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
@@ -497,18 +771,6 @@ int main(int argc, char **argv)
 	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
-#endif
-
-#ifdef USE_EXP_CONTACT_ANGLE
-	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s < 0.0 && !pBC){
-		phi_s = -phi_s;
-	 	das = (phi_s+1.0)*0.5;
-		dbs = 1.0 - das;
-		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
-		FlipID(id,Nx*Ny*Nz);
-	}
-#else
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s > 0.0 && !pBC){
 		phi_s = -phi_s;
@@ -1078,6 +1340,7 @@ int main(int argc, char **argv)
 //	double *Vel;
 //	Vel = new double[3*N];		// fluid velocity
 //	Press = new double[N];		// fluid pressure
+	
 
 	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
@@ -1138,6 +1401,7 @@ int main(int argc, char **argv)
 	DoubleArray Gws_global(6);
 	//...........................................................................
 
+	
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	DoubleArray CubeValues(2,2,2);
@@ -1205,7 +1469,10 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	int nblobs = 0;
+	IntArray BlobList(3,ncubes);	// store indices for blobs (cubes)
+	IntArray temp(3,ncubes);		// temporary storage array
+	IntArray BlobSizes(MAX_LOCAL_BLOB_COUNT);			// number of nodes in each blob
 
 	int logcount = 0; // number of surface write-outs
 	
@@ -1493,7 +1760,7 @@ int main(int argc, char **argv)
 	sat_w_previous = 1.01; // slightly impossible value! 
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
-	while (timestep < timestepMax && err > tol ){
+	while (timestep < timestepMax && err > tol){
 
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
@@ -2189,6 +2456,37 @@ int main(int argc, char **argv)
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
 			
+			for (k=0;k<Nz;k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						Dm.Blobs(i,j,k) = -1;	// Initialize each time
+					}
+				}
+			}
+			
+			nblobs=0, nc=0;
+			double vF,vS;
+			vF = vS = 0.0;
+			for (k=0;k<Nz-1;k++){
+				for (j=0;j<Ny-1;j++){
+					for (i=0;i<Nx-1;i++){
+						if ( Dm.Blobs(i,j,k) == -1 ){
+							if ( Phase(i,j,k) > 0.0 ){
+								if ( SignDist(i,j,k) > 0.0 ){
+									// node i,j,k is in the porespace
+			//						printf("Compute blob %i, \n",nblobs);
+									BlobSizes(nblobs) = ComputeBlob(BlobList,nblobs,nc,Dm.Blobs,Phase,SignDist,vF,vS,i,j,k,temp);
+									nblobs++;
+								}
+							}
+						}
+
+					}
+				}
+			}
+			printf("Number of blobs %i, Rank = %i \n",nblobs,rank);
+			MPI_Barrier(MPI_COMM_WORLD);
+
 			/// Compute volume averages
 			for (k=kstart; k<kfinish; k++){
 				for (j=1; j<Ny-1; j++){
@@ -2416,15 +2714,13 @@ int main(int argc, char **argv)
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 				fprintf(TIMELOG,"%.5g %5g %5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 				fflush(TIMELOG);
-				
-				if (timestep > 100) err = (pan_global - paw_global)*D/(5.796*alpha) - Jwn_global*D;
 			}
 		}
 		
 		if (timestep%RESTART_INTERVAL == 0){
 			if (pBC){
-				//err = fabs(sat_w - sat_w_previous);
-				//sat_w_previous = sat_w;
+				err = fabs(sat_w - sat_w_previous);
+				sat_w_previous = sat_w;
 				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
 			}
 			else{
@@ -2670,7 +2966,12 @@ int main(int argc, char **argv)
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Press.data,8,N,PRESS);
 	fclose(PRESS);
-
+	
+	sprintf(LocalRankFilename,"%s%s","BlobID.",LocalRankString);
+	FILE *BLOB;
+	BLOB = fopen(LocalRankFilename,"wb");
+	fwrite(Dm.Blobs.data,4,N,BLOB);
+	fclose(BLOB);
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	FILE *SPEED;
