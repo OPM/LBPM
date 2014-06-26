@@ -83,7 +83,26 @@ struct Domain{
 	void CommInit(MPI_Comm comm);
 	void BlobComm(MPI_Comm comm);
 
-	void getBlobConnections();
+	void AssignBlobConnections(){
+		getBlobConnections(recvList_x, recvCount_x, rank_x);
+		getBlobConnections(recvList_y, recvCount_y, rank_y);
+		getBlobConnections(recvList_z, recvCount_z, rank_z);
+		getBlobConnections(recvList_X, recvCount_X, rank_X);
+		getBlobConnections(recvList_Y, recvCount_y, rank_Y);
+		getBlobConnections(recvList_Z, recvCount_Z, rank_Z);
+		getBlobConnections(recvList_xy, recvCount_xy, rank_xy);
+		getBlobConnections(recvList_xY, recvCount_xY, rank_xY);
+		getBlobConnections(recvList_Xy, recvCount_Xy, rank_Xy);
+		getBlobConnections(recvList_XY, recvCount_XY, rank_XY);
+		getBlobConnections(recvList_xz, recvCount_xz, rank_xz);
+		getBlobConnections(recvList_xZ, recvCount_xZ, rank_xZ);
+		getBlobConnections(recvList_Xz, recvCount_Xz, rank_Xz);
+		getBlobConnections(recvList_XZ, recvCount_XZ, rank_XZ);
+		getBlobConnections(recvList_yz, recvCount_yz, rank_yz);
+		getBlobConnections(recvList_yZ, recvCount_yZ, rank_yZ);
+		getBlobConnections(recvList_Yz, recvCount_Yz, rank_Yz);
+		getBlobConnections(recvList_YZ, recvCount_YZ, rank_YZ);
+	}
 
 private:
 	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
@@ -116,6 +135,7 @@ private:
 			data[n] = recvbuf[idx];
 		}
 	}
+	
 	int VoxelConnection(int n){
 		int returnVal = -1;
 		int x,y,z;
@@ -141,6 +161,23 @@ private:
 		return returnVal;
 	}
 	
+	void getBlobConnections(int * List, int count, int neighbor){
+
+		int idx,n,localValue,neighborValue;
+		int x,y,z;
+		for (idx=0; idx<recvCount_x; idx++){
+			n = recvList_x[idx];
+			// Get the 3-D indices
+			x = n%Nx;
+			y = (n/Nx)%Ny;
+			z = n/(Nx*Ny);
+			neighborValue = Blobs(x,y,z);
+			if (neighborValue > -1){
+				localValue = VoxelConnection(n);
+				printf("Blob (%i,%i) connects to neighbor blob (%i,%i)", localValue, rank, neighborValue, neighbor);
+			}
+		}
+	}
 };
 
 void Domain::InitializeRanks()
@@ -514,14 +551,6 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, Blobs.data);
 	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, Blobs.data);
 	//......................................................................................
-}
-
-void Domain::getBlobConnections(){
-//	BlobGraph(0,nblob) = rank of the connecting blob;
-//	BlobGraph(1,nblob) = ID of the connecting blob;
-	
-	
-	
 }
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
