@@ -127,7 +127,6 @@ void Domain::CommInit(MPI_Comm Communicator){
 	int i,j,k,n;
 	int sendtag = 21;
 	int recvtag = 21;
-	
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
 	MPI_Status stat1[18],stat2[18];
@@ -240,7 +239,8 @@ void Domain::CommInit(MPI_Comm Communicator){
 	sendBuf_Xz = new int [sendCount_Xz];
 	sendBuf_XY = new int [sendCount_XY];
 	sendBuf_YZ = new int [sendCount_YZ];
-	sendBuf_XZ = new int [sendCount_XZ];	
+	sendBuf_XZ = new int [sendCount_XZ];
+	//......................................................................................
 	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x,sendtag+0,Communicator,&req1[0]);
 	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X,recvtag+0,Communicator,&req2[0]);
 	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X,sendtag+1,Communicator,&req1[1]);
