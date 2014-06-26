@@ -79,8 +79,27 @@ struct Domain{
 	
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
+	void BlobComm(MPI_Comm comm);
 	
 private:
+	void PackBlobData(int *list, int count, int *sendbuf, int *data){
+		// Fill in the phase ID values from neighboring processors
+		// This packs up the values that need to be sent from one processor to another
+		int idx,n;
+		for (idx=0; idx<count; idx++){
+			n = list[idx];
+			sendbuf[idx] = data[n];
+		}
+	}
+	void UnpackBlobData(int *list, int count, int *recvbuf, int *data){
+		// Fill in the phase ID values from neighboring processors
+		// This unpacks the values once they have been recieved from neighbors
+		int idx,n;
+		for (idx=0; idx<count; idx++){
+			n = list[idx];
+			data[n] = recvbuf[idx];
+		}
+	}
 	int getRankForBlock( int i, int j, int k )
 	{
 		int i2 = (i+nprocx)%nprocx;
@@ -380,6 +399,88 @@ void Domain::CommInit(MPI_Comm Communicator){
 	recvBuf_XZ = new int [recvCount_XZ];
 	//......................................................................................
 
+}
+
+Domain::BlobComm(MPI_Comm Communicator){
+	//......................................................................................
+	int sendtag, recvtag;
+	sendtag = recvtag = 51;
+	//......................................................................................
+	PackBlobsData(sendList_x, sendCount_x ,sendBuf_x, Blobs.data);
+	PackBlobsData(sendList_X, sendCount_X ,sendBuf_X, Blobs.data);
+	PackBlobsData(sendList_y, sendCount_y ,sendBuf_y, Blobs.data);
+	PackBlobsData(sendList_Y, sendCount_Y ,sendBuf_Y, Blobs.data);
+	PackBlobsData(sendList_z, sendCount_z ,sendBuf_z, Blobs.data);
+	PackBlobsData(sendList_Z, sendCount_Z ,sendBuf_Z, Blobs.data);
+	PackBlobsData(sendList_xy, sendCount_xy ,sendBuf_xy, Blobs.data);
+	PackBlobsData(sendList_Xy, sendCount_Xy ,sendBuf_Xy, Blobs.data);
+	PackBlobsData(sendList_xY, sendCount_xY ,sendBuf_xY, Blobs.data);
+	PackBlobsData(sendList_XY, sendCount_XY ,sendBuf_XY, Blobs.data);
+	PackBlobsData(sendList_xz, sendCount_xz ,sendBuf_xz, Blobs.data);
+	PackBlobsData(sendList_Xz, sendCount_Xz ,sendBuf_Xz, Blobs.data);
+	PackBlobsData(sendList_xZ, sendCount_xZ ,sendBuf_xZ, Blobs.data);
+	PackBlobsData(sendList_XZ, sendCount_XZ ,sendBuf_XZ, Blobs.data);
+	PackBlobsData(sendList_yz, sendCount_yz ,sendBuf_yz, Blobs.data);
+	PackBlobsData(sendList_Yz, sendCount_Yz ,sendBuf_Yz, Blobs.data);
+	PackBlobsData(sendList_yZ, sendCount_yZ ,sendBuf_yZ, Blobs.data);
+	PackBlobsData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, Blobs.data);
+	//......................................................................................
+	MPI_Sendrecv(sendBuf_x,sendCount_x,MPI_INT,rank_x,sendtag,
+			recvBuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_X,sendCount_X,MPI_INT,rank_X,sendtag,
+			recvBuf_x,recvCount_x,MPI_INT,rank_x,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_y,sendCount_y,MPI_INT,rank_y,sendtag,
+			recvBuf_Y,recvCount_Y,MPI_INT,rank_Y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_Y,sendCount_Y,MPI_INT,rank_Y,sendtag,
+			recvBuf_y,recvCount_y,MPI_INT,rank_y,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_z,sendCount_z,MPI_INT,rank_z,sendtag,
+			recvBuf_Z,recvCount_Z,MPI_INT,rank_Z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_Z,sendCount_Z,MPI_INT,rank_Z,sendtag,
+			recvBuf_z,recvCount_z,MPI_INT,rank_z,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_xy,sendCount_xy,MPI_INT,rank_xy,sendtag,
+			recvBuf_XY,recvCount_XY,MPI_INT,rank_XY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_XY,sendCount_XY,MPI_INT,rank_XY,sendtag,
+			recvBuf_xy,recvCount_xy,MPI_INT,rank_xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_Xy,sendCount_Xy,MPI_INT,rank_Xy,sendtag,
+			recvBuf_xY,recvCount_xY,MPI_INT,rank_xY,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_xY,sendCount_xY,MPI_INT,rank_xY,sendtag,
+			recvBuf_Xy,recvCount_Xy,MPI_INT,rank_Xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_xz,sendCount_xz,MPI_INT,rank_xz,sendtag,
+			recvBuf_XZ,recvCount_XZ,MPI_INT,rank_XZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_XZ,sendCount_XZ,MPI_INT,rank_XZ,sendtag,
+			recvBuf_xz,recvCount_xz,MPI_INT,rank_xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_Xz,sendCount_Xz,MPI_INT,rank_Xz,sendtag,
+			recvBuf_xZ,recvCount_xZ,MPI_INT,rank_xZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_xZ,sendCount_xZ,MPI_INT,rank_xZ,sendtag,
+			recvBuf_Xz,recvCount_Xz,MPI_INT,rank_Xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_yz,sendCount_yz,MPI_INT,rank_yz,sendtag,
+			recvBuf_YZ,recvCount_YZ,MPI_INT,rank_YZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_YZ,sendCount_YZ,MPI_INT,rank_YZ,sendtag,
+			recvBuf_yz,recvCount_yz,MPI_INT,rank_yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_Yz,sendCount_Yz,MPI_INT,rank_Yz,sendtag,
+			recvBuf_yZ,recvCount_yZ,MPI_INT,rank_yZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendBuf_yZ,sendCount_yZ,MPI_INT,rank_yZ,sendtag,
+			recvBuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+	//........................................................................................
+	UnpackBlobsData(recvList_x, recvCount_x ,recvBuf_x, Blobs.data);
+	UnpackBlobsData(recvList_X, recvCount_X ,recvBuf_X, Blobs.data);
+	UnpackBlobsData(recvList_y, recvCount_y ,recvBuf_y, Blobs.data);
+	UnpackBlobsData(recvList_Y, recvCount_Y ,recvBuf_Y, Blobs.data);
+	UnpackBlobsData(recvList_z, recvCount_z ,recvBuf_z, Blobs.data);
+	UnpackBlobsData(recvList_Z, recvCount_Z ,recvBuf_Z, Blobs.data);
+	UnpackBlobsData(recvList_xy, recvCount_xy ,recvBuf_xy, Blobs.data);
+	UnpackBlobsData(recvList_Xy, recvCount_Xy ,recvBuf_Xy, Blobs.data);
+	UnpackBlobsData(recvList_xY, recvCount_xY ,recvBuf_xY, Blobs.data);
+	UnpackBlobsData(recvList_XY, recvCount_XY ,recvBuf_XY, Blobs.data);
+	UnpackBlobsData(recvList_xz, recvCount_xz ,recvBuf_xz, Blobs.data);
+	UnpackBlobsData(recvList_Xz, recvCount_Xz ,recvBuf_Xz, Blobs.data);
+	UnpackBlobsData(recvList_xZ, recvCount_xZ ,recvBuf_xZ, Blobs.data);
+	UnpackBlobsData(recvList_XZ, recvCount_XZ ,recvBuf_XZ, Blobs.data);
+	UnpackBlobsData(recvList_yz, recvCount_yz ,recvBuf_yz, Blobs.data);
+	UnpackBlobsData(recvList_Yz, recvCount_Yz ,recvBuf_Yz, Blobs.data);
+	UnpackBlobsData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, Blobs.data);
+	UnpackBlobsData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, Blobs.data);
+	//......................................................................................
 }
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
