@@ -490,8 +490,8 @@ void Domain::BlobComm(MPI_Comm Communicator){
 
 Domain::getBlobConnections(){
 	
-	BlobGraph(0,nblob) = rank of the connecting blob;
-	BlobGraph(1,nblob) = ID of the connecting blob;
+//	BlobGraph(0,nblob) = rank of the connecting blob;
+//	BlobGraph(1,nblob) = ID of the connecting blob;
 	
 }
 
