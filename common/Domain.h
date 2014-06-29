@@ -16,7 +16,7 @@ int MAX_BLOB_COUNT=500;
 using namespace std;
 
 struct Domain{
-	
+
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
 			double lx, double ly, double lz){
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
@@ -28,7 +28,7 @@ struct Domain{
 		Blobs.New(Nx,Ny,Nz);
 		BlobGraph.New(18,MAX_BLOB_COUNT);
 	}
-		
+
 	// Basic domain information
 	int Nx,Ny,Nz,N;
 	int iproc,jproc,kproc;
@@ -72,21 +72,45 @@ struct Domain{
 	int *recvBuf_xy, *recvBuf_yz, *recvBuf_xz, *recvBuf_Xy, *recvBuf_Yz, *recvBuf_xZ;
 	int *recvBuf_xY, *recvBuf_yZ, *recvBuf_Xz, *recvBuf_XY, *recvBuf_YZ, *recvBuf_XZ;
 	//......................................................................................	
-	
+
 	// Solid indicator function
 	char *id;
 	// Blob information
 	IntArray Blobs;
 	IntArray BlobGraph;
-	
+
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
 	void BlobComm(MPI_Comm comm);
-		
-	void getBlobConnections();
-	
+
+	void AssignBlobConnections(){
+		getBlobConnections(recvList_x, recvCount_x, rank_x);
+		getBlobConnections(recvList_y, recvCount_y, rank_y);
+		getBlobConnections(recvList_z, recvCount_z, rank_z);
+		getBlobConnections(recvList_X, recvCount_X, rank_X);
+		getBlobConnections(recvList_Y, recvCount_y, rank_Y);
+		getBlobConnections(recvList_Z, recvCount_Z, rank_Z);
+		getBlobConnections(recvList_xy, recvCount_xy, rank_xy);
+		getBlobConnections(recvList_xY, recvCount_xY, rank_xY);
+		getBlobConnections(recvList_Xy, recvCount_Xy, rank_Xy);
+		getBlobConnections(recvList_XY, recvCount_XY, rank_XY);
+		getBlobConnections(recvList_xz, recvCount_xz, rank_xz);
+		getBlobConnections(recvList_xZ, recvCount_xZ, rank_xZ);
+		getBlobConnections(recvList_Xz, recvCount_Xz, rank_Xz);
+		getBlobConnections(recvList_XZ, recvCount_XZ, rank_XZ);
+		getBlobConnections(recvList_yz, recvCount_yz, rank_yz);
+		getBlobConnections(recvList_yZ, recvCount_yZ, rank_yZ);
+		getBlobConnections(recvList_Yz, recvCount_Yz, rank_Yz);
+		getBlobConnections(recvList_YZ, recvCount_YZ, rank_YZ);
+	}
+
 private:
-	int getRankForBlock( int i, int j, int k )
+	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+			{1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
+			{1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
+			{1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
+
+			int getRankForBlock( int i, int j, int k )
 	{
 		int i2 = (i+nprocx)%nprocx;
 		int j2 = (j+nprocy)%nprocy;
@@ -112,6 +136,48 @@ private:
 		}
 	}
 	
+	int VoxelConnection(int n){
+		int returnVal = -1;
+		int x,y,z;
+		// Get the 3-D indices
+		x = n%Nx;
+		y = (n/Nx)%Ny;
+		z = n/(Nx*Ny);
+		int nodx,nody,nodz;
+		for (int p=0;p<26;p++){
+			nodx=x+d[p][0];
+			// Get the neighbor and guarantee it is in the domain 
+			if (nodx < 0 ){ nodx = 0; }		
+			if (nodx > Nx-1 ){ nodx = Nx-1; }
+			nody=y+d[p][1];
+			if (nody < 0 ){ nody = 0; }		
+			if (nody > Ny-1 ){ nody = Ny-1; }
+			nodz=z+d[p][2];
+			if (nodz < 0 ){ nodz = 0; }		
+			if (nodz > Nz-1 ){ nodz = Nz-1; }
+			
+			if (Blobs(nodx,nody,nodz) > returnVal )	returnVal = Blobs(nodx,nody,nodz);
+		}
+		return returnVal;
+	}
+	
+	void getBlobConnections(int * List, int count, int neighbor){
+
+		int idx,n,localValue,neighborValue;
+		int x,y,z;
+		for (idx=0; idx<recvCount_x; idx++){
+			n = recvList_x[idx];
+			// Get the 3-D indices
+			x = n%Nx;
+			y = (n/Nx)%Ny;
+			z = n/(Nx*Ny);
+			neighborValue = Blobs(x,y,z);
+			if (neighborValue > -1){
+				localValue = VoxelConnection(n);
+				printf("Blob (%i,%i) connects to neighbor blob (%i,%i)", localValue, rank, neighborValue, neighbor);
+			}
+		}
+	}
 };
 
 void Domain::InitializeRanks()
@@ -485,13 +551,6 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, Blobs.data);
 	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, Blobs.data);
 	//......................................................................................
-}
-
-void Domain::getBlobConnections(){
-	
-//	BlobGraph(0,nblob) = rank of the connecting blob;
-//	BlobGraph(1,nblob) = ID of the connecting blob;
-	
 }
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
