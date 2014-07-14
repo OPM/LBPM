@@ -498,13 +498,16 @@ int main(int argc, char **argv)
 	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s > 0.0 && !pBC){
+/*	if (phi_s < 0.0 && !pBC){
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
 		dbs = 1.0 - das;
 		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
 	}
+*/
+	if (! pBC)	FlipID(id,Nx*Ny*Nz);
+	
 #endif
 
 	// Set up MPI communication structurese
@@ -1205,12 +1208,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	//......................................................................
-#ifdef USE_EXP_CONTACT_ANGLE
-	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
-#else
-	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-#endif
-	//......................................................................
+
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -1229,6 +1227,12 @@ int main(int argc, char **argv)
 		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+#ifdef USE_EXP_CONTACT_ANGLE
+	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+#else
+	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+#endif
+	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
