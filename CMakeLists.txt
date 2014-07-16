@@ -112,3 +112,10 @@ IF ( NOT ONLY_BUILD_DOCS )
 ENDIF()
 
 
+# Create the visit plugin
+IF ( USE_VISIT )
+    INCLUDE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindVisIt.cmake )
+    VISIT_PLUGIN( visit LBM )
+ENDIF()
+
+

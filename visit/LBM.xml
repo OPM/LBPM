@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+  <Plugin name="LBM" type="database" label="LBM" version="1.0" mdspecificcode="true" dbtype="MTMD">
+    <FilePatterns> 
+      *.LBM 
+    </FilePatterns>
+    <CXXFLAGS> 
+    </CXXFLAGS>
+    <LDFLAGS>  
+    </LDFLAGS>
+    <LIBS>     
+    </LIBS>
+  </Plugin>

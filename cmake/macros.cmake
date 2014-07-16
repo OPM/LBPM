@@ -496,6 +496,7 @@ MACRO( ADD_DISTCLEAN )
         gpu
         example
         common
+        visit
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)
