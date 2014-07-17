@@ -1220,7 +1220,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	//......................................................................
-
+#ifdef USE_EXP_CONTACT_ANGLE
+	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+#else
+	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+#endif
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -1239,11 +1243,7 @@ int main(int argc, char **argv)
 		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-#ifdef USE_EXP_CONTACT_ANGLE
-	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
-#else
-	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-#endif
+
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
