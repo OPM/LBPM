@@ -1196,6 +1196,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	ncubes = nc;
 
 
 	int logcount = 0; // number of surface write-outs
