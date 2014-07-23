@@ -17,7 +17,7 @@
 
 //#define CBUB
 //#define WRITE_SURFACES
-#define USE_EXP_CONTACT_ANGLE
+//#define USE_EXP_CONTACT_ANGLE
 
 using namespace std;
 
@@ -1184,8 +1184,8 @@ int main(int argc, char **argv)
 	int kstart,kfinish;
 	kstart = 1;
 	kfinish = Nz-1;
-//	if (pBC && kproc==0)		kstart = 4;
-//	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
+	if (pBC && kproc==0)		kstart = 4;
+	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
 	for (k=kstart; k<kfinish; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
