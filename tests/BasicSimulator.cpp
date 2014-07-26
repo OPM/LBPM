@@ -1462,7 +1462,7 @@ int main(int argc, char **argv)
 			Fy += SimDelta*Fy;
 			Fz += SimDelta*Fz;
 		}
-		printf("Simulating {Fx,Fy,Fz} = %f, %f, %f", Fx,Fy,Fz);
+		if (rank==0)	printf("Simulating {Fx,Fy,Fz} = %f, %f, %f \n", Fx,Fy,Fz);
 		
 		//************ MAIN ITERATION LOOP ***************************************/
 		MPI_Barrier(MPI_COMM_WORLD);
