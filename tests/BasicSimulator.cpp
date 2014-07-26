@@ -265,7 +265,6 @@ int main(int argc, char **argv)
 		printf("das = %f \n", das);
 		printf("dbs = %f \n", dbs);
 		printf("Value of phi at solid surface = %f \n", phi_s);
-		printf("Distance to phi = 0.0: %f \n", xIntPos);
 		printf("gamma_{wn} = %f \n", 5.796*alpha);
 //		printf("cos theta_c = %f \n", 1.05332*Ps);
 		printf("Initial Force(x) = %f \n", Fx);
@@ -274,6 +273,12 @@ int main(int argc, char **argv)
 		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		printf("********************************************************\n");
+		
+		
+		if (rank==0) printf("Number of paired forces = %i \n", SimCount);
+		if (rank==0) printf("Percent difference for force pair = %i \n", SimDelta);
+		if (rank==0) printf("********************************************************\n");
+
 	}
 
 	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
@@ -288,11 +293,6 @@ int main(int argc, char **argv)
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
-
-	
-	if (rank==0) printf("Number of paired forces = %i \n", SimCount);
-	if (rank==0) printf("Percent difference for force pair = %i \n", SimDelta);
-	if (rank==0) printf("********************************************************\n");
 
 	//.......................................................................
 	if (rank == 0)	printf("Read input media... \n");
@@ -1462,6 +1462,7 @@ int main(int argc, char **argv)
 			Fy += SimDelta*Fy;
 			Fz += SimDelta*Fz;
 		}
+		printf("Simulating {Fx,Fy,Fz} = %f, %f, %f", Fx,Fy,Fz);
 		
 		//************ MAIN ITERATION LOOP ***************************************/
 		MPI_Barrier(MPI_COMM_WORLD);
