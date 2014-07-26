@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	for (int proc=0; proc<nprocs; proc++){
 		
 		sprintf(LocalRankString,"%05d",proc);
-		sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
+		sprintf(LocalRankFilename,"%s%s",BaseFilename,LocalRankString);
 		printf("Reading file %s \n",LocalRankFilename);
 		ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 		
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 		
 	}
 	
-	
+	printf("Read %i ranks of %s \n",nprocs,BaseFilename);
 	
 }
 
