@@ -1431,8 +1431,10 @@ int main(int argc, char **argv)
 	sendtag = recvtag = 5;
 	FILE *TIMELOG;
 	FILE *FINALSTATE;
+	FILE *SPEED;
 	if (rank==0){
 		TIMELOG= fopen("timelog.tcat","a+");
+		FINALSTATE= fopen("finalstate.tcat","a");
 		if (fseek(TIMELOG,0,SEEK_CUR) == fseek(TIMELOG,0,SEEK_SET)){
 			// If timelog is empty, write a short header to list the averages
 			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
@@ -2348,7 +2350,6 @@ int main(int argc, char **argv)
 		stoptime = MPI_Wtime();
 
 		if (rank==0){
-			FINALSTATE= fopen("finalstate.tcat","a");
 			fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 			fprintf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 			fprintf(FINALSTATE,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
@@ -2366,7 +2367,6 @@ int main(int argc, char **argv)
 					Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 			fprintf(FINALSTATE,"%.5g %5g %5g %g",trawn_global, trJwn_global, trRwn_global, pc_global);		// Trimmed curvature
 			fprintf(FINALSTATE,"%.5g %5g %5g \n",Fx, Fy, Fz);												// External force
-			fclose(FINALSTATE);
 		}
 
 		sprintf(tmpstr,"Sim%03d",SimNumber);
@@ -2384,13 +2384,13 @@ int main(int argc, char **argv)
 		WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 
 		sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"dPdt.",LocalRankString);
-		FILE *SPEED;
 		SPEED = fopen(LocalRankFilename,"wb");
 		fwrite(dPdt.data,8,N,SPEED);
 		fclose(SPEED);
  
 	}
 	fclose(TIMELOG);
+	fclose(FINALSTATE);
 	
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
