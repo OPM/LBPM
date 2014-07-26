@@ -150,7 +150,6 @@ int main(int argc, char **argv)
 	int SimCount; 		// Number of simulations is 2 x SimCount 
 	double SimDelta; 	// Percent differenc between force pairs
 
-	
 	int RESTART_INTERVAL=20000;
 	
 	if (rank==0){
@@ -276,7 +275,7 @@ int main(int argc, char **argv)
 		
 		
 		if (rank==0) printf("Number of paired forces = %i \n", SimCount);
-		if (rank==0) printf("Percent difference for force pair = %i \n", SimDelta);
+		if (rank==0) printf("Percent difference for force pair = %f \n", SimDelta);
 		if (rank==0) printf("********************************************************\n");
 
 	}
@@ -1431,6 +1430,7 @@ int main(int argc, char **argv)
 	
 	sendtag = recvtag = 5;
 	FILE *TIMELOG;
+	FILE *FINALSTATE;
 	if (rank==0){
 		TIMELOG= fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_CUR) == fseek(TIMELOG,0,SEEK_SET)){
@@ -2347,7 +2347,6 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 		stoptime = MPI_Wtime();
 
-		FILE *FINALSTATE;
 		if (rank==0){
 			FINALSTATE= fopen("finalstate.tcat","a");
 			fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
