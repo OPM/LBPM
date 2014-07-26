@@ -289,13 +289,7 @@ int main(int argc, char **argv)
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
 
-//	unsigned int nBlocks = 32;
-//	int nthreads = 128;
-	int S = N/nthreads/nBlocks+1;
-
-//	unsigned int nBlocks = N/nthreads + (N%nthreads == 0?0:1);
-//	dim3 grid(nBlocks,1,1);
-
+	
 	if (rank==0) printf("Number of paired forces = %i \n", SimCount);
 	if (rank==0) printf("Percent difference for force pair = %i \n", SimDelta);
 	if (rank==0) printf("********************************************************\n");
@@ -314,7 +308,6 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 	
-//	printf("Local File Name =  %s \n",LocalRankFilename);
 	// .......... READ THE INPUT FILE .......................................
 //	char value;
 	char *id;
@@ -1432,10 +1425,6 @@ int main(int argc, char **argv)
 	int timestep = 0;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
-
-	//.......create a stream for the LB calculation.......
-//	cudaStream_t stream;
-//	cudaStreamCreate(&stream);
 	
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
@@ -1453,7 +1442,7 @@ int main(int argc, char **argv)
 			fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
 			fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
 			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] ");
-			fprintf(TIMELOG,"trJwn trawn trRwn pc Fx Fy Fz /n");				
+			fprintf(TIMELOG,"trJwn trawn trRwn pc Fx Fy Fz \n");				
 			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 	}
@@ -1464,9 +1453,9 @@ int main(int argc, char **argv)
 	for (int SimNumber=0; SimNumber < 2*SimCount; SimNumber++){
 		// Increment the external force
 		if (SimNumber%2 == 0){
-			Fx = 2.0*Fx/(1+SimDelta);
-			Fy = 2.0*Fy/(1+SimDelta);
-			Fz = 2.0*Fz/(1+SimDelta);
+			Fx = 2.0*Fx/(1.0+SimDelta);
+			Fy = 2.0*Fy/(1.0+SimDelta);
+			Fz = 2.0*Fz/(1.0+SimDelta);
 		}
 		else{
 			Fx += SimDelta*Fx;
@@ -1478,7 +1467,9 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 		starttime = MPI_Wtime();
 		//.........................................
-		while (timestep < timestepMax ){
+		timestep = 0;
+
+		while (timestep < timestepMax+5 ){
 
 			//*************************************************************************
 			// Fused Color Gradient and Collision 
@@ -2327,7 +2318,7 @@ int main(int argc, char **argv)
 				//.........................................................................
 				if (rank==0){
 
-					fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+					fprintf(TIMELOG,"%i %.5g ",timestep-5+timestepMax*SimNumber,dEs);				// change in surface energy
 					fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 					fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
 					fprintf(TIMELOG,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
@@ -2343,7 +2334,7 @@ int main(int argc, char **argv)
 					fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 							Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 					fprintf(TIMELOG,"%.5g %5g %5g %g",trawn_global, trJwn_global, trRwn_global, pc_global);			// Trimmed curvature
-					fprintf(TIMELOG,"%.5g %5g %5g\n",Fx, Fy, Fz);													// External force
+					fprintf(TIMELOG,"%.5g %5g %5g \n",Fx, Fy, Fz);													// External force
 					fflush(TIMELOG);
 
 					if (timestep > 100) err = (pan_global - paw_global)*D/(5.796*alpha) - Jwn_global*D;
@@ -2374,18 +2365,10 @@ int main(int argc, char **argv)
 			fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 					Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 			fprintf(FINALSTATE,"%.5g %5g %5g %g",trawn_global, trJwn_global, trRwn_global, pc_global);		// Trimmed curvature
-			fprintf(FINALSTATE,"%.5g %5g %5g\n",Fx, Fy, Fz);												// External force
+			fprintf(FINALSTATE,"%.5g %5g %5g \n",Fx, Fy, Fz);												// External force
 			fclose(FINALSTATE);
 		}
 
-		if (pBC){
-			//err = fabs(sat_w - sat_w_previous);
-			//sat_w_previous = sat_w;
-			if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
-		}
-		else{
-			// Not clear yet
-		}
 		sprintf(tmpstr,"Sim%03d",SimNumber);
 		if (rank==0){
 			mkdir(tmpstr,0777);
@@ -2404,8 +2387,6 @@ int main(int argc, char **argv)
 		SPEED = fopen(LocalRankFilename,"wb");
 		fwrite(dPdt.data,8,N,SPEED);
 		fclose(SPEED);
-
-		timestep = 0;
  
 	}
 	fclose(TIMELOG);
