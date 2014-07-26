@@ -2336,8 +2336,8 @@ int main(int argc, char **argv)
 							Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 					fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 							Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-					fprintf(TIMELOG,"%.5g %5g %5g %g",trawn_global, trJwn_global, trRwn_global, pc_global);			// Trimmed curvature
-					fprintf(TIMELOG,"%.5g %5g %5g \n",Fx, Fy, Fz);													// External force
+					fprintf(TIMELOG,"%.5g %.5g %.5g %.5g",trawn_global, trJwn_global, trRwn_global, pc_global);			// Trimmed curvature
+					fprintf(TIMELOG,"%.5g %.5g %.5g\n",Fx, Fy, Fz);													// External force
 					fflush(TIMELOG);
 
 					if (timestep > 100) err = (pan_global - paw_global)*D/(5.796*alpha) - Jwn_global*D;
@@ -2365,8 +2365,8 @@ int main(int argc, char **argv)
 					Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 			fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 					Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-			fprintf(FINALSTATE,"%.5g %5g %5g %g",trawn_global, trJwn_global, trRwn_global, pc_global);		// Trimmed curvature
-			fprintf(FINALSTATE,"%.5g %5g %5g \n",Fx, Fy, Fz);												// External force
+			fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g",trawn_global, trJwn_global, trRwn_global, pc_global);	// Trimmed curvature
+			fprintf(FINALSTATE,"%.5g %.5g %.5g \n",Fx, Fy, Fz);												// External force
 		}
 
 		sprintf(tmpstr,"Sim%03d",SimNumber);
