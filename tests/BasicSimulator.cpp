@@ -1179,8 +1179,6 @@ int main(int argc, char **argv)
 		}
 	}
 	ncubes = nc;
-
-	int logcount = 0; // number of surface write-outs
 	
 	//...........................................................................
 	//				MAIN  VARIABLES INITIALIZED HERE
@@ -1830,13 +1828,7 @@ int main(int argc, char **argv)
 			DeviceBarrier();
 			//...................................................................................
 			//...................................................................................
-			/*		UnpackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-			 */		
+	
 			UnpackValues(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
 			UnpackValues(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
 			UnpackValues(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
@@ -2222,44 +2214,6 @@ int main(int argc, char **argv)
 					k = cubeList(2,c);
 
 					//...........................................................................
-					/*				// Compute volume averages
-				for (p=0;p<8;p++){
-					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-
-						// 1-D index for this cube corner
-						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-
-						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
-							nwp_volume += 0.125;
-
-						// volume averages over the non-wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.99 ){
-							// volume the excludes the interfacial region
-							vol_n += 0.125;
-							// pressure
-							pan += 0.125*Press.data[n];
-							// velocity
-							van(0) += 0.125*Vel_x.data[n];
-							van(1) += 0.125*Vel_y.data[n];
-							van(2) += 0.125*Vel_z.data[n];
-						}
-
-						// volume averages over the wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < -0.99 ){
-							// volume the excludes the interfacial region
-							vol_w += 0.125;
-							// pressure
-							paw += 0.125*Press.data[n];
-							// velocity
-							vaw(0) += 0.125*Vel_x.data[n];
-							vaw(1) += 0.125*Vel_y.data[n];
-							vaw(2) += 0.125*Vel_z.data[n];
-						}
-					}
-				}
-
-					 */				//...........................................................................
 					// Construct the interfaces and common curve
 					pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
 							nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
@@ -2403,7 +2357,6 @@ int main(int argc, char **argv)
 
 		FILE *FINALSTATE;
 		if (rank==0){
-			fclose(TIMELOG);
 			FINALSTATE= fopen("finalstate.tcat","a");
 			fprintf(FINALSTATE,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 			fprintf(FINALSTATE,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
@@ -2433,7 +2386,7 @@ int main(int argc, char **argv)
 		else{
 			// Not clear yet
 		}
-		sprintf(tmpstr,"Sim%03d",logcount);
+		sprintf(tmpstr,"Sim%03d",SimNumber);
 		if (rank==0){
 			mkdir(tmpstr,0777);
 		}
@@ -2452,9 +2405,10 @@ int main(int argc, char **argv)
 		fwrite(dPdt.data,8,N,SPEED);
 		fclose(SPEED);
 
-		logcount++;
+		timestep = 0;
  
 	}
+	fclose(TIMELOG);
 	
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
