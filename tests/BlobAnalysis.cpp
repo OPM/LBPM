@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 	int nspheres;
 	double Lx,Ly,Lz;
 	//.......................................................................
-	int i,j,k;
+	int i,j,k,n;
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	domain >> Lz;
 	//.......................................................................
 
-	nprocs = nprocx*nproy*nprocz;
+	nprocs = nprocx*nprocy*nprocz;
 	printf("Number of MPI ranks: %i \n", nprocs);
 	Nx = (nx-2)*nprocx;
 	Ny = (ny-2)*nprocy;
@@ -53,9 +53,7 @@ int main(int argc, char **argv)
 	char LocalRestartFile[40];
 	char BaseFilename[20];
 	char tmpstr[10];
-	sprintf(LocalRankString,"%05d",rank);
 	sprintf(BaseFilename,"%s","Phase");
-	sprintf(LocalRankFilename,"%s%s",BaseFilename,LocalRankString);
 
 	                   
 	IntArray LocalBlobID(Nx,Ny,Nz);
