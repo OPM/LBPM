@@ -2381,9 +2381,10 @@ int main(int argc, char **argv)
 		CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
 		CopyToHost(cDen,Den,2*N*sizeof(double));
 		// Read in the restart file to CPU buffers
+		sprintf(LocalRestartFile,"%s/%s%s",tmpstr,"Restart.",LocalRankString);
 		WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 
-		sprintf(LocalRankFilename,"%s/%s%s","dPdt.",LocalRankString);
+		sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"dPdt.",LocalRankString);
 		FILE *SPEED;
 		SPEED = fopen(LocalRankFilename,"wb");
 		fwrite(dPdt.data,8,N,SPEED);
