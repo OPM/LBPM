@@ -159,6 +159,10 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 
 int main(int argc, char **argv)
 {
+	printf("----------------------------------------------------------\n");
+	printf("COMPUTING TCAT ANALYSIS FOR NON-WETTING PHASE FEATURES \n");
+	printf("----------------------------------------------------------\n");
+
 	//.......................................................................
 	int nprocx,nprocy,nprocz,nprocs;
 	int Nx, Ny, Nz;
@@ -184,6 +188,10 @@ int main(int argc, char **argv)
 	domain >> Lz;
 	//.......................................................................
 
+	nx+=2;
+	ny+=2;
+	nz+=2;
+	
 	nprocs = nprocx*nprocy*nprocz;
 	printf("Number of MPI ranks: %i \n", nprocs);
 	Nx = (nx-2)*nprocx;
@@ -227,6 +235,18 @@ int main(int argc, char **argv)
 						+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.2*Nx < minValue){
 					minValue = sqrt((1.0*i-0.7*Nx)*(1.0*i-0.7*Nx)+(1.0*j-0.7*Ny)*(1.0*j-0.7*Ny)
 							+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.2*Nx;
+				}
+				
+				if (sqrt((1.0*i-0.2*Nx)*(1.0*i-0.2*Nx)+(1.0*j-0.7*Ny)*(1.0*j-0.7*Ny)
+						+(1.0*k-0.6*Nz)*(1.0*k-0.6*Nz))-0.13*Nx < minValue){
+					minValue = sqrt((1.0*i-0.2*Nx)*(1.0*i-0.2*Nx)+(1.0*j-0.7*Ny)*(1.0*j-0.7*Ny)
+							+(1.0*k-0.6*Nz)*(1.0*k-0.6*Nz))-0.13*Nx;
+				}
+				
+				if (sqrt((1.0*i-0.7*Nx)*(1.0*i-0.7*Nx)+(1.0*j-0.3*Ny)*(1.0*j-0.3*Ny)
+						+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.17*Nx < minValue){
+					minValue = sqrt((1.0*i-0.7*Nx)*(1.0*i-0.7*Nx)+(1.0*j-0.3*Ny)*(1.0*j-0.3*Ny)
+							+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.17*Nx;
 				}
 				
 				if (minValue < -1.0)		Phase(i,j,k) = 1.0;
@@ -426,7 +446,7 @@ int main(int argc, char **argv)
 	if (ncubes > 0){
 		b(nblobs) = number;
 //		BlobList.push_back[number];
-		printf("Number of blobs is: %i \n",nblobs);
+		printf("Number of non-wetting phase blobs is: %i \n",nblobs-1);
 		nblobs++;
 	}
 	for (k=0;k<Nz;k++){
@@ -505,17 +525,25 @@ int main(int argc, char **argv)
 	int newton_steps = 0;
 	double blob_volume;
 	
+	printf("-----------------------------------------------\n");
 	printf("Computing TCAT averages based on connectivity \n");
-	printf("The number of blobs is %i \n",nblobs);
-	
+	printf("The number of non-wetting phase features is %i \n",nblobs-1);
+	printf("-----------------------------------------------\n");
+
 	// Wetting phase averages assume global connectivity
 	vol_w = 0.0;
 	aws = 0.0;
 	vaw(0) = vaw(1) = vaw(2) = 0.0;
 	Gws(0) = Gws(1) = Gws(2) = 0.0;
-	Gws(3) = Gws(4) = Gws(5) = 0.0;
+	Gws(3) = Gws(4) = Gws(5) = 0.0;	
+
+	// Don't compute the last blob unless specified
+	// the last blob is the entire wetting phase
+	nblobs -=1;
+#ifdef WP
+	nblobs+=1;
+#endif
 	
-	FILE *BLOBLOG= fopen("blobs.tcat","a");
 	for (a=0;a<nblobs;a++){
 		
 		finish = start+b(a);
@@ -665,6 +693,7 @@ int main(int argc, char **argv)
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
 		
+
 		BlobAverages(0,a) = nwp_volume;
 		BlobAverages(1,a) = pan;
 		BlobAverages(2,a) = awn;
@@ -694,10 +723,11 @@ int main(int argc, char **argv)
 		BlobAverages(26,a) = trawn;
 		BlobAverages(27,a) = trJwn;
 		BlobAverages(28,a) = trRwn;
+
+		printf("Computed TCAT averages for feature = %i \n", a);
 		
 		// Last "blob" is just the ws interface
-		if (a+1 < nblobs){
-			printf("Blob id = %i \n", a);
+/*		if (a+1 < nblobs){
 			fprintf(BLOBLOG,"%i ",a);						// blob ID
 			fprintf(BLOBLOG,"%.5g ",nwp_volume);				// blob volume
 			fprintf(BLOBLOG,"%.5g ",pan);						// blob volume
@@ -714,15 +744,27 @@ int main(int argc, char **argv)
 			fprintf(BLOBLOG,"%.5g %.5g",trawn, trJwn);						// Trimmed curvature
 			fprintf(BLOBLOG,"\n");						
 		}
-		
+		*/
 	}  // End of the blob loop
-	
+		
+	printf("-----------------------------------------------\n");
+	printf("Sorting the blobs based on volume \n");
+	printf("-----------------------------------------------\n");
+	int TempLabel;
 	double TempValue;
+	IntArray OldLabel(nblobs);
+	for (a=0; a<nblobs; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
 	for (int aa=0; aa<nblobs-1; aa++){
-		for (int bb=aa; bb<nblobs-1; bb++){
+		for (int bb=aa+1; bb<nblobs; bb++){
 			if (BlobAverages(0,aa) < BlobAverages(0,bb)){
 				// Exchange location of blobs aa and bb
+				printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
+				// switch the label
+				TempLabel = OldLabel(bb);
+				OldLabel(bb) = OldLabel(aa);
+				OldLabel(aa) = TempLabel;
+				// switch the averages
 				for (idx=0; idx<NUM_AVERAGES; idx++){
 					TempValue = BlobAverages(idx,bb);
 					BlobAverages(idx,bb) = BlobAverages(idx,aa);
@@ -731,12 +773,18 @@ int main(int argc, char **argv)
 			}
 		}		
 	}
-	
-	for (a=0; a<nblobs-1; a++){
+	printf("-----------------------------------------------\n");
+	FILE *BLOBLOG= fopen("blobs.tcat","a");
+	for (a=0; a<nblobs; a++){
 		printf("Blob id =%i \n",a);
-		printf("Blob volume (voxels) =%f \n", BlobAverages(0,a));
+		printf("Original Blob id = %i \n",OldLabel(a));
+		printf("Blob volume (voxels) = %f \n", BlobAverages(0,a));
+		for (idx=0; idx<28; idx++){
+			fprintf(BLOBLOG,"%.5g ",BlobAverages(idx,a));
+		}
+		fprintf(BLOBLOG,"\n");
 	}
-	
-	
+	printf("-----------------------------------------------\n");
+	fclose(BLOBLOG);
 }
 
