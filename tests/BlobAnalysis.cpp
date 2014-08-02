@@ -6,143 +6,60 @@
 #include <iostream>
 #include <math.h>
 #include "pmmc.h"
-#include "Domain.h"
+//#include "Domain.h"
+
+#define NUM_AVERAGES 30
 
 using namespace std;
 
-//--------------------------------------------------------------------------------------------------------
-inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
-					   DoubleArray &F, DoubleArray &S, double vf, double vs, int startx, int starty,
-					   int startz, IntArray &temp)
+inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
 {
-	// Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
-	// F>vf => oil phase S>vs => in porespace
-	// update the list of blobs, indicator mesh
-	int m = F.m;  // maxima for the meshes
-	int n = F.n;
-	int o = F.o;
-
-	int cubes_in_blob=0;
-	int nrecent = 1;						// number of nodes added at most recent sweep
-	temp(0,0) = startx;				// Set the initial point as a "seed" for the sweeps
-	temp(1,0) = starty;
-	temp(2,0) = startz;
-	int ntotal = 1;					// total number of nodes in blob
-	indicator(startx,starty,startz) = nblobs;
-
-	int p,s,x,y,z,start,finish,nodx,nody,nodz;
-	int imin=startx,imax=startx,jmin=starty,jmax=starty;	// initialize maxima / minima
-	int kmin=startz,kmax=startz;
-	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
-	{1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
-	{1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
-	{1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
-	{-1,-1,1},{-1,-1,-1}};   // directions to neighbors
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-	bool status = 1;						// status == true => continue to look for points
-	while (status == 1){
-		start = ntotal - nrecent;
-		finish = ntotal;
-		nrecent = 0;						// set recent points back to zero for next sweep through
-		for (s=start;s<finish;s++){
-			// Loop over recent points; look for new points
-			x = temp(0,s);
-			y = temp(1,s);
-			z = temp(2,s);
-			// Looop over the directions
-			for (p=0;p<26;p++){
-				nodx=x+d[p][0];
-				if (nodx < 0 ){ nodx = m-1; }		// Periodic BC for x
-				if (nodx > m-1 ){ nodx = 0; }
-				nody=y+d[p][1];
-				if (nody < 0 ){ nody = n-1; }	// Periodic BC for y
-				if (nody > n-1 ){ nody = 0; }
-				nodz=z+d[p][2];
-				if (nodz < 0 ){ nodz = 0; }		// No periodic BC for z
-				if (nodz > o-1 ){ nodz = o-1; }
-				if ( F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
-					 && indicator(nodx,nody,nodz) == -1 ){
-					// Node is a part of the blob - add it to the list
-					temp(0,ntotal) = nodx;
-					temp(1,ntotal) = nody;
-					temp(2,ntotal) = nodz;
-					ntotal++;
-					nrecent++;
-					// Update the indicator map
-					indicator(nodx,nody,nodz) = nblobs;
-					// Update the min / max for the cube loop
-					if ( nodx < imin ){ imin = nodx; }
-					if ( nodx > imax ){ imax = nodx; }
-					if ( nody < jmin ){ jmin = nody; }
-					if ( nody > jmax ){ jmax = nody; }
-					if ( nodz < kmin ){ kmin = nodz; }
-					if ( nodz > kmax ){ kmax = nodz; }
-				}
-				else if (F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
-						 && indicator(nodx,nody,nodz) > -1 &&  indicator(nodx,nody,nodz) != nblobs){
-					// Some kind of error in algorithm
-					printf("Error in blob search algorithm!");
-				}
-			}
-
+	int q,n;
+	double value;
+	ifstream File(FILENAME,ios::binary);
+	for (n=0; n<N; n++){
+		// Write the two density values
+		File.read((char*) &value, sizeof(value));
+		cDen[2*n] = value;
+	//	if (n== 66276)	printf("Density a  = %f \n",value);
+		File.read((char*) &value, sizeof(value));
+		cDen[2*n+1] = value;
+	//	if (n== 66276)	printf("Density b  = %f \n",value);
+		// Read the even distributions
+		for (q=0; q<10; q++){
+			File.read((char*) &value, sizeof(value));
+			cDistEven[q*N+n] = value;
+	//		if (n== 66276)	printf("dist even %i  = %f \n",q,value);
 		}
-		if ( nrecent == 0){
-			status = 0;
+		// Read the odd distributions
+		for (q=0; q<9; q++){
+			File.read((char*) &value, sizeof(value));
+			cDistOdd[q*N+n] = value;
+	//		if (n== 66276)	printf("dist even %i  = %f \n",q,value);
 		}
 	}
-	// Use points in temporary storage array to add cubes to the list of blobs
-	if ( imin > 0) { imin = imin-1; }
-//	if ( imax < m-1) { imax = imax+1; }
-	if ( jmin > 0) { jmin = jmin-1; }
-//	if ( jmax < n-1) { jmax = jmax+1; }
-	if ( kmin > 0) { kmin = kmin-1; }
-//	if ( kmax < o-1) { kmax = kmax+1; }
-	int i,j,k;
-	bool add;
-	for (k=kmin;k<kmax;k++){
-		for (j=jmin;j<jmax;j++){
-			for (i=imin;i<imax;i++){
-				// If cube(i,j,k) has any nodes in blob, add it to the list
-				// Loop over cube edges
-				add = 0;
-				for (p=0;p<8;p++){
-					nodx = i+cube[p][0];
-					nody = j+cube[p][1];
-					nodz = k+cube[p][2];
-					if ( indicator(nodx,nody,nodz) == nblobs ){
-						// Cube corner is in this blob
-						add = 1;
-					}
-				}
-				if (add == 1){
-					// Add cube to the list
-					blobs(0,ncubes) = i;
-					blobs(1,ncubes) = j;
-					blobs(2,ncubes) = k;
-					ncubes++;
-					cubes_in_blob++;
-					// Loop again to check for overlap
-					for (p=0;p<8;p++){
-						nodx = i+cube[p][0];
-						nody = j+cube[p][1];
-						nodz = k+cube[p][2];
-						if (indicator(nodx,nody,nodz) > -1 && indicator(nodx,nody,nodz) != nblobs){
-							printf("Overlapping cube!");
-							cout << i << ", " << j << ", " << k << endl;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return cubes_in_blob;
+	File.close();
 }
 
-inline void ReadFromAllRanks(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x, 
-							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz)
+inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 {
-	int q,n,N;
+	int n;
+	double value;
+	ifstream File(FILENAME,ios::binary);
+	for (n=0; n<N; n++){
+		// Write the two density values
+		File.read((char*) &value, sizeof(value));
+		Data[n] = value;
+
+	}
+	File.close();
+}
+
+inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x, 
+							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz, int iproc, int
+							jproc, int kproc)
+{
+	int i,j,k,q,n,N;
 	int iglobal,jglobal,kglobal;
 	double value;
 	double denA,denB;
@@ -152,7 +69,7 @@ inline void ReadFromAllRanks(char *FILENAME, DoubleArray &Phase, DoubleArray &Pr
 	
 	N = nx*ny*nz;
 	
-	double *Den, double *DistEven, double *DistOdd,
+	double *Den, *DistEven, *DistOdd;
 	
 	Den = new double[2*N];
 	DistEven = new double[10*N];
@@ -190,26 +107,26 @@ inline void ReadFromAllRanks(char *FILENAME, DoubleArray &Phase, DoubleArray &Pr
 				denA = Den[n];
 				denB = Den[N+n];
 				//........................................................................
-				f0 = disteven[n];
-				f2 = disteven[N+n];
-				f4 = disteven[2*N+n];
-				f6 = disteven[3*N+n];
-				f8 = disteven[4*N+n];
-				f10 = disteven[5*N+n];
-				f12 = disteven[6*N+n];
-				f14 = disteven[7*N+n];
-				f16 = disteven[8*N+n];
-				f18 = disteven[9*N+n];
+				f0 = DistEven[n];
+				f2 = DistEven[N+n];
+				f4 = DistEven[2*N+n];
+				f6 = DistEven[3*N+n];
+				f8 = DistEven[4*N+n];
+				f10 = DistEven[5*N+n];
+				f12 = DistEven[6*N+n];
+				f14 = DistEven[7*N+n];
+				f16 = DistEven[8*N+n];
+				f18 = DistEven[9*N+n];
 				//........................................................................
-				f1 = distodd[n];
-				f3 = distodd[1*N+n];
-				f5 = distodd[2*N+n];
-				f7 = distodd[3*N+n];
-				f9 = distodd[4*N+n];
-				f11 = distodd[5*N+n];
-				f13 = distodd[6*N+n];
-				f15 = distodd[7*N+n];
-				f17 = distodd[8*N+n];
+				f1 = DistOdd[n];
+				f3 = DistOdd[1*N+n];
+				f5 = DistOdd[2*N+n];
+				f7 = DistOdd[3*N+n];
+				f9 = DistOdd[4*N+n];
+				f11 = DistOdd[5*N+n];
+				f13 = DistOdd[6*N+n];
+				f15 = DistOdd[7*N+n];
+				f17 = DistOdd[8*N+n];
 				//........................................................................
 				//.................Compute the pressure....................................
 				value = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17);
@@ -249,7 +166,7 @@ int main(int argc, char **argv)
 	int nspheres;
 	double Lx,Ly,Lz;
 	//.......................................................................
-	int i,j,k,n;
+	int i,j,k,n,p,idx;
 	int iproc,jproc,kproc;
 	//.......................................................................
 	// Reading the domain information file
@@ -281,7 +198,9 @@ int main(int argc, char **argv)
 	char BaseFilename[20];
 	char tmpstr[10];
 	sprintf(BaseFilename,"%s","dPdt.");
-	                   
+	                 
+	int proc,iglobal,kglobal,jglobal;
+	
 	DoubleArray Phase(Nx,Ny,Nz);
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
@@ -293,7 +212,37 @@ int main(int argc, char **argv)
 	
 	double * Temp;
 	Temp = new double[nx*ny*nz];
-
+#ifdef GENTEST
+	// Fill the arrays with test data
+	double minValue;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SignDist(i,j,k) = 100.0;
+				
+				minValue = sqrt((1.0*i-0.3*Nx)*(1.0*i-0.3*Nx)+(1.0*j-0.3*Ny)*(1.0*j-0.3*Ny)
+						+(1.0*k-0.3*Nz)*(1.0*k-0.3*Nz))-0.1*Nx;
+				
+				if (sqrt((1.0*i-0.7*Nx)*(1.0*i-0.7*Nx)+(1.0*j-0.7*Ny)*(1.0*j-0.7*Ny)
+						+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.2*Nx < minValue){
+					minValue = sqrt((1.0*i-0.7*Nx)*(1.0*i-0.7*Nx)+(1.0*j-0.7*Ny)*(1.0*j-0.7*Ny)
+							+(1.0*k-0.7*Nz)*(1.0*k-0.7*Nz))-0.2*Nx;
+				}
+				
+				if (minValue < -1.0)		Phase(i,j,k) = 1.0;
+				else if (minValue < 1.0)	Phase(i,j,k) = -minValue;
+				else 						Phase(i,j,k) = -1.0;
+				
+				if (Phase(i,j,k) > 0.0){
+					Press(i,j,k) = 0.34;
+				}
+				else {
+					Press(i,j,k) = 0.32;
+				}
+			}
+		}
+	}
+#else
 	// read the files and populate main arrays
 	for ( kproc=0; kproc<nprocz; kproc++){
 		for ( jproc=0; jproc<nprocy; jproc++){
@@ -315,7 +264,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j-1;
 							kglobal = kproc*(nz-2)+k-1;
 							//........................................................................
-							SignDist(iglobal,jglobal,kglobal) = Temp[n];
+							dPdt(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
@@ -342,11 +291,13 @@ int main(int argc, char **argv)
 				
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
 
-				ReadFromAllRanks(LocalRankFilename,Phase,Pressure,Vel_x,Vel_y,Vel_z,nx,ny,nz);
+				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,nx,ny,nz,iproc,jproc,kproc);
 			}
 		}
 	}
 	printf("Read %i ranks of %s \n",nprocs,BaseFilename);
+#endif
+	
 	delete Temp;
 	
 	IntArray LocalBlobID(Nx,Ny,Nz);
@@ -368,6 +319,9 @@ int main(int argc, char **argv)
 					// Solid phase 
 					LocalBlobID(i,j,k) = -2;
 				}
+				else{
+					LocalBlobID(i,j,k) = -1;
+				}
 			}
 		}
 	}
@@ -380,10 +334,10 @@ int main(int argc, char **argv)
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
 	double sw,vol_n,vol_w,paw,pan;
-	double efawns,Jwn;
-	double As;
+	double efawns,Jwn,Kwn;
+	double trawn,trJwn,trRwn;
+	double As,dummy;
 	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
-	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
 	double As_global;
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	
@@ -419,8 +373,10 @@ int main(int argc, char **argv)
 	int n_local_nws_pts;
 	
 	DoubleArray CubeValues(2,2,2);
+	DoubleArray Values(20);
 	DoubleArray ContactAngle(20);
 	DoubleArray Curvature(20);
+	DoubleArray DistValues(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
 	DoubleArray van(3);
@@ -444,21 +400,24 @@ int main(int argc, char **argv)
 	IntArray temp(3,N);	// temporary storage array
 	IntArray  b(50);		// number of nodes in each blob
 	
-	std::vector<int> BlobList;
+/*	std::vector<int> BlobList;
 	BlobList.reserve[10000];
 
 	std::vector<int> TempBlobList;
 	TempBlobList.reserve[10000];
-	
+*/
+	double vF=0.0;
+	double vS=0.0;
+	double trimdist=1.0;
 	// Loop over z=0 first -> blobs attached to this end considered "connected" for LB simulation
 	i=0;
 	int number=0;
 	for (k=0;k<1;k++){
 		for (j=0;j<Ny;j++){
-			if ( F(i,j,k) > vF ){
-				if ( S(i,j,k) > vS ){
+			if ( Phase(i,j,k) > vF ){
+				if ( SignDist(i,j,k) > vS ){
 					// node i,j,k is in the porespace
-					number = number+ComputeBlob(blobs,nblobs,ncubes,indicator,F,S,vF,vS,i,j,k,temp);
+					number = number+ComputeBlob(blobs,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
 				}
 			}
 		}
@@ -466,18 +425,18 @@ int main(int argc, char **argv)
 	// Specify the blob on the z axis
 	if (ncubes > 0){
 		b(nblobs) = number;
-		BlobList.push_back[number];
+//		BlobList.push_back[number];
 		printf("Number of blobs is: %i \n",nblobs);
 		nblobs++;
 	}
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=1;i<Nx;i++){
-				if ( indicator(i,j,k) == -1 ){
-					if ( F(i,j,k) > vF ){
-						if ( S(i,j,k) > vS ){
+				if ( LocalBlobID(i,j,k) == -1 ){
+					if ( Phase(i,j,k) > vF ){
+						if ( SignDist(i,j,k) > vS ){
 							// node i,j,k is in the porespace
-							b(nblobs) = ComputeBlob(blobs,nblobs,ncubes,indicator,F,S,vF,vS,i,j,k,temp);
+							b(nblobs) = ComputeBlob(blobs,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
 							nblobs++;
 						}
 					}
@@ -494,7 +453,7 @@ int main(int argc, char **argv)
 	}
 	// Go over all cubes again -> add any that do not contain nw phase
 	bool add=1;			// Set to false if any corners contain nw-phase ( F > vF)
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
+//	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	int count_in=0,count_out=0;
 	int nodx,nody,nodz;
 	for (k=0;k<Nz-1;k++){
@@ -506,7 +465,7 @@ int main(int argc, char **argv)
 					nodx=i+cube[p][0];
 					nody=j+cube[p][1];
 					nodz=k+cube[p][2];
-					if ( indicator(nodx,nody,nodz) > -1 ){
+					if ( LocalBlobID(nodx,nody,nodz) > -1 ){
 						// corner occupied by nw-phase  -> do not add
 						add = 0;
 					}
@@ -524,8 +483,19 @@ int main(int argc, char **argv)
 	}
 	b(nblobs) = count_in;
 	nblobs++;
+	
+	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 
-
+	//...........................................................................
+	// Compute the gradients of the phase indicator and signed distance fields
+	//...........................................................................
+	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
+	pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
+	//...........................................................................
+	// Compute the mesh curvature of the phase indicator field
+	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+	//...........................................................................
+	
 	/* ****************************************************************
 			RUN TCAT AVERAGING ON EACH BLOB
 	****************************************************************** */
@@ -540,11 +510,12 @@ int main(int argc, char **argv)
 	
 	// Wetting phase averages assume global connectivity
 	vol_w = 0.0;
+	aws = 0.0;
 	vaw(0) = vaw(1) = vaw(2) = 0.0;
 	Gws(0) = Gws(1) = Gws(2) = 0.0;
 	Gws(3) = Gws(4) = Gws(5) = 0.0;
 	
-	BLOBLOG= fopen("finalstate.tcat","a");
+	FILE *BLOBLOG= fopen("blobs.tcat","a");
 	for (a=0;a<nblobs;a++){
 		
 		finish = start+b(a);
@@ -559,13 +530,14 @@ int main(int argc, char **argv)
 		n_ws_tris_beg = n_ws_tris;
 		n_nws_seg_beg = n_nws_seg;
 		// Loop over all cubes
-		blob_volume = 0;	// Initialize the volume for blob a to zero			awn = aws = ans = lwns = 0.0;
+		blob_volume = 0;	// Initialize the volume for blob a to zero
 		nwp_volume = 0.0;
 		As = 0.0;
 		
 		// Compute phase averages
 		vol_n =0.0;
 		pan = paw = 0.0;
+		awn  = ans = lwns = 0.0;
 		van(0) = van(1) = van(2) = 0.0;
 		vawn(0) = vawn(1) = vawn(2) = 0.0;
 		Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
@@ -577,9 +549,9 @@ int main(int argc, char **argv)
 		
 		for (c=start;c<finish;c++){
 			// Get cube from the list
-			i = cubeList(0,c);
-			j = cubeList(1,c);
-			k = cubeList(2,c);
+			i = blobs(0,c);
+			j = blobs(1,c);
+			k = blobs(2,c);
 	
 			// Use the cube to compute volume averages
 			for (p=0;p<8;p++){
@@ -625,7 +597,7 @@ int main(int argc, char **argv)
 	
 			//...........................................................................
 			// Construct the interfaces and common curve
-			pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+			pmmc_ConstructLocalCube(SignDist, Phase, vS, vF,
 					nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
 					local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 					n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
@@ -675,20 +647,63 @@ int main(int argc, char **argv)
 		}
 		start = finish;
 
-		volume(a) = blob_volume;
-		ws_areas(a) = aws;
-		nw_areas(a) = awn;
-		ns_areas(a) = ans;
+		if (vol_n > 0.0){
+			pan /= vol_n;
+			for (i=0;i<3;i++)	van(i) /= vol_n;
+		}
+		if (awn > 0.0){
+			Jwn /= awn;
+			Kwn /= awn;
+			trJwn /= trawn;
+			for (i=0;i<3;i++)	vawn(i) /= awn;
+			for (i=0;i<6;i++)	Gwn(i) /= awn;
+		}
+		if (lwns > 0.0){
+			efawns /= lwns;
+		}
+		if (ans > 0.0){
+			for (i=0;i<6;i++)	Gns(i) /= ans;
+		}
+		
+		BlobAverages(0,a) = nwp_volume;
+		BlobAverages(1,a) = pan;
+		BlobAverages(2,a) = awn;
+		BlobAverages(3,a) = ans;
+		BlobAverages(4,a) = Jwn;
+		BlobAverages(5,a) = Kwn;
+		BlobAverages(6,a) = lwns;
+		BlobAverages(7,a) = efawns;
+		BlobAverages(8,a) = van(0);
+		BlobAverages(9,a) = van(1);
+		BlobAverages(10,a) = van(2);
+		BlobAverages(11,a) = vawn(0);
+		BlobAverages(12,a) = vawn(1);
+		BlobAverages(13,a) = vawn(2);
+		BlobAverages(14,a) = Gwn(0);
+		BlobAverages(15,a) = Gwn(1);
+		BlobAverages(16,a) = Gwn(2);
+		BlobAverages(17,a) = Gwn(3);
+		BlobAverages(18,a) = Gwn(4);
+		BlobAverages(19,a) = Gwn(5);
+		BlobAverages(20,a) = Gns(0);
+		BlobAverages(21,a) = Gns(1);
+		BlobAverages(22,a) = Gns(2);
+		BlobAverages(23,a) = Gns(3);
+		BlobAverages(24,a) = Gns(4);
+		BlobAverages(25,a) = Gns(5);
+		BlobAverages(26,a) = trawn;
+		BlobAverages(27,a) = trJwn;
+		BlobAverages(28,a) = trRwn;
 		
 		// Last "blob" is just the ws interface
 		if (a+1 < nblobs){
 			printf("Blob id = %i \n", a);
-			fprintf(BLOBLOG,"%i %.5g ",a);						// blob ID
+			fprintf(BLOBLOG,"%i ",a);						// blob ID
 			fprintf(BLOBLOG,"%.5g ",nwp_volume);				// blob volume
 			fprintf(BLOBLOG,"%.5g ",pan);						// blob volume
 			fprintf(BLOBLOG,"%.5g %.5g ",awn,ans);				// interfacial areas
-			fprintf(BLOBLOG,"%.5g %5g ",Jwn, Kwn);				// curvature of wn interface
-			fprintf(BLOBLOG,"%.5g ",lwns);								// common curve length
+			fprintf(BLOBLOG,"%.5g %.5g ",Jwn,Kwn);				// curvature of wn interface
+			fprintf(BLOBLOG,"%.5g ",lwns);							// common curve length
 			fprintf(BLOBLOG,"%.5g ",efawns);											// average contact angle
 			fprintf(BLOBLOG,"%.5g %.5g %.5g ",van(0),van(1),van(2));	// average velocity of n phase
 			fprintf(BLOBLOG,"%.5g %.5g %.5g ",vawn(0),vawn(1),vawn(2));	// velocity of wn interface
@@ -696,17 +711,32 @@ int main(int argc, char **argv)
 					Gwn(0),Gwn(1),Gwn(2),Gwn(3),Gwn(4),Gwn(5));	// orientation of wn interface
 			fprintf(BLOBLOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 					Gns(0),Gns(1),Gns(2),Gns(3),Gns(4),Gns(5));	// orientation of ns interface
-			fprintf(BLOBLOG,"%.5g %5g %5g\n",trawn, trJwn, trRwn);						// Trimmed curvature
+			fprintf(BLOBLOG,"%.5g %.5g",trawn, trJwn);						// Trimmed curvature
+			fprintf(BLOBLOG,"\n");						
 		}
 		
 	}  // End of the blob loop
 	
-	fprintf(BLOBLOG,"%.5g ", paw);							// blob volume
-	fprintf(BLOBLOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-			Gws(0),Gws(1),Gws(2),Gws(3),Gws(4),Gws(5));	// orientation of ws interface
-	fprintf(BLOBLOG,"%.5g %.5g %.5g ",vaw(0),vaw(1),vaw(2));	// average velocity of w phase
-	fclose(BLOBLOG);
-
+	double TempValue;
+	// Sort the blob averages based on volume
+	for (int aa=0; aa<nblobs-1; aa++){
+		for (int bb=aa; bb<nblobs-1; bb++){
+			if (BlobAverages(0,aa) < BlobAverages(0,bb)){
+				// Exchange location of blobs aa and bb
+				for (idx=0; idx<NUM_AVERAGES; idx++){
+					TempValue = BlobAverages(idx,bb);
+					BlobAverages(idx,bb) = BlobAverages(idx,aa);
+					BlobAverages(idx,aa) = TempValue;
+				}
+			}
+		}		
+	}
+	
+	for (a=0; a<nblobs-1; a++){
+		printf("Blob id =%i \n",a);
+		printf("Blob volume (voxels) =%f \n", BlobAverages(0,a));
+	}
+	
 	
 }
 
