@@ -19,6 +19,11 @@
 //#define WRITE_SURFACES
 //#define USE_EXP_CONTACT_ANGLE
 
+/*
+ * Simulator for two-phase flow in porous media
+ * James E. McClure 2013-2014
+ */
+
 using namespace std;
 
 //*************************************************************************
