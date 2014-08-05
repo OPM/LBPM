@@ -692,7 +692,6 @@ int main(int argc, char **argv)
 		if (ans > 0.0){
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
-		
 
 		BlobAverages(0,a) = nwp_volume;
 		BlobAverages(1,a) = pan;
@@ -726,25 +725,6 @@ int main(int argc, char **argv)
 
 		printf("Computed TCAT averages for feature = %i \n", a);
 		
-		// Last "blob" is just the ws interface
-/*		if (a+1 < nblobs){
-			fprintf(BLOBLOG,"%i ",a);						// blob ID
-			fprintf(BLOBLOG,"%.5g ",nwp_volume);				// blob volume
-			fprintf(BLOBLOG,"%.5g ",pan);						// blob volume
-			fprintf(BLOBLOG,"%.5g %.5g ",awn,ans);				// interfacial areas
-			fprintf(BLOBLOG,"%.5g %.5g ",Jwn,Kwn);				// curvature of wn interface
-			fprintf(BLOBLOG,"%.5g ",lwns);							// common curve length
-			fprintf(BLOBLOG,"%.5g ",efawns);											// average contact angle
-			fprintf(BLOBLOG,"%.5g %.5g %.5g ",van(0),van(1),van(2));	// average velocity of n phase
-			fprintf(BLOBLOG,"%.5g %.5g %.5g ",vawn(0),vawn(1),vawn(2));	// velocity of wn interface
-			fprintf(BLOBLOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-					Gwn(0),Gwn(1),Gwn(2),Gwn(3),Gwn(4),Gwn(5));	// orientation of wn interface
-			fprintf(BLOBLOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-					Gns(0),Gns(1),Gns(2),Gns(3),Gns(4),Gns(5));	// orientation of ns interface
-			fprintf(BLOBLOG,"%.5g %.5g",trawn, trJwn);						// Trimmed curvature
-			fprintf(BLOBLOG,"\n");						
-		}
-		*/
 	}  // End of the blob loop
 		
 	printf("-----------------------------------------------\n");
@@ -780,11 +760,12 @@ int main(int argc, char **argv)
 		printf("Original Blob id = %i \n",OldLabel(a));
 		printf("Blob volume (voxels) = %f \n", BlobAverages(0,a));
 		for (idx=0; idx<28; idx++){
-			fprintf(BLOBLOG,"%.5g ",BlobAverages(idx,a));
+			fprintf(BLOBLOG,"%.8g ",BlobAverages(idx,a));
 		}
 		fprintf(BLOBLOG,"\n");
 	}
 	printf("-----------------------------------------------\n");
 	fclose(BLOBLOG);
+	
 }
 
