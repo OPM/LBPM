@@ -58,7 +58,7 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 
 inline void SetPeriodicBC(DoubleArray &Scalar, int nx, int ny, int nz){
 	
-	int in,jn,kn;
+	int i,j,k,in,jn,kn;
 	for (k=0; k<nz; k++){
 		for (j=0; j<ny; j++){
 			for (i=0; i<nz; i++){
