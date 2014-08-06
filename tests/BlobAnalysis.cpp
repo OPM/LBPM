@@ -12,6 +12,7 @@
 
 using namespace std;
 
+
 inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
 {
 	int q,n;
@@ -55,6 +56,24 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 	File.close();
 }
 
+inline void SetPeriodicBC(DoubleArray &Scalar, int nx, int ny, int nz){
+	
+	int in,jn,kn;
+	for (k=0; k<nz; k++){
+		for (j=0; j<ny; j++){
+			for (i=0; i<nz; i++){
+				in = i; jn=k; kn=k;
+				if (i==0) in += (nx-2);
+				if (j==0) jn += (ny-2);
+				if (k==0) kn += (nz-2);
+				if (i==nx-1) in -= (nx-2);
+				if (j==ny-1) jn -= (ny-2);
+				if (k==nz-1) kn -= (nz-2);	
+				Scalar(in,jn,kn) = Scalar(i,j,k);
+			}
+		}
+	}
+}
 inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x, 
 							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz, int iproc, int
 							jproc, int kproc)
@@ -138,9 +157,9 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 				//........................................................................
 				// save values in global arrays
 				//........................................................................
-				iglobal = iproc*(nx-2)+i-1;
-				jglobal = jproc*(ny-2)+j-1;
-				kglobal = kproc*(nz-2)+k-1;
+				iglobal = iproc*(nx-2)+i;
+				jglobal = jproc*(ny-2)+j;
+				kglobal = kproc*(nz-2)+k;
 				//........................................................................				
 				Phase(iglobal,jglobal,kglobal) = (denA+denB)/(denA-denB);
 				Pressure(iglobal,jglobal,kglobal) = value;
@@ -194,9 +213,9 @@ int main(int argc, char **argv)
 	
 	nprocs = nprocx*nprocy*nprocz;
 	printf("Number of MPI ranks: %i \n", nprocs);
-	Nx = (nx-2)*nprocx;
-	Ny = (ny-2)*nprocy;
-	Nz = (nz-2)*nprocz;
+	Nx = (nx-2)*nprocx+2;
+	Ny = (ny-2)*nprocy+2;
+	Nz = (nz-2)*nprocz+2;
 	printf("Full domain size: %i x %i x %i  \n", Nx,Ny,Nz);
 	
 	// Filenames used
@@ -220,6 +239,8 @@ int main(int argc, char **argv)
 	
 	double * Temp;
 	Temp = new double[nx*ny*nz];
+	
+	
 #ifdef GENTEST
 	// Fill the arrays with test data
 	double minValue;
@@ -280,9 +301,9 @@ int main(int argc, char **argv)
 							//........................................................................
 							n = k*nx*ny+j*nx+i;
 							//........................................................................
-							iglobal = iproc*(nx-2)+i-1;
-							jglobal = jproc*(ny-2)+j-1;
-							kglobal = kproc*(nz-2)+k-1;
+							iglobal = iproc*(nx-2)+i;
+							jglobal = jproc*(ny-2)+j;
+							kglobal = kproc*(nz-2)+k;
 							//........................................................................
 							dPdt(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
@@ -299,9 +320,9 @@ int main(int argc, char **argv)
 							//........................................................................
 							n = k*nx*ny+j*nx+i;
 							//........................................................................
-							iglobal = iproc*(nx-2)+i-1;
-							jglobal = jproc*(ny-2)+j-1;
-							kglobal = kproc*(nz-2)+k-1;
+							iglobal = iproc*(nx-2)+i;
+							jglobal = jproc*(ny-2)+j;
+							kglobal = kproc*(nz-2)+k;
 							//........................................................................
 							SignDist(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
@@ -330,6 +351,9 @@ int main(int argc, char **argv)
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
 	
+	SetPeriodicBC(SignDist, Nx, Ny, Nz);
+	SetPeriodicBC(Phase, Nx, Ny, Nz);
+	
 	// Initialize the local blob ID
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
@@ -345,7 +369,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	
+
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
@@ -358,7 +382,6 @@ int main(int argc, char **argv)
 	double trawn,trJwn,trRwn;
 	double As,dummy;
 	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
-	double As_global;
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
@@ -676,6 +699,7 @@ int main(int argc, char **argv)
 		start = finish;
 
 		if (vol_n > 0.0){
+			ivalue = 1.0/vol_n;
 			pan /= vol_n;
 			for (i=0;i<3;i++)	van(i) /= vol_n;
 		}
