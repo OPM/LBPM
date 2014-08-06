@@ -699,7 +699,6 @@ int main(int argc, char **argv)
 		start = finish;
 
 		if (vol_n > 0.0){
-			ivalue = 1.0/vol_n;
 			pan /= vol_n;
 			for (i=0;i<3;i++)	van(i) /= vol_n;
 		}
