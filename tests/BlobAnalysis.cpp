@@ -240,6 +240,13 @@ int main(int argc, char **argv)
 	double * Temp;
 	Temp = new double[nx*ny*nz];
 	
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SignDist(i,j,k) = -100.0;
+			}
+		}
+	}
 	
 #ifdef GENTEST
 	// Fill the arrays with test data
@@ -351,9 +358,6 @@ int main(int argc, char **argv)
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
 	
-	SetPeriodicBC(SignDist, Nx, Ny, Nz);
-	SetPeriodicBC(Phase, Nx, Ny, Nz);
-	
 	// Initialize the local blob ID
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
@@ -370,6 +374,9 @@ int main(int argc, char **argv)
 		}
 	}
 
+	SetPeriodicBC(SignDist, Nx, Ny, Nz);
+	SetPeriodicBC(Phase, Nx, Ny, Nz);
+	
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
