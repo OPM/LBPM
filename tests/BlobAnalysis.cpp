@@ -357,22 +357,6 @@ int main(int argc, char **argv)
 	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
-	
-	// Initialize the local blob ID
-	// Initializing the blob ID
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				if (SignDist(i,j,k) < 0.0){
-					// Solid phase 
-					LocalBlobID(i,j,k) = -2;
-				}
-				else{
-					LocalBlobID(i,j,k) = -1;
-				}
-			}
-		}
-	}
 
 	SetPeriodicBC(SignDist, Nx, Ny, Nz);
 	SetPeriodicBC(Phase, Nx, Ny, Nz);
@@ -392,12 +376,28 @@ int main(int argc, char **argv)
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nz; i++){
 				in = i; jn=k; kn=k;
-				if (i==0) 		SignDist(i,j,k) = 0.0;
-				if (j==0) 		SignDist(i,j,k) = 0.0; 
-				if (k==0) 		SignDist(i,j,k) = 0.0;
-				if (i==Nx-1) 	SignDist(i,j,k) = 0.0;
-				if (j==Nx-1) 	SignDist(i,j,k) = 0.0;
-				if (k==Nz-1) 	SignDist(i,j,k) = 0.0;	
+				if (i==0) 		SignDist(i,j,k) = -2.0;
+				if (j==0) 		SignDist(i,j,k) = -2.0; 
+				if (k==0) 		SignDist(i,j,k) = -2.0;
+				if (i==Nx-1) 	SignDist(i,j,k) = -2.0;
+				if (j==Nx-1) 	SignDist(i,j,k) = -2.0;
+				if (k==Nz-1) 	SignDist(i,j,k) = -2.0;	
+			}
+		}
+	}
+	
+	// Initialize the local blob ID
+	// Initializing the blob ID
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (SignDist(i,j,k) < 0.0){
+					// Solid phase 
+					LocalBlobID(i,j,k) = -2;
+				}
+				else{
+					LocalBlobID(i,j,k) = -1;
+				}
 			}
 		}
 	}
