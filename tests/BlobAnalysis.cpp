@@ -387,6 +387,7 @@ int main(int argc, char **argv)
 	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 	//...........................................................................
 	
+	int in,jn,kn;
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nz; i++){
