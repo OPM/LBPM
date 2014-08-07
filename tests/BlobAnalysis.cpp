@@ -376,6 +376,30 @@ int main(int argc, char **argv)
 
 	SetPeriodicBC(SignDist, Nx, Ny, Nz);
 	SetPeriodicBC(Phase, Nx, Ny, Nz);
+
+	//...........................................................................
+	// Compute the gradients of the phase indicator and signed distance fields
+	//...........................................................................
+	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
+	pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
+	//...........................................................................
+	// Compute the mesh curvature of the phase indicator field
+	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+	//...........................................................................
+	
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nz; i++){
+				in = i; jn=k; kn=k;
+				if (i==0) 		SignDist(i,j,k) = 0.0;
+				if (j==0) 		SignDist(i,j,k) = 0.0; 
+				if (k==0) 		SignDist(i,j,k) = 0.0;
+				if (i==Nx-1) 	SignDist(i,j,k) = 0.0;
+				if (j==Nx-1) 	SignDist(i,j,k) = 0.0;
+				if (k==Nz-1) 	SignDist(i,j,k) = 0.0;	
+			}
+		}
+	}
 	
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
@@ -536,15 +560,7 @@ int main(int argc, char **argv)
 	
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 
-	//...........................................................................
-	// Compute the gradients of the phase indicator and signed distance fields
-	//...........................................................................
-	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
-	pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
-	//...........................................................................
-	// Compute the mesh curvature of the phase indicator field
-	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
-	//...........................................................................
+
 	
 	/* ****************************************************************
 			RUN TCAT AVERAGING ON EACH BLOB
