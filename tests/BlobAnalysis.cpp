@@ -102,6 +102,7 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 		//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
 		Den[2*n+1] = value;
+
 		//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
 		for (q=0; q<10; q++){
@@ -311,7 +312,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							dPdt(iglobal,jglobal,kglobal) = Temp[n];
+							dPdt(iglobal,jglobal,kglobal) = Temp[n]; 
 							//........................................................................
 						}
 					}
