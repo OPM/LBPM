@@ -720,7 +720,7 @@ int main(int argc, char **argv)
 		}
 		start = finish;
 
-		if (vol_n > 0.0){
+/*		if (vol_n > 0.0){
 			pan /= vol_n;
 			for (i=0;i<3;i++)	van(i) /= vol_n;
 		}
@@ -737,6 +737,7 @@ int main(int argc, char **argv)
 		if (ans > 0.0){
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
+		*/
 
 		BlobAverages(0,a) = nwp_volume;
 		BlobAverages(1,a) = pan;
