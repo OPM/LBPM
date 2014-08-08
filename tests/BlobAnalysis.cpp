@@ -98,10 +98,10 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
-		Den[n] = value;
+		Den[2*n] = value;
 		//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
-		Den[N+n] = value;
+		Den[2*n+1] = value;
 		//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
 		for (q=0; q<10; q++){
@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 	double efawns,Jwn,Kwn;
 	double trawn,trJwn,trRwn;
 	double As,dummy;
-	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
+	double dEs,dAwn,dAns;	// Global surface energy (calculated by rank=0)
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
