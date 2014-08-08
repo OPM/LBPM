@@ -218,6 +218,14 @@ int main(int argc, char **argv)
 	Nz = (nz-2)*nprocz+2;
 	printf("Full domain size: %i x %i x %i  \n", Nx,Ny,Nz);
 	
+	DoubleArray Phase(Nx,Ny,Nz);
+	DoubleArray SignDist(Nx,Ny,Nz);
+	DoubleArray Press(Nx,Ny,Nz);
+	DoubleArray Vel_x(Nx,Ny,Nz);			// Velocity
+	DoubleArray Vel_y(Nx,Ny,Nz);
+	DoubleArray Vel_z(Nx,Ny,Nz);
+	DoubleArray dPdt(Nx,Ny,Nz);
+	
 	// Filenames used
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -227,16 +235,7 @@ int main(int argc, char **argv)
 	sprintf(BaseFilename,"%s","dPdt.");
 	                 
 	int proc,iglobal,kglobal,jglobal;
-	
-	DoubleArray Phase(Nx,Ny,Nz);
-	DoubleArray SignDist(Nx,Ny,Nz);
-	DoubleArray Press(Nx,Ny,Nz);
-	DoubleArray Vel_x(Nx,Ny,Nz);			// Velocity
-	DoubleArray Vel_y(Nx,Ny,Nz);
-	DoubleArray Vel_z(Nx,Ny,Nz);
-	
-	DoubleArray dPdt(Nx,Ny,Nz);
-	
+
 	double * Temp;
 	Temp = new double[nx*ny*nz];
 	
@@ -717,7 +716,6 @@ int main(int argc, char **argv)
 			n_ws_tris_beg = n_ws_tris;
 			n_nws_seg_beg = n_nws_seg;
 			//*******************************************************************
-			
 			
 		}
 		start = finish;
