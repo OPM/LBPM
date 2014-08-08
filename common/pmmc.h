@@ -343,14 +343,18 @@ inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indi
 			// Looop over the directions
 			for (p=0;p<26;p++){
 				nodx=x+d[p][0];
+				
 				if (nodx < 0 ){ nodx = m-1; }		// Periodic BC for x
 				if (nodx > m-1 ){ nodx = 0; }
 				nody=y+d[p][1];
-				if (nody < 0 ){ nody = n-1; }	// Periodic BC for y
+
+				if (nody < 0 ){ nody = n-1; }		// Periodic BC for y
 				if (nody > n-1 ){ nody = 0; }
+
 				nodz=z+d[p][2];
-				if (nodz < 0 ){ nodz = 0; }		// No periodic BC for z
-				if (nodz > o-1 ){ nodz = o-1; }
+				if (nodz < 0 ){ nodz = o-1; }		// Periodic BC for z
+				if (nodz > o-1 ){ nodz = 0; }
+				
 				if ( F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
 					 && indicator(nodx,nody,nodz) == -1 ){
 					// Node is a part of the blob - add it to the list

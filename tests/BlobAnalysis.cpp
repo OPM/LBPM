@@ -21,10 +21,10 @@ inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, doub
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n] = value;
+		cDen[n] = value;
 	//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n+1] = value;
+		cDen[N+n] = value;
 	//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
 		for (q=0; q<10; q++){
@@ -61,15 +61,15 @@ inline void SetPeriodicBC(DoubleArray &Scalar, int nx, int ny, int nz){
 	int i,j,k,in,jn,kn;
 	for (k=0; k<nz; k++){
 		for (j=0; j<ny; j++){
-			for (i=0; i<nz; i++){
-				in = i; jn=k; kn=k;
-				if (i==0) in += (nx-2);
-				if (j==0) jn += (ny-2);
-				if (k==0) kn += (nz-2);
-				if (i==nx-1) in -= (nx-2);
-				if (j==ny-1) jn -= (ny-2);
-				if (k==nz-1) kn -= (nz-2);	
-				Scalar(in,jn,kn) = Scalar(i,j,k);
+			for (i=0; i<nx; i++){
+				in = i; jn=j; kn=k;
+				if (i==0) in = nx-2 ;
+				else if (i==nx-1) in = 0;
+				if (j==0) jn = ny-2;
+				else if (j==ny-1) jn = 0;
+				if (k==0) kn = nz-2;
+				else if (k==nz-1) kn = 0;	
+				Scalar(i,j,k) = Scalar(in,jn,kn);
 			}
 		}
 	}
@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 
 				sprintf(LocalRankString,"%05d",proc);
 				sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
-				printf("Reading file %s \n",LocalRankFilename);
+	//			printf("Reading file %s \n",LocalRankFilename);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
@@ -319,11 +319,13 @@ int main(int argc, char **argv)
 				}
 				
 				sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-				printf("Reading file %s \n",LocalRankFilename);
+		//		printf("Reading file %s \n",LocalRankFilename);
+		//		printf("Sub-domain size: %i x %i x %i  \n", nx,ny,nz);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
 						for (i=1; i<nz-1; i++){
+
 							//........................................................................
 							n = k*nx*ny+j*nx+i;
 							//........................................................................
@@ -360,7 +362,7 @@ int main(int argc, char **argv)
 
 	SetPeriodicBC(SignDist, Nx, Ny, Nz);
 	SetPeriodicBC(Phase, Nx, Ny, Nz);
-
+	
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	//...........................................................................
@@ -371,21 +373,28 @@ int main(int argc, char **argv)
 	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 	//...........................................................................
 	
-	int in,jn,kn;
-	for (k=0; k<Nz; k++){
+	SetPeriodicBC(MeanCurvature, Nx, Ny, Nz);
+	SetPeriodicBC(GaussCurvature, Nx, Ny, Nz);
+	SetPeriodicBC(SignDist_x, Nx, Ny, Nz);
+	SetPeriodicBC(SignDist_y, Nx, Ny, Nz);
+	SetPeriodicBC(SignDist_z, Nx, Ny, Nz);
+	SetPeriodicBC(Phase_x, Nx, Ny, Nz);
+	SetPeriodicBC(Phase_y, Nx, Ny, Nz);
+	SetPeriodicBC(Phase_z, Nx, Ny, Nz);
+	
+/*	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
-			for (i=0; i<Nz; i++){
-				in = i; jn=k; kn=k;
+			for (i=0; i<Nx; i++){
 				if (i==0) 		SignDist(i,j,k) = -2.0;
 				if (j==0) 		SignDist(i,j,k) = -2.0; 
 				if (k==0) 		SignDist(i,j,k) = -2.0;
 				if (i==Nx-1) 	SignDist(i,j,k) = -2.0;
-				if (j==Nx-1) 	SignDist(i,j,k) = -2.0;
+				if (j==Ny-1) 	SignDist(i,j,k) = -2.0;
 				if (k==Nz-1) 	SignDist(i,j,k) = -2.0;	
 			}
 		}
 	}
-	
+*/
 	// Initialize the local blob ID
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
@@ -401,7 +410,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	
+
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
 	 ****************************************************************** */
@@ -461,7 +470,7 @@ int main(int argc, char **argv)
 	DoubleArray Gns(6);
 	DoubleArray Gws(6);
 	//...........................................................................
-
+	
 	printf("Execute blob identification algorithm... \n");
 
 	/* ****************************************************************
@@ -561,8 +570,6 @@ int main(int argc, char **argv)
 	
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 
-
-	
 	/* ****************************************************************
 			RUN TCAT AVERAGING ON EACH BLOB
 	****************************************************************** */
@@ -721,7 +728,7 @@ int main(int argc, char **argv)
 		}
 		start = finish;
 
-/*		if (vol_n > 0.0){
+		if (vol_n > 0.0){
 			pan /= vol_n;
 			for (i=0;i<3;i++)	van(i) /= vol_n;
 		}
@@ -738,7 +745,6 @@ int main(int argc, char **argv)
 		if (ans > 0.0){
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
-		*/
 
 		BlobAverages(0,a) = nwp_volume;
 		BlobAverages(1,a) = pan;
@@ -777,16 +783,16 @@ int main(int argc, char **argv)
 	printf("-----------------------------------------------\n");
 	printf("Sorting the blobs based on volume \n");
 	printf("-----------------------------------------------\n");
-	int TempLabel;
+	int TempLabel,aa,bb;
 	double TempValue;
 	IntArray OldLabel(nblobs);
 	for (a=0; a<nblobs; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
-	for (int aa=0; aa<nblobs-1; aa++){
-		for (int bb=aa+1; bb<nblobs; bb++){
+	for (aa=0; aa<nblobs-1; aa++){
+		for ( bb=aa+1; bb<nblobs; bb++){
 			if (BlobAverages(0,aa) < BlobAverages(0,bb)){
 				// Exchange location of blobs aa and bb
-				printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
+				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
 				// switch the label
 				TempLabel = OldLabel(bb);
 				OldLabel(bb) = OldLabel(aa);
@@ -800,13 +806,35 @@ int main(int argc, char **argv)
 			}
 		}		
 	}
+	
+	IntArray NewLabel(nblobs);
+	for (aa=0; aa<nblobs; aa++){
+		// Match the new label for original blob aa
+		bb=0;
+		while (OldLabel(bb) != aa)	bb++;
+		NewLabel(aa) = bb;
+	}
+	
+	// Re-label the blob ID
+	printf("Re-labeling the blobs, now indexed by volume \n");
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (LocalBlobID(i,j,k) > -1){
+					TempLabel = NewLabel(LocalBlobID(i,j,k));
+					LocalBlobID(i,j,k) = TempLabel;
+				}
+			}
+		}
+	}
+		
 	printf("-----------------------------------------------\n");
 	FILE *BLOBLOG= fopen("blobs.tcat","a");
 	for (a=0; a<nblobs; a++){
-		printf("Blob id =%i \n",a);
-		printf("Original Blob id = %i \n",OldLabel(a));
-		printf("Blob volume (voxels) = %f \n", BlobAverages(0,a));
-		for (idx=0; idx<28; idx++){
+		//printf("Blob id =%i \n",a);
+		//printf("Original Blob id = %i \n",OldLabel(a));
+		//printf("Blob volume (voxels) = %f \n", BlobAverages(0,a));
+		for (idx=0; idx<27; idx++){
 			fprintf(BLOBLOG,"%.8g ",BlobAverages(idx,a));
 		}
 		fprintf(BLOBLOG,"\n");
@@ -814,5 +842,9 @@ int main(int argc, char **argv)
 	printf("-----------------------------------------------\n");
 	fclose(BLOBLOG);
 	
+	FILE *PHASE;
+	PHASE = fopen("Blobs.dat","wb");
+	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,PHASE);
+	fclose(PHASE);
 }
 
