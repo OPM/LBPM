@@ -84,24 +84,24 @@ struct Domain{
 	void BlobComm(MPI_Comm comm);
 
 	void AssignBlobConnections(){
-		getBlobConnections(recvList_x, recvCount_x, rank_x);
-		getBlobConnections(recvList_y, recvCount_y, rank_y);
-		getBlobConnections(recvList_z, recvCount_z, rank_z);
-		getBlobConnections(recvList_X, recvCount_X, rank_X);
-		getBlobConnections(recvList_Y, recvCount_y, rank_Y);
-		getBlobConnections(recvList_Z, recvCount_Z, rank_Z);
-		getBlobConnections(recvList_xy, recvCount_xy, rank_xy);
-		getBlobConnections(recvList_xY, recvCount_xY, rank_xY);
-		getBlobConnections(recvList_Xy, recvCount_Xy, rank_Xy);
-		getBlobConnections(recvList_XY, recvCount_XY, rank_XY);
-		getBlobConnections(recvList_xz, recvCount_xz, rank_xz);
-		getBlobConnections(recvList_xZ, recvCount_xZ, rank_xZ);
-		getBlobConnections(recvList_Xz, recvCount_Xz, rank_Xz);
-		getBlobConnections(recvList_XZ, recvCount_XZ, rank_XZ);
-		getBlobConnections(recvList_yz, recvCount_yz, rank_yz);
-		getBlobConnections(recvList_yZ, recvCount_yZ, rank_yZ);
-		getBlobConnections(recvList_Yz, recvCount_Yz, rank_Yz);
-		getBlobConnections(recvList_YZ, recvCount_YZ, rank_YZ);
+		getBlobConnections(recvList_x, recvCount_x, rank_x, 0);
+		getBlobConnections(recvList_y, recvCount_y, rank_y, 1);
+		getBlobConnections(recvList_z, recvCount_z, rank_z, 2);
+		getBlobConnections(recvList_X, recvCount_X, rank_X, 3);
+		getBlobConnections(recvList_Y, recvCount_y, rank_Y, 4);
+		getBlobConnections(recvList_Z, recvCount_Z, rank_Z, 5);
+		getBlobConnections(recvList_xy, recvCount_xy, rank_xy, 6);
+		getBlobConnections(recvList_xY, recvCount_xY, rank_xY, 7);
+		getBlobConnections(recvList_Xy, recvCount_Xy, rank_Xy, 8);
+		getBlobConnections(recvList_XY, recvCount_XY, rank_XY, 9);
+		getBlobConnections(recvList_xz, recvCount_xz, rank_xz, 10);
+		getBlobConnections(recvList_xZ, recvCount_xZ, rank_xZ, 11);
+		getBlobConnections(recvList_Xz, recvCount_Xz, rank_Xz, 12);
+		getBlobConnections(recvList_XZ, recvCount_XZ, rank_XZ, 13);
+		getBlobConnections(recvList_yz, recvCount_yz, rank_yz, 14);
+		getBlobConnections(recvList_yZ, recvCount_yZ, rank_yZ, 15);
+		getBlobConnections(recvList_Yz, recvCount_Yz, rank_Yz, 16);
+		getBlobConnections(recvList_YZ, recvCount_YZ, rank_YZ, 17);
 	}
 
 private:
