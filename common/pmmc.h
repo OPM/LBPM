@@ -4066,7 +4066,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 {
 	int p;
 	double s,lwns,norm;
-	double a,b,c,d,e,f,g;
+	double a,b,c,d,e,f,g,h;
 	double x,y,z,zeta;
 	double tangent_x,tangent_y,tangent_z;
 	double ns_x, ns_y, ns_z;
