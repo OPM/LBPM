@@ -4059,6 +4059,95 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 	return area;
 }
 //--------------------------------------------------------------------------------------------------------
+inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, DoubleArray &ReturnVector, 
+		DoubleArray &Fx, DoubleArray &Fy, DoubleArray &Fz,							
+		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,							
+		DTMutableList<Point> &Points, int i, int j, int k, int npts)
+{
+	int p;
+	double s,lwns,norm;
+	double a,b,c,d,e,f,g;
+	double x,y,z;
+	double tangent_x,tangent_y,tangent_z;
+	double ns_x, ns_y, ns_z;
+	double nwn_x, nwn_y, nwn_z;
+	double nwns_x, nwns_y, nwns_z;
+	Point A,B;
+	lwns = 0.0;
+	
+	//.............................................................................
+	// Compute the normal and the speed at points on the interface
+	// Copy the curvature values for the cube
+	CubeValues(0,0,0) = dPdt(i,j,k);
+	CubeValues(1,0,0) = dPdt(i+1,j,k);
+	CubeValues(0,1,0) = dPdt(i,j+1,k);
+	CubeValues(1,1,0) = dPdt(i+1,j+1,k);
+	CubeValues(0,0,1) = dPdt(i,j,k+1);
+	CubeValues(1,0,1) = dPdt(i+1,j,k+1);
+	CubeValues(0,1,1) = dPdt(i,j+1,k+1);
+	CubeValues(1,1,1) = dPdt(i+1,j+1,k+1);
+
+	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
+	a = CubeValues(0,0,0);
+	b = CubeValues(1,0,0)-a;
+	c = CubeValues(0,1,0)-a;
+	d = CubeValues(0,0,1)-a;
+	e = CubeValues(1,1,0)-a-b-c;
+	f = CubeValues(1,0,1)-a-b-d;
+	g = CubeValues(0,1,1)-a-c-d;
+	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+	
+	for (p=0; p < npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		// Compute the curve tangent
+		tangent_x = A.x - B.x;
+		tangent_y = A.y - B.y;
+		tangent_z = A.z - B.z;
+		// Get the normal to the Color gradient
+		nwn_x = Fx(i,j,k);
+		nwn_y = Fy(i,j,k);
+		nwn_z = Fz(i,j,k);
+		// Get the normal to the solid surface
+		ns_x = Sx(i,j,k);
+		ns_y = Sy(i,j,k);
+		ns_z = Sz(i,j,k);
+		// Compute the normal to the common curve (vector product of tangent and solid normal)
+		nwns_x = ns_y*tangent_z - ns_z*tangent_y;
+		nwns_y = ns_z*tangent_x - ns_x*tangent_z;
+		nwns_z = ns_x*tangent_y - ns_y*tangent_x;
+		// dot product of nwns and nwn should be positive
+		if (nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z < 0.0){
+			nwns_x = -nwns_x;
+			nwns_y = -nwns_y;
+			nwns_z = -nwns_z;
+		}
+		// normalize the common curve normal
+		norm = nwns_x*nwns_x + nwns_y*nwns_y + nwns_z*nwns_z;
+		nwns_x /= norm;
+		nwns_y /= norm;
+		nwns_z /= norm;
+		// Compute the interface speed at the midpoint of the segment
+		x = 0.5*(A.x+B.x);
+		y = 0.5*(A.y+B.y);
+		z = 0.5*(A.z+B.z);
+		zeta = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+		norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
+
+		// Compute the common curve velocity 
+		ReturnVector(0) += -(zeta/norm)*nwns_x;
+		ReturnVector(1) += -(zeta/norm)*nwns_y;
+		ReturnVector(2) += -(zeta/norm)*nwns_z;
+		
+		// Compute the length of the segment
+		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		// Add the length to the common line 
+		lwns += s;
+	}
+	return lwns;	
+}
+//--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
 									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
 									  DoubleArray &SurfaceVector, DoubleArray &SurfaceValues, DoubleArray &AvgVel, 
