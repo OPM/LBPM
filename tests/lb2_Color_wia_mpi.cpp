@@ -1230,13 +1230,7 @@ int main(int argc, char **argv)
 #else
 	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 #endif
-	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-	WriteLocalSolidID(LocalRankFilename, id, N);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
-	//.......................................................................
+
 	if (Restart == true){
 		if (rank==0) printf("Reading restart file! \n");
 		// Read in the restart file to CPU buffers
@@ -1255,6 +1249,13 @@ int main(int argc, char **argv)
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
 	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
+	//.......................................................................
+	sprintf(LocalRankString,"%05d",rank);
+//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+//	WriteLocalSolidID(LocalRankFilename, id, N);
+	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	//.......................................................................
 	
 	//...........................................................................
 	// Gradient of the Signed Distance function
