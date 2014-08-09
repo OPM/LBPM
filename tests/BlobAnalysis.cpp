@@ -738,9 +738,9 @@ int main(int argc, char **argv)
 			for (i=0;i<3;i++)	vawn(i) /= awn;
 			for (i=0;i<6;i++)	Gwn(i) /= awn;
 		}
-	//	if (lwns > 0.0){
-	//		efawns /= lwns;
-	//	}
+		if (lwns > 0.0){
+			efawns /= lwns;
+		}
 		if (ans > 0.0){
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
