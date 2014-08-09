@@ -735,7 +735,6 @@ int main(int argc, char **argv)
 		if (awn > 0.0){
 			Jwn /= awn;
 			Kwn /= awn;
-			trJwn /= trawn;
 			for (i=0;i<3;i++)	vawn(i) /= awn;
 			for (i=0;i<6;i++)	Gwn(i) /= awn;
 		}
@@ -745,7 +744,10 @@ int main(int argc, char **argv)
 		if (ans > 0.0){
 			for (i=0;i<6;i++)	Gns(i) /= ans;
 		}
-
+		if (trawn > 0.0){
+			trJwn /= trawn;
+		}
+		
 		BlobAverages(0,a) = nwp_volume;
 		BlobAverages(1,a) = pan;
 		BlobAverages(2,a) = awn;
