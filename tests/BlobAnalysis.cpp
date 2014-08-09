@@ -301,7 +301,7 @@ int main(int argc, char **argv)
 				sprintf(LocalRankString,"%05d",proc);
 				sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	//			printf("Reading file %s \n",LocalRankFilename);
-				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
+				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
 						for (i=1; i<nz-1; i++){
@@ -846,5 +846,6 @@ int main(int argc, char **argv)
 	PHASE = fopen("Blobs.dat","wb");
 	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,PHASE);
 	fclose(PHASE);
+	
 }
 

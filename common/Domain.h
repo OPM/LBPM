@@ -11,7 +11,7 @@
 #include <mpi.h>
 #include "common/Utilities.h"
 
-int MAX_BLOB_COUNT=500;
+int MAX_BLOB_COUNT=50;
 
 using namespace std;
 
@@ -25,8 +25,8 @@ struct Domain{
 		nprocx=npx; nprocy=npy; nprocz=npz;
 		N = Nx*Ny*Nz;
 		id = new char [N];
-		Blobs.New(Nx,Ny,Nz);
-		BlobGraph.New(18,MAX_BLOB_COUNT);
+		BlobLabel.New(Nx,Ny,Nz);
+		BlobGraph.New(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 	}
 
 	// Basic domain information
@@ -76,7 +76,7 @@ struct Domain{
 	// Solid indicator function
 	char *id;
 	// Blob information
-	IntArray Blobs;
+	IntArray BlobLabel;
 	IntArray BlobGraph;
 
 	void InitializeRanks();
@@ -158,25 +158,26 @@ private:
 			if (nodz < 0 ){ nodz = 0; }		
 			if (nodz > Nz-1 ){ nodz = Nz-1; }
 			
-			if (Blobs(nodx,nody,nodz) > returnVal )	returnVal = Blobs(nodx,nody,nodz);
+			if (BlobLabel(nodx,nody,nodz) > returnVal )	returnVal = BlobLabel(nodx,nody,nodz);
 		}
 		return returnVal;
 	}
 	
-	void getBlobConnections(int * List, int count, int neighbor){
+	void getBlobConnections(int * List, int count, int neighbor, int direction){
 
 		int idx,n,localValue,neighborValue;
 		int x,y,z;
-		for (idx=0; idx<recvCount_x; idx++){
-			n = recvList_x[idx];
+		for (idx=0; idx<count; idx++){
+			n = List[idx];
 			// Get the 3-D indices
 			x = n%Nx;
 			y = (n/Nx)%Ny;
 			z = n/(Nx*Ny);
-			neighborValue = Blobs(x,y,z);
+			neighborValue = BlobLabel(x,y,z);
 			if (neighborValue > -1){
 				localValue = VoxelConnection(n);
 				printf("Blob (%i,%i) connects to neighbor blob (%i,%i)", localValue, rank, neighborValue, neighbor);
+				BlobGraph(direction,localValue,neighbor) = 1; // Set the BlobGraph to TRUE for this pair		
 			}
 		}
 	}
@@ -478,24 +479,24 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	int sendtag, recvtag;
 	sendtag = recvtag = 51;
 	//......................................................................................
-	PackBlobData(sendList_x, sendCount_x ,sendBuf_x, Blobs.data);
-	PackBlobData(sendList_X, sendCount_X ,sendBuf_X, Blobs.data);
-	PackBlobData(sendList_y, sendCount_y ,sendBuf_y, Blobs.data);
-	PackBlobData(sendList_Y, sendCount_Y ,sendBuf_Y, Blobs.data);
-	PackBlobData(sendList_z, sendCount_z ,sendBuf_z, Blobs.data);
-	PackBlobData(sendList_Z, sendCount_Z ,sendBuf_Z, Blobs.data);
-	PackBlobData(sendList_xy, sendCount_xy ,sendBuf_xy, Blobs.data);
-	PackBlobData(sendList_Xy, sendCount_Xy ,sendBuf_Xy, Blobs.data);
-	PackBlobData(sendList_xY, sendCount_xY ,sendBuf_xY, Blobs.data);
-	PackBlobData(sendList_XY, sendCount_XY ,sendBuf_XY, Blobs.data);
-	PackBlobData(sendList_xz, sendCount_xz ,sendBuf_xz, Blobs.data);
-	PackBlobData(sendList_Xz, sendCount_Xz ,sendBuf_Xz, Blobs.data);
-	PackBlobData(sendList_xZ, sendCount_xZ ,sendBuf_xZ, Blobs.data);
-	PackBlobData(sendList_XZ, sendCount_XZ ,sendBuf_XZ, Blobs.data);
-	PackBlobData(sendList_yz, sendCount_yz ,sendBuf_yz, Blobs.data);
-	PackBlobData(sendList_Yz, sendCount_Yz ,sendBuf_Yz, Blobs.data);
-	PackBlobData(sendList_yZ, sendCount_yZ ,sendBuf_yZ, Blobs.data);
-	PackBlobData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, Blobs.data);
+	PackBlobData(sendList_x, sendCount_x ,sendBuf_x, BlobLabel.data);
+	PackBlobData(sendList_X, sendCount_X ,sendBuf_X, BlobLabel.data);
+	PackBlobData(sendList_y, sendCount_y ,sendBuf_y, BlobLabel.data);
+	PackBlobData(sendList_Y, sendCount_Y ,sendBuf_Y, BlobLabel.data);
+	PackBlobData(sendList_z, sendCount_z ,sendBuf_z, BlobLabel.data);
+	PackBlobData(sendList_Z, sendCount_Z ,sendBuf_Z, BlobLabel.data);
+	PackBlobData(sendList_xy, sendCount_xy ,sendBuf_xy, BlobLabel.data);
+	PackBlobData(sendList_Xy, sendCount_Xy ,sendBuf_Xy, BlobLabel.data);
+	PackBlobData(sendList_xY, sendCount_xY ,sendBuf_xY, BlobLabel.data);
+	PackBlobData(sendList_XY, sendCount_XY ,sendBuf_XY, BlobLabel.data);
+	PackBlobData(sendList_xz, sendCount_xz ,sendBuf_xz, BlobLabel.data);
+	PackBlobData(sendList_Xz, sendCount_Xz ,sendBuf_Xz, BlobLabel.data);
+	PackBlobData(sendList_xZ, sendCount_xZ ,sendBuf_xZ, BlobLabel.data);
+	PackBlobData(sendList_XZ, sendCount_XZ ,sendBuf_XZ, BlobLabel.data);
+	PackBlobData(sendList_yz, sendCount_yz ,sendBuf_yz, BlobLabel.data);
+	PackBlobData(sendList_Yz, sendCount_Yz ,sendBuf_Yz, BlobLabel.data);
+	PackBlobData(sendList_yZ, sendCount_yZ ,sendBuf_yZ, BlobLabel.data);
+	PackBlobData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, BlobLabel.data);
 	//......................................................................................
 	MPI_Sendrecv(sendBuf_x,sendCount_x,MPI_INT,rank_x,sendtag,
 			recvBuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
@@ -534,24 +535,24 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	MPI_Sendrecv(sendBuf_yZ,sendCount_yZ,MPI_INT,rank_yZ,sendtag,
 			recvBuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	//........................................................................................
-	UnpackBlobData(recvList_x, recvCount_x ,recvBuf_x, Blobs.data);
-	UnpackBlobData(recvList_X, recvCount_X ,recvBuf_X, Blobs.data);
-	UnpackBlobData(recvList_y, recvCount_y ,recvBuf_y, Blobs.data);
-	UnpackBlobData(recvList_Y, recvCount_Y ,recvBuf_Y, Blobs.data);
-	UnpackBlobData(recvList_z, recvCount_z ,recvBuf_z, Blobs.data);
-	UnpackBlobData(recvList_Z, recvCount_Z ,recvBuf_Z, Blobs.data);
-	UnpackBlobData(recvList_xy, recvCount_xy ,recvBuf_xy, Blobs.data);
-	UnpackBlobData(recvList_Xy, recvCount_Xy ,recvBuf_Xy, Blobs.data);
-	UnpackBlobData(recvList_xY, recvCount_xY ,recvBuf_xY, Blobs.data);
-	UnpackBlobData(recvList_XY, recvCount_XY ,recvBuf_XY, Blobs.data);
-	UnpackBlobData(recvList_xz, recvCount_xz ,recvBuf_xz, Blobs.data);
-	UnpackBlobData(recvList_Xz, recvCount_Xz ,recvBuf_Xz, Blobs.data);
-	UnpackBlobData(recvList_xZ, recvCount_xZ ,recvBuf_xZ, Blobs.data);
-	UnpackBlobData(recvList_XZ, recvCount_XZ ,recvBuf_XZ, Blobs.data);
-	UnpackBlobData(recvList_yz, recvCount_yz ,recvBuf_yz, Blobs.data);
-	UnpackBlobData(recvList_Yz, recvCount_Yz ,recvBuf_Yz, Blobs.data);
-	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, Blobs.data);
-	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, Blobs.data);
+	UnpackBlobData(recvList_x, recvCount_x ,recvBuf_x, BlobLabel.data);
+	UnpackBlobData(recvList_X, recvCount_X ,recvBuf_X, BlobLabel.data);
+	UnpackBlobData(recvList_y, recvCount_y ,recvBuf_y, BlobLabel.data);
+	UnpackBlobData(recvList_Y, recvCount_Y ,recvBuf_Y, BlobLabel.data);
+	UnpackBlobData(recvList_z, recvCount_z ,recvBuf_z, BlobLabel.data);
+	UnpackBlobData(recvList_Z, recvCount_Z ,recvBuf_Z, BlobLabel.data);
+	UnpackBlobData(recvList_xy, recvCount_xy ,recvBuf_xy, BlobLabel.data);
+	UnpackBlobData(recvList_Xy, recvCount_Xy ,recvBuf_Xy, BlobLabel.data);
+	UnpackBlobData(recvList_xY, recvCount_xY ,recvBuf_xY, BlobLabel.data);
+	UnpackBlobData(recvList_XY, recvCount_XY ,recvBuf_XY, BlobLabel.data);
+	UnpackBlobData(recvList_xz, recvCount_xz ,recvBuf_xz, BlobLabel.data);
+	UnpackBlobData(recvList_Xz, recvCount_Xz ,recvBuf_Xz, BlobLabel.data);
+	UnpackBlobData(recvList_xZ, recvCount_xZ ,recvBuf_xZ, BlobLabel.data);
+	UnpackBlobData(recvList_XZ, recvCount_XZ ,recvBuf_XZ, BlobLabel.data);
+	UnpackBlobData(recvList_yz, recvCount_yz ,recvBuf_yz, BlobLabel.data);
+	UnpackBlobData(recvList_Yz, recvCount_Yz ,recvBuf_Yz, BlobLabel.data);
+	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, BlobLabel.data);
+	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, BlobLabel.data);
 	//......................................................................................
 }
 
@@ -947,12 +948,18 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 	int n;
 	double value;
 	ifstream File(FILENAME,ios::binary);
-	for (n=0; n<N; n++){
-		// Write the two density values
-		File.read((char*) &value, sizeof(value));
-		Data[n] = value;
+	if (File.good()){
+		for (n=0; n<N; n++){
+			// Write the two density values
+			File.read((char*) &value, sizeof(value));
+			Data[n] = value;
 
+		}
+	}
+	else {
+		for (n=0; n<N; n++) Data[n] = 1.2e-34;
 	}
 	File.close();
+
 }
 
