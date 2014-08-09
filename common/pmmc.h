@@ -4067,7 +4067,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	int p;
 	double s,lwns,norm;
 	double a,b,c,d,e,f,g;
-	double x,y,z;
+	double x,y,z,zeta;
 	double tangent_x,tangent_y,tangent_z;
 	double ns_x, ns_y, ns_z;
 	double nwn_x, nwn_y, nwn_z;
@@ -4145,7 +4145,6 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		// Add the length to the common line 
 		lwns += s;
 	}
-	return lwns;	
 }
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
