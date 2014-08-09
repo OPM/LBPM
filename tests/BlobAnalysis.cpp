@@ -836,7 +836,7 @@ int main(int argc, char **argv)
 		//printf("Blob id =%i \n",a);
 		//printf("Original Blob id = %i \n",OldLabel(a));
 		//printf("Blob volume (voxels) = %f \n", BlobAverages(0,a));
-		for (idx=0; idx<27; idx++){
+		for (idx=0; idx<28; idx++){
 			fprintf(BLOBLOG,"%.8g ",BlobAverages(idx,a));
 		}
 		fprintf(BLOBLOG,"\n");
