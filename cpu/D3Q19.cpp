@@ -48,7 +48,8 @@ extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int sta
 	//		idx = count;
 	//	}
 //		list[idx] = nn;
-		dist[q*N+nn] = recvbuf[start+idx];
+		// Don't unpack distributions into the solid phase
+		if (dist(q*N+nn) > 0.0)	dist[q*N+nn] = recvbuf[start+idx];
 	}
 }
 
