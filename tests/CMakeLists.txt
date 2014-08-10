@@ -1,6 +1,5 @@
 # Copy files for the tests
 INSTALL_LBPM_EXE( lb2_Color_wia_mpi )
-INSTALL_LBPM_EXE( lb2_Blob_wia_mpi )
 INSTALL_LBPM_EXE( TestBubble )
 INSTALL_LBPM_EXE( BasicSimulator )
 INSTALL_LBPM_EXE( BlobAnalysis )
