@@ -1243,6 +1243,12 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
+	//.......................................................................
+	sprintf(LocalRankString,"%05d",rank);
+//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+//	WriteLocalSolidID(LocalRankFilename, id, N);
+	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
@@ -1250,12 +1256,7 @@ int main(int argc, char **argv)
 	//......................................................................
 	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
 	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-//	WriteLocalSolidID(LocalRankFilename, id, N);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
-	//.......................................................................
+
 	
 	//...........................................................................
 	// Gradient of the Signed Distance function
@@ -2427,7 +2428,6 @@ int main(int argc, char **argv)
 				fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 				fflush(TIMELOG);
 				
-				if (timestep > 100) err = (pan_global - paw_global)*D/(5.796*alpha) - Jwn_global*D;
 			}
 		}
 		
