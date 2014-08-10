@@ -162,7 +162,7 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 				jglobal = jproc*(ny-2)+j;
 				kglobal = kproc*(nz-2)+k;
 				//........................................................................				
-				Phase(iglobal,jglobal,kglobal) = (denA+denB)/(denA-denB);
+				Phase(iglobal,jglobal,kglobal) = (denA-denB)/(denA+denB);
 				Pressure(iglobal,jglobal,kglobal) = value;
 				Vel_x(iglobal,jglobal,kglobal) = vx;
 				Vel_y(iglobal,jglobal,kglobal) = vy;
@@ -362,6 +362,7 @@ int main(int argc, char **argv)
 
 	SetPeriodicBC(SignDist, Nx, Ny, Nz);
 	SetPeriodicBC(Phase, Nx, Ny, Nz);
+	SetPeriodicBC(Press, Nx, Ny, Nz);
 	
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
@@ -395,6 +396,12 @@ int main(int argc, char **argv)
 		}
 	}
 */
+	
+	FILE *PHASE;
+	PHASE = fopen("Phase.dat","wb");
+	fwrite(Phase.data,8,Nx*Ny*Nz,PHASE);
+	fclose(PHASE);
+	
 	// Initialize the local blob ID
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
@@ -410,6 +417,21 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	
+	// Compute the porosity
+	double porosity=0.0;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (SignDist(i,j,k) > 0.0){ 
+					porosity += 1.0;
+				}
+			}
+		}
+	}
+	porosity /= (Nx*Ny*Nz*1.0);
+
+	printf("Media porosity is %f \n",porosity);
 
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
@@ -569,6 +591,24 @@ int main(int argc, char **argv)
 	nblobs++;
 	
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
+	
+	// Map the signed distance for the analysis
+	for (i=0; i<Nx*Ny*Nz; i++)	SignDist.data[i] -= (1.0); 
+	
+	// Compute the porosity
+	porosity=0.0;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (SignDist(i,j,k) > 0.0){ 
+					porosity += 1.0;
+				}
+			}
+		}
+	}
+	porosity /= (Nx*Ny*Nz*1.0);
+
+	printf("Media porosity is %f \n",porosity);
 
 	/* ****************************************************************
 			RUN TCAT AVERAGING ON EACH BLOB
@@ -585,7 +625,9 @@ int main(int argc, char **argv)
 	printf("-----------------------------------------------\n");
 
 	// Wetting phase averages assume global connectivity
+	As = 0.0;
 	vol_w = 0.0;
+	paw = 0.0;
 	aws = 0.0;
 	vaw(0) = vaw(1) = vaw(2) = 0.0;
 	Gws(0) = Gws(1) = Gws(2) = 0.0;
@@ -593,7 +635,7 @@ int main(int argc, char **argv)
 
 	// Don't compute the last blob unless specified
 	// the last blob is the entire wetting phase
-	nblobs -=1;
+//	nblobs -=1;
 #ifdef WP
 	nblobs+=1;
 #endif
@@ -614,11 +656,10 @@ int main(int argc, char **argv)
 		// Loop over all cubes
 		blob_volume = 0;	// Initialize the volume for blob a to zero
 		nwp_volume = 0.0;
-		As = 0.0;
 		
 		// Compute phase averages
 		vol_n =0.0;
-		pan = paw = 0.0;
+		pan = 0.0;
 		awn  = ans = lwns = 0.0;
 		van(0) = van(1) = van(2) = 0.0;
 		vawn(0) = vawn(1) = vawn(2) = 0.0;
@@ -728,6 +769,7 @@ int main(int argc, char **argv)
 		}
 		start = finish;
 
+		if (a < nblobs-1){
 		if (vol_n > 0.0){
 			pan /= vol_n;
 			for (i=0;i<3;i++)	van(i) /= vol_n;
@@ -776,12 +818,15 @@ int main(int argc, char **argv)
 		BlobAverages(25,a) = Gns(5);
 		BlobAverages(26,a) = trawn;
 		BlobAverages(27,a) = trJwn;
-		BlobAverages(28,a) = trRwn;
+		BlobAverages(28,a) = vol_n;
+		BlobAverages(29,a) = trRwn;
 
 		printf("Computed TCAT averages for feature = %i \n", a);
+		}
 		
 	}  // End of the blob loop
 		
+	nblobs -= 1;
 	printf("-----------------------------------------------\n");
 	printf("Sorting the blobs based on volume \n");
 	printf("-----------------------------------------------\n");
@@ -830,7 +875,6 @@ int main(int argc, char **argv)
 		}
 	}
 		
-	printf("-----------------------------------------------\n");
 	FILE *BLOBLOG= fopen("blobs.tcat","a");
 	for (a=0; a<nblobs; a++){
 		//printf("Blob id =%i \n",a);
@@ -841,13 +885,142 @@ int main(int argc, char **argv)
 		}
 		fprintf(BLOBLOG,"\n");
 	}
-	printf("-----------------------------------------------\n");
 	fclose(BLOBLOG);
+
+	printf("-----------------------------------------------\n");
+	vol_n = nwp_volume = 0.0;
+	pan = 0.0;
+	awn  = ans = lwns = 0.0;
+	van(0) = van(1) = van(2) = 0.0;
+	vawn(0) = vawn(1) = vawn(2) = 0.0;
+	Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
+	Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
+	Gns(0) = Gns(1) = Gns(2) = 0.0;
+	Gns(3) = Gns(4) = Gns(5) = 0.0;
+	Jwn = Kwn = efawns = 0.0;
+	trJwn = trawn = trRwn = 0.0;	
 	
-	FILE *PHASE;
-	PHASE = fopen("Blobs.dat","wb");
-	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,PHASE);
-	fclose(PHASE);
+	double iVol = 1.0/Nx/Ny/Nz;
+	sw = 1.0;
+	// Compute the Sauter mean grain diamter
+	double D = 6.0*Nx*Ny*Nz*(1.0-porosity) / As;
+	double pw,pn,pc,awnD,ansD,awsD,JwnD,trJwnD,lwnsDD,cwns;
+	pw = paw/vol_w;
+	printf("paw = %f \n", paw);
+	printf("vol_w = %f \n", vol_w);
+	
+	// Write out the "equilibrium" state with a 0.5 % change in saturation"
+	// Always write the largest blob 
+	// sw, pw, pn, pc*D/gamma, awn*D, aws*D, ans*D,lwns*D*D, Jwn*D, trJwn*D, cwns, nblobs
+	printf("Computing equilibria from blobs \n");
+	printf("Sauter mean diamter = %f \n",D);
+	printf("WARNING: lazy coder hard-coded the surface tension as 0.058 \n");
+	FILE *BLOBSTATES= fopen("blobstates.tcat","a");
+	
+	// Compute the averages over the entire non-wetting phsae
+	for (a=0; a<nblobs; a++){
+		nwp_volume += BlobAverages(0,a);
+		pan += BlobAverages(1,a)*BlobAverages(28,a);
+		awn += BlobAverages(2,a);
+		ans += BlobAverages(3,a);
+		Jwn += BlobAverages(4,a)*BlobAverages(2,a);
+		Kwn += BlobAverages(5,a)*BlobAverages(2,a);
+		lwns += BlobAverages(6,a);
+		efawns += BlobAverages(7,a)*BlobAverages(6,a);
+		van(0) += BlobAverages(8,a)*BlobAverages(28,a);
+		van(1) += BlobAverages(9,a)*BlobAverages(28,a);
+		van(2) += BlobAverages(10,a)*BlobAverages(28,a);
+		vawn(0) += BlobAverages(11,a)*BlobAverages(2,a);
+		vawn(1) += BlobAverages(12,a)*BlobAverages(2,a);
+		vawn(2) += BlobAverages(13,a)*BlobAverages(2,a);
+		Gwn(0) += BlobAverages(14,a)*BlobAverages(2,a);
+		Gwn(1) += BlobAverages(15,a)*BlobAverages(2,a);
+		Gwn(2) += BlobAverages(16,a)*BlobAverages(2,a);
+		Gwn(3) += BlobAverages(17,a)*BlobAverages(2,a);
+		Gwn(4) += BlobAverages(18,a)*BlobAverages(2,a);
+		Gwn(5) += BlobAverages(19,a)*BlobAverages(2,a);
+		Gns(0) += BlobAverages(20,a)*BlobAverages(3,a);
+		Gns(1) += BlobAverages(21,a)*BlobAverages(3,a);
+		Gns(2) += BlobAverages(22,a)*BlobAverages(3,a);
+		Gns(3) += BlobAverages(23,a)*BlobAverages(3,a);
+		Gns(4) += BlobAverages(24,a)*BlobAverages(3,a);
+		Gns(5) += BlobAverages(25,a)*BlobAverages(3,a);
+		trawn += BlobAverages(26,a);
+		trJwn += BlobAverages(27,a)*BlobAverages(26,a);
+		vol_n += BlobAverages(28,a);
+	}	
+	
+	// Subtract off portions of non-wetting phase in order of size
+	for (a=nblobs-1; a>0; a--){
+		// Subtract the features one-by-one
+		nwp_volume -= BlobAverages(0,a);
+		pan -= BlobAverages(1,a)*BlobAverages(28,a);
+		awn -= BlobAverages(2,a);
+		ans -= BlobAverages(3,a);
+		Jwn -= BlobAverages(4,a)*BlobAverages(2,a);
+		Kwn -= BlobAverages(5,a)*BlobAverages(2,a);
+		lwns -= BlobAverages(6,a);
+		efawns -= BlobAverages(7,a)*BlobAverages(6,a);
+		van(0) -= BlobAverages(8,a)*BlobAverages(28,a);
+		van(1) -= BlobAverages(9,a)*BlobAverages(28,a);
+		van(2) -= BlobAverages(10,a)*BlobAverages(28,a);
+		vawn(0) -= BlobAverages(11,a)*BlobAverages(2,a);
+		vawn(1) -= BlobAverages(12,a)*BlobAverages(2,a);
+		vawn(2) -= BlobAverages(13,a)*BlobAverages(2,a);
+		Gwn(0) -= BlobAverages(14,a)*BlobAverages(2,a);
+		Gwn(1) -= BlobAverages(15,a)*BlobAverages(2,a);
+		Gwn(2) -= BlobAverages(16,a)*BlobAverages(2,a);
+		Gwn(3) -= BlobAverages(17,a)*BlobAverages(2,a);
+		Gwn(4) -= BlobAverages(18,a)*BlobAverages(2,a);
+		Gwn(5) -= BlobAverages(19,a)*BlobAverages(2,a);
+		Gns(0) -= BlobAverages(20,a)*BlobAverages(3,a);
+		Gns(1) -= BlobAverages(21,a)*BlobAverages(3,a);
+		Gns(2) -= BlobAverages(22,a)*BlobAverages(3,a);
+		Gns(3) -= BlobAverages(23,a)*BlobAverages(3,a);
+		Gns(4) -= BlobAverages(24,a)*BlobAverages(3,a);
+		Gns(5) -= BlobAverages(25,a)*BlobAverages(3,a);
+		trawn -= BlobAverages(26,a);
+		trJwn -= BlobAverages(27,a)*BlobAverages(26,a);
+		vol_n -= BlobAverages(28,a);
+		
+		// Update wetting phase averages
+		aws += BlobAverages(3,a);
+		Gws(0) += BlobAverages(20,a)*BlobAverages(3,a);
+		Gws(1) += BlobAverages(21,a)*BlobAverages(3,a);
+		Gws(2) += BlobAverages(22,a)*BlobAverages(3,a);
+		Gws(3) += BlobAverages(23,a)*BlobAverages(3,a);
+		Gws(4) += BlobAverages(24,a)*BlobAverages(3,a);
+		Gws(5) += BlobAverages(25,a)*BlobAverages(3,a);
+		
+		if (fabs(1.0 - nwp_volume*iVol/porosity - sw) > 0.0025 || a == 0){
+			sw = 1.0 - nwp_volume*iVol/porosity;
+			
+			JwnD = -Jwn*D/awn;
+			trJwnD = -trJwn*D/trawn;
+			cwns = -efawns / lwns;
+			pn = pan/vol_n;
+			awnD = awn*D*iVol;
+			awsD = aws*D*iVol;
+			ansD = ans*D*iVol;
+			lwnsDD = lwns*D*D*iVol;
+			pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
+			
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g %i\n",pc,JwnD,trJwnD,cwns,a);
+		}
+	}
+	fclose(BLOBSTATES);
+
+	FILE *BLOBS;
+	BLOBS = fopen("Blobs.dat","wb");
+	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,BLOBS);
+	fclose(BLOBS);
+	
+	FILE *DISTANCE;
+	DISTANCE = fopen("SignDist.dat","wb");
+	fwrite(SignDist.data,8,Nx*Ny*Nz,DISTANCE);
+	fclose(DISTANCE);
 	
 }
 
