@@ -53,7 +53,7 @@ __global__ void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int
 	//		idx = count;
 	//	}
 //		list[idx] = nn;
-		if (dist(q*N+nn) > 0.0) dist[q*N+nn] = recvbuf[start+idx];
+		if (dist[q*N+nn] > 0.0) dist[q*N+nn] = recvbuf[start+idx];
 	}
 }
 
