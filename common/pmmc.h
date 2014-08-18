@@ -3265,6 +3265,8 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 		TRIM(local_sol_pts, n_local_sol_pts, fluid_isovalue,local_sol_tris, n_local_sol_tris,
 				ns_pts, n_ns_pts, ns_tris, n_ns_tris, ws_pts, n_ws_pts,
 				ws_tris, n_ws_tris, values, local_nws_pts, n_local_nws_pts);
+		
+		
 
 		/////////////////////////////////////////
 		//////// WRITE COMMON LINE POINTS ///////
@@ -3275,74 +3277,75 @@ inline void pmmc_ConstructLocalCube(DoubleArray &SignDist, DoubleArray &Phase, d
 		// Make sure the first common line point is on a face
 		// Common curve points are located pairwise and must
 		// be searched and rearranged accordingly
-		for (p=0; p<n_local_nws_pts-1; p++){
-			P = local_nws_pts(p);
-			if ( P.x == 1.0*i || P.x ==1.0*(i+1)||
-					P.y == 1.0*j || P.y == 1.0*(j+1) ||
-					P.z == 1.0*k || P.z == 1.0*(k+1) ){
-				if (p%2 == 0){
-					// even points
-					// Swap the pair of points
-					local_nws_pts(p) = local_nws_pts(0);
-					local_nws_pts(0) = P;
-					P = local_nws_pts(p+1);
-					local_nws_pts(p+1) = local_nws_pts(1);
-					local_nws_pts(1) = P;
-					p = n_local_nws_pts;
-
-				}
-				else{
-					// odd points - flip the order
-					local_nws_pts(p) = local_nws_pts(p-1);
-					local_nws_pts(p-1) = P;
-					p-=2;
-				}
-				// guarantee exit from the loop
-			}
-		}
-		// Two common curve points per triangle
-		// 0-(1=2)-(3=4)-...
-		for (p=1; p<n_local_nws_pts-1; p+=2){
-			A = local_nws_pts(p);
-			for (q=p+1; q<n_local_nws_pts; q++){
-				B = local_nws_pts(q);
-				if ( A.x == B.x && A.y == B.y && A.z == B.z){
-					if (q%2 == 0){
+		if (n_local_nws_pts > 0){
+			for (p=0; p<n_local_nws_pts-1; p++){
+				P = local_nws_pts(p);
+				if ( P.x == 1.0*i || P.x ==1.0*(i+1)||
+						P.y == 1.0*j || P.y == 1.0*(j+1) ||
+						P.z == 1.0*k || P.z == 1.0*(k+1) ){
+					if (p%2 == 0){
 						// even points
 						// Swap the pair of points
-						local_nws_pts(q) = local_nws_pts(p+1);
-						local_nws_pts(p+1) = B;
-						B = local_nws_pts(q+1);
-						local_nws_pts(q+1) = local_nws_pts(p+2);
-						local_nws_pts(p+2) = B;
-						q = n_local_nws_pts;
+						local_nws_pts(p) = local_nws_pts(0);
+						local_nws_pts(0) = P;
+						P = local_nws_pts(p+1);
+						local_nws_pts(p+1) = local_nws_pts(1);
+						local_nws_pts(1) = P;
+						p = n_local_nws_pts;
 
 					}
 					else{
 						// odd points - flip the order
-						local_nws_pts(q) = local_nws_pts(q-1);
-						local_nws_pts(q-1) = B;
-						q-=2;
+						local_nws_pts(p) = local_nws_pts(p-1);
+						local_nws_pts(p-1) = P;
+						p-=2;
+					}
+					// guarantee exit from the loop
+				}
+			}
+			// Two common curve points per triangle
+			// 0-(1=2)-(3=4)-...
+			for (p=1; p<n_local_nws_pts-1; p+=2){
+				A = local_nws_pts(p);
+				for (q=p+1; q<n_local_nws_pts; q++){
+					B = local_nws_pts(q);
+					if ( A.x == B.x && A.y == B.y && A.z == B.z){
+						if (q%2 == 0){
+							// even points
+							// Swap the pair of points
+							local_nws_pts(q) = local_nws_pts(p+1);
+							local_nws_pts(p+1) = B;
+							B = local_nws_pts(q+1);
+							local_nws_pts(q+1) = local_nws_pts(p+2);
+							local_nws_pts(p+2) = B;
+							q = n_local_nws_pts;
+
+						}
+						else{
+							// odd points - flip the order
+							local_nws_pts(q) = local_nws_pts(q-1);
+							local_nws_pts(q-1) = B;
+							q-=2;
+						}
 					}
 				}
 			}
-		}
-		map = n_nws_pts = 0;
-		nws_pts(n_nws_pts++) = local_nws_pts(0);
-		for (p=2; p < n_local_nws_pts; p+=2){
-			nws_pts(n_nws_pts++) = local_nws_pts(p);
+			map = n_nws_pts = 0;
+			nws_pts(n_nws_pts++) = local_nws_pts(0);
+			for (p=2; p < n_local_nws_pts; p+=2){
+				nws_pts(n_nws_pts++) = local_nws_pts(p);
 
-		}
-		nws_pts(n_nws_pts++) = local_nws_pts(n_local_nws_pts-1);
+			}
+			nws_pts(n_nws_pts++) = local_nws_pts(n_local_nws_pts-1);
 
-		for (q=0; q < n_nws_pts-1; q++){
-			nws_seg(0,n_nws_seg) = map+q;
-			nws_seg(1,n_nws_seg) = map+q+1;
-			n_nws_seg++;
+			for (q=0; q < n_nws_pts-1; q++){
+				nws_seg(0,n_nws_seg) = map+q;
+				nws_seg(1,n_nws_seg) = map+q+1;
+				n_nws_seg++;
+			}
+			// End of the common line sorting algorithm
+			/////////////////////////////////////////
 		}
-		// End of the common line sorting algorithm
-		/////////////////////////////////////////
-
 
 		/////////////////////////////////////////
 		////// CONSTRUCT THE nw SURFACE /////////
@@ -3859,7 +3862,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	// Evaluate the coefficients
 	a = CubeValues(0,0,0);
 	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
+	c = CubeValues(0,1,0)-a;	`
 	d = CubeValues(0,0,1)-a;
 	e = CubeValues(1,1,0)-a-b-c;
 	f = CubeValues(1,0,1)-a-b-d;
