@@ -3862,7 +3862,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	// Evaluate the coefficients
 	a = CubeValues(0,0,0);
 	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;	`
+	c = CubeValues(0,1,0)-a;
 	d = CubeValues(0,0,1)-a;
 	e = CubeValues(1,1,0)-a-b-c;
 	f = CubeValues(1,0,1)-a-b-d;
