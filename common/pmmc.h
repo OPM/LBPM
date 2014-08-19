@@ -3891,7 +3891,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 		integral += 0.5*length*(vA + vB);
 	}
 
-	if (isnan(integral))	integral = 0.0;
+//	if (isnan(integral))	integral = 0.0;
 	
 	return integral;
 }
