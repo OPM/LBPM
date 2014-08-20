@@ -464,6 +464,17 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	sum_local = 1.0*sum;
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	porosity = porosity*iVol_global;
+	if (rank==0) printf("Media porosity = %f \n",porosity);
+
+	// Generate the residual NWP 
+	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+	
+#endif
+
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
 	if (pBC && kproc == 0){
@@ -493,17 +504,7 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-	sum_local = 1.0*sum;
-	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	porosity = porosity*iVol_global;
-	if (rank==0) printf("Media porosity = %f \n",porosity);
-
-	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
-#endif
-
 #ifdef USE_EXP_CONTACT_ANGLE
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s < 0.0 && !pBC){
@@ -523,7 +524,7 @@ int main(int argc, char **argv)
 		FlipID(id,Nx*Ny*Nz);
 	}
 */
-	if (! pBC)	FlipID(id,Nx*Ny*Nz);
+	if (! pBC )	FlipID(id,Nx*Ny*Nz);
 	
 #endif
 
@@ -2483,8 +2484,7 @@ int main(int argc, char **argv)
 						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-						i, j, k, Nx, Ny, Nz);
-
+						i, j, k, Nx, Ny, Nz);	
 				//.......................................................................................
 				// Write the triangle lists to text file
 				for (int r=0;r<n_nw_tris;r++){
