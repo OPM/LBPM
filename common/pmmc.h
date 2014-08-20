@@ -3830,33 +3830,56 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 	double a,b,c,d,e,f,g,h;
 	double integral;
 	double length;
-	
+	double denom;
 
 	// theta = acos ( -(gradF*gradS) / (|gradF| |gradS|) )
-	CubeValues(0,0,0) = -( Fx(i,j,k)*Sx(i,j,k)+Fy(i,j,k)*Sy(i,j,k)+Fz(i,j,k)*Sz(i,j,k) )
-									   /( sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2))
-											   *sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2)) );
+
+	denom = sqrt(pow(Fx(i,j,k),2)+pow(Fy(i,j,k),2)+pow(Fz(i,j,k),2))
+													   *sqrt(pow(Sx(i,j,k),2)+pow(Sy(i,j,k),2)+pow(Sz(i,j,k),2));
+	if (denom == 0.0) denom =1.0;
+	CubeValues(0,0,0) = -( Fx(i,j,k)*Sx(i,j,k)+Fy(i,j,k)*Sy(i,j,k)+Fz(i,j,k)*Sz(i,j,k) )/(denom);
+	
+	denom = sqrt(pow(Fx(i+1,j,k),2)+pow(Fy(i+1,j,k),2)+pow(Fz(i+1,j,k),2))
+													   *sqrt(pow(Sx(i+1,j,k),2)+pow(Sy(i+1,j,k),2)+pow(Sz(i+1,j,k),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(1,0,0) = -( Fx(i+1,j,k)*Sx(i+1,j,k)+Fy(i+1,j,k)*Sy(i+1,j,k)+Fz(i+1,j,k)*Sz(i+1,j,k) )
-									   /( sqrt(pow(Fx(i+1,j,k),2)+pow(Fy(i+1,j,k),2)+pow(Fz(i+1,j,k),2))
-											   *sqrt(pow(Sx(i+1,j,k),2)+pow(Sy(i+1,j,k),2)+pow(Sz(i+1,j,k),2)) );
+									   /( denom );
+
+	denom = sqrt(pow(Fx(i,j+1,k),2)+pow(Fy(i,j+1,k),2)+pow(Fz(i,j+1,k),2))
+													   *sqrt(pow(Sx(i,j+1,k),2)+pow(Sy(i,j+1,k),2)+pow(Sz(i,j+1,k),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(0,1,0) = -( Fx(i,j+1,k)*Sx(i,j+1,k)+Fy(i,j+1,k)*Sy(i,j+1,k)+Fz(i,j+1,k)*Sz(i,j+1,k) )
-									   /( sqrt(pow(Fx(i,j+1,k),2)+pow(Fy(i,j+1,k),2)+pow(Fz(i,j+1,k),2))
-											   *sqrt(pow(Sx(i,j+1,k),2)+pow(Sy(i,j+1,k),2)+pow(Sz(i,j+1,k),2)) );
+									   /( denom );
+
+	denom = sqrt(pow(Fx(i,j,k+1),2)+pow(Fy(i,j,k+1),2)+pow(Fz(i,j,k+1),2))
+													   *sqrt(pow(Sx(i,j,k+1),2)+pow(Sy(i,j,k+1),2)+pow(Sz(i,j,k+1),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(0,0,1) = -( Fx(i,j,k+1)*Sx(i,j,k+1)+Fy(i,j,k+1)*Sy(i,j,k+1)+Fz(i,j,k+1)*Sz(i,j,k+1) )
-									   /( sqrt(pow(Fx(i,j,k+1),2)+pow(Fy(i,j,k+1),2)+pow(Fz(i,j,k+1),2))
-											   *sqrt(pow(Sx(i,j,k+1),2)+pow(Sy(i,j,k+1),2)+pow(Sz(i,j,k+1),2)) );
+									   /( denom);
+
+	denom = sqrt(pow(Fx(i+1,j+1,k),2)+pow(Fy(i+1,j+1,k),2)+pow(Fz(i+1,j+1,k),2))
+													   *sqrt(pow(Sx(i+1,j+1,k),2)+pow(Sy(i+1,j+1,k),2)+pow(Sz(i+1,j+1,k),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(1,1,0) = -( Fx(i+1,j+1,k)*Sx(i+1,j+1,k)+Fy(i+1,j+1,k)*Sy(i+1,j+1,k)+Fz(i+1,j+1,k)*Sz(i+1,j+1,k) )
-									   /( sqrt(pow(Fx(i+1,j+1,k),2)+pow(Fy(i+1,j+1,k),2)+pow(Fz(i+1,j+1,k),2))
-											   *sqrt(pow(Sx(i+1,j+1,k),2)+pow(Sy(i+1,j+1,k),2)+pow(Sz(i+1,j+1,k),2)) );
+									   /( denom );
+
+	denom = sqrt(pow(Fx(i+1,j,k+1),2)+pow(Fy(i+1,j,k+1),2)+pow(Fz(i+1,j,k+1),2))
+													   *sqrt(pow(Sx(i+1,j,k+1),2)+pow(Sy(i+1,j,k+1),2)+pow(Sz(i+1,j,k+1),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(1,0,1) = -( Fx(i+1,j,k+1)*Sx(i+1,j,k+1)+Fy(i+1,j,k+1)*Sy(i+1,j,k+1)+Fz(i+1,j,k+1)*Sz(i+1,j,k+1) )
-									   /( sqrt(pow(Fx(i+1,j,k+1),2)+pow(Fy(i+1,j,k+1),2)+pow(Fz(i+1,j,k+1),2))
-											   *sqrt(pow(Sx(i+1,j,k+1),2)+pow(Sy(i+1,j,k+1),2)+pow(Sz(i+1,j,k+1),2)) );
+									   /( denom );
+
+	denom = sqrt(pow(Fx(i,j+1,k+1),2)+pow(Fy(i,j+1,k+1),2)+pow(Fz(i,j+1,k+1),2))
+													   *sqrt(pow(Sx(i,j+1,k+1),2)+pow(Sy(i,j+1,k+1),2)+pow(Sz(i,j+1,k+1),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(0,1,1) = -( Fx(i,j+1,k+1)*Sx(i,j+1,k+1)+Fy(i,j+1,k+1)*Sy(i,j+1,k+1)+Fz(i,j+1,k+1)*Sz(i,j+1,k+1) )
-									   /( sqrt(pow(Fx(i,j+1,k+1),2)+pow(Fy(i,j+1,k+1),2)+pow(Fz(i,j+1,k+1),2))
-											   *sqrt(pow(Sx(i,j+1,k+1),2)+pow(Sy(i,j+1,k+1),2)+pow(Sz(i,j+1,k+1),2)) );
+									   /( denom );
+
+	denom = sqrt(pow(Fx(i+1,j+1,k+1),2)+pow(Fy(i+1,j+1,k+1),2)+pow(Fz(i+1,j+1,k+1),2))
+													   *sqrt(pow(Sx(i+1,j+1,k+1),2)+pow(Sy(i+1,j+1,k+1),2)+pow(Sz(i+1,j+1,k+1),2));
+	if (denom == 0.0) denom =1.0;
 	CubeValues(1,1,1) = -( Fx(i+1,j+1,k+1)*Sx(i+1,j+1,k+1)+Fy(i+1,j+1,k+1)*Sy(i+1,j+1,k+1)+Fz(i+1,j+1,k+1)*Sz(i+1,j+1,k+1) )
-									   /( sqrt(pow(Fx(i+1,j+1,k+1),2)+pow(Fy(i+1,j+1,k+1),2)+pow(Fz(i+1,j+1,k+1),2))
-											   *sqrt(pow(Sx(i+1,j+1,k+1),2)+pow(Sy(i+1,j+1,k+1),2)+pow(Sz(i+1,j+1,k+1),2)) );
+									   /( denom );
 
 	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
 	// Evaluate the coefficients
@@ -3880,6 +3903,7 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 
 	integral = 0.0;
 
+	
 	for (p=0; p < npts-1; p++){
 		// Extract the line segment
 		A = Points(p);
@@ -3890,8 +3914,6 @@ inline double pmmc_CubeContactAngle(DoubleArray &CubeValues, DoubleArray &CurveV
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		integral += 0.5*length*(vA + vB);
 	}
-
-//	if (isnan(integral))	integral = 0.0;
 	
 	return integral;
 }
