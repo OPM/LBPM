@@ -2359,20 +2359,26 @@ int main(int argc, char **argv)
 			
 			// Normalize the phase averages 
 			// (density of both components = 1.0)
-			paw_global = paw_global / vol_w_global;
-			vaw_global(0) = vaw_global(0) / vol_w_global;
-			vaw_global(1) = vaw_global(1) / vol_w_global;
-			vaw_global(2) = vaw_global(2) / vol_w_global;
-			pan_global = pan_global / vol_n_global;
-			van_global(0) = van_global(0) / vol_n_global;
-			van_global(1) = van_global(1) / vol_n_global;
-			van_global(2) = van_global(2) / vol_n_global;
-			
+			if (vol_w_global > 0.0){
+				paw_global = paw_global / vol_w_global;
+				vaw_global(0) = vaw_global(0) / vol_w_global;
+				vaw_global(1) = vaw_global(1) / vol_w_global;
+				vaw_global(2) = vaw_global(2) / vol_w_global;
+			}
+			if (vol_n_global > 0.0){
+				pan_global = pan_global / vol_n_global;
+				van_global(0) = van_global(0) / vol_n_global;
+				van_global(1) = van_global(1) / vol_n_global;
+				van_global(2) = van_global(2) / vol_n_global;
+			}
 			// Normalize surface averages by the interfacial area
-			Jwn_global /= awn_global;
-			Kwn_global /= awn_global;
-			efawns_global /= lwns_global;
-			
+			if (awn_global > 0.0){
+				Jwn_global /= awn_global;
+				Kwn_global /= awn_global;
+			}
+			if (lwns_global > 0.0){
+				efawns_global /= lwns_global;
+			}
 			if (trawn_global > 0.0)	trJwn_global /= trawn_global;
 			if (trawn_global > 0.0)	trRwn_global /= trawn_global;
 			trRwn_global = 2.0*fabs(trRwn_global);
