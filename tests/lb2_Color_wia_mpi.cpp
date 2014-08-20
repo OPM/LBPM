@@ -333,33 +333,9 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*iproc*(Ny-2)*jproc*((Nz-2)*kproc-6))
+	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*iproc*(Ny-2)*jproc*((Nz-2)*kproc-6));
 	double porosity;
-/*	//.......................................................................
-	ifstream PM(LocalRankFilename,ios::binary);
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				id[n] = 0;
-			}
-		}
-	}
-	for ( k=1;k<Nz-1;k++){
-		for ( j=1;j<Ny-1;j++){
-			for ( i=1;i<Nx-1;i++){
-				PM.read((char *) (&value), sizeof(value));
-				n = k*Nx*Ny+j*Nx+i;
-				id[n] = value;
-				if (value > 0) sum++;
-			}
-		}
-	}
-	PM.close();
-//	printf("File porosity = %f\n", double(sum)/N);
-*/	//...........................................................................
-//	double *SignDist;
-//	SignDist = new double[N];
+	//...........................................................................
 	DoubleArray SignDist(Nx,Ny,Nz);
 	//.......................................................................
 #ifdef CBUB
