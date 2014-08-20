@@ -333,6 +333,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*iproc*(Ny-2)*jproc*((Nz-2)*kproc-6))
 	double porosity;
 /*	//.......................................................................
 	ifstream PM(LocalRankFilename,ios::binary);
