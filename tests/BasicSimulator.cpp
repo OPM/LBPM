@@ -2169,13 +2169,26 @@ int main(int argc, char **argv)
 				for (k=kstart; k<kfinish; k++){
 					for (j=1; j<Ny-1; j++){
 						for (i=1; i<Nx-1; i++){
-							if ( SignDist(i,j,k) > 0.0 ){
 
-								// 1-D index for this cube corner
-								n = i + j*Nx + k*Nx*Ny;
-								// Compute the non-wetting phase volume contribution
-								if ( Phase(i,j,k) > 0.0 )
-									nwp_volume += 1.0;
+							// 1-D index
+							n = i + j*Nx + k*Nx*Ny;
+
+							// Compute the non-wetting phase volume contribution
+							if ( Phase(i,j,k) > 0.0 && id[n] > 0)
+								nwp_volume += 1.0;
+
+							if ( SignDist(i,j,k) > 0.0 ){
+								// volume averages over the non-wetting phase
+								if ( Phase(i,j,k) > 0.999 ){
+									// volume the excludes the interfacial region
+									vol_n += 1.0;
+									// pressure
+									pan += Press(i,j,k);
+									// velocity
+									van(0) += Vel_x(i,j,k);
+									van(1) += Vel_y(i,j,k);
+									van(2) += Vel_z(i,j,k);
+								}
 
 								// volume averages over the non-wetting phase
 								if ( Phase(i,j,k) > 0.999 ){

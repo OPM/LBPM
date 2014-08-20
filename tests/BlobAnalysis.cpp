@@ -680,9 +680,6 @@ int main(int argc, char **argv)
 			for (p=0;p<8;p++){
 				if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 
-					// 1-D index for this cube corner
-					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-
 					// Compute the non-wetting phase volume contribution
 					if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
 						nwp_volume += 0.125;
