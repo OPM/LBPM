@@ -516,7 +516,10 @@ int main(int argc, char **argv)
 		FlipID(id,Nx*Ny*Nz);
 	}
 */
-	if (! pBC )	FlipID(id,Nx*Ny*Nz);
+	if (! pBC && phi_s > 0.0){
+		FlipID(id,Nx*Ny*Nz);
+		phi_s = -phi_s;
+	}
 	
 #endif
 
