@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	double porosity;
+	double porosity,pore_vol;
 	
 	DoubleArray SignDist(Nx,Ny,Nz);
 	//.......................................................................
@@ -421,6 +421,32 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	sum_local = 1.0*sum;
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	porosity = porosity*iVol_global;
+	if (rank==0) printf("Media porosity = %f \n",porosity);
+	
+	// Compute the pore volume
+	sum_local = 0.0;
+	for ( k=1;k<Nz-1;k++){
+		for ( j=1;j<Ny-1;j++){
+			for ( i=1;i<Nx-1;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				if (id[n] > 0){
+					sum_local += 1.0;
+				}
+			}
+		}
+	}
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+
+	// Generate the residual NWP 
+	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+	
+#endif
+
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
 	if (pBC && kproc == 0){
@@ -450,17 +476,6 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-	sum_local = 1.0*sum;
-	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	porosity = porosity*iVol_global;
-	if (rank==0) printf("Media porosity = %f \n",porosity);
-
-	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
-	
-#endif
-
 #ifdef USE_EXP_CONTACT_ANGLE
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s < 0.0 && !pBC){
@@ -2322,7 +2337,8 @@ int main(int argc, char **argv)
 				if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 				if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 
-				sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
+				//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
+				sat_w = 1.0 - nwp_volume_global/pore_vol;
 				// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
 				awn_global = awn_global*iVol_global*D;
 				ans_global = ans_global*iVol_global*D;
