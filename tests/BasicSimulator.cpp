@@ -487,17 +487,12 @@ int main(int argc, char **argv)
 	}
 #else
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
-/*	if (phi_s < 0.0 && !pBC){
+	if (phi_s < 0.0 && !pBC){
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
 		dbs = 1.0 - das;
 		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
-	}
-*/
-	if (! pBC && phi_s > 0.0){
-		FlipID(id,Nx*Ny*Nz);
-		phi_s = -phi_s;
 	}
 	
 #endif
