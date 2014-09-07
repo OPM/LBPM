@@ -1484,7 +1484,7 @@ int main(int argc, char **argv)
 			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
 			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
 			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
-			fprintf(TIMELOG,"vawnx vawny, vawnz vawnsx vawnsy vawnsz ");			
+			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");			
 			fprintf(TIMELOG,"Gwnxx, Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
