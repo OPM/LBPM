@@ -593,7 +593,7 @@ int main(int argc, char **argv)
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 	
 	// Map the signed distance for the analysis
-	for (i=0; i<Nx*Ny*Nz; i++)	SignDist.data[i] -= (1.0); 
+//	for (i=0; i<Nx*Ny*Nz; i++)	SignDist.data[i] -= (1.0); 
 	
 	// Compute the porosity
 	porosity=0.0;
