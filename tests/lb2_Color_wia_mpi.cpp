@@ -446,7 +446,13 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
+
+	// Generate the residual NWP 
+	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
+#endif
+
 	// Compute the pore volume
 	sum_local = 0.0;
 	for ( k=1;k<Nz-1;k++){
@@ -460,13 +466,7 @@ int main(int argc, char **argv)
 		}
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
-#endif
-
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
 	if (pBC && kproc == 0){
@@ -1479,8 +1479,8 @@ int main(int argc, char **argv)
 	if (rank==0){
 		TIMELOG= fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
-			//// If timelog is empty, write a short header to list the averages
-			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			// If timelog is empty, write a short header to list the averages
+			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
 			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns ");	// Scalar averages
 			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
