@@ -117,10 +117,15 @@ avtLBMFileFormat::avtLBMFileFormat(const char *filename)
     size_t k2 = file.rfind(92);
     if ( k1==std::string::npos ) { k1=0; }
     if ( k2==std::string::npos ) { k2=0; }
-    path = file.substr(0,std::max(k1,k2));
+    d_path = file.substr(0,std::max(k1,k2));
     // Load the summary file
     DebugStream::Stream1() << "Loading " << filename << std::endl;
-    timesteps = IO::readTimesteps(filename);
+    d_timesteps = IO::readTimesteps(filename);
+    // Read the mesh dabases
+    d_database.clear();
+    d_database.resize(d_timesteps.size());
+    for (size_t i=0; i<d_timesteps.size(); i++)
+        d_database[i] = IO::getMeshList(d_path,d_timesteps[i]);
 }
 
 
@@ -139,7 +144,7 @@ int
 avtLBMFileFormat::GetNTimesteps(void)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::GetNTimesteps" << std::endl;
-    return static_cast<int>(timesteps.size());
+    return static_cast<int>(d_timesteps.size());
 }
 
 
@@ -162,14 +167,13 @@ avtLBMFileFormat::FreeUpResources(void)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::FreeUpResources" << std::endl;
     std::map<std::string,vtkObjectBase*>::iterator it;
-    for ( it=meshcache.begin(); it!=meshcache.end(); ++it ) {
+    for ( it=d_meshcache.begin(); it!=d_meshcache.end(); ++it ) {
         DebugStream::Stream2() << "   deleting: " << it->first << std::endl;
         vtkObjectBase* obj = it->second;
         it->second = NULL;
         if ( obj!=NULL )
             obj->Delete();
     }
-    database.clear();
     DebugStream::Stream2() << "   finished" << std::endl;
 }
 
@@ -191,9 +195,8 @@ void
 avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timeState << std::endl;
-    // Read the mesh dabases
-    database = IO::getMeshList(path,timesteps[timeState]);
     // Add the mesh domains to the meta data
+    const std::vector<IO::MeshDatabase> database = d_database[timeState];
     for (size_t i=0; i<database.size(); i++) {
         DebugStream::Stream1() << "   Adding " << database[i].name << std::endl;
         avtMeshMetaData *mmd = new avtMeshMetaData;
@@ -336,15 +339,17 @@ avtLBMFileFormat::GetMesh(int timeState, int domain, const char *meshname)
     // Check if we have a cached copy of the mesh
     char cache_name[1000];
     sprintf(cache_name,"%i-%i-%s",timeState,domain,meshname);
-    if ( meshcache.find(cache_name)!=meshcache.end() )
-        return dynamic_cast<vtkDataSet*>(meshcache.find(cache_name)->second);
+    if ( d_meshcache.find(cache_name)!=d_meshcache.end() )
+        return dynamic_cast<vtkDataSet*>(d_meshcache.find(cache_name)->second);
     // Read the mesh
     std::shared_ptr<IO::Mesh> mesh;
+    const std::vector<IO::MeshDatabase> database = d_database[timeState];
+    const std::string timestep = d_timesteps[timeState];
     for (size_t i=0; i<database.size(); i++) {
         if ( database[i].name==std::string(meshname) ) {
             DebugStream::Stream1() << "   calling getMesh" << std::endl;
             try {
-                mesh = IO::getMesh(path,timesteps[timeState],database[i],domain);
+                mesh = IO::getMesh(d_path,timestep,database[i],domain);
             } catch (const std::exception &err) {
                 DebugStream::Stream1() << "   Caught errror calling getMesh:" << std::endl;
                 DebugStream::Stream1() << err.what() << std::endl;
