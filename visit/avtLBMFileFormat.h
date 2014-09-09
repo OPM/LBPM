@@ -49,6 +49,7 @@
 
 #include <vector>
 #include <map>
+#include "IO/MeshDatabase.h"
 
 
 
@@ -101,12 +102,7 @@ class avtLBMFileFormat : public avtMTMDFileFormat
     virtual void           PopulateDatabaseMetaData(avtDatabaseMetaData *, int);
     std::string path;
     std::vector<std::string> timesteps;
-    struct meshdata {
-        std::string meshname;
-        avtMeshType type;
-        std::vector<std::string> files;
-    };
-    std::vector<std::map<std::string,meshdata> > meshlist;
+    std::vector<IO::MeshDatabase> database;
     std::map<std::string,vtkObjectBase*> meshcache;
 };
 

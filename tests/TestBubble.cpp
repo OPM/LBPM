@@ -13,8 +13,12 @@
 #include "D3Q7.h"
 #include "Color.h"
 #include "Communication.h"
+#include "IO/Mesh.h"
+#include "IO/Writer.h"
+#include "ProfilerApp.h"
 
 #define CBUB
+#define USE_NEW_WRITER
 
 using namespace std;
 
@@ -101,6 +105,8 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    Utilities::setAbortBehavior(true,true,false);
+    PROFILE_ENABLE(0);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -2089,11 +2095,17 @@ int main(int argc, char **argv)
 					Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));		// orientation of wn interface
 		}
 
-		
-		FILE *WN_TRIS;
-		sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
-		WN_TRIS = fopen(LocalRankFilename,"wb");
 
+        #ifdef USE_NEW_WRITER
+            std::shared_ptr<IO::TriList> mesh( new IO::TriList() );
+            mesh->A.reserve(8*ncubes);
+            mesh->B.reserve(8*ncubes);
+            mesh->C.reserve(8*ncubes);
+        #else
+            FILE *WN_TRIS;
+	        sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
+	        WN_TRIS = fopen(LocalRankFilename,"wb");
+        #endif
 		for (c=0;c<ncubes;c++){
 			// Get cube from the list
 			i = cubeList(0,c);
@@ -2131,20 +2143,33 @@ int main(int argc, char **argv)
 					A = C;
 					C = P;
 				}
-				//fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-				fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
-				fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
-				fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
-				fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
-				fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
-				fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
-				fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
-				fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
-				fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                #ifdef USE_NEW_WRITER
+                    mesh->A.push_back(A);
+                    mesh->B.push_back(B);
+                    mesh->C.push_back(C);
+                #else
+				    //fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+				    fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+				    fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+				    fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+				    fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+				    fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+				    fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+				    fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+				    fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+				    fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                #endif
 			}		
 		}
-		fclose(WN_TRIS);
-		
+        #ifdef USE_NEW_WRITER
+            std::vector<IO::MeshDataStruct> meshData(1);
+            meshData[0].meshName = "wn-tris";
+            meshData[0].mesh = mesh;
+            IO::writeData( bubbleCount, meshData );
+        #else
+		    fclose(WN_TRIS);
+        #endif
+
 	}
 	//************************************************************************/
 	DeviceBarrier();
@@ -2184,7 +2209,7 @@ int main(int argc, char **argv)
 	fwrite(DensityValues,8,2*N,PHASE);
 	fclose(PHASE);
 */	//************************************************************************/
-
+    PROFILE_SAVE("TestBubble");
 	return 0;
 	
 	// ****************************************************

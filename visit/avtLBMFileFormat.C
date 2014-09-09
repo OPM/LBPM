@@ -45,6 +45,10 @@
 
 #include <string>
 
+// LBPM headers
+#include "IO/Reader.h"
+#include "common/Utilities.h"
+
 // vtk headers
 #include <vtkFloatArray.h>
 #include <vtkRectilinearGrid.h>
@@ -57,6 +61,7 @@
 
 
 #include <avtDatabaseMetaData.h>
+#include <vtkHelpers.h>
 
 #include <DBOptionsAttributes.h>
 #include <Expression.h>
@@ -104,6 +109,8 @@ avtLBMFileFormat::avtLBMFileFormat(const char *filename)
     : avtMTMDFileFormat(filename)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::avtLBMFileFormat: " << filename << std::endl;
+    Utilities::setAbortBehavior(true,true,true);
+    Utilities::setErrorHandlers();
     // Get the path to the input file
     std::string file(filename);
     size_t k1 = file.rfind(47);
@@ -111,55 +118,9 @@ avtLBMFileFormat::avtLBMFileFormat(const char *filename)
     if ( k1==std::string::npos ) { k1=0; }
     if ( k2==std::string::npos ) { k2=0; }
     path = file.substr(0,std::max(k1,k2));
-
     // Load the summary file
     DebugStream::Stream1() << "Loading " << filename << std::endl;
-    FILE *fid= fopen(filename,"r");
-    if ( fid==NULL ) {
-        DebugStream::Stream1() << "Error opening file" << std::endl;
-        return;
-    }
-    char buf[1000];
-    while (fgets(buf,sizeof(buf),fid) != NULL) {
-        std::string line(buf);
-        line.resize(line.size()-1);
-        if ( line.empty() )
-            continue;
-        timesteps.push_back(line);
-    }
-    fclose(fid);
-
-    // For each time step, get the list of meshes and files
-    meshlist.resize(timesteps.size());
-    for (size_t i=0; i<timesteps.size(); i++) {
-        std::string filename2 = path + "/" + timesteps[i] + "/LBM.summary";
-        FILE *fid= fopen(filename2.c_str(),"r");
-        if ( fid==NULL ) {
-            DebugStream::Stream1() << "Error opening timestep: " << filename << std::endl;
-            return;
-        }
-        char buf[1000];
-        while (fgets(buf,sizeof(buf),fid) != NULL) {
-            std::string file(buf);
-            file.resize(file.size()-1);
-            if ( file.empty() )
-                continue;
-            size_t k = file.rfind('.');
-            std::string meshname = file.substr(0,k);
-            if ( meshlist[i][meshname].meshname.empty() ) {
-                meshlist[i][meshname].meshname = meshname;
-                if ( meshname=="ns-tris" || meshname=="ws-tris" || meshname=="wn-tris" ) {
-                    meshlist[i][meshname].type = AVT_SURFACE_MESH;
-                } else if ( meshname=="wns-crv" ) {
-                    meshlist[i][meshname].type = AVT_POINT_MESH;
-                } else {
-                    DebugStream::Stream1() << "Warning: unknown mesh type for mesh: " << meshname << std::endl;
-                }
-            }
-            meshlist[i][meshname].files.push_back(file);
-        }
-        fclose(fid);
-    }
+    timesteps = IO::readTimesteps(filename);
 }
 
 
@@ -208,7 +169,7 @@ avtLBMFileFormat::FreeUpResources(void)
         if ( obj!=NULL )
             obj->Delete();
     }
-    meshcache.clear();
+    database.clear();
     DebugStream::Stream2() << "   finished" << std::endl;
 }
 
@@ -230,41 +191,34 @@ void
 avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timeState << std::endl;
+    // Read the mesh dabases
+    database = IO::getMeshList(path,timesteps[timeState]);
     // Add the mesh domains to the meta data
-    std::map<std::string,meshdata>::iterator it;
-    for (it=meshlist[timeState].begin(); it!=meshlist[timeState].end(); ++it) {
-        std::sort(it->second.files.begin(),it->second.files.end());
-        std::string meshname = it->first;
-        avtMeshType type = it->second.type;
+    for (size_t i=0; i<database.size(); i++) {
+        DebugStream::Stream1() << "   Adding " << database[i].name << std::endl;
         avtMeshMetaData *mmd = new avtMeshMetaData;
-        mmd->name = meshname;
-        mmd->meshType = it->second.type;
+        mmd->name = database[i].name;
+        mmd->meshType = vtkMeshType(database[i].type);
         mmd->spatialDimension = 3;
         mmd->topologicalDimension = -1;
         if ( mmd->meshType==AVT_SURFACE_MESH )
             mmd->topologicalDimension = 2;
-        mmd->numBlocks = it->second.files.size();
-        mmd->blockNames = std::vector<std::string>(it->second.files.size());
-        for(size_t i=0; i<it->second.files.size(); i++) {
-            char tmp[100];
-            sprintf(tmp,"%s.%5i",meshname.c_str(),(int)i);
-            mmd->blockNames[i] = std::string(tmp);
-        }
+        mmd->numBlocks = database[i].domains.size();
+        mmd->blockNames = database[i].domains;
         md->Add(mmd);
         // Add expressions for the coordinates
         const char *xyz[3] = {"x","y","z"};
-        for(int i=0; i<3; ++i) {
+        for(int j=0; j<3; j++) {
             Expression expr;
             char expdef[100], expname[100];
-            sprintf(expdef,"coord(<%s>)[%i]",meshname.c_str(),i);
-            sprintf(expname,"%s-%s",meshname.c_str(),xyz[i]);
+            sprintf(expdef,"coord(<%s>)[%i]",mmd->name.c_str(),j);
+            sprintf(expname,"%s-%s",mmd->name.c_str(),xyz[j]);
             expr.SetName(expname);
             expr.SetDefinition(expdef);
-            expr.SetType(Expression::ScalarMeshVar);
             md->AddExpression(&expr);
         }
     }
-
+    DebugStream::Stream1() << "   Finished" << std::endl;
 
     //
     // CODE TO ADD A SCALAR VARIABLE
@@ -372,94 +326,50 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeStat
 // ****************************************************************************
 
 vtkDataSet *
-avtLBMFileFormat::GetMesh(int timestate, int domain, const char *meshname)
+avtLBMFileFormat::GetMesh(int timeState, int domain, const char *meshname)
 {
+    DebugStream::Stream1() << "avtLBMFileFormat::GetMesh - " << meshname
+        << "," << timeState << "," << domain << std::endl;
     TIME_TYPE start, stop, freq;
     get_frequency(&freq);
     get_time(&start);
-    // Get the filename
-    DebugStream::Stream1() << "avtLBMFileFormat::GetMesh: ";
-    std::string filename = path + "/" + timesteps[timestate] + "/" + 
-        meshlist[timestate][std::string(meshname)].files[domain];
-    avtMeshType type = meshlist[timestate][std::string(meshname)].type;
-    DebugStream::Stream1() << filename << std::endl;
     // Check if we have a cached copy of the mesh
     char cache_name[1000];
-    sprintf(cache_name,"%i-%i-%s",timestate,domain,meshname);
+    sprintf(cache_name,"%i-%i-%s",timeState,domain,meshname);
     if ( meshcache.find(cache_name)!=meshcache.end() )
         return dynamic_cast<vtkDataSet*>(meshcache.find(cache_name)->second);
-    // Read the raw data
-    FILE *fid = fopen(filename.c_str(),"rb");
-    if ( fid==NULL ) {
-        DebugStream::Stream1() << "   Error opening file" << std::endl;
-        return NULL;
-    }
-    fseek( fid, 0, SEEK_END );
-    size_t bytes = ftell(fid);
-    size_t N_max = bytes/sizeof(double)+1000;
-    double *data = new double[N_max];
-    fseek( fid, 0, SEEK_SET );
-    size_t count = fread(data,sizeof(double),N_max,fid);
-    fclose(fid);
-    if ( count%3 ) {
-        DebugStream::Stream1() << "   Error reading data: " << count << std::endl;
-        delete [] data;
-        return NULL;
-    }
-    if ( count==0 ) {
-        DebugStream::Stream2() << "   No points read" << std::endl;
-        delete [] data;
-        return NULL;
-    }
-    // Create the points in vtk
-    DebugStream::Stream2() << "   Creating vtkFloatArray" << std::endl;
-    vtkFloatArray *coords = vtkFloatArray::New();
-    coords->SetNumberOfComponents(3);
-    coords->SetNumberOfTuples(count/3);
-    for (size_t i=0; i<count/3; i++)
-        coords->SetTuple3(i,data[3*i+0],data[3*i+1],data[3*i+2]);
-    delete [] data;
-    DebugStream::Stream2() << "   Creating vtkPoints" << std::endl;
-    vtkPoints *points = vtkPoints::New(VTK_FLOAT);
-    points->SetData(coords);
-    points->ComputeBounds();
-    // Create the mesh
-    DebugStream::Stream2() << "   Creating mesh" << std::endl;
-    vtkPolyData *mesh = vtkPolyData::New();
-    mesh->SetPoints(points);
-    if ( type==AVT_SURFACE_MESH ) {
-        size_t N_tri = count/9;
-        mesh->Allocate(N_tri);
-        for (size_t i=0; i<N_tri; i++) {
-            vtkIdType ids[3] = {3*i+0,3*i+1,3*i+2};
-            mesh->InsertNextCell(VTK_TRIANGLE,3,ids);
+    // Read the mesh
+    std::shared_ptr<IO::Mesh> mesh;
+    for (size_t i=0; i<database.size(); i++) {
+        if ( database[i].name==std::string(meshname) ) {
+            DebugStream::Stream1() << "   calling getMesh" << std::endl;
+            try {
+                mesh = IO::getMesh(path,timesteps[timeState],database[i],domain);
+            } catch (const std::exception &err) {
+                DebugStream::Stream1() << "   Caught errror calling getMesh:" << std::endl;
+                DebugStream::Stream1() << err.what() << std::endl;
+            } catch (...) {
+                DebugStream::Stream1() << "   Caught unknown errror calling getMesh" << std::endl;
+                return NULL;
+            }
         }
-    } else if ( type==AVT_POINT_MESH ) {
-        size_t N_tri = count/3;
-        mesh->Allocate(N_tri);
-        for (size_t i=0; i<N_tri; i++) {
-            vtkIdType ids[1] = {i};
-            mesh->InsertNextCell(VTK_VERTEX,1,ids);
-        }
-    } else {
-        DebugStream::Stream1() << "   Unknown mesh type" << std::endl;
-        points->Delete();
-        coords->Delete();
+    }
+    if ( mesh==NULL ) {
+        DebugStream::Stream1() << "   Error loading mesh" << std::endl;
         return NULL;
     }
-    mesh->BuildCells();
-    mesh->ComputeBounds();
+    // Create the mesh in vtk
+    vtkDataSet* vtkMesh = meshToVTK(mesh);
     DebugStream::Stream2() << "   mesh created:" << std::endl;
-    DebugStream::Stream2() << "      " << mesh->GetNumberOfCells() << std::endl;
-    DebugStream::Stream2() << "      " << mesh->GetNumberOfCells() << std::endl;
-    mesh->PrintSelf(DebugStream::Stream2(),vtkIndent(6));
-    points->Delete();
-    coords->Delete();
+    ASSERT(vtkMesh!=NULL);
+    DebugStream::Stream2() << "      " << vtkMesh->GetNumberOfCells() << std::endl;
+    DebugStream::Stream2() << "      " << vtkMesh->GetNumberOfCells() << std::endl;
+    vtkMesh->PrintSelf(DebugStream::Stream2(),vtkIndent(6));
     // Cache the mesh and return
     // meshcache[cache_name] = mesh;
     get_time(&stop);
     DebugStream::Stream2() << "   Time required: " << get_diff(start,stop,freq) << std::endl;
-    return mesh;
+    return vtkMesh;
 }
 
 

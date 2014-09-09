@@ -252,6 +252,7 @@ MACRO( ADD_LBPM_EXE_DEP EXE )
     # Add the libraries
     TARGET_LINK_LIBRARIES( ${EXE} ${LBPM_LIBS} )
     # Add external libraries
+    TARGET_LINK_LIBRARIES( ${EXE} ${TIMER_LIBS} )
     TARGET_LINK_LIBRARIES( ${EXE} ${EXTERNAL_LIBS} )
     IF ( USE_MPI )
         TARGET_LINK_LIBRARIES( ${EXE} ${MPI_LINK_FLAGS} ${MPI_LIBRARIES} )
@@ -497,6 +498,7 @@ MACRO( ADD_DISTCLEAN )
         example
         common
         visit
+        IO
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)

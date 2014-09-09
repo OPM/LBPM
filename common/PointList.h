@@ -1,10 +1,14 @@
+#ifndef PointList_INC
+#define PointList_INC
 
 #include <math.h>
 
 struct Point {
     Point() : x(0.0), y(0.0), z(0.0) {}
     Point(double xv,double yv,double zv) : x(xv), y(yv), z(zv) {}
-
+    Point(const Point& rhs): x(rhs.x), y(rhs.y), z(rhs.z) {}
+    Point& operator=(const Point& rhs) { this->x=rhs.x; this->y=rhs.y; this->z=rhs.z; }
+    ~Point() {}
     double x,y,z;
 };
 
@@ -177,5 +181,8 @@ template <class T> DTMutableList<T> IncreaseSize(const DTList<T> &A,size_t addLe
     for (size_t i=0;i<len;i++) toP[i] = fromP[i];
     return toReturn;
 }
+
+
+#endif
 
 

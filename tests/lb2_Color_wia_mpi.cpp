@@ -18,6 +18,8 @@
 //#define CBUB
 //#define WRITE_SURFACES
 #define USE_EXP_CONTACT_ANGLE
+#define USE_NEW_WRITER
+
 
 using namespace std;
 
@@ -2430,28 +2432,47 @@ int main(int argc, char **argv)
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 
 #ifdef WRITE_SURFACES
-			
-			sprintf(tmpstr,"vis%03d",logcount);
-			if (rank==0){
-				mkdir(tmpstr,0777);
-			}
-			MPI_Barrier(MPI_COMM_WORLD);
-			
-			FILE *WN_TRIS;
-			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wn-tris.",LocalRankString);
-			WN_TRIS = fopen(LocalRankFilename,"wb");
 
-			FILE *NS_TRIS;
-			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ns-tris.",LocalRankString);
-			NS_TRIS = fopen(LocalRankFilename,"wb");
+            #ifdef USE_NEW_WRITER
+                std::shared_ptr<TriList> wn_mesh( new TriList() );
+                wn_mesh->A.reserve(8*ncubes);
+                wn_mesh->B.reserve(8*ncubes);
+                wn_mesh->C.reserve(8*ncubes);
+                std::shared_ptr<TriList> ns_mesh( new TriList() );
+                ns_mesh->A.reserve(8*ncubes);
+                ns_mesh->B.reserve(8*ncubes);
+                ns_mesh->C.reserve(8*ncubes);
+                std::shared_ptr<TriList> ws_mesh( new TriList() );
+                ws_mesh->A.reserve(8*ncubes);
+                ws_mesh->B.reserve(8*ncubes);
+                ws_mesh->C.reserve(8*ncubes);
+                std::shared_ptr<TriList> wns_mesh( new TriList() );
+                wns_mesh->A.reserve(8*ncubes);
+                wns_mesh->B.reserve(8*ncubes);
+                wns_mesh->C.reserve(8*ncubes);
+			#else
+    			sprintf(tmpstr,"vis%03d",logcount);
+	    		if (rank==0){
+	    			mkdir(tmpstr,0777);
+	    		}
+	    		MPI_Barrier(MPI_COMM_WORLD);
 
-			FILE *WS_TRIS;
-			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ws-tris.",LocalRankString);
-			WS_TRIS = fopen(LocalRankFilename,"wb");
+			    FILE *WN_TRIS;
+			    sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wn-tris.",LocalRankString);
+			    WN_TRIS = fopen(LocalRankFilename,"wb");
 
-			FILE *WNS_PTS;
-			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wns-crv.",LocalRankString);
-			WNS_PTS = fopen(LocalRankFilename,"wb");
+			    FILE *NS_TRIS;
+			    sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ns-tris.",LocalRankString);
+			    NS_TRIS = fopen(LocalRankFilename,"wb");
+
+			    FILE *WS_TRIS;
+			    sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"ws-tris.",LocalRankString);
+			    WS_TRIS = fopen(LocalRankFilename,"wb");
+
+			    FILE *WNS_PTS;
+			    sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wns-crv.",LocalRankString);
+			    WNS_PTS = fopen(LocalRankFilename,"wb");
+            #endif
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
@@ -2500,16 +2521,22 @@ int main(int argc, char **argv)
 					C.x += 1.0*iproc*(Nx-2);
 					C.y += 1.0*jproc*(Nx-2);
 					C.z += 1.0*kproc*(Nx-2);
-					// write the triangle
-					fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
-					fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
-					fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
-					fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
-					fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
-					fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
-					fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
-					fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
-					fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                    #ifdef USE_NEW_WRITER
+                        wn_mesh->A.push_back(A);
+                        wn_mesh->B.push_back(B);
+                        wn_mesh->C.push_back(C);
+                    #else
+					    // write the triangle
+					    fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+					    fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+					    fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+					    fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+					    fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+					    fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+					    fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+					    fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+					    fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                    #endif
 				}		
 				for (int r=0;r<n_ws_tris;r++){
 					A = ws_pts(ws_tris(0,r));
@@ -2525,16 +2552,22 @@ int main(int argc, char **argv)
 					C.x += 1.0*iproc*(Nx-2);
 					C.y += 1.0*jproc*(Nx-2);
 					C.z += 1.0*kproc*(Nx-2);
-					// write the triangle
-					fwrite(&A.x,sizeof(A.x),1,WS_TRIS);
-					fwrite(&A.y,sizeof(A.y),1,WS_TRIS);
-					fwrite(&A.z,sizeof(A.z),1,WS_TRIS);
-					fwrite(&B.x,sizeof(B.x),1,WS_TRIS);
-					fwrite(&B.y,sizeof(B.y),1,WS_TRIS);
-					fwrite(&B.z,sizeof(B.z),1,WS_TRIS);
-					fwrite(&C.x,sizeof(C.x),1,WS_TRIS);
-					fwrite(&C.y,sizeof(C.y),1,WS_TRIS);
-					fwrite(&C.z,sizeof(C.z),1,WS_TRIS);	
+                    #ifdef USE_NEW_WRITER
+                        ws_mesh->A.push_back(A);
+                        ws_mesh->B.push_back(B);
+                        ws_mesh->C.push_back(C);
+                    #else
+					    // write the triangle
+					    fwrite(&A.x,sizeof(A.x),1,WS_TRIS);
+					    fwrite(&A.y,sizeof(A.y),1,WS_TRIS);
+					    fwrite(&A.z,sizeof(A.z),1,WS_TRIS);
+					    fwrite(&B.x,sizeof(B.x),1,WS_TRIS);
+					    fwrite(&B.y,sizeof(B.y),1,WS_TRIS);
+					    fwrite(&B.z,sizeof(B.z),1,WS_TRIS);
+					    fwrite(&C.x,sizeof(C.x),1,WS_TRIS);
+					    fwrite(&C.y,sizeof(C.y),1,WS_TRIS);
+					    fwrite(&C.z,sizeof(C.z),1,WS_TRIS);	
+                    #endif
 				}
 				for (int r=0;r<n_ns_tris;r++){
 					A = ns_pts(ns_tris(0,r));
@@ -2550,16 +2583,22 @@ int main(int argc, char **argv)
 					C.x += 1.0*iproc*(Nx-2);
 					C.y += 1.0*jproc*(Nx-2);
 					C.z += 1.0*kproc*(Nx-2);
-					// write the triangle
-					fwrite(&A.x,sizeof(A.x),1,NS_TRIS);
-					fwrite(&A.y,sizeof(A.y),1,NS_TRIS);
-					fwrite(&A.z,sizeof(A.z),1,NS_TRIS);
-					fwrite(&B.x,sizeof(B.x),1,NS_TRIS);
-					fwrite(&B.y,sizeof(B.y),1,NS_TRIS);
-					fwrite(&B.z,sizeof(B.z),1,NS_TRIS);
-					fwrite(&C.x,sizeof(C.x),1,NS_TRIS);
-					fwrite(&C.y,sizeof(C.y),1,NS_TRIS);
-					fwrite(&C.z,sizeof(C.z),1,NS_TRIS);
+                    #ifdef USE_NEW_WRITER
+                        ns_mesh->A.push_back(A);
+                        ns_mesh->B.push_back(B);
+                        ns_mesh->C.push_back(C);
+                    #else
+					    // write the triangle
+					    fwrite(&A.x,sizeof(A.x),1,NS_TRIS);
+					    fwrite(&A.y,sizeof(A.y),1,NS_TRIS);
+					    fwrite(&A.z,sizeof(A.z),1,NS_TRIS);
+					    fwrite(&B.x,sizeof(B.x),1,NS_TRIS);
+					    fwrite(&B.y,sizeof(B.y),1,NS_TRIS);
+					    fwrite(&B.z,sizeof(B.z),1,NS_TRIS);
+					    fwrite(&C.x,sizeof(C.x),1,NS_TRIS);
+					    fwrite(&C.y,sizeof(C.y),1,NS_TRIS);
+					    fwrite(&C.z,sizeof(C.z),1,NS_TRIS);
+                    #endif
 				}
 				for (int p=0; p < n_nws_pts; p++){
 					P = nws_pts(p);
@@ -2569,10 +2608,23 @@ int main(int argc, char **argv)
 					fwrite(&P.z,sizeof(P.z),1,WNS_PTS);
 				}
 			}
-			fclose(WN_TRIS);
-			fclose(NS_TRIS);
-			fclose(WS_TRIS);
-			fclose(WNS_PTS);
+            #ifdef USE_NEW_WRITER
+                std::vector<MeshDataStruct> meshData(4);
+                meshData[0].meshName = "wn-tris";
+                meshData[0].mesh = wn_mesh;
+                meshData[1].meshName = "ws-tris";
+                meshData[1].mesh = ws_mesh;
+                meshData[2].meshName = "ns-tris";
+                meshData[2].mesh = ns_mesh;
+                meshData[3].meshName = "wns-tris";
+                meshData[3].mesh = wns_mesh;
+                writeData( logcount, meshData );
+            #else
+			    fclose(WN_TRIS);
+			    fclose(NS_TRIS);
+			    fclose(WS_TRIS);
+			    fclose(WNS_PTS);
+            #endif
 			logcount++;
 #endif 
 		}
