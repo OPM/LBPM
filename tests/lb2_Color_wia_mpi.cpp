@@ -2337,7 +2337,7 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vawn(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -2386,6 +2386,7 @@ int main(int argc, char **argv)
 			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+			if (lwns_global > 0.0)	for (i=0; i<3; i++)		vawns_global(i) /= lwns_global;
 
 			//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			sat_w = 1.0 - nwp_volume_global/pore_vol;
@@ -2402,7 +2403,7 @@ int main(int argc, char **argv)
 				fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				fprintf(TIMELOG,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+				fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
 				fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
 				fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
