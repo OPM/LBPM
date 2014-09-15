@@ -4134,10 +4134,24 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		nwn_x = Fx(i,j,k);
 		nwn_y = Fy(i,j,k);
 		nwn_z = Fz(i,j,k);
+		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
+		if (norm > 0.0){
+			nwn_x /= norm;
+			nwn_y /= norm;
+			nwn_z /= norm;
+		}
+		
 		// Get the normal to the solid surface
 		ns_x = Sx(i,j,k);
 		ns_y = Sy(i,j,k);
 		ns_z = Sz(i,j,k);
+		norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
+		if (norm > 0.0){
+			ns_x /= norm;
+			ns_y /= norm;
+			ns_z /= norm;
+		}
+		
 		// Compute the normal to the common curve (vector product of tangent and solid normal)
 		nwns_x = ns_y*tangent_z - ns_z*tangent_y;
 		nwns_y = ns_z*tangent_x - ns_x*tangent_z;
@@ -4150,21 +4164,25 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		}
 		// normalize the common curve normal
 		norm = nwns_x*nwns_x + nwns_y*nwns_y + nwns_z*nwns_z;
-		nwns_x /= norm;
-		nwns_y /= norm;
-		nwns_z /= norm;
+		if (norm > 0.0){
+			nwns_x /= norm;
+			nwns_y /= norm;
+			nwns_z /= norm;
+		}
 		// Compute the interface speed at the midpoint of the segment
 		x = 0.5*(A.x+B.x);
 		y = 0.5*(A.y+B.y);
 		z = 0.5*(A.z+B.z);
 		zeta = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-		norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
+		//norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
+		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
 
 		// Compute the common curve velocity 
-		ReturnVector(0) += -(zeta/norm)*nwns_x;
-		ReturnVector(1) += -(zeta/norm)*nwns_y;
-		ReturnVector(2) += -(zeta/norm)*nwns_z;
-		
+		if (norm > 0.0){
+			ReturnVector(0) += -(zeta/norm)*nwns_x;
+			ReturnVector(1) += -(zeta/norm)*nwns_y;
+			ReturnVector(2) += -(zeta/norm)*nwns_z;
+		}		
 		// Compute the length of the segment
 		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		// Add the length to the common line 
