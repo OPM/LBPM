@@ -446,7 +446,13 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
+
+	// Generate the residual NWP 
+	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
+#endif
+
 	// Compute the pore volume
 	sum_local = 0.0;
 	for ( k=1;k<Nz-1;k++){
@@ -460,13 +466,7 @@ int main(int argc, char **argv)
 		}
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
-#endif
-
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
 	if (pBC && kproc == 0){
@@ -1118,6 +1118,7 @@ int main(int argc, char **argv)
 	DoubleArray van(3);
 	DoubleArray vaw(3);
 	DoubleArray vawn(3);
+	DoubleArray vawns(3);
 	DoubleArray Gwn(6);
 	DoubleArray Gns(6);
 	DoubleArray Gws(6);
@@ -1132,6 +1133,7 @@ int main(int argc, char **argv)
 	DoubleArray van_global(3);
 	DoubleArray vaw_global(3);
 	DoubleArray vawn_global(3);
+	DoubleArray vawns_global(3);
 	DoubleArray Gwn_global(6);
 	DoubleArray Gns_global(6);
 	DoubleArray Gws_global(6);
@@ -1245,7 +1247,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
+	for (i=0; i<N; i++)	SignDist.data[i] -= (0.5); // 
 	//.......................................................................
 	
 	//...........................................................................
@@ -1478,15 +1480,16 @@ int main(int argc, char **argv)
 		TIMELOG= fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
 			// If timelog is empty, write a short header to list the averages
-			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"timestep dEs ");								// Timestep, Change in Surface Energy
-			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns efawns ");	// Scalar averages
-			fprintf(TIMELOG,"vw[x, y, z] vn[x, y, z] vwn[x, y, z]");		// Velocity averages
-			fprintf(TIMELOG,"Gwn [xx, yy, zz, xy, xz, yz] ");				// Orientation tensors
-			fprintf(TIMELOG,"Gws [xx, yy, zz, xy, xz, yz] ");
-			fprintf(TIMELOG,"Gns [xx, yy, zz, xy, xz, yz] ");
+			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
+			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns ");	// Scalar averages
+			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
+			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");			
+			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
+			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
+			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
 			fprintf(TIMELOG,"trJwn trawn trRwn\n");								// trimmed curvature for wn surface
-			fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 	}
 
@@ -2180,6 +2183,7 @@ int main(int argc, char **argv)
 			vaw(0) = vaw(1) = vaw(2) = 0.0;
 			van(0) = van(1) = van(2) = 0.0;
 			vawn(0) = vawn(1) = vawn(2) = 0.0;
+			vawns(0) = vawns(1) = vawns(2) = 0.0;
 			Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
 			Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
 			Gws(0) = Gws(1) = Gws(2) = 0.0;
@@ -2302,6 +2306,9 @@ int main(int argc, char **argv)
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 				
+				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,						
+						local_nws_pts,i,j,k,n_local_nws_pts);
+				
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 				// Compute the surface orientation and the interfacial area
@@ -2330,6 +2337,7 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -2378,6 +2386,7 @@ int main(int argc, char **argv)
 			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+			if (lwns_global > 0.0)	for (i=0; i<3; i++)		vawns_global(i) /= lwns_global;
 
 			//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			sat_w = 1.0 - nwp_volume_global/pore_vol;
@@ -2390,33 +2399,17 @@ int main(int argc, char **argv)
 			
 			//.........................................................................
 			if (rank==0){
-/*				printf("%i %.5g ",timestep-5,dEs);										// change in surface energy
-				printf("%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
-				printf("%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				printf("%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
-				printf("%.5g ",lwns_global);											// common curve length
-				printf("%.5g ",efawns_global);											// average contact angle
-				printf("%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
-				printf("%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
-				printf("%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface	
-				printf("%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-				printf("%.5g %5g \n",trawn_global, trJwn_global);						// Trimmed curvature
 
-*/
 				fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				fprintf(TIMELOG,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+				fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
 				fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
 				fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
 				fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+				fprintf(TIMELOG,"%.5g %.5g %.5g ",vawns_global(0),vawns_global(1),vawns_global(2));	// velocity of wn interface
 				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
 				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
@@ -2624,6 +2617,7 @@ int main(int argc, char **argv)
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+		fprintf(FINALSTATE,"%.5g %.5g %.5g ",vawns_global(0),vawns_global(1),vawns_global(2));	// velocity of wn interface
 		fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
 		fprintf(FINALSTATE,"%.5g %.5g %.5g %.5g %.5g %.5g ",
@@ -2634,11 +2628,6 @@ int main(int argc, char **argv)
 		fclose(FINALSTATE);
 	}
 	
-	//************************************************************************/
-	// Write out the phase indicator field 
-	//************************************************************************/
-	//	printf("Local File Name =  %s \n",LocalRankFilename);
-
 	
 //#ifdef WriteOutput	
 	CopyToHost(Phase.data,Phi,N*sizeof(double));
