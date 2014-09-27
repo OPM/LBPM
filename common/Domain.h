@@ -727,12 +727,12 @@ inline void SignedDistance(double *Distance, int nspheres, double *List_cx, doub
 		r = List_rad[p];
 		// Check if
 		// Range for this sphere in global indexing
-		imin = int ((cx-r)/hx);
-		imax = int ((cx+r)/hx)+2;
-		jmin = int ((cy-r)/hy);
-		jmax = int ((cy+r)/hy)+2;
-		kmin = int ((cz-r)/hz);
-		kmax = int ((cz+r)/hz)+2;
+		imin = int ((cx-2*r)/hx);
+		imax = int ((cx+2*r)/hx)+2;
+		jmin = int ((cy-2*r)/hy);
+		jmax = int ((cy+2*r)/hy)+2;
+		kmin = int ((cz-2*r)/hz);
+		kmax = int ((cz+2*r)/hz)+2;
 		// Obviously we have to do something at the edges
 		if (imin<0)		imin = 0;
 		if (imin>Nx)	imin = Nx;
