@@ -1247,7 +1247,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= (0.5); // 
+	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
 	//.......................................................................
 	
 	//...........................................................................
@@ -1488,7 +1488,7 @@ int main(int argc, char **argv)
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trJwn trawn trRwn\n");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"trawn trJwn trRwn\n");								// trimmed curvature for wn surface
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 	}
@@ -1873,7 +1873,6 @@ int main(int argc, char **argv)
 		UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
 		UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 		//...................................................................................
-	
 		
 		if (pBC && kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
