@@ -344,6 +344,7 @@ int main(int argc, char **argv)
 				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,nx,ny,nz,iproc,jproc,kproc);
 
 				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
+				
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
@@ -361,6 +362,8 @@ int main(int argc, char **argv)
 						}
 					}
 				}
+				printf("%s, %f \n",LocalRankFilename, Press(50,50,50));
+
 
 				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
@@ -709,7 +712,7 @@ int main(int argc, char **argv)
 		Gns(3) = Gns(4) = Gns(5) = 0.0;
 		Jwn = Kwn = efawns = 0.0;
 		trJwn = trawn = trRwn = 0.0;
-		
+				
 		for (c=start;c<finish;c++){
 			// Get cube from the list
 			i = blobs(0,c);
@@ -719,6 +722,8 @@ int main(int argc, char **argv)
 			// Use the cube to compute volume averages
 			for (p=0;p<8;p++){
 				if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					
+					n = i+cube[p][0] + Nx*(j+cube[p][1]) + Nx*Ny*(k+cube[p][2]);
 
 					// Compute the non-wetting phase volume contribution
 					if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
@@ -923,7 +928,16 @@ int main(int argc, char **argv)
 		fprintf(BLOBLOG,"\n");
 	}
 	fclose(BLOBLOG);
-
+	
+	double iVol = 1.0/Nx/Ny/Nz;
+	sw = 1.0;
+	// Compute the Sauter mean grain diamter
+	double D = 6.0*Nx*Ny*Nz*(1.0-porosity) / As;
+	double pw,pn,pc,awnD,ansD,awsD,JwnD,trJwnD,lwnsDD,cwns;
+	pw = paw/vol_w;
+	printf("paw = %f \n", paw/vol_w);
+	printf("vol_w = %f \n", vol_w);
+	
 	printf("-----------------------------------------------\n");
 	vol_n = nwp_volume = 0.0;
 	pan = 0.0;
@@ -936,15 +950,7 @@ int main(int argc, char **argv)
 	Gns(3) = Gns(4) = Gns(5) = 0.0;
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;	
-	
-	double iVol = 1.0/Nx/Ny/Nz;
-	sw = 1.0;
-	// Compute the Sauter mean grain diamter
-	double D = 6.0*Nx*Ny*Nz*(1.0-porosity) / As;
-	double pw,pn,pc,awnD,ansD,awsD,JwnD,trJwnD,lwnsDD,cwns;
-	pw = paw/vol_w;
-	printf("paw = %f \n", paw);
-	printf("vol_w = %f \n", vol_w);
+
 	
 	// Write out the "equilibrium" state with a 0.5 % change in saturation"
 	// Always write the largest blob 
