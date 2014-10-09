@@ -342,6 +342,46 @@ int main(int argc, char **argv)
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
 
 				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,nx,ny,nz,iproc,jproc,kproc);
+
+				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
+				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
+				for (k=1; k<nz-1; k++){
+					for (j=1; j<ny-1; j++){
+						for (i=1; i<nx-1; i++){
+
+							//........................................................................
+							n = k*nx*ny+j*nx+i;
+							//........................................................................
+							iglobal = iproc*(nx-2)+i;
+							jglobal = jproc*(ny-2)+j;
+							kglobal = kproc*(nz-2)+k;
+							//........................................................................
+							Press(iglobal,jglobal,kglobal) = Temp[n];
+							//........................................................................
+						}
+					}
+				}
+
+				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
+				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
+				for (k=1; k<nz-1; k++){
+					for (j=1; j<ny-1; j++){
+						for (i=1; i<nx-1; i++){
+
+							//........................................................................
+							n = k*nx*ny+j*nx+i;
+							//........................................................................
+							iglobal = iproc*(nx-2)+i;
+							jglobal = jproc*(ny-2)+j;
+							kglobal = kproc*(nz-2)+k;
+							//........................................................................
+							Phase(iglobal,jglobal,kglobal) = Temp[n];
+							//........................................................................
+						}
+					}
+				}
+				
+				
 			}
 		}
 	}
