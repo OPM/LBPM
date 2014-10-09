@@ -362,8 +362,6 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-				printf("%s, %f \n",LocalRankFilename, Press(50,50,50));
-
 
 				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
@@ -950,7 +948,6 @@ int main(int argc, char **argv)
 	Gns(3) = Gns(4) = Gns(5) = 0.0;
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;	
-
 	
 	// Write out the "equilibrium" state with a 0.5 % change in saturation"
 	// Always write the largest blob 
