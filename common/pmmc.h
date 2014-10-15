@@ -4102,7 +4102,6 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	
 	//.............................................................................
 	// Compute the normal and the speed at points on the interface
-	// Copy the curvature values for the cube
 	CubeValues(0,0,0) = dPdt(i,j,k);
 	CubeValues(1,0,0) = dPdt(i+1,j,k);
 	CubeValues(0,1,0) = dPdt(i,j+1,k);
@@ -4188,6 +4187,65 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		// Add the length to the common line 
 		lwns += s;
 	}
+}
+
+inline void pmmc_CurveCurvature(){
+	
+	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
+	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
+	
+	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
+	double Tx[8],Ty[8],Tz[8];	// Tangent vector
+	double Nx[8],Ny[8],Nz[8];	// Principle normal
+	double tx,ty,tz,nx,ny,nz,K; // tangent,normal and curvature
+
+	for (int p=0; p<8; p++){
+		// Compute all of the derivatives using finite differences
+		// fluid phase indicator field
+		fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
+		fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
+		fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
+		fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
+		fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
+		fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
+		fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
+		fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
+		fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
+
+		// solid distance function
+		sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
+		sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
+		sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
+		sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
+		syy = s(i,j+1,k) - 2.0*s(i,j,k) + s(i,j-1,k);
+		szz = s(i,j,k+1) - 2.0*s(i,j,k) + s(i,j,k-1);
+		sxy = 0.25*(s(i+1,j+1,k) - s(i+1,j-1,k) - s(i-1,j+1,k) + s(i-1,j-1,k));
+		sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
+		syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
+
+		// Compute the Jacobean matrix for tangent vector
+		Gxx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
+		Gxy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
+		Gxz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
+		Gyx = syy*fz + sy*fyz - syz*fy - sz*fyy;
+		Gyy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
+		Gyz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
+		Gxx = syz*fz + sy*fzz - szz*fy - sz*fyz;
+		Gxy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
+		Gxz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
+
+		// Compute the tangent vector
+		Tx[p] = sy*fz-sz*fy;
+		Ty[p] = sz*fx-sx*fz;
+		Tz[p] = sx*fy-sy*fx;
+
+		// Compute the normal 
+		Nx[p] = Tx*Gxx + Ty*Gyx + Tz*Gzx;
+		Ny[p] = Tx*Gxy + Ty*Gyy + Tz*Gzy;
+		Nz[p] = Tx*Gxz + Ty*Gyz + Tz*Gzz;
+	}
+	
+	
 }
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
