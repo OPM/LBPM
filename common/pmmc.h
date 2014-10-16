@@ -301,7 +301,7 @@ char triTable[256][16] =
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 //--------------------------------------------------------------------------------------------------------
-class TriLinearPoly{
+class TriLinPoly{
 	/* Compute a tri-linear polynomial within a given cube (i,j,k) x (i+1,j+1,k+1)
 	 * Values are provided at the corners in CubeValues
 	 * x,y,z must be defined on [0,1] where the length of the cube edge is one
@@ -309,34 +309,40 @@ class TriLinearPoly{
 	int ic,jc,kc;
 	double a,b,c,d,e,f,g,h;
 	double x,y,z;
-	DoubleArray CubeValues;
 public:
-	TriLinearPoly(){		
-		CubeValues.New(2,2,2);
+	DoubleArray Corners;
+
+	TriLinPoly(){		
+		Corners.New(2,2,2);
 	}
 	
+	// Assign the polynomial within a cube
 	void assign(DoubleArray &A, int i, int j, int k){		
+		// Save the cube indices
 		ic=i; jc=j; kc=k;
 		
-		CubeValues(0,0,0) = A(i,j,k);
-		CubeValues(1,0,0) = A(i+1,j,k);
-		CubeValues(0,1,0) = A(i,j+1,k);
-		CubeValues(1,1,0) = A(i+1,j+1,k);
-		CubeValues(0,0,1) = A(i,j,k+1);
-		CubeValues(1,0,1) = A(i+1,j,k+1);
-		CubeValues(0,1,1) = A(i,j+1,k+1);
-		CubeValues(1,1,1) = A(i+1,j+1,k+1);
+		// local copy of the cube values
+		Corners(0,0,0) = A(i,j,k);
+		Corners(1,0,0) = A(i+1,j,k);
+		Corners(0,1,0) = A(i,j+1,k);
+		Corners(1,1,0) = A(i+1,j+1,k);
+		Corners(0,0,1) = A(i,j,k+1);
+		Corners(1,0,1) = A(i+1,j,k+1);
+		Corners(0,1,1) = A(i,j+1,k+1);
+		Corners(1,1,1) = A(i+1,j+1,k+1);
 
-		a = CubeValues(0,0,0);
-		b = CubeValues(1,0,0)-a;
-		c = CubeValues(0,1,0)-a;
-		d = CubeValues(0,0,1)-a;
-		e = CubeValues(1,1,0)-a-b-c;
-		f = CubeValues(1,0,1)-a-b-d;
-		g = CubeValues(0,1,1)-a-c-d;
-		h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+		// coefficients of the tri-linear approximation
+		a = Corners(0,0,0);
+		b = Corners(1,0,0)-a;
+		c = Corners(0,1,0)-a;
+		d = Corners(0,0,1)-a;
+		e = Corners(1,1,0)-a-b-c;
+		f = Corners(1,0,1)-a-b-d;
+		g = Corners(0,1,1)-a-c-d;
+		h = Corners(1,1,1)-a-b-c-d-e-f-g;
 	}
 
+	// Evaluate the polynomial at a point
 	double eval(Point P){
 		double returnValue;
 		x = P.x - 1.0*ic;
@@ -345,6 +351,7 @@ public:
 		returnValue = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 		return returnValue;
 	}
+	
 };
 //--------------------------------------------------------------------------------------------------------
 inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
@@ -4243,50 +4250,76 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Po
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
 	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
-	double Tx[8],Ty[8],Tz[8];	// Tangent vector
-	double Nx[8],Ny[8],Nz[8];	// Principle normal
+//	double Tx[8],Ty[8],Tz[8];	// Tangent vector
+//	double Nx[8],Ny[8],Nz[8];	// Principle normal
 	double tx,ty,tz,nx,ny,nz,K; // tangent,normal and curvature
 	
+/*	// Store the tangent and normal locally in the cube
+	DoubleArray Tx(2,2,2);
+	DoubleArray Ty(2,2,2);
+	DoubleArray Tz(2,2,2);
+	DoubleArray Nx(2,2,2);
+	DoubleArray Ny(2,2,2);
+	DoubleArray Nx(2,2,2);
+*/
 	Point P;
+	
+	TriLinPoly Tx,Ty,Tz,Nx,Ny,Nz;
 
-	for (int p=0; p<8; p++){
-		i = ic;
-		j = jc;
-		k = kc;
-		// Compute all of the derivatives using finite differences
-		// fluid phase indicator field
-		fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
-		fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
-		fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
-		fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
-		fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
-		fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
-		fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
-		fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
-		fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
+	// Loop over the cube and compute the derivatives
+	for (k=kc; k<kc+2; k++){
+		for (j=jc; j<jc+2; j++){
+			for (i=ic; i<ic+2; i++){
+				
+				// Compute all of the derivatives using finite differences
+				// fluid phase indicator field
+				fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
+				fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
+				fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
+				fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
+				fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
+				fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
+				fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
+				fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
+				fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
 
-		// solid distance function
-		sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
-		sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
-		sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
-		sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
-		syy = s(i,j+1,k) - 2.0*s(i,j,k) + s(i,j-1,k);
-		szz = s(i,j,k+1) - 2.0*s(i,j,k) + s(i,j,k-1);
-		sxy = 0.25*(s(i+1,j+1,k) - s(i+1,j-1,k) - s(i-1,j+1,k) + s(i-1,j-1,k));
-		sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
-		syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
+				// solid distance function
+				sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
+				sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
+				sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
+				sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
+				syy = s(i,j+1,k) - 2.0*s(i,j,k) + s(i,j-1,k);
+				szz = s(i,j,k+1) - 2.0*s(i,j,k) + s(i,j,k-1);
+				sxy = 0.25*(s(i+1,j+1,k) - s(i+1,j-1,k) - s(i-1,j+1,k) + s(i-1,j-1,k));
+				sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
+				syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
 
-		// Compute the Jacobean matrix for tangent vector
-		Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
-		Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
-		Axz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
-		Ayx = syy*fz + sy*fyz - syz*fy - sz*fyy;
-		Ayy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
-		Ayz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
-		Axx = syz*fz + sy*fzz - szz*fy - sz*fyz;
-		Axy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
-		Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
+				// Compute the Jacobean matrix for tangent vector
+				Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
+				Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
+				Axz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
+				Ayx = syy*fz + sy*fyz - syz*fy - sz*fyy;
+				Ayy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
+				Ayz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
+				Axx = syz*fz + sy*fzz - szz*fy - sz*fyz;
+				Axy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
+				Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
+				
+				// Compute the tangent vector
+				Tx.Corners(ic-i,jc-j,kc-k) = sy*fz-sz*fy;
+				Ty.Corners(ic-i,jc-j,kc-k) = sz*fx-sx*fz;
+				Tz.Corners(ic-i,jc-j,kc-k) = sx*fy-sy*fx;
 
+				// Compute the normal 
+				Nx.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axx + Ty.Corners(ic-i,jc-j,kc-k)*Ayx + Tz.Corners(ic-i,jc-j,kc-k)*Azx;
+				Ny.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axy + Ty.Corners(ic-i,jc-j,kc-k)*Ayy + Tz.Corners(ic-i,jc-j,kc-k)*Azy;
+				Nz.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axz + Ty.Corners(ic-i,jc-j,kc-k)*Ayz + Tz.Corners(ic-i,jc-j,kc-k)*Azz;
+			}
+		}
+	}
+	
+/*	for (int p=0; p<8; p++){
+		
 		// Compute the tangent vector
 		Tx[p] = sy*fz-sz*fy;
 		Ty[p] = sz*fx-sx*fz;
@@ -4296,8 +4329,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Po
 		Nx[p] = Tx[p]*Axx + Ty[p]*Ayx + Tz[p]*Azx;
 		Ny[p] = Tx[p]*Axy + Ty[p]*Ayy + Tz[p]*Azy;
 		Nz[p] = Tx[p]*Axz + Ty[p]*Ayz + Tz[p]*Azz;
-	}
 
+	}
+*/
 	for (p=0; p<npts; p++){
 		P = Points(p);
 		x = P.x-1.0*i;
