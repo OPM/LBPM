@@ -306,12 +306,19 @@ class TriLinearPoly{
 	 * Values are provided at the corners in CubeValues
 	 * x,y,z must be defined on [0,1] where the length of the cube edge is one
 	 */
+	int ic,jc,kc,
 	double a,b,c,d,e,f,g,h;
 	double x,y,z;
 	DoubleArray CubeValues;
 public:
-	TriLinearPoly(DoubleArray &A, int i, int j, int k){		
+	TriLinearPoly(){		
 		CubeValues.New(2,2,2);
+	}
+	
+	void assign(DoubleArray &A, int i, int j, int k){		
+		
+		ic=i; jc=j; kc=k
+		
 		CubeValues(0,0,0) = A(i,j,k);
 		CubeValues(1,0,0) = A(i+1,j,k);
 		CubeValues(0,1,0) = A(i,j+1,k);
@@ -320,7 +327,7 @@ public:
 		CubeValues(1,0,1) = A(i+1,j,k+1);
 		CubeValues(0,1,1) = A(i,j+1,k+1);
 		CubeValues(1,1,1) = A(i+1,j+1,k+1);
-		
+
 		a = CubeValues(0,0,0);
 		b = CubeValues(1,0,0)-a;
 		c = CubeValues(0,1,0)-a;
@@ -330,9 +337,12 @@ public:
 		g = CubeValues(0,1,1)-a-c-d;
 		h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
 	}
-	
-	double eval(double x, double y, double z){
+
+	double eval(Point P){
 		double returnValue;
+		x = P.x - 1.0*ic;
+		y = P.y - 1.0*jc;
+		z = P.z - 1.0*kc;
 		returnValue = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 		return returnValue;
 	}
