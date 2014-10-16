@@ -301,12 +301,26 @@ char triTable[256][16] =
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 //--------------------------------------------------------------------------------------------------------
-
 class TriLinearPoly{
+	/* Compute a tri-linear polynomial within a given cube (i,j,k) x (i+1,j+1,k+1)
+	 * Values are provided at the corners in CubeValues
+	 * x,y,z must be defined on [0,1] where the length of the cube edge is one
+	 */
 	double a,b,c,d,e,f,g,h;
 	double x,y,z;
+	DoubleArray CubeValues;
 public:
-	TriLinearPoly(DoubleArray &CubeValues){
+	TriLinearPoly(DoubleArray &A, int i, int j, int k){		
+		CubeValues.New(2,2,2);
+		CubeValues(0,0,0) = A(i,j,k);
+		CubeValues(1,0,0) = A(i+1,j,k);
+		CubeValues(0,1,0) = A(i,j+1,k);
+		CubeValues(1,1,0) = A(i+1,j+1,k);
+		CubeValues(0,0,1) = A(i,j,k+1);
+		CubeValues(1,0,1) = A(i+1,j,k+1);
+		CubeValues(0,1,1) = A(i,j+1,k+1);
+		CubeValues(1,1,1) = A(i+1,j+1,k+1);
+		
 		a = CubeValues(0,0,0);
 		b = CubeValues(1,0,0)-a;
 		c = CubeValues(0,1,0)-a;
@@ -323,7 +337,6 @@ public:
 		return returnValue;
 	}
 };
-
 //--------------------------------------------------------------------------------------------------------
 inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
 					   DoubleArray &F, DoubleArray &S, double vf, double vs, int startx, int starty,
@@ -4212,10 +4225,10 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	}
 }
 
-inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,  DTMutableList<Point> &Points, int npts, 
-		int i, int j, int k){
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Point> &Points, int npts, 
+		int ic, int jc, int kc){
 	
-	int p;
+	int p,i,j,k;
 	double x,y,z;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
@@ -4228,6 +4241,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,  DTMutableList<P
 	Point P;
 
 	for (int p=0; p<8; p++){
+		i = ic;
+		j = jc;
+		k = kc;
 		// Compute all of the derivatives using finite differences
 		// fluid phase indicator field
 		fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
