@@ -316,8 +316,7 @@ public:
 	}
 	
 	void assign(DoubleArray &A, int i, int j, int k){		
-		
-		ic=i; jc=j; kc=k
+		ic=i; jc=j; kc=k;
 		
 		CubeValues(0,0,0) = A(i,j,k);
 		CubeValues(1,0,0) = A(i+1,j,k);
