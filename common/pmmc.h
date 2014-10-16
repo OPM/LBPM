@@ -306,7 +306,7 @@ class TriLinearPoly{
 	 * Values are provided at the corners in CubeValues
 	 * x,y,z must be defined on [0,1] where the length of the cube edge is one
 	 */
-	int ic,jc,kc,
+	int ic,jc,kc;
 	double a,b,c,d,e,f,g,h;
 	double x,y,z;
 	DoubleArray CubeValues;
