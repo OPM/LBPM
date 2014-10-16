@@ -4241,9 +4241,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s){
 		Tz[p] = sx*fy-sy*fx;
 
 		// Compute the normal 
-		Nx[p] = Tx*Gxx + Ty*Gyx + Tz*Gzx;
-		Ny[p] = Tx*Gxy + Ty*Gyy + Tz*Gzy;
-		Nz[p] = Tx*Gxz + Ty*Gyz + Tz*Gzz;
+		Nx[p] = Tx*Axx + Ty*Ayx + Tz*Azx;
+		Ny[p] = Tx*Axy + Ty*Ayy + Tz*Azy;
+		Nz[p] = Tx*Axz + Ty*Ayz + Tz*Azz;
 	}
 	
 	
