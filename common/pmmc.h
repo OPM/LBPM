@@ -4212,7 +4212,8 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	}
 }
 
-inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, int i, int j, int k){
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,  DTMutableList<Point> &Points, int npts, 
+		int i, int j, int k){
 	
 	int p;
 	double x,y,z;
