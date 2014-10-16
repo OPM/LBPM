@@ -300,6 +300,29 @@ char triTable[256][16] =
 	{0, 9, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
+//--------------------------------------------------------------------------------------------------------
+
+class TriLinearPoly{
+	double a,b,c,d,e,f,g;
+	double x,y,z;
+public:
+	TriLinearCube(DoubleArray &CubeValues){
+		a = CubeValues(0,0,0);
+		b = CubeValues(1,0,0)-a;
+		c = CubeValues(0,1,0)-a;
+		d = CubeValues(0,0,1)-a;
+		e = CubeValues(1,1,0)-a-b-c;
+		f = CubeValues(1,0,1)-a-b-d;
+		g = CubeValues(0,1,1)-a-c-d;
+		h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+	}
+	
+	double eval(double x, double y, double z){
+		double returnValue;
+		returnValue = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+		return returnValue;
+	}
+};
 
 //--------------------------------------------------------------------------------------------------------
 inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
@@ -4189,9 +4212,9 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	}
 }
 
-inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s){
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, int i, int j, int k){
 	
-	int p,i,j,k;
+	int p;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
@@ -4199,6 +4222,8 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s){
 	double Tx[8],Ty[8],Tz[8];	// Tangent vector
 	double Nx[8],Ny[8],Nz[8];	// Principle normal
 	double tx,ty,tz,nx,ny,nz,K; // tangent,normal and curvature
+	
+	Point P;
 
 	for (int p=0; p<8; p++){
 		// Compute all of the derivatives using finite differences
@@ -4245,7 +4270,15 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s){
 		Ny[p] = Tx[p]*Axy + Ty[p]*Ayy + Tz[p]*Azy;
 		Nz[p] = Tx[p]*Axz + Ty[p]*Ayz + Tz[p]*Azz;
 	}
-	
+
+	for (p=0; p<npts; p++){
+		P = Points(p);
+		x = P.x-1.0*i;
+		y = P.y-1.0*j;
+		z = P.z-1.0*k;
+		SurfaceVector(npts+p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+	}
+
 	
 }
 //--------------------------------------------------------------------------------------------------------
