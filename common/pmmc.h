@@ -4189,8 +4189,9 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	}
 }
 
-inline void pmmc_CurveCurvature(){
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s){
 	
+	int p,i,j,k;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
@@ -4224,15 +4225,15 @@ inline void pmmc_CurveCurvature(){
 		syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
 
 		// Compute the Jacobean matrix for tangent vector
-		Gxx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
-		Gxy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
-		Gxz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
-		Gyx = syy*fz + sy*fyz - syz*fy - sz*fyy;
-		Gyy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
-		Gyz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
-		Gxx = syz*fz + sy*fzz - szz*fy - sz*fyz;
-		Gxy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
-		Gxz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
+		Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
+		Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
+		Axz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
+		Ayx = syy*fz + sy*fyz - syz*fy - sz*fyy;
+		Ayy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
+		Ayz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
+		Axx = syz*fz + sy*fzz - szz*fy - sz*fyz;
+		Axy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
+		Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 
 		// Compute the tangent vector
 		Tx[p] = sy*fz-sz*fy;
