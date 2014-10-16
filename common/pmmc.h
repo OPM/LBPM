@@ -306,7 +306,7 @@ class TriLinearPoly{
 	double a,b,c,d,e,f,g;
 	double x,y,z;
 public:
-	TriLinearCube(DoubleArray &CubeValues){
+	TriLinearPoly(DoubleArray &CubeValues){
 		a = CubeValues(0,0,0);
 		b = CubeValues(1,0,0)-a;
 		c = CubeValues(0,1,0)-a;
