@@ -316,7 +316,7 @@ public:
 		Corners.New(2,2,2);
 	}
 	
-	// Assign the polynomial within a cube
+	// Assign the polynomial within a cube from a mesh
 	void assign(DoubleArray &A, int i, int j, int k){		
 		// Save the cube indices
 		ic=i; jc=j; kc=k;
@@ -330,6 +330,21 @@ public:
 		Corners(1,0,1) = A(i+1,j,k+1);
 		Corners(0,1,1) = A(i,j+1,k+1);
 		Corners(1,1,1) = A(i+1,j+1,k+1);
+
+		// coefficients of the tri-linear approximation
+		a = Corners(0,0,0);
+		b = Corners(1,0,0)-a;
+		c = Corners(0,1,0)-a;
+		d = Corners(0,0,1)-a;
+		e = Corners(1,1,0)-a-b-c;
+		f = Corners(1,0,1)-a-b-d;
+		g = Corners(0,1,1)-a-c-d;
+		h = Corners(1,1,1)-a-b-c-d-e-f-g;
+	}
+	
+	// Assign polynomial based on values manually assigned to Corners
+	void assign(){
+		ic=0; jc=0; kc=0;
 
 		// coefficients of the tri-linear approximation
 		a = Corners(0,0,0);
@@ -4241,8 +4256,8 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	}
 }
 
-inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Point> &Points, int npts, 
-		int ic, int jc, int kc){
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN, DoubleArray &KG,
+		DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
 	
 	int p,i,j,k;
 	double x,y,z;
@@ -4252,20 +4267,14 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Po
 	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
 //	double Tx[8],Ty[8],Tz[8];	// Tangent vector
 //	double Nx[8],Ny[8],Nz[8];	// Principle normal
-	double tx,ty,tz,nx,ny,nz,K; // tangent,normal and curvature
+	double twnsx,twnsy,twnsz,nwnsx,nwnsy,nwnsz,K; // tangent,normal and curvature
+	double nsx,nsy,nsz,norm;
+	double nwsx,nwsy,nwsz;
 	
-/*	// Store the tangent and normal locally in the cube
-	DoubleArray Tx(2,2,2);
-	DoubleArray Ty(2,2,2);
-	DoubleArray Tz(2,2,2);
-	DoubleArray Nx(2,2,2);
-	DoubleArray Ny(2,2,2);
-	DoubleArray Nx(2,2,2);
-*/
 	Point P;
+	// Local trilinear approximation for tangent and normal vector
+	TriLinPoly Tx,Ty,Tz,Nx,Ny,Nz,Sx,Sy,Sz;
 	
-	TriLinPoly Tx,Ty,Tz,Nx,Ny,Nz;
-
 	// Loop over the cube and compute the derivatives
 	for (k=kc; k<kc+2; k++){
 		for (j=jc; j<jc+2; j++){
@@ -4305,6 +4314,11 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Po
 				Axy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
 				Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 				
+				// Normal to solid surface
+				Sx.Corners(ic-i,jc-j,kc-k) = sx
+				Sy.Corners(ic-i,jc-j,kc-k) = sy;
+				Sz.Corners(ic-i,jc-j,kc-k) = sz;
+				
 				// Compute the tangent vector
 				Tx.Corners(ic-i,jc-j,kc-k) = sy*fz-sz*fy;
 				Ty.Corners(ic-i,jc-j,kc-k) = sz*fx-sx*fz;
@@ -4318,27 +4332,60 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DTMutableList<Po
 		}
 	}
 	
-/*	for (int p=0; p<8; p++){
-		
-		// Compute the tangent vector
-		Tx[p] = sy*fz-sz*fy;
-		Ty[p] = sz*fx-sx*fz;
-		Tz[p] = sx*fy-sy*fx;
+	// Assign the tri-linear polynomial coefficients
+	Sx.assign();
+	Sy.assign();
+	Sz.assign();
+	Tx.assign();
+	Ty.assign();
+	Tz.assign();
+	Nx.assign();
+	Ny.assign();
+	Nz.assign();
 
-		// Compute the normal 
-		Nx[p] = Tx[p]*Axx + Ty[p]*Ayx + Tz[p]*Azx;
-		Ny[p] = Tx[p]*Axy + Ty[p]*Ayy + Tz[p]*Azy;
-		Nz[p] = Tx[p]*Axz + Ty[p]*Ayz + Tz[p]*Azz;
-
-	}
-*/
 	for (p=0; p<npts; p++){
 		P = Points(p);
-		x = P.x-1.0*i;
-		y = P.y-1.0*j;
-		z = P.z-1.0*k;
+		P.x -= 1.0*ic;
+		P.y -= 1.0*jc;
+		P.z -= 1.0*kc;
+		
+		// tangent vector
+		twnsx = Tx.eval(P);
+		twnsy = Ty.eval(P);
+		twnsx = Tz.eval(P);
+		
+		// normal vector and curvature to the wns curve
+		nwnsx = Nx.eval(P);
+		nwnsy = Ny.eval(P);
+		nwnsx = Nz.eval(P);
+		K = sqrt(nwnsx*nwnsx+nwnsy*nwnsy+nwnsz*nwnsz);
+		nwnsx /= K;
+		nwnsy /= K;
+		nwnsz /= K;
+		
+		// Normal vector to the solid surface
+		nsx = Sx.eval(P);
+		nsy = Sy.eval(P);
+		nsz = Sz.eval(P);
+		norm = sqrt(nsx*nsx+nsy*nsy+nsz*nsz);
+		nsx /= norm;
+		nsy /= norm;
+		nsz /= norm;
+		
+		// normal in the surface tangent plane (rel. geodesic curvature)
+		nwsx = twnsy*nsz-twnsz*nsy;
+		nwsy = twnsz*nsx-twnsx*nsz;
+		nwsz = twnsx*nsy-twnsy*nsx;
+		norm = sqrt(nwsx*nwsx+nwsy*nwsy+nwsz*nwsz);
+		nwsx /= norm;
+		nwsy /= norm;
+		nwsz /= norm;
+		
+		// normal curvature component in the direction of the solid surface
+		KN(p) = K*(nsx*nwnsx + nsy*nwnsy + nsz*nwnsz);
+		//geodesic curvature
+		KN(p) = K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz);
 	}
-
 	
 }
 //--------------------------------------------------------------------------------------------------------
