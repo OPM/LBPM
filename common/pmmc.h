@@ -4215,6 +4215,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, int i, int j, int k){
 	
 	int p;
+	double x,y,z;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
@@ -4276,7 +4277,6 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, int i, int j, in
 		x = P.x-1.0*i;
 		y = P.y-1.0*j;
 		z = P.z-1.0*k;
-		SurfaceVector(npts+p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 	}
 
 	
