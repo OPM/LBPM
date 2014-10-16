@@ -303,7 +303,7 @@ char triTable[256][16] =
 //--------------------------------------------------------------------------------------------------------
 
 class TriLinearPoly{
-	double a,b,c,d,e,f,g;
+	double a,b,c,d,e,f,g,h;
 	double x,y,z;
 public:
 	TriLinearPoly(DoubleArray &CubeValues){
