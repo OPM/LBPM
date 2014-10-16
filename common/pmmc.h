@@ -4315,7 +4315,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 				
 				// Normal to solid surface
-				Sx.Corners(ic-i,jc-j,kc-k) = sx
+				Sx.Corners(ic-i,jc-j,kc-k) = sx;
 				Sy.Corners(ic-i,jc-j,kc-k) = sy;
 				Sz.Corners(ic-i,jc-j,kc-k) = sz;
 				
