@@ -46,6 +46,7 @@ int main (int argc, char *argv[])
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
 	double efawns,Jwn;
+	double KNwns,KGwns;
 	double As;
 	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
 	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
@@ -87,6 +88,8 @@ int main (int argc, char *argv[])
 	
 	DoubleArray CubeValues(2,2,2);
 	DoubleArray ContactAngle(20);
+	DoubleArray KGwns_values(20);
+	DoubleArray KNwns_Values(20);
 	DoubleArray wn_curvature(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
@@ -199,6 +202,7 @@ int main (int argc, char *argv[])
 		pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 		
+		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);	
 		
 	//	if (n_nw_pts>0) printf("speed %f \n",InterfaceSpeed(0));
 		
@@ -210,7 +214,8 @@ int main (int argc, char *argv[])
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 	}
-	
+	KGwns /= lwns;
+	KNwns /= lwns;
 	Jwn /= awn;
 	efawns /= lwns;
 	for (i=0;i<6;i++)	vawn(i) /= awn;
@@ -221,6 +226,8 @@ int main (int argc, char *argv[])
 	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT);
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
+	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, RADIUS);
+	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 0);
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 //	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("Advancing Interface Velocity = %f,%f,%f \n",vawn(0),vawn(1),vawn(2));
