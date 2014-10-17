@@ -4257,10 +4257,10 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 }
 
 inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN, DoubleArray &KG,
-		DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
+		DTMutableList<Point> &Points, double &KNavg, double &KGavg, int npts, int ic, int jc, int kc){
 	
 	int p,i,j,k;
-	double x,y,z;
+	double x,y,z,s;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
@@ -4271,7 +4271,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	double nsx,nsy,nsz,norm;
 	double nwsx,nwsy,nwsz;
 	
-	Point P;
+	Point P,A,B;
 	// Local trilinear approximation for tangent and normal vector
 	TriLinPoly Tx,Ty,Tz,Nx,Ny,Nz,Sx,Sy,Sz;
 	
@@ -4384,9 +4384,17 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		// normal curvature component in the direction of the solid surface
 		KN(p) = K*(nsx*nwnsx + nsy*nwnsy + nsz*nwnsz);
 		//geodesic curvature
-		KN(p) = K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz);
+		KG(p) = K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz);
 	}
 	
+	for (p=0; p<npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		KNavg += 0.5*s*(KN(p)+KN(p+1));
+		KGavg += 0.5*s*(KG(p)+KG(p+1));
+	}
 }
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
