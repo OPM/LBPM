@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 	DoubleArray CubeValues(2,2,2);
 	DoubleArray ContactAngle(20);
 	DoubleArray KGwns_values(20);
-	DoubleArray KNwns_Values(20);
+	DoubleArray KNwns_values(20);
 	DoubleArray wn_curvature(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
