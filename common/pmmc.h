@@ -4315,19 +4315,19 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 				
 				// Normal to solid surface
-				Sx.Corners(ic-i,jc-j,kc-k) = sx;
-				Sy.Corners(ic-i,jc-j,kc-k) = sy;
-				Sz.Corners(ic-i,jc-j,kc-k) = sz;
+				Sx.Corners(i-ic,j-jc,k-kc) = sx;
+				Sy.Corners(i-ic,j-jc,k-kc) = sy;
+				Sz.Corners(i-ic,j-jc,k-kc) = sz;
 				
 				// Compute the tangent vector
-				Tx.Corners(ic-i,jc-j,kc-k) = sy*fz-sz*fy;
-				Ty.Corners(ic-i,jc-j,kc-k) = sz*fx-sx*fz;
-				Tz.Corners(ic-i,jc-j,kc-k) = sx*fy-sy*fx;
+				Tx.Corners(i-ic,j-jc,k-kc) = sy*fz-sz*fy;
+				Ty.Corners(i-ic,j-jc,k-kc) = sz*fx-sx*fz;
+				Tz.Corners(i-ic,j-jc,k-kc) = sx*fy-sy*fx;
 
 				// Compute the normal 
-				Nx.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axx + Ty.Corners(ic-i,jc-j,kc-k)*Ayx + Tz.Corners(ic-i,jc-j,kc-k)*Azx;
-				Ny.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axy + Ty.Corners(ic-i,jc-j,kc-k)*Ayy + Tz.Corners(ic-i,jc-j,kc-k)*Azy;
-				Nz.Corners(ic-i,jc-j,kc-k) = Tx.Corners(ic-i,jc-j,kc-k)*Axz + Ty.Corners(ic-i,jc-j,kc-k)*Ayz + Tz.Corners(ic-i,jc-j,kc-k)*Azz;
+				Nx.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axx + Ty.Corners(i-ic,j-jc,k-kc)*Ayx + Tz.Corners(i-ic,j-jc,k-kc)*Azx;
+				Ny.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axy + Ty.Corners(i-ic,j-jc,k-kc)*Ayy + Tz.Corners(i-ic,j-jc,k-kc)*Azy;
+				Nz.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axz + Ty.Corners(i-ic,j-jc,k-kc)*Ayz + Tz.Corners(i-ic,j-jc,k-kc)*Azz;
 			}
 		}
 	}
