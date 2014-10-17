@@ -4257,10 +4257,10 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 }
 
 inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN, DoubleArray &KG,
-		DTMutableList<Point> &Points, double &KNavg, double &KGavg, int npts, int ic, int jc, int kc){
+		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
 	
 	int p,i,j,k;
-	double x,y,z,s;
+	double x,y,z,length;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
 	
@@ -4391,9 +4391,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		// Extract the line segment
 		A = Points(p);
 		B = Points(p+1);
-		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-		KNavg += 0.5*s*(KN(p)+KN(p+1));
-		KGavg += 0.5*s*(KG(p)+KG(p+1));
+		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
+		KNavg += 0.5*length*(KN(p)+KN(p+1));
+		KGavg += 0.5*length*(KG(p)+KG(p+1));
 	}
 }
 //--------------------------------------------------------------------------------------------------------
