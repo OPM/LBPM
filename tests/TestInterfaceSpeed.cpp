@@ -236,9 +236,9 @@ int main (int argc, char *argv[])
 	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT);
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
+	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, 0.0);
 	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
-	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 //	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
 	printf("Interface Velocity = %f,%f,%f \n",vawn(0),vawn(1),vawn(2));
 	printf("Common Curve Velocity = %f,%f,%f \n",vawns(0),vawns(1),vawns(2));
