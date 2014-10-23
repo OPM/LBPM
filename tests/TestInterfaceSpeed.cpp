@@ -94,6 +94,7 @@ int main (int argc, char *argv[])
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
 	DoubleArray vawn(6);
+	DoubleArray vawns(3);
 	
 	int c;
 	//...........................................................................
@@ -202,6 +203,9 @@ int main (int argc, char *argv[])
 		pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 		
+		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, Phase_x,Phase_y,Phase_z,Sx,Sy,Sz,
+				local_nws_pts,i,j,k,n_local_nws_pts);
+
 		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);	
 		
 	//	if (n_nw_pts>0) printf("speed %f \n",InterfaceSpeed(0));
@@ -219,6 +223,7 @@ int main (int argc, char *argv[])
 	Jwn /= awn;
 	efawns /= lwns;
 	for (i=0;i<6;i++)	vawn(i) /= awn;
+	for (i=0;i<3;i++)	vawns(i) /= lwns;
 	
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
@@ -226,12 +231,12 @@ int main (int argc, char *argv[])
 	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT);
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
-	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, RADIUS);
-	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 0);
+	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, 0.0);
+	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 //	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
-	printf("Advancing Interface Velocity = %f,%f,%f \n",vawn(0),vawn(1),vawn(2));
-	printf("Receding Interface Velocity = %f,%f,%f \n",vawn(3),vawn(4),vawn(5));
+	printf("Interface Velocity = %f,%f,%f \n",vawn(0),vawn(1),vawn(2));
+	printf("Common Curve Velocity = %f,%f,%f \n",vawns(0),vawns(1),vawns(2));
 	printf("-------------------------------- \n");	
 	//.........................................................................	
 	

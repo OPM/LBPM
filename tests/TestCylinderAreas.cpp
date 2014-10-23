@@ -274,7 +274,7 @@ int main (int argc, char *argv[])
 		toReturn += 1;
 		printf("TestCylinderArea.cpp: error tolerance exceeded for wn area \n");
 	}
-	if (fabs(ans - (2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT)))/(2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT)) > 0.02 ){
+	if (fabs(ans - (2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT))/(2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT)> 0.02 ){
 		toReturn += 2;
 		printf("TestCylinderArea.cpp: error tolerance exceeded for ns area \n");
 	}
@@ -290,6 +290,6 @@ int main (int argc, char *argv[])
 		toReturn += 5;
 		printf("TestCylinderArea.cpp: error tolerance exceeded for common curve length \n");
 	}
-	
+
 	return toReturn;
 }

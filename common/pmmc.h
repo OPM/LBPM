@@ -4153,7 +4153,7 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, DoubleArray &ReturnVector, 
 		DoubleArray &Fx, DoubleArray &Fy, DoubleArray &Fz,							
-		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,							
+		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,
 		DTMutableList<Point> &Points, int i, int j, int k, int npts)
 {
 	int p;
@@ -4164,43 +4164,37 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	double ns_x, ns_y, ns_z;
 	double nwn_x, nwn_y, nwn_z;
 	double nwns_x, nwns_y, nwns_z;
-	Point A,B;
+	Point P,A,B;
 	lwns = 0.0;
-	
-	//.............................................................................
-	// Compute the normal and the speed at points on the interface
-	CubeValues(0,0,0) = dPdt(i,j,k);
-	CubeValues(1,0,0) = dPdt(i+1,j,k);
-	CubeValues(0,1,0) = dPdt(i,j+1,k);
-	CubeValues(1,1,0) = dPdt(i+1,j+1,k);
-	CubeValues(0,0,1) = dPdt(i,j,k+1);
-	CubeValues(1,0,1) = dPdt(i+1,j,k+1);
-	CubeValues(0,1,1) = dPdt(i,j+1,k+1);
-	CubeValues(1,1,1) = dPdt(i+1,j+1,k+1);
 
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
+	TriLinPoly Px,Py,Pz,SDx,SDy,SDz,Pt;
+	Px.assign(Fx,i,j,k);
+	Py.assign(Fy,i,j,k);
+	Pz.assign(Fz,i,j,k);
+	SDx.assign(Sx,i,j,k);
+	SDy.assign(Sy,i,j,k);
+	SDz.assign(Sz,i,j,k);
+	Pt.assign(dPdt,i,j,k);
 	
 	for (p=0; p < npts-1; p++){
 		// Extract the line segment
 		A = Points(p);
 		B = Points(p+1);
+		// Midpoint of the line
+		P.x = 0.5*(A.x+B.x);
+		P.y = 0.5*(A.y+B.y);
+		P.z = 0.5*(A.z+B.z);
 		// Compute the curve tangent
 		tangent_x = A.x - B.x;
 		tangent_y = A.y - B.y;
 		tangent_z = A.z - B.z;
 		// Get the normal to the Color gradient
-		nwn_x = Fx(i,j,k);
-		nwn_y = Fy(i,j,k);
-		nwn_z = Fz(i,j,k);
+		nwn_x = Px.eval(P);
+		nwn_y = Py.eval(P);
+		nwn_z = Pz.eval(P);
 		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
+		// Compute the interface speed
+		zeta = -Pt.eval(P) / norm;
 		if (norm > 0.0){
 			nwn_x /= norm;
 			nwn_y /= norm;
@@ -4208,9 +4202,9 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		}
 		
 		// Get the normal to the solid surface
-		ns_x = Sx(i,j,k);
-		ns_y = Sy(i,j,k);
-		ns_z = Sz(i,j,k);
+		ns_x = SDx.eval(P);
+		ns_y = SDy.eval(P);;
+		ns_z = SDz.eval(P);
 		norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
 		if (norm > 0.0){
 			ns_x /= norm;
@@ -4235,24 +4229,16 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			nwns_y /= norm;
 			nwns_z /= norm;
 		}
-		// Compute the interface speed at the midpoint of the segment
-		x = 0.5*(A.x+B.x);
-		y = 0.5*(A.y+B.y);
-		z = 0.5*(A.z+B.z);
-		zeta = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-		//norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
-		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
-
-		// Compute the common curve velocity 
-		if (norm > 0.0){
-			ReturnVector(0) += -(zeta/norm)*nwns_x;
-			ReturnVector(1) += -(zeta/norm)*nwns_y;
-			ReturnVector(2) += -(zeta/norm)*nwns_z;
-		}		
 		// Compute the length of the segment
 		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-		// Add the length to the common line 
-		lwns += s;
+		// Add the length to the common line
+	//	lwns += s;
+		// Compute the common curve velocity 
+		if (norm > 0.0){
+			ReturnVector(0) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_x*s;
+			ReturnVector(1) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_y*s;
+			ReturnVector(2) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_z*s;
+		}
 	}
 }
 
@@ -4310,9 +4296,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				Ayx = syy*fz + sy*fyz - syz*fy - sz*fyy;
 				Ayy = syz*fx + sz*fxy - sxy*fz - sx*fyz;
 				Ayz = sxy*fy + sx*fyy - syy*fx - sy*fxy;
-				Axx = syz*fz + sy*fzz - szz*fy - sz*fyz;
-				Axy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
-				Axz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
+				Azx = syz*fz + sy*fzz - szz*fy - sz*fyz;
+				Azy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
+				Azz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 				
 				// Normal to solid surface
 				Sx.Corners(i-ic,j-jc,k-kc) = sx;
@@ -4352,13 +4338,14 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		// tangent vector
 		twnsx = Tx.eval(P);
 		twnsy = Ty.eval(P);
-		twnsx = Tz.eval(P);
+		twnsz = Tz.eval(P);
 		
 		// normal vector and curvature to the wns curve
 		nwnsx = Nx.eval(P);
 		nwnsy = Ny.eval(P);
 		nwnsx = Nz.eval(P);
 		K = sqrt(nwnsx*nwnsx+nwnsy*nwnsy+nwnsz*nwnsz);
+		if (K == 0.0) K=1.0;
 		nwnsx /= K;
 		nwnsy /= K;
 		nwnsz /= K;
@@ -4368,6 +4355,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		nsy = Sy.eval(P);
 		nsz = Sz.eval(P);
 		norm = sqrt(nsx*nsx+nsy*nsy+nsz*nsz);
+		if (norm == 0.0) norm=1.0;
 		nsx /= norm;
 		nsy /= norm;
 		nsz /= norm;
@@ -4377,6 +4365,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		nwsy = twnsz*nsx-twnsx*nsz;
 		nwsz = twnsx*nsy-twnsy*nsx;
 		norm = sqrt(nwsx*nwsx+nwsy*nwsy+nwsz*nwsz);
+		if (norm == 0.0) norm=1.0;
 		nwsx /= norm;
 		nwsy /= norm;
 		nwsz /= norm;
@@ -4392,8 +4381,11 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		A = Points(p);
 		B = Points(p+1);
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-		KNavg += 0.5*length*(KN(p)+KN(p+1));
-		KGavg += 0.5*length*(KG(p)+KG(p+1));
+		if (length > 0.0){
+			KNavg += 0.5*length*(KN(p)+KN(p+1));
+			KGavg += 0.5*length*(KG(p)+KG(p+1));
+		//	KGavg += length;
+		}
 	}
 }
 //--------------------------------------------------------------------------------------------------------
@@ -4402,149 +4394,21 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 									  DoubleArray &SurfaceVector, DoubleArray &SurfaceValues, DoubleArray &AvgVel, 
 									  int i, int j, int k, int npts, int ntris)
 {
-	Point A,B,C;
+	Point A,B,C,P;
 	int p;
 	double vA,vB,vC;
 	double vAx,vBx,vCx,vAy,vBy,vCy,vAz,vBz,vCz;
 	double x,y,z;
 	double s,s1,s2,s3,temp;
-	double a,b,c,d,e,f,g,h;
+	double px,py,pz;
 	double norm, zeta;
 
-	// ................x component .............................
-	// Copy the x derivative values for the cube
-	CubeValues(0,0,0) = P_x(i,j,k);
-	CubeValues(1,0,0) = P_x(i+1,j,k);
-	CubeValues(0,1,0) = P_x(i,j+1,k);
-	CubeValues(1,1,0) = P_x(i+1,j+1,k);
-	CubeValues(0,0,1) = P_x(i,j,k+1);
-	CubeValues(1,0,1) = P_x(i+1,j,k+1);
-	CubeValues(0,1,1) = P_x(i,j+1,k+1);
-	CubeValues(1,1,1) = P_x(i+1,j+1,k+1);
+	TriLinPoly Px,Py,Pz,Pt;
+	Px.assign(P_x,i,j,k);
+	Py.assign(P_y,i,j,k);
+	Pz.assign(P_z,i,j,k);
+	Pt.assign(dPdt,i,j,k);
 
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-
-	for (p=0; p<npts; p++){
-		A = Points(p);
-		x = A.x-1.0*i;
-		y = A.y-1.0*j;
-		z = A.z-1.0*k;
-		SurfaceVector(p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-	}
-
-	// ................y component .............................
-	// Copy the y  derivative values for the cube
-	CubeValues(0,0,0) = P_y(i,j,k);
-	CubeValues(1,0,0) = P_y(i+1,j,k);
-	CubeValues(0,1,0) = P_y(i,j+1,k);
-	CubeValues(1,1,0) = P_y(i+1,j+1,k);
-	CubeValues(0,0,1) = P_y(i,j,k+1);
-	CubeValues(1,0,1) = P_y(i+1,j,k+1);
-	CubeValues(0,1,1) = P_y(i,j+1,k+1);
-	CubeValues(1,1,1) = P_y(i+1,j+1,k+1);
-
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-
-	for (p=0; p<npts; p++){
-		A = Points(p);
-		x = A.x-1.0*i;
-		y = A.y-1.0*j;
-		z = A.z-1.0*k;
-		SurfaceVector(npts+p) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-	}
-
-	// ................z component .............................
-	// Copy the z derivative values for the cube
-	CubeValues(0,0,0) = P_z(i,j,k);
-	CubeValues(1,0,0) = P_z(i+1,j,k);
-	CubeValues(0,1,0) = P_z(i,j+1,k);
-	CubeValues(1,1,0) = P_z(i+1,j+1,k);
-	CubeValues(0,0,1) = P_z(i,j,k+1);
-	CubeValues(1,0,1) = P_z(i+1,j,k+1);
-	CubeValues(0,1,1) = P_z(i,j+1,k+1);
-	CubeValues(1,1,1) = P_z(i+1,j+1,k+1);
-
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-
-	for (p=0; p<npts; p++){
-		A = Points(p);
-		x = A.x-1.0*i;
-		y = A.y-1.0*j;
-		z = A.z-1.0*k;
-		SurfaceVector(2*npts+p) = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-	}
-	//.............................................................................
-	// Compute the normal and the speed at points on the interface
-	// Copy the curvature values for the cube
-	CubeValues(0,0,0) = dPdt(i,j,k);
-	CubeValues(1,0,0) = dPdt(i+1,j,k);
-	CubeValues(0,1,0) = dPdt(i,j+1,k);
-	CubeValues(1,1,0) = dPdt(i+1,j+1,k);
-	CubeValues(0,0,1) = dPdt(i,j,k+1);
-	CubeValues(1,0,1) = dPdt(i+1,j,k+1);
-	CubeValues(0,1,1) = dPdt(i,j+1,k+1);
-	CubeValues(1,1,1) = dPdt(i+1,j+1,k+1);
-
-	// trilinear coefficients: f(x,y,z) = a+bx+cy+dz+exy+fxz+gyz+hxyz
-	a = CubeValues(0,0,0);
-	b = CubeValues(1,0,0)-a;
-	c = CubeValues(0,1,0)-a;
-	d = CubeValues(0,0,1)-a;
-	e = CubeValues(1,1,0)-a-b-c;
-	f = CubeValues(1,0,1)-a-b-d;
-	g = CubeValues(0,1,1)-a-c-d;
-	h = CubeValues(1,1,1)-a-b-c-d-e-f-g;
-			
-	for (p=0; p<npts; p++){
-		A = Points(p);
-		// evaluate time derivative on the surface
-		x = A.x-1.0*i;
-		y = A.y-1.0*j;
-		z = A.z-1.0*k;
-		zeta = a + b*x + c*y + d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-		// compute the normal
-		x = SurfaceVector(p);
-		y = SurfaceVector(npts+p);
-		z = SurfaceVector(2*npts+p);
-		norm = sqrt(x*x+y*y+z*z);
-		// Save the surface values and normal vector
-		if (norm > 0.0){
-			SurfaceValues(p) = -zeta/norm;
-			SurfaceVector(p) = 			x/norm;
-			SurfaceVector(npts+p) = 	y/norm;
-			SurfaceVector(2*npts+p) = 	z/norm;
-		}
-		else{
-			SurfaceValues(p) = 0.0;
-			SurfaceVector(p) = 		 	0.0;
-			SurfaceVector(npts+p) = 	0.0;
-			SurfaceVector(2*npts+p) = 	0.0;
-		}
-	}
 	//.............................................................................
 	// Compute the average speed of the interface
 	for (int r=0; r<ntris; r++){
@@ -4557,44 +4421,21 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
 		s = 0.5*(s1+s2+s3);
 		temp = s*(s-s1)*(s-s2)*(s-s3);
+		// Compute the centroid P
+		P.x = 0.33333333333333333*(A.x+B.x+C.x);
+		P.y = 0.33333333333333333*(A.y+B.y+C.y);
+		P.z = 0.33333333333333333*(A.z+B.z+C.z);
 		if (temp > 0.0){
-			// Surface value (speed)
-			vA = SurfaceValues(Triangles(0,r));
-			vB = SurfaceValues(Triangles(1,r));
-			vC = SurfaceValues(Triangles(2,r));
-			// Increment the averaged values
-			// x component
-			vAx = SurfaceVector(Triangles(0,r))*vA;
-			vBx = SurfaceVector(Triangles(1,r))*vB;
-			vCx = SurfaceVector(Triangles(2,r))*vC;
-			// y component
-			vAy = SurfaceVector(npts+Triangles(0,r))*vA;
-			vBy = SurfaceVector(npts+Triangles(1,r))*vB;
-			vCy = SurfaceVector(npts+Triangles(2,r))*vC;
-			// z component
-			vAz = SurfaceVector(2*npts+Triangles(0,r))*vA;
-			vBz = SurfaceVector(2*npts+Triangles(1,r))*vB;
-			vCz = SurfaceVector(2*npts+Triangles(2,r))*vC;
 
-			AvgVel(0) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
-			AvgVel(1) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
-			AvgVel(2) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
-							
-			// Update the Averages. Differentiate between advancing (0,1,2) and receding (3,4,5) interfaces
-			// All points on a triangle have the same orientation in the color gradient
-/*			if (vA > 0.0){
-				// Advancing interface
-				AvgVel(0) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
-				AvgVel(1) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
-				AvgVel(2) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
-			}
-			else{
-				// Receding interface
-				AvgVel(3) += sqrt(temp)*0.33333333333333333*(vAx+vBx+vCx);
-				AvgVel(4) += sqrt(temp)*0.33333333333333333*(vAy+vBy+vCy);
-				AvgVel(5) += sqrt(temp)*0.33333333333333333*(vAz+vBz+vCz);
-			}	
-*/
+			x = Px.eval(P);
+			y = Py.eval(P);
+			z = Pz.eval(P);
+			norm = sqrt(x*x+y*y+z*z);
+			zeta = -Pt.eval(P) / norm;
+
+			AvgVel(0) += sqrt(temp)*zeta*x/norm;
+			AvgVel(1) += sqrt(temp)*zeta*y/norm;
+			AvgVel(2) += sqrt(temp)*zeta*z/norm;
 		}
 	}
 	//.............................................................................
