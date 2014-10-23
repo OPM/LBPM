@@ -96,6 +96,11 @@ int main (int argc, char *argv[])
 	DoubleArray vawn(6);
 	DoubleArray vawns(3);
 	
+	for (i=0;i<3;i++){
+		vawn(i) = 0.0;
+		vawns(i) = 0.0;
+	}
+
 	int c;
 	//...........................................................................
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
