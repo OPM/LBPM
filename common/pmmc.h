@@ -4289,7 +4289,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
 				syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
 
-				// Compute the Jacobean matrix for tangent vector
+/*				// Compute the Jacobean matrix for tangent vector
 				Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
 				Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
 				Axz = sxx*fy + sx*fxy - sxy*fx - sy*fxx;
@@ -4299,21 +4299,19 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				Azx = syz*fz + sy*fzz - szz*fy - sz*fyz;
 				Azy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
 				Azz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
-				
+*/
 				// Normal to solid surface
 				Sx.Corners(i-ic,j-jc,k-kc) = sx;
 				Sy.Corners(i-ic,j-jc,k-kc) = sy;
 				Sz.Corners(i-ic,j-jc,k-kc) = sz;
 				
 				// Compute the tangent vector
-				Tx.Corners(i-ic,j-jc,k-kc) = sy*fz-sz*fy;
-				Ty.Corners(i-ic,j-jc,k-kc) = sz*fx-sx*fz;
-				Tz.Corners(i-ic,j-jc,k-kc) = sx*fy-sy*fx;
+				norm = sqrt((sy*fz-sz*fy)*(sy*fz-sz*fy)+(sz*fx-sx*fz)*(sz*fx-sx*fz)+(sx*fy-sy*fx)*(sx*fy-sy*fx));
+				if (norm == 0.0) norm=1.0;
+				Tx.Corners(i-ic,j-jc,k-kc) = (sy*fz-sz*fy)/norm;
+				Ty.Corners(i-ic,j-jc,k-kc) = (sz*fx-sx*fz)/norm;
+				Tz.Corners(i-ic,j-jc,k-kc) = (sx*fy-sy*fx)/norm;
 
-				// Compute the normal 
-				Nx.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axx + Ty.Corners(i-ic,j-jc,k-kc)*Ayx + Tz.Corners(i-ic,j-jc,k-kc)*Azx;
-				Ny.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axy + Ty.Corners(i-ic,j-jc,k-kc)*Ayy + Tz.Corners(i-ic,j-jc,k-kc)*Azy;
-				Nz.Corners(i-ic,j-jc,k-kc) = Tx.Corners(i-ic,j-jc,k-kc)*Axz + Ty.Corners(i-ic,j-jc,k-kc)*Ayz + Tz.Corners(i-ic,j-jc,k-kc)*Azz;
 			}
 		}
 	}
@@ -4329,34 +4327,65 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	Ny.assign();
 	Nz.assign();
 	
+	double tax,tay,taz,tbx,tby,tbz;
+
 	for (p=0; p<npts-1; p++){
 		// Extract the line segment
 		A = Points(p);
 		B = Points(p+1);
-		P.x = 0.5*(A.x+B.x);
-		P.y = 0.5*(A.y+B.y);
-		P.z = 0.5*(A.z+B.z);
+		P.x = 0.5*(A.x+B.x) - 1.0*i;
+		P.y = 0.5*(A.y+B.y) - 1.0*j;
+		P.z = 0.5*(A.z+B.z) - 1.0*k;
 		
+		A.x -= 1.0*i;
+		A.y -= 1.0*j;
+		A.z -= 1.0*k;
+		B.x -= 1.0*i;
+		B.y -= 1.0*j;
+		B.z -= 1.0*k;
+
 		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		
 		// tangent vector
 		twnsx = B.x - A.x;
 		twnsy = B.y - A.y;
 		twnsz = B.z - A.z;
+		norm = sqrt(twnsx*twnsx+twnsy*twnsy+twnsz*twnsz);
+		if (norm == 0.0) norm = 1.0;
+		twnsx /= norm;
+		twnsy /= norm;
+		twnsz /= norm;
 		
-		twnsx = Tx.eval(P);
-		twnsy = Ty.eval(P);
-		twnsz = Tz.eval(P);
+		// *****************************************************
+		// Compute tangent vector at A and B and normalize
+		tax = Tx.eval(A);
+		tay = Ty.eval(A);
+		taz = Tz.eval(A);
+		norm = sqrt(tax*tax+tay*tay+taz*taz);
+		tax /= norm;
+		tay /= norm;
+		taz /= norm;
 
-		// normal vector and curvature to the wns curve
-		nwnsx = Nx.eval(P);
-		nwnsy = Ny.eval(P);
-		nwnsx = Nz.eval(P);
+		tbx = Tx.eval(B);
+		tby = Ty.eval(B);
+		tbz = Tz.eval(B);
+		norm = sqrt(tbx*tbx+tby*tby+tbz*tbz);
+		tbx /= norm;
+		tby /= norm;
+		tbz /= norm;
+		// *****************************************************
+
+		// *****************************************************
+		// Compute the divergence of the tangent vector
+		nwnsx = (tax - tbx) / length;
+		nwnsy = (tay - tby) / length;
+		nwnsz = (taz - tbz) / length;
 		K = sqrt(nwnsx*nwnsx+nwnsy*nwnsy+nwnsz*nwnsz);
 		if (K == 0.0) K=1.0;
 		nwnsx /= K;
 		nwnsy /= K;
 		nwnsz /= K;
+		// *****************************************************
 		
 		// Normal vector to the solid surface
 		nsx = Sx.eval(P);
@@ -4378,6 +4407,12 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		nwsy /= norm;
 		nwsz /= norm;
 		
+		if (nsx*nwnsx + nsy*nwnsy + nsz*nwnsz < 0.0){
+			nwnsx = -nwnsx;
+			nwnsy = -nwnsy;
+			nwnsz = -nwnsz;
+		}
+
 		if (length > 0.0){
 			// normal curvature component in the direction of the solid surface
 			KNavg += K*(nsx*nwnsx + nsy*nwnsy + nsz*nwnsz)*length;
