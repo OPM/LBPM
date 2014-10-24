@@ -1,0 +1,211 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		EBFA445519F30F150041BAF1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EBFA445419F30F150041BAF1 /* main.cpp */; };
+		EBFA445719F30F150041BAF1 /* lbpm_wia_test.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = EBFA445619F30F150041BAF1 /* lbpm_wia_test.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EBFA444E19F30F150041BAF1 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				EBFA445719F30F150041BAF1 /* lbpm_wia_test.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		EBFA445019F30F150041BAF1 /* lbpm-wia-test */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "lbpm-wia-test"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EBFA445419F30F150041BAF1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		EBFA445619F30F150041BAF1 /* lbpm_wia_test.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = lbpm_wia_test.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		EBFA444D19F30F150041BAF1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		EBFA444519F30F150041BAF1 = {
+			isa = PBXGroup;
+			children = (
+				EBFA445319F30F150041BAF1 /* lbpm-wia-test */,
+				EBFA445119F30F150041BAF1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EBFA445119F30F150041BAF1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EBFA445019F30F150041BAF1 /* lbpm-wia-test */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EBFA445319F30F150041BAF1 /* lbpm-wia-test */ = {
+			isa = PBXGroup;
+			children = (
+				EBFA445419F30F150041BAF1 /* main.cpp */,
+				EBFA445619F30F150041BAF1 /* lbpm_wia_test.1 */,
+			);
+			path = "lbpm-wia-test";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EBFA444F19F30F150041BAF1 /* lbpm-wia-test */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBFA445A19F30F150041BAF1 /* Build configuration list for PBXNativeTarget "lbpm-wia-test" */;
+			buildPhases = (
+				EBFA444C19F30F150041BAF1 /* Sources */,
+				EBFA444D19F30F150041BAF1 /* Frameworks */,
+				EBFA444E19F30F150041BAF1 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "lbpm-wia-test";
+			productName = "lbpm-wia-test";
+			productReference = EBFA445019F30F150041BAF1 /* lbpm-wia-test */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EBFA444719F30F150041BAF1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0430;
+				ORGANIZATIONNAME = "Virginia Tech";
+			};
+			buildConfigurationList = EBFA444A19F30F150041BAF1 /* Build configuration list for PBXProject "lbpm-wia-test" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = EBFA444519F30F150041BAF1;
+			productRefGroup = EBFA445119F30F150041BAF1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EBFA444F19F30F150041BAF1 /* lbpm-wia-test */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EBFA444C19F30F150041BAF1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBFA445519F30F150041BAF1 /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		EBFA445819F30F150041BAF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		EBFA445919F30F150041BAF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		EBFA445B19F30F150041BAF1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		EBFA445C19F30F150041BAF1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EBFA444A19F30F150041BAF1 /* Build configuration list for PBXProject "lbpm-wia-test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBFA445819F30F150041BAF1 /* Debug */,
+				EBFA445919F30F150041BAF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EBFA445A19F30F150041BAF1 /* Build configuration list for PBXNativeTarget "lbpm-wia-test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBFA445B19F30F150041BAF1 /* Debug */,
+				EBFA445C19F30F150041BAF1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EBFA444719F30F150041BAF1 /* Project object */;
+}

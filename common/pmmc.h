@@ -4223,7 +4223,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			nwns_z = -nwns_z;
 		}
 		// normalize the common curve normal
-		norm = nwns_x*nwns_x + nwns_y*nwns_y + nwns_z*nwns_z;
+		norm = sqrt(nwns_x*nwns_x + nwns_y*nwns_y + nwns_z*nwns_z);
 		if (norm > 0.0){
 			nwns_x /= norm;
 			nwns_y /= norm;
@@ -4328,18 +4328,26 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	Nx.assign();
 	Ny.assign();
 	Nz.assign();
-
-	for (p=0; p<npts; p++){
-		P = Points(p);
-		P.x -= 1.0*ic;
-		P.y -= 1.0*jc;
-		P.z -= 1.0*kc;
+	
+	for (p=0; p<npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		P.x = 0.5*(A.x+B.x);
+		P.y = 0.5*(A.y+B.y);
+		P.z = 0.5*(A.z+B.z);
+		
+		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		
 		// tangent vector
+		twnsx = B.x - A.x;
+		twnsy = B.y - A.y;
+		twnsz = B.z - A.z;
+		
 		twnsx = Tx.eval(P);
 		twnsy = Ty.eval(P);
 		twnsz = Tz.eval(P);
-		
+
 		// normal vector and curvature to the wns curve
 		nwnsx = Nx.eval(P);
 		nwnsy = Ny.eval(P);
@@ -4370,21 +4378,11 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		nwsy /= norm;
 		nwsz /= norm;
 		
-		// normal curvature component in the direction of the solid surface
-		KN(p) = K*(nsx*nwnsx + nsy*nwnsy + nsz*nwnsz);
-		//geodesic curvature
-		KG(p) = K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz);
-	}
-	
-	for (p=0; p<npts-1; p++){
-		// Extract the line segment
-		A = Points(p);
-		B = Points(p+1);
-		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		if (length > 0.0){
-			KNavg += 0.5*length*(KN(p)+KN(p+1));
-			KGavg += 0.5*length*(KG(p)+KG(p+1));
-		//	KGavg += length;
+			// normal curvature component in the direction of the solid surface
+			KNavg += K*(nsx*nwnsx + nsy*nwnsy + nsz*nwnsz)*length;
+			//geodesic curvature
+			KGavg += K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz)*length;
 		}
 	}
 }
