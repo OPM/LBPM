@@ -1112,6 +1112,8 @@ int main(int argc, char **argv)
 	double efawns,efawns_global;				// averaged contact angle
 	double Jwn,Jwn_global;						// average mean curavture - wn interface
 	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
+	double KNwns,KNwns_global;					// wns common curve normal curavture
+	double KGwns,KGwns_global;					// wns common curve geodesic curavture
 	double trawn,trawn_global;					// trimmed interfacial area
 	double trJwn,trJwn_global;					// trimmed interfacial area	
 	double trRwn,trRwn_global;					// trimmed interfacial area	
@@ -1482,7 +1484,7 @@ int main(int argc, char **argv)
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
-			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns ");	// Scalar averages
+			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns");	// Scalar averages
 			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
 			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");			
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
@@ -2308,6 +2310,9 @@ int main(int argc, char **argv)
 				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,						
 						local_nws_pts,i,j,k,n_local_nws_pts);
 				
+				pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns,
+						nws_pts, n_nws_pts, i, j, k);
+
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 				// Compute the surface orientation and the interfacial area
@@ -2327,6 +2332,8 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 			// Phase averages
 			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
@@ -2372,20 +2379,24 @@ int main(int argc, char **argv)
 			if (awn_global > 0.0){
 				Jwn_global /= awn_global;
 				Kwn_global /= awn_global;
+				for (i=0; i<3; i++) vawn_global(i) /= awn_global;
+				for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
 			}
 			if (lwns_global > 0.0){
 				efawns_global /= lwns_global;
+				KNwns_global /= lwns_global;
+				KGwns_global /= lwns_global;
+				for (i=0; i<3; i++)	vawns_global(i) /= lwns_global;
 			}
-			if (trawn_global > 0.0)	trJwn_global /= trawn_global;
-			if (trawn_global > 0.0)	trRwn_global /= trawn_global;
-			trRwn_global = 2.0*fabs(trRwn_global);
-			trJwn_global = fabs(trJwn_global);
+			if (trawn_global > 0.0){
+				trJwn_global /= trawn_global;
+				trRwn_global /= trawn_global;
+				trRwn_global = 2.0*fabs(trRwn_global);
+				trJwn_global = fabs(trJwn_global);
+			}
 
-			if (awn_global > 0.0)	for (i=0; i<3; i++)		vawn_global(i) /= awn_global;
-			if (awn_global > 0.0)	for (i=0; i<6; i++)		Gwn_global(i) /= awn_global;
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
-			if (lwns_global > 0.0)	for (i=0; i<3; i++)		vawns_global(i) /= lwns_global;
 
 			//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 			sat_w = 1.0 - nwp_volume_global/pore_vol;
@@ -2613,6 +2624,7 @@ int main(int argc, char **argv)
 		fprintf(FINALSTATE,"%.5g %5g ",Jwn_global, Kwn_global);								// curvature of wn interface
 		fprintf(FINALSTATE,"%.5g ",lwns_global);											// common curve length
 		fprintf(FINALSTATE,"%.5g ",efawns_global);											// average contact angle
+		fprintf(FINALSTATE,"%.5g %5g ",KNwns_global, KGwns_global);							// curvature of wns curve
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
 		fprintf(FINALSTATE,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
