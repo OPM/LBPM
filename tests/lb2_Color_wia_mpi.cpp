@@ -1486,7 +1486,7 @@ int main(int argc, char **argv)
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
-			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns");	// Scalar averages
+			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns ");	// Scalar averages
 			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
 			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");			
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
