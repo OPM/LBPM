@@ -1159,6 +1159,8 @@ int main(int argc, char **argv)
 	IntArray nws_seg(2,20);
 	DTMutableList<Point> tmp(20);
 	DoubleArray Values(20);
+	DoubleArray KGwns_values(20);
+	DoubleArray KNwns_values(20);
 	DoubleArray ContactAngle(20);
 	DoubleArray Curvature(20);
 	DoubleArray DistValues(20);
