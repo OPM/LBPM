@@ -309,14 +309,14 @@ class TriLinPoly{
 	int ic,jc,kc;
 	double a,b,c,d,e,f,g,h;
 	double x,y,z;
-	double C[8];
 public:
+	DoubleArray Corners;
+
 	TriLinPoly(){		
+		Corners.New(2,2,2);
 	}
 	~TriLinPoly(){
-	}
-	double Corners(int i, int j, int k){
-		return C[k*4+j*2+i];
+		Corners.~DoubleArray();
 	}
 	// Assign the polynomial within a cube from a mesh
 	void assign(DoubleArray &A, int i, int j, int k){		
