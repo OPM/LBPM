@@ -181,7 +181,7 @@ IntArray::IntArray(int nx, int ny, int nz)
 
 IntArray::~IntArray()
 {
-//	delete [] data;
+	delete data;
 }
 
 
@@ -291,7 +291,7 @@ void DoubleArray::New(int nx, int ny,int nz)
 
 DoubleArray::~DoubleArray()
 {
-//	delete [] data;
+	delete data;
 }
 
 double DoubleArray::e(int i)
