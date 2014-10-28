@@ -1887,7 +1887,6 @@ int main(int argc, char **argv)
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
-		
 		//...................................................................................
 
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -2640,7 +2639,6 @@ int main(int argc, char **argv)
 		fprintf(FINALSTATE,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 		fclose(FINALSTATE);
 	}
-	
 	
 //#ifdef WriteOutput	
 	CopyToHost(Phase.data,Phi,N*sizeof(double));
