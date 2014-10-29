@@ -1917,7 +1917,6 @@ int main(int argc, char **argv)
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
-			if (rank==0)	printf("Analysis happening now! \n");
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
