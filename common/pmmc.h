@@ -316,7 +316,6 @@ public:
 		Corners.New(2,2,2);
 	}
 	~TriLinPoly(){
-		Corners.~DoubleArray();
 	}
 	// Assign the polynomial within a cube from a mesh
 	void assign(DoubleArray &A, int i, int j, int k){		

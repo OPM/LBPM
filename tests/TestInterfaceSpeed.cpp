@@ -13,7 +13,6 @@
 
 int main (int argc, char *argv[])
 {
-	
 	//  printf("Radius = %s \n,"RADIUS);  
 	int SIZE = N*N*N;
 	int Nx,Ny,Nz;
