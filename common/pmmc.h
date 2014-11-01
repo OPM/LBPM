@@ -4465,6 +4465,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 			y = Py.eval(P);
 			z = Pz.eval(P);
 			norm = sqrt(x*x+y*y+z*z);
+			if (norm==0.0) norm=1.0;
 			zeta = -Pt.eval(P) / norm;
 
 			AvgVel(0) += sqrt(temp)*zeta*x/norm;
