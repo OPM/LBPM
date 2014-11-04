@@ -4189,22 +4189,10 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		tangent_x = A.x - B.x;
 		tangent_y = A.y - B.y;
 		tangent_z = A.z - B.z;
-		// Get the normal to the Color gradient
-		nwn_x = Px.eval(P);
-		nwn_y = Py.eval(P);
-		nwn_z = Pz.eval(P);
-		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
-		// Compute the interface speed
-		zeta = -Pt.eval(P) / norm;
-		if (norm > 0.0){
-			nwn_x /= norm;
-			nwn_y /= norm;
-			nwn_z /= norm;
-		}
-		
+
 		// Get the normal to the solid surface
 		ns_x = SDx.eval(P);
-		ns_y = SDy.eval(P);;
+		ns_y = SDy.eval(P);
 		ns_z = SDz.eval(P);
 		norm = ns_x*ns_x + ns_y*ns_y + ns_z*ns_z;
 		if (norm > 0.0){
@@ -4212,7 +4200,36 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			ns_y /= norm;
 			ns_z /= norm;
 		}
-		
+
+		// Get the Color gradient
+		nwn_x = Px.eval(P);
+		nwn_y = Py.eval(P);
+		nwn_z = Pz.eval(P);
+		// to compute zeta, consider the change only in the plane of the solid surface
+		norm = nwn_x*ns_x + nwn_y*ns_y + nwn_z*ns_z; // component of color gradient aligned with solid
+		nwns_x = nwn_x - norm*ns_x;
+		nwns_y = nwn_y - norm*ns_y;
+		nwns_z = nwn_z - norm*ns_z;
+		// now {nwns_x, nwns_y, nwns_z} is the color gradient confined to the solid plane
+		norm = sqrt(nwns_x*nwns_x + nwns_y*nwns_y + nwns_z*nwns_z);
+		zeta = -Pt.eval(P) / norm;
+		// normalize the normal to the common curve within the solid surface
+		if (norm > 0.0){
+			nwns_x /= norm;
+			nwns_y /= norm;
+			nwns_z /= norm;
+		}
+
+		/*
+		// normal to the wn interface
+		norm = nwn_x*nwn_x + nwn_y*nwn_y + nwn_z*nwn_z;
+		// Compute the interface speed
+		if (norm > 0.0){
+			nwn_x /= norm;
+			nwn_y /= norm;
+			nwn_z /= norm;
+		}
+
 		// Compute the normal to the common curve (vector product of tangent and solid normal)
 		nwns_x = ns_y*tangent_z - ns_z*tangent_y;
 		nwns_y = ns_z*tangent_x - ns_x*tangent_z;
@@ -4230,15 +4247,16 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			nwns_y /= norm;
 			nwns_z /= norm;
 		}
+		*/
 		// Compute the length of the segment
 		s = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
 		// Add the length to the common line
 	//	lwns += s;
 		// Compute the common curve velocity 
 		if (norm > 0.0){
-			ReturnVector(0) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_x*s;
-			ReturnVector(1) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_y*s;
-			ReturnVector(2) += zeta*(nwn_x*nwns_x+nwn_y*nwns_y+nwn_z*nwns_z)*nwns_z*s;
+			ReturnVector(0) += zeta*nwns_x*s;
+			ReturnVector(1) += zeta*nwns_y*s;
+			ReturnVector(2) += zeta*nwns_z*s;
 		}
 	}
 }
