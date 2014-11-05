@@ -222,6 +222,8 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeStat
             expr.SetDefinition(expdef);
             md->AddExpression(&expr);
         }
+        // Add the variables
+        
     }
     DebugStream::Stream1() << "   Finished" << std::endl;
 

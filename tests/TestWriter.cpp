@@ -16,8 +16,12 @@
 
 inline bool approx_equal( const Point& A, const Point& B )
 {
-    double tol = 1e-8*(A.x*A.x+A.y*A.y+A.z*A.z); 
+    double tol = 1e-8*sqrt(A.x*A.x+A.y*A.y+A.z*A.z); 
     return fabs(A.x-B.x)<=tol && fabs(A.y-B.y)<=tol && fabs(A.z-B.z)<=tol;
+}
+inline bool approx_equal( const double& A, const double& B )
+{
+    return fabs(A-B)<=1e-8*fabs(A+B);
 }
 
 
@@ -83,6 +87,8 @@ int main(int argc, char **argv)
     dist_trimesh->dim = 1;
     dist_set1->name = "Distance";
     dist_trimesh->name = "Distance";
+    dist_set1->type = IO::Variable::VariableType::NodeVariable;
+    dist_trimesh->type = IO::Variable::VariableType::NodeVariable;
     dist_set1->data.resize( N_points );
     for (int i=0; i<N_points; i++)
         dist_set1->data[i] = distance(set1->points[i]);
@@ -196,10 +202,36 @@ int main(int argc, char **argv)
             continue;
         }
         // For each domain, load the variables and check their data
+        if ( i==0 )
+            continue;   // Format 1 does not support variables
         for (size_t j=0; j<list.size(); j++) {
-            for (size_t k=0; k<list[i].domains.size(); k++) {
-                for (size_t v=0; v<list[i].variables.size(); v++) {
-                    std::shared_ptr<IO::Variable> var = IO::getVariable(".",timesteps[i],list[j],k,list[i].variables[v]);
+            const IO::MeshDataStruct* mesh0 = NULL;
+            for (size_t k=0; k<meshData.size(); k++) {
+                if ( meshData[k].meshName == list[j].name ) {
+                    mesh0 = &meshData[k];
+                    break;
+                }
+            }
+            for (size_t v=0; v<list[i].variables.size(); v++) {
+                for (size_t k=0; k<list[i].domains.size(); k++) {
+                    std::shared_ptr<const IO::Variable> variable = 
+                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v]);
+                    const IO::Variable& var1 = *mesh0->vars[v];
+                    const IO::Variable& var2 = *variable;
+                    pass = var1.name == var2.name;
+                    pass = pass && var1.dim == var2.dim;
+                    pass = pass && var1.type == var2.type;
+                    pass = pass && var1.data.size() == var2.data.size();
+                    if ( pass ) {
+                        for (size_t m=0; m<var1.data.size(); m++)
+                            pass = pass && approx_equal(var1.data[m],var2.data[m]);
+                    }
+                    if ( pass ) {
+                        ut.passes("Variables match");
+                    } else {
+                        ut.failure("Variables did not match");
+                        break;
+                    }
                 }
             }
         }

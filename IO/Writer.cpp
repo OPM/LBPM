@@ -1,5 +1,6 @@
 #include "IO/Writer.h"
 #include "IO/MeshDatabase.h"
+#include "IO/IOHelpers.h"
 #include "common/Utilities.h"
 
 #include "mpi.h"
@@ -37,8 +38,8 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
         mesh_entry.domains.push_back(domain);
         if ( !meshData[i].vars.empty() ) {
             printf("Warning: variables are not supported with this format\n");
-            for (size_t j=0; j<meshData[i].vars.size(); j++)
-                mesh_entry.variables.push_back( meshData[i].vars[j]->name );
+            //for (size_t j=0; j<meshData[i].vars.size(); j++)
+            //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
         if ( std::dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
             // List of points
@@ -110,10 +111,12 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
         database.variable_data.insert( 
             std::pair<std::pair<std::string,std::string>,IO::DatabaseEntry>(key,variable) );
         int dim = mesh.vars[i]->dim;
+        int type = static_cast<int>(mesh.vars[i]->type);
         size_t N = mesh.vars[i]->data.size();
         const void* data = N==0 ? 0:&mesh.vars[i]->data[0];
-        fprintf(fid,"Var: %s-%05i-%s: %i, %lu, %lu, double\n",
-            database.name.c_str(),rank,variable.name.c_str(),dim,N,dim*N*sizeof(double));
+        fprintf(fid,"Var: %s-%05i-%s: %i, %i, %lu, %lu, double\n",
+            database.name.c_str(), rank, variable.name.c_str(),
+            dim, type, N, dim*N*sizeof(double) );
         fwrite(data,sizeof(double),dim*N,fid);
         fprintf(fid,"\n");
     }

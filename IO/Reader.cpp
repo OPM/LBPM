@@ -1,6 +1,7 @@
 #include "IO/Reader.h"
 #include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
+#include "IO/IOHelpers.h"
 #include "common/Utilities.h"
 
 #include <ProfilerApp.h>
@@ -8,34 +9,7 @@
 #include <string.h>
 #include <memory>
 #include <vector>
-
-
-// Helper function
-static inline size_t find( const char *line, char key )
-{
-    size_t i=0;
-    while ( 1 ) {
-        if ( line[i]==key || line[i]<32 || line[i]==0 )
-            break;
-        ++i;
-    }
-    return i;
-}
-
-
-// Remove preceeding/trailing whitespace
-inline std::string deblank( const std::string& str )
-{
-    size_t i1 = str.size();
-    size_t i2 = 0;
-    for (size_t i=0; i<str.size(); i++) {
-        if ( str[i]!=' ' && str[i]>=32 ) {
-            i1 = std::min(i1,i);
-            i2 = std::max(i2,i);
-        }
-    }
-    return str.substr(i1,i2-i1+1);
-}
+#include <map>
 
 
 
@@ -129,13 +103,14 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         FILE *fid = fopen(filename.c_str(),"rb");
         fseek(fid,database.offset,SEEK_SET);
         char line[1000];
-        std::fgets(line,0x100000,fid);
+        std::fgets(line,1000,fid);
         size_t i1 = find(line,':');
         size_t i2 = find(&line[i1+1],':')+i1+1;
         size_t bytes = atol(&line[i2+1]);
         char *data = new char[bytes];
         size_t count = fread(data,1,bytes,fid);
         fclose(fid);
+        ASSERT(count==bytes);
         if ( meshDatabase.meshClass=="PointList" ) {
             mesh.reset( new IO::PointList() );
         } else if ( meshDatabase.meshClass=="TriMesh" ) {
@@ -159,7 +134,43 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
 std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
     const MeshDatabase& meshDatabase, int domain, const std::string& variable )
 {
-    return std::shared_ptr<IO::Variable>();
+    std::pair<std::string,std::string> key(meshDatabase.domains[domain].name,variable);
+    std::map<std::pair<std::string,std::string>,DatabaseEntry>::const_iterator it;
+    it = meshDatabase.variable_data.find(key);
+    if ( it==meshDatabase.variable_data.end() )
+        return std::shared_ptr<IO::Variable>();
+    const DatabaseEntry& database = it->second;
+    std::string filename = path + "/" + timestep + "/" + database.file;
+    FILE *fid = fopen(filename.c_str(),"rb");
+    fseek(fid,database.offset,SEEK_SET);
+    char line[1000];
+    std::fgets(line,1000,fid);
+    size_t i1 = find(line,':');
+    size_t i2 = find(&line[i1+1],':')+i1+1;
+    std::vector<std::string> values = splitList(&line[i2+1],',');
+    ASSERT(values.size()==5);
+    int dim = atoi(values[0].c_str());
+    int type = atoi(values[1].c_str());
+    size_t N = atol(values[2].c_str());
+    size_t bytes = atol(values[3].c_str());
+    std::string precision  = values[4];
+    char *data = new char[bytes];
+    size_t count = fread(data,1,bytes,fid);
+    fclose(fid);
+    ASSERT(count==bytes);
+    std::shared_ptr<IO::Variable> var( new IO::Variable() );
+    var->dim = dim;
+    var->type = static_cast<IO::Variable::VariableType>(type);
+    var->name = variable;
+    var->data.resize(N);
+    double *var_data = var->data.data();
+    if ( precision=="double" ) {
+        memcpy(var_data,data,bytes);
+    } else {
+        ERROR("Format not implimented");
+    }
+    delete [] data;
+    return var;
 }
 
 

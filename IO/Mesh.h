@@ -122,12 +122,14 @@ public:
 struct Variable
 {
 public:
-    //! Internal variables
-    int dim;
-    std::string name;
-    std::vector<double> data;
+    enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
+    // Internal variables
+    unsigned int dim;           //!< Number of points per grid point (1: scalar, 3: vector, ...)
+    VariableType type;          //!< Variable type
+    std::string name;           //!< Variable name
+    std::vector<double> data;   //!< Variable data
     //! Empty constructor
-    Variable() {}
+    Variable(): type(VariableType::Null) {}
     //! Destructor
     virtual ~Variable() {}
 protected:
