@@ -11,6 +11,7 @@
 
 static bool global_summary_created = false;
 
+
 // Write the mesh data in the original format
 static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO::MeshDataStruct>& meshData, const char* path )
 {
@@ -18,20 +19,29 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     std::vector<IO::MeshDatabase> meshes_written;
     for (size_t i=0; i<meshData.size(); i++) {
-        char domain[100], filename[100], fullpath[200];
-        sprintf(domain,"%05i",rank);
+        char domainname[100], filename[100], fullpath[200];
+        sprintf(domainname,"%05i",rank);
         sprintf(filename,"%s.%05i",meshData[i].meshName.c_str(),rank);
 	    sprintf(fullpath,"%s/%s",path,filename);
         FILE *fid = fopen(fullpath,"wb");
         std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         IO::MeshDatabase mesh_entry;
         mesh_entry.name = meshData[i].meshName;
+        mesh_entry.type = meshType(mesh);
+        mesh_entry.meshClass = meshData[i].mesh->className();
         mesh_entry.format = 1;
+        IO::DatabaseEntry domain;
+        domain.name = domainname;
+        domain.file = filename;
+        domain.offset = 0;
         mesh_entry.domains.push_back(domain);
-        mesh_entry.file.push_back(filename);
+        if ( !meshData[i].vars.empty() ) {
+            printf("Warning: variables are not supported with this format\n");
+            for (size_t j=0; j<meshData[i].vars.size(); j++)
+                mesh_entry.variables.push_back( meshData[i].vars[j]->name );
+        }
         if ( std::dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
             // List of points
-            mesh_entry.type = IO::MeshType::PointMesh;
             std::shared_ptr<IO::PointList> pointlist = std::dynamic_pointer_cast<IO::PointList>(mesh);
             const std::vector<Point>& P = pointlist->points;
             for (size_t i=0; i<P.size(); i++) {
@@ -41,7 +51,6 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             }
         } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh)!=NULL || std::dynamic_pointer_cast<IO::TriMesh>(mesh)!=NULL ) {
             // Triangle mesh
-            mesh_entry.type = IO::MeshType::SurfaceMesh;
             std::shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
             const std::vector<Point>& A = trilist->A;
             const std::vector<Point>& B = trilist->B;
@@ -57,16 +66,84 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             ERROR("Unknown mesh");
         }
         fclose(fid);
+        std::unique(mesh_entry.variables.begin(),mesh_entry.variables.end());
         meshes_written.push_back(mesh_entry);
     }
     return meshes_written;
 }
 
 
-// Write the mesh data
-void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData )
+// Write a mesh (and variables) to a file
+static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
+    const IO::MeshDataStruct& mesh, int format )
 {
-    const int format = 1;
+    int rank = -1;
+    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    char domainname[10];
+    sprintf(domainname,"%05i",rank);
+    int level = 0;
+    // Create the MeshDatabase
+    IO::MeshDatabase database;
+    database.name = mesh.meshName;
+    database.type = meshType(mesh.mesh);
+    database.meshClass = mesh.mesh->className();
+    database.format = format;
+    // Write the mesh
+    IO::DatabaseEntry domain;
+    domain.name = domainname;
+    domain.file = filename;
+    domain.offset = ftell(fid);
+    database.domains.push_back(domain);
+    std::pair<size_t,void*> data = mesh.mesh->pack(level);
+    fprintf(fid,"Mesh: %s-%05i: %lu\n",mesh.meshName.c_str(),rank,data.first);
+    fwrite(data.second,1,data.first,fid);
+    fprintf(fid,"\n");
+    delete [] (char*) data.second;
+    // Write the variables
+    for (size_t i=0; i<mesh.vars.size(); i++) {
+        IO::DatabaseEntry variable;
+        variable.name = mesh.vars[i]->name;
+        variable.file = filename;
+        variable.offset = ftell(fid);
+        std::pair<std::string,std::string> key(domainname,variable.name);
+        database.variables.push_back(variable.name);
+        database.variable_data.insert( 
+            std::pair<std::pair<std::string,std::string>,IO::DatabaseEntry>(key,variable) );
+        int dim = mesh.vars[i]->dim;
+        size_t N = mesh.vars[i]->data.size();
+        const void* data = N==0 ? 0:&mesh.vars[i]->data[0];
+        fprintf(fid,"Var: %s-%05i-%s: %i, %lu, %lu, double\n",
+            database.name.c_str(),rank,variable.name.c_str(),dim,N,dim*N*sizeof(double));
+        fwrite(data,sizeof(double),dim*N,fid);
+        fprintf(fid,"\n");
+    }
+    return database;
+}
+
+
+// Write the mesh data in the new format
+static std::vector<IO::MeshDatabase> writeMeshesNewFormat( 
+    const std::vector<IO::MeshDataStruct>& meshData, const char* path, int format )
+{
+    int rank = -1;
+    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    std::vector<IO::MeshDatabase> meshes_written;
+    char filename[100], fullpath[200];
+    sprintf(filename,"%05i",rank);
+    sprintf(fullpath,"%s/%s",path,filename);
+    FILE *fid = fopen(fullpath,"wb");
+    for (size_t i=0; i<meshData.size(); i++) {
+        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        meshes_written.push_back( write_domain(fid,filename,meshData[i],format) );
+    }
+    fclose(fid);
+    return meshes_written;
+}
+
+
+// Write the mesh data
+void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format )
+{
     int rank = -1;
     int size = 0;
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
@@ -81,6 +158,9 @@ void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshDat
     if ( format == 1 ) {
         // Write the original triangle format
         meshes_written = writeMeshesOrigFormat( meshData, path );
+    } else if ( format == 2 ) {
+        // Write the new format
+        meshes_written = writeMeshesNewFormat( meshData, path, format );
     } else {
         ERROR("Unknown format");
     }

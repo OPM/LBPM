@@ -1,4 +1,5 @@
 #include "IO/Reader.h"
+#include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
 #include "common/Utilities.h"
 
@@ -7,6 +8,35 @@
 #include <string.h>
 #include <memory>
 #include <vector>
+
+
+// Helper function
+static inline size_t find( const char *line, char key )
+{
+    size_t i=0;
+    while ( 1 ) {
+        if ( line[i]==key || line[i]<32 || line[i]==0 )
+            break;
+        ++i;
+    }
+    return i;
+}
+
+
+// Remove preceeding/trailing whitespace
+inline std::string deblank( const std::string& str )
+{
+    size_t i1 = str.size();
+    size_t i2 = 0;
+    for (size_t i=0; i<str.size(); i++) {
+        if ( str[i]!=' ' && str[i]>=32 ) {
+            i1 = std::min(i1,i);
+            i2 = std::max(i2,i);
+        }
+    }
+    return str.substr(i1,i2-i1+1);
+}
+
 
 
 // List the timesteps in the given directors (dumps.LBPM)
@@ -47,7 +77,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
     std::shared_ptr<IO::Mesh> mesh;
     if ( meshDatabase.format==1 ) {
         // Old format (binary doubles)
-        std::string filename = path + "/" + timestep + "/" + meshDatabase.file[domain];
+        std::string filename = path + "/" + timestep + "/" + meshDatabase.domains[domain].file;
         FILE *fid = fopen(filename.c_str(),"rb");
         INSIST(fid!=NULL,"Error opening file");
         fseek( fid, 0, SEEK_END );
@@ -93,11 +123,44 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
             ERROR("Unknown mesh type");
         }
         delete [] data;
+    } else if ( meshDatabase.format==2 ) {
+        const DatabaseEntry& database = meshDatabase.domains[domain];
+        std::string filename = path + "/" + timestep + "/" + database.file;
+        FILE *fid = fopen(filename.c_str(),"rb");
+        fseek(fid,database.offset,SEEK_SET);
+        char line[1000];
+        std::fgets(line,0x100000,fid);
+        size_t i1 = find(line,':');
+        size_t i2 = find(&line[i1+1],':')+i1+1;
+        size_t bytes = atol(&line[i2+1]);
+        char *data = new char[bytes];
+        size_t count = fread(data,1,bytes,fid);
+        fclose(fid);
+        if ( meshDatabase.meshClass=="PointList" ) {
+            mesh.reset( new IO::PointList() );
+        } else if ( meshDatabase.meshClass=="TriMesh" ) {
+            mesh.reset( new IO::TriMesh() );
+        } else if ( meshDatabase.meshClass=="TriList" ) {
+            mesh.reset( new IO::TriList() );
+        } else {
+            ERROR("Unknown mesh class");
+        }
+        mesh->unpack( std::pair<size_t,void*>(bytes,data) );
+        delete [] data;
     } else {
         ERROR("Unknown format");
     }
     PROFILE_STOP("getMesh");
     return mesh;
 }
+
+
+// Read the given variable for the given mesh domain
+std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
+    const MeshDatabase& meshDatabase, int domain, const std::string& variable )
+{
+    return std::shared_ptr<IO::Variable>();
+}
+
 
 

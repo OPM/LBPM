@@ -207,7 +207,9 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeStat
         if ( mmd->meshType==AVT_SURFACE_MESH )
             mmd->topologicalDimension = 2;
         mmd->numBlocks = database[i].domains.size();
-        mmd->blockNames = database[i].domains;
+        mmd->blockNames.resize( mmd->numBlocks );
+        for (int j=0; j<mmd->numBlocks; j++)
+            mmd->blockNames[j] = database[i].domains[j].name;
         md->Add(mmd);
         // Add expressions for the coordinates
         const char *xyz[3] = {"x","y","z"};
@@ -452,7 +454,7 @@ avtLBMFileFormat::GetVar(int timestate, int domain, const char *varname)
 // ****************************************************************************
 
 vtkDataArray *
-avtLBMFileFormat::GetVectorVar(int timestate, int domain,const char *varname)
+avtLBMFileFormat::GetVectorVar(int timestate, int domain, const char *varname)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::GetVectorVar" << std::endl;
     EXCEPTION1(InvalidVariableException, varname);

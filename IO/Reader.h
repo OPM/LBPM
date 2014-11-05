@@ -23,7 +23,12 @@ std::vector<IO::MeshDatabase> getMeshList( const std::string& path, const std::s
 
 //! Read the given mesh domain
 std::shared_ptr<IO::Mesh> getMesh( const std::string& path, const std::string& timestep, 
-    const MeshDatabase& mesh, int domain );
+    const MeshDatabase& meshDatabase, int domain );
+
+
+//! Read the given mesh domain
+std::shared_ptr<IO::Variable> getVariable( const std::string& path, const std::string& timestep, 
+    const MeshDatabase& meshDatabase, int domain, const std::string& variable );
 
 
 } // IO namespace

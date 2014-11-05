@@ -13,11 +13,20 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
+
 inline bool approx_equal( const Point& A, const Point& B )
 {
     double tol = 1e-8*(A.x*A.x+A.y*A.y+A.z*A.z); 
     return fabs(A.x-B.x)<=tol && fabs(A.y-B.y)<=tol && fabs(A.z-B.z)<=tol;
 }
+
+
+inline double distance( const Point& p )
+{
+    return sqrt(p.x*p.x+p.y*p.y+p.z*p.z);
+}
+
+
 
 int main(int argc, char **argv)
 {
@@ -66,16 +75,39 @@ int main(int argc, char **argv)
         }
     }
 
-    // Write the data
+    // Create the variables
+    std::shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
+    std::shared_ptr<IO::Variable> dist_trimesh( new IO::Variable() );
+    std::shared_ptr<IO::Variable> dist_list( new IO::Variable() );
+    dist_set1->dim = 1;
+    dist_trimesh->dim = 1;
+    dist_set1->name = "Distance";
+    dist_trimesh->name = "Distance";
+    dist_set1->data.resize( N_points );
+    for (int i=0; i<N_points; i++)
+        dist_set1->data[i] = distance(set1->points[i]);
+    dist_trimesh->data.resize( 3*N_tri );
+    for (int i=0; i<N_tri; i++) {
+        dist_trimesh->data[3*i+0] = trimesh->A[i];
+        dist_trimesh->data[3*i+1] = trimesh->B[i];
+        dist_trimesh->data[3*i+2] = trimesh->C[i];
+    }
+
+    // Create the MeshDataStruct
     std::vector<IO::MeshDataStruct> meshData(3);
     meshData[0].meshName = "pointmesh";
     meshData[0].mesh = set1;
+    meshData[0].vars.push_back(dist_set1);
     meshData[1].meshName = "trimesh";
     meshData[1].mesh = trimesh;
+    meshData[1].vars.push_back(dist_trimesh);
     meshData[2].meshName = "trilist";
     meshData[2].mesh = trilist;
-    IO::writeData( 0, meshData );
-    IO::writeData( 3, meshData );
+    meshData[2].vars.push_back(dist_set1);
+
+    // Write the data
+    IO::writeData( 0, meshData, 1 );
+    IO::writeData( 3, meshData, 2 );
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Get a list of the timesteps 
@@ -96,7 +128,7 @@ int main(int argc, char **argv)
         // Check the number of domains for each mesh
         bool pass = true;
         for (size_t j=0; j<list.size(); j++)
-            pass = pass && list[j].domains.size()==nprocs;
+            pass = pass && (int)list[j].domains.size()==nprocs;
         if ( pass ) {
             ut.passes("Corrent number of domains for mesh");
         } else {
@@ -162,6 +194,14 @@ int main(int argc, char **argv)
         } else {
             ut.failure("Meshes did not load correctly");
             continue;
+        }
+        // For each domain, load the variables and check their data
+        for (size_t j=0; j<list.size(); j++) {
+            for (size_t k=0; k<list[i].domains.size(); k++) {
+                for (size_t v=0; v<list[i].variables.size(); v++) {
+                    std::shared_ptr<IO::Variable> var = IO::getVariable(".",timesteps[i],list[j],k,list[i].variables[v]);
+                }
+            }
         }
     }
 

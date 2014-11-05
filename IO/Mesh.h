@@ -20,6 +20,12 @@ class Mesh
 public:
     //! Destructor
     virtual ~Mesh();
+    //! Mesh class name (eg. PointList)
+    virtual std::string className() const = 0;
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const = 0;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data ) = 0;
 protected:
     //! Empty constructor
     Mesh();
@@ -40,6 +46,12 @@ public:
     PointList( size_t N );
     //! Destructor
     virtual ~PointList();
+    //! Mesh class name
+    virtual std::string className() const { return "PointList"; }
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data );
 public:
     std::vector<Point>  points;  //!< List of points vertex
 };
@@ -62,6 +74,12 @@ public:
     TriMesh( const TriList& );
     //! Destructor
     virtual ~TriMesh();
+    //! Mesh class name
+    virtual std::string className() const { return "TriMesh"; }
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data );
 public:
     std::shared_ptr<PointList> vertices;    //!< List of verticies
     std::vector<int>    A;                  //!< First vertex
@@ -84,10 +102,38 @@ public:
     TriList( const TriMesh& );
     //! Destructor
     virtual ~TriList();
+    //! Mesh class name
+    virtual std::string className() const { return "TriList"; }
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data );
 public:
     std::vector<Point>  A;      //!< First vertex
     std::vector<Point>  B;      //!< Second vertex
     std::vector<Point>  C;      //!< Third vertex
+};
+
+
+
+/*! \class Variable
+    \brief A base class fore variables
+*/
+struct Variable
+{
+public:
+    //! Internal variables
+    int dim;
+    std::string name;
+    std::vector<double> data;
+    //! Empty constructor
+    Variable() {}
+    //! Destructor
+    virtual ~Variable() {}
+protected:
+    //! Empty constructor
+    Variable(const Variable&);
+    Variable& operator=(const Variable&);
 };
 
 
@@ -98,9 +144,7 @@ public:
 struct MeshDataStruct {
     std::string             meshName;
     std::shared_ptr<Mesh>   mesh;
-    //std::vector<std::string> dataName;
-    //std::vector<int>        dataType;
-    //std::vector<double*>    data;
+    std::vector<std::shared_ptr<Variable> >  vars;
 };
 
 

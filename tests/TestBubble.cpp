@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*Nx*Ny*Nz*nprocs);
-	double porosity;
+	double porosity = 0;
 
 	DoubleArray SignDist(Nx,Ny,Nz);
 	//.......................................................................
@@ -2165,7 +2165,22 @@ int main(int argc, char **argv)
             std::vector<IO::MeshDataStruct> meshData(1);
             meshData[0].meshName = "wn-tris";
             meshData[0].mesh = mesh;
-            IO::writeData( bubbleCount, meshData );
+            for (size_t k=0; k<meshData.size(); k++) {
+                std::shared_ptr<IO::Variable> dist( new IO::Variable() );
+                dist->name = "distance";
+                dist->dim = 1;
+                dist->data.resize(3*mesh->A.size());
+                for (size_t i=0; i<mesh->A.size(); i++) {
+                    const Point& a = mesh->A[i];
+                    const Point& b = mesh->B[i];
+                    const Point& c = mesh->C[i];
+                    dist->data[3*i+0] = sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+                    dist->data[3*i+1] = sqrt(b.x*b.x+b.y*b.y+b.z*b.z);
+                    dist->data[3*i+2] = sqrt(c.x*c.x+c.y*c.y+c.z*c.z);
+                }
+                meshData[k].vars.push_back(dist);
+            }
+            IO::writeData( bubbleCount, meshData, 2 );
         #else
 		    fclose(WN_TRIS);
         #endif

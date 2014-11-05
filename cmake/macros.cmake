@@ -177,10 +177,10 @@ ENDMACRO()
 # Macro to set the proper warnings
 MACRO ( SET_WARNINGS )
   IF ( USING_GCC )
-    ## Add gcc specific compiler options
-    ##    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
-    #SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall ") 
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
+    # Add gcc specific compiler options
+    #    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
+    SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable") 
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable")
   ELSEIF ( USING_MICROSOFT )
     # Add Microsoft specifc compiler options
     SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} /D _SCL_SECURE_NO_WARNINGS /D _CRT_SECURE_NO_WARNINGS /D _ITERATOR_DEBUG_LEVEL=0" )

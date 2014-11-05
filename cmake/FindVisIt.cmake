@@ -39,7 +39,8 @@ MACRO( VISIT_PLUGIN SRC_DIR TARGET )
     ADD_CUSTOM_TARGET(copy-${SRC_DIR})
     FOREACH( ConfigFile ${ConfigFiles} )
         ADD_CUSTOM_COMMAND(TARGET copy-${SRC_DIR} PRE_BUILD 
-            COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/${ConfigFile}" "${CMAKE_CURRENT_BINARY_DIR}/${SRC_DIR}/${ConfigFile}"
+            COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/${ConfigFile}" 
+                "${CMAKE_CURRENT_BINARY_DIR}/${SRC_DIR}/${ConfigFile}"
         )
     ENDFOREACH()
     ADD_CUSTOM_TARGET( 

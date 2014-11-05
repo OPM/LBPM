@@ -3,14 +3,15 @@
 
 #include <math.h>
 
-struct Point {
-    Point() : x(0.0), y(0.0), z(0.0) {}
-    Point(double xv,double yv,double zv) : x(xv), y(yv), z(zv) {}
-    Point(const Point& rhs): x(rhs.x), y(rhs.y), z(rhs.z) {}
-    Point& operator=(const Point& rhs) { this->x=rhs.x; this->y=rhs.y; this->z=rhs.z; }
-    ~Point() {}
+struct LBPM_Point {
+    LBPM_Point() : x(0.0), y(0.0), z(0.0) {}
+    LBPM_Point(double xv,double yv,double zv) : x(xv), y(yv), z(zv) {}
+    LBPM_Point(const LBPM_Point& rhs): x(rhs.x), y(rhs.y), z(rhs.z) {}
+    //Point& operator=(const Point& rhs) { this->x=rhs.x; this->y=rhs.y; this->z=rhs.z; return *this; }
+    //~Point() {}
     double x,y,z;
 };
+typedef LBPM_Point Point;
 
 inline Point operator+(const Point &A,const Point &B) {return Point(A.x+B.x,A.y+B.y,A.z+B.z);}
 inline Point operator-(const Point &A,const Point &B) {return Point(A.x-B.x,A.y-B.y,A.z-B.z);}
