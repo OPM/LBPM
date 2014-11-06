@@ -160,7 +160,7 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     ASSERT(count==bytes);
     std::shared_ptr<IO::Variable> var( new IO::Variable() );
     var->dim = dim;
-    var->type = static_cast<IO::Variable::VariableType>(type);
+    var->type = static_cast<IO::VariableType>(type);
     var->name = variable;
     var->data.resize(N);
     double *var_data = var->data.data();

@@ -42,6 +42,13 @@ PointList::PointList( size_t N )
 PointList::~PointList( )
 {
 }
+size_t PointList::numberPointsVar( VariableType type ) const
+{
+    size_t N = 0;
+    if ( type == VariableType::NodeVariable )
+        N = points.size();
+    return N;
+}
 std::pair<size_t,void*> PointList::pack( int level ) const
 {
     std::pair<size_t,void*> data_out(0,NULL);
@@ -110,6 +117,15 @@ TriList::TriList( const TriMesh& mesh )
 }
 TriList::~TriList( )
 {
+}
+size_t TriList::numberPointsVar( VariableType type ) const
+{
+    size_t N = 0;
+    if ( type==VariableType::NodeVariable )
+        N = 3*A.size();
+    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
+        N = A.size();
+    return N;
 }
 std::pair<size_t,void*> TriList::pack( int level ) const
 {
@@ -207,6 +223,15 @@ TriMesh::~TriMesh( )
     B.clear();
     C.clear();
 }
+size_t TriMesh::numberPointsVar( VariableType type ) const
+{
+    size_t N = 0;
+    if ( type==VariableType::NodeVariable )
+        N = vertices->points.size();
+    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
+        N = A.size();
+    return N;
+}
 std::pair<size_t,void*> TriMesh::pack( int level ) const
 {
     std::pair<size_t,void*> data_out(0,NULL);
@@ -295,6 +320,18 @@ std::shared_ptr<TriList> getTriList( std::shared_ptr<Mesh> mesh )
         mesh2.reset( new TriList(*trimesh) );
     }
     return mesh2;
+}
+std::shared_ptr<const PointList> getPointList( std::shared_ptr<const Mesh> mesh )
+{
+    return getPointList( std::const_pointer_cast<Mesh>(mesh) );
+}
+std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh )
+{
+    return getTriMesh( std::const_pointer_cast<Mesh>(mesh) );
+}
+std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh )
+{
+    return getTriList( std::const_pointer_cast<Mesh>(mesh) );
 }
 
 

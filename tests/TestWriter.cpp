@@ -81,22 +81,21 @@ int main(int argc, char **argv)
 
     // Create the variables
     std::shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
-    std::shared_ptr<IO::Variable> dist_trimesh( new IO::Variable() );
     std::shared_ptr<IO::Variable> dist_list( new IO::Variable() );
     dist_set1->dim = 1;
-    dist_trimesh->dim = 1;
+    dist_list->dim = 1;
     dist_set1->name = "Distance";
-    dist_trimesh->name = "Distance";
-    dist_set1->type = IO::Variable::VariableType::NodeVariable;
-    dist_trimesh->type = IO::Variable::VariableType::NodeVariable;
+    dist_list->name = "Distance";
+    dist_set1->type = IO::VariableType::NodeVariable;
+    dist_list->type = IO::VariableType::NodeVariable;
     dist_set1->data.resize( N_points );
     for (int i=0; i<N_points; i++)
         dist_set1->data[i] = distance(set1->points[i]);
-    dist_trimesh->data.resize( 3*N_tri );
+    dist_list->data.resize( 3*N_tri );
     for (int i=0; i<N_tri; i++) {
-        dist_trimesh->data[3*i+0] = trimesh->A[i];
-        dist_trimesh->data[3*i+1] = trimesh->B[i];
-        dist_trimesh->data[3*i+2] = trimesh->C[i];
+        dist_list->data[3*i+0] = distance(trilist->A[i]);
+        dist_list->data[3*i+1] = distance(trilist->B[i]);
+        dist_list->data[3*i+2] = distance(trilist->C[i]);
     }
 
     // Create the MeshDataStruct
@@ -106,10 +105,10 @@ int main(int argc, char **argv)
     meshData[0].vars.push_back(dist_set1);
     meshData[1].meshName = "trimesh";
     meshData[1].mesh = trimesh;
-    meshData[1].vars.push_back(dist_trimesh);
+    meshData[1].vars.push_back(dist_set1);
     meshData[2].meshName = "trilist";
     meshData[2].mesh = trilist;
-    meshData[2].vars.push_back(dist_set1);
+    meshData[2].vars.push_back(dist_list);
 
     // Write the data
     IO::writeData( 0, meshData, 1 );
@@ -215,7 +214,7 @@ int main(int argc, char **argv)
             for (size_t v=0; v<list[i].variables.size(); v++) {
                 for (size_t k=0; k<list[i].domains.size(); k++) {
                     std::shared_ptr<const IO::Variable> variable = 
-                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v]);
+                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
                     const IO::Variable& var1 = *mesh0->vars[v];
                     const IO::Variable& var2 = *variable;
                     pass = var1.name == var2.name;

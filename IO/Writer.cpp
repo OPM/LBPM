@@ -106,14 +106,23 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
         variable.name = mesh.vars[i]->name;
         variable.file = filename;
         variable.offset = ftell(fid);
+        IO::VariableDatabase info;
+        info.name = variable.name;
+        info.type = mesh.vars[i]->type;
+        info.dim = mesh.vars[i]->dim;
+        database.variables.push_back(info);
         std::pair<std::string,std::string> key(domainname,variable.name);
-        database.variables.push_back(variable.name);
         database.variable_data.insert( 
             std::pair<std::pair<std::string,std::string>,IO::DatabaseEntry>(key,variable) );
         int dim = mesh.vars[i]->dim;
         int type = static_cast<int>(mesh.vars[i]->type);
         size_t N = mesh.vars[i]->data.size();
         const void* data = N==0 ? 0:&mesh.vars[i]->data[0];
+        if ( type == static_cast<int>(IO::VariableType::Null) ) {
+            ERROR("Variable type not set");
+        }
+        size_t N_mesh = mesh.mesh->numberPointsVar(mesh.vars[i]->type);
+        ASSERT(N==dim*N_mesh);
         fprintf(fid,"Var: %s-%05i-%s: %i, %i, %lu, %lu, double\n",
             database.name.c_str(), rank, variable.name.c_str(),
             dim, type, N, dim*N*sizeof(double) );

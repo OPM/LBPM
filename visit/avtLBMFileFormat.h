@@ -101,11 +101,14 @@ class avtLBMFileFormat : public avtMTMDFileFormat
     // Populate the databes
     virtual void PopulateDatabaseMetaData(avtDatabaseMetaData*, int);
 
+    // Helper typedefs
+    typedef std::pair<std::string,int> mesh_key;
+    
     // DATA MEMBERS
-    std::string                 d_path;
-    std::vector<std::string>    d_timesteps;
+    std::string                                 d_path;
+    std::vector<std::string>                    d_timesteps;
     std::vector<std::vector<IO::MeshDatabase> > d_database;
-    std::map<std::string,vtkObjectBase*> d_meshcache;
+    std::map<std::string,vtkObjectBase*>        d_meshcache;
 };
 
 

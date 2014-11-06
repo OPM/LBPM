@@ -47,6 +47,7 @@
 
 // LBPM headers
 #include "IO/Reader.h"
+#include "IO/IOHelpers.h"
 #include "common/Utilities.h"
 
 // vtk headers
@@ -192,11 +193,11 @@ avtLBMFileFormat::FreeUpResources(void)
 // ****************************************************************************
 
 void
-avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeState)
+avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestate)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timeState << std::endl;
+    DebugStream::Stream1() << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timestate << std::endl;
     // Add the mesh domains to the meta data
-    const std::vector<IO::MeshDatabase> database = d_database[timeState];
+    const std::vector<IO::MeshDatabase> database = d_database[timestate];
     for (size_t i=0; i<database.size(); i++) {
         DebugStream::Stream1() << "   Adding " << database[i].name << std::endl;
         avtMeshMetaData *mmd = new avtMeshMetaData;
@@ -217,62 +218,33 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeStat
             Expression expr;
             char expdef[100], expname[100];
             sprintf(expdef,"coord(<%s>)[%i]",mmd->name.c_str(),j);
-            sprintf(expname,"%s-%s",mmd->name.c_str(),xyz[j]);
+            sprintf(expname,"%s/%s",xyz[j],mmd->name.c_str());
             expr.SetName(expname);
             expr.SetDefinition(expdef);
             md->AddExpression(&expr);
         }
         // Add the variables
-        
+        for (size_t j=0; j<database[i].variables.size(); j++) {
+            IO::VariableDatabase variable = database[i].variables[j];
+            std::string varname = variable.name + "/" + mmd->name;
+            avtCentering center = AVT_UNKNOWN_CENT;
+            if ( variable.type==IO::VariableType::NodeVariable ) {
+                center = AVT_NODECENT;
+            } else if ( variable.type==IO::VariableType::SurfaceVariable ) {
+                center = AVT_ZONECENT;
+            } else if ( variable.type==IO::VariableType::VolumeVariable ) {
+                center = AVT_ZONECENT;
+            }
+            if ( variable.dim==1 ) {
+                AddScalarVarToMetaData( md, varname, mmd->name, center );
+            } else if ( variable.dim==3 ) {
+                AddVectorVarToMetaData( md, varname, mmd->name, center, variable.dim );
+            } else if ( variable.dim==9 ) {
+                AddTensorVarToMetaData( md, varname, mmd->name, center, variable.dim );
+            }
+        }
     }
     DebugStream::Stream1() << "   Finished" << std::endl;
-
-    //
-    // CODE TO ADD A SCALAR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddScalarVarToMetaData(md, varname, mesh_for_this_var, cent);
-    //
-
-    //
-    // CODE TO ADD A VECTOR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    // int vector_dim = 2;
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddVectorVarToMetaData(md, varname, mesh_for_this_var, cent,vector_dim);
-    //
-
-    //
-    // CODE TO ADD A TENSOR VARIABLE
-    //
-    // string mesh_for_this_var = meshname; // ??? -- could be multiple meshes
-    // string varname = ...
-    // int tensor_dim = 9;
-    //
-    // AVT_NODECENT, AVT_ZONECENT, AVT_UNKNOWN_CENT
-    // avtCentering cent = AVT_NODECENT;
-    //
-    //
-    // Here's the call that tells the meta-data object that we have a var:
-    //
-    // AddTensorVarToMetaData(md, varname, mesh_for_this_var, cent,tensor_dim);
-    //
 
     //
     // CODE TO ADD A MATERIAL
@@ -333,22 +305,22 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timeStat
 // ****************************************************************************
 
 vtkDataSet *
-avtLBMFileFormat::GetMesh(int timeState, int domain, const char *meshname)
+avtLBMFileFormat::GetMesh(int timestate, int domain, const char *meshname)
 {
     DebugStream::Stream1() << "avtLBMFileFormat::GetMesh - " << meshname
-        << "," << timeState << "," << domain << std::endl;
+        << "," << timestate << "," << domain << std::endl;
     TIME_TYPE start, stop, freq;
     get_frequency(&freq);
     get_time(&start);
     // Check if we have a cached copy of the mesh
     char cache_name[1000];
-    sprintf(cache_name,"%i-%i-%s",timeState,domain,meshname);
+    sprintf(cache_name,"%i-%i-%s",timestate,domain,meshname);
     if ( d_meshcache.find(cache_name)!=d_meshcache.end() )
         return dynamic_cast<vtkDataSet*>(d_meshcache.find(cache_name)->second);
     // Read the mesh
     std::shared_ptr<IO::Mesh> mesh;
-    const std::vector<IO::MeshDatabase> database = d_database[timeState];
-    const std::string timestep = d_timesteps[timeState];
+    const std::vector<IO::MeshDatabase> database = d_database[timestate];
+    const std::string timestep = d_timesteps[timestate];
     for (size_t i=0; i<database.size(); i++) {
         if ( database[i].name==std::string(meshname) ) {
             DebugStream::Stream1() << "   calling getMesh" << std::endl;
@@ -369,9 +341,9 @@ avtLBMFileFormat::GetMesh(int timeState, int domain, const char *meshname)
     }
     // Create the mesh in vtk
     vtkDataSet* vtkMesh = meshToVTK(mesh);
+vtkMesh->PrintSelf(std::cerr,vtkIndent(6));
     DebugStream::Stream2() << "   mesh created:" << std::endl;
     ASSERT(vtkMesh!=NULL);
-    DebugStream::Stream2() << "      " << vtkMesh->GetNumberOfCells() << std::endl;
     DebugStream::Stream2() << "      " << vtkMesh->GetNumberOfCells() << std::endl;
     vtkMesh->PrintSelf(DebugStream::Stream2(),vtkIndent(6));
     // Cache the mesh and return
@@ -404,33 +376,35 @@ avtLBMFileFormat::GetMesh(int timeState, int domain, const char *meshname)
 // ****************************************************************************
 
 vtkDataArray *
-avtLBMFileFormat::GetVar(int timestate, int domain, const char *varname)
+avtLBMFileFormat::GetVar(int timestate, int domain, const char *meshvarname)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::GetVar" << std::endl;
-    EXCEPTION1(InvalidVariableException, varname);
-    return NULL;
-
-    //
-    // If you have a file format where variables don't apply (for example a
-    // strictly polygonal format like the STL (Stereo Lithography) format,
-    // then uncomment the code below.
-    //
-    // EXCEPTION1(InvalidVariableException, varname);
-    //
-
-    //
-    // If you do have a scalar variable, here is some code that may be helpful.
-    //
-    // int ntuples = XXX; // this is the number of entries in the variable.
-    // vtkFloatArray *rv = vtkFloatArray::New();
-    // rv->SetNumberOfTuples(ntuples);
-    // for (int i = 0 ; i < ntuples ; i++)
-    // {
-    //      rv->SetTuple1(i, VAL);  // you must determine value for ith entry.
-    // }
-    //
-    // return rv;
-    //
+    DebugStream::Stream1() << "avtLBMFileFormat::GetVar: " << meshvarname 
+        << "," << timestate << "," << domain << std::endl;
+    std::vector<std::string> tmp = IO::splitList(meshvarname,'/');
+    ASSERT(tmp.size()==2);
+    std::string varname = tmp[0];
+    std::string meshname = tmp[1];
+    const std::vector<IO::MeshDatabase> database = d_database[timestate];
+    const std::string timestep = d_timesteps[timestate];
+    std::shared_ptr<const IO::Variable> variable;
+    for (size_t i=0; i<database.size(); i++) {
+        if ( database[i].name==std::string(meshname) ) {
+            DebugStream::Stream1() << "   calling getVar" << std::endl;
+            try {
+                variable = IO::getVariable(d_path,timestep,database[i],domain,varname);
+            } catch (const std::exception &err) {
+                DebugStream::Stream1() << "   Caught errror calling getVar:" << std::endl;
+                DebugStream::Stream1() << err.what() << std::endl;
+            } catch (...) {
+                DebugStream::Stream1() << "   Caught unknown errror calling getVar" << std::endl;
+                return NULL;
+            }
+        }
+    }
+    if ( variable == NULL )
+        EXCEPTION1(InvalidVariableException, varname);
+    vtkDataArray* vtkVar = varToVTK(variable);
+    return vtkVar;
 }
 
 
@@ -458,6 +432,8 @@ avtLBMFileFormat::GetVar(int timestate, int domain, const char *varname)
 vtkDataArray *
 avtLBMFileFormat::GetVectorVar(int timestate, int domain, const char *varname)
 {
+cerr << "avtLBMFileFormat::GetVectorVar - " << varname
+        << "," << timestate << "," << domain << std::endl;
     DebugStream::Stream1() << "avtLBMFileFormat::GetVectorVar" << std::endl;
     EXCEPTION1(InvalidVariableException, varname);
     return NULL;

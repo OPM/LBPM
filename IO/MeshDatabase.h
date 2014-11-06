@@ -1,6 +1,8 @@
 #ifndef MeshDatabase_INC
 #define MeshDatabase_INC
 
+#include "IO/Mesh.h" 
+
 #include <iostream>
 #include <string.h>
 #include <memory>
@@ -37,15 +39,31 @@ struct DatabaseEntry {
 };
 
 
+//! Structure to hold the info about the variables
+struct VariableDatabase {
+    std::string name;                   //!< Name of the variable
+    IO::VariableType type;              //!< Variable
+    unsigned int dim;                   //!< Number of points per grid point (1: scalar, 3: vector, ...)
+    // Overload key operators
+    bool operator==(const VariableDatabase& rhs ) const;
+    bool operator!=(const VariableDatabase& rhs ) const;
+    bool operator>=(const VariableDatabase& rhs ) const;
+    bool operator<=(const VariableDatabase& rhs ) const;
+    bool operator> (const VariableDatabase& rhs ) const;
+    bool operator< (const VariableDatabase& rhs ) const;
+};
+
+
 //! Structure to hold the info about the meshes
 struct MeshDatabase {
+    typedef  std::pair<std::string,std::string>  variable_id;
     std::string name;                   //!< Name of the mesh
     MeshType type;                      //!< Mesh type
     std::string meshClass;              //!< Mesh class
     unsigned char format;               //!< Data format
     std::vector<DatabaseEntry> domains; //!< List of the domains
-    std::vector<std::string> variables; //!< List of the variables
-    std::map<std::pair<std::string,std::string>,DatabaseEntry> variable_data; //!< Data for the variables
+    std::vector<VariableDatabase> variables; //!< List of the variables
+    std::map<variable_id,DatabaseEntry> variable_data; //!< Data for the variables
 public:
     MeshDatabase();
     ~MeshDatabase();

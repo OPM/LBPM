@@ -1,6 +1,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/IOHelpers.h"
+#include "IO/MPIHelpers.h"
 #include "common/Utilities.h"
 
 #include <vector>
@@ -16,149 +17,6 @@ namespace IO {
 /****************************************************
 * Pack/unpack data from a buffer                    *
 ****************************************************/
-template<class TYPE>
-size_t packsize( const TYPE& rhs );
-template<class TYPE>
-void pack( const TYPE& rhs, char *buffer );
-template<class TYPE>
-void unpack( TYPE& data, const char *buffer );
-// std::vector
-template<class TYPE>
-size_t packsize( const std::vector<TYPE>& rhs )
-{
-    size_t bytes = sizeof(size_t);
-    for (size_t i=0; i<rhs.size(); i++)
-        bytes += packsize(rhs[i]);
-    return bytes;
-}
-template<class TYPE>
-void pack( const std::vector<TYPE>& rhs, char *buffer )
-{
-    size_t size = rhs.size();
-    memcpy(buffer,&size,sizeof(size_t));
-    size_t pos = sizeof(size_t);
-    for (int i=0; i<rhs.size(); i++) {
-        pack(rhs[i],&buffer[pos]);
-        pos += packsize(rhs[i]);
-    }
-}
-template<class TYPE>
-void unpack( std::vector<TYPE>& data, const char *buffer )
-{
-    size_t size;
-    memcpy(&size,buffer,sizeof(size_t));
-    data.clear();
-    data.resize(size);
-    size_t pos = sizeof(size_t);
-    for (int i=0; i<data.size(); i++) {
-        unpack(data[i],&buffer[pos]);
-        pos += packsize(data[i]);
-    }
-}
-// std::pair
-template<class TYPE1, class TYPE2>
-size_t packsize( const std::pair<TYPE1,TYPE2>& rhs )
-{
-    return packsize(rhs.first)+packsize(rhs.second);
-}
-template<class TYPE1, class TYPE2>
-void pack( const std::pair<TYPE1,TYPE2>& rhs, char *buffer )
-{
-    pack(rhs.first,buffer);
-    pack(rhs.second,&buffer[packsize(rhs.first)]);
-}
-template<class TYPE1, class TYPE2>
-void unpack( std::pair<TYPE1,TYPE2>& data, const char *buffer )
-{
-    unpack(data.first,buffer);
-    unpack(data.second,&buffer[packsize(data.first)]);
-}
-// std::map
-template<class TYPE1, class TYPE2>
-size_t packsize( const std::map<TYPE1,TYPE2>& rhs )
-{
-    size_t bytes = sizeof(size_t);
-    typename std::map<TYPE1,TYPE2>::const_iterator it;
-    for (it=rhs.begin(); it!=rhs.end(); ++it) {
-        bytes += packsize(it->first);
-        bytes += packsize(it->second);
-    }
-    return bytes;
-}
-template<class TYPE1, class TYPE2>
-void pack( const std::map<TYPE1,TYPE2>& rhs, char *buffer )
-{
-    size_t N = rhs.size();
-    pack(N,buffer);
-    size_t pos = sizeof(size_t);
-    typename std::map<TYPE1,TYPE2>::const_iterator it;
-    for (it=rhs.begin(); it!=rhs.end(); ++it) {
-        pack(it->first,&buffer[pos]);   pos+=packsize(it->first);
-        pack(it->second,&buffer[pos]);  pos+=packsize(it->second);
-    }
-}
-template<class TYPE1, class TYPE2>
-void unpack( std::map<TYPE1,TYPE2>& data, const char *buffer )
-{
-    size_t N = 0;
-    unpack(N,buffer);
-    size_t pos = sizeof(size_t);
-    data.clear();
-    for (size_t i=0; i<N; i++) {
-        std::pair<TYPE1,TYPE2> tmp;
-        unpack(tmp.first,&buffer[pos]);   pos+=packsize(tmp.first);
-        unpack(tmp.second,&buffer[pos]);  pos+=packsize(tmp.second);
-        data.insert(tmp);
-    }
-}
-// size_t
-template<>
-size_t packsize<size_t>( const size_t& rhs )
-{
-    return sizeof(size_t);
-}
-template<>
-void pack<size_t>( const size_t& rhs, char *buffer )
-{
-    memcpy(buffer,&rhs,sizeof(size_t));
-}
-template<>
-void unpack<size_t>( size_t& data, const char *buffer )
-{
-    memcpy(&data,buffer,sizeof(size_t));
-}
-// unsigned char
-template<>
-size_t packsize<unsigned char>( const unsigned char& rhs )
-{
-    return sizeof(unsigned char);
-}
-template<>
-void pack<unsigned char>( const unsigned char& rhs, char *buffer )
-{
-    memcpy(buffer,&rhs,sizeof(unsigned char));
-}
-template<>
-void unpack<unsigned char>( unsigned char& data, const char *buffer )
-{
-    memcpy(&data,buffer,sizeof(unsigned char));
-}
-// std::string
-template<>
-size_t packsize<std::string>( const std::string& rhs )
-{
-    return rhs.size()+1;
-}
-template<>
-void pack<std::string>( const std::string& rhs, char *buffer )
-{
-    memcpy(buffer,rhs.c_str(),rhs.size()+1);
-}
-template<>
-void unpack<std::string>( std::string& data, const char *buffer )
-{
-    data = std::string(buffer);
-}
 // MeshType
 template<>
 size_t packsize<MeshType>( const MeshType& rhs )
@@ -172,6 +30,22 @@ void pack<MeshType>( const MeshType& rhs, char *buffer )
 }
 template<>
 void unpack<MeshType>( MeshType& data, const char *buffer )
+{
+    memcpy(&data,buffer,sizeof(MeshType));
+}
+// Variable::VariableType
+template<>
+size_t packsize<VariableType>( const VariableType& rhs )
+{
+    return sizeof(VariableType);
+}
+template<>
+void pack<VariableType>( const VariableType& rhs, char *buffer )
+{
+    memcpy(buffer,&rhs,sizeof(MeshType));
+}
+template<>
+void unpack<VariableType>( VariableType& data, const char *buffer )
 {
     memcpy(&data,buffer,sizeof(MeshType));
 }
@@ -193,9 +67,31 @@ template<>
 void unpack<DatabaseEntry>( DatabaseEntry& data, const char *buffer )
 {
     size_t i=0;
-    unpack(data.name,&buffer[i]);       i+=packsize(data.name);
-    unpack(data.file,&buffer[i]);       i+=packsize(data.file);
-    unpack(data.offset,&buffer[i]);     i+=packsize(data.offset);
+    unpack(data.name,&buffer[i]);   i+=packsize(data.name);
+    unpack(data.file,&buffer[i]);   i+=packsize(data.file);
+    unpack(data.offset,&buffer[i]); i+=packsize(data.offset);
+}
+// VariableDatabase
+template<>
+size_t packsize<VariableDatabase>( const VariableDatabase& rhs )
+{
+    return packsize(rhs.name)+packsize(rhs.type)+packsize(rhs.dim);
+}
+template<>
+void pack<VariableDatabase>( const VariableDatabase& rhs, char *buffer )
+{
+    size_t i=0;
+    pack(rhs.name,&buffer[i]);      i+=packsize(rhs.name);
+    pack(rhs.type,&buffer[i]);      i+=packsize(rhs.type);
+    pack(rhs.dim,&buffer[i]);       i+=packsize(rhs.dim);
+}
+template<>
+void unpack<VariableDatabase>( VariableDatabase& data, const char *buffer )
+{
+    size_t i=0;
+    unpack(data.name,&buffer[i]);   i+=packsize(data.name);
+    unpack(data.type,&buffer[i]);   i+=packsize(data.type);
+    unpack(data.dim,&buffer[i]);    i+=packsize(data.dim);
 }
 // MeshDatabase
 template<>
@@ -232,6 +128,47 @@ void unpack<MeshDatabase>( MeshDatabase& data, const char *buffer )
     unpack(data.domains,&buffer[i]);    i+=packsize(data.domains);
     unpack(data.variables,&buffer[i]);  i+=packsize(data.variables);
     unpack(data.variable_data,&buffer[i]); i+=packsize(data.variable_data);
+}
+
+
+/****************************************************
+* VariableDatabase                                  *
+****************************************************/
+bool VariableDatabase::operator==(const VariableDatabase& rhs ) const
+{
+    return type==rhs.type && dim==rhs.dim && name==rhs.name;
+}
+bool VariableDatabase::operator!=(const VariableDatabase& rhs ) const
+{
+    return type!=rhs.type || dim!=rhs.dim || name!=rhs.name;
+}
+bool VariableDatabase::operator>=(const VariableDatabase& rhs ) const
+{
+    return operator>(rhs) || operator==(rhs);
+}
+bool VariableDatabase::operator<=(const VariableDatabase& rhs ) const
+{
+    return !operator>(rhs);
+}
+bool VariableDatabase::operator>(const VariableDatabase& rhs ) const
+{
+    if ( name>rhs.name )
+        return true;
+    else if ( name<rhs.name )
+        return false;
+    if ( type>rhs.type )
+        return true;
+    else if ( type<rhs.type )
+        return false;
+    if ( dim>rhs.dim )
+        return true;
+    else if ( dim<rhs.dim )
+        return false;
+    return false;
+}
+bool VariableDatabase::operator<(const VariableDatabase& rhs ) const
+{
+    return !operator>(rhs) && operator!=(rhs);
 }
 
 
@@ -351,8 +288,8 @@ std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, MP
     }
     for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it) {
         // Get the unique variables
-        std::set<std::string> data2(it->second.variables.begin(),it->second.variables.end());
-        it->second.variables = std::vector<std::string>(data2.begin(),data2.end());
+        std::set<VariableDatabase> data2(it->second.variables.begin(),it->second.variables.end());
+        it->second.variables = std::vector<VariableDatabase>(data2.begin(),data2.end());
     }
     // Free temporary memory
     delete [] localbuf;
@@ -383,7 +320,8 @@ void write( const std::vector<MeshDatabase>& meshes, const std::string& filename
             fprintf(fid,"   domain: %s\n",meshes[i].domains[j].write().c_str());
         fprintf(fid,"   variables: ");
         for (size_t j=0; j<meshes[i].variables.size(); j++) {
-            fprintf(fid,"%s; ",meshes[i].variables[j].c_str());
+            const VariableDatabase& var = meshes[i].variables[j];
+            fprintf(fid,"%s|%i|%i; ",var.name.c_str(),static_cast<int>(var.type),var.dim);
         }
         fprintf(fid,"\n");
         std::map<std::pair<std::string,std::string>,DatabaseEntry>::const_iterator it;
@@ -426,7 +364,16 @@ std::vector<MeshDatabase> read( const std::string& filename )
             DatabaseEntry data(&line[10]);
             meshes.back().domains.push_back(data);
         } else if ( strncmp(line,"   variables:",13)==0 ) {
-            meshes.back().variables = splitList(&line[13],';');
+            MeshDatabase& mesh = meshes.back();
+            std::vector<std::string> variables = splitList(&line[13],';');
+            mesh.variables.resize(variables.size());
+            for (size_t i=0; i<variables.size(); i++) {
+                std::vector<std::string> tmp = splitList(variables[i].c_str(),'|');
+                ASSERT(tmp.size()==3);
+                mesh.variables[i].name = tmp[0];
+                mesh.variables[i].type = static_cast<VariableType>(atoi(tmp[1].c_str()));
+                mesh.variables[i].dim = atoi(tmp[2].c_str());
+            }
         } else if ( strncmp(line,"   variable(",12)==0 ) {
             size_t i1 = find(line,',');
             size_t i2 = find(line,':');

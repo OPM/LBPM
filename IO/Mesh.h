@@ -12,6 +12,10 @@
 namespace IO {
 
 
+//! Possible variable types
+enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
+
+
 /*! \class Mesh
     \brief A base class for meshes
 */
@@ -22,6 +26,8 @@ public:
     virtual ~Mesh();
     //! Mesh class name (eg. PointList)
     virtual std::string className() const = 0;
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const = 0;
     //! Pack the data
     virtual std::pair<size_t,void*> pack( int level ) const = 0;
     //! Unpack the data
@@ -48,6 +54,8 @@ public:
     virtual ~PointList();
     //! Mesh class name
     virtual std::string className() const { return "PointList"; }
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const;
     //! Pack the data
     virtual std::pair<size_t,void*> pack( int level ) const;
     //! Unpack the data
@@ -76,6 +84,8 @@ public:
     virtual ~TriMesh();
     //! Mesh class name
     virtual std::string className() const { return "TriMesh"; }
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const;
     //! Pack the data
     virtual std::pair<size_t,void*> pack( int level ) const;
     //! Unpack the data
@@ -104,6 +114,8 @@ public:
     virtual ~TriList();
     //! Mesh class name
     virtual std::string className() const { return "TriList"; }
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const;
     //! Pack the data
     virtual std::pair<size_t,void*> pack( int level ) const;
     //! Unpack the data
@@ -122,7 +134,6 @@ public:
 struct Variable
 {
 public:
-    enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
     // Internal variables
     unsigned int dim;           //!< Number of points per grid point (1: scalar, 3: vector, ...)
     VariableType type;          //!< Variable type
@@ -154,6 +165,9 @@ struct MeshDataStruct {
 std::shared_ptr<PointList> getPointList( std::shared_ptr<Mesh> mesh );
 std::shared_ptr<TriMesh> getTriMesh( std::shared_ptr<Mesh> mesh );
 std::shared_ptr<TriList> getTriList( std::shared_ptr<Mesh> mesh );
+std::shared_ptr<const PointList> getPointList( std::shared_ptr<const Mesh> mesh );
+std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh );
+std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh );
 
 
 } // IO namespace
