@@ -2193,6 +2193,7 @@ int main(int argc, char **argv)
 			Gns(0) = Gns(1) = Gns(2) = 0.0;
 			Gns(3) = Gns(4) = Gns(5) = 0.0;
 			vol_w = vol_n =0.0;
+			KGwns = KNwns = 0.0;
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
 			
