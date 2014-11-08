@@ -56,6 +56,7 @@ int main(int argc, char **argv)
 	string FILENAME;
 	unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
+	int BCx,BCy,BCz;	// Boundary condition
 	int nspheres;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
 	double D = 1.0;		// reference length for non-dimensionalization
@@ -77,8 +78,10 @@ int main(int argc, char **argv)
 		domain >> Lx;
 		domain >> Ly;
 		domain >> Lz;
+		domain >> BCx;
+		domain >> BCy;
+		domain >> BCz;
 		//.......................................................................
-		
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
@@ -95,6 +98,9 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&BCx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&BCy,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&BCz,1,MPI_INT,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	
@@ -106,6 +112,9 @@ int main(int argc, char **argv)
 		printf("nprocz =  %i \n",nprocz);
 		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
 	}
+
+	bool pBC;
+	if ( BCz > 0 )	pBC=true;
 
 	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
