@@ -84,35 +84,35 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 	// .........Loop over the spheres.............
 	for (p=0;p<ndiscs;p++){
 		// Get the sphere from the list, map to local min
-		cx = List_cx[p] - min_x;
-		cy = List_cy[p] - min_y;
+		cx = List_cx[p] - min_y;
+		cy = List_cy[p] - min_z;
 		r = List_rad[p];
 		// Check if
 		// Range for this sphere in global indexing
-		imin = int ((cx-2*r)/hx);
-		imax = int ((cx+2*r)/hx)+2;
-		jmin = int ((cy-2*r)/hy);
-		jmax = int ((cy+2*r)/hy)+2;
+		jmin = int ((cx-2*r)/hx);
+		jmax = int ((cx+2*r)/hx)+2;
+		kmin = int ((cy-2*r)/hy);
+		kmax = int ((cy+2*r)/hy)+2;
 
 		// Obviously we have to do something at the edges
-		if (imin<0)		imin = 0;
-		if (imin>Nx)	imin = Nx;
-		if (imax<0)		imax = 0;
-		if (imax>Nx)	imax = Nx;
-		if (jmin<0)		jmin = 0;
-		if (jmin>Ny)	jmin = Ny;
-		if (jmax<0)		jmax = 0;
-		if (jmax>Ny)	jmax = Ny;
+		if (jmin<0)		imin = 0;
+		if (jmin>Ny)	imin = Ny;
+		if (jmax<0)		imax = 0;
+		if (jmax>Ny)	imax = Ny;
+		if (kmin<0)		jmin = 0;
+		if (kmin>Nz)	jmin = Nz;
+		if (kmax<0)		jmax = 0;
+		if (kmax>Nz)	jmax = Nz;
 		// Loop over the domain for this sphere (may be null)
-		for (k=0;k<Nz;k++){
+		for (k=kmin;k<kmax;k++){
 			for (j=jmin;j<jmax;j++){
-				for (i=imin;i<imax;i++){
+				for (i=0;i<Nx;i++){
 					// x,y,z is distance in physical units
-					x = i*hx;
-					y = j*hy;
-					z = k*hz;
-					// if inside sphere, set to zero
-					// get the position in the list
+					//x = i*hx;
+					x = j*hy;
+					y = k*hz;
+					// if inside disc, set to zero
+					// get the position in the list -- x direction assigned the same
 					n = k*Nx*Ny+j*Nx+i;
 					// Compute the distance
 					distance = sqrt((cx-x)*(cx-x)+(cy-y)*(cy-y)) - r;
@@ -295,10 +295,10 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				dst = (iproc*(Nx-2)+i-2)*1.0;
+				dst = (iproc*(Nx-2)+i-1)*1.0;
 				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
-				if ( (jproc*(Ny-2)+ j-2)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
-				if ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2))*1.0;
+				if ( (jproc*(Ny-2)+ j-1)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
+				if ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
 				// Assign the Signed Distance where valid
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
