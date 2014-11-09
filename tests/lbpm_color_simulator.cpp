@@ -2098,7 +2098,7 @@ int main(int argc, char **argv)
 				
 				//...........................................................................
 				// Compute volume averages
-				for (p=0;p<8;p++){
+				for (int p=0;p<8;p++){
 					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 
 						// 1-D index for this cube corner
