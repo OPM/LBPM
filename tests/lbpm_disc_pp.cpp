@@ -38,7 +38,7 @@ inline void ReadDiscPacking(int ndiscs, double *List_cx, double *List_cy, double
 		List_rad[count] = strtod(line2,&line2);
 		count++;
 	}
-	cout << "Number of spheres extracted is: " << count << endl;
+	cout << "Number of discs extracted is: " << count << endl;
     INSIST( count==ndiscs, "Specified number of discs is probably incorrect!" );
 	// .............................................................
 }
@@ -262,16 +262,14 @@ int main(int argc, char **argv)
 	double *cx,*cy,*cz,*rad;
 	cx = new double[ndiscs];
 	cy = new double[ndiscs];
-	cz = new double[ndiscs];
 	rad = new double[ndiscs];
 	//.......................................................................
-	if (rank == 0)	printf("Reading the sphere packing \n");
+	if (rank == 0)	printf("Reading the disc packing \n");
 	if (rank == 0)	ReadDiscPacking(ndiscs,cx,cy,rad);
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,ndiscs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(cy,ndiscs,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(cz,ndiscs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
