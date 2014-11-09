@@ -145,7 +145,6 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
 	//...........................................................................
 	DoubleArray SignDist(Nx,Ny,Nz);
