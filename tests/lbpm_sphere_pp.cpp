@@ -56,7 +56,6 @@ int main(int argc, char **argv)
 	string FILENAME;
 	unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
-	int BCx,BCy,BCz;	// Boundary condition
 	int nspheres;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
 	double D = 1.0;		// reference length for non-dimensionalization
@@ -78,9 +77,6 @@ int main(int argc, char **argv)
 		domain >> Lx;
 		domain >> Ly;
 		domain >> Lz;
-		domain >> BCx;
-		domain >> BCy;
-		domain >> BCz;
 		//.......................................................................
 	}
 	// **************************************************************
@@ -98,9 +94,6 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&BCx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&BCy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&BCz,1,MPI_INT,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	
@@ -244,30 +237,6 @@ int main(int argc, char **argv)
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 	
-	//.........................................................
-	// If pressure boundary conditions are applied remove solid
-	if (pBC && kproc == 0){
-		for (k=0; k<3; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 1;
-					SignDist.data[n] =  max(SignDist.data[n],1.0*(2.5-k));
-				}					
-			}
-		}
-	}
-	if (pBC && kproc == nprocz-1){
-		for (k=Nz-3; k<Nz; k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 2;
-					SignDist.data[n] = max(SignDist.data[n],1.0*(k-Nz+2.5));
-				}					
-			}
-		}
-	}
 	//.........................................................
 	// don't perform computations at the eight corners
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
