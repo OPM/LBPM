@@ -383,7 +383,7 @@ int main(int argc, char **argv)
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 //	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	porosity = sum_local*iVol_global;
+	porosity = pore_vol*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
