@@ -230,8 +230,6 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-//	MPI_Bcast(&nBlocks,1,MPI_INT,0,MPI_COMM_WORLD);
-//	MPI_Bcast(&nthreads,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -269,10 +267,7 @@ int main(int argc, char **argv)
 		printf("beta = %f \n", beta);
 		printf("das = %f \n", das);
 		printf("dbs = %f \n", dbs);
-		printf("Value of phi at solid surface = %f \n", phi_s);
-		printf("Distance to phi = 0.0: %f \n", xIntPos);
 		printf("gamma_{wn} = %f \n", 5.796*alpha);
-//		printf("cos theta_c = %f \n", 1.05332*Ps);
 		printf("Force(x) = %f \n", Fx);
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
@@ -980,11 +975,6 @@ int main(int argc, char **argv)
 	cDistEven = new double[10*N];
 	cDistOdd = new double[9*N];
 
-	// data needed to perform CPU-based averaging
-//	double *Vel;
-//	Vel = new double[3*N];		// fluid velocity
-//	Press = new double[N];		// fluid pressure
-
 	IntArray LocalBlobID(Nx,Ny,Nz);
 	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
@@ -1073,15 +1063,11 @@ int main(int argc, char **argv)
 	DoubleArray DistValues(20);
 	DoubleArray InterfaceSpeed(20);
 	DoubleArray NormalVector(60);
-	
-	//	IntArray store;
-	
+
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
-//	double s,s1,s2,s3;		// Triangle sides (lengths)
 	Point A,B,C,P;
-//	double area;
 	
 	// Initialize arrays for local solid surface
 	DTMutableList<Point> local_sol_pts(20);
@@ -2240,7 +2226,7 @@ int main(int argc, char **argv)
 			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 
-			D = 6.0*(Nx-2)*nprocx*(1-porosity)/(ans_global+aws_global)/Lx/iVol_global;
+			D = 6.0*(1-porosity)/(ans_global+aws_global)/iVol_global;
 			MPI_Bcast(&D,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 			MPI_Barrier(MPI_COMM_WORLD);
 
