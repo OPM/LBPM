@@ -288,8 +288,8 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				dst = (iproc*(Nx-2)+i-2)*1.0;
 				if ((Nx-2)*nprocx-dst < dst) 		dst = Nx*nprocx-dst;
-				if (dst < (jproc*(Ny-2)+ j-2)*1.0) 	dst = (jproc*(Ny-2)+j-2)*1.0);
-				if (dst < (Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0)) 	(Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0);
+				if (dst < (jproc*(Ny-2)+ j-2)*1.0) 	dst = (jproc*(Ny-2)+j-2)*1.0;
+				if (dst < (Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0) 	(Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0;
 
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
