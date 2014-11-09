@@ -357,10 +357,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	sum_local = 1.0*sum;
-	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	porosity = porosity*iVol_global;
-	if (rank==0) printf("Media porosity = %f \n",porosity);
 
 	// Generate the residual NWP 
 	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
@@ -386,7 +382,9 @@ int main(int argc, char **argv)
 		}
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	
+//	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	porosity = sum_local*iVol_global;
+	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
 	// If pressure boundary conditions are applied remove solid
 	if (pBC && kproc == 0){
