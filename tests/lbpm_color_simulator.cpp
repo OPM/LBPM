@@ -2184,7 +2184,7 @@ int main(int argc, char **argv)
 			//.........................................................................
 			dAwn += awn_global;
 			dAns += ans_global;
-			dEs = 6.01603*alpha*(dAwn + 1.05332*Ps*dAns);
+			dEs = 6.01603*alpha*(dAwn + dAns);
 			dAwn = -awn_global;		// Get ready for the next analysis interval
 			dAns = -ans_global;
 
