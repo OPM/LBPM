@@ -104,9 +104,9 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		if (jmax<0)		jmax = 0;
 		if (jmax>Ny)	jmax = Ny;
 		// Loop over the domain for this sphere (may be null)
-		for (i=imin;i<imax;i++){
+		for (k=0;k<Nz;k++){
 			for (j=jmin;j<jmax;j++){
-				for (k=0;k<Nz;k++){
+				for (i=imin;i<imax;i++){
 					// x,y,z is distance in physical units
 					x = i*hx;
 					y = j*hy;
@@ -118,7 +118,6 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 					distance = sqrt((cx-x)*(cx-x)+(cy-y)*(cy-y)) - r;
 					// Assign the minimum distance
 					if (distance < Distance[n])		Distance[n] = distance;
-
 				}
 			}
 		}
@@ -226,9 +225,12 @@ int main(int argc, char **argv)
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
 
-	if (rank==0) printf("Number of nodes per side = %i \n", Nx);
-	if (rank==0) printf("Total Number of nodes = %i \n", N);
-	if (rank==0) printf("********************************************************\n");
+	if (rank==0){
+		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
+		printf("Sub-domain size = %ix%ix%i \n", Nx,Ny,Nz);
+		printf("Physical domain size = %fx%fx%f \n",Lx,Ly,Lz);
+	}
+
 
 	//.......................................................................
 	if (rank == 0)	printf("Read input media... \n");
@@ -274,7 +276,15 @@ int main(int argc, char **argv)
 	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
-	if (rank == 0) cout << "Domain set." << endl;
+	if (rank == 0){
+		cout << "Domain set." << endl;
+		printf("************ \n")
+		printf("Discs are: \n")
+		for (int disc=0; disc<ndiscs; discs++){
+			printf("%f,%f,%f\n",cx[disc],cy[disc],rad[disc]);
+		}
+		printf("************ \n")
+	}
 
 	//.......................................................................
 	SignedDistanceDiscPack(SignDist.data,ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
