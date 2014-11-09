@@ -278,8 +278,8 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0){
 		cout << "Domain set." << endl;
-		printf("************ \n")
-		printf("Discs are: \n")
+		printf("************ \n");
+		printf("Discs are: \n");
 		for (int disc=0; disc<ndiscs; discs++){
 			printf("%f,%f,%f\n",cx[disc],cy[disc],rad[disc]);
 		}
