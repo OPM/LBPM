@@ -106,9 +106,6 @@ int main(int argc, char **argv)
 		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
 	}
 
-	bool pBC;
-	if ( BCz > 0 )	pBC=true;
-
 	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
