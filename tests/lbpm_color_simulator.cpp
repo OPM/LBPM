@@ -371,8 +371,6 @@ int main(int argc, char **argv)
 	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
-#endif
-
 	// Compute the pore volume
 	sum_local = 0.0;
 	for ( k=1;k<Nz-1;k++){
@@ -417,16 +415,6 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 	
-#ifdef USE_EXP_CONTACT_ANGLE
-	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s < 0.0 && !pBC){
-		phi_s = -phi_s;
-	 	das = (phi_s+1.0)*0.5;
-		dbs = 1.0 - das;
-		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
-		FlipID(id,Nx*Ny*Nz);
-	}
-#else
 	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s > 0.0 && !pBC){
 		phi_s = -phi_s;
@@ -436,7 +424,6 @@ int main(int argc, char **argv)
 		FlipID(id,Nx*Ny*Nz);
 	}
 
-#endif
 
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
