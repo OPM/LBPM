@@ -28,6 +28,7 @@ inline void ReadDiscPacking(int ndiscs, double *List_cx, double *List_cy, double
 	FILE *fid = fopen("DiscPack.in","rb");
 	INSIST(fid!=NULL,"Error opening DistPack.in");
 	//............................................
+	char * line = new char[100];
     // We will read until a blank like or end-of-file is reached
 	int count = 0;
 	while ( !feof(fid) && fgets(line,100,fid)>0 ) {
