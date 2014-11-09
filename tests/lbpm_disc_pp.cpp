@@ -92,6 +92,7 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		imin = int ((cx-2*r)/hx);
 		imax = int ((cx+2*r)/hx)+2;
 		jmin = int ((cy-2*r)/hy);
+		jmax = int ((cy+2*r)/hy)+2;
 
 		// Obviously we have to do something at the edges
 		if (imin<0)		imin = 0;
