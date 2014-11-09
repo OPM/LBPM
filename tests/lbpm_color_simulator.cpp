@@ -366,9 +366,16 @@ int main(int argc, char **argv)
 	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
+	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
+	int kstart,kfinish;
+	kstart = 1;
+	kfinish = Nz-1;
+	if (pBC && kproc==0)		kstart = 4;
+	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
+
 	// Compute the pore volume
 	sum_local = 0.0;
-	for ( k=1;k<Nz-1;k++){
+	for ( k=kstart;k<kfinish;k++){
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
@@ -1087,12 +1094,6 @@ int main(int argc, char **argv)
 	int nc=0;
 	//...........................................................................
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
-	int kstart,kfinish;
-	kstart = 1;
-	kfinish = Nz-1;
-	if (pBC && kproc==0)		kstart = 4;
-	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
 	for (k=kstart; k<kfinish; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -2261,7 +2262,6 @@ int main(int argc, char **argv)
 						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 				fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 				fflush(TIMELOG);
-				
 			}
 		}
 		
