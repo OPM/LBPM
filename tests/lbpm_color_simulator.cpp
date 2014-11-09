@@ -420,7 +420,6 @@ int main(int argc, char **argv)
 		FlipID(id,Nx*Ny*Nz);
 	}
 
-
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
 	//......................................................................................
