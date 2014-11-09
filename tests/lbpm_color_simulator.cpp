@@ -289,10 +289,6 @@ int main(int argc, char **argv)
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
 
-	if (rank==0) printf("Number of lattice sites per side = %i \n", Nx);
-	if (rank==0) printf("Total number of lattice sites per MPI process = %i \n", N);
-	if (rank==0) printf("********************************************************\n");
-
 	//.......................................................................
 	if (rank == 0)	printf("Read input media... \n");
 	//.......................................................................
