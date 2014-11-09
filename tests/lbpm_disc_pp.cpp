@@ -283,7 +283,7 @@ int main(int argc, char **argv)
 		for (int disc=0; disc<ndiscs; disc++){
 			printf("%f,%f,%f\n",cx[disc],cy[disc],rad[disc]);
 		}
-		printf("************ \n")
+		printf("************ \n");
 	}
 
 	//.......................................................................
