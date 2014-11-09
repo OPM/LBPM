@@ -280,7 +280,7 @@ int main(int argc, char **argv)
 		cout << "Domain set." << endl;
 		printf("************ \n");
 		printf("Discs are: \n");
-		for (int disc=0; disc<ndiscs; discs++){
+		for (int disc=0; disc<ndiscs; disc++){
 			printf("%f,%f,%f\n",cx[disc],cy[disc],rad[disc]);
 		}
 		printf("************ \n")
