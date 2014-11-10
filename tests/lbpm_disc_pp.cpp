@@ -89,20 +89,20 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		r = List_rad[p];
 		// Check if
 		// Range for this sphere in global indexing
-		jmin = int ((cx-2*r)/hx);
-		jmax = int ((cx+2*r)/hx)+2;
-		kmin = int ((cy-2*r)/hy);
-		kmax = int ((cy+2*r)/hy)+2;
+		jmin = int ((cx-2*r)/hy);
+		jmax = int ((cx+2*r)/hy)+2;
+		kmin = int ((cy-2*r)/hz);
+		kmax = int ((cy+2*r)/hz)+2;
 
 		// Obviously we have to do something at the edges
-		if (jmin<0)		imin = 0;
-		if (jmin>Ny)	imin = Ny;
-		if (jmax<0)		imax = 0;
-		if (jmax>Ny)	imax = Ny;
-		if (kmin<0)		jmin = 0;
-		if (kmin>Nz)	jmin = Nz;
-		if (kmax<0)		jmax = 0;
-		if (kmax>Nz)	jmax = Nz;
+		if (jmin<0)		jmin = 0;
+		if (jmin>Ny)	jmin = Ny;
+		if (jmax<0)		jmax = 0;
+		if (jmax>Ny)	jmax = Ny;
+		if (kmin<0)		kmin = 0;
+		if (kmin>Nz)	kmin = Nz;
+		if (kmax<0)		kmax = 0;
+		if (kmax>Nz)	kmax = Nz;
 		// Loop over the domain for this sphere (may be null)
 		for (k=kmin;k<kmax;k++){
 			for (j=jmin;j<jmax;j++){
