@@ -1,6 +1,6 @@
-#include "IO/MPIHelpers.h"
+#include "common/MPI.h"
+#include "common/Utilities.h"
 
-namespace IO {
 
 
 /********************************************************
@@ -104,6 +104,72 @@ void unpack<std::string>( std::string& data, const char *buffer )
 }
 
 
-};
+/********************************************************
+* Fake MPI routines                                     *
+********************************************************/
+#ifndef USE_MPI
+int MPI_Init(int*,char***)
+{
+    return 0;
+}
+int MPI_Finalize()
+{
+    return 0;
+}
+int MPI_Comm_size( MPI_Comm, int *size )
+{
+    *size = 1;
+    return 0;
+}
+int MPI_Comm_rank( MPI_Comm, int *rank )
+{
+    *rank = 1;
+    return 0;
+}
+int MPI_Barrier( MPI_Comm )
+{
+    return 0;
+}
+int MPI_Waitall( int, MPI_Request[], MPI_Status[] )
+{
+    return 0;
+}
+int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+              MPI_Comm comm, MPI_Request *request)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
+              int tag, MPI_Comm comm, MPI_Request *request)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
+                  MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                int dest, int sendtag,
+                void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                int source, int recvtag,
+                MPI_Comm comm, MPI_Status *status)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+double MPI_Wtime( void )
+{
+    return 0.0;
+}
+#endif
 
 

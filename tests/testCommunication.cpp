@@ -4,9 +4,9 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "Communication.h"
+#include "common/MPI.h"
 
 using namespace std;
 

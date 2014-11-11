@@ -8,8 +8,11 @@
 #include <time.h>
 #include <exception>      // std::exception
 #include <stdexcept>
-#include <mpi.h>
+
 #include "common/Utilities.h"
+#include "common/MPI.h"
+
+
 
 int MAX_BLOB_COUNT=500;
 

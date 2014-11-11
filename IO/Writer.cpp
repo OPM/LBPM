@@ -1,9 +1,9 @@
 #include "IO/Writer.h"
 #include "IO/MeshDatabase.h"
 #include "IO/IOHelpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 
-#include "mpi.h"
 #include <sys/stat.h>
 #include <algorithm>
 #include <vector>
@@ -16,8 +16,7 @@ static bool global_summary_created = false;
 // Write the mesh data in the original format
 static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO::MeshDataStruct>& meshData, const char* path )
 {
-    int rank = -1;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    int rank = MPI_WORLD_RANK();
     std::vector<IO::MeshDatabase> meshes_written;
     for (size_t i=0; i<meshData.size(); i++) {
         char domainname[100], filename[100], fullpath[200];
@@ -78,8 +77,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
 static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
     const IO::MeshDataStruct& mesh, int format )
 {
-    int rank = -1;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    int rank = MPI_WORLD_RANK();
     char domainname[10];
     sprintf(domainname,"%05i",rank);
     int level = 0;
@@ -137,8 +135,7 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
 static std::vector<IO::MeshDatabase> writeMeshesNewFormat( 
     const std::vector<IO::MeshDataStruct>& meshData, const char* path, int format )
 {
-    int rank = -1;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    int rank = MPI_WORLD_RANK();
     std::vector<IO::MeshDatabase> meshes_written;
     char filename[100], fullpath[200];
     sprintf(filename,"%05i",rank);
@@ -156,10 +153,8 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
 // Write the mesh data
 void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format )
 {
-    int rank = -1;
-    int size = 0;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &size );
+    int rank = MPI_WORLD_RANK();
+    int size = MPI_WORLD_SIZE();
     // Create the output directory
     char path[100];
     sprintf(path,"vis%03i",timestep);

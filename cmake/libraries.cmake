@@ -105,6 +105,7 @@ MACRO( CONFIGURE_MPI )
         ENDIF()
         # Check if we need to use MPI for serial tests
         CHECK_ENABLE_FLAG( USE_MPI_FOR_SERIAL_TESTS 0 )
+        SET( MPI_CXXFLAGS -DUSE_MPI -I${MPI_INCLUDE} )
         # Set the definitions
         ADD_DEFINITIONS ( "-D USE_MPI" )  
         MESSAGE ( "Using MPI" )

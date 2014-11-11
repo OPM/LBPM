@@ -5,7 +5,6 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
@@ -14,6 +13,7 @@
 #include "D3Q7.h"
 #include "Color.h"
 #include "Communication.h"
+#include "common/MPI.h"
 
 //#define CBUB
 //#define WRITE_SURFACES

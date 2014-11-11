@@ -4,11 +4,11 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 #include <memory>
 
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"

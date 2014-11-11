@@ -2,18 +2,13 @@
 #define MeshDatabase_INC
 
 #include "IO/Mesh.h" 
+#include "common/MPI.h" 
 
 #include <iostream>
 #include <string.h>
 #include <memory>
 #include <vector>
 #include <map>
-
-#ifdef USE_MPI
-    #include "mpi.h"
-#else
-    typedef int MPI_Comm;
-#endif
 
 
 namespace IO {

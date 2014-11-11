@@ -174,11 +174,12 @@ MACRO( SET_COMPILER )
 ENDMACRO()
 
 
-# Macro to set the proper warnings
-MACRO ( SET_WARNINGS )
+# Macro to set the compiler specific flags
+MACRO ( SET_COMPILER_FLAGS )
   IF ( USING_GCC )
     # Add gcc specific compiler options
     #    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable") 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable")
   ELSEIF ( USING_MICROSOFT )
@@ -237,7 +238,7 @@ MACRO( SET_COMPILE_FLAGS )
     ELSE()
         MESSAGE(FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}")
     ENDIF()
-    SET_WARNINGS()
+    SET_COMPILER_FLAGS()
 ENDMACRO()
 
 

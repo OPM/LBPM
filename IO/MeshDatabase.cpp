@@ -1,7 +1,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/IOHelpers.h"
-#include "IO/MPIHelpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 
 #include <vector>
@@ -10,53 +10,50 @@
 #include <ProfilerApp.h>
 
 
-namespace IO {
-
-
 
 /****************************************************
 * Pack/unpack data from a buffer                    *
 ****************************************************/
 // MeshType
 template<>
-size_t packsize<MeshType>( const MeshType& rhs )
+size_t packsize<IO::MeshType>( const IO::MeshType& rhs )
 {
-    return sizeof(MeshType);
+    return sizeof(IO::MeshType);
 }
 template<>
-void pack<MeshType>( const MeshType& rhs, char *buffer )
+void pack<IO::MeshType>( const IO::MeshType& rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(MeshType));
+    memcpy(buffer,&rhs,sizeof(IO::MeshType));
 }
 template<>
-void unpack<MeshType>( MeshType& data, const char *buffer )
+void unpack<IO::MeshType>( IO::MeshType& data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(MeshType));
+    memcpy(&data,buffer,sizeof(IO::MeshType));
 }
 // Variable::VariableType
 template<>
-size_t packsize<VariableType>( const VariableType& rhs )
+size_t packsize<IO::VariableType>( const IO::VariableType& rhs )
 {
-    return sizeof(VariableType);
+    return sizeof(IO::VariableType);
 }
 template<>
-void pack<VariableType>( const VariableType& rhs, char *buffer )
+void pack<IO::VariableType>( const IO::VariableType& rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(MeshType));
+    memcpy(buffer,&rhs,sizeof(IO::VariableType));
 }
 template<>
-void unpack<VariableType>( VariableType& data, const char *buffer )
+void unpack<IO::VariableType>( IO::VariableType& data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(MeshType));
+    memcpy(&data,buffer,sizeof(IO::VariableType));
 }
 // DatabaseEntry
 template<>
-size_t packsize<DatabaseEntry>( const DatabaseEntry& rhs )
+size_t packsize<IO::DatabaseEntry>( const IO::DatabaseEntry& rhs )
 {
     return packsize(rhs.name)+packsize(rhs.file)+packsize(rhs.offset);
 }
 template<>
-void pack<DatabaseEntry>( const DatabaseEntry& rhs, char *buffer )
+void pack<IO::DatabaseEntry>( const IO::DatabaseEntry& rhs, char *buffer )
 {
     size_t i=0;
     pack(rhs.name,&buffer[i]);      i+=packsize(rhs.name);
@@ -64,7 +61,7 @@ void pack<DatabaseEntry>( const DatabaseEntry& rhs, char *buffer )
     pack(rhs.offset,&buffer[i]);    i+=packsize(rhs.offset);
 }
 template<>
-void unpack<DatabaseEntry>( DatabaseEntry& data, const char *buffer )
+void unpack<IO::DatabaseEntry>( IO::DatabaseEntry& data, const char *buffer )
 {
     size_t i=0;
     unpack(data.name,&buffer[i]);   i+=packsize(data.name);
@@ -73,12 +70,12 @@ void unpack<DatabaseEntry>( DatabaseEntry& data, const char *buffer )
 }
 // VariableDatabase
 template<>
-size_t packsize<VariableDatabase>( const VariableDatabase& rhs )
+size_t packsize<IO::VariableDatabase>( const IO::VariableDatabase& rhs )
 {
     return packsize(rhs.name)+packsize(rhs.type)+packsize(rhs.dim);
 }
 template<>
-void pack<VariableDatabase>( const VariableDatabase& rhs, char *buffer )
+void pack<IO::VariableDatabase>( const IO::VariableDatabase& rhs, char *buffer )
 {
     size_t i=0;
     pack(rhs.name,&buffer[i]);      i+=packsize(rhs.name);
@@ -86,7 +83,7 @@ void pack<VariableDatabase>( const VariableDatabase& rhs, char *buffer )
     pack(rhs.dim,&buffer[i]);       i+=packsize(rhs.dim);
 }
 template<>
-void unpack<VariableDatabase>( VariableDatabase& data, const char *buffer )
+void unpack<IO::VariableDatabase>( IO::VariableDatabase& data, const char *buffer )
 {
     size_t i=0;
     unpack(data.name,&buffer[i]);   i+=packsize(data.name);
@@ -95,7 +92,7 @@ void unpack<VariableDatabase>( VariableDatabase& data, const char *buffer )
 }
 // MeshDatabase
 template<>
-size_t packsize<MeshDatabase>( const MeshDatabase& data )
+size_t packsize<IO::MeshDatabase>( const IO::MeshDatabase& data )
 {
     return packsize(data.name) 
          + packsize(data.type)
@@ -106,7 +103,7 @@ size_t packsize<MeshDatabase>( const MeshDatabase& data )
          + packsize(data.variable_data);
 }
 template<>
-void pack<MeshDatabase>( const MeshDatabase& rhs, char *buffer )
+void pack<IO::MeshDatabase>( const IO::MeshDatabase& rhs, char *buffer )
 {
     size_t i = 0;
     pack(rhs.name,&buffer[i]);          i+=packsize(rhs.name);
@@ -118,7 +115,7 @@ void pack<MeshDatabase>( const MeshDatabase& rhs, char *buffer )
     pack(rhs.variable_data,&buffer[i]); i+=packsize(rhs.variable_data);
 }
 template<>
-void unpack<MeshDatabase>( MeshDatabase& data, const char *buffer )
+void unpack<IO::MeshDatabase>( IO::MeshDatabase& data, const char *buffer )
 {
     size_t i=0;
     unpack(data.name,&buffer[i]);       i+=packsize(data.name);
@@ -129,6 +126,9 @@ void unpack<MeshDatabase>( MeshDatabase& data, const char *buffer )
     unpack(data.variables,&buffer[i]);  i+=packsize(data.variables);
     unpack(data.variable_data,&buffer[i]); i+=packsize(data.variable_data);
 }
+
+
+namespace IO {
 
 
 /****************************************************
@@ -239,70 +239,72 @@ void DatabaseEntry::read( const std::string& line )
 // Gather the mesh databases from all processors
 std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, MPI_Comm comm )
 {
-    PROFILE_START("gatherAll");
-    int rank = -1;
-    int size = 0;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    MPI_Comm_size( MPI_COMM_WORLD, &size );
-    // First pack the mesh data to local buffers
-    size_t localsize = 0;
-    for (size_t i=0; i<meshes.size(); i++)
-        localsize += packsize(meshes[i]);
-    char *localbuf = new char[localsize];
-    size_t pos = 0;
-    for (size_t i=0; i<meshes.size(); i++) {
-        pack( meshes[i], &localbuf[pos] );
-        pos += packsize(meshes[i]);
-    }
-    // Get the number of bytes each processor will be sending/recieving
-    int sendsize = static_cast<int>(localsize);
-    int *recvsize = new int[size];
-    MPI_Allgather(&sendsize,1,MPI_INT,recvsize,1,MPI_INT,comm);
-    size_t globalsize = recvsize[0];
-    int *disp = new int[size];
-    disp[0] = 0;
-    for (int i=1; i<size; i++) {
-        disp[i] = disp[i-1] + recvsize[i];
-        globalsize += recvsize[i];
-    }
-    // Send/recv the global data
-    char *globalbuf = new char[globalsize];
-    MPI_Allgatherv(localbuf,sendsize,MPI_CHAR,globalbuf,recvsize,disp,MPI_CHAR,comm);
-    // Unpack the data
-    std::map<std::string,MeshDatabase> data;
-    pos = 0;
-    while ( pos < globalsize ) {
-        MeshDatabase tmp;
-        unpack(tmp,&globalbuf[pos]);
-        pos += packsize(tmp);
-        std::map<std::string,MeshDatabase>::iterator it = data.find(tmp.name);
-        if ( it==data.end() ) {
-            data[tmp.name] = tmp;
-        } else {
-            for (size_t i=0; i<tmp.domains.size(); i++)
-                it->second.domains.push_back(tmp.domains[i]);
-            for (size_t i=0; i<tmp.variables.size(); i++)
-                it->second.variables.push_back(tmp.variables[i]);
-            it->second.variable_data.insert(tmp.variable_data.begin(),tmp.variable_data.end());
+    #ifdef USE_MPI
+        PROFILE_START("gatherAll");
+        int rank = MPI_WORLD_RANK();
+        int size = MPI_WORLD_SIZE();
+        // First pack the mesh data to local buffers
+        size_t localsize = 0;
+        for (size_t i=0; i<meshes.size(); i++)
+            localsize += packsize(meshes[i]);
+        char *localbuf = new char[localsize];
+        size_t pos = 0;
+        for (size_t i=0; i<meshes.size(); i++) {
+            pack( meshes[i], &localbuf[pos] );
+            pos += packsize(meshes[i]);
         }
-    }
-    for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it) {
-        // Get the unique variables
-        std::set<VariableDatabase> data2(it->second.variables.begin(),it->second.variables.end());
-        it->second.variables = std::vector<VariableDatabase>(data2.begin(),data2.end());
-    }
-    // Free temporary memory
-    delete [] localbuf;
-    delete [] recvsize;
-    delete [] disp;
-    delete [] globalbuf;
-    // Return the results
-    std::vector<MeshDatabase> data2(data.size());
-    size_t i=0; 
-    for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it, ++i)
-        data2[i] = it->second;
-    PROFILE_STOP("gatherAll");
-    return data2;
+        // Get the number of bytes each processor will be sending/recieving
+        int sendsize = static_cast<int>(localsize);
+        int *recvsize = new int[size];
+        MPI_Allgather(&sendsize,1,MPI_INT,recvsize,1,MPI_INT,comm);
+        size_t globalsize = recvsize[0];
+        int *disp = new int[size];
+        disp[0] = 0;
+        for (int i=1; i<size; i++) {
+            disp[i] = disp[i-1] + recvsize[i];
+            globalsize += recvsize[i];
+        }
+        // Send/recv the global data
+        char *globalbuf = new char[globalsize];
+        MPI_Allgatherv(localbuf,sendsize,MPI_CHAR,globalbuf,recvsize,disp,MPI_CHAR,comm);
+        // Unpack the data
+        std::map<std::string,MeshDatabase> data;
+        pos = 0;
+        while ( pos < globalsize ) {
+            MeshDatabase tmp;
+            unpack(tmp,&globalbuf[pos]);
+            pos += packsize(tmp);
+            std::map<std::string,MeshDatabase>::iterator it = data.find(tmp.name);
+            if ( it==data.end() ) {
+                data[tmp.name] = tmp;
+            } else {
+                for (size_t i=0; i<tmp.domains.size(); i++)
+                    it->second.domains.push_back(tmp.domains[i]);
+                for (size_t i=0; i<tmp.variables.size(); i++)
+                    it->second.variables.push_back(tmp.variables[i]);
+                it->second.variable_data.insert(tmp.variable_data.begin(),tmp.variable_data.end());
+            }
+        }
+        for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it) {
+            // Get the unique variables
+            std::set<VariableDatabase> data2(it->second.variables.begin(),it->second.variables.end());
+            it->second.variables = std::vector<VariableDatabase>(data2.begin(),data2.end());
+        }
+        // Free temporary memory
+        delete [] localbuf;
+        delete [] recvsize;
+        delete [] disp;
+        delete [] globalbuf;
+        // Return the results
+        std::vector<MeshDatabase> data2(data.size());
+        size_t i=0; 
+        for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it, ++i)
+            data2[i] = it->second;
+        PROFILE_STOP("gatherAll");
+        return data2;
+    #else
+        return meshes;
+    #endif
 }
 
 

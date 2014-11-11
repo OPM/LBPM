@@ -4,8 +4,8 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
+#include "common/MPI.h"
 #include "pmmc.h"
 #include "Domain.h"
 #include "Extras.h"
