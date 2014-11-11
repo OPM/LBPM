@@ -24,6 +24,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
         sprintf(filename,"%s.%05i",meshData[i].meshName.c_str(),rank);
 	    sprintf(fullpath,"%s/%s",path,filename);
         FILE *fid = fopen(fullpath,"wb");
+        INSIST(fid!=NULL,std::string("Error opening file: ")+fullpath);
         std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         IO::MeshDatabase mesh_entry;
         mesh_entry.name = meshData[i].meshName;
@@ -160,6 +161,7 @@ void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshDat
     sprintf(path,"vis%03i",timestep);
     if ( rank == 0 )
         mkdir(path,S_IRWXU|S_IRGRP);
+    MPI_Barrier(MPI_COMM_WORLD);
     // Write the mesh files
     std::vector<IO::MeshDatabase> meshes_written;
     if ( format == 1 ) {

@@ -123,7 +123,7 @@ int MPI_Comm_size( MPI_Comm, int *size )
 }
 int MPI_Comm_rank( MPI_Comm, int *rank )
 {
-    *rank = 1;
+    *rank = 0;
     return 0;
 }
 int MPI_Barrier( MPI_Comm )
