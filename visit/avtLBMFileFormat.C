@@ -48,6 +48,7 @@
 // LBPM headers
 #include "IO/Reader.h"
 #include "IO/IOHelpers.h"
+#include "IO/PIO.h"
 #include "common/Utilities.h"
 
 // vtk headers
@@ -98,6 +99,13 @@
 #endif
 
 
+// Output streams
+static IO::ParallelStreamBuffer DebugStreamBuffer1;
+static IO::ParallelStreamBuffer DebugStreamBuffer2;
+std::ostream DebugStream1(&DebugStreamBuffer1);
+std::ostream DebugStream2(&DebugStreamBuffer2);
+
+
 // ****************************************************************************
 //  Method: avtLBMFileFormat constructor
 //
@@ -109,9 +117,13 @@
 avtLBMFileFormat::avtLBMFileFormat(const char *filename)
     : avtMTMDFileFormat(filename)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::avtLBMFileFormat: " << filename << std::endl;
+    // Set abort behavior
     Utilities::setAbortBehavior(true,true,true);
     Utilities::setErrorHandlers();
+    // Set debug streams
+    DebugStreamBuffer1.setOutputStream( &DebugStream::Stream1() );
+    DebugStreamBuffer2.setOutputStream( &DebugStream::Stream2() );
+    DebugStreamBuffer1.setOutputStream( &std::cout );
     // Get the path to the input file
     std::string file(filename);
     size_t k1 = file.rfind(47);
@@ -120,7 +132,7 @@ avtLBMFileFormat::avtLBMFileFormat(const char *filename)
     if ( k2==std::string::npos ) { k2=0; }
     d_path = file.substr(0,std::max(k1,k2));
     // Load the summary file
-    DebugStream::Stream1() << "Loading " << filename << std::endl;
+    DebugStream1 << "Loading " << filename << std::endl;
     d_timesteps = IO::readTimesteps(filename);
     // Read the mesh dabases
     d_database.clear();
@@ -144,7 +156,7 @@ avtLBMFileFormat::avtLBMFileFormat(const char *filename)
 int
 avtLBMFileFormat::GetNTimesteps(void)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::GetNTimesteps" << std::endl;
+    DebugStream2 << "avtLBMFileFormat::GetNTimesteps" << std::endl;
     return static_cast<int>(d_timesteps.size());
 }
 
@@ -166,16 +178,16 @@ avtLBMFileFormat::GetNTimesteps(void)
 void
 avtLBMFileFormat::FreeUpResources(void)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::FreeUpResources" << std::endl;
+    DebugStream1 << "avtLBMFileFormat::FreeUpResources" << std::endl;
     std::map<std::string,vtkObjectBase*>::iterator it;
     for ( it=d_meshcache.begin(); it!=d_meshcache.end(); ++it ) {
-        DebugStream::Stream2() << "   deleting: " << it->first << std::endl;
+        DebugStream2 << "   deleting: " << it->first << std::endl;
         vtkObjectBase* obj = it->second;
         it->second = NULL;
         if ( obj!=NULL )
             obj->Delete();
     }
-    DebugStream::Stream2() << "   finished" << std::endl;
+    DebugStream2 << "   finished" << std::endl;
 }
 
 
@@ -195,11 +207,11 @@ avtLBMFileFormat::FreeUpResources(void)
 void
 avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestate)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timestate << std::endl;
+    DebugStream1 << "avtLBMFileFormat::PopulateDatabaseMetaData: " << timestate << std::endl;
     // Add the mesh domains to the meta data
     const std::vector<IO::MeshDatabase> database = d_database[timestate];
     for (size_t i=0; i<database.size(); i++) {
-        DebugStream::Stream1() << "   Adding " << database[i].name << std::endl;
+        DebugStream2 << "   Adding " << database[i].name << std::endl;
         avtMeshMetaData *mmd = new avtMeshMetaData;
         mmd->name = database[i].name;
         mmd->meshType = vtkMeshType(database[i].type);
@@ -244,7 +256,7 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestat
             }
         }
     }
-    DebugStream::Stream1() << "   Finished" << std::endl;
+    DebugStream2 << "   Finished" << std::endl;
 
     //
     // CODE TO ADD A MATERIAL
@@ -307,7 +319,7 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestat
 vtkDataSet *
 avtLBMFileFormat::GetMesh(int timestate, int domain, const char *meshname)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::GetMesh - " << meshname
+    DebugStream1 << "avtLBMFileFormat::GetMesh - " << meshname
         << "," << timestate << "," << domain << std::endl;
     TIME_TYPE start, stop, freq;
     get_frequency(&freq);
@@ -323,33 +335,32 @@ avtLBMFileFormat::GetMesh(int timestate, int domain, const char *meshname)
     const std::string timestep = d_timesteps[timestate];
     for (size_t i=0; i<database.size(); i++) {
         if ( database[i].name==std::string(meshname) ) {
-            DebugStream::Stream1() << "   calling getMesh" << std::endl;
+            DebugStream2 << "   calling getMesh" << std::endl;
             try {
                 mesh = IO::getMesh(d_path,timestep,database[i],domain);
             } catch (const std::exception &err) {
-                DebugStream::Stream1() << "   Caught errror calling getMesh:" << std::endl;
-                DebugStream::Stream1() << err.what() << std::endl;
+                DebugStream1 << "   Caught errror calling getMesh:" << std::endl;
+                DebugStream1 << err.what() << std::endl;
             } catch (...) {
-                DebugStream::Stream1() << "   Caught unknown errror calling getMesh" << std::endl;
+                DebugStream1 << "   Caught unknown errror calling getMesh" << std::endl;
                 return NULL;
             }
         }
     }
     if ( mesh==NULL ) {
-        DebugStream::Stream1() << "   Error loading mesh" << std::endl;
+        DebugStream1 << "   Error loading mesh" << std::endl;
         return NULL;
     }
     // Create the mesh in vtk
     vtkDataSet* vtkMesh = meshToVTK(mesh);
-vtkMesh->PrintSelf(std::cerr,vtkIndent(6));
-    DebugStream::Stream2() << "   mesh created:" << std::endl;
+    DebugStream2 << "   mesh created:" << std::endl;
     ASSERT(vtkMesh!=NULL);
-    DebugStream::Stream2() << "      " << vtkMesh->GetNumberOfCells() << std::endl;
-    vtkMesh->PrintSelf(DebugStream::Stream2(),vtkIndent(6));
+    DebugStream2 << "      " << vtkMesh->GetNumberOfCells() << std::endl;
+    vtkMesh->PrintSelf(DebugStream2,vtkIndent(6));
     // Cache the mesh and return
     // meshcache[cache_name] = mesh;
     get_time(&stop);
-    DebugStream::Stream2() << "   Time required: " << get_diff(start,stop,freq) << std::endl;
+    DebugStream2 << "   Time required: " << get_diff(start,stop,freq) << std::endl;
     return vtkMesh;
 }
 
@@ -378,7 +389,7 @@ vtkMesh->PrintSelf(std::cerr,vtkIndent(6));
 vtkDataArray *
 avtLBMFileFormat::GetVar(int timestate, int domain, const char *meshvarname)
 {
-    DebugStream::Stream1() << "avtLBMFileFormat::GetVar: " << meshvarname 
+    DebugStream1 << "avtLBMFileFormat::GetVar: " << meshvarname 
         << "," << timestate << "," << domain << std::endl;
     std::vector<std::string> tmp = IO::splitList(meshvarname,'/');
     ASSERT(tmp.size()==2);
@@ -389,14 +400,14 @@ avtLBMFileFormat::GetVar(int timestate, int domain, const char *meshvarname)
     std::shared_ptr<const IO::Variable> variable;
     for (size_t i=0; i<database.size(); i++) {
         if ( database[i].name==std::string(meshname) ) {
-            DebugStream::Stream1() << "   calling getVar" << std::endl;
+            DebugStream2 << "   calling getVar" << std::endl;
             try {
                 variable = IO::getVariable(d_path,timestep,database[i],domain,varname);
             } catch (const std::exception &err) {
-                DebugStream::Stream1() << "   Caught errror calling getVar:" << std::endl;
-                DebugStream::Stream1() << err.what() << std::endl;
+                DebugStream1 << "   Caught errror calling getVar:" << std::endl;
+                DebugStream1 << err.what() << std::endl;
             } catch (...) {
-                DebugStream::Stream1() << "   Caught unknown errror calling getVar" << std::endl;
+                DebugStream1 << "   Caught unknown errror calling getVar" << std::endl;
                 return NULL;
             }
         }
@@ -434,7 +445,7 @@ avtLBMFileFormat::GetVectorVar(int timestate, int domain, const char *varname)
 {
 cerr << "avtLBMFileFormat::GetVectorVar - " << varname
         << "," << timestate << "," << domain << std::endl;
-    DebugStream::Stream1() << "avtLBMFileFormat::GetVectorVar" << std::endl;
+    DebugStream1 << "avtLBMFileFormat::GetVectorVar" << std::endl;
     EXCEPTION1(InvalidVariableException, varname);
     return NULL;
 

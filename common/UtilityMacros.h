@@ -47,7 +47,7 @@
  *  \param MSG  Error message to print
  */
 #define ERROR(MSG) do {                                 \
-    Utilities::abort(MSG,__FILE__,__LINE__);            \
+    ::Utilities::abort(MSG,__FILE__,__LINE__);            \
 }while(0)
 
 
@@ -75,7 +75,7 @@
     if ( !(EXP) ) {                                                 \
         std::stringstream tboxos;                                   \
         tboxos << "Failed assertion: " << #EXP << std::ends;        \
-        Utilities::abort(tboxos.str(), __FILE__, __LINE__);         \
+        ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);         \
     }                                                               \
 }while(0)
 
@@ -94,7 +94,7 @@
         std::stringstream tboxos;                                   \
         tboxos << "Failed insist: " << #EXP << std::endl;           \
         tboxos << "Message: " << MSG << std::ends;                  \
-        Utilities::abort(tboxos.str(), __FILE__, __LINE__);         \
+        ::Utilities::abort(tboxos.str(), __FILE__, __LINE__);         \
     }                                                               \
 }while(0)
 
