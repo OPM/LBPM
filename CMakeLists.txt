@@ -55,7 +55,7 @@ ENDIF()
 
 
 # Add some directories to include
-INCLUDE_DIRECTORIES( ${LBPM_INSTALL_DIR}/include )
+INCLUDE_DIRECTORIES( "${LBPM_INSTALL_DIR}/include" )
 
 
 # Set doxygen info
@@ -89,6 +89,7 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_CUDA()
     CONFIGURE_MIC()
     CONFIGURE_LBPM()
+    CONFIGURE_TIMER()
     CONFIGURE_LINE_COVERAGE()
 ENDIF()
 
@@ -101,6 +102,7 @@ SET( LBPM_LIBS  lbpm-wia )
 IF ( NOT ONLY_BUILD_DOCS )
     BEGIN_PACKAGE_CONFIG( lbpm-wia )
     ADD_PACKAGE_SUBDIRECTORY( common )
+    ADD_PACKAGE_SUBDIRECTORY( IO )
     IF ( USE_CUDA )
         ADD_PACKAGE_SUBDIRECTORY( gpu )
     ELSE()
@@ -109,6 +111,13 @@ IF ( NOT ONLY_BUILD_DOCS )
     INSTALL_LBPM_TARGET( lbpm-wia )
     ADD_SUBDIRECTORY( tests )
     ADD_SUBDIRECTORY( example )
+ENDIF()
+
+
+# Create the visit plugin
+IF ( USE_VISIT )
+    INCLUDE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindVisIt.cmake )
+    VISIT_PLUGIN( visit LBM )
 ENDIF()
 
 

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Plugin name="LBM" type="database" label="LBM" version="1.0" mdspecificcode="true" dbtype="MTMD">
+    <FilePatterns> 
+        *.LBM 
+    </FilePatterns>
+    <CXXFLAGS> 
+        -I${LBPM_INSTALL_DIR}/include
+        ${MPI_CXXFLAGS}
+        ${TIMER_CXXFLAGS}
+    </CXXFLAGS>
+    <LDFLAGS>  
+        -L${LBPM_INSTALL_DIR}/lib
+        -L${CMAKE_CURRENT_BINARY_DIR}/..
+        ${TIMER_LDFLAGS}
+        ${MPI_LINK_FLAGS}
+    </LDFLAGS>
+    <LIBS>     
+        -llbpm-wia
+        ${TIMER_LDLIBS}
+        ${MPI_LIBRARIES}
+    </LIBS>
+</Plugin>
+

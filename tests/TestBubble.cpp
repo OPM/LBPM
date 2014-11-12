@@ -4,7 +4,6 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
@@ -12,9 +11,14 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
+#include "common/MPI.h"
 #include "Communication.h"
+#include "IO/Mesh.h"
+#include "IO/Writer.h"
+#include "ProfilerApp.h"
 
 #define CBUB
+#define USE_NEW_WRITER
 
 using namespace std;
 
@@ -101,6 +105,8 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    Utilities::setAbortBehavior(true,true,false);
+    PROFILE_ENABLE(0);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -318,7 +324,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*Nx*Ny*Nz*nprocs);
-	double porosity;
+	double porosity = 0;
 
 	DoubleArray SignDist(Nx,Ny,Nz);
 	//.......................................................................
@@ -2089,11 +2095,17 @@ int main(int argc, char **argv)
 					Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));		// orientation of wn interface
 		}
 
-		
-		FILE *WN_TRIS;
-		sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
-		WN_TRIS = fopen(LocalRankFilename,"wb");
 
+        #ifdef USE_NEW_WRITER
+            std::shared_ptr<IO::TriList> mesh( new IO::TriList() );
+            mesh->A.reserve(8*ncubes);
+            mesh->B.reserve(8*ncubes);
+            mesh->C.reserve(8*ncubes);
+        #else
+            FILE *WN_TRIS;
+	        sprintf(LocalRankFilename,"%s%s","wn-tris.",LocalRankString);
+	        WN_TRIS = fopen(LocalRankFilename,"wb");
+        #endif
 		for (c=0;c<ncubes;c++){
 			// Get cube from the list
 			i = cubeList(0,c);
@@ -2131,20 +2143,49 @@ int main(int argc, char **argv)
 					A = C;
 					C = P;
 				}
-				//fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
-				fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
-				fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
-				fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
-				fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
-				fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
-				fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
-				fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
-				fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
-				fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                #ifdef USE_NEW_WRITER
+                    mesh->A.push_back(A);
+                    mesh->B.push_back(B);
+                    mesh->C.push_back(C);
+                #else
+				    //fprintf(WN_TRIS,"%f %f %f %f %f %f %f %f %f \n",A.x,A.y,A.z,B.x,B.y,B.z,C.x,C.y,C.z);
+				    fwrite(&A.x,sizeof(A.x),1,WN_TRIS);
+				    fwrite(&A.y,sizeof(A.y),1,WN_TRIS);
+				    fwrite(&A.z,sizeof(A.z),1,WN_TRIS);
+				    fwrite(&B.x,sizeof(B.x),1,WN_TRIS);
+				    fwrite(&B.y,sizeof(B.y),1,WN_TRIS);
+				    fwrite(&B.z,sizeof(B.z),1,WN_TRIS);
+				    fwrite(&C.x,sizeof(C.x),1,WN_TRIS);
+				    fwrite(&C.y,sizeof(C.y),1,WN_TRIS);
+				    fwrite(&C.z,sizeof(C.z),1,WN_TRIS);
+                #endif
 			}		
 		}
-		fclose(WN_TRIS);
-		
+        #ifdef USE_NEW_WRITER
+            std::vector<IO::MeshDataStruct> meshData(1);
+            meshData[0].meshName = "wn-tris";
+            meshData[0].mesh = mesh;
+            for (size_t k=0; k<meshData.size(); k++) {
+                std::shared_ptr<IO::Variable> dist( new IO::Variable() );
+                dist->name = "distance";
+                dist->dim = 1;
+                dist->type = IO::VariableType::NodeVariable;
+                dist->data.resize(3*mesh->A.size());
+                for (size_t i=0; i<mesh->A.size(); i++) {
+                    const Point& a = mesh->A[i];
+                    const Point& b = mesh->B[i];
+                    const Point& c = mesh->C[i];
+                    dist->data[3*i+0] = sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+                    dist->data[3*i+1] = sqrt(b.x*b.x+b.y*b.y+b.z*b.z);
+                    dist->data[3*i+2] = sqrt(c.x*c.x+c.y*c.y+c.z*c.z);
+                }
+                meshData[k].vars.push_back(dist);
+            }
+            IO::writeData( bubbleCount, meshData, 2 );
+        #else
+		    fclose(WN_TRIS);
+        #endif
+
 	}
 	//************************************************************************/
 	DeviceBarrier();
@@ -2184,7 +2225,7 @@ int main(int argc, char **argv)
 	fwrite(DensityValues,8,2*N,PHASE);
 	fclose(PHASE);
 */	//************************************************************************/
-
+    PROFILE_SAVE("TestBubble");
 	return 0;
 	
 	// ****************************************************

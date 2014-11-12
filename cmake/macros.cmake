@@ -149,18 +149,22 @@ MACRO( SET_COMPILER )
     # SET the C/C++ compiler
     IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
         SET( USING_GCC TRUE )
+        ADD_DEFINITIONS( -D USING_GCC )
         MESSAGE("Using gcc")
     ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
         IF( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
             MESSAGE( FATAL_ERROR "Using microsoft compilers on non-windows system?" )
         ENDIF()
         SET( USING_MICROSOFT TRUE )
+        ADD_DEFINITIONS( -D USING_MICROSOFT )
         MESSAGE("Using Microsoft")
     ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
         SET(USING_ICC TRUE)
+        ADD_DEFINITIONS( -D USING_ICC )
         MESSAGE("Using icc")
     ELSEIF( ${CMAKE_C_COMPILER_ID} MATCHES "PGI")
         SET(USING_PGCC TRUE)
+        ADD_DEFINITIONS( -D USING_ICCPGCC )
         MESSAGE("Using pgCC")
     ELSE()
         SET(USING_DEFAULT TRUE)
@@ -170,13 +174,14 @@ MACRO( SET_COMPILER )
 ENDMACRO()
 
 
-# Macro to set the proper warnings
-MACRO ( SET_WARNINGS )
+# Macro to set the compiler specific flags
+MACRO ( SET_COMPILER_FLAGS )
   IF ( USING_GCC )
-    ## Add gcc specific compiler options
-    ##    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
-    #SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall ") 
-    #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
+    # Add gcc specific compiler options
+    #    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable") 
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable")
   ELSEIF ( USING_MICROSOFT )
     # Add Microsoft specifc compiler options
     SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} /D _SCL_SECURE_NO_WARNINGS /D _CRT_SECURE_NO_WARNINGS /D _ITERATOR_DEBUG_LEVEL=0" )
@@ -233,7 +238,7 @@ MACRO( SET_COMPILE_FLAGS )
     ELSE()
         MESSAGE(FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}")
     ENDIF()
-    SET_WARNINGS()
+    SET_COMPILER_FLAGS()
 ENDMACRO()
 
 
@@ -252,6 +257,7 @@ MACRO( ADD_LBPM_EXE_DEP EXE )
     # Add the libraries
     TARGET_LINK_LIBRARIES( ${EXE} ${LBPM_LIBS} )
     # Add external libraries
+    TARGET_LINK_LIBRARIES( ${EXE} ${TIMER_LIBS} )
     TARGET_LINK_LIBRARIES( ${EXE} ${EXTERNAL_LIBS} )
     IF ( USE_MPI )
         TARGET_LINK_LIBRARIES( ${EXE} ${MPI_LINK_FLAGS} ${MPI_LIBRARIES} )
@@ -496,6 +502,8 @@ MACRO( ADD_DISTCLEAN )
         gpu
         example
         common
+        visit
+        IO
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)

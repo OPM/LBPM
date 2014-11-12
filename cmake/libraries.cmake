@@ -1,14 +1,17 @@
-MACRO ( CONFIGURE_LINE_COVERAGE )
+INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Find_TIMER.cmake" )
+
+
+MACRO( CONFIGURE_LINE_COVERAGE )
     SET ( COVERAGE_LIBS )
     IF ( ENABLE_GCOV )
         ADD_DEFINITIONS ( -fprofile-arcs -ftest-coverage )
         SET ( COVERAGE_LIBS -lgcov -fprofile-arcs )
     ENDIF ()
-ENDMACRO ()
+ENDMACRO()
 
 
 # Macro to configure CUDA
-MACRO ( CONFIGURE_CUDA )
+MACRO( CONFIGURE_CUDA )
     CHECK_ENABLE_FLAG( USE_CUDA 0 )
     IF( USE_CUDA )
         SET( CUDA_FLAGS ${CUDA_NVCC_FLAGS} )
@@ -41,14 +44,14 @@ ENDMACRO()
 
 
 # Macro to configure MIC
-MACRO ( CONFIGURE_MIC )
+MACRO( CONFIGURE_MIC )
     CHECK_ENABLE_FLAG( USE_MIC 0 )
     ADD_DEFINITIONS ( "-D USE_MIC" ) 
 ENDMACRO() 
 
 
 # Macro to find and configure the MPI libraries
-MACRO ( CONFIGURE_MPI )
+MACRO( CONFIGURE_MPI )
     # Determine if we want to use MPI
     CHECK_ENABLE_FLAG(USE_MPI 1 )
     IF ( USE_MPI )
@@ -102,6 +105,7 @@ MACRO ( CONFIGURE_MPI )
         ENDIF()
         # Check if we need to use MPI for serial tests
         CHECK_ENABLE_FLAG( USE_MPI_FOR_SERIAL_TESTS 0 )
+        SET( MPI_CXXFLAGS -DUSE_MPI -I${MPI_INCLUDE} )
         # Set the definitions
         ADD_DEFINITIONS ( "-D USE_MPI" )  
         MESSAGE ( "Using MPI" )
@@ -123,10 +127,16 @@ ENDMACRO ()
 
 
 # Macro to configure system-specific libraries and flags
-MACRO ( CONFIGURE_SYSTEM )
+MACRO( CONFIGURE_SYSTEM )
     # First check/set the compile mode
     IF( NOT CMAKE_BUILD_TYPE )
         MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE is not set")
+    ENDIF()
+    # Disable gxx debug flags if we are building the visit plugin
+    # This is necessary to prvent segfaults caused by inconsistent object sizes
+    #    caused by std::vector<std::string> in the avtMeshMetaData class
+    IF ( USE_VISIT )
+        SET( DISABLE_GXX_DEBUG 1 )
     ENDIF()
     # Remove extra library links
     # Get the compiler

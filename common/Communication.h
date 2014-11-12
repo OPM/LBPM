@@ -1,6 +1,7 @@
 #ifndef COMMUNICATION_H_INC
 #define COMMUNICATION_H_INC
 
+#include "common/MPI.h"
 #include "Array.h"
 
 // ********** COMMUNICTION **************************************
