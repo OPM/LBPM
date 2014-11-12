@@ -14,7 +14,7 @@ rm -rf CMake*
 cmake                                    \
     -D CMAKE_C_COMPILER:PATH=cc          \
     -D CMAKE_CXX_COMPILER:PATH=CC        \
-    -D CMAKE_CXX_COMPILER:PATH=CC        \
+    -D CMAKE_CXX_FLAGS=""       \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=aprun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
@@ -22,6 +22,7 @@ cmake                                    \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_CUDA=1                        \
+    -D USE_TIMER=0                        \
     ${HOME}/LBPM-WIA
 
 
@@ -29,7 +30,7 @@ cmake                                    \
 make install -j 8
 
 # Run the fast tests
-ctest -E WEEKLY
+#ctest -E WEEKLY
 
 
 # Run the slow tests
