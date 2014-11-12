@@ -21,7 +21,7 @@
  * Simulator for two-phase flow in porous media
  * James E. McClure 2013-2014
  */
-#define USE_EXP_CONTACT_ANGLE
+
 #define USE_NEW_WRITER
 
 using namespace std;

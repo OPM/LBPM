@@ -16,7 +16,7 @@
 #include "common/MPI.h"
 
 
-#define CBUB
+#define USE_NEW_WRITER
 //#define WRITE_SURFACES
 
 /*
