@@ -4381,6 +4381,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		tay = Ty.eval(A);
 		taz = Tz.eval(A);
 		norm = sqrt(tax*tax+tay*tay+taz*taz);
+		if (norm=0.0) norm=1.0;
 		tax /= norm;
 		tay /= norm;
 		taz /= norm;
@@ -4389,6 +4390,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		tby = Ty.eval(B);
 		tbz = Tz.eval(B);
 		norm = sqrt(tbx*tbx+tby*tby+tbz*tbz);
+		if (norm=0.0) norm=1.0;
 		tbx /= norm;
 		tby /= norm;
 		tbz /= norm;
