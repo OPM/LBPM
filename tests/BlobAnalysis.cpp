@@ -1053,7 +1053,6 @@ int main(int argc, char **argv)
 	fclose(BLOBSTATES);
 
 	start = 0;
-
 	for (a=0;a<nblobs;a++){
 
 		finish = start+b(a);
@@ -1073,6 +1072,7 @@ int main(int argc, char **argv)
 			LocalBlobID(i,j+1,k+1) = NewLabel(a);
 			LocalBlobID(i+1,j+1,k+1) = NewLabel(a);
 		}
+		start=finish;
 	}
 
 	FILE *BLOBS;
