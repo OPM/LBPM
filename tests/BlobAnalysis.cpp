@@ -1052,6 +1052,28 @@ int main(int argc, char **argv)
 	}
 	fclose(BLOBSTATES);
 
+
+	for (a=0;a<nblobs;a++){
+
+		finish = start+b(a);
+
+		for (c=start;c<finish;c++){
+			// Get cube from the list
+			i = blobs(0,c);
+			j = blobs(1,c);
+			k = blobs(2,c);
+			// Label the entire cube so that interfaces can be re-labled easily
+			LocalBlobID(i,j,k) = NewLabel(a);
+			LocalBlobID(i+1,j,k) = NewLabel(a);
+			LocalBlobID(i,j+1,k) = NewLabel(a);
+			LocalBlobID(i+1,j+1,k) = NewLabel(a);
+			LocalBlobID(i,j,k+1) = NewLabel(a);
+			LocalBlobID(i+1,j,k+1) = NewLabel(a);
+			LocalBlobID(i,j+1,k+1) = NewLabel(a);
+			LocalBlobID(i+1,j+1,k+1) = NewLabel(a);
+		}
+	}
+
 	FILE *BLOBS;
 	BLOBS = fopen("Blobs.dat","wb");
 	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,BLOBS);
