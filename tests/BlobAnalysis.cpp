@@ -545,7 +545,7 @@ int main(int argc, char **argv)
 	int N = (Nx-1)*(Ny-1)*(Nz-1);		// total number of nodes
 	IntArray blobs(3,N);	// store indices for blobs (cubes)
 	IntArray temp(3,N);	// temporary storage array
-	IntArray  b(50);		// number of nodes in each blob
+	IntArray  b(N);		// number of nodes in each blob
 	
 /*	std::vector<int> BlobList;
 	BlobList.reserve[10000];
