@@ -1052,6 +1052,7 @@ int main(int argc, char **argv)
 	}
 	fclose(BLOBSTATES);
 
+	start = 0;
 
 	for (a=0;a<nblobs;a++){
 
