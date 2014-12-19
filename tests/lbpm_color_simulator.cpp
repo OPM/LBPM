@@ -16,7 +16,7 @@
 #include "common/MPI.h"
 
 
-#define WRITE_SURFACES
+//#define WRITE_SURFACES
 
 /*
  * Simulator for two-phase flow in porous media
