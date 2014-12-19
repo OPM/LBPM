@@ -2072,7 +2072,7 @@ int main(int argc, char **argv)
 						// 1-D index for this cube corner
 						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 						// compute the norm of the gradient of the phase indicator field
-						delphi = sqrt(Phase_x[n]*Phase_x[n]+Phase_y[n]*Phase_y[n]+Phase_z[n]*Phase_z[n]);
+						delphi = sqrt(Phase_x.data.data[n]*Phase_x.data[n]+Phase_y.data[n]*Phase_y.data[n]+Phase_z.data[n]*Phase_z.data[n]);
 						// Compute the non-wetting phase volume contribution
 						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 							nwp_volume += 0.125;
