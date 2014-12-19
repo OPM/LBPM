@@ -2066,29 +2066,28 @@ int main(int argc, char **argv)
 				//...........................................................................
 				// Compute volume averages
 				for (int p=0;p<8;p++){
-					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 
+					double delphi;
+					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 						// 1-D index for this cube corner
 						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-
+						// compute the norm of the gradient of the phase indicator field
+						delphi = sqrt(Phase_x[n]*Phase_x[n]+Phase_y[n]*Phase_y[n]+Phase_z[n]*Phase_z[n]);
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 							nwp_volume += 0.125;
-
-						// volume averages over the non-wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.99 ){
 							// volume the excludes the interfacial region
-							vol_n += 0.125;
-							// pressure
-							pan += 0.125*Press.data[n];
-							// velocity
-							van(0) += 0.125*Vel_x.data[n];
-							van(1) += 0.125*Vel_y.data[n];
-							van(2) += 0.125*Vel_z.data[n];
+							if (delphi < 1e-4){
+								vol_n += 0.125;
+								// pressure
+								pan += 0.125*Press.data[n];
+								// velocity
+								van(0) += 0.125*Vel_x.data[n];
+								van(1) += 0.125*Vel_y.data[n];
+								van(2) += 0.125*Vel_z.data[n];
+							}
 						}
-
-						// volume averages over the wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < -0.99 ){
+						else if (delphi < 1e-4){
 							// volume the excludes the interfacial region
 							vol_w += 0.125;
 							// pressure
