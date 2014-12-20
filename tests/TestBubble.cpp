@@ -1971,10 +1971,6 @@ int main(int argc, char **argv)
 							vol_n += 0.125;
 							// pressure
 							pan += 0.125*Press.data[n];
-							// velocity
-							van(0) += 0.125*Vel_x.data[n];
-							van(1) += 0.125*Vel_y.data[n];
-							van(2) += 0.125*Vel_z.data[n];
 						}
 					}
 					else if (delphi < 1e-4){
@@ -1982,10 +1978,6 @@ int main(int argc, char **argv)
 						vol_w += 0.125;
 						// pressure
 						paw += 0.125*Press.data[n];
-						// velocity
-						vaw(0) += 0.125*Vel_x.data[n];
-						vaw(1) += 0.125*Vel_y.data[n];
-						vaw(2) += 0.125*Vel_z.data[n];
 					}
 				}
 			}
