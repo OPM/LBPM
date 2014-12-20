@@ -15,7 +15,7 @@
 #include "Communication.h"
 #include "common/MPI.h"
 
-//#define CBUB
+#define CBUB
 
 /*
  * Simulator for two-phase flow in porous media
@@ -2197,46 +2197,7 @@ int main(int argc, char **argv)
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
 			
-			/// Compute volume averages
-			for (k=kstart; k<kfinish; k++){
-				for (j=1; j<Ny-1; j++){
-					for (i=1; i<Nx-1; i++){
-						
-						// 1-D index
-						n = i + j*Nx + k*Nx*Ny;
-						
-						// Compute the non-wetting phase volume contribution
-						if ( Phase(i,j,k) > 0.0 && id[n] > 0)
-							nwp_volume += 1.0;
-						
-						if ( SignDist(i,j,k) > 0.0 ){
-							// volume averages over the non-wetting phase
-							if ( Phase(i,j,k) > 0.999 ){
-								// volume the excludes the interfacial region
-								vol_n += 1.0;
-								// pressure
-								pan += Press(i,j,k);
-								// velocity
-								van(0) += Vel_x(i,j,k);
-								van(1) += Vel_y(i,j,k);
-								van(2) += Vel_z(i,j,k);
-							}
 
-							// volume averages over the wetting phase
-							if ( Phase(i,j,k) < -0.999 ){
-								// volume the excludes the interfacial region
-								vol_w += 1.0;
-								// pressure
-								paw += Press(i,j,k);
-								// velocity
-								vaw(0) += Vel_x(i,j,k);
-								vaw(1) += Vel_y(i,j,k);
-								vaw(2) += Vel_z(i,j,k);
-							}
-						}
-					}
-				}
-			}
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
 				i = cubeList(0,c);
@@ -2244,31 +2205,31 @@ int main(int argc, char **argv)
 				k = cubeList(2,c);
 				
 				//...........................................................................
-/*				// Compute volume averages
-				for (p=0;p<8;p++){
-					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+				//...........................................................................
+				// Compute volume averages
+				for (int p=0;p<8;p++){
 
+					double delphi;
+					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 						// 1-D index for this cube corner
 						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-
+						// compute the norm of the gradient of the phase indicator field
+						delphi = sqrt(Phase_x.data[n]*Phase_x.data[n]+Phase_y.data[n]*Phase_y.data[n]+Phase_z.data[n]*Phase_z.data[n]);
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 							nwp_volume += 0.125;
-
-						// volume averages over the non-wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.99 ){
 							// volume the excludes the interfacial region
-							vol_n += 0.125;
-							// pressure
-							pan += 0.125*Press.data[n];
-							// velocity
-							van(0) += 0.125*Vel_x.data[n];
-							van(1) += 0.125*Vel_y.data[n];
-							van(2) += 0.125*Vel_z.data[n];
+							if (delphi < 1e-4){
+								vol_n += 0.125;
+								// pressure
+								pan += 0.125*Press.data[n];
+								// velocity
+								van(0) += 0.125*Vel_x.data[n];
+								van(1) += 0.125*Vel_y.data[n];
+								van(2) += 0.125*Vel_z.data[n];
+							}
 						}
-
-						// volume averages over the wetting phase
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < -0.99 ){
+						else if (delphi < 1e-4){
 							// volume the excludes the interfacial region
 							vol_w += 0.125;
 							// pressure
@@ -2281,7 +2242,7 @@ int main(int argc, char **argv)
 					}
 				}
 
-*/				//...........................................................................
+			//...........................................................................
 				// Construct the interfaces and common curve
 				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,

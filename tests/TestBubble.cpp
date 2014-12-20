@@ -1946,50 +1946,49 @@ int main(int argc, char **argv)
 		vol_w = vol_n =0.0;
 		Jwn = efawns = 0.0;
 		
-		// Phase averages
-		for (k=1; k<Nz-1; k++){
-			for (j=1; j<Ny-1; j++){
-				for (i=1; i<Nx-1; i++){
-					// 1-D index for this cube corner
-					n = i + j*Nx + k*Nx*Ny;
-
-					// Compute the non-wetting phase volume contribution
-					if ( Phase(i,j,k) > 0 )
-						nwp_volume += 1.0;
-
-					// volume averages over the non-wetting phase
-					if ( Phase(i,j,k) > 0.99999 ){
-						// volume the excludes the interfacial region
-						vol_n += 1.0;
-						// pressure
-						pan += Press.data[n];
-						// velocity
-						van(0) += Vel[3*n];
-						van(1) += Vel[3*n+1];
-						van(2) += Vel[3*n+2];
-					}
-
-					// volume averages over the wetting phase
-					if (  Phase(i,j,k) < -0.99999 ){
-						// volume the excludes the interfacial region
-						vol_w += 1.0;
-						// pressure
-						paw += Press.data[n];
-						// velocity
-						vaw(0) += Vel[3*n];
-						vaw(1) += Vel[3*n+1];
-						vaw(2) += Vel[3*n+2];
-					}
-					
-				}
-			}
-		}
 
 		for (c=0;c<ncubes;c++){
 			// Get cube from the list
 			i = cubeList(0,c);
 			j = cubeList(1,c);
 			k = cubeList(2,c);
+
+			//...........................................................................
+			// Compute volume averages
+			for (int p=0;p<8;p++){
+
+				double delphi;
+				if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					// 1-D index for this cube corner
+					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+					// compute the norm of the gradient of the phase indicator field
+					delphi = sqrt(Phase_x.data[n]*Phase_x.data[n]+Phase_y.data[n]*Phase_y.data[n]+Phase_z.data[n]*Phase_z.data[n]);
+					// Compute the non-wetting phase volume contribution
+					if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+						nwp_volume += 0.125;
+						// volume the excludes the interfacial region
+						if (delphi < 1e-4){
+							vol_n += 0.125;
+							// pressure
+							pan += 0.125*Press.data[n];
+							// velocity
+							van(0) += 0.125*Vel_x.data[n];
+							van(1) += 0.125*Vel_y.data[n];
+							van(2) += 0.125*Vel_z.data[n];
+						}
+					}
+					else if (delphi < 1e-4){
+						// volume the excludes the interfacial region
+						vol_w += 0.125;
+						// pressure
+						paw += 0.125*Press.data[n];
+						// velocity
+						vaw(0) += 0.125*Vel_x.data[n];
+						vaw(1) += 0.125*Vel_y.data[n];
+						vaw(2) += 0.125*Vel_z.data[n];
+					}
+				}
+			}
 
 			//...........................................................................
 			// Construct the interfaces and common curve
