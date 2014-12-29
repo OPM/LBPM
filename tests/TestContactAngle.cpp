@@ -126,6 +126,7 @@ int main (int argc, char *argv[])
 
 	pmmc_MeshGradient(Phase,Fx,Fy,Fz,Nx,Ny,Nz);
 	pmmc_MeshGradient(SignDist,Sx,Sy,Sz,Nx,Ny,Nz);
+	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 	
 	// End of the loop to set the values
 	awn = aws = ans = lwns = 0.0;
