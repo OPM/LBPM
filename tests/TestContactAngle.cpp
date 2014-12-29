@@ -31,6 +31,8 @@ int main (int argc, char *argv[])
 	DoubleArray Sx(Nx,Ny,Nz);
 	DoubleArray Sy(Nx,Ny,Nz);
 	DoubleArray Sz(Nx,Ny,Nz);
+	DoubleArray GaussCurvature(Nx,Ny,Nz);
+	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	double fluid_isovalue = 0.0;
 	double solid_isovalue = 0.0;
 
@@ -62,6 +64,7 @@ int main (int argc, char *argv[])
 	// initialize list for line segments
 	IntArray nws_seg(2,20);
 	
+	DoubleArray CubeValues(2,2,2);
 	DTMutableList<Point> tmp(20);
 	DoubleArray ContactAngle(20);
 	DoubleArray KGwns_values(20);
@@ -85,8 +88,6 @@ int main (int argc, char *argv[])
 	DTMutableList<Point> local_nws_pts(20);
 	int n_local_nws_pts;
 	
-	DoubleArray CubeValues(2,2,2);
-	DoubleArray ContactAngle(20);
 	
 	int c;
 	//...........................................................................
@@ -170,7 +171,7 @@ int main (int argc, char *argv[])
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
 	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*RADIUS*CAPHEIGHT);
-	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT)));
+	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
