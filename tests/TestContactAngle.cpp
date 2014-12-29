@@ -150,7 +150,7 @@ int main (int argc, char *argv[])
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
-		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Phase_x,Phase_y,Phase_z,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
+		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
 
 		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
