@@ -42,11 +42,10 @@ int main (int argc, char *argv[])
 	// Averaging variables
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
-	double efawns;
 	double As;
-	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
-	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
-	double As_global;
+	double efawns,Jwn;
+	double KNwns,KGwns;
+
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	//	int count_in=0,count_out=0;
@@ -64,6 +63,10 @@ int main (int argc, char *argv[])
 	IntArray nws_seg(2,20);
 	
 	DTMutableList<Point> tmp(20);
+	DoubleArray ContactAngle(20);
+	DoubleArray KGwns_values(20);
+	DoubleArray KNwns_values(20);
+	DoubleArray wn_curvature(20);
 	//	IntArray store;
 	
 	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
@@ -144,8 +147,13 @@ int main (int argc, char *argv[])
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
+		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
+									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
+
 		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
 		
+		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
+
 		//*******************************************************************
 		// Compute the Interfacial Areas, Common Line length
 		awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
@@ -155,14 +163,20 @@ int main (int argc, char *argv[])
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 	}
 
+	KGwns /= lwns;
+	KNwns /= lwns;
+
+	double CAPHEIGHT = CAPRAD-sqrt(RADIUS*RADIUS-CAPRAD*CAPRAD); // height of the sphereical cap
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
-	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*RADIUS*RADIUS);
-	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT);
-	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*HEIGHT);
+	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*RADIUS*CAPHEIGHT);
+	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT)));
+	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
 	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
 	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns/lwns,1.0*RADIUS/CAPRAD);
+	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, 0.0);
+	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
 	printf("-------------------------------- \n");	
 	//.........................................................................
 	
