@@ -15,6 +15,7 @@ cmake                                    \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_CUDA=0                        \
+    -D USE_TIMER=0			 \
     ${HOME}/LBPM-WIA
 
 
