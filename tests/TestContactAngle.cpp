@@ -178,7 +178,6 @@ int main (int argc, char *argv[])
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 
-		printf("%i, %i, %i \n",i,j,k);
 	}
 	KGwns /= lwns;
 	KNwns /= lwns;
@@ -186,11 +185,11 @@ int main (int argc, char *argv[])
 	efawns /= lwns;
 	printf("Analysis complete. \n");
 
-
-	double CAPHEIGHT = CAPRAD-sqrt(RADIUS*RADIUS-CAPRAD*CAPRAD); // height of the sphereical cap
+	double CAPHEIGHT = CAPRAD-sqrt(CAPRAD*CAPRAD-RADIUS*RADIUS); // height of the sphereical cap
+	printf("Height of sphereical cap = %f \n",CAPHEIGHT);
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
-	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*RADIUS*CAPHEIGHT);
+	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS));
 	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
 	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
 	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
