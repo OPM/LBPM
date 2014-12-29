@@ -94,6 +94,19 @@ int main (int argc, char *argv[])
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
 	IntArray cubeList(3,ncubes);
 	pmmc_CubeListFromMesh(cubeList, ncubes, Nx, Ny, Nz);
+	int nc=1;
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				cubeList(0,nc) = i;
+				cubeList(1,nc) = j;
+				cubeList(2,nc) = k;
+				nc++;
+			}
+		}
+	}
+	ncubes = nc;
+
 	//...........................................................................
 	double Cx,Cy,Cz;
 	double dist1,dist2;
