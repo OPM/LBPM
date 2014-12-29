@@ -37,7 +37,6 @@ int main (int argc, char *argv[])
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	double fluid_isovalue = 0.0;
 	double solid_isovalue = 0.0;
-
 	
 	/* ****************************************************************
 	 VARIABLES FOR THE PMMC ALGORITHM
@@ -89,8 +88,7 @@ int main (int argc, char *argv[])
 	DoubleArray values(20);
 	DTMutableList<Point> local_nws_pts(20);
 	int n_local_nws_pts;
-	
-	
+		
 	int c;
 	//...........................................................................
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
@@ -100,9 +98,9 @@ int main (int argc, char *argv[])
 	double Cx,Cy,Cz;
 	double dist1,dist2;
 	Cx = Cy = Cz = N*0.51;
-	for (k=0; k<N; k++){
-		for (j=0; j<N; j++){
-			for (i=0; i<N; i++){
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
 				
 				dist1 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)) - RADIUS;
 				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
@@ -166,6 +164,8 @@ int main (int argc, char *argv[])
 		aws += pmmc_CubeSurfaceArea(ws_pts,ws_tris,n_ws_tris);
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+
+		printf("%i, %i, %i \n",i,j,k);
 	}
 	KGwns /= lwns;
 	KNwns /= lwns;
