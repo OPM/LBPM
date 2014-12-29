@@ -202,9 +202,12 @@ int main (int argc, char *argv[])
 	//.........................................................................
 	
 	int toReturn = 0;
-	if (fabs(efawns/lwns - 1.0*RADIUS/CAPRAD)/(1.0*RADIUS/CAPRAD) > 0.01){
+	if (fabs(efawns - 1.0*RADIUS/CAPRAD)/(1.0*RADIUS/CAPRAD) > 0.01){
 		toReturn = 1;
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for the contact angle \n");
+	}
+	else{
+		printf("Contact angle: passed test");
 	}
 	return toReturn;
 
