@@ -170,6 +170,8 @@ int main (int argc, char *argv[])
 
 	KGwns /= lwns;
 	KNwns /= lwns;
+	printf("Analysis complete. \n");
+
 
 	double CAPHEIGHT = CAPRAD-sqrt(RADIUS*RADIUS-CAPRAD*CAPRAD); // height of the sphereical cap
 	printf("-------------------------------- \n");
