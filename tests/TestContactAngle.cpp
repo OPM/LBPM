@@ -121,8 +121,6 @@ int main (int argc, char *argv[])
 	nwp_volume = 0.0;
 	As = 0.0;
 	
-	printf("Domain initialized... running analysis \n");
-
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
@@ -152,13 +150,15 @@ int main (int argc, char *argv[])
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
+		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Phase_x,Phase_y,Phase_z,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
+
 		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
 
-		efawns += pmmc_CubeContactAngle(CubeValues,ContactAngle,Fx,Fy,Fz,Sx,Sy,Sz,local_nws_pts,i,j,k,n_local_nws_pts);
-		
 		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
 
+	//	if (n_nw_pts>0) printf("speed %f \n",InterfaceSpeed(0));
+		
 		//*******************************************************************
 		// Compute the Interfacial Areas, Common Line length
 		awn += pmmc_CubeSurfaceArea(nw_pts,nw_tris,n_nw_tris);
@@ -167,9 +167,10 @@ int main (int argc, char *argv[])
 		As += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 	}
-
 	KGwns /= lwns;
 	KNwns /= lwns;
+	Jwn /= awn;
+	efawns /= lwns;
 	printf("Analysis complete. \n");
 
 
