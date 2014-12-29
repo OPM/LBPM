@@ -13,6 +13,8 @@
 int main (int argc, char *argv[])
 {
 	
+	printf("Unit test for analysis framework \n");
+
 	//  printf("Radius = %s \n,"RADIUS);  
 	int SIZE = N*N*N;
 	int Nx,Ny,Nz;
@@ -119,6 +121,8 @@ int main (int argc, char *argv[])
 	nwp_volume = 0.0;
 	As = 0.0;
 	
+	printf("Domain initialized... running analysis \n");
+
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
