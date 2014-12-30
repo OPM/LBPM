@@ -4263,7 +4263,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int i, int j, int k){
 
 
-	double twnsx,twnsy,twnsz,norm; // tangent, norm
+	double twnsx,twnsy,twnsz,length; // tangent, norm
 
 	Point P,A,B;
 
@@ -4282,17 +4282,17 @@ inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point>
 		B.y -= 1.0*j;
 		B.z -= 1.0*k;
 
-		norm = 1.0/((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));// tangent vector
-		twnsx = norm*(B.x - A.x);
-		twnsy = norm*(B.y - A.y);
-		twnsz = norm*(B.z - A.z);
+		length = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));// tangent vector
+		twnsx = (B.x - A.x)/length;
+		twnsy = (B.y - A.y)/length;
+		twnsz = (B.z - A.z)/length;
 
-		Orientation(0) += 1.0 - twnsx*twnsx;	// Gxx
-		Orientation(1) += 1.0 - twnsy*twnsy;	// Gyy
-		Orientation(2) += 1.0 - twnsz*twnsz;	// Gzz
-		Orientation(3) += 1.0 - twnsx*twnsy;	// Gxy
-		Orientation(4) += 1.0 - twnsx*twnsz;	// Gxz
-		Orientation(5) += 1.0 - twnsy*twnsz;	// Gyz
+		Orientation(0) += (1.0 - twnsx*twnsx)*length;	// Gxx
+		Orientation(1) += (1.0 - twnsy*twnsy)*length;	// Gyy
+		Orientation(2) += (1.0 - twnsz*twnsz)*length;	// Gzz
+		Orientation(3) += (1.0 - twnsx*twnsy)*length;	// Gxy
+		Orientation(4) += (1.0 - twnsx*twnsz)*length;	// Gxz
+		Orientation(5) += (1.0 - twnsy*twnsz)*length;	// Gyz
 	}
 
 }
