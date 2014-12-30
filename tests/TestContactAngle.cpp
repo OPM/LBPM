@@ -1,4 +1,4 @@
-#include <iostream>
+`x#include <iostream>
 #include <math.h>
 #include "pmmc.h"
 //#include "PointList.h"
@@ -169,7 +169,7 @@ int main (int argc, char *argv[])
 		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
 
-		pmmc_CurveOrientation(Gwns, nws_pts, n_nws_pts, i,j,k)
+		pmmc_CurveOrientation(Gwns, nws_pts, n_nws_pts, i,j,k);
 
 		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
 
@@ -206,7 +206,7 @@ int main (int argc, char *argv[])
 	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
 	printf("-------------------------------- \n");	
 	//.........................................................................
-	printf("Gwns=%i,%i,%i,%i,%i,%i",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
+	printf("Gwns=%f,%f,%f,%f,%f,%f",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
 
 	
 	int toReturn = 0;
