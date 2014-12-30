@@ -4260,6 +4260,37 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		}
 	}
 }
+inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
+
+	for (p=0; p<npts-1; p++){
+		// Extract the line segment
+		A = Points(p);
+		B = Points(p+1);
+		P.x = 0.5*(A.x+B.x) - 1.0*i;
+		P.y = 0.5*(A.y+B.y) - 1.0*j;
+		P.z = 0.5*(A.z+B.z) - 1.0*k;
+
+		A.x -= 1.0*i;
+		A.y -= 1.0*j;
+		A.z -= 1.0*k;
+		B.x -= 1.0*i;
+		B.y -= 1.0*j;
+		B.z -= 1.0*k;
+
+		norm = 1.0/((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));// tangent vector
+		twnsx = norm*(B.x - A.x);
+		twnsy = norm*(B.y - A.y);
+		twnsz = norm*(B.z - A.z);
+
+		Orientation(0) += 1.0 - twnsx*twnsx;	// Gxx
+		Orientation(1) += 1.0 - twnsy*twnsy;	// Gyy
+		Orientation(2) += 1.0 - twnsz*twnsz;	// Gzz
+		Orientation(3) += 1.0 - twnsx*twnsy;	// Gxy
+		Orientation(4) += 1.0 - twnsx*twnsz;	// Gxz
+		Orientation(5) += 1.0 - twnsy*twnsz;	// Gyz
+	}
+
+}
 
 inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN, DoubleArray &KG,
 		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){

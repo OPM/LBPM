@@ -48,6 +48,7 @@ int main (int argc, char *argv[])
 	double As;
 	double efawns,Jwn;
 	double KNwns,KGwns;
+	DoubleArray Gwns(6);
 
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
@@ -132,6 +133,7 @@ int main (int argc, char *argv[])
 	awn = aws = ans = lwns = 0.0;
 	nwp_volume = 0.0;
 	As = 0.0;
+	for (i=0; i<6; i++) Gwns(i) = 0.0;
 	
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
@@ -167,6 +169,8 @@ int main (int argc, char *argv[])
 		Jwn += pmmc_CubeSurfaceInterpValue(CubeValues, MeanCurvature, nw_pts, nw_tris,
 									wn_curvature, i, j, k, n_nw_pts, n_nw_tris);
 
+		pmmc_CurveOrientation(Gwns, nws_pts, n_nws_pts, i,j,k)
+
 		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
 
 	//	if (n_nw_pts>0) printf("speed %f \n",InterfaceSpeed(0));
@@ -184,6 +188,8 @@ int main (int argc, char *argv[])
 	KNwns /= lwns;
 	Jwn /= awn;
 	efawns /= lwns;
+	for (i=0; i<6; i++) Gwns(i) /= lwns;
+
 	printf("Analysis complete. \n");
 
 	double CAPHEIGHT = CAPRAD-sqrt(CAPRAD*CAPRAD-RADIUS*RADIUS); // height of the sphereical cap
@@ -200,6 +206,8 @@ int main (int argc, char *argv[])
 	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
 	printf("-------------------------------- \n");	
 	//.........................................................................
+	printf("Gwns=%i,%i,%i,%i,%i,%i",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
+
 	
 	int toReturn = 0;
 	if (fabs(efawns - 1.0*RADIUS/CAPRAD)/(1.0*RADIUS/CAPRAD) > 0.01){
@@ -207,8 +215,23 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for the contact angle \n");
 	}
 	else{
-		printf("Contact angle: passed test");
+		printf("Passed test: contact angle");
 	}
+
+	if (fabs(ans - 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT))/(4*PI*RADIUS*(CAPRAD-CAPHEIGHT)) > 0.01 ){
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for ns area \n");
+	}
+	else{
+		printf("Passed test: ans");
+	}
+	if (fabs(awn-2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS))/(2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS)) > 0.01){
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for wn area \n");
+	}
+	else{
+		printf("Passed test: awn");
+	}
+
+
 	return toReturn;
 
 }
