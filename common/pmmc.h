@@ -4260,9 +4260,14 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 		}
 	}
 }
-inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
+inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int i, int j, int k){
 
-	for (p=0; p<npts-1; p++){
+
+	double twnsx,twnsy,twnsz,norm; // tangent, norm
+
+	Point P,A,B;
+
+	for (int p=0; p<npts-1; p++){
 		// Extract the line segment
 		A = Points(p);
 		B = Points(p+1);
