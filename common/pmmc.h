@@ -4290,9 +4290,9 @@ inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point>
 		Orientation(0) += (1.0 - twnsx*twnsx)*length;	// Gxx
 		Orientation(1) += (1.0 - twnsy*twnsy)*length;	// Gyy
 		Orientation(2) += (1.0 - twnsz*twnsz)*length;	// Gzz
-		Orientation(3) += (1.0 - twnsx*twnsy)*length;	// Gxy
-		Orientation(4) += (1.0 - twnsx*twnsz)*length;	// Gxz
-		Orientation(5) += (1.0 - twnsy*twnsz)*length;	// Gyz
+		Orientation(3) += (0.0 - twnsx*twnsy)*length;	// Gxy
+		Orientation(4) += (0.0 - twnsx*twnsz)*length;	// Gxz
+		Orientation(5) += (0.0 - twnsy*twnsz)*length;	// Gyz
 	}
 
 }
