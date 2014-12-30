@@ -273,7 +273,7 @@ int main (int argc, char *argv[])
 	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
 	analytical = 1.0/RADIUS;
 	RelError = fabs(KNwns-analytical)/analytical;
-	if (RelError > 0.01){
+	if (RelError > 0.02){
 		toReturn = 1;
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance KNwns \n");
 	}
