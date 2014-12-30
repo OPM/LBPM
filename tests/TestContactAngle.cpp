@@ -121,6 +121,8 @@ int main (int argc, char *argv[])
 
 				SignDist(i,j,k) = -dist1;
 				Phase(i,j,k) = dist2;
+
+//				if (k<Cz && 1.0*(Cz-k) < Phase(i,j,k) )  Phase(i,j,k) = 1.0*(Cz-k);
 			}
 		}   
 	}
@@ -193,21 +195,38 @@ int main (int argc, char *argv[])
 	printf("Analysis complete. \n");
 
 	double CAPHEIGHT = CAPRAD-sqrt(CAPRAD*CAPRAD-RADIUS*RADIUS); // height of the sphereical cap
+	double analytical,RelError;
 	printf("Height of sphereical cap = %f \n",CAPHEIGHT);
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", nwp_volume);
-	printf("Area wn = %f, Analytical = %f \n", awn,2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS));
-	printf("Area ns = %f, Analytical = %f \n", ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
-	printf("Area ws = %f, Analytical = %f \n", aws, 4*PI*RADIUS*(CAPRAD-CAPHEIGHT));
-	printf("Area s = %f, Analytical = %f \n", As, 2*PI*RADIUS*(N-2));
-	printf("Length wns = %f, Analytical = %f \n", lwns, 4*PI*RADIUS);
-	printf("Cos(theta_wns) = %f, Analytical = %f \n",efawns,1.0*RADIUS/CAPRAD);
-	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", KGwns, 0.0);
-	printf("Normal curvature (wns) = %f, Analytical = %f \n", KNwns, 1.0/RADIUS);
+	analytical = 2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS);
+	RelError = (awn-analytical)/analytical;
+	printf("Area wn = %f, Analytical = %f, Rel. Error = %f \n", awn,analytical,RelError);
+	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
+	RelError = (ans-analytical)/analytical;
+	printf("Area ns = %f, Analytical = %f, Rel. Error = %f \n", ans, analytical,RelError);
+	analytical = 2*PI*RADIUS*(CAPRAD-CAPHEIGHT);
+	RelError = (aws-analytical)/analytical;
+	printf("Area ws = %f, Analytical = %f, Rel. Error = %f \n", aws, analytical,RelError);
+	analytical = 2*PI*RADIUS*(N-2);
+	RelError = (As-analytical)/analytical;
+	printf("Area s = %f, Analytical = %f, Rel. Error = %f \n", As, analytical,RelError);
+	analytical = 4*PI*RADIUS;
+	RelError = (lwns-analytical)/analytical;
+	printf("Length wns = %f, Analytical = %f, Rel. Error = %f  \n", lwns, analytical,RelError);
+	analytical = 1.0*RADIUS/CAPRAD;
+	RelError = (efawns-analytical)/analytical;
+	printf("Cos(theta_wns) = %f, Analytical = %f, Rel. Error = %f  \n",efawns,analytical,RelError);
+	analytical = 2.0/RADIUS;
+	RelError = (Jwn-analytical)/analytical;
+	printf("Mean curvature (wn) = %f, Analytical = %f, Rel. Error = %f  \n", Jwn, analytical,RelError);
+	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
+	analytical = 1.0/RADIUS;
+	RelError = (KNwns-analytical)/analytical;
+	printf("Normal curvature (wns) = %f, Analytical = %f, Rel. Error = %f  \n", KNwns, analytical,RelError);
 	printf("-------------------------------- \n");	
 	//.........................................................................
 	printf("Gwns=%f,%f,%f,%f,%f,%f \n",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
-
 	
 	int toReturn = 0;
 	if (fabs(efawns - 1.0*RADIUS/CAPRAD)/(1.0*RADIUS/CAPRAD) > 0.01){
