@@ -267,7 +267,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for mean curvature \n");
 	}
 	else{
-		printf("Passed test (Jwn):");
+		printf("Passed test (Jwn): ");
 	}
 	printf("Mean curvature (wn) = %f, Analytical = %f, Rel. Error = %f  \n", Jwn, analytical,RelError);
 	analytical = 1.0/RADIUS;
