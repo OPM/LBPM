@@ -205,7 +205,7 @@ int main (int argc, char *argv[])
 	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
 	RelError = fabs(ans-analytical)/analytical;
 	printf("Area ns = %f, Analytical = %f, Rel. Error = %f \n", ans, analytical,RelError);
-	analytical = 2*PI*RADIUS*(CAPRAD-CAPHEIGHT);
+	analytical = 4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
 	RelError = fabs(aws-analytical)/analytical;
 	printf("Area ws = %f, Analytical = %f, Rel. Error = %f \n", aws, analytical,RelError);
 	analytical = 2*PI*RADIUS*(N-2);
