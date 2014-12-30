@@ -207,7 +207,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for the contact angle \n");
 	}
 	else{
-		printf("Passed test (awn) ");
+		printf("Passed test (awn): ");
 	}
 	printf("Area wn = %f, Analytical = %f, Rel. Error = %f \n", awn,analytical,RelError);
 	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
@@ -257,7 +257,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for contact angle \n");
 	}
 	else{
-		printf("Passed test (contact angle)");
+		printf("Passed test (contact angle): ");
 	}
 	printf("Cos(theta_wns) = %f, Analytical = %f, Rel. Error = %f  \n",efawns,analytical,RelError);
 	analytical = 2.0/CAPRAD;
@@ -270,7 +270,6 @@ int main (int argc, char *argv[])
 		printf("Passed test (Jwn):");
 	}
 	printf("Mean curvature (wn) = %f, Analytical = %f, Rel. Error = %f  \n", Jwn, analytical,RelError);
-	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
 	analytical = 1.0/RADIUS;
 	RelError = fabs(KNwns-analytical)/analytical;
 	if (RelError > 0.02){
@@ -278,11 +277,12 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance KNwns \n");
 	}
 	else{
-		printf("Passed test (KNwns):");
+		printf("Passed test (KNwns): ");
 	}
 	printf("Normal curvature (wns) = %f, Analytical = %f, Rel. Error = %f  \n", KNwns, analytical,RelError);
 	printf("-------------------------------- \n");	
 	//.........................................................................
+	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
 	printf("Gwns=%f,%f,%f,%f,%f,%f \n",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
 
 
