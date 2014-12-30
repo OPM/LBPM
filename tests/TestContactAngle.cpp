@@ -194,6 +194,7 @@ int main (int argc, char *argv[])
 
 	printf("Analysis complete. \n");
 
+	int toReturn = 0;
 	double CAPHEIGHT = CAPRAD-sqrt(CAPRAD*CAPRAD-RADIUS*RADIUS); // height of the sphereical cap
 	double analytical,RelError;
 	printf("Height of sphereical cap = %f \n",CAPHEIGHT);
@@ -201,54 +202,88 @@ int main (int argc, char *argv[])
 	printf("NWP volume = %f \n", nwp_volume);
 	analytical = 2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS);
 	RelError = fabs(awn-analytical)/analytical;
-	printf("Area wn = %f, Analytical = %f, Rel. Error = %f \n", awn,analytical,RelError);
-	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
-	RelError = fabs(ans-analytical)/analytical;
-	printf("Area ns = %f, Analytical = %f, Rel. Error = %f \n", ans, analytical,RelError);
-	analytical = 4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
-	RelError = fabs(aws-analytical)/analytical;
-	printf("Area ws = %f, Analytical = %f, Rel. Error = %f \n", aws, analytical,RelError);
-	analytical = 2*PI*RADIUS*(N-2);
-	RelError = fabs(As-analytical)/analytical;
-	printf("Area s = %f, Analytical = %f, Rel. Error = %f \n", As, analytical,RelError);
-	analytical = 4*PI*RADIUS;
-	RelError = fabs(lwns-analytical)/analytical;
-	printf("Length wns = %f, Analytical = %f, Rel. Error = %f  \n", lwns, analytical,RelError);
-	analytical = 1.0*RADIUS/CAPRAD;
-	RelError = fabs(efawns-analytical)/analytical;
-	printf("Cos(theta_wns) = %f, Analytical = %f, Rel. Error = %f  \n",efawns,analytical,RelError);
-	analytical = 2.0/CAPRAD;
-	RelError = fabs(Jwn-analytical)/analytical;
-	printf("Mean curvature (wn) = %f, Analytical = %f, Rel. Error = %f  \n", Jwn, analytical,RelError);
-	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
-	analytical = 1.0/RADIUS;
-	RelError = fabs(KNwns-analytical)/analytical;
-	printf("Normal curvature (wns) = %f, Analytical = %f, Rel. Error = %f  \n", KNwns, analytical,RelError);
-	printf("-------------------------------- \n");	
-	//.........................................................................
-	printf("Gwns=%f,%f,%f,%f,%f,%f \n",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
-	
-	int toReturn = 0;
-	if (fabs(efawns - 1.0*RADIUS/CAPRAD)/(1.0*RADIUS/CAPRAD) > 0.01){
+	if (RelError > 0.01){
 		toReturn = 1;
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for the contact angle \n");
 	}
 	else{
-		printf("Passed test: contact angle");
+		printf("Passed test: awn \n");
 	}
-
-	if (fabs(ans - 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT))/(4*PI*RADIUS*(CAPRAD-CAPHEIGHT)) > 0.01 ){
-		printf("tests/TestContactAngle.cpp: exceeded error tolerance for ns area \n");
-	}
-	else{
-		printf("Passed test: ans");
-	}
-	if (fabs(awn-2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS))/(2*PI*(CAPHEIGHT*CAPHEIGHT+RADIUS*RADIUS)) > 0.01){
-		printf("tests/TestContactAngle.cpp: exceeded error tolerance for wn area \n");
+	printf("Area wn = %f, Analytical = %f, Rel. Error = %f \n", awn,analytical,RelError);
+	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
+	RelError = fabs(ans-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for ans \n");
 	}
 	else{
-		printf("Passed test: awn");
+		printf("Passed test: ans \n");
 	}
+	printf("Area ns = %f, Analytical = %f, Rel. Error = %f \n", ans, analytical,RelError);
+	analytical = 4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
+	RelError = fabs(aws-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for aws\n");
+	}
+	else{
+		printf("Passed test: aws \n");
+	}
+	printf("Area ws = %f, Analytical = %f, Rel. Error = %f \n", aws, analytical,RelError);
+	analytical = 2*PI*RADIUS*(N-2);
+	RelError = fabs(As-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for solid area \n");
+	}
+	else{
+		printf("Passed test: As \n");
+	}
+	printf("Area s = %f, Analytical = %f, Rel. Error = %f \n", As, analytical,RelError);
+	analytical = 4*PI*RADIUS;
+	RelError = fabs(lwns-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for common line length \n");
+	}
+	else{
+		printf("Passed test: lwns \n");
+	}
+	printf("Length wns = %f, Analytical = %f, Rel. Error = %f  \n", lwns, analytical,RelError);
+	analytical = 1.0*RADIUS/CAPRAD;
+	RelError = fabs(efawns-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for contact angle \n");
+	}
+	else{
+		printf("Passed test: contact angle \n");
+	}
+	printf("Cos(theta_wns) = %f, Analytical = %f, Rel. Error = %f  \n",efawns,analytical,RelError);
+	analytical = 2.0/CAPRAD;
+	RelError = fabs(Jwn-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance for mean curvature \n");
+	}
+	else{
+		printf("Passed test: Jwn \n");
+	}
+	printf("Mean curvature (wn) = %f, Analytical = %f, Rel. Error = %f  \n", Jwn, analytical,RelError);
+	printf("Geodesic curvature (wns) = %f, Analytical, Rel. Error = %f  = %f \n", KGwns, 0.0, 0.0);
+	analytical = 1.0/RADIUS;
+	RelError = fabs(KNwns-analytical)/analytical;
+	if (RelError > 0.01){
+		toReturn = 1;
+		printf("tests/TestContactAngle.cpp: exceeded error tolerance KNwns \n");
+	}
+	else{
+		printf("Passed test: KNwns \n");
+	}
+	printf("Normal curvature (wns) = %f, Analytical = %f, Rel. Error = %f  \n", KNwns, analytical,RelError);
+	printf("-------------------------------- \n");	
+	//.........................................................................
+	printf("Gwns=%f,%f,%f,%f,%f,%f \n",Gwns(0),Gwns(1),Gwns(2),Gwns(3),Gwns(4),Gwns(5));
 
 
 	return toReturn;
