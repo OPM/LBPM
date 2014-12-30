@@ -207,7 +207,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for the contact angle \n");
 	}
 	else{
-		printf("Passed test (awn) \n");
+		printf("Passed test (awn) ");
 	}
 	printf("Area wn = %f, Analytical = %f, Rel. Error = %f \n", awn,analytical,RelError);
 	analytical = 2*PI*RADIUS*(N-2)-4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
@@ -217,7 +217,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for ans \n");
 	}
 	else{
-		printf("Passed test (ans): \n");
+		printf("Passed test (ans): ");
 	}
 	printf("Area ns = %f, Analytical = %f, Rel. Error = %f \n", ans, analytical,RelError);
 	analytical = 4*PI*RADIUS*(CAPRAD-CAPHEIGHT);
@@ -227,7 +227,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for aws\n");
 	}
 	else{
-		printf("Passed test (aws): \n");
+		printf("Passed test (aws): ");
 	}
 	printf("Area ws = %f, Analytical = %f, Rel. Error = %f \n", aws, analytical,RelError);
 	analytical = 2*PI*RADIUS*(N-2);
@@ -237,7 +237,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for solid area \n");
 	}
 	else{
-		printf("Passed test (As): \n");
+		printf("Passed test (As): ");
 	}
 	printf("Area s = %f, Analytical = %f, Rel. Error = %f \n", As, analytical,RelError);
 	analytical = 4*PI*RADIUS;
@@ -247,7 +247,7 @@ int main (int argc, char *argv[])
 		printf("tests/TestContactAngle.cpp: exceeded error tolerance for common line length \n");
 	}
 	else{
-		printf("Passed test (lwns): \n");
+		printf("Passed test (lwns): ");
 	}
 	printf("Length wns = %f, Analytical = %f, Rel. Error = %f  \n", lwns, analytical,RelError);
 	analytical = 1.0*RADIUS/CAPRAD;
