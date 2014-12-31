@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
 	//...........................................................................
-	DoubleArray SignDist(Nx,Ny,Nz);
+	DoubleArray SDs(Nx,Ny,Nz);
 	//.......................................................................
 #ifdef CBUB
 	// Initializes a constrained bubble test
@@ -349,10 +349,10 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				SignDist(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2) 
+				SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2) 
 									+ (j-Ny/2)*(j-Ny/2)));
 				// Initialize phase positions field
-				if (SignDist(i,j,k) < 0.0){
+				if (SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
 				else if (k<BubbleBot){
@@ -410,10 +410,10 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	//.......................................................................
-	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(SDs.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	
-//	for (n=0; n<Nx*Ny*Nz; n++)	SignDist.data[n] += (1.0); // map by a pixel to account for interface width
+//	for (n=0; n<Nx*Ny*Nz; n++)	SDs.data[n] += (1.0); // map by a pixel to account for interface width
 
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
@@ -432,11 +432,11 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (SignDist.data[n] > 0.0){ 
+				if (SDs.data[n] > 0.0){ 
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (SignDist.data[n] > 0.0){ 
+				if (SDs.data[n] > 0.0){ 
 					sum++;	
 				}
 			}
@@ -475,7 +475,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
-					SignDist.data[n] =  max(SignDist.data[n],1.0*(2.5-k));
+					SDs.data[n] =  max(SDs.data[n],1.0*(2.5-k));
 				}					
 			}
 		}
@@ -486,7 +486,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 2;
-					SignDist.data[n] = max(SignDist.data[n],1.0*(k-Nz+2.5));
+					SDs.data[n] = max(SDs.data[n],1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -1048,16 +1048,16 @@ int main(int argc, char **argv)
 	//...........................................................................
 	double *Phi,*Den;
 //	double *Copy;
-	double *ColorGrad, *Velocity, *Pressure, *dvcSignDist;
+	double *ColorGrad, *Velocity, *Pressure, *dvcSDs;
 	//...........................................................................
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
-	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
+	AllocateDeviceMemory((void **) &dvcSDs, dist_mem_size);
 	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, SignDist.data, dist_mem_size);
+	CopyToDevice(dvcSDs, SDs.data, dist_mem_size);
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
 	DoubleArray Phase(Nx,Ny,Nz);
@@ -1082,9 +1082,9 @@ int main(int argc, char **argv)
 	DoubleArray Press(Nx,Ny,Nz);
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
-	DoubleArray SignDist_x(Nx,Ny,Nz);		// Gradient of the signed distance
-	DoubleArray SignDist_y(Nx,Ny,Nz);
-	DoubleArray SignDist_z(Nx,Ny,Nz);
+	DoubleArray SDs_x(Nx,Ny,Nz);		// Gradient of the signed distance
+	DoubleArray SDs_y(Nx,Ny,Nz);
+	DoubleArray SDs_z(Nx,Ny,Nz);
 	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
 	DoubleArray Phase_y(Nx,Ny,Nz);
 	DoubleArray Phase_z(Nx,Ny,Nz);
@@ -1223,7 +1223,7 @@ int main(int argc, char **argv)
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	//......................................................................
 #ifdef USE_EXP_CONTACT_ANGLE
-	InitDenColorDistance(ID, Den, Phi, dvcSignDist, das, dbs, beta, xIntPos, Nx, Ny, Nz);
+	InitDenColorDistance(ID, Den, Phi, dvcSDs, das, dbs, beta, xIntPos, Nx, Ny, Nz);
 #else
 	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 #endif
@@ -1244,22 +1244,22 @@ int main(int argc, char **argv)
 	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	sprintf(LocalRankFilename,"%s%s","SDs.",LocalRankString);
+	WriteLocalSolidDistance(LocalRankFilename, SDs.data, N);
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
+	for (i=0; i<N; i++)	SDs.data[i] -= (1.0); // 
 	//.......................................................................
 	
 	//...........................................................................
 	// Gradient of the Signed Distance function
 	//...........................................................................
-	pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
+	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 	//...........................................................................
-	CommunicateMeshHalo(SignDist_x, MPI_COMM_WORLD,
+	CommunicateMeshHalo(SDs_x, MPI_COMM_WORLD,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -1281,7 +1281,7 @@ int main(int argc, char **argv)
 			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
 			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(SignDist_y, MPI_COMM_WORLD,
+	CommunicateMeshHalo(SDs_y, MPI_COMM_WORLD,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -1303,7 +1303,7 @@ int main(int argc, char **argv)
 			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
 			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(SignDist_z, MPI_COMM_WORLD,
+	CommunicateMeshHalo(SDs_z, MPI_COMM_WORLD,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -1951,7 +1951,7 @@ int main(int argc, char **argv)
 			
 			// Compute the gradients of the phase indicator and signed distance fields
 			pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
-//			pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
+//			pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 			//...........................................................................
 			// Compute the mesh curvature of the phase indicator field
 			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
@@ -2210,7 +2210,7 @@ int main(int argc, char **argv)
 				for (int p=0;p<8;p++){
 
 					double delphi;
-					if ( SignDist(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 						// 1-D index for this cube corner
 						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 						// compute the norm of the gradient of the phase indicator field
@@ -2244,7 +2244,7 @@ int main(int argc, char **argv)
 
 			//...........................................................................
 				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+				pmmc_ConstructLocalCube(SDs, Phase, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
 						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
@@ -2252,7 +2252,7 @@ int main(int argc, char **argv)
 						i, j, k, Nx, Ny, Nz);
 
 				// Integrate the contact angle
-				efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,
+				efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,
 												local_nws_pts,i,j,k,n_local_nws_pts);
 
 				// Integrate the mean curvature
@@ -2260,20 +2260,20 @@ int main(int argc, char **argv)
 				Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
 				// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
+				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistValues,
 							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
 				
-				pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SignDist,nw_pts,nw_tris,Values,DistValues,
+				pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistValues,
 							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
 				
 				// Compute the normal speed of the interface
 				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
 									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 				
-				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SignDist_x,SignDist_y,SignDist_z,						
+				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,						
 						local_nws_pts,i,j,k,n_local_nws_pts);
 				
-				pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns,
+				pmmc_CurveCurvature(Phase, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
 						nws_pts, n_nws_pts, i, j, k);
 
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
@@ -2462,7 +2462,7 @@ int main(int argc, char **argv)
 				k = cubeList(2,c);
 				//...........................................................................
 				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
+				pmmc_ConstructLocalCube(SDs, Phase, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
 						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
