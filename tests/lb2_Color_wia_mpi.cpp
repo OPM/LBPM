@@ -337,6 +337,7 @@ int main(int argc, char **argv)
 	double porosity, pore_vol;
 	//...........................................................................
 	DoubleArray SDs(Nx,Ny,Nz);
+	DoubleArray SDn(Nx,Ny,Nz);
 	//.......................................................................
 #ifdef CBUB
 	// Initializes a constrained bubble test
@@ -1926,6 +1927,13 @@ int main(int argc, char **argv)
 			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 			//...........................................................................
 
+			// Initialize signed distance function from the phase indicator field
+			double temp=0.5/beta;
+			for (n=0; n<N; n++){
+			  double value = Phase.data[n];
+				SDn.data[n] = temp*log((1.0+value)/(1.0-value))-1.5;
+			}
+
 			//...........................................................................
 			CommunicateMeshHalo(Phase, MPI_COMM_WORLD,
 					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
@@ -1954,7 +1962,7 @@ int main(int argc, char **argv)
 //			pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 			//...........................................................................
 			// Compute the mesh curvature of the phase indicator field
-			pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
+			pmmc_MeshCurvature(SDn, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 			//...........................................................................
 			// Fill in the halo region for the mesh gradients and curvature
 			//...........................................................................
@@ -2244,7 +2252,7 @@ int main(int argc, char **argv)
 
 			//...........................................................................
 				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SDs, Phase, solid_isovalue, fluid_isovalue,
+				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
 						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
 						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
@@ -2273,7 +2281,7 @@ int main(int argc, char **argv)
 				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,						
 						local_nws_pts,i,j,k,n_local_nws_pts);
 				
-				pmmc_CurveCurvature(Phase, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+				pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
 						nws_pts, n_nws_pts, i, j, k);
 
 				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
