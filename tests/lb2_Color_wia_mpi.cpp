@@ -1931,7 +1931,7 @@ int main(int argc, char **argv)
 			double temp=0.5/beta;
 			for (n=0; n<N; n++){
 			  double value = Phase.data[n];
-				SDn.data[n] = temp*log((1.0+value)/(1.0-value))-1.5;
+				SDn.data[n] = temp*log((1.0+value)/(1.0-value))+1.5;
 			}
 
 			//...........................................................................
@@ -2204,7 +2204,6 @@ int main(int argc, char **argv)
 			KGwns = KNwns = 0.0;
 			Jwn = Kwn = efawns = 0.0;
 			trJwn = trawn = trRwn = 0.0;
-			
 
 			for (c=0;c<ncubes;c++){
 				// Get cube from the list
