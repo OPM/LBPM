@@ -12,8 +12,6 @@
 #include "common/Utilities.h"
 #include "common/MPI.h"
 
-
-
 int MAX_BLOB_COUNT=50;
 
 using namespace std;
@@ -38,6 +36,7 @@ struct Domain{
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 	int rank;
+	bool pBC;
 
 	//**********************************
 	// MPI ranks for all 18 neighbors
