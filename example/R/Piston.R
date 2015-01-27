@@ -20,7 +20,7 @@ RHSB=expression(frac(1,2)~G[zz]^{wn}~(~v[z]^{bar(w)}~+~v[z]^{bar(n)}))
 #pression(frac(d~s^{bar(bar(w))},dt^{*}))
 
 # define the TCAT variables, length scale and IFT
-source("~/Programs/TCAT/R/DefsTCAT.R")
+source("~/Programs/LBPM-WIA/example/R/DefsTCAT.R")
 gamma = 0.058
 D=14.5
 volume=4e6
@@ -118,23 +118,23 @@ Full$ResA<-Full$LHS-2808.1693*Full$NonDimA+0.1038
 
 myfitA<-lm(NonDimA~LHS+NonDimB,data=Full)
 summary.lm(myfitA)
-coefA1 <- summary(myfitA)$coefficients[1,1]
-coefA2 <- summary(myfitA)$coefficients[2,1]
-coefA3 <- summary(myfitA)$coefficients[3,1]
+Err <- summary(myfitA)$coefficients[1,1]
+cwn <- summary(myfitA)$coefficients[2,1]
+kwn <- summary(myfitA)$coefficients[3,1]
 
 Full$RHSB<-0.5*Full$Gwnzz*(Full$vawz+Full$vanz)
 
-postscript(family="ComputerModern",encoding="TeXtext.enc")
+#postscript(family="ComputerModern",encoding="TeXtext.enc")
 #loadfonts(device="postscript")
 #font_install('fontcm')
 
 
 p<-ggplot(Full,aes(LHS,NonDimA,colour=Case))+
-	geom_point() + xlab(RHSAa) + ylab(LHSA) + theme_bw() +
+	geom_point() + ylab(expression(frac(ds^{bar(bar(w))},dt~paste("*")))) + xlab(C^{wn}~Delta~P^{c}) + theme_bw() +
 	theme(text=element_text(family=mainfont,size=rel(3))) +
 	theme(legend.text=element_text(size=rel(4)))+
 	theme(legend.title=element_text(size=rel(3)))+
-	geom_abline(slope=coefA2,intercept=-coefA1,colour="gray")
+	geom_abline(slope=cwn,intercept=Err,colour="gray")
 						      
 ggsave("~/Data/Multiphase/Piston/piston-dswdt-nondim.pdf",p,width=4.5,heigh=3.5)
 
