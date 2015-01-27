@@ -1,6 +1,7 @@
 // Header file for two-phase averaging class
 #include "pmmc.h"
 #include "Domain.h"
+#include "Communication.h"
 
 class TwoPhase{
 
@@ -13,6 +14,7 @@ class TwoPhase{
 	int kstart,kfinish;
 
 	double fluid_isovalue, solid_isovalue;
+	double Volume;
 	// initialize lists for vertices for surfaces, common line
 	DTMutableList<Point> nw_pts;
 	DTMutableList<Point> ns_pts;
@@ -41,13 +43,16 @@ class TwoPhase{
 	DoubleArray NormalVector;
 
 public:
+	Domain& Dm;
 	int ncubes;
 	//...........................................................................
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
 	double trimdist; 						// pixel distance to trim surface for specified averages
-	double awn,ans,aws,lwns,nwp_volume;
+	double porosity,poreVol;
+	double awn,ans,aws,lwns;
+	double wp_volume,nwp_volume;
 	double As, dummy;
 	double vol_w, vol_n;						// volumes the exclude the interfacial region
 	double sat_w, sat_w_previous;
@@ -65,7 +70,8 @@ public:
 	double trawn,trawn_global;					// trimmed interfacial area
 	double trJwn,trJwn_global;					// trimmed interfacial area
 	double trRwn,trRwn_global;					// trimmed interfacial area
-	double nwp_volume_global;					// volume for the wetting phase (for saturation)
+	double nwp_volume_global;					// volume for the non-wetting phase
+	double wp_volume_global;					// volume for the wetting phase
 	double As_global;
 	double dEs,dAwn,dAns;						// Global surface energy (calculated by rank=0)
 	DoubleArray van;
@@ -105,8 +111,9 @@ public:
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
 	//...........................................................................
-	TwoPhase(Domain &dm){
+	TwoPhase(Domain &dm) : Dm(dm){
 		Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
+		Volume=Nx*Ny*Nz*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
 		ncubes=(Nx-2)*(Ny-2)*(Nz-2);
 		cubeList.New(3,ncubes);
@@ -179,7 +186,8 @@ public:
 	void UpdateMeshValues();
 	void PhaseToSignedDistance(double Beta);
 	void ComputeLocal();
-	void Reduce();
+	void Reduce(MPI_Comm Communicator);
+	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep, FILE*);
 
 };
@@ -199,7 +207,7 @@ void TwoPhase::Initialize(){
 	fluid_isovalue=solid_isovalue=0.0;
 	// Initialize the averaged quantities
 	awn = aws = ans = lwns = 0.0;
-	nwp_volume = 0.0;
+	nwp_volume = wp_volume = 0.0;
 	As = 0.0;
 	pan = paw = 0.0;
 	vaw(0) = vaw(1) = vaw(2) = 0.0;
@@ -289,15 +297,18 @@ void TwoPhase::ComputeLocal(){
 						van(2) += 0.125*Vel_z.data[n];
 					}
 				}
-				else if (delphi < 1e-4){
-					// volume the excludes the interfacial region
-					vol_w += 0.125;
-					// pressure
-					paw += 0.125*Press.data[n];
-					// velocity
-					vaw(0) += 0.125*Vel_x.data[n];
-					vaw(1) += 0.125*Vel_y.data[n];
-					vaw(2) += 0.125*Vel_z.data[n];
+				else{
+					wp_volume += 0.125;
+					if (delphi < 1e-4){
+						// volume the excludes the interfacial region
+						vol_w += 0.125;
+						// pressure
+						paw += 0.125*Press.data[n];
+						// velocity
+						vaw(0) += 0.125*Vel_x.data[n];
+						vaw(1) += 0.125*Vel_y.data[n];
+						vaw(2) += 0.125*Vel_z.data[n];
+					}
 				}
 			}
 		}
@@ -344,34 +355,119 @@ void TwoPhase::ComputeLocal(){
 		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		//...........................................................................
-		//printf("finished cube %i \n",c);
 	}
 }
 
-void TwoPhase::Reduce(){
-  awn_global=awn;
-  Jwn_global=Jwn/awn;
+void TwoPhase::Reduce(MPI_Comm Communicator){
+	int i;
+	double iVol_global=1.0/Volume;
+	//...........................................................................
+	MPI_Barrier(Communicator);
+	MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&wp_volume,&wp_volume_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	// Phase averages
+	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Barrier(Communicator);
+
+	// Normalize the phase averages
+	// (density of both components = 1.0)
+	if (vol_w_global > 0.0){
+		paw_global = paw_global / vol_w_global;
+		vaw_global(0) = vaw_global(0) / vol_w_global;
+		vaw_global(1) = vaw_global(1) / vol_w_global;
+		vaw_global(2) = vaw_global(2) / vol_w_global;
+	}
+	if (vol_n_global > 0.0){
+		pan_global = pan_global / vol_n_global;
+		van_global(0) = van_global(0) / vol_n_global;
+		van_global(1) = van_global(1) / vol_n_global;
+		van_global(2) = van_global(2) / vol_n_global;
+	}
+	// Normalize surface averages by the interfacial area
+	if (awn_global > 0.0){
+		Jwn_global /= awn_global;
+		Kwn_global /= awn_global;
+		for (i=0; i<3; i++) vawn_global(i) /= awn_global;
+		for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
+	}
+	if (lwns_global > 0.0){
+		efawns_global /= lwns_global;
+		KNwns_global /= lwns_global;
+		KGwns_global /= lwns_global;
+		for (i=0; i<3; i++)	vawns_global(i) /= lwns_global;
+	}
+	if (trawn_global > 0.0){
+		trJwn_global /= trawn_global;
+		trRwn_global /= trawn_global;
+		trRwn_global = 2.0*fabs(trRwn_global);
+		trJwn_global = fabs(trJwn_global);
+	}
+
+	if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
+	if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+
+	//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
+	sat_w = 1.0 - nwp_volume_global/(nwp_volume_global+wp_volume_global);
+	// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
+	awn_global = awn_global*iVol_global;
+	ans_global = ans_global*iVol_global;
+	aws_global = aws_global*iVol_global;
+	dEs = dEs*iVol_global;
+	lwns_global = lwns_global*iVol_global;
+}
+
+void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT){
+	awn_global *= D;
+	ans_global *= D;
+	ans_global *= D;
+	lwns_global *= D*D;
+
 }
 
 void TwoPhase::PrintAll(int timestep, FILE *TIMELOG){
-	fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-	fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
-	fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
-	fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
-	fprintf(TIMELOG,"%.5g %.5g ",KNwns_global, KGwns_global);								// curvature of wn interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g ",vawns_global(0),vawns_global(1),vawns_global(2));	// velocity of wn interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-			Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-			Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-			Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-	fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
-	fflush(TIMELOG);
+	if (Dm.rank==0){
+		fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
+		fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
+		fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
+		fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
+		fprintf(TIMELOG,"%.5g %.5g ",KNwns_global, KGwns_global);								// curvature of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vawns_global(0),vawns_global(1),vawns_global(2));	// velocity of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
+		fflush(TIMELOG);
+	}
 }
 

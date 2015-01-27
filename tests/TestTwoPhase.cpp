@@ -20,19 +20,28 @@
 
 int main(int argc, char **argv)
 {
-	int rank,npx,npy,npz;
+	// Initialize MPI
+	int rank,nprocs;
+	MPI_Init(&argc,&argv);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+
+	printf("Running two-phase averaging test on %i processors \n",nprocs);
+
+	int npx,npy,npz;
 	int i,j,k;
 	int Nx,Ny,Nz;
 	double Lx,Ly,Lz;
 	Nx=Ny=Nz=40;
-	rank=0;
-	npx=npy=npz=1;
+	npx=npy=1;
+	npz=nprocs;
 	Lx=Ly=Lz=1.0;
 
 	FILE *TIMELOG;
 	if (rank==0)	TIMELOG = fopen("timelog.tcat","a+");
 
 	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz);
+	Dm.InitializeRanks();
 
 	TwoPhase Averages(Dm);
 	int timestep=0;
@@ -53,14 +62,18 @@ int main(int argc, char **argv)
 		}
 	}
 
-	printf("Nx=%i, \n",Averages.Nx);
-
 	Averages.SetupCubes(Dm);
 	Averages.Initialize();
 	Averages.UpdateMeshValues();
 	Averages.ComputeLocal();
-	Averages.Reduce();
+	Averages.Reduce(MPI_COMM_WORLD);
 	Averages.PrintAll(timestep,TIMELOG);
 
+	printf("my rank = %i \n",Dm.rank);
+
+	// ****************************************************
+	MPI_Barrier(MPI_COMM_WORLD);
 	return 0;
+	MPI_Finalize();
+	// ****************************************************
 }
