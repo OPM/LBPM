@@ -1050,13 +1050,6 @@ int main(int argc, char **argv)
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSDs, Averages.SDs.data, dist_mem_size);
 	//...........................................................................
-	// Phase indicator (in array form as needed by PMMC algorithm)
-	DoubleArray Phase(Nx,Ny,Nz);
-
-	// Extra copies of phi needed to compute time derivatives on CPU
-	DoubleArray Phase_tminus(Nx,Ny,Nz);
-	DoubleArray Phase_tplus(Nx,Ny,Nz);
-	DoubleArray dPdt(Nx,Ny,Nz);
 
 	//copies of data needed to perform checkpointing from cpu
 	double *cDen, *cDistEven, *cDistOdd;
@@ -1230,7 +1223,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
-	CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+	CopyToHost(Averages.Phase_tplus.data,Phi,N*sizeof(double));
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
