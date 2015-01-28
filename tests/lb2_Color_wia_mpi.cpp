@@ -1110,8 +1110,6 @@ int main(int argc, char **argv)
 	Averages.UpdateSolid();
 	//.......................................................................
 
-	//......................................................................
-
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
 	//*************************************************************************
@@ -1665,7 +1663,8 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus.data,Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
+			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.Phase_tplus.data);
 			//...........................................................................
 		}
 		if (timestep%1000 == 0){
@@ -1688,9 +1687,11 @@ int main(int argc, char **argv)
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
 			CopyToHost(Averages.Phase_tminus.data,Phi,N*sizeof(double));
+			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.data,Averages.Phase_tminus.data);
 			//....................................................................
 			// The following need to be called each time new averages are computed
 			Averages.Initialize();
+			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
 			Averages.Reduce();
