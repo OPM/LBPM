@@ -1,9 +1,12 @@
+#ifndef Domain_INC
+#define Domain_INC
 // Created by James McClure
 // Copyright 2008-2013
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <Array.h>
 #include <math.h>
 #include <time.h>
 #include <exception>      // std::exception
@@ -1002,3 +1005,4 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 
 }
 
+#endif
