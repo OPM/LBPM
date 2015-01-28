@@ -360,7 +360,6 @@ void TwoPhase::SetupCubes(Domain &Dm){
 	kfinish = Nz-1;
 	if (Dm.BoundaryCondition !=0 && Dm.kproc==0)			kstart = 4;
 	if (Dm.BoundaryCondition !=0 && Dm.kproc==Dm.nprocz-1)	kfinish = Nz-4;
-
 	nc=0;
 	for (k=kstart; k<kfinish; k++){
 		for (j=1; j<Ny-1; j++){
@@ -450,7 +449,6 @@ void TwoPhase::UpdateSolid(){
 }
 
 void TwoPhase::UpdateMeshValues(){
-
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
@@ -461,9 +459,7 @@ void TwoPhase::UpdateMeshValues(){
 	//...........................................................................
 	// Update the time derivative of non-dimensional density field
 	// Map Phase_tplus and Phase_tminus
-
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
-	//...........................................................................
 	//...........................................................................
 	CommunicateMeshHalo(Vel_x, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
