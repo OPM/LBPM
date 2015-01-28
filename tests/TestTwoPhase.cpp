@@ -39,12 +39,12 @@ int main(int argc, char **argv)
 	int BC=0;	// periodic boundary condition
 
 	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz,BC);
-	Dm.InitializeRanks();
 	Dm.CommInit(MPI_COMM_WORLD);
 
 	TwoPhase Averages(Dm);
 	int timestep=0;
 
+	// Initializing a simple case
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
@@ -60,9 +60,10 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	//....................................................................
+	// The following only need to be done once
 	Averages.SetupCubes(Dm);
-	Averages.UpdateSolid();
+	Averages.UpdateSolid(); 	// unless the solid is deformable!
 	//....................................................................
 	// The following need to be called each time new averages are computed
 	Averages.Initialize();
@@ -71,8 +72,6 @@ int main(int argc, char **argv)
 	Averages.Reduce();
 	Averages.PrintAll(timestep);
 	//....................................................................
-
-	printf("my rank = %i \n",Dm.rank);
 
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
