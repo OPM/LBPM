@@ -115,12 +115,13 @@ public:
 	DoubleArray SDs_x;		// Gradient of the signed distance
 	DoubleArray SDs_y;
 	DoubleArray SDs_z;
-	DoubleArray Phase_x;		// Gradient of the phase indicator field
-	DoubleArray Phase_y;
-	DoubleArray Phase_z;
+	DoubleArray SDn_x;		// Gradient of the signed distance
+	DoubleArray SDn_y;
+	DoubleArray SDn_z;
+	DoubleArray DelPhi;		// Magnitude of Gradient of the phase indicator field
 	DoubleArray Phase_tplus;
 	DoubleArray Phase_tminus;
-	DoubleArray Vel_x;		// Gradient of the phase indicator field
+	DoubleArray Vel_x;		// Velocity
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
 	//...........................................................................
@@ -143,9 +144,10 @@ public:
 		SDs_x.New(Nx,Ny,Nz);		// Gradient of the signed distance
 		SDs_y.New(Nx,Ny,Nz);
 		SDs_z.New(Nx,Ny,Nz);
-		Phase_x.New(Nx,Ny,Nz);		// Gradient of the phase indicator field
-		Phase_y.New(Nx,Ny,Nz);
-		Phase_z.New(Nx,Ny,Nz);
+		SDn_x.New(Nx,Ny,Nz);		// Gradient of the signed distance
+		SDn_y.New(Nx,Ny,Nz);
+		SDn_z.New(Nx,Ny,Nz);
+		DelPhi.New(Nx,Ny,Nz);
 		Phase_tplus.New(Nx,Ny,Nz);
 		Phase_tminus.New(Nx,Ny,Nz);
 		Vel_x.New(Nx,Ny,Nz);		// Gradient of the phase indicator field
@@ -292,7 +294,8 @@ public:
 	void SetupCubes(Domain &Dm);
 	void UpdateMeshValues();
 	void UpdateSolid();
-	void PhaseToSignedDistance(double Beta);
+	void ComputeDelPhi();
+	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
 	void ComputeLocal();
 	void Reduce();
 	void NonDimensionalize(double D, double viscosity, double IFT);
@@ -300,12 +303,29 @@ public:
 
 };
 
-void TwoPhase::PhaseToSignedDistance(double Beta){
+void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *DistData){
 
 	double temp=0.5/Beta;
 	for (int n=0; n<Nx*Ny*Nz; n++){
-	  double value = Phase.data[n];
-		SDn.data[n] = temp*log((1.0+value)/(1.0-value));
+		double value = ColorData[n];
+		DistData[n] = temp*log((1.0+value)/(1.0-value));
+	}
+}
+
+void TwoPhase::ComputeDelPhi(){
+
+	int i,j,k;
+	double fx,fy,fz;
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				// Compute all of the derivatives using finite differences
+				fx = 0.5*(Phase(i+1,j,k) - Phase(i-1,j,k));
+				fy = 0.5*(Phase(i,j+1,k) - Phase(i,j-1,k));
+				fz = 0.5*(Phase(i,j,k+1) - Phase(i,j,k-1));
+				DelPhi(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
+			}
+		}
 	}
 }
 
@@ -433,13 +453,15 @@ void TwoPhase::UpdateMeshValues(){
 
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
-	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
 	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
+	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
 	//...........................................................................
 	// Compute the mesh curvature of the phase indicator field
 	pmmc_MeshCurvature(SDn, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 	//...........................................................................
 	// Update the time derivative of non-dimensional density field
+	// Map Phase_tplus and Phase_tminus
+
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 	//...........................................................................
 	//...........................................................................
@@ -586,7 +608,7 @@ void TwoPhase::UpdateMeshValues(){
 	//...........................................................................
 	// Gradient of the phase indicator field
 	//...........................................................................
-	CommunicateMeshHalo(Phase_x, Dm.Comm,
+	CommunicateMeshHalo(SDn_x, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -608,7 +630,7 @@ void TwoPhase::UpdateMeshValues(){
 			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(Phase_y, Dm.Comm,
+	CommunicateMeshHalo(SDn_y, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -630,7 +652,29 @@ void TwoPhase::UpdateMeshValues(){
 			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(Phase_z, Dm.Comm,
+	CommunicateMeshHalo(SDn_z, Dm.Comm,
+			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
+			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
+			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
+			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
+			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
+			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
+			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
+			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
+			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
+			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
+			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
+			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
+			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
+			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	//...........................................................................	//...........................................................................
+	CommunicateMeshHalo(DelPhi, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -652,6 +696,7 @@ void TwoPhase::UpdateMeshValues(){
 			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
+
 }
 
 void TwoPhase::ComputeLocal(){
@@ -674,12 +719,11 @@ void TwoPhase::ComputeLocal(){
 				// 1-D index for this cube corner
 				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 				// compute the norm of the gradient of the phase indicator field
-				delphi = sqrt(Phase_x.data[n]*Phase_x.data[n]+Phase_y.data[n]*Phase_y.data[n]+Phase_z.data[n]*Phase_z.data[n]);
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					nwp_volume += 0.125;
 					// volume the excludes the interfacial region
-					if (delphi < 1e-4){
+					if (DelPhi.data[n] < 1e-4){
 						vol_n += 0.125;
 						// pressure
 						pan += 0.125*Press.data[n];
@@ -691,7 +735,7 @@ void TwoPhase::ComputeLocal(){
 				}
 				else{
 					wp_volume += 0.125;
-					if (delphi < 1e-4){
+					if (DelPhi.data[n] < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
@@ -715,7 +759,7 @@ void TwoPhase::ComputeLocal(){
 				i, j, k, Nx, Ny, Nz);
 
 		// Integrate the contact angle
-		efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,
+		efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 				local_nws_pts,i,j,k,n_local_nws_pts);
 
 		// Integrate the mean curvature
@@ -730,10 +774,10 @@ void TwoPhase::ComputeLocal(){
 				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
 
 		// Compute the normal speed of the interface
-		pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
+		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
 				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 
-		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,
+		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 				local_nws_pts,i,j,k,n_local_nws_pts);
 
 		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
