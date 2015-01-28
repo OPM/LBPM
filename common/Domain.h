@@ -225,6 +225,36 @@ void Domain::CommInit(MPI_Comm Communicator){
 	int sendtag = 21;
 	int recvtag = 21;
 
+	//......................................................................................
+	//Get the ranks of each process and it's neighbors
+	// map the rank to the block index
+	iproc = rank%nprocx;
+	jproc = (rank/nprocx)%nprocy;
+	kproc = rank/(nprocx*nprocy);
+	// set up the neighbor ranks
+    i = iproc;
+    j = jproc;
+    k = kproc;
+	rank_X = getRankForBlock(i+1,j,k);
+	rank_x = getRankForBlock(i-1,j,k);
+	rank_Y = getRankForBlock(i,j+1,k);
+	rank_y = getRankForBlock(i,j-1,k);
+	rank_Z = getRankForBlock(i,j,k+1);
+	rank_z = getRankForBlock(i,j,k-1);
+	rank_XY = getRankForBlock(i+1,j+1,k);
+	rank_xy = getRankForBlock(i-1,j-1,k);
+	rank_Xy = getRankForBlock(i+1,j-1,k);
+	rank_xY = getRankForBlock(i-1,j+1,k);
+	rank_XZ = getRankForBlock(i+1,j,k+1);
+	rank_xz = getRankForBlock(i-1,j,k-1);
+	rank_Xz = getRankForBlock(i+1,j,k-1);
+	rank_xZ = getRankForBlock(i-1,j,k+1);
+	rank_YZ = getRankForBlock(i,j+1,k+1);
+	rank_yz = getRankForBlock(i,j-1,k-1);
+	rank_Yz = getRankForBlock(i,j+1,k-1);
+	rank_yZ = getRankForBlock(i,j-1,k+1);
+	//......................................................................................
+
 	MPI_Comm_group(Communicator,&Group);
 	MPI_Comm_create(Communicator,Group,&Comm);
 
