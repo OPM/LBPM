@@ -37,11 +37,9 @@ int main(int argc, char **argv)
 	npz=nprocs;
 	Lx=Ly=Lz=1.0;
 
-	FILE *TIMELOG;
-	if (rank==0)	TIMELOG = fopen("timelog.tcat","a+");
-
 	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz);
 	Dm.InitializeRanks();
+	Dm.CommInit(MPI_COMM_WORLD);
 
 	TwoPhase Averages(Dm);
 	int timestep=0;
@@ -64,10 +62,10 @@ int main(int argc, char **argv)
 
 	Averages.SetupCubes(Dm);
 	Averages.Initialize();
-	Averages.UpdateMeshValues();
+	Averages.UpdateMeshValues(MPI_COMM_WORLD);
 	Averages.ComputeLocal();
 	Averages.Reduce(MPI_COMM_WORLD);
-	Averages.PrintAll(timestep,TIMELOG);
+	Averages.PrintAll(timestep);
 
 	printf("my rank = %i \n",Dm.rank);
 
