@@ -36,8 +36,9 @@ int main(int argc, char **argv)
 	npx=npy=1;
 	npz=nprocs;
 	Lx=Ly=Lz=1.0;
+	int BC=0;	// periodic boundary condition
 
-	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz);
+	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz,BC);
 	Dm.InitializeRanks();
 	Dm.CommInit(MPI_COMM_WORLD);
 
@@ -61,11 +62,15 @@ int main(int argc, char **argv)
 	}
 
 	Averages.SetupCubes(Dm);
+	Averages.UpdateSolid();
+	//....................................................................
+	// The following need to be called each time new averages are computed
 	Averages.Initialize();
-	Averages.UpdateMeshValues(MPI_COMM_WORLD);
+	Averages.UpdateMeshValues();
 	Averages.ComputeLocal();
-	Averages.Reduce(MPI_COMM_WORLD);
+	Averages.Reduce();
 	Averages.PrintAll(timestep);
+	//....................................................................
 
 	printf("my rank = %i \n",Dm.rank);
 

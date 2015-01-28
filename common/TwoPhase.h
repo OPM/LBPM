@@ -47,6 +47,7 @@ class TwoPhase{
 
 	// Buffers for communication
 	// Fill in the phase MeshData from neighboring processors
+	// Note that the communicator is associated with the domain Dm
 	double *sendMeshData_x, *sendMeshData_y, *sendMeshData_z, *sendMeshData_X, *sendMeshData_Y, *sendMeshData_Z;
 	double *sendMeshData_xy, *sendMeshData_yz, *sendMeshData_xz, *sendMeshData_Xy, *sendMeshData_Yz, *sendMeshData_xZ;
 	double *sendMeshData_xY, *sendMeshData_yZ, *sendMeshData_Xz, *sendMeshData_XY, *sendMeshData_YZ, *sendMeshData_XZ;
@@ -125,7 +126,7 @@ public:
 	//...........................................................................
 	TwoPhase(Domain &dm) : Dm(dm){
 		Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
-		Volume=Nx*Ny*Nz*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
+		Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
 		ncubes=(Nx-2)*(Ny-2)*(Nz-2);
 		cubeList.New(3,ncubes);
@@ -188,7 +189,22 @@ public:
 		Gns_global.New(6);
 		Gws_global.New(6);
 		//.........................................
-		if (Dm.rank==0)	TIMELOG = fopen("timelog.tcat","a+");
+		if (Dm.rank==0){
+			TIMELOG = fopen("timelog.tcat","a+");
+			if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
+				// If timelog is empty, write a short header to list the averages
+				//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+				fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
+				fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns ");	// Scalar averages
+				fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
+				fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");
+				fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
+				fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
+				fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
+				fprintf(TIMELOG,"trawn trJwn trRwn\n");								// trimmed curvature for wn surface
+				//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			}
+		}
 		//.........................................
 		// Allocation buffers for mesh communication
 		// send buffers
@@ -274,10 +290,11 @@ public:
 
 	void Initialize();
 	void SetupCubes(Domain &Dm);
-	void UpdateMeshValues(MPI_Comm Communicator);
+	void UpdateMeshValues();
+	void UpdateSolid();
 	void PhaseToSignedDistance(double Beta);
 	void ComputeLocal();
-	void Reduce(MPI_Comm Communicator);
+	void Reduce();
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 
@@ -321,8 +338,8 @@ void TwoPhase::SetupCubes(Domain &Dm){
 	int i,j,k;
 	kstart = 1;
 	kfinish = Nz-1;
-	if (Dm.pBC && Dm.kproc==0)				kstart = 4;
-	if (Dm.pBC && Dm.kproc==Dm.nprocz-1)	kfinish = Nz-4;
+	if (Dm.BoundaryCondition !=0 && Dm.kproc==0)			kstart = 4;
+	if (Dm.BoundaryCondition !=0 && Dm.kproc==Dm.nprocz-1)	kfinish = Nz-4;
 
 	nc=0;
 	for (k=kstart; k<kfinish; k++){
@@ -338,7 +355,81 @@ void TwoPhase::SetupCubes(Domain &Dm){
 	ncubes = nc;
 }
 
-void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
+void TwoPhase::UpdateSolid(){
+	//...........................................................................
+	// Gradient of the Signed Distance function
+	//...........................................................................
+	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
+	//...........................................................................
+	CommunicateMeshHalo(SDs_x, Dm.Comm,
+			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
+			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
+			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
+			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
+			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
+			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
+			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
+			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
+			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
+			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
+			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
+			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
+			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
+			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	//...........................................................................
+	CommunicateMeshHalo(SDs_y, Dm.Comm,
+			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
+			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
+			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
+			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
+			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
+			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
+			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
+			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
+			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
+			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
+			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
+			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
+			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
+			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	//...........................................................................
+	CommunicateMeshHalo(SDs_z, Dm.Comm,
+			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
+			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
+			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
+			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
+			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
+			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
+			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
+			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
+			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
+			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
+			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
+			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
+			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
+			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	//...........................................................................
+}
+
+void TwoPhase::UpdateMeshValues(){
 
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
@@ -352,7 +443,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 	//...........................................................................
 	//...........................................................................
-	CommunicateMeshHalo(Vel_x, Communicator,
+	CommunicateMeshHalo(Vel_x, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -376,7 +467,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 	//...........................................................................
 	// Velocity
 	//...........................................................................
-	CommunicateMeshHalo(Press, Communicator,
+	CommunicateMeshHalo(Press, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -399,7 +490,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
 	//...........................................................................
-	CommunicateMeshHalo(Vel_y, Communicator,
+	CommunicateMeshHalo(Vel_y, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -422,7 +513,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
 	//...........................................................................
-	CommunicateMeshHalo(Vel_z, Communicator,
+	CommunicateMeshHalo(Vel_z, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -446,7 +537,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 	//...........................................................................
 	// Mean Curvature
 	//...........................................................................
-	CommunicateMeshHalo(MeanCurvature, Communicator,
+	CommunicateMeshHalo(MeanCurvature, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -471,7 +562,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 	//...........................................................................
 	// Gaussian Curvature
 	//...........................................................................
-	CommunicateMeshHalo(GaussCurvature, Communicator,
+	CommunicateMeshHalo(GaussCurvature, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -495,7 +586,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 	//...........................................................................
 	// Gradient of the phase indicator field
 	//...........................................................................
-	CommunicateMeshHalo(Phase_x, Communicator,
+	CommunicateMeshHalo(Phase_x, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -517,7 +608,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(Phase_y, Communicator,
+	CommunicateMeshHalo(Phase_y, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -539,7 +630,7 @@ void TwoPhase::UpdateMeshValues(MPI_Comm Communicator){
 			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
 			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
 	//...........................................................................
-	CommunicateMeshHalo(Phase_z, Communicator,
+	CommunicateMeshHalo(Phase_z, Dm.Comm,
 			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
 			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
 			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
@@ -659,39 +750,39 @@ void TwoPhase::ComputeLocal(){
 	}
 }
 
-void TwoPhase::Reduce(MPI_Comm Communicator){
+void TwoPhase::Reduce(){
 	int i;
 	double iVol_global=1.0/Volume;
 	//...........................................................................
-	MPI_Barrier(Communicator);
-	MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&wp_volume,&wp_volume_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
+	MPI_Barrier(Dm.Comm);
+	MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&wp_volume,&wp_volume_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	// Phase averages
-	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,Communicator);
-	MPI_Barrier(Communicator);
+	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Barrier(Dm.Comm);
 
 	// Normalize the phase averages
 	// (density of both components = 1.0)

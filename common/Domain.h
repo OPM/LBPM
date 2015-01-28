@@ -19,7 +19,7 @@ using namespace std;
 struct Domain{
 
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
-			double lx, double ly, double lz){
+			double lx, double ly, double lz, int BC){
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
 		Lx = lx, Ly = ly, Lz = lz;
 		rank = rnk;
@@ -28,6 +28,7 @@ struct Domain{
 		id = new char [N];
 		BlobLabel.New(Nx,Ny,Nz);
 		BlobGraph.New(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
+		BoundaryCondition = BC;
 	}
 
 	// Basic domain information
@@ -36,7 +37,9 @@ struct Domain{
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 	int rank;
-	bool pBC;
+	int BoundaryCondition;
+	MPI_Group Group;	// Group of processors associated with this domain
+	MPI_Comm Comm;		// MPI Communicator for this domain
 
 	//**********************************
 	// MPI ranks for all 18 neighbors
@@ -221,6 +224,10 @@ void Domain::CommInit(MPI_Comm Communicator){
 	int i,j,k,n;
 	int sendtag = 21;
 	int recvtag = 21;
+
+	MPI_Comm_group(Communicator,&Group);
+	MPI_Comm_create(Communicator,Group,&Comm);
+
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
 	MPI_Status stat1[18],stat2[18];
