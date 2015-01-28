@@ -6,13 +6,13 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "pmmc.h"
 #include "Domain.h"
 #include "Extras.h"
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
 #include "Communication.h"
+#include "TwoPhase.h"
 #include "common/MPI.h"
 
 #define CBUB
@@ -284,7 +284,13 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
+	// Initialized domain and averaging framework for Two-Phase Flow
+	int BC=pBC;
+	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	Dm.CommInit(MPI_COMM_WORLD);
+	TwoPhase Averages(Dm);
+
+	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
@@ -296,20 +302,6 @@ int main(int argc, char **argv)
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
-
-//	unsigned int nBlocks = 32;
-//	int nthreads = 128;
-	int S = N/nthreads/nBlocks+1;
-
-//	unsigned int nBlocks = N/nthreads + (N%nthreads == 0?0:1);
-//	dim3 grid(nBlocks,1,1);
-
-	if (rank==0) printf("Number of blocks = %i \n", nBlocks);
-	if (rank==0) printf("Threads per block = %i \n", nthreads);
-	if (rank==0) printf("Sweeps per thread = %i \n", S);
-	if (rank==0) printf("Number of nodes per side = %i \n", Nx);
-	if (rank==0) printf("Total Number of nodes = %i \n", N);
-	if (rank==0) printf("********************************************************\n");
 
 	//.......................................................................
 	if (rank == 0)	printf("Read input media... \n");
@@ -335,9 +327,7 @@ int main(int argc, char **argv)
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
-	//...........................................................................
-	DoubleArray SDs(Nx,Ny,Nz);
-	DoubleArray SDn(Nx,Ny,Nz);
+
 	//.......................................................................
 #ifdef CBUB
 	// Initializes a constrained bubble test
@@ -350,10 +340,10 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2) 
+				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
 									+ (j-Ny/2)*(j-Ny/2)));
 				// Initialize phase positions field
-				if (SDs(i,j,k) < 0.0){
+				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
 				else if (k<BubbleBot){
@@ -411,7 +401,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	//.......................................................................
-	SignedDistance(SDs.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(Averages.SDs.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	
 //	for (n=0; n<Nx*Ny*Nz; n++)	SDs.data[n] += (1.0); // map by a pixel to account for interface width
@@ -433,11 +423,11 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (SDs.data[n] > 0.0){ 
+				if (Averages.SDs.data[n] > 0.0){
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (SDs.data[n] > 0.0){ 
+				if (Averages.SDs.data[n] > 0.0){
 					sum++;	
 				}
 			}
@@ -476,7 +466,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
-					SDs.data[n] =  max(SDs.data[n],1.0*(2.5-k));
+					Averages.SDs.data[n] =  max(Averages.SDs.data[n],1.0*(2.5-k));
 				}					
 			}
 		}
@@ -487,7 +477,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 2;
-					SDs.data[n] = max(SDs.data[n],1.0*(k-Nz+2.5));
+					Averages.SDs.data[n] = max(Averages.SDs.data[n],1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -1058,7 +1048,7 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSDs, SDs.data, dist_mem_size);
+	CopyToDevice(dvcSDs, Averages.SDs.data, dist_mem_size);
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
 	DoubleArray Phase(Nx,Ny,Nz);
@@ -1073,145 +1063,6 @@ int main(int argc, char **argv)
 	cDen = new double[2*N];
 	cDistEven = new double[10*N];
 	cDistOdd = new double[9*N];
-
-	// data needed to perform CPU-based averaging
-//	double *Vel;
-//	Vel = new double[3*N];		// fluid velocity
-//	Press = new double[N];		// fluid pressure
-
-	IntArray LocalBlobID(Nx,Ny,Nz);
-	DoubleArray Press(Nx,Ny,Nz);
-	DoubleArray MeanCurvature(Nx,Ny,Nz);
-	DoubleArray GaussCurvature(Nx,Ny,Nz);
-	DoubleArray SDs_x(Nx,Ny,Nz);		// Gradient of the signed distance
-	DoubleArray SDs_y(Nx,Ny,Nz);
-	DoubleArray SDs_z(Nx,Ny,Nz);
-	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
-	DoubleArray Phase_y(Nx,Ny,Nz);
-	DoubleArray Phase_z(Nx,Ny,Nz);
-	DoubleArray Vel_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
-	DoubleArray Vel_y(Nx,Ny,Nz);
-	DoubleArray Vel_z(Nx,Ny,Nz);
-	/*****************************************************************
-	 VARIABLES FOR THE PMMC ALGORITHM
-	 ****************************************************************** */
-	//...........................................................................
-	// Averaging variables
-	//...........................................................................
-	// local averages (to each MPI process)
-	double trimdist=1.0; 						// pixel distance to trim surface for specified averages
-	double awn,ans,aws,lwns,nwp_volume;
-	double As, dummy;
-	double vol_w, vol_n;						// volumes the exclude the interfacial region
-	double sat_w, sat_w_previous;
-	double pan,paw;								// local phase averaged pressure
-//	double vx_w,vy_w,vz_w,vx_n,vy_n,vz_n;  		// local phase averaged velocity
-	// Global averages (all processes)
-	double vol_w_global, vol_n_global;			// volumes the exclude the interfacial region
-	double awn_global,ans_global,aws_global;
-	double lwns_global;
-	double efawns,efawns_global;				// averaged contact angle
-	double Jwn,Jwn_global;						// average mean curavture - wn interface
-	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
-	double KNwns,KNwns_global;					// wns common curve normal curavture
-	double KGwns,KGwns_global;					// wns common curve geodesic curavture
-	double trawn,trawn_global;					// trimmed interfacial area
-	double trJwn,trJwn_global;					// trimmed interfacial area	
-	double trRwn,trRwn_global;					// trimmed interfacial area	
-	DoubleArray van(3);
-	DoubleArray vaw(3);
-	DoubleArray vawn(3);
-	DoubleArray vawns(3);
-	DoubleArray Gwn(6);
-	DoubleArray Gns(6);
-	DoubleArray Gws(6);
-	
-	double nwp_volume_global;					// volume for the wetting phase (for saturation)
-//	double p_n_global,p_w_global;				// global phase averaged pressure
-//	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
-//	double vx_n_global,vy_n_global,vz_n_global;	// global phase averaged velocity
-	double As_global;
-	double dEs,dAwn,dAns;						// Global surface energy (calculated by rank=0)
-	double pan_global,paw_global;								// local phase averaged pressure
-	DoubleArray van_global(3);
-	DoubleArray vaw_global(3);
-	DoubleArray vawn_global(3);
-	DoubleArray vawns_global(3);
-	DoubleArray Gwn_global(6);
-	DoubleArray Gns_global(6);
-	DoubleArray Gws_global(6);
-	//...........................................................................
-
-	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-	DoubleArray CubeValues(2,2,2);
-//	int count_in=0,count_out=0;
-//	int nodx,nody,nodz;
-	// initialize lists for vertices for surfaces, common line
-	DTMutableList<Point> nw_pts(20);
-	DTMutableList<Point> ns_pts(20);
-	DTMutableList<Point> ws_pts(20);
-	DTMutableList<Point> nws_pts(20);
-	// initialize triangle lists for surfaces
-	IntArray nw_tris(3,20);
-	IntArray ns_tris(3,20);
-	IntArray ws_tris(3,20);
-	// initialize list for line segments
-	IntArray nws_seg(2,20);
-	DTMutableList<Point> tmp(20);
-	DoubleArray Values(20);
-	DoubleArray KGwns_values(20);
-	DoubleArray KNwns_values(20);
-	DoubleArray ContactAngle(20);
-	DoubleArray Curvature(20);
-	DoubleArray DistValues(20);
-	DoubleArray InterfaceSpeed(20);
-	DoubleArray NormalVector(60);
-	
-	//	IntArray store;
-	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
-	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-	
-//	double s,s1,s2,s3;		// Triangle sides (lengths)
-	Point A,B,C,P;
-//	double area;
-	
-	// Initialize arrays for local solid surface
-	DTMutableList<Point> local_sol_pts(20);
-	int n_local_sol_pts = 0;
-	IntArray local_sol_tris(3,18);
-	int n_local_sol_tris;
-	DoubleArray values(20);
-	DTMutableList<Point> local_nws_pts(20);
-	int n_local_nws_pts;
-	
-	//int n_nw_tris_beg, n_ns_tris_beg, n_ws_tris_beg;
-	int c;
-	//int newton_steps = 0;
-	//...........................................................................
-	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
-	IntArray cubeList(3,ncubes);
-	int nc=0;
-	//...........................................................................
-	// Set up the cube list (very regular in this case due to lack of blob-ID)
-	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
-	int kstart,kfinish;
-	kstart = 1;
-	kfinish = Nz-1;
-	if (pBC && kproc==0)		kstart = 4;
-	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
-	for (k=kstart; k<kfinish; k++){
-		for (j=1; j<Ny-1; j++){
-			for (i=1; i<Nx-1; i++){
-				cubeList(0,nc) = i;
-				cubeList(1,nc) = j;
-				cubeList(2,nc) = k;
-				nc++;
-			}
-		}
-	}
-	ncubes = nc;
 
 	int logcount = 0; // number of surface write-outs
 	
@@ -1246,86 +1097,19 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SDs.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SDs.data, N);
+	WriteLocalSolidDistance(LocalRankFilename, Averages.SDs.data, N);
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SDs.data[i] -= (1.0); // 
+	for (i=0; i<N; i++)	Averages.SDs.data[i] -= (1.0); //
 	//.......................................................................
-	
-	//...........................................................................
-	// Gradient of the Signed Distance function
-	//...........................................................................
-	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
-	//...........................................................................
-	CommunicateMeshHalo(SDs_x, MPI_COMM_WORLD,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-			sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-			sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-			sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-			sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-			sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-			recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-			recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-			recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-			recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-			recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-			recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-	//...........................................................................
-	CommunicateMeshHalo(SDs_y, MPI_COMM_WORLD,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-			sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-			sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-			sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-			sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-			sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-			recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-			recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-			recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-			recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-			recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-			recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-	//...........................................................................
-	CommunicateMeshHalo(SDs_z, MPI_COMM_WORLD,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-			sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-			sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-			sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-			sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-			sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-			recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-			recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-			recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-			recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-			recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-			recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-	//...........................................................................
+	// Finalize setup for averaging domain
+	Averages.SetupCubes(Dm);
+	Averages.UpdateSolid();
+	//.......................................................................
+
 	//......................................................................
 
 	//*************************************************************************
@@ -1457,11 +1241,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	DeviceBarrier();
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Phase.data,Phi,N*sizeof(double));
-	CopyToHost(Press.data,Pressure,N*sizeof(double));
-	CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
-	CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
-	CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
+	CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
+	CopyToHost(Averages.Press.data,Pressure,N*sizeof(double));
+	CopyToHost(Averages.Vel_x.data,&Velocity[0],N*sizeof(double));
+	CopyToHost(Averages.Vel_y.data,&Velocity[N],N*sizeof(double));
+	CopyToHost(Averages.Vel_z.data,&Velocity[2*N],N*sizeof(double));
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
@@ -1480,26 +1264,8 @@ int main(int argc, char **argv)
 	//.........................................
 	
 	sendtag = recvtag = 5;
-	FILE *TIMELOG;
-	if (rank==0){
-		TIMELOG= fopen("timelog.tcat","a+");
-		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR)){
-			// If timelog is empty, write a short header to list the averages
-			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
-			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns ");	// Scalar averages
-			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
-			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");			
-			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
-			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
-			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn\n");								// trimmed curvature for wn surface
-			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-		}
-	}
 
 	err = 1.0; 	
-	sat_w_previous = 1.01; // slightly impossible value! 
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax && err > tol ){
@@ -1899,7 +1665,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
-			CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase_tplus.data,Phi,N*sizeof(double));
 			//...........................................................................
 		}
 		if (timestep%1000 == 0){
@@ -1910,497 +1676,26 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Phase.data,Phi,N*sizeof(double));
-			CopyToHost(Press.data,Pressure,N*sizeof(double));
-			CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
-			CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
-			CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
+			CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
+			CopyToHost(Averages.Press.data,Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x.data,&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y.data,&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z.data,&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
-			CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
-			//...........................................................................
-			// Calculate the time derivative of the phase indicator field
-			for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
-			//...........................................................................
-
-			// Initialize signed distance function from the phase indicator field
-			double temp=0.5/beta;
-			for (n=0; n<N; n++){
-			  double value = Phase.data[n];
-				SDn.data[n] = temp*log((1.0+value)/(1.0-value));
-			}
-
-			//...........................................................................
-			CommunicateMeshHalo(Phase, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			
-			// Compute the gradients of the phase indicator and signed distance fields
-			pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
-//			pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
-			//...........................................................................
-			// Compute the mesh curvature of the phase indicator field
-			pmmc_MeshCurvature(SDn, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
-			//...........................................................................
-			// Fill in the halo region for the mesh gradients and curvature
-			//...........................................................................
-			// Pressure
-			//...........................................................................
-			CommunicateMeshHalo(Vel_x, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			// Velocity
-			//...........................................................................
-			CommunicateMeshHalo(Press, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			//...........................................................................
-			CommunicateMeshHalo(Vel_y, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			//...........................................................................
-			CommunicateMeshHalo(Vel_z, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			// Mean Curvature
-			//...........................................................................
-			CommunicateMeshHalo(MeanCurvature, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			//...........................................................................
-			// Gaussian Curvature
-			//...........................................................................
-			CommunicateMeshHalo(GaussCurvature, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			// Gradient of the phase indicator field
-			//...........................................................................
-			CommunicateMeshHalo(Phase_x, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			CommunicateMeshHalo(Phase_y, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-			CommunicateMeshHalo(Phase_z, MPI_COMM_WORLD,
-					sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-					sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-					sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-					recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-					recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-					recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-					sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-					sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-					sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-					sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-					sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-					sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-					recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-					recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-					recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-					recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-					recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-					recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-					rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-					rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
-			//...........................................................................
-
-			//...........................................................................
-
-			//...........................................................................
-			// Compute areas using porous medium marching cubes algorithm
-			// McClure, Adalsteinsson, et al. (2007)
-			//...........................................................................
-			awn = aws = ans = lwns = 0.0;
-			nwp_volume = 0.0;
-			As = 0.0;
-			
-			// Compute phase averages
-			pan = paw = 0.0;
-			vaw(0) = vaw(1) = vaw(2) = 0.0;
-			van(0) = van(1) = van(2) = 0.0;
-			vawn(0) = vawn(1) = vawn(2) = 0.0;
-			vawns(0) = vawns(1) = vawns(2) = 0.0;
-			Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
-			Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
-			Gws(0) = Gws(1) = Gws(2) = 0.0;
-			Gws(3) = Gws(4) = Gws(5) = 0.0;
-			Gns(0) = Gns(1) = Gns(2) = 0.0;
-			Gns(3) = Gns(4) = Gns(5) = 0.0;
-			vol_w = vol_n =0.0;
-			KGwns = KNwns = 0.0;
-			Jwn = Kwn = efawns = 0.0;
-			trJwn = trawn = trRwn = 0.0;
-
-			for (c=0;c<ncubes;c++){
-				// Get cube from the list
-				i = cubeList(0,c);
-				j = cubeList(1,c);
-				k = cubeList(2,c);
-				
-				//...........................................................................
-				//...........................................................................
-				// Compute volume averages
-				for (int p=0;p<8;p++){
-
-					double delphi;
-					if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-						// 1-D index for this cube corner
-						n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-						// compute the norm of the gradient of the phase indicator field
-						delphi = sqrt(Phase_x.data[n]*Phase_x.data[n]+Phase_y.data[n]*Phase_y.data[n]+Phase_z.data[n]*Phase_z.data[n]);
-						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-							nwp_volume += 0.125;
-							// volume the excludes the interfacial region
-							if (delphi < 1e-4){
-								vol_n += 0.125;
-								// pressure
-								pan += 0.125*Press.data[n];
-								// velocity
-								van(0) += 0.125*Vel_x.data[n];
-								van(1) += 0.125*Vel_y.data[n];
-								van(2) += 0.125*Vel_z.data[n];
-							}
-						}
-						else if (delphi < 1e-4){
-							// volume the excludes the interfacial region
-							vol_w += 0.125;
-							// pressure
-							paw += 0.125*Press.data[n];
-							// velocity
-							vaw(0) += 0.125*Vel_x.data[n];
-							vaw(1) += 0.125*Vel_y.data[n];
-							vaw(2) += 0.125*Vel_z.data[n];
-						}
-					}
-				}
-
-			//...........................................................................
-				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
-						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
-						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-						i, j, k, Nx, Ny, Nz);
-
-				// Integrate the contact angle
-				efawns += pmmc_CubeContactAngle(CubeValues,Values,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,
-												local_nws_pts,i,j,k,n_local_nws_pts);
-
-				// Integrate the mean curvature
-				Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-				Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-
-				// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-				pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistValues,
-							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
-				
-				pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistValues,
-							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
-				
-				// Compute the normal speed of the interface
-				pmmc_InterfaceSpeed(dPdt, Phase_x, Phase_y, Phase_z, CubeValues, nw_pts, nw_tris,
-									NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
-				
-				pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns,Phase_x,Phase_y,Phase_z,SDs_x,SDs_y,SDs_z,						
-						local_nws_pts,i,j,k,n_local_nws_pts);
-				
-				pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
-						nws_pts, n_nws_pts, i, j, k);
-
-				As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
-
-				// Compute the surface orientation and the interfacial area
-				awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-				ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-				aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-				lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
-				//...........................................................................
-			}
-			//...........................................................................
-			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			// Phase averages
-			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Barrier(MPI_COMM_WORLD);
-			//.........................................................................
-			// Compute the change in the total surface energy based on the defined interval
-			// See McClure, Prins and Miller (2014) 
-			//.........................................................................
-			dAwn += awn_global;
-			dAns += ans_global;
-			dEs = 6.01603*alpha*(dAwn + 1.05332*Ps*dAns);
-			dAwn = -awn_global;		// Get ready for the next analysis interval
-			dAns = -ans_global;
-			
-			// Normalize the phase averages 
-			// (density of both components = 1.0)
-			if (vol_w_global > 0.0){
-				paw_global = paw_global / vol_w_global;
-				vaw_global(0) = vaw_global(0) / vol_w_global;
-				vaw_global(1) = vaw_global(1) / vol_w_global;
-				vaw_global(2) = vaw_global(2) / vol_w_global;
-			}
-			if (vol_n_global > 0.0){
-				pan_global = pan_global / vol_n_global;
-				van_global(0) = van_global(0) / vol_n_global;
-				van_global(1) = van_global(1) / vol_n_global;
-				van_global(2) = van_global(2) / vol_n_global;
-			}
-			// Normalize surface averages by the interfacial area
-			if (awn_global > 0.0){
-				Jwn_global /= awn_global;
-				Kwn_global /= awn_global;
-				for (i=0; i<3; i++) vawn_global(i) /= awn_global;
-				for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
-			}
-			if (lwns_global > 0.0){
-				efawns_global /= lwns_global;
-				KNwns_global /= lwns_global;
-				KGwns_global /= lwns_global;
-				for (i=0; i<3; i++)	vawns_global(i) /= lwns_global;
-			}
-			if (trawn_global > 0.0){
-				trJwn_global /= trawn_global;
-				trRwn_global /= trawn_global;
-				trRwn_global = 2.0*fabs(trRwn_global);
-				trJwn_global = fabs(trJwn_global);
-			}
-
-			if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
-			if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
-
-			//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
-			sat_w = 1.0 - nwp_volume_global/pore_vol;
-			// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
-			awn_global = awn_global*iVol_global*D;
-			ans_global = ans_global*iVol_global*D;
-			aws_global = aws_global*iVol_global*D;
-			dEs = dEs*iVol_global*D;
-			lwns_global = lwns_global*iVol_global*D*D;
-			
-			//.........................................................................
-			if (rank==0){
-
-				fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
-				fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
-				fprintf(TIMELOG,"%.5g ",lwns_global);											// common curve length
-				fprintf(TIMELOG,"%.5g ",efawns_global);											// average contact angle
-				fprintf(TIMELOG,"%.5g %.5g ",KNwns_global, KGwns_global);								// curvature of wn interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw_global(0),vaw_global(1),vaw_global(2));	// average velocity of w phase
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",van_global(0),van_global(1),van_global(2));	// average velocity of n phase
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn_global(0),vawn_global(1),vawn_global(2));	// velocity of wn interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g ",vawns_global(0),vawns_global(1),vawns_global(2));	// velocity of wn interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5));	// orientation of wn interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-						Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-				fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
-				fflush(TIMELOG);
-				
-			}
+			CopyToHost(Averages.Phase_tminus.data,Phi,N*sizeof(double));
+			//....................................................................
+			// The following need to be called each time new averages are computed
+			Averages.Initialize();
+			Averages.UpdateMeshValues();
+			Averages.ComputeLocal();
+			Averages.Reduce();
+			Averages.PrintAll(timestep);
+			//....................................................................
 		}
 		
 		if (timestep%RESTART_INTERVAL == 0){
@@ -2634,7 +1929,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 	
-	//	printf("Local File Name =  %s \n",LocalRankFilename);
+/*	//	printf("Local File Name =  %s \n",LocalRankFilename);
 	FILE *FINALSTATE;
 	if (rank==0){
 		fclose(TIMELOG);
@@ -2659,43 +1954,18 @@ int main(int argc, char **argv)
 		fprintf(FINALSTATE,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 		fclose(FINALSTATE);
 	}
+*/
 	
-//#ifdef WriteOutput	
-	CopyToHost(Phase.data,Phi,N*sizeof(double));
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Phase.data,8,N,PHASE);
-//	fwrite(MeanCurvature.data,8,N,PHASE);
+	fwrite(Averages.Phase.data,8,N,PHASE);
 	fclose(PHASE);
-//#endif
-	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Press.data,Pressure,N*sizeof(double));
-	CommunicateMeshHalo(Press, MPI_COMM_WORLD,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			sendList_x,sendList_y,sendList_z,sendList_X,sendList_Y,sendList_Z,
-			sendList_xy,sendList_XY,sendList_xY,sendList_Xy,sendList_xz,sendList_XZ,
-			sendList_xZ,sendList_Xz,sendList_yz,sendList_YZ,sendList_yZ,sendList_Yz,
-			sendCount_x,sendCount_y,sendCount_z,sendCount_X,sendCount_Y,sendCount_Z,
-			sendCount_xy,sendCount_XY,sendCount_xY,sendCount_Xy,sendCount_xz,sendCount_XZ,
-			sendCount_xZ,sendCount_Xz,sendCount_yz,sendCount_YZ,sendCount_yZ,sendCount_Yz,
-			recvList_x,recvList_y,recvList_z,recvList_X,recvList_Y,recvList_Z,
-			recvList_xy,recvList_XY,recvList_xY,recvList_Xy,recvList_xz,recvList_XZ,
-			recvList_xZ,recvList_Xz,recvList_yz,recvList_YZ,recvList_yZ,recvList_Yz,
-			recvCount_x,recvCount_y,recvCount_z,recvCount_X,recvCount_Y,recvCount_Z,
-			recvCount_xy,recvCount_XY,recvCount_xY,recvCount_Xy,recvCount_xz,recvCount_XZ,
-			recvCount_xZ,recvCount_Xz,recvCount_yz,recvCount_YZ,recvCount_yZ,recvCount_Yz,
-			rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z,rank_xy,rank_XY,rank_xY,
-			rank_Xy,rank_xz,rank_XZ,rank_xZ,rank_Xz,rank_yz,rank_YZ,rank_yZ,rank_Yz);
+
 	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Press.data,8,N,PRESS);
+	fwrite(Averages.Press.data,8,N,PRESS);
 	fclose(PRESS);
 
 	
