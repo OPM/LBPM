@@ -4,7 +4,6 @@
 #include <fstream>
 #include <math.h>
 #include "Array.h"
-
 #include "PointList.h"
 //#include "vecLib/clapack.h"
 
@@ -301,6 +300,7 @@ char triTable[256][16] =
 	{0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}};
 //--------------------------------------------------------------------------------------------------------
+
 class TriLinPoly{
 	/* Compute a tri-linear polynomial within a given cube (i,j,k) x (i+1,j+1,k+1)
 	 * Values are provided at the corners in CubeValues

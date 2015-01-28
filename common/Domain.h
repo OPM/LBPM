@@ -1,9 +1,12 @@
+#ifndef Domain_INC
+#define Domain_INC
 // Created by James McClure
 // Copyright 2008-2013
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <Array.h>
 #include <math.h>
 #include <time.h>
 #include <exception>      // std::exception
@@ -12,8 +15,6 @@
 #include "common/Utilities.h"
 #include "common/MPI.h"
 
-
-
 int MAX_BLOB_COUNT=50;
 
 using namespace std;
@@ -21,7 +22,7 @@ using namespace std;
 struct Domain{
 
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
-			double lx, double ly, double lz){
+			double lx, double ly, double lz, int BC){
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
 		Lx = lx, Ly = ly, Lz = lz;
 		rank = rnk;
@@ -30,6 +31,7 @@ struct Domain{
 		id = new char [N];
 		BlobLabel.New(Nx,Ny,Nz);
 		BlobGraph.New(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
+		BoundaryCondition = BC;
 	}
 
 	// Basic domain information
@@ -38,6 +40,9 @@ struct Domain{
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 	int rank;
+	int BoundaryCondition;
+	MPI_Group Group;	// Group of processors associated with this domain
+	MPI_Comm Comm;		// MPI Communicator for this domain
 
 	//**********************************
 	// MPI ranks for all 18 neighbors
@@ -222,6 +227,40 @@ void Domain::CommInit(MPI_Comm Communicator){
 	int i,j,k,n;
 	int sendtag = 21;
 	int recvtag = 21;
+
+	//......................................................................................
+	//Get the ranks of each process and it's neighbors
+	// map the rank to the block index
+	iproc = rank%nprocx;
+	jproc = (rank/nprocx)%nprocy;
+	kproc = rank/(nprocx*nprocy);
+	// set up the neighbor ranks
+    i = iproc;
+    j = jproc;
+    k = kproc;
+	rank_X = getRankForBlock(i+1,j,k);
+	rank_x = getRankForBlock(i-1,j,k);
+	rank_Y = getRankForBlock(i,j+1,k);
+	rank_y = getRankForBlock(i,j-1,k);
+	rank_Z = getRankForBlock(i,j,k+1);
+	rank_z = getRankForBlock(i,j,k-1);
+	rank_XY = getRankForBlock(i+1,j+1,k);
+	rank_xy = getRankForBlock(i-1,j-1,k);
+	rank_Xy = getRankForBlock(i+1,j-1,k);
+	rank_xY = getRankForBlock(i-1,j+1,k);
+	rank_XZ = getRankForBlock(i+1,j,k+1);
+	rank_xz = getRankForBlock(i-1,j,k-1);
+	rank_Xz = getRankForBlock(i+1,j,k-1);
+	rank_xZ = getRankForBlock(i-1,j,k+1);
+	rank_YZ = getRankForBlock(i,j+1,k+1);
+	rank_yz = getRankForBlock(i,j-1,k-1);
+	rank_Yz = getRankForBlock(i,j+1,k-1);
+	rank_yZ = getRankForBlock(i,j-1,k+1);
+	//......................................................................................
+
+	MPI_Comm_group(Communicator,&Group);
+	MPI_Comm_create(Communicator,Group,&Comm);
+
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
 	MPI_Status stat1[18],stat2[18];
@@ -966,3 +1005,4 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
 
 }
 
+#endif

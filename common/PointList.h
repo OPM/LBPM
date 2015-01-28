@@ -124,12 +124,8 @@ public:
 	
     size_t IsEmpty(void) const {return (Data==0);}
     size_t Length(void) const {return length;}
-	
-#if DTRangeCheck
-    const T operator()(size_t i) const  {if (i>= length) {printf("DTList: out of range"); return outOfRange;} return Data[i];}
-#else
+
     const T operator()(size_t i) const  {return Data[i];}
-#endif
 	
 protected:
     T *Data;
@@ -151,14 +147,8 @@ public:
 	
     T *Pointer(void) {return DTList<T>::Data;}
     const T *Pointer(void) const {return DTList<T>::Data;}
-	
-#if DTRangeCheck
-    T &operator()(size_t i) {if (i>=DTList<T>::length) {DTErrorOutOfRange("DTList<T>",i,DTList<T>::length); return DTList<T>::outOfRange;} return DTList<T>::Data[i];}
-    T operator()(size_t i) const  {if (i<0 || i>= DTList<T>::length) {DTErrorOutOfRange("DTList<T>",i,DTList<T>::length); return DTList<T>::outOfRange;} return DTList<T>::Data[i];}
-#else
     T &operator()(size_t i) {return DTList<T>::Data[i];}
     T operator()(size_t i) const  {return DTList<T>::Data[i];}
-#endif
 	
     DTMutableList<T> &operator=(T v) {for (size_t i=0;i<DTList<T>::length;i++) DTList<T>::Data[i] = v; return *this;}
 };
@@ -182,7 +172,6 @@ template <class T> DTMutableList<T> IncreaseSize(const DTList<T> &A,size_t addLe
     for (size_t i=0;i<len;i++) toP[i] = fromP[i];
     return toReturn;
 }
-
 
 #endif
 
