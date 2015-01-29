@@ -1684,6 +1684,7 @@ int main(int argc, char **argv)
 			//....................................................................
 			// The following need to be called each time new averages are computed
 			Averages.Initialize();
+			Averages.ComputeDelPhi();
 			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
