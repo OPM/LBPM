@@ -310,7 +310,6 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 		double value = ColorData[n];
 		DistData[n] = temp*log((1.0+value)/(1.0-value));
 	}
-
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
@@ -318,6 +317,29 @@ void TwoPhase::ComputeDelPhi(){
 
 	int i,j,k;
 	double fx,fy,fz;
+
+	CommunicateMeshHalo(Phase, Dm.Comm,
+			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
+			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
+			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
+			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
+			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
+			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
+			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
+			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
+			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
+			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
+			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
+			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
+			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
+			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
+			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
+			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
+			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
+			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
+			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
+			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+
 	for (k=1; k<Nz-1; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -451,6 +473,7 @@ void TwoPhase::UpdateSolid(){
 }
 
 void TwoPhase::UpdateMeshValues(){
+
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
