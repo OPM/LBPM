@@ -1574,8 +1574,8 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Phase_tminus.data,Phi,N*sizeof(double));
 			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.data,Averages.Phase_tminus.data);
 			//....................................................................
-			// The following need to be called each time new averages are computed
 			Averages.Initialize();
+			Averages.ComputeDelPhi();
 			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
