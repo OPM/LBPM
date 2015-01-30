@@ -1,7 +1,9 @@
 # Set some CMake properties    
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-CMAKE_POLICY(SET CMP0011 OLD)
 CMAKE_POLICY(SET CMP0014 OLD)
+IF ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
+    CMAKE_POLICY(SET CMP0026 OLD)
+ENDIF()
 
 
 MESSAGE("====================")
@@ -9,24 +11,14 @@ MESSAGE("Configuring LBPM-WIA")
 MESSAGE("====================")
 
 
+# Prevent users from building in place
+IF ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}" )
+    MESSAGE( FATAL_ERROR "Building code in place is a bad idea" )
+ENDIF()
+
+
 # Set the project name
 PROJECT( LBPM-WIA )
-
-
-# Check if we are only compiling docs
-INCLUDE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake )
-INCLUDE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/libraries.cmake )
-CHECK_ENABLE_FLAG( ONLY_BUILD_DOCS 0 )
-
-
-# Set testing paramaters
-SET( DROP_METHOD "http" )
-SET( DROP_SITE "oblivion.engr.colostate.edu" )
-SET( DROP_LOCATION "/CDash/submit.php?project=LBPM-WIA" )
-SET( TRIGGER_SITE "" )
-SET( DROP_SITE_CDASH TRUE )
-ENABLE_TESTING()
-INCLUDE( CTest )
 
 
 # Set some common paths
@@ -38,6 +30,26 @@ ELSEIF( NOT LBPM_INSTALL_DIR )
     SET( LBPM_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR} )
 ENDIF()
 SET( CMAKE_MODULE_PATH ${LBPM_SOURCE_DIR} ${LBPM_SOURCE_DIR}/cmake )
+
+
+# Include macros
+SET( PROJ LBPM )
+INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake" )
+INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/libraries.cmake" )
+
+
+# Check if we are only compiling docs
+CHECK_ENABLE_FLAG( ONLY_BUILD_DOCS 0 )
+
+
+# Set testing paramaters
+SET( DROP_METHOD "http" )
+SET( DROP_SITE "" )
+SET( DROP_LOCATION "/CDash/submit.php?project=LBPM-WIA" )
+SET( TRIGGER_SITE "" )
+SET( DROP_SITE_CDASH TRUE )
+ENABLE_TESTING()
+INCLUDE( CTest )
 
 
 # Create custom targets for build-test, check, and distclean
@@ -89,13 +101,21 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_CUDA()
     CONFIGURE_MIC()
     CONFIGURE_LBPM()
-    CONFIGURE_TIMER()
+    CONFIGURE_TIMER( 0 "${${PROJ}_INSTALL_DIR}/null_timer" )
     CONFIGURE_LINE_COVERAGE()
 ENDIF()
 
 
 # Configure internal libraries (order matters)
 SET( LBPM_LIBS  lbpm-wia )
+
+
+# Macro to create 1,2,4 processor tests
+MACRO( ADD_LBPM_TEST_1_2_4 EXENAME ${ARGN} )
+    ADD_LBPM_TEST( ${EXENAME} ${ARGN} )
+    ADD_LBPM_TEST_PARALLEL( ${EXENAME} 2 ${ARGN} )
+    ADD_LBPM_TEST_PARALLEL( ${EXENAME} 4 ${ARGN} )
+ENDMACRO()
 
 
 # Add the src directories

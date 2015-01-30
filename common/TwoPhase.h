@@ -306,11 +306,12 @@ public:
 void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *DistData){
 
 	double temp=0.5/Beta;
-	for (int n=0; n<Nx*Ny*Nz; n++){
+/*	for (int n=0; n<Nx*Ny*Nz; n++){
 		double value = ColorData[n];
 		DistData[n] = temp*log((1.0+value)/(1.0-value));
 	}
-//	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
+*/
+	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
 void TwoPhase::ComputeDelPhi(){
