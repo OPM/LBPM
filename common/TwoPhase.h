@@ -45,16 +45,6 @@ class TwoPhase{
 	// CSV / text file where time history of averages is saved
 	FILE *TIMELOG;
 
-	// Buffers for communication
-	// Fill in the phase MeshData from neighboring processors
-	// Note that the communicator is associated with the domain Dm
-	double *sendMeshData_x, *sendMeshData_y, *sendMeshData_z, *sendMeshData_X, *sendMeshData_Y, *sendMeshData_Z;
-	double *sendMeshData_xy, *sendMeshData_yz, *sendMeshData_xz, *sendMeshData_Xy, *sendMeshData_Yz, *sendMeshData_xZ;
-	double *sendMeshData_xY, *sendMeshData_yZ, *sendMeshData_Xz, *sendMeshData_XY, *sendMeshData_YZ, *sendMeshData_XZ;
-	double *recvMeshData_x, *recvMeshData_y, *recvMeshData_z, *recvMeshData_X, *recvMeshData_Y, *recvMeshData_Z;
-	double *recvMeshData_xy, *recvMeshData_yz, *recvMeshData_xz, *recvMeshData_Xy, *recvMeshData_Yz, *recvMeshData_xZ;
-	double *recvMeshData_xY, *recvMeshData_yZ, *recvMeshData_Xz, *recvMeshData_XY, *recvMeshData_YZ, *recvMeshData_XZ;
-
 public:
 	Domain& Dm;
 	int ncubes;
@@ -207,87 +197,9 @@ public:
 				//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			}
 		}
-		//.........................................
-		// Allocation buffers for mesh communication
-		// send buffers
-		sendMeshData_x = new double [Dm.sendCount_x];
-		sendMeshData_y = new double [Dm.sendCount_y];
-		sendMeshData_z = new double [Dm.sendCount_z];
-		sendMeshData_X = new double [Dm.sendCount_X];
-		sendMeshData_Y = new double [Dm.sendCount_Y];
-		sendMeshData_Z = new double [Dm.sendCount_Z];
-		sendMeshData_xy = new double [Dm.sendCount_xy];
-		sendMeshData_yz = new double [Dm.sendCount_yz];
-		sendMeshData_xz = new double [Dm.sendCount_xz];
-		sendMeshData_Xy = new double [Dm.sendCount_Xy];
-		sendMeshData_Yz = new double [Dm.sendCount_Yz];
-		sendMeshData_xZ = new double [Dm.sendCount_xZ];
-		sendMeshData_xY = new double [Dm.sendCount_xY];
-		sendMeshData_yZ = new double [Dm.sendCount_yZ];
-		sendMeshData_Xz = new double [Dm.sendCount_Xz];
-		sendMeshData_XY = new double [Dm.sendCount_XY];
-		sendMeshData_YZ = new double [Dm.sendCount_YZ];
-		sendMeshData_XZ = new double [Dm.sendCount_XZ];
-		//......................................................................................
-		// recv buffers
-		recvMeshData_x = new double [Dm.recvCount_x];
-		recvMeshData_y = new double [Dm.recvCount_y];
-		recvMeshData_z = new double [Dm.recvCount_z];
-		recvMeshData_X = new double [Dm.recvCount_X];
-		recvMeshData_Y = new double [Dm.recvCount_Y];
-		recvMeshData_Z = new double [Dm.recvCount_Z];
-		recvMeshData_xy = new double [Dm.recvCount_xy];
-		recvMeshData_yz = new double [Dm.recvCount_yz];
-		recvMeshData_xz = new double [Dm.recvCount_xz];
-		recvMeshData_Xy = new double [Dm.recvCount_Xy];
-		recvMeshData_xZ = new double [Dm.recvCount_xZ];
-		recvMeshData_xY = new double [Dm.recvCount_xY];
-		recvMeshData_yZ = new double [Dm.recvCount_yZ];
-		recvMeshData_Yz = new double [Dm.recvCount_Yz];
-		recvMeshData_Xz = new double [Dm.recvCount_Xz];
-		recvMeshData_XY = new double [Dm.recvCount_XY];
-		recvMeshData_YZ = new double [Dm.recvCount_YZ];
-		recvMeshData_XZ = new double [Dm.recvCount_XZ];
-		//......................................................................................
-
 	}
 	~TwoPhase(){
-		delete sendMeshData_x;
-		delete sendMeshData_y;
-		delete sendMeshData_z;
-		delete sendMeshData_X;
-		delete sendMeshData_Y;
-		delete sendMeshData_Z;
-		delete sendMeshData_xy;
-		delete sendMeshData_xY;
-		delete sendMeshData_Xy;
-		delete sendMeshData_XY;
-		delete sendMeshData_xz;
-		delete sendMeshData_xZ;
-		delete sendMeshData_Xz;
-		delete sendMeshData_XZ;
-		delete sendMeshData_yz;
-		delete sendMeshData_yZ;
-		delete sendMeshData_Yz;
-		delete sendMeshData_YZ;
-		delete recvMeshData_x;
-		delete recvMeshData_y;
-		delete recvMeshData_z;
-		delete recvMeshData_X;
-		delete recvMeshData_Y;
-		delete recvMeshData_Z;
-		delete recvMeshData_xy;
-		delete recvMeshData_xY;
-		delete recvMeshData_Xy;
-		delete recvMeshData_XY;
-		delete recvMeshData_xz;
-		delete recvMeshData_xZ;
-		delete recvMeshData_Xz;
-		delete recvMeshData_XZ;
-		delete recvMeshData_yz;
-		delete recvMeshData_yZ;
-		delete recvMeshData_Yz;
-		delete recvMeshData_YZ;
+
 	}
 
 	void Initialize();
@@ -319,28 +231,7 @@ void TwoPhase::ComputeDelPhi(){
 	int i,j,k;
 	double fx,fy,fz;
 
-	CommunicateMeshHalo(Phase, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-
+	Dm.CommunicateMeshHalo(Phase);
 	for (k=1; k<Nz-1; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -400,106 +291,32 @@ void TwoPhase::SetupCubes(Domain &Dm){
 }
 
 void TwoPhase::UpdateSolid(){
-	CommunicateMeshHalo(SDs, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(SDs);
 	//...........................................................................
 	// Gradient of the Signed Distance function
 	//...........................................................................
 	pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 	//...........................................................................
-	CommunicateMeshHalo(SDs_x, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(SDs_x);
 	//...........................................................................
-	CommunicateMeshHalo(SDs_y, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(SDs_y);
 	//...........................................................................
-	CommunicateMeshHalo(SDs_z, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(SDs_z);
 	//...........................................................................
 }
 
 void TwoPhase::UpdateMeshValues(){
-
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
-	//pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
+	//...........................................................................
+	// Gradient of the phase indicator field
+	//...........................................................................
+	Dm.CommunicateMeshHalo(SDn_x);
+	//...........................................................................
+	Dm.CommunicateMeshHalo(SDn_y);
+	//...........................................................................
+	Dm.CommunicateMeshHalo(SDn_z);
 	//...........................................................................
 	// Compute the mesh curvature of the phase indicator field
 	pmmc_MeshCurvature(SDn, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
@@ -508,236 +325,19 @@ void TwoPhase::UpdateMeshValues(){
 	// Map Phase_tplus and Phase_tminus
 	for (int n=0; n<Nx*Ny*Nz; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
 	//...........................................................................
-	CommunicateMeshHalo(Vel_x, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(Press);
 	//...........................................................................
-	// Velocity
+	Dm.CommunicateMeshHalo(Vel_x);
 	//...........................................................................
-	CommunicateMeshHalo(Press, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(Vel_y);
 	//...........................................................................
+	Dm.CommunicateMeshHalo(Vel_z);
 	//...........................................................................
-	CommunicateMeshHalo(Vel_y, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(MeanCurvature);
 	//...........................................................................
+	Dm.CommunicateMeshHalo(GaussCurvature);
 	//...........................................................................
-	CommunicateMeshHalo(Vel_z, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................
-	// Mean Curvature
-	//...........................................................................
-	CommunicateMeshHalo(MeanCurvature, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................
-	//...........................................................................
-	// Gaussian Curvature
-	//...........................................................................
-	CommunicateMeshHalo(GaussCurvature, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................
-	// Gradient of the phase indicator field
-	//...........................................................................
-	CommunicateMeshHalo(SDn_x, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................
-	CommunicateMeshHalo(SDn_y, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................
-	CommunicateMeshHalo(SDn_z, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
-	//...........................................................................	//...........................................................................
-	CommunicateMeshHalo(DelPhi, Dm.Comm,
-			sendMeshData_x,sendMeshData_y,sendMeshData_z,sendMeshData_X,sendMeshData_Y,sendMeshData_Z,
-			sendMeshData_xy,sendMeshData_XY,sendMeshData_xY,sendMeshData_Xy,sendMeshData_xz,sendMeshData_XZ,
-			sendMeshData_xZ,sendMeshData_Xz,sendMeshData_yz,sendMeshData_YZ,sendMeshData_yZ,sendMeshData_Yz,
-			recvMeshData_x,recvMeshData_y,recvMeshData_z,recvMeshData_X,recvMeshData_Y,recvMeshData_Z,
-			recvMeshData_xy,recvMeshData_XY,recvMeshData_xY,recvMeshData_Xy,recvMeshData_xz,recvMeshData_XZ,
-			recvMeshData_xZ,recvMeshData_Xz,recvMeshData_yz,recvMeshData_YZ,recvMeshData_yZ,recvMeshData_Yz,
-			Dm.sendList_x,Dm.sendList_y,Dm.sendList_z,Dm.sendList_X,Dm.sendList_Y,Dm.sendList_Z,
-			Dm.sendList_xy,Dm.sendList_XY,Dm.sendList_xY,Dm.sendList_Xy,Dm.sendList_xz,Dm.sendList_XZ,
-			Dm.sendList_xZ,Dm.sendList_Xz,Dm.sendList_yz,Dm.sendList_YZ,Dm.sendList_yZ,Dm.sendList_Yz,
-			Dm.sendCount_x,Dm.sendCount_y,Dm.sendCount_z,Dm.sendCount_X,Dm.sendCount_Y,Dm.sendCount_Z,
-			Dm.sendCount_xy,Dm.sendCount_XY,Dm.sendCount_xY,Dm.sendCount_Xy,Dm.sendCount_xz,Dm.sendCount_XZ,
-			Dm.sendCount_xZ,Dm.sendCount_Xz,Dm.sendCount_yz,Dm.sendCount_YZ,Dm.sendCount_yZ,Dm.sendCount_Yz,
-			Dm.recvList_x,Dm.recvList_y,Dm.recvList_z,Dm.recvList_X,Dm.recvList_Y,Dm.recvList_Z,
-			Dm.recvList_xy,Dm.recvList_XY,Dm.recvList_xY,Dm.recvList_Xy,Dm.recvList_xz,Dm.recvList_XZ,
-			Dm.recvList_xZ,Dm.recvList_Xz,Dm.recvList_yz,Dm.recvList_YZ,Dm.recvList_yZ,Dm.recvList_Yz,
-			Dm.recvCount_x,Dm.recvCount_y,Dm.recvCount_z,Dm.recvCount_X,Dm.recvCount_Y,Dm.recvCount_Z,
-			Dm.recvCount_xy,Dm.recvCount_XY,Dm.recvCount_xY,Dm.recvCount_Xy,Dm.recvCount_xz,Dm.recvCount_XZ,
-			Dm.recvCount_xZ,Dm.recvCount_Xz,Dm.recvCount_yz,Dm.recvCount_YZ,Dm.recvCount_yZ,Dm.recvCount_Yz,
-			Dm.rank_x,Dm.rank_y,Dm.rank_z,Dm.rank_X,Dm.rank_Y,Dm.rank_Z,Dm.rank_xy,Dm.rank_XY,Dm.rank_xY,
-			Dm.rank_Xy,Dm.rank_xz,Dm.rank_XZ,Dm.rank_xZ,Dm.rank_Xz,Dm.rank_yz,Dm.rank_YZ,Dm.rank_yZ,Dm.rank_Yz);
+	Dm.CommunicateMeshHalo(DelPhi);
 	//...........................................................................
 
 }

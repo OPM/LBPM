@@ -14,6 +14,7 @@
 
 #include "common/Utilities.h"
 #include "common/MPI.h"
+#include "common/Communication.h"
 
 int MAX_BLOB_COUNT=50;
 
@@ -33,6 +34,7 @@ struct Domain{
 		BlobGraph.New(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 		BoundaryCondition = BC;
 	}
+	~Domain();
 
 	// Basic domain information
 	int Nx,Ny,Nz,N;
@@ -80,6 +82,12 @@ struct Domain{
 	int *recvBuf_xy, *recvBuf_yz, *recvBuf_xz, *recvBuf_Xy, *recvBuf_Yz, *recvBuf_xZ;
 	int *recvBuf_xY, *recvBuf_yZ, *recvBuf_Xz, *recvBuf_XY, *recvBuf_YZ, *recvBuf_XZ;
 	//......................................................................................	
+	double *sendData_x, *sendData_y, *sendData_z, *sendData_X, *sendData_Y, *sendData_Z;
+	double *sendData_xy, *sendData_yz, *sendData_xz, *sendData_Xy, *sendData_Yz, *sendData_xZ;
+	double *sendData_xY, *sendData_yZ, *sendData_Xz, *sendData_XY, *sendData_YZ, *sendData_XZ;
+	double *recvData_x, *recvData_y, *recvData_z, *recvData_X, *recvData_Y, *recvData_Z;
+	double *recvData_xy, *recvData_yz, *recvData_xz, *recvData_Xy, *recvData_Yz, *recvData_xZ;
+	double *recvData_xY, *recvData_yZ, *recvData_Xz, *recvData_XY, *recvData_YZ, *recvData_XZ;
 
 	// Solid indicator function
 	char *id;
@@ -89,6 +97,7 @@ struct Domain{
 
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
+	void CommunicateMeshHalo(DoubleArray &Mesh);
 	void BlobComm(MPI_Comm comm);
 
 	void AssignBlobConnections(){
@@ -190,6 +199,45 @@ private:
 		}
 	}
 };
+
+Domain::~Domain(){
+	delete sendData_x;
+	delete sendData_y;
+	delete sendData_z;
+	delete sendData_X;
+	delete sendData_Y;
+	delete sendData_Z;
+	delete sendData_xy;
+	delete sendData_xY;
+	delete sendData_Xy;
+	delete sendData_XY;
+	delete sendData_xz;
+	delete sendData_xZ;
+	delete sendData_Xz;
+	delete sendData_XZ;
+	delete sendData_yz;
+	delete sendData_yZ;
+	delete sendData_Yz;
+	delete sendData_YZ;
+	delete recvData_x;
+	delete recvData_y;
+	delete recvData_z;
+	delete recvData_X;
+	delete recvData_Y;
+	delete recvData_Z;
+	delete recvData_xy;
+	delete recvData_xY;
+	delete recvData_Xy;
+	delete recvData_XY;
+	delete recvData_xz;
+	delete recvData_xZ;
+	delete recvData_Xz;
+	delete recvData_XZ;
+	delete recvData_yz;
+	delete recvData_yZ;
+	delete recvData_Yz;
+	delete recvData_YZ;
+}
 
 void Domain::InitializeRanks()
 {
@@ -513,7 +561,127 @@ void Domain::CommInit(MPI_Comm Communicator){
 	recvBuf_YZ = new int [recvCount_YZ];
 	recvBuf_XZ = new int [recvCount_XZ];
 	//......................................................................................
+	// send buffers
+	sendData_x = new double [sendCount_x];
+	sendData_y = new double [sendCount_y];
+	sendData_z = new double [sendCount_z];
+	sendData_X = new double [sendCount_X];
+	sendData_Y = new double [sendCount_Y];
+	sendData_Z = new double [sendCount_Z];
+	sendData_xy = new double [sendCount_xy];
+	sendData_yz = new double [sendCount_yz];
+	sendData_xz = new double [sendCount_xz];
+	sendData_Xy = new double [sendCount_Xy];
+	sendData_Yz = new double [sendCount_Yz];
+	sendData_xZ = new double [sendCount_xZ];
+	sendData_xY = new double [sendCount_xY];
+	sendData_yZ = new double [sendCount_yZ];
+	sendData_Xz = new double [sendCount_Xz];
+	sendData_XY = new double [sendCount_XY];
+	sendData_YZ = new double [sendCount_YZ];
+	sendData_XZ = new double [sendCount_XZ];
+	//......................................................................................
+	// recv buffers
+	recvData_x = new double [recvCount_x];
+	recvData_y = new double [recvCount_y];
+	recvData_z = new double [recvCount_z];
+	recvData_X = new double [recvCount_X];
+	recvData_Y = new double [recvCount_Y];
+	recvData_Z = new double [recvCount_Z];
+	recvData_xy = new double [recvCount_xy];
+	recvData_yz = new double [recvCount_yz];
+	recvData_xz = new double [recvCount_xz];
+	recvData_Xy = new double [recvCount_Xy];
+	recvData_xZ = new double [recvCount_xZ];
+	recvData_xY = new double [recvCount_xY];
+	recvData_yZ = new double [recvCount_yZ];
+	recvData_Yz = new double [recvCount_Yz];
+	recvData_Xz = new double [recvCount_Xz];
+	recvData_XY = new double [recvCount_XY];
+	recvData_YZ = new double [recvCount_YZ];
+	recvData_XZ = new double [recvCount_XZ];
+	//......................................................................................
 
+}
+
+inline void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
+{
+	int sendtag, recvtag;
+	sendtag = recvtag = 7;
+	PackMeshData(sendList_x, sendCount_x ,sendData_x, Mesh.data);
+	PackMeshData(sendList_X, sendCount_X ,sendData_X, Mesh.data);
+	PackMeshData(sendList_y, sendCount_y ,sendData_y, Mesh.data);
+	PackMeshData(sendList_Y, sendCount_Y ,sendData_Y, Mesh.data);
+	PackMeshData(sendList_z, sendCount_z ,sendData_z, Mesh.data);
+	PackMeshData(sendList_Z, sendCount_Z ,sendData_Z, Mesh.data);
+	PackMeshData(sendList_xy, sendCount_xy ,sendData_xy, Mesh.data);
+	PackMeshData(sendList_Xy, sendCount_Xy ,sendData_Xy, Mesh.data);
+	PackMeshData(sendList_xY, sendCount_xY ,sendData_xY, Mesh.data);
+	PackMeshData(sendList_XY, sendCount_XY ,sendData_XY, Mesh.data);
+	PackMeshData(sendList_xz, sendCount_xz ,sendData_xz, Mesh.data);
+	PackMeshData(sendList_Xz, sendCount_Xz ,sendData_Xz, Mesh.data);
+	PackMeshData(sendList_xZ, sendCount_xZ ,sendData_xZ, Mesh.data);
+	PackMeshData(sendList_XZ, sendCount_XZ ,sendData_XZ, Mesh.data);
+	PackMeshData(sendList_yz, sendCount_yz ,sendData_yz, Mesh.data);
+	PackMeshData(sendList_Yz, sendCount_Yz ,sendData_Yz, Mesh.data);
+	PackMeshData(sendList_yZ, sendCount_yZ ,sendData_yZ, Mesh.data);
+	PackMeshData(sendList_YZ, sendCount_YZ ,sendData_YZ, Mesh.data);
+	//......................................................................................
+	MPI_Sendrecv(sendData_x,sendCount_x,MPI_DOUBLE,rank_x,sendtag,
+			recvData_X,recvCount_X,MPI_DOUBLE,rank_X,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_X,sendCount_X,MPI_DOUBLE,rank_X,sendtag,
+			recvData_x,recvCount_x,MPI_DOUBLE,rank_x,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_y,sendCount_y,MPI_DOUBLE,rank_y,sendtag,
+			recvData_Y,recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Y,sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,
+			recvData_y,recvCount_y,MPI_DOUBLE,rank_y,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_z,sendCount_z,MPI_DOUBLE,rank_z,sendtag,
+			recvData_Z,recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Z,sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,
+			recvData_z,recvCount_z,MPI_DOUBLE,rank_z,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xy,sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,
+			recvData_XY,recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_XY,sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,
+			recvData_xy,recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Xy,sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,
+			recvData_xY,recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xY,sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,
+			recvData_Xy,recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xz,sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,
+			recvData_XZ,recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_XZ,sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,
+			recvData_xz,recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Xz,sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,
+			recvData_xZ,recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xZ,sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,
+			recvData_Xz,recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_yz,sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,
+			recvData_YZ,recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_YZ,sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,
+			recvData_yz,recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Yz,sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,
+			recvData_yZ,recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,
+			recvData_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,Comm,MPI_STATUS_IGNORE);
+	//........................................................................................
+	UnpackMeshData(recvList_x, recvCount_x ,recvData_x, Mesh.data);
+	UnpackMeshData(recvList_X, recvCount_X ,recvData_X, Mesh.data);
+	UnpackMeshData(recvList_y, recvCount_y ,recvData_y, Mesh.data);
+	UnpackMeshData(recvList_Y, recvCount_Y ,recvData_Y, Mesh.data);
+	UnpackMeshData(recvList_z, recvCount_z ,recvData_z, Mesh.data);
+	UnpackMeshData(recvList_Z, recvCount_Z ,recvData_Z, Mesh.data);
+	UnpackMeshData(recvList_xy, recvCount_xy ,recvData_xy, Mesh.data);
+	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvData_Xy, Mesh.data);
+	UnpackMeshData(recvList_xY, recvCount_xY ,recvData_xY, Mesh.data);
+	UnpackMeshData(recvList_XY, recvCount_XY ,recvData_XY, Mesh.data);
+	UnpackMeshData(recvList_xz, recvCount_xz ,recvData_xz, Mesh.data);
+	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvData_Xz, Mesh.data);
+	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvData_xZ, Mesh.data);
+	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvData_XZ, Mesh.data);
+	UnpackMeshData(recvList_yz, recvCount_yz ,recvData_yz, Mesh.data);
+	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvData_Yz, Mesh.data);
+	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvData_yZ, Mesh.data);
+	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, Mesh.data);
 }
 
 void Domain::BlobComm(MPI_Comm Communicator){
@@ -541,41 +709,41 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	PackBlobData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, BlobLabel.data);
 	//......................................................................................
 	MPI_Sendrecv(sendBuf_x,sendCount_x,MPI_INT,rank_x,sendtag,
-			recvBuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_X,sendCount_X,MPI_INT,rank_X,sendtag,
-			recvBuf_x,recvCount_x,MPI_INT,rank_x,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_x,recvCount_x,MPI_INT,rank_x,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_y,sendCount_y,MPI_INT,rank_y,sendtag,
-			recvBuf_Y,recvCount_Y,MPI_INT,rank_Y,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_Y,recvCount_Y,MPI_INT,rank_Y,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_Y,sendCount_Y,MPI_INT,rank_Y,sendtag,
-			recvBuf_y,recvCount_y,MPI_INT,rank_y,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_y,recvCount_y,MPI_INT,rank_y,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_z,sendCount_z,MPI_INT,rank_z,sendtag,
-			recvBuf_Z,recvCount_Z,MPI_INT,rank_Z,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_Z,recvCount_Z,MPI_INT,rank_Z,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_Z,sendCount_Z,MPI_INT,rank_Z,sendtag,
-			recvBuf_z,recvCount_z,MPI_INT,rank_z,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_z,recvCount_z,MPI_INT,rank_z,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_xy,sendCount_xy,MPI_INT,rank_xy,sendtag,
-			recvBuf_XY,recvCount_XY,MPI_INT,rank_XY,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_XY,recvCount_XY,MPI_INT,rank_XY,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_XY,sendCount_XY,MPI_INT,rank_XY,sendtag,
-			recvBuf_xy,recvCount_xy,MPI_INT,rank_xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_xy,recvCount_xy,MPI_INT,rank_xy,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_Xy,sendCount_Xy,MPI_INT,rank_Xy,sendtag,
-			recvBuf_xY,recvCount_xY,MPI_INT,rank_xY,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_xY,recvCount_xY,MPI_INT,rank_xY,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_xY,sendCount_xY,MPI_INT,rank_xY,sendtag,
-			recvBuf_Xy,recvCount_Xy,MPI_INT,rank_Xy,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_Xy,recvCount_Xy,MPI_INT,rank_Xy,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_xz,sendCount_xz,MPI_INT,rank_xz,sendtag,
-			recvBuf_XZ,recvCount_XZ,MPI_INT,rank_XZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_XZ,recvCount_XZ,MPI_INT,rank_XZ,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_XZ,sendCount_XZ,MPI_INT,rank_XZ,sendtag,
-			recvBuf_xz,recvCount_xz,MPI_INT,rank_xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_xz,recvCount_xz,MPI_INT,rank_xz,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_Xz,sendCount_Xz,MPI_INT,rank_Xz,sendtag,
-			recvBuf_xZ,recvCount_xZ,MPI_INT,rank_xZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_xZ,recvCount_xZ,MPI_INT,rank_xZ,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_xZ,sendCount_xZ,MPI_INT,rank_xZ,sendtag,
-			recvBuf_Xz,recvCount_Xz,MPI_INT,rank_Xz,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_Xz,recvCount_Xz,MPI_INT,rank_Xz,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_yz,sendCount_yz,MPI_INT,rank_yz,sendtag,
-			recvBuf_YZ,recvCount_YZ,MPI_INT,rank_YZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_YZ,recvCount_YZ,MPI_INT,rank_YZ,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_YZ,sendCount_YZ,MPI_INT,rank_YZ,sendtag,
-			recvBuf_yz,recvCount_yz,MPI_INT,rank_yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_yz,recvCount_yz,MPI_INT,rank_yz,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_Yz,sendCount_Yz,MPI_INT,rank_Yz,sendtag,
-			recvBuf_yZ,recvCount_yZ,MPI_INT,rank_yZ,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_yZ,recvCount_yZ,MPI_INT,rank_yZ,recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendBuf_yZ,sendCount_yZ,MPI_INT,rank_yZ,sendtag,
-			recvBuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
+			recvBuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Comm,MPI_STATUS_IGNORE);
 	//........................................................................................
 	UnpackBlobData(recvList_x, recvCount_x ,recvBuf_x, BlobLabel.data);
 	UnpackBlobData(recvList_X, recvCount_X ,recvBuf_X, BlobLabel.data);
@@ -898,6 +1066,8 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	}
 	//.......................................................................
 }
+
+
 
 inline void FlipID(char *ID, int N)
 {

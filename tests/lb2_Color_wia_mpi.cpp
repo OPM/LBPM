@@ -287,7 +287,6 @@ int main(int argc, char **argv)
 	// Initialized domain and averaging framework for Two-Phase Flow
 	int BC=pBC;
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	Dm.CommInit(MPI_COMM_WORLD);
 	TwoPhase Averages(Dm);
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
@@ -295,7 +294,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -508,6 +507,10 @@ int main(int argc, char **argv)
 	}
 
 #endif
+
+	// Initialize communication structures in averaging domain
+	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+	Dm.CommInit(MPI_COMM_WORLD);
 
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
