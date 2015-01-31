@@ -232,7 +232,6 @@ void TwoPhase::ComputeDelPhi(){
 	double fx,fy,fz;
 
 	Dm.CommunicateMeshHalo(Phase);
-
 	for (k=1; k<Nz-1; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -307,10 +306,8 @@ void TwoPhase::UpdateSolid(){
 }
 
 void TwoPhase::UpdateMeshValues(){
-
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
-	//pmmc_MeshGradient(SDs,SDs_x,SDs_y,SDs_z,Nx,Ny,Nz);
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
 	//...........................................................................
 	// Gradient of the phase indicator field
