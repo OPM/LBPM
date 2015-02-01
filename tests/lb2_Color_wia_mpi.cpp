@@ -512,7 +512,7 @@ int main(int argc, char **argv)
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 	Dm.CommInit(MPI_COMM_WORLD);
 
-	// Set up MPI communication structurese
+	// Set up MPI communication structures
 	if (rank==0)	printf ("Setting up communication control structures \n");
 	//......................................................................................
 	// Get the actual D3Q19 communication counts (based on location of solid phase)
