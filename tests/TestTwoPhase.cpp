@@ -33,10 +33,19 @@ int main(int argc, char **argv)
 	int Nx,Ny,Nz;
 	double Lx,Ly,Lz;
 	Nx=Ny=Nz=40;
-	npx=npy=npz=2;
-//	npz=nprocs;
 	Lx=Ly=Lz=1.0;
 	int BC=0;	// periodic boundary condition
+
+    // Set the number of processors in each direction
+    if ( nprocs==4 ) {
+    	npx=npy=2;
+    	npz=1;
+    } else if ( nprocs==8 ) {
+    	npx=npy=npz=2;
+    } else {
+    	npx=npy=1;
+    	npz=nprocs;
+    }
 
 	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz,BC);
 
