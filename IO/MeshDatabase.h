@@ -2,7 +2,7 @@
 #define MeshDatabase_INC
 
 #include "IO/Mesh.h" 
-#include "common/MPI.h" 
+#include "common/MPI_Helpers.h"
 
 #include <iostream>
 #include <string.h>

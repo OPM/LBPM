@@ -11,7 +11,7 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"

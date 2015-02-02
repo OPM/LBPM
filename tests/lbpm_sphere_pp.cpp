@@ -5,11 +5,11 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
 #include "Extras.h"
+#include "common/MPI_Helpers.h"
 #include "Communication.h"
 
 /*

@@ -13,7 +13,7 @@
 #include <stdexcept>
 
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
 int MAX_BLOB_COUNT=50;

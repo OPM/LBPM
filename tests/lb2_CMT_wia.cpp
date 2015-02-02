@@ -4,7 +4,6 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-//#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
@@ -12,6 +11,7 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
+//#include "common/MPI_Helpers.h"
 //#include "Communication.h"
 
 //#define CBUB

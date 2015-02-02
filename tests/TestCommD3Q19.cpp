@@ -10,7 +10,7 @@
 #include "D3Q7.h"
 #include "Array.h"
 #include "Extras.h"
-#include <mpi.h>
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 

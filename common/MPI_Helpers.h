@@ -127,6 +127,6 @@ void unpack( std::set<TYPE>& data, const char *buffer );
 #endif
 
 
-#include "common/MPI.hpp"
+#include "common/MPI_Helpers.hpp"
 
 

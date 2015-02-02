@@ -2,7 +2,7 @@
 #ifndef MPI_WRAPPERS_HPP
 #define MPI_WRAPPERS_HPP
 
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include <string.h>
 #include <vector>
 #include <set>

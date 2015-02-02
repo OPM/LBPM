@@ -145,15 +145,15 @@ ELSE()
 ENDIF()
 
 
-# Set timeouts: 5 minutes for debug, 2 for opt, and 30 minutes for valgrind/weekly
+# Set timeouts: 30 minutes for debug, 15 for opt, and 60 minutes for valgrind/weekly
 IF ( USE_VALGRIND )
-    SET( CTEST_TEST_TIMEOUT 1800 )
+    SET( CTEST_TEST_TIMEOUT 3600 )
 ELSEIF ( RUN_WEEKLY )
-    SET( CTEST_TEST_TIMEOUT 1800 )
+    SET( CTEST_TEST_TIMEOUT 3600 )
 ELSEIF( ${CMAKE_BUILD_TYPE} STREQUAL "Debug" )
-    SET( CTEST_TEST_TIMEOUT 300 )
+    SET( CTEST_TEST_TIMEOUT 1800 )
 ELSE()
-    SET( CTEST_TEST_TIMEOUT 120 )
+    SET( CTEST_TEST_TIMEOUT 900 )
 ENDIF()
 
 
@@ -227,7 +227,7 @@ SET( DROP_SITE_CDASH TRUE )
 CTEST_SUBMIT()
 
 
-# Clean up
-# exec_program("make distclean")
+# Write a message to test for success in the ctest-builder
+MESSAGE( "ctest_script ran to completion" )
 
 
