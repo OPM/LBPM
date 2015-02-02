@@ -1,14 +1,10 @@
 #include "IO/PIO.h"
 #include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
 
 #include <fstream>
 #include <string>
 #include <cstring>
-
-
-#ifdef USE_MPI
-    #include "mpi.h"
-#endif
 
 
 namespace IO {

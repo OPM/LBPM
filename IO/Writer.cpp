@@ -1,7 +1,7 @@
 #include "IO/Writer.h"
 #include "IO/MeshDatabase.h"
 #include "IO/IOHelpers.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 
 #include <sys/stat.h>

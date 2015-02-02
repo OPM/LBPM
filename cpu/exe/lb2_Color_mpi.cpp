@@ -4,7 +4,7 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include <mpi.h>
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 

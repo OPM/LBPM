@@ -227,7 +227,7 @@ SET( DROP_SITE_CDASH TRUE )
 CTEST_SUBMIT()
 
 
-# Clean up
-# exec_program("make distclean")
+# Write a message to test for success in the ctest-builder
+MESSAGE( "ctest_script ran to completion" )
 
 

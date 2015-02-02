@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 
 int main (int argc, char **argv)

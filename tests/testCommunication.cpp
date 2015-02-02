@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include "Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 

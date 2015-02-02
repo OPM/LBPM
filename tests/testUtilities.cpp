@@ -10,10 +10,7 @@
 
 #include "common/Utilities.h"
 #include "common/UnitTest.h"
-
-#ifdef USE_MPI
-    #include "mpi.h"
-#endif
+#include "common/MPI_Helpers.h"
 
 
 // Function to return the call stack
@@ -30,10 +27,8 @@ std::vector<std::string> get_call_stack()
 int main(int argc, char *argv[]) 
 {
     int rank = 0;
-    #ifdef USE_MPI
-        MPI_Init(&argc,&argv);
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    #endif
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     UnitTest ut;
     Utilities::setAbortBehavior( true, true, true );
 
@@ -110,9 +105,7 @@ int main(int argc, char *argv[])
     size_t N_errors = ut.NumFailGlobal();
     if ( N_errors==0 )
         printf("All tests passed\n");
-    #ifdef USE_MPI
-        MPI_Finalize();
-    #endif
+    MPI_Finalize();
     return (int) N_errors;
 }
 

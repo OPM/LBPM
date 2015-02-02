@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <mpi.h>
+
 
 #include "pmmc.h"
 #include "Domain.h"
@@ -10,8 +10,10 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
+
 
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM using CUDA
