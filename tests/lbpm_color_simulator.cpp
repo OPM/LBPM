@@ -276,9 +276,9 @@ int main(int argc, char **argv)
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
+	// Initialized domain and averaging framework for Two-Phase Flow
 	int BC=pBC;
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	Dm.CommInit(MPI_COMM_WORLD);
 	TwoPhase Averages(Dm);
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
@@ -423,6 +423,9 @@ int main(int argc, char **argv)
 		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
 	}
+	// Initialize communication structures in averaging domain
+	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+	Dm.CommInit(MPI_COMM_WORLD);
 
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
@@ -1583,6 +1586,7 @@ int main(int argc, char **argv)
 			Averages.PrintAll(timestep);
 			//....................................................................
 		}
+
 		if (timestep%RESTART_INTERVAL == 0){
 			if (pBC){
 				//err = fabs(sat_w - sat_w_previous);
