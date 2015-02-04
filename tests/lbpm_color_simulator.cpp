@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 		FlipID(id,Nx*Ny*Nz);
 	}
 	// Initialize communication structures in averaging domain
-	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
 
 	// Set up MPI communication structurese
