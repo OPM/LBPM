@@ -1547,7 +1547,7 @@ int main(int argc, char **argv)
 		// Timestep completed!
 		timestep++;
 		//...................................................................
-		if (timestep%1000 == 995){
+		if (timestep%5000 == 995){
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
@@ -1555,7 +1555,7 @@ int main(int argc, char **argv)
 			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.Phase_tplus.data);
 			//...........................................................................
 		}
-		if (timestep%1000 == 0){
+		if (timestep%5000 == 0){
 			//...........................................................................
 			// Copy the data for for the analysis timestep
 			//...........................................................................
@@ -1570,7 +1570,7 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_z.data,&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		if (timestep%1000 == 5){
+		if (timestep%5000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
