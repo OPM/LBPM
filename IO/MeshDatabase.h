@@ -3,10 +3,10 @@
 
 #include "IO/Mesh.h" 
 #include "common/MPI_Helpers.h"
+#include "shared_ptr.h"
 
 #include <iostream>
 #include <string.h>
-#include <memory>
 #include <vector>
 #include <map>
 
@@ -17,7 +17,8 @@ class Mesh;
 
 
 //! Enum to identify mesh type
-enum class MeshType : char { PointMesh=1, SurfaceMesh=2, VolumeMesh=3, Unknown=-1 };
+//enum class MeshType : char { PointMesh=1, SurfaceMesh=2, VolumeMesh=3, Unknown=-1 };
+enum MeshType { PointMesh=1, SurfaceMesh=2, VolumeMesh=3, Unknown=-1 };
 
 
 //! Helper struct for containing offsets for the mesh info
@@ -80,7 +81,7 @@ std::vector<MeshDatabase> read( const std::string& filename );
 
 
 //! Return the mesh type
-IO::MeshType meshType( std::shared_ptr<IO::Mesh> mesh );
+IO::MeshType meshType( shared_ptr<IO::Mesh> mesh );
 
 
 } // IO namespace

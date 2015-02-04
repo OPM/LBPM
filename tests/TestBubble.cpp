@@ -1155,7 +1155,9 @@ int main(int argc, char **argv)
 	}
 
 	for (int bubbleCount=0; bubbleCount<4; bubbleCount++){
-
+        char bubbleCountName[20];
+        sprintf(bubbleCountName,"bubbleCount-%i",bubbleCount);
+        PROFILE_START(bubbleCountName);
 		BubbleRadius = BubRad[bubbleCount]; // Radius of the current bubble
 
 		// Initialize the bubble
@@ -1356,6 +1358,7 @@ int main(int argc, char **argv)
 		sendtag = recvtag = 5;
 
 		//************ MAIN ITERATION LOOP ***************************************/
+        PROFILE_START("Time-loop");
 		while (timestep < timestepMax){
 
 
@@ -1760,6 +1763,7 @@ int main(int argc, char **argv)
 				WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 			}
 		}
+        PROFILE_STOP("Time-loop");
 		// End the bubble loop
 		//...........................................................................
 		// Copy the phase indicator field for the later timestep
@@ -2094,7 +2098,7 @@ int main(int argc, char **argv)
 
 
         #ifdef USE_NEW_WRITER
-            std::shared_ptr<IO::TriList> mesh( new IO::TriList() );
+            shared_ptr<IO::TriList> mesh( new IO::TriList() );
             mesh->A.reserve(8*ncubes);
             mesh->B.reserve(8*ncubes);
             mesh->C.reserve(8*ncubes);
@@ -2163,10 +2167,10 @@ int main(int argc, char **argv)
             meshData[0].meshName = "wn-tris";
             meshData[0].mesh = mesh;
             for (size_t k=0; k<meshData.size(); k++) {
-                std::shared_ptr<IO::Variable> dist( new IO::Variable() );
+                shared_ptr<IO::Variable> dist( new IO::Variable() );
                 dist->name = "distance";
                 dist->dim = 1;
-                dist->type = IO::VariableType::NodeVariable;
+                dist->type = IO::NodeVariable;
                 dist->data.resize(3*mesh->A.size());
                 for (size_t i=0; i<mesh->A.size(); i++) {
                     const Point& a = mesh->A[i];
@@ -2183,7 +2187,9 @@ int main(int argc, char **argv)
 		    fclose(WN_TRIS);
         #endif
 
+        PROFILE_STOP(bubbleCountName);
 	}
+
 	//************************************************************************/
 	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);

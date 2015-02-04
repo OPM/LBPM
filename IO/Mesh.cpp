@@ -2,7 +2,7 @@
 #include "common/Utilities.h"
 
 #include <limits>
-
+#include <stdint.h>
 
 namespace IO {
 
@@ -45,7 +45,7 @@ PointList::~PointList( )
 size_t PointList::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type == VariableType::NodeVariable )
+    if ( type == NodeVariable )
         N = points.size();
     return N;
 }
@@ -121,9 +121,9 @@ TriList::~TriList( )
 size_t TriList::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type==VariableType::NodeVariable )
+    if ( type==NodeVariable )
         N = 3*A.size();
-    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
+    else if ( type==SurfaceVariable ||  type==VolumeVariable )
         N = A.size();
     return N;
 }
@@ -192,7 +192,7 @@ TriMesh::TriMesh( size_t N_tri, size_t N_point )
     B.resize(N_tri,-1);
     C.resize(N_tri,-1);
 }
-TriMesh::TriMesh( size_t N_tri, std::shared_ptr<PointList> points )
+TriMesh::TriMesh( size_t N_tri, shared_ptr<PointList> points )
 {
     vertices = points;
     A.resize(N_tri,-1);
@@ -226,9 +226,9 @@ TriMesh::~TriMesh( )
 size_t TriMesh::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type==VariableType::NodeVariable )
+    if ( type==NodeVariable )
         N = vertices->points.size();
-    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
+    else if ( type==SurfaceVariable ||  type==VolumeVariable )
         N = A.size();
     return N;
 }
@@ -293,45 +293,45 @@ void TriMesh::unpack( const std::pair<size_t,void*>& data_in )
 /****************************************************
 * Converters                                        *
 ****************************************************/
-std::shared_ptr<PointList> getPointList( std::shared_ptr<Mesh> mesh )
+shared_ptr<PointList> getPointList( shared_ptr<Mesh> mesh )
 {
-    return std::dynamic_pointer_cast<PointList>(mesh);
+    return dynamic_pointer_cast<PointList>(mesh);
 }
-std::shared_ptr<TriMesh> getTriMesh( std::shared_ptr<Mesh> mesh )
+shared_ptr<TriMesh> getTriMesh( shared_ptr<Mesh> mesh )
 {
-    std::shared_ptr<TriMesh> mesh2;
-    if ( std::dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
-        mesh2 = std::dynamic_pointer_cast<TriMesh>(mesh);
-    } else if ( std::dynamic_pointer_cast<TriList>(mesh) != NULL ) {
-        std::shared_ptr<TriList> trilist = std::dynamic_pointer_cast<TriList>(mesh);
+    shared_ptr<TriMesh> mesh2;
+    if ( dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
+        mesh2 = dynamic_pointer_cast<TriMesh>(mesh);
+    } else if ( dynamic_pointer_cast<TriList>(mesh) != NULL ) {
+        shared_ptr<TriList> trilist = dynamic_pointer_cast<TriList>(mesh);
         ASSERT(trilist!=NULL);
         mesh2.reset( new TriMesh(*trilist) );
     }
     return mesh2;
 }
-std::shared_ptr<TriList> getTriList( std::shared_ptr<Mesh> mesh )
+shared_ptr<TriList> getTriList( shared_ptr<Mesh> mesh )
 {
-    std::shared_ptr<TriList> mesh2;
-    if ( std::dynamic_pointer_cast<TriList>(mesh) != NULL ) {
-        mesh2 = std::dynamic_pointer_cast<TriList>(mesh);
-    } else if ( std::dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
-        std::shared_ptr<TriMesh> trimesh = std::dynamic_pointer_cast<TriMesh>(mesh);
+    shared_ptr<TriList> mesh2;
+    if ( dynamic_pointer_cast<TriList>(mesh) != NULL ) {
+        mesh2 = dynamic_pointer_cast<TriList>(mesh);
+    } else if ( dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
+        shared_ptr<TriMesh> trimesh = dynamic_pointer_cast<TriMesh>(mesh);
         ASSERT(trimesh!=NULL);
         mesh2.reset( new TriList(*trimesh) );
     }
     return mesh2;
 }
-std::shared_ptr<const PointList> getPointList( std::shared_ptr<const Mesh> mesh )
+shared_ptr<const PointList> getPointList( shared_ptr<const Mesh> mesh )
 {
-    return getPointList( std::const_pointer_cast<Mesh>(mesh) );
+    return getPointList( const_pointer_cast<Mesh>(mesh) );
 }
-std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh )
+shared_ptr<const TriMesh> getTriMesh( shared_ptr<const Mesh> mesh )
 {
-    return getTriMesh( std::const_pointer_cast<Mesh>(mesh) );
+    return getTriMesh( const_pointer_cast<Mesh>(mesh) );
 }
-std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh )
+shared_ptr<const TriList> getTriList( shared_ptr<const Mesh> mesh )
 {
-    return getTriList( std::const_pointer_cast<Mesh>(mesh) );
+    return getTriList( const_pointer_cast<Mesh>(mesh) );
 }
 
 
