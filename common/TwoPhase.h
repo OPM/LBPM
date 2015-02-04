@@ -219,7 +219,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 	double temp=0.5/Beta;
 	for (int n=0; n<Nx*Ny*Nz; n++){
 		double value = ColorData[n];
-		DistData[n] = temp*log((1.0+value)/(1.0-value));
+		if (value > 0.999 ) DistData[n] = 4.0;
+		else if (value < -0.999 ) DistData[n] = -4.0;
+		else 	DistData[n] = temp*log((1.0+value)/(1.0-value));
 	}
 
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
