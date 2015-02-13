@@ -12,6 +12,14 @@
 #include <cstdio>
 
 
+// Inline function to read line without a return argument
+static inline void fgetl( char * str, int num, FILE * stream )
+{
+    char* ptr = fgets( str, num, stream );
+    if ( 0 ) {char *temp = (char *)&ptr; temp++;}
+}
+
+
 // List the timesteps in the given directors (dumps.LBPM)
 std::vector<std::string> IO::readTimesteps( const std::string& filename )
 {
@@ -102,7 +110,7 @@ shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& ti
         FILE *fid = fopen(filename.c_str(),"rb");
         fseek(fid,database.offset,SEEK_SET);
         char line[1000];
-        std::fgets(line,1000,fid);
+        fgetl(line,1000,fid);
         size_t i1 = find(line,':');
         size_t i2 = find(&line[i1+1],':')+i1+1;
         size_t bytes = atol(&line[i2+1]);
@@ -143,7 +151,7 @@ shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::st
     FILE *fid = fopen(filename.c_str(),"rb");
     fseek(fid,database.offset,SEEK_SET);
     char line[1000];
-    std::fgets(line,1000,fid);
+    fgetl(line,1000,fid);
     size_t i1 = find(line,':');
     size_t i2 = find(&line[i1+1],':')+i1+1;
     std::vector<std::string> values = splitList(&line[i2+1],',');
