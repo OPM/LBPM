@@ -122,6 +122,16 @@ int main (int argc, char *argv[])
 	//.........................................................................	
 	
 	int toReturn = 0;
+
+	if ( fabs(Averages.vawn_global(2)+0.2) > 0.01){
+		printf("TestInterfaceSpeed: Error too high for kinematic velocity of wn interface \n");
+		toReturn=1;
+	}
+	if ( fabs(Averages.vawns_global(2)+0.2) > 0.01){
+		printf("TestInterfaceSpeed: Error too high for kinematic velocity of common curve \n");
+		toReturn=2;
+	}
+
 	return toReturn;
 
 	// ****************************************************
