@@ -10,7 +10,7 @@ ENDIF()
 IF ( NOT ${PROJ}_INSTALL_DIR )
     MESSAGE(FATAL_ERROR "${PROJ}_INSTALL_DIR must be set before including macros.cmake")
 ENDIF()
-#MESSAGE("Installing project ${PROJ} in ${${PROJ}_INSTALL_DIR}")
+
 
 
 # Macro to print all variables
@@ -162,37 +162,39 @@ ENDMACRO()
 # Macro to identify the compiler
 MACRO( SET_COMPILER )
     # SET the C/C++ compiler
-    IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
-        SET( USING_GCC TRUE )
-        ADD_DEFINITIONS( -D USING_GCC )
-        MESSAGE("Using gcc")
-    ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
-        IF( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-            MESSAGE( FATAL_ERROR "Using microsoft compilers on non-windows system?" )
+    IF ( CMAKE_C_COMPILER_WORKS OR CMAKE_C_COMPILER_WORKS )
+        IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+            SET( USING_GCC TRUE )
+            ADD_DEFINITIONS( -D USING_GCC )
+            MESSAGE("Using gcc")
+        ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
+            IF( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+                MESSAGE( FATAL_ERROR "Using microsoft compilers on non-windows system?" )
+            ENDIF()
+            SET( USING_MICROSOFT TRUE )
+            ADD_DEFINITIONS( -D USING_MICROSOFT )
+            MESSAGE("Using Microsoft")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
+            SET(USING_ICC TRUE)
+            ADD_DEFINITIONS( -D USING_ICC )
+            MESSAGE("Using icc")
+        ELSEIF( ${CMAKE_C_COMPILER_ID} MATCHES "PGI")
+            SET(USING_PGCC TRUE)
+            ADD_DEFINITIONS( -D USING_ICCPGCC )
+            MESSAGE("Using pgCC")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CRAY") OR (${CMAKE_C_COMPILER_ID} MATCHES "Cray") )
+            SET(USING_CRAY TRUE)
+            ADD_DEFINITIONS( -D USING_CRAY )
+            MESSAGE("Using Cray")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CLANG") OR (${CMAKE_C_COMPILER_ID} MATCHES "Clang") )
+            SET(USING_CLANG TRUE)
+            ADD_DEFINITIONS( -D USING_CLANG )
+            MESSAGE("Using Clang")
+        ELSE()
+            SET(USING_DEFAULT TRUE)
+            MESSAGE("${CMAKE_C_COMPILER_ID}")
+            MESSAGE("Unknown C/C++ compiler, default flags will be used")
         ENDIF()
-        SET( USING_MICROSOFT TRUE )
-        ADD_DEFINITIONS( -D USING_MICROSOFT )
-        MESSAGE("Using Microsoft")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
-        SET(USING_ICC TRUE)
-        ADD_DEFINITIONS( -D USING_ICC )
-        MESSAGE("Using icc")
-    ELSEIF( ${CMAKE_C_COMPILER_ID} MATCHES "PGI")
-        SET(USING_PGCC TRUE)
-        ADD_DEFINITIONS( -D USING_ICCPGCC )
-        MESSAGE("Using pgCC")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CRAY") OR (${CMAKE_C_COMPILER_ID} MATCHES "Cray") )
-        SET(USING_CRAY TRUE)
-        ADD_DEFINITIONS( -D USING_CRAY )
-        MESSAGE("Using Cray")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CLANG") OR (${CMAKE_C_COMPILER_ID} MATCHES "Clang") )
-        SET(USING_CLANG TRUE)
-        ADD_DEFINITIONS( -D USING_CLANG )
-        MESSAGE("Using Clang")
-    ELSE()
-        SET(USING_DEFAULT TRUE)
-        MESSAGE("${CMAKE_C_COMPILER_ID}")
-        MESSAGE("Unknown C/C++ compiler, default flags will be used")
     ENDIF()
 ENDMACRO()
 
@@ -539,17 +541,19 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
         Testing
         include
         doc
+        docs
+        latex_docs
         lib
-        tests
+        Makefile.config
+        install_manifest.txt
+        test
+        matlab
+        mex
+        tmp
+        #tmp#
         bin
-        liblbpm-wia.a
-        liblbpm-wia.so
-        cpu
-        gpu
-        example
-        common
-        visit
-        IO
+        cmake
+        ${ARGN}
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)
@@ -566,6 +570,7 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
             *.vcxproj*
             ipch
             x64
+            Debug
         )
         SET( DISTCLEAN_FILE "${CMAKE_CURRENT_BINARY_DIR}/distclean.bat" )
         FILE( WRITE  "${DISTCLEAN_FILE}" "del /s /q /f " )

@@ -1,5 +1,5 @@
 # Create a shared_ptr.h file in the include directory that contains 
-#    a shared_ptr class (hopefully Tdef to a compiler basic)
+#    a shared_ptr class (hopefully typedef to a compiler basic)
 # Arguements:
 #    INSTALL_DIR - Directory to install shared_ptr.h
 #    NAMESPACE - Namespace to contain the shared_ptr class (may be empty)
@@ -33,7 +33,9 @@ FUNCTION( CONFIGURE_SHARED_PTR INSTALL_DIR NAMESPACE )
 	        }
 	    "
 	    TR1_MEMORY_TR1_SHARED_PTR )
-    SET( CMAKE_REQUIRED_INCLUDES "${BOOST_INCLUDE}" )
+    GET_DIRECTORY_PROPERTY( dirs INCLUDE_DIRECTORIES )
+    SET( CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS}" )
+    SET( CMAKE_REQUIRED_INCLUDES ${dirs} "${BOOST_INCLUDE}" )
     CHECK_CXX_SOURCE_COMPILES(
 	    "   #include \"boost/shared_ptr.hpp\"
             namespace  ${NAMESPACE} { using boost::shared_ptr; }
@@ -53,7 +55,7 @@ FUNCTION( CONFIGURE_SHARED_PTR INSTALL_DIR NAMESPACE )
 	        }
 	    "
 	    DUMMY_SHARED_PTR )
-	IF ( BOOST_SHARED_PTR )
+    IF ( BOOST_SHARED_PTR )
         FILE(WRITE  "${CMAKE_CURRENT_BINARY_DIR}/tmp/shared_ptr.h" "#include \"boost/shared_ptr.hpp\"\n")
         FILE(APPEND "${CMAKE_CURRENT_BINARY_DIR}/tmp/shared_ptr.h" "#include \"boost/weak_ptr.hpp\"\n")
         FILE(APPEND "${CMAKE_CURRENT_BINARY_DIR}/tmp/shared_ptr.h" "#include \"boost/enable_shared_from_this.hpp\"\n")
