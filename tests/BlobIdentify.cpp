@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	printf("Read %i ranks of %s \n",nprocs,BaseFilename);
+	printf("Read %i ranks of Phase, SignDist \n",nprocs);
 	
 	delete Temp;
 	
@@ -293,9 +293,6 @@ int main(int argc, char **argv)
 
 	printf("Media porosity is %f \n",porosity);
 
-
-	printf("Execute blob identification algorithm... \n");
-
 	/* ****************************************************************
 				IDENTIFY ALL BLOBS: F > vF, S > vS
 	****************************************************************** */
@@ -305,11 +302,12 @@ int main(int argc, char **argv)
 	int N = (Nx-1)*(Ny-1)*(Nz-1);		// total number of nodes
 	IntArray blobs(3,N);	// store indices for blobs (cubes)
 	IntArray temp(3,N);	// temporary storage array
-	IntArray  b(N);		// number of nodes in each blob
+	IntArray b(N);		// number of nodes in each blob
 
 	double vF=0.0;
 	double vS=0.0;
 	double trimdist=1.0;
+	printf("Execute blob identification algorithm... \n");
 	// Loop over z=0 first -> blobs attached to this end considered "connected" for LB simulation
 	i=0;
 	int number=0;
