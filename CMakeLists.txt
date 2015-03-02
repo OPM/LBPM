@@ -57,7 +57,7 @@ ADD_CUSTOM_TARGET( doc )
 ADD_CUSTOM_TARGET( latex_docs )
 ADD_CUSTOM_TARGET( build-test )
 ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN()
+ADD_DISTCLEAN( tests liblbpm-wia.* cpu gpu example common visit IO )
 
 
 # Check the compile mode and compile flags
