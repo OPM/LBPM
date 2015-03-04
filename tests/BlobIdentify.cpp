@@ -250,17 +250,17 @@ int main(int argc, char **argv)
 	}
 	printf("Read %i ranks of Phase, SignDist \n",nprocs);
 	
-	delete Temp;
+	delete [] Temp;
 	
 	IntArray GlobalBlobID(Nx,Ny,Nz);
 
 	SetPeriodicBC(SignDist, Nx, Ny, Nz);
 	SetPeriodicBC(Phase, Nx, Ny, Nz);
 	
-	FILE *PHASE;
-	PHASE = fopen("Phase.dat","wb");
-	fwrite(Phase.data,8,Nx*Ny*Nz,PHASE);
-	fclose(PHASE);
+	//		FILE *PHASE;
+	//PHASE = fopen("Phase.dat","wb");
+	//fwrite(Phase.data,8,Nx*Ny*Nz,PHASE);
+	//fclose(PHASE);
 	
 	// Initialize the local blob ID
 	// Initializing the blob ID
@@ -289,8 +289,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	int N=int(porosity*1.25);
 	porosity /= (Nx*Ny*Nz*1.0);
-
 	printf("Media porosity is %f \n",porosity);
 
 	/* ****************************************************************
@@ -299,10 +299,9 @@ int main(int argc, char **argv)
 	// Find blob domains, number of blobs
 	int nblobs = 0;					// number of blobs
 	int ncubes = 0;					// total number of nodes in any blob
-	int N = (Nx-1)*(Ny-1)*(Nz-1);		// total number of nodes
 	IntArray blobs(3,N);	// store indices for blobs (cubes)
 	IntArray temp(3,N);	// temporary storage array
-	IntArray b(N);		// number of nodes in each blob
+	IntArray b(N);          // number of nodes in each blob
 
 	double vF=0.0;
 	double vS=0.0;
@@ -311,7 +310,7 @@ int main(int argc, char **argv)
 	// Loop over z=0 first -> blobs attached to this end considered "connected" for LB simulation
 	i=0;
 	int number=0;
-	for (k=0;k<1;k++){
+	/*	for (k=0;k<1;k++){
 		for (j=0;j<Ny;j++){
 			if ( Phase(i,j,k) > vF ){
 				if ( SignDist(i,j,k) > vS ){
@@ -328,15 +327,16 @@ int main(int argc, char **argv)
 		printf("Number of non-wetting phase blobs is: %i \n",nblobs-1);
 		nblobs++;
 	}
+	*/
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
-			for (i=1;i<Nx;i++){
+			for (i=0;i<Nx;i++){
 				if ( GlobalBlobID(i,j,k) == -1 ){
 					if ( Phase(i,j,k) > vF ){
 						if ( SignDist(i,j,k) > vS ){
 							// node i,j,k is in the porespace
 							b(nblobs) = ComputeBlob(blobs,nblobs,ncubes,GlobalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
-							nblobs++;
+							nblobs++;							  
 						}
 					}
 				}
@@ -384,9 +384,11 @@ int main(int argc, char **argv)
 	nblobs++;
 	printf("Identified %i blobs. Writing per-process output files. \n",nblobs);
 
+	int sizeLoc = nx*ny*nz;
 	int *LocalBlobID;
-	LocalBlobID = new int [nx*ny*nz];
+	LocalBlobID = new int [sizeLoc];
 
+	printf("File size (4 bytes per entry) %i, \n",sizeLoc);
 	// read the files and populate main arrays
 	for ( kproc=0; kproc<nprocz; kproc++){
 		for ( jproc=0; jproc<nprocy; jproc++){
@@ -422,14 +424,14 @@ int main(int argc, char **argv)
 
 				FILE *BLOBLOCAL;
 				BLOBLOCAL = fopen(LocalRankFilename,"wb");
-				fwrite(LocalBlobID,4,nx*ny*nz,BLOBLOCAL);
+				fwrite(&LocalBlobID[0],4,sizeLoc,BLOBLOCAL);
 				fclose(BLOBLOCAL);
 			}
 		}
 	}
-	printf("Read %i ranks of %s \n",nprocs,BaseFilename);
+	printf("Wrote %i ranks of BlobLabel.xxxxx \n",nprocs);
 
-	FILE *BLOBS;
+      	FILE *BLOBS;
 	BLOBS = fopen("Blobs.dat","wb");
 	fwrite(GlobalBlobID.data,4,Nx*Ny*Nz,BLOBS);
 	fclose(BLOBS);
