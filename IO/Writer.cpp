@@ -42,7 +42,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             //for (size_t j=0; j<meshData[i].vars.size(); j++)
             //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
-        if ( dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
+        if ( dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
             // List of points
             shared_ptr<IO::PointList> pointlist = dynamic_pointer_cast<IO::PointList>(mesh);
             const std::vector<Point>& P = pointlist->points;
@@ -51,7 +51,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
                 x[0] = P[i].x;  x[1] = P[i].y;  x[2] = P[i].z;
                 fwrite(x,sizeof(double),3,fid);
             }
-        } else if ( dynamic_pointer_cast<IO::TriList>(mesh)!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh)!=NULL ) {
+        } else if ( dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
             // Triangle mesh
             shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
             const std::vector<Point>& A = trilist->A;

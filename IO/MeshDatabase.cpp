@@ -402,9 +402,9 @@ std::vector<MeshDatabase> read( const std::string& filename )
 IO::MeshType meshType( shared_ptr<IO::Mesh> mesh )
 {
     IO::MeshType type = IO::Unknown;
-    if ( dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
+    if ( dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
         type = IO::PointMesh;
-    } else if ( dynamic_pointer_cast<IO::TriList>(mesh)!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh)!=NULL ) {
+    } else if ( dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
         type = IO::SurfaceMesh;
     } else {
         ERROR("Unknown mesh");

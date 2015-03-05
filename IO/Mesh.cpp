@@ -300,11 +300,11 @@ shared_ptr<PointList> getPointList( shared_ptr<Mesh> mesh )
 shared_ptr<TriMesh> getTriMesh( shared_ptr<Mesh> mesh )
 {
     shared_ptr<TriMesh> mesh2;
-    if ( dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
+    if ( dynamic_pointer_cast<TriMesh>(mesh).get() != NULL ) {
         mesh2 = dynamic_pointer_cast<TriMesh>(mesh);
-    } else if ( dynamic_pointer_cast<TriList>(mesh) != NULL ) {
+    } else if ( dynamic_pointer_cast<TriList>(mesh).get() != NULL ) {
         shared_ptr<TriList> trilist = dynamic_pointer_cast<TriList>(mesh);
-        ASSERT(trilist!=NULL);
+        ASSERT(trilist.get()!=NULL);
         mesh2.reset( new TriMesh(*trilist) );
     }
     return mesh2;
@@ -312,11 +312,11 @@ shared_ptr<TriMesh> getTriMesh( shared_ptr<Mesh> mesh )
 shared_ptr<TriList> getTriList( shared_ptr<Mesh> mesh )
 {
     shared_ptr<TriList> mesh2;
-    if ( dynamic_pointer_cast<TriList>(mesh) != NULL ) {
+    if ( dynamic_pointer_cast<TriList>(mesh).get() != NULL ) {
         mesh2 = dynamic_pointer_cast<TriList>(mesh);
-    } else if ( dynamic_pointer_cast<TriMesh>(mesh) != NULL ) {
+    } else if ( dynamic_pointer_cast<TriMesh>(mesh).get() != NULL ) {
         shared_ptr<TriMesh> trimesh = dynamic_pointer_cast<TriMesh>(mesh);
-        ASSERT(trimesh!=NULL);
+        ASSERT(trimesh.get()!=NULL);
         mesh2.reset( new TriList(*trimesh) );
     }
     return mesh2;
