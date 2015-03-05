@@ -14,7 +14,16 @@
    fun:acmlcpuid2
    ...
 }
-
+{
+   HYDU
+   Memcheck:Leak
+   ...
+   fun:HYDU_sock_forward_stdio
+   fun:HYDT_bscu_stdio_cb
+   fun:HYDT_dmxu_poll_wait_for_event
+   fun:HYD_pmci_wait_for_completion
+   ...
+}
 
 
 
