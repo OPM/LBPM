@@ -16,6 +16,26 @@ James E. McClure 2015
 #include "TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
+inline void ReadBlobLabel(char *FILENAME, int *Data, int N)
+{
+    int n;
+    int value;
+    ifstream File(FILENAME,ios::binary);
+    if (File.good()){
+        for (n=0; n<N; n++){
+            // Write the two density values
+            File.read((char*) &value, sizeof(value));
+            Data[n] = value;
+            
+        }
+    }
+    else {
+        for (n=0; n<N; n++) Data[n] = 1.2e-34;
+    }
+    File.close();
+    
+}
+
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -80,12 +100,16 @@ int main(int argc, char **argv)
 	//...........................................................................
 	if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
 	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages.SDs.data, N);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
-	//.......................................................................
+    //.......................................................................
+    sprintf(LocalRankFilename,"%s%s","BlobLabel.",LocalRankString);
+    ReadBlobFile(LocalRankFilename, Averages.BlobLabel.data, N);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) cout << "BlobLabel set." << endl;
+    //.......................................................................
 	//copies of data needed to perform checkpointing from cpu
 	double *Den, *DistEven, *DistOdd;
 	Den = new double[2*N];
@@ -98,6 +122,45 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
+    for (int n=0; n<Nx*Ny*Nz; n++){
+        double phi,da,db,press,vx,vy,vz;
+        double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
+        da = Den[n];
+        db = Den[N+n];
+        f0 = DistEven[n];
+        f2 = DistEven[N+n];
+        f4 = DistEven[2*N+n];
+        f6 = DistEven[3*N+n];
+        f8 = DistEven[4*N+n];
+        f10 = DistEven[5*N+n];
+        f12 = DistEven[6*N+n];
+        f14 = DistEven[7*N+n];
+        f16 = DistEven[8*N+n];
+        f18 = DistEven[9*N+n];
+        //........................................................................
+        f1 = DistOdd[n];
+        f3 = DistOdd[1*N+n];
+        f5 = DistOdd[2*N+n];
+        f7 = DistOdd[3*N+n];
+        f9 = DistOdd[4*N+n];
+        f11 = DistOdd[5*N+n];
+        f13 = DistOdd[6*N+n];
+        f15 = DistOdd[7*N+n];
+        f17 = DistOdd[8*N+n];
+        //.................Compute the velocity...................................
+        press = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
+                                          f9+f12+f11+f14+f13+f16+f15+f18+f17);
+        vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+        vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+        vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+        Averages.Phase.data[n]=(da-db)/(da+db);
+        Averages.Phase_tplus.data[n]=(da-db)/(da+db);
+        Averages.Phase_tminus.data[n]=(da-db)/(da+db);
+        Averages.Press.data[n]=press;
+        Averages.Vel_x.data[n]=vx;
+        Averages.Vel_y.data[n]=vy;
+        Averages.Vel_z.data[n]=vz;
+    }
 	Averages.Phase();
 	Averages.LocalBlobID();
 
