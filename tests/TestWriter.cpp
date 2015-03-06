@@ -144,7 +144,7 @@ int main(int argc, char **argv)
         for (size_t j=0; j<list.size(); j++) {
             for (size_t k=0; k<list[i].domains.size(); k++) {
                 shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
-                if ( mesh==NULL ) {
+                if ( mesh.get()==NULL ) {
                     printf("Failed to load %s\n",meshData[i].meshName.c_str());
                     pass = false;
                     break;
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
                 if ( meshData[j].meshName=="pointmesh" ) {
                     // Check the pointmesh
                     shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
-                    if ( pmesh==NULL ) {
+                    if ( pmesh.get()==NULL ) {
                         pass = false;
                         break;
                     }
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
                     // Check the trimesh/trilist
                     shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
                     shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
-                    if ( mesh1==NULL || mesh2==NULL ) {
+                    if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
                         pass = false;
                         break;
                     }
