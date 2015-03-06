@@ -18,11 +18,25 @@
 
 # MPI suppressions
 {
-   HYDU
+   HYD_pmci_wait_for_completion
    Memcheck:Leak
    ...
    fun:HYD_pmci_wait_for_completion
+   fun:main
+}
+{
+   HYDT_dmxu_poll_wait_for_event
+   Memcheck:Leak
    ...
+   fun:HYDT_dmxu_poll_wait_for_event
+   fun:main
+}
+{
+   PMPI_Init
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+   fun:main
 }
 
 
