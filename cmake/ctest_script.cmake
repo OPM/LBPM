@@ -112,10 +112,10 @@ IF( NOT DEFINED N_PROCS )
     ENDIF()
     # Mac:
     IF(APPLE)
-        find_program(cmd_sys_pro "system_profiler")
+        find_program(cmd_sys_pro "sysctl")
         if(cmd_sys_pro)
-            execute_process(COMMAND ${cmd_sys_pro} OUTPUT_VARIABLE info)
-            STRING(REGEX REPLACE "^.*Total Number of Cores: ([0-9]+).*$" "\\1" N_PROCS "${info}")
+            execute_process(COMMAND ${cmd_sys_pro} hw.physicalcpu OUTPUT_VARIABLE info)
+            STRING(REGEX REPLACE "^.*hw.physicalcpu: ([0-9]+).*$" "\\1" N_PROCS "${info}")
         ENDIF()
     ENDIF()
     # Windows:
