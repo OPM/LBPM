@@ -30,11 +30,9 @@
 {
    expand_dynamic_string_token
    Memcheck:Cond
-   ...
+   fun:index
    fun:expand_dynamic_string_token
-   fun:_dl_map_object
    ...
 }
-
 
 
