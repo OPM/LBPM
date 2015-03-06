@@ -142,6 +142,7 @@ IF ( BUILD_SERIAL )
 ELSE()
     SET( CTEST_BUILD_COMMAND "${CMAKE_MAKE_PROGRAM} -i -j ${N_PROCS} install" )
 ENDIF()
+SET( CTEST_CUSTOM_WARNING_EXCEPTION "has no symbols" )
 
 
 # Set timeouts: 30 minutes for debug, 15 for opt, and 60 minutes for valgrind/weekly
