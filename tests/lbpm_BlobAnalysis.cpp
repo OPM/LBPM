@@ -52,7 +52,11 @@ int main(int argc, char **argv)
 	int Nx,Ny,Nz,N,nspheres;
 	double Lx,Ly,Lz;
 
-	int BC,nblobs;
+	int BC;	// type of boundary condition applied: 0-periodic, 1-pressure/velocity
+	int nblobs_global; 	// number of blobs in the global system
+
+	int *CubeList;
+
 
 	if (rank==0){
 		//.......................................................................
@@ -161,9 +165,15 @@ int main(int argc, char **argv)
         Averages.Vel_y.data[n]=vy;
         Averages.Vel_z.data[n]=vz;
     }
-	Averages.Phase();
-	Averages.LocalBlobID();
 
+    // Count the number of cubes for each blob
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=1;i<Nx;i++){
+
+			}
+		}
+	}
 
 	/*	Averages.Initialize();
 	Averages.ComputeDelPhi();
