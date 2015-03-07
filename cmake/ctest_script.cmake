@@ -6,6 +6,7 @@
 
 # Set platform specific variables
 SITE_NAME( HOSTNAME )
+STRING(REGEX REPLACE "-ext." "" HOSTNAME "${HOSTNAME}")
 SET( CC                 $ENV{CC}                )
 SET( CXX                $ENV{CXX}               )
 SET( MPIEXEC            $ENV{MPIEXEC}           )
@@ -37,6 +38,7 @@ SET( MPIEXEC            $ENV{MPIEXEC}           )
 SET( BUILD_SERIAL       $ENV{BUILD_SERIAL}      )
 SET( CUDA_FLAGS         $ENV{CUDA_FLAGS}        )
 SET( CUDA_HOST_COMPILER $ENV{CUDA_HOST_COMPILER} )
+SET( SKIP_TESTS         $ENV{SKIP_TESTS}        )
 
 
 # Get the source directory based on the current directory
@@ -208,7 +210,10 @@ CTEST_CONFIGURE(
     OPTIONS "${CTEST_OPTIONS}"
 )
 CTEST_BUILD()
-IF ( USE_VALGRIND_MATLAB )
+IF ( SKIP_TESTS )
+    # Do not run tests
+    SET( CTEST_COVERAGE_COMMAND )
+ELSEIF ( USE_VALGRIND_MATLAB )
     CTEST_TEST( INCLUDE MATLAB  PARALLEL_LEVEL ${N_PROCS} )
 ELSEIF ( USE_VALGRIND )
     # CTEST_MEMCHECK( EXCLUDE "(WEEKLY|procs|example--)"  PARALLEL_LEVEL ${N_PROCS} )
