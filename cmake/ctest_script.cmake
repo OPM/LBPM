@@ -6,7 +6,8 @@
 
 # Set platform specific variables
 SITE_NAME( HOSTNAME )
-STRING(REGEX REPLACE "-ext." "" HOSTNAME "${HOSTNAME}")
+STRING(REGEX REPLACE "-ext."   "" HOSTNAME "${HOSTNAME}")
+STRING(REGEX REPLACE "-login." "" HOSTNAME "${HOSTNAME}")
 SET( CC                 $ENV{CC}                )
 SET( CXX                $ENV{CXX}               )
 SET( CFLAGS             $ENV{CFLAGS}            )
