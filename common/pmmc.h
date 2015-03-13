@@ -5,6 +5,7 @@
 #include <math.h>
 #include "Array.h"
 #include "PointList.h"
+#include "Utilities.h"
 //#include "vecLib/clapack.h"
 
 using namespace std;
@@ -4159,14 +4160,14 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 {
 	int p;
 	double s,lwns,norm;
-	double a,b,c,d,e,f,g,h;
-	double x,y,z,zeta;
+	double zeta;
 	double tangent_x,tangent_y,tangent_z;
 	double ns_x, ns_y, ns_z;
 	double nwn_x, nwn_y, nwn_z;
 	double nwns_x, nwns_y, nwns_z;
 	Point P,A,B;
 	lwns = 0.0;
+    NULL_USE(lwns);
 
 	TriLinPoly Px,Py,Pz,SDx,SDy,SDz,Pt;
 	Px.assign(Fx,i,j,k);
@@ -4259,6 +4260,9 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			ReturnVector(2) += zeta*nwns_z*s;
 		}
 	}
+    NULL_USE(tangent_x);
+    NULL_USE(tangent_y);
+    NULL_USE(tangent_z);
 }
 inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int i, int j, int k){
 
@@ -4301,10 +4305,9 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
 	
 	int p,i,j,k;
-	double x,y,z,length;
+	double length;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
-	
 	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
 //	double Tx[8],Ty[8],Tz[8];	// Tangent vector
 //	double Nx[8],Ny[8],Nz[8];	// Principle normal
@@ -4477,7 +4480,17 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 			KGavg += K*(nwsx*nwnsx + nwsy*nwnsy + nwsz*nwnsz)*length;
 		}
 	}
+	NULL_USE(fxx); NULL_USE(fyy); NULL_USE(fzz);
+    NULL_USE(fxy); NULL_USE(fxz); NULL_USE(fyz);
+    NULL_USE(fx);  NULL_USE(fy);  NULL_USE(fz);
+	NULL_USE(sxx); NULL_USE(syy); NULL_USE(szz);
+    NULL_USE(sxy); NULL_USE(sxz); NULL_USE(syz);
+    NULL_USE(sx);  NULL_USE(sy);  NULL_USE(sz);
+	NULL_USE(Axx); NULL_USE(Ayy); NULL_USE(Azz);
+    NULL_USE(Axy); NULL_USE(Axz); NULL_USE(Ayz);
 }
+
+
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
 									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,

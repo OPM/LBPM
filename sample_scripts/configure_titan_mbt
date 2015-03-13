@@ -14,9 +14,8 @@ rm -rf CMake*
 cmake                                    \
     -D CMAKE_C_COMPILER:PATH=cc          \
     -D CMAKE_CXX_COMPILER:PATH=CC        \
-    -D CMAKE_CXX_COMPILER:PATH=CC        \
     -D CMAKE_C_FLAGS="-DCBUB"            \
-    -D CMAKE_CXX_FLAGS="-DCBUB"          \
+    -D CMAKE_CXX_FLAGS="-DCBUB -tp=bulldozer"   \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=aprun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
@@ -28,11 +27,11 @@ cmake                                    \
 
 
 # Build the code
-make install -j 8
+# make install -j 8
 
 
 # Run the fast tests
-ctest -E WEEKLY
+# ctest -E WEEKLY
 
 
 # Run the slow tests
