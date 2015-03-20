@@ -135,10 +135,11 @@ void ParallelStreamBuffer::reserve( size_t size )
         }
     }
 }
-std::streamsize ParallelStreamBuffer::xsputn( const std::string &text, std::streamsize n )
+std::streamsize ParallelStreamBuffer::xsputn( const char* text, std::streamsize n )
 {
     reserve(d_size+n);
-    memcpy(&d_buffer[d_size],text.c_str(),text.size());
+    memcpy(&d_buffer[d_size],text,n);
+    d_size += n;
     if ( text[n-1]==0 || text[n-1]==10 ) { sync(); }
     return n;
 }
