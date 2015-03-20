@@ -93,7 +93,7 @@ public:
 	//...........................................................................
 	//...........................................................................
 	int Nx,Ny,Nz;
-	IntArray LocalBlobID;
+	IntArray BlobLabel;
 	DoubleArray SDn;
 	DoubleArray SDs;
 	DoubleArray Phase;
@@ -122,7 +122,7 @@ public:
 		cubeList.New(3,ncubes);
 
 		// Global arrays
-		LocalBlobID.New(Nx,Ny,Nz);
+		BlobLabel.New(Nx,Ny,Nz);
 		SDn.New(Nx,Ny,Nz);
 		SDs.New(Nx,Ny,Nz);
 		Phase.New(Nx,Ny,Nz);
@@ -652,16 +652,16 @@ void TwoPhase::PrintAll(int timestep){
 }
 
 inline int TwoPhase::GetCubeLabel(int i, int j, int k){
-  int label;
-			  label=LocalBlobID(i,j,k);
-			  label=max(label,LocalBlobID(i+1,j,k));
-			  label=max(label,LocalBlobID(i,j+1,k));
-			  label=max(label,LocalBlobID(i+1,j+1,k));
-			  label=max(label,LocalBlobID(i,j,k+1));
-			  label=max(label,LocalBlobID(i+1,j,k+1));
-			  label=max(label,LocalBlobID(i,j+1,k+1));
-			  label=max(label,LocalBlobID(i+1,j+1,k+1));
+	int label;
+	label=BlobLabel(i,j,k);
+	label=max(label,BlobLabel(i+1,j,k));
+	label=max(label,BlobLabel(i,j+1,k));
+	label=max(label,BlobLabel(i+1,j+1,k));
+	label=max(label,BlobLabel(i,j,k+1));
+	label=max(label,BlobLabel(i+1,j,k+1));
+	label=max(label,BlobLabel(i,j+1,k+1));
+	label=max(label,BlobLabel(i+1,j+1,k+1));
 
-			  return label;
+	return label;
 }
 
