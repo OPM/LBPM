@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	//.................................................
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	TwoPhase Averages(Dm);
-    BlobTwoPhase BlobAverages(nblobs_global);
+	BlobTwoPhase BlobAverages(nblobs_global);
 	//.......................................................................
 	// Filenames used
 	char LocalRankString[8];
@@ -223,7 +223,6 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=1;i<Nx;i++){
-                
 			}
 		}
 	}

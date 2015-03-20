@@ -8,7 +8,6 @@ class TwoPhase{
 	//...........................................................................
 	int n_nw_pts,n_ns_pts,n_ws_pts,n_nws_pts,n_local_sol_pts,n_local_nws_pts;
 	int n_nw_tris,n_ns_tris,n_ws_tris,n_nws_seg,n_local_sol_tris;
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 	//...........................................................................
 	int nc;
 	int kstart,kfinish;
@@ -220,7 +219,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 	double temp=0.5/Beta;
 	for (int n=0; n<Nx*Ny*Nz; n++){
 		double value = ColorData[n];
-		DistData[n] = temp*log((1.0+value)/(1.0-value));
+		if (value > 0.999 ) DistData[n] = 4.0;
+		else if (value < -0.999 ) DistData[n] = -4.0;
+		else 	DistData[n] = temp*log((1.0+value)/(1.0-value));
 	}
 
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
@@ -345,6 +346,8 @@ void TwoPhase::UpdateMeshValues(){
 void TwoPhase::ComputeLocal(){
 	int i,j,k,n;
 	double delphi;
+	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);

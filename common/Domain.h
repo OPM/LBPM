@@ -200,6 +200,13 @@ private:
 	}
 };
 
+// Inline function to read line without a return argument
+static inline void fgetl( char * str, int num, FILE * stream )
+{
+    char* ptr = fgets( str, num, stream );
+    if ( 0 ) {char *temp = (char *)&ptr; temp++;}
+}
+
 Domain::~Domain(){
 	delete sendData_x;
 	delete sendData_y;
@@ -775,11 +782,11 @@ inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, do
 	INSIST(fid!=NULL,"Error opening pack.out");
 	//.........Trash the header lines..........
 	char * line = new char[100];
-	fgets(line, 100, fid);
-	fgets(line, 100, fid);
-	fgets(line, 100, fid);
-	fgets(line, 100, fid);
-	fgets(line, 100, fid);
+	fgetl(line, 100, fid);
+	fgetl(line, 100, fid);
+	fgetl(line, 100, fid);
+	fgetl(line, 100, fid);
+	fgetl(line, 100, fid);
 	//........read the spheres..................
     // We will read until a blank like or end-of-file is reached
 	int count = 0;

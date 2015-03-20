@@ -7,6 +7,8 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <cstdio>
+
 #include <ProfilerApp.h>
 
 
@@ -397,13 +399,13 @@ std::vector<MeshDatabase> read( const std::string& filename )
 
 
 // Return the mesh type
-IO::MeshType meshType( std::shared_ptr<IO::Mesh> mesh )
+IO::MeshType meshType( shared_ptr<IO::Mesh> mesh )
 {
-    IO::MeshType type = IO::MeshType::Unknown;
-    if ( std::dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
-        type = IO::MeshType::PointMesh;
-    } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh)!=NULL || std::dynamic_pointer_cast<IO::TriMesh>(mesh)!=NULL ) {
-        type = IO::MeshType::SurfaceMesh;
+    IO::MeshType type = IO::Unknown;
+    if ( dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
+        type = IO::PointMesh;
+    } else if ( dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
+        type = IO::SurfaceMesh;
     } else {
         ERROR("Unknown mesh");
     }

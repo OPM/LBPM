@@ -10,7 +10,9 @@ ENDIF()
 IF ( NOT ${PROJ}_INSTALL_DIR )
     MESSAGE(FATAL_ERROR "${PROJ}_INSTALL_DIR must be set before including macros.cmake")
 ENDIF()
-#MESSAGE("Installing project ${PROJ} in ${${PROJ}_INSTALL_DIR}")
+IF ( NOT ${PROJ}_BUILD_DIR )
+    MESSAGE(FATAL_ERROR "${PROJ}_BUILD_DIR must be set before including macros.cmake")
+ENDIF()
 
 
 # Macro to print all variables
@@ -162,37 +164,39 @@ ENDMACRO()
 # Macro to identify the compiler
 MACRO( SET_COMPILER )
     # SET the C/C++ compiler
-    IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
-        SET( USING_GCC TRUE )
-        ADD_DEFINITIONS( -D USING_GCC )
-        MESSAGE("Using gcc")
-    ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
-        IF( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-            MESSAGE( FATAL_ERROR "Using microsoft compilers on non-windows system?" )
+    IF ( CMAKE_C_COMPILER_WORKS OR CMAKE_C_COMPILER_WORKS )
+        IF( CMAKE_COMPILE_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+            SET( USING_GCC TRUE )
+            ADD_DEFINITIONS( -D USING_GCC )
+            MESSAGE("Using gcc")
+        ELSEIF( MSVC OR MSVC_IDE OR MSVC60 OR MSVC70 OR MSVC71 OR MSVC80 OR CMAKE_COMPILER_2005 OR MSVC90 OR MSVC10 )
+            IF( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+                MESSAGE( FATAL_ERROR "Using microsoft compilers on non-windows system?" )
+            ENDIF()
+            SET( USING_MICROSOFT TRUE )
+            ADD_DEFINITIONS( -D USING_MICROSOFT )
+            MESSAGE("Using Microsoft")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
+            SET(USING_ICC TRUE)
+            ADD_DEFINITIONS( -D USING_ICC )
+            MESSAGE("Using icc")
+        ELSEIF( ${CMAKE_C_COMPILER_ID} MATCHES "PGI")
+            SET(USING_PGCC TRUE)
+            ADD_DEFINITIONS( -D USING_ICCPGCC )
+            MESSAGE("Using pgCC")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CRAY") OR (${CMAKE_C_COMPILER_ID} MATCHES "Cray") )
+            SET(USING_CRAY TRUE)
+            ADD_DEFINITIONS( -D USING_CRAY )
+            MESSAGE("Using Cray")
+        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CLANG") OR (${CMAKE_C_COMPILER_ID} MATCHES "Clang") )
+            SET(USING_CLANG TRUE)
+            ADD_DEFINITIONS( -D USING_CLANG )
+            MESSAGE("Using Clang")
+        ELSE()
+            SET(USING_DEFAULT TRUE)
+            MESSAGE("${CMAKE_C_COMPILER_ID}")
+            MESSAGE("Unknown C/C++ compiler, default flags will be used")
         ENDIF()
-        SET( USING_MICROSOFT TRUE )
-        ADD_DEFINITIONS( -D USING_MICROSOFT )
-        MESSAGE("Using Microsoft")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "Intel") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "Intel") ) 
-        SET(USING_ICC TRUE)
-        ADD_DEFINITIONS( -D USING_ICC )
-        MESSAGE("Using icc")
-    ELSEIF( ${CMAKE_C_COMPILER_ID} MATCHES "PGI")
-        SET(USING_PGCC TRUE)
-        ADD_DEFINITIONS( -D USING_ICCPGCC )
-        MESSAGE("Using pgCC")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CRAY") OR (${CMAKE_C_COMPILER_ID} MATCHES "Cray") )
-        SET(USING_CRAY TRUE)
-        ADD_DEFINITIONS( -D USING_CRAY )
-        MESSAGE("Using Cray")
-    ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "CLANG") OR (${CMAKE_C_COMPILER_ID} MATCHES "Clang") )
-        SET(USING_CLANG TRUE)
-        ADD_DEFINITIONS( -D USING_CLANG )
-        MESSAGE("Using Clang")
-    ELSE()
-        SET(USING_DEFAULT TRUE)
-        MESSAGE("${CMAKE_C_COMPILER_ID}")
-        MESSAGE("Unknown C/C++ compiler, default flags will be used")
     ENDIF()
 ENDMACRO()
 
@@ -202,7 +206,7 @@ MACRO ( SET_COMPILER_FLAGS )
   IF ( USING_GCC )
     # Add gcc specific compiler options
     #    -Wno-reorder:  warning: "" will be initialized after "" when initialized here
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98")
     SET(CMAKE_C_FLAGS     "${CMAKE_C_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable") 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-char-subscripts -Wno-comment -Wno-unused-variable -Wno-unused-but-set-variable")
   ELSEIF ( USING_MICROSOFT )
@@ -443,21 +447,40 @@ MACRO( INSTALL_EXAMPLE EXAMPLE )
 ENDMACRO()
 
 
-# Copy an example folder
+# Create an example test
+CONFIGURE_FILE( "${${PROJ}_SOURCE_DIR}/cmake/CompareOutput.cmake" "${${PROJ}_BUILD_DIR}/CompareOutput.cmake" COPYONLY )
 MACRO( TEST_EXAMPLE EXAMPLE EXEFILE PROCS ${ARGN} )
+    SET( EXAMPLE_DIR "${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}" )
+    # Copy the example directory
     ADD_CUSTOM_TARGET(
         ${EXAMPLE} ALL
-        ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}" "${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}"
+        ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}" "${EXAMPLE_DIR}"
         DEPENDS ${EXEFILE}
     )
+    # Create a wrapper script to run the test and copy the output to ${EXAMPLE}.out
+    SET( FILENAME "${EXAMPLE_DIR}/run-${EXAMPLE}" )
+    FILE(WRITE  "${FILENAME}" "# This is a automatically generated file to run example--${EXAMPLE}\n" )
+    FILE(APPEND "${FILENAME}" "${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} \"${LBPM_INSTALL_DIR}/bin/${EXEFILE}\" ${ARGN} 2>&1 | tee ${EXAMPLE}.out\n\n" )
+    # Create the test to run the example
     SET( TESTNAME example--${EXAMPLE} )
+    EXECUTE_PROCESS(COMMAND chmod 755 "${FILENAME}")
     ADD_TEST( 
         NAME ${TESTNAME}
-        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}" 
-        COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${PROCS} "${LBPM_INSTALL_DIR}/bin/${EXEFILE}" ${ARGN} )
+        WORKING_DIRECTORY "${EXAMPLE_DIR}"
+        COMMAND "${FILENAME}" 
+    )
     SET_TESTS_PROPERTIES( ${TESTNAME} PROPERTIES FAIL_REGULAR_EXPRESSION "${TEST_FAIL_REGULAR_EXPRESSION}" PROCESSORS ${PROCS} )
     SET_TESTS_PROPERTIES( ${TESTNAME} PROPERTIES RESOURCE_LOCK ${EXEFILE} )
-
+    # Create a test that checks the output against the data in EXAMPLE/OutputAns.txt
+    IF ( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE}/ExampleOutput.txt" )
+        ADD_TEST( 
+            NAME ${TESTNAME}-output
+            WORKING_DIRECTORY "${EXAMPLE_DIR}"
+            COMMAND ${CMAKE_COMMAND} -DTEST=${EXAMPLE}.out -DGOLD=ExampleOutput.txt -P "${${PROJ}_BUILD_DIR}/CompareOutput.cmake"
+        )
+        SET_TESTS_PROPERTIES( ${TESTNAME} PROPERTIES FAIL_REGULAR_EXPRESSION "${TEST_FAIL_REGULAR_EXPRESSION}" PROCESSORS 1 )
+        SET_TESTS_PROPERTIES( ${TESTNAME} PROPERTIES DEPENDS ${TESTNAME} )
+    ENDIF()
 ENDMACRO()
 
 
@@ -539,17 +562,19 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
         Testing
         include
         doc
+        docs
+        latex_docs
         lib
-        tests
+        Makefile.config
+        install_manifest.txt
+        test
+        matlab
+        mex
+        tmp
+        #tmp#
         bin
-        liblbpm-wia.a
-        liblbpm-wia.so
-        cpu
-        gpu
-        example
-        common
-        visit
-        IO
+        cmake
+        ${ARGN}
     )
     ADD_CUSTOM_TARGET (distclean @echo cleaning for source distribution)
     IF (UNIX)
@@ -566,6 +591,7 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
             *.vcxproj*
             ipch
             x64
+            Debug
         )
         SET( DISTCLEAN_FILE "${CMAKE_CURRENT_BINARY_DIR}/distclean.bat" )
         FILE( WRITE  "${DISTCLEAN_FILE}" "del /s /q /f " )

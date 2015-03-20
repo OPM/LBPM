@@ -101,9 +101,9 @@ protected:
 public:
     
     virtual ~DTList() {
-      //  --(*refCount);
-      //  if (*refCount==0) {delete [] Data; delete refCount;}
-      //  Data = 0; refCount = 0; length=0;
+      --(*refCount);
+      if (*refCount==0) {delete [] Data; delete refCount;}
+      Data = 0; refCount = 0; length=0;
     }
 	
     DTList<T> &operator=(const DTList<T> &A) {

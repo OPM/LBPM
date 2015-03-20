@@ -3,17 +3,19 @@
 
 #include <iostream>
 #include <string.h>
-#include <memory>
 #include <vector>
 
 #include "common/PointList.h"
+#include "shared_ptr.h"
+
 
 
 namespace IO {
 
 
 //! Possible variable types
-enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
+//enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
+enum VariableType { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
 
 
 /*! \class Mesh
@@ -65,42 +67,10 @@ public:
 };
 
 
-/*! \class TriMesh
-    \brief A class used to hold a list of trianges specified by their vertex number and list of coordiantes
-*/
-class TriList;
-class TriMesh: public Mesh
-{
-public:
-    //! TriMesh constructor
-    TriMesh();
-    //! Constructor for Nt triangles and Np points
-    TriMesh( size_t N_tri, size_t N_point );
-    //! Constructor for Nt triangles and the given points
-    TriMesh( size_t N_tri, std::shared_ptr<PointList> points );
-    //! Constructor from TriList
-    TriMesh( const TriList& );
-    //! Destructor
-    virtual ~TriMesh();
-    //! Mesh class name
-    virtual std::string className() const { return "TriMesh"; }
-    //! Number of points for the given variable type
-    virtual size_t numberPointsVar( VariableType type ) const;
-    //! Pack the data
-    virtual std::pair<size_t,void*> pack( int level ) const;
-    //! Unpack the data
-    virtual void unpack( const std::pair<size_t,void*>& data );
-public:
-    std::shared_ptr<PointList> vertices;    //!< List of verticies
-    std::vector<int>    A;                  //!< First vertex
-    std::vector<int>    B;                  //!< Second vertex
-    std::vector<int>    C;                  //!< Third vertex
-};
-
-
 /*! \class TriList
     \brief A class used to hold a list of triangles specified by their vertex coordinates
 */
+class TriMesh;
 class TriList: public Mesh
 {
 public:
@@ -127,6 +97,38 @@ public:
 };
 
 
+/*! \class TriMesh
+    \brief A class used to hold a list of trianges specified by their vertex number and list of coordiantes
+*/
+class TriMesh: public Mesh
+{
+public:
+    //! TriMesh constructor
+    TriMesh();
+    //! Constructor for Nt triangles and Np points
+    TriMesh( size_t N_tri, size_t N_point );
+    //! Constructor for Nt triangles and the given points
+    TriMesh( size_t N_tri, shared_ptr<PointList> points );
+    //! Constructor from TriList
+    TriMesh( const TriList& );
+    //! Destructor
+    virtual ~TriMesh();
+    //! Mesh class name
+    virtual std::string className() const { return "TriMesh"; }
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const;
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data );
+public:
+    shared_ptr<PointList> vertices;    //!< List of verticies
+    std::vector<int>    A;                  //!< First vertex
+    std::vector<int>    B;                  //!< Second vertex
+    std::vector<int>    C;                  //!< Third vertex
+};
+
+
 
 /*! \class Variable
     \brief A base class fore variables
@@ -140,7 +142,7 @@ public:
     std::string name;           //!< Variable name
     std::vector<double> data;   //!< Variable data
     //! Empty constructor
-    Variable(): type(VariableType::Null) {}
+    Variable(): type(NullVariable) {}
     //! Destructor
     virtual ~Variable() {}
 protected:
@@ -156,18 +158,18 @@ protected:
 */
 struct MeshDataStruct {
     std::string             meshName;
-    std::shared_ptr<Mesh>   mesh;
-    std::vector<std::shared_ptr<Variable> >  vars;
+    shared_ptr<Mesh>   mesh;
+    std::vector<shared_ptr<Variable> >  vars;
 };
 
 
 //! Convert the mesh to a TriMesh (will return NULL if this is invalid)
-std::shared_ptr<PointList> getPointList( std::shared_ptr<Mesh> mesh );
-std::shared_ptr<TriMesh> getTriMesh( std::shared_ptr<Mesh> mesh );
-std::shared_ptr<TriList> getTriList( std::shared_ptr<Mesh> mesh );
-std::shared_ptr<const PointList> getPointList( std::shared_ptr<const Mesh> mesh );
-std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh );
-std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh );
+shared_ptr<PointList> getPointList( shared_ptr<Mesh> mesh );
+shared_ptr<TriMesh> getTriMesh( shared_ptr<Mesh> mesh );
+shared_ptr<TriList> getTriList( shared_ptr<Mesh> mesh );
+shared_ptr<const PointList> getPointList( shared_ptr<const Mesh> mesh );
+shared_ptr<const TriMesh> getTriMesh( shared_ptr<const Mesh> mesh );
+shared_ptr<const TriList> getTriList( shared_ptr<const Mesh> mesh );
 
 
 } // IO namespace

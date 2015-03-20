@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string.h>
-#include <memory>
 #include <vector>
 
 #include "IO/Mesh.h"

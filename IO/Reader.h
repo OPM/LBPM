@@ -3,11 +3,11 @@
 
 #include <iostream>
 #include <string.h>
-#include <memory>
 #include <vector>
 
 #include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
+#include "shared_ptr.h"
 
 
 namespace IO {
@@ -22,12 +22,12 @@ std::vector<IO::MeshDatabase> getMeshList( const std::string& path, const std::s
 
 
 //! Read the given mesh domain
-std::shared_ptr<IO::Mesh> getMesh( const std::string& path, const std::string& timestep, 
+shared_ptr<IO::Mesh> getMesh( const std::string& path, const std::string& timestep, 
     const MeshDatabase& meshDatabase, int domain );
 
 
 //! Read the given mesh domain
-std::shared_ptr<IO::Variable> getVariable( const std::string& path, const std::string& timestep, 
+shared_ptr<IO::Variable> getVariable( const std::string& path, const std::string& timestep, 
     const MeshDatabase& meshDatabase, int domain, const std::string& variable );
 
 

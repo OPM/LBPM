@@ -32,12 +32,14 @@
     #include <execinfo.h>
     #include <dlfcn.h>
     #include <mach/mach.h>
+    #include <unistd.h>
 #elif defined(__linux) || defined(__unix) || defined(__posix)
     #define USE_LINUX
     #include <sys/time.h>
     #include <execinfo.h>
     #include <dlfcn.h>
     #include <malloc.h>
+    #include <unistd.h>
 #else
     #error Unknown OS
 #endif

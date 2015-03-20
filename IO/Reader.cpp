@@ -7,10 +7,17 @@
 #include <ProfilerApp.h>
 #include <iostream>
 #include <string.h>
-#include <memory>
 #include <vector>
 #include <map>
+#include <cstdio>
 
+
+// Inline function to read line without a return argument
+static inline void fgetl( char * str, int num, FILE * stream )
+{
+    char* ptr = fgets( str, num, stream );
+    if ( 0 ) {char *temp = (char *)&ptr; temp++;}
+}
 
 
 // List the timesteps in the given directors (dumps.LBPM)
@@ -44,11 +51,11 @@ std::vector<IO::MeshDatabase> IO::getMeshList( const std::string& path, const st
 
 
 // Read the given mesh domain
-std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& timestep, 
+shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& timestep, 
     const IO::MeshDatabase& meshDatabase, int domain )
 {
     PROFILE_START("getMesh");
-    std::shared_ptr<IO::Mesh> mesh;
+    shared_ptr<IO::Mesh> mesh;
     if ( meshDatabase.format==1 ) {
         // Old format (binary doubles)
         std::string filename = path + "/" + timestep + "/" + meshDatabase.domains[domain].file;
@@ -63,9 +70,9 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         fclose(fid);
         if ( count%3 != 0 )
             ERROR("Error reading file");
-        if ( meshDatabase.type==IO::MeshType::PointMesh ) {
+        if ( meshDatabase.type==IO::PointMesh ) {
             size_t N = count/3;
-            std::shared_ptr<PointList> pointlist( new PointList(N) );
+            shared_ptr<PointList> pointlist( new PointList(N) );
             std::vector<Point>& P = pointlist->points;
             for (size_t i=0; i<N; i++) {
                 P[i].x = data[3*i+0];
@@ -73,11 +80,11 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
                 P[i].z = data[3*i+2];
             }
             mesh = pointlist;
-        } else if ( meshDatabase.type==IO::MeshType::SurfaceMesh ) {
+        } else if ( meshDatabase.type==IO::SurfaceMesh ) {
             if ( count%9 != 0 )
                 ERROR("Error reading file (2)");
             size_t N_tri = count/9;
-            std::shared_ptr<TriList> trilist( new TriList(N_tri) );
+            shared_ptr<TriList> trilist( new TriList(N_tri) );
             std::vector<Point>& A = trilist->A;
             std::vector<Point>& B = trilist->B;
             std::vector<Point>& C = trilist->C;
@@ -103,7 +110,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         FILE *fid = fopen(filename.c_str(),"rb");
         fseek(fid,database.offset,SEEK_SET);
         char line[1000];
-        std::fgets(line,1000,fid);
+        fgetl(line,1000,fid);
         size_t i1 = find(line,':');
         size_t i2 = find(&line[i1+1],':')+i1+1;
         size_t bytes = atol(&line[i2+1]);
@@ -131,20 +138,20 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
 
 
 // Read the given variable for the given mesh domain
-std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
+shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
     const MeshDatabase& meshDatabase, int domain, const std::string& variable )
 {
     std::pair<std::string,std::string> key(meshDatabase.domains[domain].name,variable);
     std::map<std::pair<std::string,std::string>,DatabaseEntry>::const_iterator it;
     it = meshDatabase.variable_data.find(key);
     if ( it==meshDatabase.variable_data.end() )
-        return std::shared_ptr<IO::Variable>();
+        return shared_ptr<IO::Variable>();
     const DatabaseEntry& database = it->second;
     std::string filename = path + "/" + timestep + "/" + database.file;
     FILE *fid = fopen(filename.c_str(),"rb");
     fseek(fid,database.offset,SEEK_SET);
     char line[1000];
-    std::fgets(line,1000,fid);
+    fgetl(line,1000,fid);
     size_t i1 = find(line,':');
     size_t i2 = find(&line[i1+1],':')+i1+1;
     std::vector<std::string> values = splitList(&line[i2+1],',');
@@ -158,12 +165,14 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     size_t count = fread(data,1,bytes,fid);
     fclose(fid);
     ASSERT(count==bytes);
-    std::shared_ptr<IO::Variable> var( new IO::Variable() );
+    shared_ptr<IO::Variable> var( new IO::Variable() );
     var->dim = dim;
     var->type = static_cast<IO::VariableType>(type);
     var->name = variable;
     var->data.resize(N);
-    double *var_data = var->data.data();
+    double *var_data = NULL;
+    if ( !var->data.empty() )
+        var_data = &var->data[0];
     if ( precision=="double" ) {
         memcpy(var_data,data,bytes);
     } else {

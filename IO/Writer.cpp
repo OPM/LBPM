@@ -3,6 +3,7 @@
 #include "IO/IOHelpers.h"
 #include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
+#include "shared_ptr.h"
 
 #include <sys/stat.h>
 #include <algorithm>
@@ -25,7 +26,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
 	    sprintf(fullpath,"%s/%s",path,filename);
         FILE *fid = fopen(fullpath,"wb");
         INSIST(fid!=NULL,std::string("Error opening file: ")+fullpath);
-        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         IO::MeshDatabase mesh_entry;
         mesh_entry.name = meshData[i].meshName;
         mesh_entry.type = meshType(mesh);
@@ -41,18 +42,18 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             //for (size_t j=0; j<meshData[i].vars.size(); j++)
             //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
-        if ( std::dynamic_pointer_cast<IO::PointList>(mesh)!=NULL ) {
+        if ( dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
             // List of points
-            std::shared_ptr<IO::PointList> pointlist = std::dynamic_pointer_cast<IO::PointList>(mesh);
+            shared_ptr<IO::PointList> pointlist = dynamic_pointer_cast<IO::PointList>(mesh);
             const std::vector<Point>& P = pointlist->points;
             for (size_t i=0; i<P.size(); i++) {
                 double x[3];
                 x[0] = P[i].x;  x[1] = P[i].y;  x[2] = P[i].z;
                 fwrite(x,sizeof(double),3,fid);
             }
-        } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh)!=NULL || std::dynamic_pointer_cast<IO::TriMesh>(mesh)!=NULL ) {
+        } else if ( dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
             // Triangle mesh
-            std::shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
+            shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
             const std::vector<Point>& A = trilist->A;
             const std::vector<Point>& B = trilist->B;
             const std::vector<Point>& C = trilist->C;
@@ -117,7 +118,7 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
         int type = static_cast<int>(mesh.vars[i]->type);
         size_t N = mesh.vars[i]->data.size();
         const void* data = N==0 ? 0:&mesh.vars[i]->data[0];
-        if ( type == static_cast<int>(IO::VariableType::Null) ) {
+        if ( type == static_cast<int>(IO::NullVariable) ) {
             ERROR("Variable type not set");
         }
         size_t N_mesh = mesh.mesh->numberPointsVar(mesh.vars[i]->type);
@@ -143,7 +144,7 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
     sprintf(fullpath,"%s/%s",path,filename);
     FILE *fid = fopen(fullpath,"wb");
     for (size_t i=0; i<meshData.size(); i++) {
-        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         meshes_written.push_back( write_domain(fid,filename,meshData[i],format) );
     }
     fclose(fid);

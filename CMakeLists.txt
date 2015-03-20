@@ -57,7 +57,7 @@ ADD_CUSTOM_TARGET( doc )
 ADD_CUSTOM_TARGET( latex_docs )
 ADD_CUSTOM_TARGET( build-test )
 ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN()
+ADD_DISTCLEAN( tests liblbpm-wia.* cpu gpu example common visit IO )
 
 
 # Check the compile mode and compile flags
@@ -103,6 +103,8 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_LBPM()
     CONFIGURE_TIMER( 0 "${${PROJ}_INSTALL_DIR}/null_timer" )
     CONFIGURE_LINE_COVERAGE()
+    INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SharedPtr.cmake" )
+    CONFIGURE_SHARED_PTR( "${LBPM_INSTALL_DIR}/include" "" )
 ENDIF()
 
 
