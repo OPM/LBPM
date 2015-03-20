@@ -2066,42 +2066,7 @@ inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, i
 			}
 		}
 	}
-	// if point A(i,j,k) is in the solid phase
-	//		else if ( A(i,j,k) == 0 ){
-	//			pt.x = i;
-	//			pt.y = j;
-	//			pt.z = k;
-	//			val =  EXTRAP(A, v, i+1,j,k, 1,pt);
-	//			// If extrapolated value gives a vertex
-	//			if ( (A(i+1,j,k)- v)*(val-v) < 0 ){
-	//				P.x = i + (val-v)/(val-A(i+1,j,k));
-	//				P.y = j;
-	//				P.z = k;
-	//				if (  INTERP(solid(i,j,k), solid(i+1,j,k), P.x-i) > 0 ){
-	//					nw_pts(n_nw_pts++) =  P;
-	//					N++;
-	//				}
-	//			}
-	//		}
-	//		// if point A(i+1,j,k) is in the solid phase
-	//		else if ( A(i+1,j,k) == 0 ){
-	//			pt.x = i+1;
-	//			pt.y = j;
-	//			pt.z = k;
-	//			val =  EXTRAP(A, v, i,j,k, 4,pt);
-	//			// If extrapolated value gives a vertex
-	//			if ( (A(i,j,k)- v)*(val-v) < 0 ){
-	//				P.x = i + (A(i,j,k)-v)/(A(i,j,k)-val);
-	//				P.y = j;
-	//				P.z = k;
-	//				if (  INTERP(solid(i,j,k), solid(i+1,j,k), P.x-i) > 0 ){
-	//					nw_pts(n_nw_pts++) =  P;
-	//					N++;
-	//				}
-	//			}
-	//		}
-	//	}
-    // 2
+
     if ((A(i+1,j,k)-v)*(A(i+1,j+1,k)-v) < 0)
 	{
 		if ( A(i+1,j,k) != 0 && A(i+1,j+1,k) != 0 ){
@@ -2118,42 +2083,7 @@ inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, i
 			}
 		}
 	}
-	//		else if ( A(i+1,j,k)  == 0 ){
-	//			pt.x = i+1;
-	//			pt.y = j;
-	//			pt.z = k;
-	//			val =  EXTRAP(A, v, i+1,j+1,k, 2,pt);
-	//			// If extrapolated value gives a vertex
-	//			if ( (A(i+1,j+1,k)- v)*(val-v) < 0 ){
-	//				P.x = i+1;
-	//				P.y = j + (val-v)/(val-A(i+1,j+1,k));
-	//				P.z = k;
-	//				if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-	//					INTERP(solid(i+1,j,k), solid(i+1,j+1,k), P.y-j) > 0 ){ // P is a new vertex (not counted twice)
-	//					nw_pts(n_nw_pts++) =  P;
-	//					N++;
-	//				}
-	//			}
-	//		}
-	//		else if ( A(i+1,j+1,k) == 0){
-	//			pt.x = i+1;
-	//			pt.y = j+1;
-	//			pt.z = k;
-	//			val =  EXTRAP(A, v, i+1,j,k, 5,pt);
-	//			// If extrapolated value gives a vertex
-	//			if ( (A(i+1,j,k)- v)*(val-v) < 0 ){
-	//				P.x = i+1;
-	//				P.y = j + (A(i+1,j,k)-v)/(A(i+1,j,k)-val);
-	//				P.z = k;
-	//				if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-	//					INTERP(solid(i+1,j,k), solid(i+1,j+1,k), P.y-j) > 0 ){
-	//					nw_pts(n_nw_pts++) =  P;
-	//					N++;
-	//				}
-	//			}
-	//		}
-	//	 }
-    //3
+
     if ((A(i+1,j+1,k)-v)*(A(i,j+1,k)-v) < 0 )
 	{
 		if ( A(i+1,j+1,k) != 0 && A(i,j+1,k) != 0 ){
@@ -2170,42 +2100,6 @@ inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, i
 			}
 		}
 	}
-	/*		else if ( A(i,j+1,k)  == 0 ){
-		pt.x = i;
-	pt.y = j+1;
-	pt.z = k;
-	val =  EXTRAP(A, v, i+1,j+1,k, 1,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j+1,k)- v)*(val-v) < 0 ){
-		P.x = i + (val-v) / (val-A(i+1,j+1,k));
-		P.y = j+1;
-		P.z = k;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k), solid(i+1,j+1,k), P.x-i) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i+1,j+1,k) == 0){
-	pt.x = i+1;
-	pt.y = j+1;
-	pt.z = k;
-	val =  EXTRAP(A, v, i,j+1,k, 4, pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j+1,k)- v)*(val-v) < 0 ){
-		P.x = i + (A(i,j+1,k)-v) / (A(i,j+1,k)-val);
-		P.y = j+1;
-		P.z = k;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k), solid(i+1,j+1,k), P.x-i) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
 
     //4
     if ((A(i,j+1,k)-v)*(A(i,j,k)-v) < 0 )
@@ -2224,41 +2118,7 @@ else if ( A(i+1,j+1,k) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i,j+1,k)  == 0 ){
-		pt.x = i;
-	pt.y = j+1;
-	pt.z = k;
-	val =  EXTRAP(A, v, i,j,k, 5,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j,k)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j + (A(i,j,k)-v) / (A(i,j,k)-val);
-		P.z = k;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k), solid(i,j+1,k), P.y-j) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-		}
-	}
-	}
-else if ( A(i,j,k) == 0){
-	pt.x = i;
-	pt.y = j;
-	pt.z = k;
-	val =  EXTRAP(A, v, i,j+1,k, 2,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j+1,k)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j + (val-v) / (val-A(i,j+1,k));
-		P.z = k;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k), solid(i,j+1,k), P.y-j) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //5
     if ((A(i,j,k)-v)*(A(i,j,k+1)-v) < 0 )
 	{
@@ -2276,42 +2136,7 @@ else if ( A(i,j,k) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i,j,k)  == 0 ){
-		pt.x = i;
-	pt.y = j;
-	pt.z = k;
-	val =  EXTRAP(A, v, i,j,k+1, 3,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j,k+1)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j;
-		P.z = k + (val-v) / (val-A(i,j,k+1));
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k), solid(i,j,k+1), P.z-k) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i,j,k+1) == 0){
-	pt.x = i;
-	pt.y = j;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i,j,k, 6,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j,k)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j;
-		P.z = k + (A(i,j,k)-v) / (A(i,j,k)-val);
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k), solid(i,j,k+1), P.z-k) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //6
     if ((A(i+1,j,k)-v)*(A(i+1,j,k+1)-v) < 0 )
 	{
@@ -2329,43 +2154,7 @@ else if ( A(i,j,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i+1,j,k)  == 0 ){
-		pt.x = i+1;
-	pt.y = j;
-	pt.z = k;
-	val =  EXTRAP(A, v, i+1,j,k+1, 3,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j,k+1)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j;
-		P.z = k + (val-v) / (val-A(i+1,j,k+1));
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j,k), solid(i+1,j,k+1), P.z-k) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i+1,j,k+1) == 0){
-	pt.x = i+1;
-	pt.y = j;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j,k, 6,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j,k)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j;
-		P.z = k + (A(i+1,j,k)-v) / (A(i+1,j,k)-val);
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j,k), solid(i+1,j,k+1), P.z-k) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
 
-	 }
-*/
     //7
     if ((A(i+1,j+1,k)-v)*(A(i+1,j+1,k+1)-v) < 0 )
 	{
@@ -2383,42 +2172,7 @@ else if ( A(i+1,j,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i+1,j+1,k)  == 0 ){
-		pt.x = i+1;
-	pt.y = j+1;
-	pt.z = k;
-	val =  EXTRAP(A, v, i+1,j+1,k+1, 3,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j+1,k+1)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j+1;
-		P.z = k + (val-v) / (val-A(i+1,j+1,k+1));
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j+1,k), solid(i+1,j+1,k+1), P.z-k) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i+1,j+1,k+1) == 0){
-	pt.x = i+1;
-	pt.y = j+1;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j+1,k, 6,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j+1,k)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j+1;
-		P.z = k + (A(i+1,j+1,k)-v) / (A(i+1,j+1,k)-val);
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j+1,k), solid(i+1,j+1,k+1), P.z-k) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //8
     if ((A(i,j+1,k)-v)*(A(i,j+1,k+1)-v) < 0 )
 	{
@@ -2436,42 +2190,7 @@ else if ( A(i+1,j+1,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i,j+1,k)  == 0 ){
-		pt.x = i;
-	pt.y = j+1;
-	pt.z = k;
-	val =  EXTRAP(A, v, i,j+1,k+1, 3,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j+1,k+1)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j+1;
-		P.z = k + (val-v) / (val-A(i,j+1,k+1));
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k), solid(i,j+1,k+1), P.z-k) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i,j+1,k+1) == 0){
-	pt.x = i;
-	pt.y = j+1;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i,j+1,k, 6,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j+1,k)- v)*(val-v) < 0 ){
-		P.x = i;
-		P.y = j+1;
-		P.z = k + (A(i,j+1,k)-v) / (A(i,j+1,k)-val);
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k), solid(i,j+1,k+1), P.z-k) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //9
     if ((A(i,j,k+1)-v)*(A(i+1,j,k+1)-v) < 0 )
 	{
@@ -2489,42 +2208,7 @@ else if ( A(i,j+1,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i,j,k+1)  == 0 ){
-		pt.x = i;
-	pt.y = j;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j,k+1, 1,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j,k+1)- v)*(val-v) < 0 ){
-		P.x = i + (val-v) / (val-A(i+1,j,k+1));
-		P.y = j;
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k+1), solid(i+1,j,k+1), P.x-i) > 0 ){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i+1,j,k+1) == 0){
-	pt.x = i+1;
-	pt.y = j;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i,j,k+1, 4,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j,k+1)- v)*(val-v) < 0 ){
-		P.x = i + (A(i,j,k+1)-v) / (A(i,j,k+1)-val);
-		P.y = j;
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j,k+1), solid(i+1,j,k+1), P.x-i) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //10
     if ((A(i+1,j,k+1)-v)*(A(i+1,j+1,k+1)-v) < 0 )
 	{
@@ -2542,42 +2226,7 @@ else if ( A(i+1,j,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i+1,j,k+1)  == 0 ){
-		pt.x = i+1;
-	pt.y = j;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j+1,k+1, 2,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j+1,k+1)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j + (val-v) / (val-A(i+1,j+1,k+1));
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j,k+1), solid(i+1,j+1,k+1), P.y-j) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i+1,j+1,k+1) == 0){
-	pt.x = i+1;
-	pt.y = j+1;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j,k+1, 5,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j,k+1)- v)*(val-v) < 0 ){
-		P.x = i+1;
-		P.y = j + (A(i+1,j,k+1)-v) / (A(i+1,j,k+1)-val);
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i+1,j,k+1), solid(i+1,j+1,k+1), P.y-j) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //11
     if ((A(i+1,j+1,k+1)-v)*(A(i,j+1,k+1)-v) < 0 )
 	{
@@ -2595,42 +2244,7 @@ else if ( A(i+1,j+1,k+1) == 0){
 			}
 		}
 	}
-	/*		else if ( A(i+1,j+1,k+1)  == 0 ){
-		pt.x = i+1;
-	pt.y = j+1;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i,j+1,k+1, 4,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i,j+1,k+1)- v)*(val-v) < 0 ){
-		P.x = i+(A(i,j+1,k+1)-v) / (A(i,j+1,k+1)-val);
-		P.y = j+1;
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k+1), solid(i+1,j+1,k+1), P.x-i) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-	}
-else if ( A(i,j+1,k+1) == 0){
-	pt.x = i;
-	pt.y = j+1;
-	pt.z = k+1;
-	val =  EXTRAP(A, v, i+1,j+1,k+1, 1,pt);
-	// If extrapolated value gives a vertex
-	if ( (A(i+1,j+1,k+1)- v)*(val-v) < 0 ){
-		P.x = i+(val-v) / (val-A(i+1,j+1,k+1));
-		P.y = j+1;
-		P.z = k+1;
-		if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1 &&
-			INTERP(solid(i,j+1,k+1), solid(i+1,j+1,k+1), P.x-i) > 0){ // P is a new vertex (not counted twice)
-			nw_pts(n_nw_pts++) =  P;
-			N++;
-		}
-	}
-}
-	 }
-*/
+
     //12
     if ((A(i,j+1,k+1)-v)*(A(i,j,k+1)-v) < 0 )
 	{
@@ -2657,66 +2271,68 @@ else if ( A(i,j+1,k+1) == 0){
     // n = number of vertices in this grid cell
 
 
-    for (m = n_nw_pts-N; m < n_nw_pts-2; m++) {
-        for (o = m+2; o < n_nw_pts-1; o++) {
-            if (ShareSide(nw_pts(m), nw_pts(o)) == 1) {
-                PlaceHolder = nw_pts(m+1);
-                nw_pts(m+1) = nw_pts(o);
-                nw_pts(o) = PlaceHolder;
-            }
-        }
+    // Assemble the triangles as long as points are found
+    if (N > 0){
+    	for (m = n_nw_pts-N; m < n_nw_pts-2; m++) {
+    		for (o = m+2; o < n_nw_pts-1; o++) {
+    			if (ShareSide(nw_pts(m), nw_pts(o)) == 1) {
+    				PlaceHolder = nw_pts(m+1);
+    				nw_pts(m+1) = nw_pts(o);
+    				nw_pts(o) = PlaceHolder;
+    			}
+    		}
 
-		// make sure other neighbor of vertex 1 is in last spot
-        if (m == n_nw_pts-N){
-            for (p = m+2; p < n_nw_pts-1; p++){
-                if (ShareSide(nw_pts(m), nw_pts(p)) == 1){
-                    PlaceHolder = nw_pts(n_nw_pts-1);
-                    nw_pts(n_nw_pts-1) = nw_pts(p);
-                    nw_pts(p) = PlaceHolder;
-                }
-            }
-        }
-        if ( ShareSide(nw_pts(n_nw_pts-2), nw_pts(n_nw_pts-3)) != 1 ){
-            if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
-				ShareSide( nw_pts(n_nw_pts-N),nw_pts(n_nw_pts-2)) == 1 ){
-                PlaceHolder = nw_pts(n_nw_pts-2);
-                nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-1);
-                nw_pts(n_nw_pts-1) = PlaceHolder;
-            }
-        }
-        if ( ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-2)) != 1 ){
-            if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
-				ShareSide(nw_pts(n_nw_pts-4),nw_pts(n_nw_pts-2)) == 1 ){
-                PlaceHolder = nw_pts(n_nw_pts-3);
-                nw_pts(n_nw_pts-3) = nw_pts(n_nw_pts-2);
-                nw_pts(n_nw_pts-2) = PlaceHolder;
-            }
-            if (ShareSide( nw_pts(n_nw_pts-N+1), nw_pts(n_nw_pts-3)) == 1 &&
-				ShareSide(nw_pts(n_nw_pts-1),nw_pts(n_nw_pts-N+1)) == 1 ){
-                PlaceHolder = nw_pts(n_nw_pts-2);
-                nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-N+1);
-                nw_pts(n_nw_pts-N+1) = PlaceHolder;
-            }
-        }
-        if ( ShareSide(nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-N+1)) != 1 ){
-            if (ShareSide( nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-2)) == 1 &&
-				ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-N+1)) == 1){
-                PlaceHolder = nw_pts(n_nw_pts-1);
-                nw_pts(n_nw_pts-1) = nw_pts(n_nw_pts-N);
-                nw_pts(n_nw_pts-N) = PlaceHolder;
-            }
-        }
+    		// make sure other neighbor of vertex 1 is in last spot
+    		if (m == n_nw_pts-N){
+    			for (p = m+2; p < n_nw_pts-1; p++){
+    				if (ShareSide(nw_pts(m), nw_pts(p)) == 1){
+    					PlaceHolder = nw_pts(n_nw_pts-1);
+    					nw_pts(n_nw_pts-1) = nw_pts(p);
+    					nw_pts(p) = PlaceHolder;
+    				}
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-2), nw_pts(n_nw_pts-3)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
+    					ShareSide( nw_pts(n_nw_pts-N),nw_pts(n_nw_pts-2)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-1);
+    				nw_pts(n_nw_pts-1) = PlaceHolder;
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-2)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-4),nw_pts(n_nw_pts-2)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-3);
+    				nw_pts(n_nw_pts-3) = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = PlaceHolder;
+    			}
+    			if (ShareSide( nw_pts(n_nw_pts-N+1), nw_pts(n_nw_pts-3)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-1),nw_pts(n_nw_pts-N+1)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-N+1);
+    				nw_pts(n_nw_pts-N+1) = PlaceHolder;
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-N+1)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-2)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-N+1)) == 1){
+    				PlaceHolder = nw_pts(n_nw_pts-1);
+    				nw_pts(n_nw_pts-1) = nw_pts(n_nw_pts-N);
+    				nw_pts(n_nw_pts-N) = PlaceHolder;
+    			}
+    		}
+    	}
+
+    	// *    *    *   ESTABLISH TRIANGLE CONNECTIONS	   *    *    *
+
+    	for (p=n_nw_pts-N+2; p<n_nw_pts; p++){
+    		nw_tris(0,n_nw_tris) = n_nw_pts-N;
+    		nw_tris(1,n_nw_tris) = p-1;
+    		nw_tris(2,n_nw_tris) = p;
+    		n_nw_tris++;
+    	}
     }
-
-	// *    *    *   ESTABLISH TRIANGLE CONNECTIONS	   *    *    *
-
-	for (p=n_nw_pts-N+2; p<n_nw_pts; p++){
-		nw_tris(0,n_nw_tris) = n_nw_pts-N;
-        nw_tris(1,n_nw_tris) = p-1;
-        nw_tris(2,n_nw_tris) = p;
-        n_nw_tris++;
-	}
-
 }
 //-------------------------------------------------------------------------------
 inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k, int &m, int &n, int &o,

@@ -208,9 +208,11 @@ public:
 	void ComputeDelPhi();
 	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
 	void ComputeLocal();
+	void ComputeLocalBlob();
 	void Reduce();
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
+	int GetCubeLabel(int i, int j, int k);
 
 };
 
@@ -342,7 +344,6 @@ void TwoPhase::UpdateMeshValues(){
 	//...........................................................................
 
 }
-
 void TwoPhase::ComputeLocal(){
 	int i,j,k,n;
 	double delphi;
@@ -353,6 +354,104 @@ void TwoPhase::ComputeLocal(){
 		i = cubeList(0,c);
 		j = cubeList(1,c);
 		k = cubeList(2,c);
+
+		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
+		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
+		//...........................................................................
+		//...........................................................................
+		// Compute volume averages
+		for (int p=0;p<8;p++){
+
+			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+				// 1-D index for this cube corner
+				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+				// compute the norm of the gradient of the phase indicator field
+				// Compute the non-wetting phase volume contribution
+				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					nwp_volume += 0.125;
+					// volume the excludes the interfacial region
+					if (DelPhi.data[n] < 1e-4){
+						vol_n += 0.125;
+						// pressure
+						pan += 0.125*Press.data[n];
+						// velocity
+						van(0) += 0.125*Vel_x.data[n];
+						van(1) += 0.125*Vel_y.data[n];
+						van(2) += 0.125*Vel_z.data[n];
+					}
+				}
+				else{
+					wp_volume += 0.125;
+					if (DelPhi.data[n] < 1e-4){
+						// volume the excludes the interfacial region
+						vol_w += 0.125;
+						// pressure
+						paw += 0.125*Press.data[n];
+						// velocity
+						vaw(0) += 0.125*Vel_x.data[n];
+						vaw(1) += 0.125*Vel_y.data[n];
+						vaw(2) += 0.125*Vel_z.data[n];
+					}
+				}
+			}
+		}
+
+		//...........................................................................
+		// Construct the interfaces and common curve
+		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
+				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+				i, j, k, Nx, Ny, Nz);
+
+		// Integrate the contact angle
+		efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+				local_nws_pts,i,j,k,n_local_nws_pts);
+
+		// Integrate the mean curvature
+		Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+
+		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+				i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+
+		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+
+		// Compute the normal speed of the interface
+		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+
+		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+				local_nws_pts,i,j,k,n_local_nws_pts);
+
+		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+				nws_pts, n_nws_pts, i, j, k);
+
+		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+
+		// Compute the surface orientation and the interfacial area
+		awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+		ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		//...........................................................................
+	}
+}
+
+void TwoPhase::ComputeLocalBlob(){
+        int i,j,k,n,label;
+	double delphi;
+	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+
+	for (int c=0;c<ncubes;c++){
+		// Get cube from the list
+		i = cubeList(0,c);
+		j = cubeList(1,c);
+		k = cubeList(2,c);
+		label=GetCubeLabel(i,j,k);
 
 		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
@@ -550,5 +649,19 @@ void TwoPhase::PrintAll(int timestep){
 		fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 		fflush(TIMELOG);
 	}
+}
+
+inline int TwoPhase::GetCubeLabel(int i, int j, int k){
+  int label;
+			  label=LocalBlobID(i,j,k);
+			  label=max(label,LocalBlobID(i+1,j,k));
+			  label=max(label,LocalBlobID(i,j+1,k));
+			  label=max(label,LocalBlobID(i+1,j+1,k));
+			  label=max(label,LocalBlobID(i,j,k+1));
+			  label=max(label,LocalBlobID(i+1,j,k+1));
+			  label=max(label,LocalBlobID(i,j+1,k+1));
+			  label=max(label,LocalBlobID(i+1,j+1,k+1));
+
+			  return label;
 }
 

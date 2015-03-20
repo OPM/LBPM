@@ -55,9 +55,6 @@ int main(int argc, char **argv)
 	int BC;	// type of boundary condition applied: 0-periodic, 1-pressure/velocity
 	int nblobs_global; 	// number of blobs in the global system
 
-	int *CubeList;
-
-
 	if (rank==0){
 		//.......................................................................
 		// Reading the domain information file
@@ -166,11 +163,14 @@ int main(int argc, char **argv)
         Averages.Vel_z.data[n]=vz;
     }
 
-    // Count the number of cubes for each blob
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=1;i<Nx;i++){
-
+    int label;
+    DoubleArray BlobAverages(50,n_blobs_global);
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+			  // Assign the label for the cube
+			  label = Averages.GetCubeLabel(i,j,k);
+			  
 			}
 		}
 	}
@@ -187,4 +187,19 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
 	// ****************************************************
+}
+
+
+inline int GetCubeLabel(int i, int j, int k){
+  int label;
+			  label=BlobLabel(i,j,k);
+			  label=max(label,BlobLabel(i+1,j,k));
+			  label=max(label,BlobLabel(i,j+1,k));
+			  label=max(label,BlobLabel(i+1,j+1,k));
+			  label=max(label,BlobLabel(i,j,k+1));
+			  label=max(label,BlobLabel(i+1,j,k+1));
+			  label=max(label,BlobLabel(i,j+1,k+1));
+			  label=max(label,BlobLabel(i+1,j+1,k+1));
+
+			  return label;
 }

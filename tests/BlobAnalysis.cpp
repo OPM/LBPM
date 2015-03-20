@@ -12,7 +12,6 @@
 
 using namespace std;
 
-
 inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
 {
 	int q,n;
