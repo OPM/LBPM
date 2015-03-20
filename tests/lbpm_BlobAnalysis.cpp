@@ -15,6 +15,7 @@ James E. McClure 2015
 #include "Domain.h"
 #include "TwoPhase.h"
 #include "common/MPI_Helpers.h"
+#include "common/Utilities.h"
 
 inline void ReadBlobLabel(char *FILENAME, int *Data, int N)
 {
@@ -36,6 +37,49 @@ inline void ReadBlobLabel(char *FILENAME, int *Data, int N)
     
 }
 
+struct BlobTwoPhase{
+    int COUNT=26; // number of averages to compute for each blob
+    BlobTwoPhase(int size){
+        NBLOBS=size;
+        Data = new double [size*COUNT];
+    }
+    ~(BlobTwoPhase){
+        delete [] Data;
+    }
+    int NBLOBS;
+    double *Data;
+    
+    // if modified -- make sure to adjust COUNT so that
+    // there is enough memory to save all the averages
+    double Vn(int IDX){return Data[COUNT*IDX]}
+    double pan(int IDX){return Data[COUNT*IDX+1]}
+    double awn(int IDX){return Data[COUNT*IDX+2]}
+    double ans(int IDX){return Data[COUNT*IDX+3]}
+    double Jwn(int IDX){return Data[COUNT*IDX+4]}
+    double Kwn(int IDX){return Data[COUNT*IDX+5]}
+    double lwns(int IDX){return Data[COUNT*IDX+6]}
+    double cwns(int IDX){return Data[COUNT*IDX+7]}
+    double vanx(int IDX){return Data[COUNT*IDX+8]}
+    double vany(int IDX){return Data[COUNT*IDX+9]}
+    double vanz(int IDX){return Data[COUNT*IDX+10]}
+    double vawnx(int IDX){return Data[COUNT*IDX+11]}
+    double vawny(int IDX){return Data[COUNT*IDX+12]}
+    double vawnz(int IDX){return Data[COUNT*IDX+13]}
+    double Gwnxx(int IDX){return Data[COUNT*IDX+14]}
+    double Gwnyy(int IDX){return Data[COUNT*IDX+15]}
+    double Gwnzz(int IDX){return Data[COUNT*IDX+16]}
+    double Gwnxy(int IDX){return Data[COUNT*IDX+17]}
+    double Gwnxz(int IDX){return Data[COUNT*IDX+18]}
+    double Gwnyz(int IDX){return Data[COUNT*IDX+19]}
+    double Gnsxx(int IDX){return Data[COUNT*IDX+20]}
+    double Gnsyy(int IDX){return Data[COUNT*IDX+22]}
+    double Gnszz(int IDX){return Data[COUNT*IDX+23]}
+    double Gnsxy(int IDX){return Data[COUNT*IDX+23]}
+    double Gnsxz(int IDX){return Data[COUNT*IDX+24]}
+    double Gnsyz(int IDX){return Data[COUNT*IDX+25]}
+
+};
+
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -54,6 +98,16 @@ int main(int argc, char **argv)
 
 	int BC;	// type of boundary condition applied: 0-periodic, 1-pressure/velocity
 	int nblobs_global; 	// number of blobs in the global system
+    
+    // Get the global number of blobs from arguments
+    if (nargc > 1){
+        nblobs_global = atoi(argv[1]);
+        if (rank==0)    printf("Number of global blobs is: %i \n",nblobs_global);
+    }
+    else{
+        ERROR("Number of blobs was not specified");
+    }
+	int *CubeList;
 
 	if (rank==0){
 		//.......................................................................
@@ -89,6 +143,7 @@ int main(int argc, char **argv)
 	//.................................................
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	TwoPhase Averages(Dm);
+	BlobTwoPhase BlobAverages(nblobs_global);
 	//.......................................................................
 	// Filenames used
 	char LocalRankString[8];
@@ -162,9 +217,7 @@ int main(int argc, char **argv)
         Averages.Vel_y.data[n]=vy;
         Averages.Vel_z.data[n]=vz;
     }
-
     int label;
-    DoubleArray BlobAverages(50,n_blobs_global);
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
