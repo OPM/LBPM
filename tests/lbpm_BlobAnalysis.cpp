@@ -179,10 +179,14 @@ int main(int argc, char **argv)
         Averages.Vel_x.data[n]=vx;
         Averages.Vel_y.data[n]=vy;
         Averages.Vel_z.data[n]=vz;
+	if (Averages.SDs.data[n] > 0.0) Dm.id[n]=1;
+	else Dm.id[n]=0;
     }
     delete [] DistEven;
     delete [] DistOdd;
-    printf("Ready for averaging, rank=%i \n",rank);
+    printf("Ready for averaging, rank=%i \n",rank);    
+    Dm.CommInit(MPI_COMM_WORLD);
+
     int label;
     Averages.ComputeLocalBlob();
     

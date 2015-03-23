@@ -15,10 +15,13 @@ struct BlobContainer{
     }
     void Set(int size){
       NBLOBS=size;
+      //Data = new int [BLOB_AVG_COUNT*size];
       Data.resize(size*BLOB_AVG_COUNT);
+      for (int i=0; i<size*BLOB_AVG_COUNT; i++) Data[i] = 0.0;
     }
     int NBLOBS;
-    std::vector<int> Data;
+  //int * Data;
+   std::vector<double> Data;
     
     // if modified -- make sure to adjust COUNT so that
     // there is enough memory to save all the averages
@@ -49,8 +52,34 @@ struct BlobContainer{
     double Gnsxz(int IDX){return Data[BLOB_AVG_COUNT*IDX+24];}
     double Gnsyz(int IDX){return Data[BLOB_AVG_COUNT*IDX+25];}
 
-};
+    void Vn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX]+=value;}
+    void pan(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+1]+=value;}
+    void awn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+2]+=value;}
+    void ans(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+3]+=value;}
+    void Jwn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+4]+=value;}
+    void Kwn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+5]+=value;}
+    void lwns(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+6]+=value;}
+    void cwns(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+7]+=value;}
+    void vanx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+8]+=value;}
+    void vany(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+9]+=value;}
+    void vanz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+10]+=value;}
+    void vawnx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+11]+=value;}
+    void vawny(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+12]+=value;}
+    void vawnz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+13]+=value;}
+    void Gwnxx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+14]+=value;}
+    void Gwnyy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+15]+=value;}
+    void Gwnzz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+16]+=value;}
+    void Gwnxy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+17]+=value;}
+    void Gwnxz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+18]+=value;}
+    void Gwnyz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+19]+=value;}
+    void Gnsxx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+20]+=value;}
+    void Gnsyy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+22]+=value;}
+    void Gnszz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+23]+=value;}
+    void Gnsxy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+23]+=value;}
+    void Gnsxz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+24]+=value;}
+    void Gnsyz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+25]+=value;}
 
+};
 
 class TwoPhase{
 
@@ -528,13 +557,13 @@ void TwoPhase::ComputeLocalBlob(){
 					nwp_volume += 0.125;
 					// volume the excludes the interfacial region
 					if (DelPhi.data[n] < 1e-4){
-						vol_n += 0.125;
+					  BlobAverages.Vn(label, 0.125);
 						// pressure
-						pan += 0.125*Press.data[n];
+					  BlobAverages.pan(label,0.125*Press.data[n]);
 						// velocity
-						van(0) += 0.125*Vel_x.data[n];
-						van(1) += 0.125*Vel_y.data[n];
-						van(2) += 0.125*Vel_z.data[n];
+					  BlobAverages.vanx(label, 0.125*Vel_x.data[n]);
+					  BlobAverages.vany(label, 0.125*Vel_y.data[n]);
+					  BlobAverages.vanz(label, 0.125*Vel_z.data[n]);
 					}
 				}
 				else{
@@ -563,12 +592,12 @@ void TwoPhase::ComputeLocalBlob(){
 				i, j, k, Nx, Ny, Nz);
 
 		// Integrate the contact angle
-		efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
+		BlobAverages.cwns(label, pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+								  local_nws_pts,i,j,k,n_local_nws_pts));
 
 		// Integrate the mean curvature
-		Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-		Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		BlobAverages.Jwn(label, pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris));
+		BlobAverages.Kwn(label, pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris));
 
 		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
 		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
@@ -590,10 +619,10 @@ void TwoPhase::ComputeLocalBlob(){
 		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 		// Compute the surface orientation and the interfacial area
-		awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-		ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		BlobAverages.awn(label, pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris));
+		BlobAverages.ans(label, pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris));
+		BlobAverages.lwns(label, pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts));
 		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		//...........................................................................
 	}
 }
