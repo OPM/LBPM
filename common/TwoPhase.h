@@ -2,6 +2,55 @@
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
+#include <vector>
+
+#define BLOB_AVG_COUNT 26
+
+struct BlobContainer{
+
+    BlobContainer(){
+      NBLOBS=0;
+    }
+    ~BlobContainer(){
+    }
+    void Set(int size){
+      NBLOBS=size;
+      Data.resize(size*BLOB_AVG_COUNT);
+    }
+    int NBLOBS;
+    std::vector<int> Data;
+    
+    // if modified -- make sure to adjust COUNT so that
+    // there is enough memory to save all the averages
+    double Vn(int IDX){return Data[BLOB_AVG_COUNT*IDX];}
+    double pan(int IDX){return Data[BLOB_AVG_COUNT*IDX+1];}
+    double awn(int IDX){return Data[BLOB_AVG_COUNT*IDX+2];}
+    double ans(int IDX){return Data[BLOB_AVG_COUNT*IDX+3];}
+    double Jwn(int IDX){return Data[BLOB_AVG_COUNT*IDX+4];}
+    double Kwn(int IDX){return Data[BLOB_AVG_COUNT*IDX+5];}
+    double lwns(int IDX){return Data[BLOB_AVG_COUNT*IDX+6];}
+    double cwns(int IDX){return Data[BLOB_AVG_COUNT*IDX+7];}
+    double vanx(int IDX){return Data[BLOB_AVG_COUNT*IDX+8];}
+    double vany(int IDX){return Data[BLOB_AVG_COUNT*IDX+9];}
+    double vanz(int IDX){return Data[BLOB_AVG_COUNT*IDX+10];}
+    double vawnx(int IDX){return Data[BLOB_AVG_COUNT*IDX+11];}
+    double vawny(int IDX){return Data[BLOB_AVG_COUNT*IDX+12];}
+    double vawnz(int IDX){return Data[BLOB_AVG_COUNT*IDX+13];}
+    double Gwnxx(int IDX){return Data[BLOB_AVG_COUNT*IDX+14];}
+    double Gwnyy(int IDX){return Data[BLOB_AVG_COUNT*IDX+15];}
+    double Gwnzz(int IDX){return Data[BLOB_AVG_COUNT*IDX+16];}
+    double Gwnxy(int IDX){return Data[BLOB_AVG_COUNT*IDX+17];}
+    double Gwnxz(int IDX){return Data[BLOB_AVG_COUNT*IDX+18];}
+    double Gwnyz(int IDX){return Data[BLOB_AVG_COUNT*IDX+19];}
+    double Gnsxx(int IDX){return Data[BLOB_AVG_COUNT*IDX+20];}
+    double Gnsyy(int IDX){return Data[BLOB_AVG_COUNT*IDX+22];}
+    double Gnszz(int IDX){return Data[BLOB_AVG_COUNT*IDX+23];}
+    double Gnsxy(int IDX){return Data[BLOB_AVG_COUNT*IDX+23];}
+    double Gnsxz(int IDX){return Data[BLOB_AVG_COUNT*IDX+24];}
+    double Gnsyz(int IDX){return Data[BLOB_AVG_COUNT*IDX+25];}
+
+};
+
 
 class TwoPhase{
 
@@ -113,6 +162,7 @@ public:
 	DoubleArray Vel_x;		// Velocity
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
+	BlobContainer BlobAverages;
 	//...........................................................................
 	TwoPhase(Domain &dm) : Dm(dm){
 		Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
@@ -443,8 +493,17 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComputeLocalBlob(){
         int i,j,k,n,label;
+	int nblobs_global;
 	double delphi;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
+        // get the maximum label locally -- then compute number of global blobs
+	label=0; 
+	for (n=0; n<Nx*Ny*Nz; n++){
+	  if (label < BlobLabel.data[n]) label = BlobLabel.data[n];
+	}
+	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
+	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+	// Perform averaging
 
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
@@ -653,15 +712,15 @@ void TwoPhase::PrintAll(int timestep){
 
 inline int TwoPhase::GetCubeLabel(int i, int j, int k){
 	int label;
+
 	label=BlobLabel(i,j,k);
 	label=max(label,BlobLabel(i+1,j,k));
-	label=max(label,BlobLabel(i,j+1,k));
+      	label=max(label,BlobLabel(i,j+1,k));
 	label=max(label,BlobLabel(i+1,j+1,k));
 	label=max(label,BlobLabel(i,j,k+1));
 	label=max(label,BlobLabel(i+1,j,k+1));
 	label=max(label,BlobLabel(i,j+1,k+1));
 	label=max(label,BlobLabel(i+1,j+1,k+1));
-
+	
 	return label;
 }
-
