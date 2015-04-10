@@ -14,14 +14,15 @@ struct BlobContainer{
     ~BlobContainer(){
     }
     void Set(int size){
+      if (NBLOBS!=0) delete [] Data;
       NBLOBS=size;
-      //Data = new int [BLOB_AVG_COUNT*size];
-      Data.resize(size*BLOB_AVG_COUNT);
-      for (int i=0; i<size*BLOB_AVG_COUNT; i++) Data[i] = 0.0;
+      Data = new double [BLOB_AVG_COUNT*size];
+      //Data.resize(size*BLOB_AVG_COUNT);
+      //for (int i=0; i<size*BLOB_AVG_COUNT; i++) Data[i] = 0.0;
     }
     int NBLOBS;
-  //int * Data;
-   std::vector<double> Data;
+    double * Data;
+  //std::vector<double> Data;
     
     // if modified -- make sure to adjust COUNT so that
     // there is enough memory to save all the averages
@@ -191,7 +192,8 @@ public:
 	DoubleArray Vel_x;		// Velocity
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
-	BlobContainer BlobAverages;
+	//	BlobContainer BlobAverages;
+	DoubleArray BlobAverages;
 	//...........................................................................
 	TwoPhase(Domain &dm) : Dm(dm){
 		Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
@@ -532,8 +534,10 @@ void TwoPhase::ComputeLocalBlob(){
 	}
 	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+	//BlobAverages.Set(nblobs_global);
+	BlobAverages.New(BLOB_AVG_COUNT,nblobs_global);
 	// Perform averaging
-
+	for (int idx=0; idx<BlobAverages.m*BlobAverages.n; idx++) BlobAverages.data[idx] = 0.0;
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
@@ -557,6 +561,25 @@ void TwoPhase::ComputeLocalBlob(){
 					nwp_volume += 0.125;
 					// volume the excludes the interfacial region
 					if (DelPhi.data[n] < 1e-4){
+					  BlobAverages(0,label) += 0.125;
+						// pressure
+					  BlobAverages(1,label ) += 0.125*Press.data[n];
+						// velocity
+						BlobAverages(8,label) += 0.125*Vel_x.data[n];
+						BlobAverages(9,label) += 0.125*Vel_y.data[n];
+						BlobAverages(10,label) += 0.125*Vel_z.data[n];
+					}
+				}
+
+				/*			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+				// 1-D index for this cube corner
+				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+				// compute the norm of the gradient of the phase indicator field
+				// Compute the non-wetting phase volume contribution
+				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					nwp_volume += 0.125;
+					// volume the excludes the interfacial region
+					if (DelPhi.data[n] < 1e-4){
 					  BlobAverages.Vn(label, 0.125);
 						// pressure
 					  BlobAverages.pan(label,0.125*Press.data[n]);
@@ -566,6 +589,7 @@ void TwoPhase::ComputeLocalBlob(){
 					  BlobAverages.vanz(label, 0.125*Vel_z.data[n]);
 					}
 				}
+				*/
 				else{
 					wp_volume += 0.125;
 					if (DelPhi.data[n] < 1e-4){
@@ -581,9 +605,51 @@ void TwoPhase::ComputeLocalBlob(){
 				}
 			}
 		}
-
 		//...........................................................................
 		// Construct the interfaces and common curve
+		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
+				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+				i, j, k, Nx, Ny, Nz);
+
+		// Integrate the contact angle
+		BlobAverages(7,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+				local_nws_pts,i,j,k,n_local_nws_pts);
+
+		// Integrate the mean curvature
+		BlobAverages(4,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+
+		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+				i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+
+		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+
+		// Compute the normal speed of the interface
+		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+
+		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+				local_nws_pts,i,j,k,n_local_nws_pts);
+
+		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+				nws_pts, n_nws_pts, i, j, k);
+
+		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+
+		// Compute the surface orientation and the interfacial area
+		BlobAverages(2,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+		BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+		BlobAverages(6,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		//...........................................................................
+
+		//...........................................................................
+		/*		// Construct the interfaces and common curve
 		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
 				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
 				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
@@ -623,8 +689,11 @@ void TwoPhase::ComputeLocalBlob(){
 		BlobAverages.ans(label, pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris));
 		BlobAverages.lwns(label, pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts));
 		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		//...........................................................................
+		*/		//...........................................................................
 	}
+
+	//		MPI_Reduce(&BlobAverages.Data,&BlobAverages.Data,BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+
 }
 
 void TwoPhase::Reduce(){

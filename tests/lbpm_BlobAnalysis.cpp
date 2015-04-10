@@ -184,22 +184,43 @@ int main(int argc, char **argv)
     }
     delete [] DistEven;
     delete [] DistOdd;
-    printf("Ready for averaging, rank=%i \n",rank);    
+
     Dm.CommInit(MPI_COMM_WORLD);
+    printf("Ready for averaging, rank=%i \n",rank);    
 
-    int label;
+    double beta = 0.95;
+     
+    Averages.SetupCubes(Dm);
+    Averages.UpdateSolid();
+    Averages.Initialize();
+    Averages.ComputeDelPhi();
+    Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
+    Averages.UpdateMeshValues();
     Averages.ComputeLocalBlob();
+    Averages.Reduce();
+    int b=0;
+    printf("rank %i: %f %f %f\n",rank,Averages.BlobAverages(0,b),Averages.BlobAverages(1,b),Averages.BlobAverages(2,b));
     
-    printf("Exit, rank=%i \n",rank);
+    //    printf("I am %i with %i \n",rank, Averages.BlobAverages.NBLOBS);
 
-	/*	Averages.Initialize();
-	Averages.ComputeDelPhi();
-	Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
-	Averages.UpdateMeshValues();
-	Averages.ComputeLocal();
-	Averages.Reduce();
-	Averages.PrintAll(timestep);
-*/
+    //      BlobContainer Blobs;
+    //  Blobs.Set(Averages.BlobAverages.NBLOBS);
+    int dimx = Averages.BlobAverages.m;
+    int dimy = Averages.BlobAverages.n;
+    int TotalBlobInfoSize=Averages.BlobAverages.m*Averages.BlobAverages.n;
+    DoubleArray Blobs(dimx,dimy);
+    //    MPI_Allreduce(&Averages.BlobAverages.data,&Blobs.data,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (rank==0){
+      printf("Number of blobs = %i \n", Averages.BlobAverages.n);
+      //      for (int b=0; b<Averages.BlobAverages.n; b++){
+      for (int b=0; b<1; b++){
+	printf("%f %f %f\n",Averages.BlobAverages(0,b),Averages.BlobAverages(1,b),Averages.BlobAverages(2,b));
+      }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    printf("Exit, rank=%i \n",rank);
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
