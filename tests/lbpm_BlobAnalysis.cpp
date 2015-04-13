@@ -201,24 +201,61 @@ int main(int argc, char **argv)
     int b=0;
     printf("rank %i: %f %f %f\n",rank,Averages.BlobAverages(0,b),Averages.BlobAverages(1,b),Averages.BlobAverages(2,b));
     
-    //    printf("I am %i with %i \n",rank, Averages.BlobAverages.NBLOBS);
+    for (int p=0; p<nprocs; p++){
 
-    //      BlobContainer Blobs;
+      if (rank==p){
+	printf("Checking rank %i \n",rank);
+	printf("m= %i \n",Averages.BlobAverages.m);
+	printf("n= %i \n",Averages.BlobAverages.n);
+	printf("+++++++++++++++++++++++++++ \n");
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
     int dimx = Averages.BlobAverages.m;
     int dimy = Averages.BlobAverages.n;
     int TotalBlobInfoSize=Averages.BlobAverages.m*Averages.BlobAverages.n;
-    DoubleArray Blobs(dimx,dimy);
+   
+    FILE *BLOBLOG;
+    if (rank==0){
+      	BLOBLOG=fopen("blobs.tcat","w");	
+      printf("dimx=%i \n",dimx);
+    }
+    //      BlobContainer Blobs;
+    DoubleArray RecvBuffer(dimx);
     //    MPI_Allreduce(&Averages.BlobAverages.data,&Blobs.data,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(MPI_COMM_WORLD);
+    if (rank==0) printf("All ranks passed gate \n");
 
-    if (rank==0){
-      printf("Number of blobs = %i \n", Averages.BlobAverages.n);
-      //      for (int b=0; b<Averages.BlobAverages.n; b++){
-      for (int b=0; b<1; b++){
-	printf("%f %f %f\n",Averages.BlobAverages(0,b),Averages.BlobAverages(1,b),Averages.BlobAverages(2,b));
-      }
+    for (int b=0; b<Averages.BlobAverages.n; b++){
+      
+      MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx); 
+          
+      MPI_Barrier(MPI_COMM_WORLD);
     }
+
+    Averages.SortBlobs();
+
+      if (rank==0){
+	//	printf("Reduced blob %i \n",b);
+	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w,Averages.paw/Averages.vol_w,Averages.aws);
+    for (int b=0; b<Averages.BlobAverages.n; b++){
+      if (Averages.BlobAverages(0,b) > 0.0){
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(0,b)); //Vn
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(1,b)/Averages.BlobAverages(0,b)); //pn
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(2,b)); //awn
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(3,b)); //ans
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(4,b)/Averages.BlobAverages(2,b)); //Jwn
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(5,b)/Averages.BlobAverages(2,b)); //Kwn
+      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(6,b)); //lwns  
+      fprintf(BLOBLOG,"%.5g\n", Averages.BlobAverages(7,b)/Averages.BlobAverages(6,b)); //cwns
+      }
+    }      
+      }    
+    if (rank==0)  fclose(BLOBLOG);
+
     MPI_Barrier(MPI_COMM_WORLD);
     printf("Exit, rank=%i \n",rank);
 	// ****************************************************

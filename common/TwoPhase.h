@@ -90,6 +90,7 @@ class TwoPhase{
 	//...........................................................................
 	int nc;
 	int kstart,kfinish;
+	int nblobs_global;
 
 	double fluid_isovalue, solid_isovalue;
 	double Volume;
@@ -294,6 +295,7 @@ public:
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k);
+	void SortBlobs();
 
 };
 
@@ -524,11 +526,12 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComputeLocalBlob(){
         int i,j,k,n,label;
-	int nblobs_global;
+	
 	double delphi;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
         // get the maximum label locally -- then compute number of global blobs
 	label=0; 
+	nblobs_global = 0;
 	for (n=0; n<Nx*Ny*Nz; n++){
 	  if (label < BlobLabel.data[n]) label = BlobLabel.data[n];
 	}
@@ -647,53 +650,7 @@ void TwoPhase::ComputeLocalBlob(){
 		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 		BlobAverages(6,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		//...........................................................................
-
-		//...........................................................................
-		/*		// Construct the interfaces and common curve
-		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
-				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
-				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-				i, j, k, Nx, Ny, Nz);
-
-		// Integrate the contact angle
-		BlobAverages.cwns(label, pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-								  local_nws_pts,i,j,k,n_local_nws_pts));
-
-		// Integrate the mean curvature
-		BlobAverages.Jwn(label, pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris));
-		BlobAverages.Kwn(label, pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris));
-
-		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
-
-		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
-
-		// Compute the normal speed of the interface
-		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
-				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
-
-		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
-
-		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
-				nws_pts, n_nws_pts, i, j, k);
-
-		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
-
-		// Compute the surface orientation and the interfacial area
-		BlobAverages.awn(label, pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris));
-		BlobAverages.ans(label, pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris));
-		BlobAverages.lwns(label, pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts));
-		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		*/		//...........................................................................
 	}
-
-	//		MPI_Reduce(&BlobAverages.Data,&BlobAverages.Data,BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
-
 }
 
 void TwoPhase::Reduce(){
@@ -821,4 +778,53 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k){
 	label=max(label,BlobLabel(i+1,j+1,k+1));
 	
 	return label;
+}
+
+void TwoPhase::SortBlobs(){
+	printf("Sorting the blobs based on volume \n");
+	printf("-----------------------------------------------\n");
+	int TempLabel,a,aa,bb,i,j,k,idx;
+	double TempValue;
+	IntArray OldLabel(nblobs_global);
+	for (a=0; a<nblobs_global; a++)	OldLabel(a) = a;
+	// Sort the blob averages based on volume
+	for (aa=0; aa<nblobs_global-1; aa++){
+		for ( bb=aa+1; bb<nblobs_global; bb++){
+			if (BlobAverages(0,aa) < BlobAverages(0,bb)){
+				// Exchange location of blobs aa and bb
+				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
+				// switch the label
+				TempLabel = OldLabel(bb);
+				OldLabel(bb) = OldLabel(aa);
+				OldLabel(aa) = TempLabel;
+				// switch the averages
+				for (idx=0; idx<BLOB_AVG_COUNT; idx++){
+					TempValue = BlobAverages(idx,bb);
+					BlobAverages(idx,bb) = BlobAverages(idx,aa);
+					BlobAverages(idx,aa) = TempValue;
+				}
+			}
+		}		
+	}
+	
+	IntArray NewLabel(nblobs_global);
+	for (aa=0; aa<nblobs_global; aa++){
+		// Match the new label for original blob aa
+		bb=0;
+		while (OldLabel(bb) != aa)	bb++;
+		NewLabel(aa) = bb;
+	}
+	
+	// Re-label the blob ID
+	printf("Re-labeling the blobs, now indexed by volume \n");
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (BlobLabel(i,j,k) > -1){
+					TempLabel = NewLabel(BlobLabel(i,j,k));
+					BlobLabel(i,j,k) = TempLabel;
+				}
+			}
+		}
+	}
 }
