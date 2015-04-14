@@ -37,6 +37,8 @@ inline void ReadBlobFile(char *FILENAME, int *Data, int N)
     
 }
 
+inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity);
+
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -141,6 +143,9 @@ int main(int argc, char **argv)
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
 	if (rank==0) printf("Populate arrays \n");
+    // Compute porosity
+	double porosity,sum,sum_global;
+    sum=0.0;
     for (int n=0; n<Nx*Ny*Nz; n++){
         double phi,da,db,press,vx,vy,vz;
         double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
@@ -179,14 +184,20 @@ int main(int argc, char **argv)
         Averages.Vel_x.data[n]=vx;
         Averages.Vel_y.data[n]=vy;
         Averages.Vel_z.data[n]=vz;
-	if (Averages.SDs.data[n] > 0.0) Dm.id[n]=1;
+	if (Averages.SDs.data[n] > 0.0){
+	  Dm.id[n]=1;
+	  sum += 1.0;
+	}
 	else Dm.id[n]=0;
     }
     delete [] DistEven;
     delete [] DistOdd;
-
+    
+    MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    porosity = sum_global/((Nx-2)*(Ny-2)*(Nz-2)*nprocx*nprocy*nprocz);
+    if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
-    printf("Ready for averaging, rank=%i \n",rank);    
+    printf("Ready for averaging, rank=%i \n",rank);
 
     double beta = 0.95;
      
@@ -199,8 +210,7 @@ int main(int argc, char **argv)
     Averages.ComputeLocalBlob();
     Averages.Reduce();
     int b=0;
-    printf("rank %i: %f %f %f\n",rank,Averages.BlobAverages(0,b),Averages.BlobAverages(1,b),Averages.BlobAverages(2,b));
-    
+
     for (int p=0; p<nprocs; p++){
 
       if (rank==p){
@@ -232,8 +242,27 @@ int main(int argc, char **argv)
       
       MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx); 
-          
       MPI_Barrier(MPI_COMM_WORLD);
+      if (Averages.BlobAverages(0,b) > 0.0){
+	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
+	Vn = Averages.BlobAverages(1,b);
+	pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
+	awn = Averages.BlobAverages(3,b);
+	ans = Averages.BlobAverages(4,b);
+	if (awn != 0.0){
+	  Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
+	  Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
+	}
+	else Jwn=0.0;
+	lwns = Averages.BlobAverages(7,b);
+	if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
+	else  cwns=0.0;
+	Averages.BlobAverages(2,b) = pn;
+	Averages.BlobAverages(5,b) = Jwn;
+	Averages.BlobAverages(6,b) = Kwn;
+	Averages.BlobAverages(8,b) = cwns;
+	
+      }
     }
 
     Averages.SortBlobs();
@@ -243,18 +272,31 @@ int main(int argc, char **argv)
 	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w,Averages.paw/Averages.vol_w,Averages.aws);
     for (int b=0; b<Averages.BlobAverages.n; b++){
       if (Averages.BlobAverages(0,b) > 0.0){
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(0,b)); //Vn
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(1,b)/Averages.BlobAverages(0,b)); //pn
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(2,b)); //awn
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(3,b)); //ans
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(4,b)/Averages.BlobAverages(2,b)); //Jwn
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(5,b)/Averages.BlobAverages(2,b)); //Kwn
-      fprintf(BLOBLOG,"%.5g ", Averages.BlobAverages(6,b)); //lwns  
-      fprintf(BLOBLOG,"%.5g\n", Averages.BlobAverages(7,b)/Averages.BlobAverages(6,b)); //cwns
+	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
+	Vn = Averages.BlobAverages(1,b);
+	pn = Averages.BlobAverages(2,b);
+	awn = Averages.BlobAverages(3,b);
+	ans = Averages.BlobAverages(4,b);
+	Jwn = Averages.BlobAverages(5,b);
+	Kwn = Averages.BlobAverages(6,b);
+	lwns = Averages.BlobAverages(7,b);
+	cwns = Averages.BlobAverages(8,b);
+	
+      fprintf(BLOBLOG,"%.5g ", Vn); //Vn
+      fprintf(BLOBLOG,"%.5g ", pn); //pn
+      fprintf(BLOBLOG,"%.5g ", awn); //awn
+      fprintf(BLOBLOG,"%.5g ", ans); //ans
+      fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
+      fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
+      fprintf(BLOBLOG,"%.5g ", lwns); //lwns  
+      fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
       }
     }      
       }    
     if (rank==0)  fclose(BLOBLOG);
+
+    double Length=1.0;
+    if (rank==0) WriteBlobStates(Averages,Length,porosity);
 
     MPI_Barrier(MPI_COMM_WORLD);
     printf("Exit, rank=%i \n",rank);
@@ -264,3 +306,64 @@ int main(int argc, char **argv)
 	// ****************************************************
 }
 
+inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
+	FILE *BLOBSTATES= fopen("blobstates.tcat","w");
+	int a;
+	double iVol=1.0/(TCAT.Dm.Nx*TCAT.Dm.Ny*TCAT.Dm.Nz);
+	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
+	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
+	nwp_volume=vol_n=pan=awn=ans=Jwn=Kwn=lwns=clwns=pawn=0.0;
+	pw = TCAT.paw / TCAT.vol_w;
+	aws = TCAT.aws;
+	// Compute the averages over the entire non-wetting phsae
+	for (a=0; a<TCAT.nblobs_global; a++){
+		nwp_volume += TCAT.BlobAverages(0,a);
+		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(1,a);
+		awn += TCAT.BlobAverages(3,a);
+		ans += TCAT.BlobAverages(4,a);
+		Jwn += TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
+		Kwn += TCAT.BlobAverages(6,a)*TCAT.BlobAverages(3,a);
+		lwns += TCAT.BlobAverages(7,a);
+		clwns += TCAT.BlobAverages(8,a)*TCAT.BlobAverages(7,a);
+		vol_n += TCAT.BlobAverages(1,a);
+		pawn += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(3,a);
+	}	
+	
+	// Subtract off portions of non-wetting phase in order of size
+	for (a=TCAT.nblobs_global-1; a>0; a--){
+		// Subtract the features one-by-one
+		nwp_volume -= TCAT.BlobAverages(0,a);
+		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(1,a);
+		awn -= TCAT.BlobAverages(3,a);
+		ans -= TCAT.BlobAverages(4,a);
+		Jwn -= TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
+		Kwn -= TCAT.BlobAverages(6,a)*TCAT.BlobAverages(3,a);
+		lwns -= TCAT.BlobAverages(7,a);
+		clwns -= TCAT.BlobAverages(8,a)*TCAT.BlobAverages(7,a);
+		vol_n -= TCAT.BlobAverages(1,a);
+		pawn -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(3,a);
+		
+		// Update wetting phase averages
+		aws += TCAT.BlobAverages(4,a);
+		
+		if (fabs(1.0 - nwp_volume*iVol/porosity - sw) > 0.005 || a == 0){
+			sw = 1.0 - nwp_volume*iVol/porosity;
+			
+			JwnD = -Jwn*D/awn;
+			//trJwnD = -trJwn*D/trawn;
+			cwns = -clwns / lwns;
+			pwn = pawn/awn;
+			pn = pan/vol_n;
+			awnD = awn*D*iVol;
+			awsD = aws*D*iVol;
+			ansD = ans*D*iVol;
+			lwnsDD = lwns*D*D*iVol;
+			pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
+			
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
+			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g %i\n",pc,pwn,JwnD,cwns,a);
+		}
+	}
+	fclose(BLOBSTATES);
+}

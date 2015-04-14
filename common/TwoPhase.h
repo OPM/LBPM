@@ -90,7 +90,6 @@ class TwoPhase{
 	//...........................................................................
 	int nc;
 	int kstart,kfinish;
-	int nblobs_global;
 
 	double fluid_isovalue, solid_isovalue;
 	double Volume;
@@ -126,6 +125,7 @@ class TwoPhase{
 
 public:
 	Domain& Dm;
+	int nblobs_global;
 	int ncubes;
 	//...........................................................................
 	// Averaging variables
@@ -561,16 +561,16 @@ void TwoPhase::ComputeLocalBlob(){
 				// compute the norm of the gradient of the phase indicator field
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-					nwp_volume += 0.125;
+					BlobAverages(1,label) += 0.125;
 					// volume the excludes the interfacial region
 					if (DelPhi.data[n] < 1e-4){
 					  BlobAverages(0,label) += 0.125;
 						// pressure
-					  BlobAverages(1,label ) += 0.125*Press.data[n];
+					  BlobAverages(2,label ) += 0.125*Press.data[n];
 						// velocity
-						BlobAverages(8,label) += 0.125*Vel_x.data[n];
-						BlobAverages(9,label) += 0.125*Vel_y.data[n];
-						BlobAverages(10,label) += 0.125*Vel_z.data[n];
+						BlobAverages(9,label) += 0.125*Vel_x.data[n];
+						BlobAverages(10,label) += 0.125*Vel_y.data[n];
+						BlobAverages(11,label) += 0.125*Vel_z.data[n];
 					}
 				}
 
@@ -618,11 +618,11 @@ void TwoPhase::ComputeLocalBlob(){
 				i, j, k, Nx, Ny, Nz);
 
 		// Integrate the contact angle
-		BlobAverages(7,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+		BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 				local_nws_pts,i,j,k,n_local_nws_pts);
 
 		// Integrate the mean curvature
-		BlobAverages(4,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 		BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
 		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
@@ -645,10 +645,10 @@ void TwoPhase::ComputeLocalBlob(){
 		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 		// Compute the surface orientation and the interfacial area
-		BlobAverages(2,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-		BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+		BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
 		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		BlobAverages(6,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		//...........................................................................
 	}
 }
