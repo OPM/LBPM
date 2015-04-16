@@ -574,32 +574,14 @@ void TwoPhase::ComputeLocalBlob(){
 					}
 				}
 
-				/*			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-				// 1-D index for this cube corner
-				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-				// compute the norm of the gradient of the phase indicator field
-				// Compute the non-wetting phase volume contribution
-				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-					nwp_volume += 0.125;
-					// volume the excludes the interfacial region
-					if (DelPhi.data[n] < 1e-4){
-					  BlobAverages.Vn(label, 0.125);
-						// pressure
-					  BlobAverages.pan(label,0.125*Press.data[n]);
-						// velocity
-					  BlobAverages.vanx(label, 0.125*Vel_x.data[n]);
-					  BlobAverages.vany(label, 0.125*Vel_y.data[n]);
-					  BlobAverages.vanz(label, 0.125*Vel_z.data[n]);
-					}
-				}
-				*/
 				else{
 					wp_volume += 0.125;
 					if (DelPhi.data[n] < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
-						paw += 0.125*Press.data[n];
+						if (isnan(Press.data[n])) printf("Pressure is nan!\n");
+						else paw += 0.125*Press.data[n];
 						// velocity
 						vaw(0) += 0.125*Vel_x.data[n];
 						vaw(1) += 0.125*Vel_y.data[n];
@@ -627,7 +609,7 @@ void TwoPhase::ComputeLocalBlob(){
 
 		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
 		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+						 i,j,k,n_nw_pts,n_nw_tris,trimdist,BlobAverages(12,label),BlobAverages(13,label));
 
 		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
 				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
@@ -781,8 +763,8 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k){
 }
 
 void TwoPhase::SortBlobs(){
-	printf("Sorting the blobs based on volume \n");
-	printf("-----------------------------------------------\n");
+  //printf("Sorting the blobs based on volume \n");
+  //printf("-----------------------------------------------\n");
 	int TempLabel,a,aa,bb,i,j,k,idx;
 	double TempValue;
 	IntArray OldLabel(nblobs_global);
@@ -816,7 +798,7 @@ void TwoPhase::SortBlobs(){
 	}
 	
 	// Re-label the blob ID
-	printf("Re-labeling the blobs, now indexed by volume \n");
+	//	printf("Re-labeling the blobs, now indexed by volume \n");
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){

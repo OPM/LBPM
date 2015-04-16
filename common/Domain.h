@@ -24,6 +24,7 @@ struct Domain{
 
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
 			double lx, double ly, double lz, int BC){
+	        Volume = nx*ny*nx*npx*npy*npz*1.0;
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
 		Lx = lx, Ly = ly, Lz = lz;
 		rank = rnk;
@@ -39,8 +40,8 @@ struct Domain{
 	// Basic domain information
 	int Nx,Ny,Nz,N;
 	int iproc,jproc,kproc;
-	int nprocx,nprocy,nprocz;
-	double Lx,Ly,Lz;
+ 	int nprocx,nprocy,nprocz;
+        double Lx,Ly,Lz,Volume;
 	int rank;
 	int BoundaryCondition;
 	MPI_Group Group;	// Group of processors associated with this domain
