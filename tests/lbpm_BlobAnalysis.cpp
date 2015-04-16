@@ -315,12 +315,12 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
 	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
 	nwp_volume=vol_n=pan=awn=ans=Jwn=Kwn=lwns=clwns=pawn=0.0;
-	pw = TCAT.paw_global / TCAT.vol_w_global;
+	pw = TCAT.paw_global;
 	aws = TCAT.aws;
 	// Compute the averages over the entire non-wetting phsae
 	for (a=0; a<TCAT.nblobs_global; a++){
 		vol_n += TCAT.BlobAverages(0,a);
-		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(1,a);
+		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
 		awn += TCAT.BlobAverages(3,a);
 		ans += TCAT.BlobAverages(4,a);
 		Jwn += TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
@@ -337,7 +337,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	for (a=TCAT.nblobs_global-1; a>0; a--){
 		// Subtract the features one-by-one
 		vol_n -= TCAT.BlobAverages(0,a);
-		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(1,a);
+		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
 		awn -= TCAT.BlobAverages(3,a);
 		ans -= TCAT.BlobAverages(4,a);
 		Jwn -= TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
