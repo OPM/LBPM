@@ -349,24 +349,25 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 		
 		// Update wetting phase averages
 		aws += TCAT.BlobAverages(4,a);
-		
-		if (fabs(1.0 - nwp_volume/PoreVolume - sw) > 0.005 || a == 1){
-			sw = 1.0 - nwp_volume/PoreVolume;
-			
-			JwnD = Jwn*D/awn;
-			//trJwnD = -trJwn*D/trawn;
-			cwns = clwns / lwns;
-			pwn = (pawn/awn-pw)*D/0.058;
-			pn = pan/vol_n;
-			awnD = awn*D*iVol;
-			awsD = aws*D*iVol;
-			ansD = ans*D*iVol;
-			lwnsDD = lwns*D*D*iVol;
-			pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
-			
-			fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
-			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
-			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g %i\n",pc,pwn,JwnD,cwns,a);
+		if (vol_n > 64){	// Only consider systems with "large enough" blobs -- 4^3
+			if (fabs(1.0 - nwp_volume/PoreVolume - sw) > 0.005 || a == 1){
+				sw = 1.0 - nwp_volume/PoreVolume;
+
+				JwnD = Jwn*D/awn;
+				//trJwnD = -trJwn*D/trawn;
+				cwns = clwns / lwns;
+				pwn = (pawn/awn-pw)*D/0.058;
+				pn = pan/vol_n;
+				awnD = awn*D*iVol;
+				awsD = aws*D*iVol;
+				ansD = ans*D*iVol;
+				lwnsDD = lwns*D*D*iVol;
+				pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
+
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g %i\n",pc,pwn,JwnD,cwns,a);
+			}
 		}
 	}
 	fclose(BLOBSTATES);
