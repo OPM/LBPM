@@ -4,6 +4,25 @@
 #include <iostream>
 #include <string.h>
 
+
+// Define a macro to check if the index is valid
+// Only perform the check if we are compiling in debug mode
+#ifdef DEBUG
+    #ifdef USE_CUDA
+        #define CHECK_INDEX(i,j,k) \
+            if ( (i+j*m+k*m*n)<0 || (i+j*m+k*m*n)>=Length ) { \
+                printf("Index is out of bounds\n"); }
+    #else
+        #include "common/Utilities.h"
+        #define CHECK_INDEX(i,j,k) \
+            if ( (i+j*m+k*m*n)<0 || (i+j*m+k*m*n)>=Length ) { \
+                ERROR("Index is out of bounds\n"); }
+    #endif
+#else
+    #define CHECK_INDEX(i,j,k) 
+#endif
+
+
 // ********** ARRAY CLASS INFO **************************************
 /*
  //..............................................................
@@ -45,12 +64,12 @@ public:
 	void New(int nx, int ny);
 	void New(int nx, int ny, int nz);
 	
-	int & operator()(int index)
-	{return data[index];}	
+	int & operator()(int i)
+	{ CHECK_INDEX(i,0,0) return data[i];}	
 	int & operator()(int i, int j)
-	{ return data[j*m+i];}
+	{ CHECK_INDEX(i,j,0) return data[j*m+i];}
 	int & operator()(int i, int j, int k)
-	{ return data[k*m*n+j*m+i];}
+	{ CHECK_INDEX(i,j,k) return data[k*m*n+j*m+i];}
 	
 	int e(int i);
 	int e(int i, int j);
@@ -78,12 +97,12 @@ public:
 	void New(int nx, int ny);
 	void New(int nx, int ny, int nz);
 	
-	double & operator()(int index)
-	{return data[index];}	
+	double & operator()(int i)
+	{ CHECK_INDEX(i,0,0) return data[i];}	
 	double & operator()(int i, int j)
-	{return data[j*m+i];}
+	{ CHECK_INDEX(i,j,0) return data[j*m+i];}
 	double & operator()(int i, int j, int k)
-	{return data[k*m*n+j*m+i];}
+	{ CHECK_INDEX(i,j,k) return data[k*m*n+j*m+i];}
 	double e(int i);
 	double e(int i, int j);
 	double e(int i, int j, int k);

@@ -1136,8 +1136,8 @@ inline void WriteCheckpoint(char *FILENAME, double *cDen, double *cDistEven, dou
 
 inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
 {
-	int q,n;
-	double value;
+	int q=0, n=0;
+	double value=0;
 	ifstream File(FILENAME,ios::binary);
 	for (n=0; n<N; n++){
 		// Write the two density values
