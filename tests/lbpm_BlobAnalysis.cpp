@@ -318,7 +318,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	pw = TCAT.paw_global;
 	aws = TCAT.aws;
 	// Compute the averages over the entire non-wetting phsae
-	for (a=0; a<TCAT.nblobs_global; a++){
+	for (a=0; a<TCAT.BlobAverages.n; a++){
 		vol_n += TCAT.BlobAverages(0,a);
 		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
 		awn += TCAT.BlobAverages(3,a);
@@ -334,7 +334,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
 	PoreVolume=TCAT.wp_volume_global + nwp_volume;
 	// Subtract off portions of non-wetting phase in order of size
-	for (a=TCAT.nblobs_global-1; a>0; a--){
+	for (a=TCAT.BlobAverages.n-1; a>0; a--){
 		// Subtract the features one-by-one
 		vol_n -= TCAT.BlobAverages(0,a);
 		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
