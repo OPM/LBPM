@@ -437,9 +437,8 @@ int main(int argc, char **argv)
 	}
 */
 	
-	FILE *PHASE;
-	PHASE = fopen("Phase.dat","wb");
-	fwrite(Phase.data,8,Nx*Ny*Nz,PHASE);
+	FILE *PHASE = fopen("Phase.dat","wb");
+	fwrite(Phase.get(),8,Nx*Ny*Nz,PHASE);
 	fclose(PHASE);
 	
 	// Initialize the local blob ID
@@ -590,9 +589,9 @@ int main(int argc, char **argv)
 				// Otherwise, this point has already been assigned - ignore
 
 				// Make sure list blob_nodes is large enough
-				if ( nblobs > b.Length-1){
+				if ( nblobs > (int)b.length()-1){
 					printf("Increasing size of blob list \n");
-					b = IncreaseSize(b,b.Length);
+					b.resize(2*b.length());
 				}
 			}
 		}
@@ -633,7 +632,7 @@ int main(int argc, char **argv)
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 	
 	// Map the signed distance for the analysis
-	for (i=0; i<Nx*Ny*Nz; i++)	SignDist.data[i] -= (1.0); 
+	for (i=0; i<Nx*Ny*Nz; i++)	SignDist(i) -= (1.0); 
 	
 	// Compute the porosity
 	porosity=0.0;
@@ -731,11 +730,11 @@ int main(int argc, char **argv)
 						// volume the excludes the interfacial region
 						vol_n += 0.125;
 						// pressure
-						pan += 0.125*Press.data[n];
+						pan += 0.125*Press(n);
 						// velocity
-						van(0) += 0.125*Vel_x.data[n];
-						van(1) += 0.125*Vel_y.data[n];
-						van(2) += 0.125*Vel_z.data[n];
+						van(0) += 0.125*Vel_x(n);
+						van(1) += 0.125*Vel_y(n);
+						van(2) += 0.125*Vel_z(n);
 					}
 
 					// volume averages over the wetting phase
@@ -743,11 +742,11 @@ int main(int argc, char **argv)
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
-						paw += 0.125*Press.data[n];
+						paw += 0.125*Press(n);
 						// velocity
-						vaw(0) += 0.125*Vel_x.data[n];
-						vaw(1) += 0.125*Vel_y.data[n];
-						vaw(2) += 0.125*Vel_z.data[n];
+						vaw(0) += 0.125*Vel_x(n);
+						vaw(1) += 0.125*Vel_y(n);
+						vaw(2) += 0.125*Vel_z(n);
 					}
 				}
 			}
@@ -1076,12 +1075,12 @@ int main(int argc, char **argv)
 
 	FILE *BLOBS;
 	BLOBS = fopen("Blobs.dat","wb");
-	fwrite(LocalBlobID.data,4,Nx*Ny*Nz,BLOBS);
+	fwrite(LocalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
 	fclose(BLOBS);
 	
 	FILE *DISTANCE;
 	DISTANCE = fopen("SignDist.dat","wb");
-	fwrite(SignDist.data,8,Nx*Ny*Nz,DISTANCE);
+	fwrite(SignDist.get(),8,Nx*Ny*Nz,DISTANCE);
 	fclose(DISTANCE);
 	
 }

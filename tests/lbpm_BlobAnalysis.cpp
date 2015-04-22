@@ -120,16 +120,16 @@ int main(int argc, char **argv)
 	if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
 	//.......................................................................
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages.SDs.data, N);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	//	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
-	//ReadBinaryFile(LocalRankFilename, Averages.Press.data, N);
+	//ReadBinaryFile(LocalRankFilename, Averages.Press.get(), N);
 	//MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
     //.......................................................................
     sprintf(LocalRankFilename,"%s%s","BlobLabel.",LocalRankString);
-    ReadBlobFile(LocalRankFilename, Averages.BlobLabel.data, N);
+    ReadBlobFile(LocalRankFilename, Averages.BlobLabel.get(), N);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) cout << "BlobLabel set." << endl;
 
@@ -181,14 +181,14 @@ int main(int argc, char **argv)
         vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
         vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
         vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
-        Averages.Phase.data[n]=(da-db)/(da+db);
-        Averages.Phase_tplus.data[n]=(da-db)/(da+db);
-        Averages.Phase_tminus.data[n]=(da-db)/(da+db);
-        Averages.Press.data[n]=press;
-        Averages.Vel_x.data[n]=vx;
-        Averages.Vel_y.data[n]=vy;
-        Averages.Vel_z.data[n]=vz;
-	if (Averages.SDs.data[n] > 0.0){
+        Averages.Phase(n)=(da-db)/(da+db);
+        Averages.Phase_tplus(n)=(da-db)/(da+db);
+        Averages.Phase_tminus(n)=(da-db)/(da+db);
+        Averages.Press(n)=press;
+        Averages.Vel_x(n)=vx;
+        Averages.Vel_y(n)=vy;
+        Averages.Vel_z(n)=vz;
+	if (Averages.SDs(n) > 0.0){
 	  Dm.id[n]=1;
 	  sum += 1.0;
 	}
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
-    for (int i=0; i<N; i++) Averages.SDs.data[i] -= 1.0; // map the distance 
+    for (int i=0; i<N; i++) Averages.SDs(i) -= 1.0; // map the distance 
     
     double beta = 0.95;
      
@@ -209,16 +209,16 @@ int main(int argc, char **argv)
     Averages.UpdateSolid();
     Averages.Initialize();
     Averages.ComputeDelPhi();
-    Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
+    Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.SDn.get());
     Averages.UpdateMeshValues();
     Averages.ComputeLocalBlob();
     Averages.Reduce();
     int b=0;
 
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
-    int dimx = Averages.BlobAverages.m;
-    int dimy = Averages.BlobAverages.n;
-    int TotalBlobInfoSize=Averages.BlobAverages.m*Averages.BlobAverages.n;
+    int dimx = Averages.BlobAverages.size(0);
+    int dimy = Averages.BlobAverages.size(1);
+    int TotalBlobInfoSize=dimx*dimy;
    
     FILE *BLOBLOG;
     if (rank==0){
@@ -227,11 +227,11 @@ int main(int argc, char **argv)
     }
     //      BlobContainer Blobs;
     DoubleArray RecvBuffer(dimx);
-    //    MPI_Allreduce(&Averages.BlobAverages.data,&Blobs.data,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) printf("All ranks passed gate \n");
 
-    for (int b=0; b<Averages.BlobAverages.n; b++){
+    for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
       
       MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
       for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx); 
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
       if (rank==0){
 	//	printf("Reduced blob %i \n",b);
 	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
-    for (int b=0; b<Averages.BlobAverages.n; b++){
+    for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
       if (Averages.BlobAverages(0,b) > 0.0){
 	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
 	Vn = Averages.BlobAverages(1,b);
@@ -318,7 +318,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	pw = TCAT.paw_global;
 	aws = TCAT.aws;
 	// Compute the averages over the entire non-wetting phsae
-	for (a=0; a<TCAT.BlobAverages.n; a++){
+	for (a=0; a<(int)TCAT.BlobAverages.size(1); a++){
 		vol_n += TCAT.BlobAverages(0,a);
 		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
 		awn += TCAT.BlobAverages(3,a);
@@ -334,7 +334,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
 	PoreVolume=TCAT.wp_volume_global + nwp_volume;
 	// Subtract off portions of non-wetting phase in order of size
-	for (a=TCAT.BlobAverages.n-1; a>0; a--){
+	for (a=TCAT.BlobAverages.size(1)-1; a>0; a--){
 		// Subtract the features one-by-one
 		vol_n -= TCAT.BlobAverages(0,a);
 		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);

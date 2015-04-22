@@ -314,7 +314,7 @@ public:
 	DoubleArray Corners;
 
 	TriLinPoly(){		
-		Corners.New(2,2,2);
+		Corners.resize(2,2,2);
 	}
 	~TriLinPoly(){
 	}
@@ -378,9 +378,9 @@ inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indi
 	// Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
 	// F>vf => oil phase S>vs => in porespace
 	// update the list of blobs, indicator mesh
-	int m = F.m;  // maxima for the meshes
-	int n = F.n;
-	int o = F.o;
+	int m = F.size(0);  // maxima for the meshes
+	int n = F.size(1);
+	int o = F.size(2);
 
 	int cubes_in_blob=0;
 	int nrecent = 1;						// number of nodes added at most recent sweep

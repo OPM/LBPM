@@ -26,7 +26,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
 	    sprintf(fullpath,"%s/%s",path,filename);
         FILE *fid = fopen(fullpath,"wb");
         INSIST(fid!=NULL,std::string("Error opening file: ")+fullpath);
-        shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         IO::MeshDatabase mesh_entry;
         mesh_entry.name = meshData[i].meshName;
         mesh_entry.type = meshType(mesh);
@@ -42,18 +42,19 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             //for (size_t j=0; j<meshData[i].vars.size(); j++)
             //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
-        if ( dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
+        if ( std::dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
             // List of points
-            shared_ptr<IO::PointList> pointlist = dynamic_pointer_cast<IO::PointList>(mesh);
+            std::shared_ptr<IO::PointList> pointlist = std::dynamic_pointer_cast<IO::PointList>(mesh);
             const std::vector<Point>& P = pointlist->points;
             for (size_t i=0; i<P.size(); i++) {
                 double x[3];
                 x[0] = P[i].x;  x[1] = P[i].y;  x[2] = P[i].z;
                 fwrite(x,sizeof(double),3,fid);
             }
-        } else if ( dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
+        } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || 
+                    std::dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
             // Triangle mesh
-            shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
+            std::shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
             const std::vector<Point>& A = trilist->A;
             const std::vector<Point>& B = trilist->B;
             const std::vector<Point>& C = trilist->C;
@@ -144,7 +145,7 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
     sprintf(fullpath,"%s/%s",path,filename);
     FILE *fid = fopen(fullpath,"wb");
     for (size_t i=0; i<meshData.size(); i++) {
-        shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         meshes_written.push_back( write_domain(fid,filename,meshData[i],format) );
     }
     fclose(fid);

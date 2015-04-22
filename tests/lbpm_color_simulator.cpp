@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages.SDs.data, N);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
 	
@@ -347,11 +347,11 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (Averages.SDs.data[n] > 0.0){
+				if (Averages.SDs(n) > 0.0){
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (Averages.SDs.data[n] > 0.0){
+				if (Averages.SDs(n) > 0.0){
 					sum++;	
 				}
 			}
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
-					Averages.SDs.data[n] =  max(Averages.SDs.data[n],1.0*(2.5-k));
+					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
 				}					
 			}
 		}
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 2;
-					Averages.SDs.data[n] = max(Averages.SDs.data[n],1.0*(k-Nz+2.5));
+					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -974,7 +974,7 @@ int main(int argc, char **argv)
 
 
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, Averages.SDs.data, dist_mem_size);
+	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
 	//...........................................................................
 
 	int logcount = 0; // number of surface write-outs
@@ -1007,7 +1007,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages.SDs.data[i] -= (1.0); //
+	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
 	Averages.SetupCubes(Dm);
@@ -1127,7 +1127,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
-	CopyToHost(Averages.Phase_tplus.data,Phi,N*sizeof(double));
+	CopyToHost(Averages.Phase_tplus.get(),Phi,N*sizeof(double));
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
@@ -1136,11 +1136,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	DeviceBarrier();
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
-	CopyToHost(Averages.Press.data,Pressure,N*sizeof(double));
-	CopyToHost(Averages.Vel_x.data,&Velocity[0],N*sizeof(double));
-	CopyToHost(Averages.Vel_y.data,&Velocity[N],N*sizeof(double));
-	CopyToHost(Averages.Vel_z.data,&Velocity[2*N],N*sizeof(double));
+	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+	CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
+	CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
+	CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
+	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
@@ -1551,8 +1551,8 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
-			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.Phase_tplus.data);
+			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+			Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.Phase_tplus.get());
 			//...........................................................................
 		}
 		if (timestep%5000 == 0){
@@ -1563,23 +1563,23 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase.data,Phi,N*sizeof(double));
-			CopyToHost(Averages.Press.data,Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x.data,&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y.data,&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z.data,&Velocity[2*N],N*sizeof(double));
+			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%5000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus.data,Phi,N*sizeof(double));
-			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.data,Averages.Phase_tminus.data);
+			CopyToHost(Averages.Phase_tminus.get(),Phi,N*sizeof(double));
+			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.get(),Averages.Phase_tminus.get());
 			//....................................................................
 			Averages.Initialize();
 			Averages.ComputeDelPhi();
-			Averages.ColorToSignedDistance(beta,Averages.Phase.data,Averages.SDn.data);
+			Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.SDn.get());
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
 			Averages.Reduce();
@@ -1747,22 +1747,22 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.Phase.data,8,N,PHASE);
-//	fwrite(MeanCurvature.data,8,N,PHASE);
+	fwrite(Averages.Phase.get(),8,N,PHASE);
+//	fwrite(MeanCurvature.get(),8,N,PHASE);
 	fclose(PHASE);
 //#endif
 
 	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.Press.data,8,N,PRESS);
+	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
 
 	
 /*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	FILE *SPEED;
 	SPEED = fopen(LocalRankFilename,"wb");
-	fwrite(dPdt.data,8,N,SPEED);
+	fwrite(dPdt.get(),8,N,SPEED);
 	fclose(SPEED);
 	
 	sprintf(LocalRankFilename,"%s%s","DenA.",LocalRankString);
@@ -1787,7 +1787,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	fwrite(Phase.data,8,N,GRAD);
+	fwrite(Phase.get(),8,N,GRAD);
 	fclose(GRAD);
 */	
 /*	double *DensityValues;

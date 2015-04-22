@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	DoubleArray CubeValues(2,2,2);
 
 	// Compute the signed distance function
-	SignedDistance(Phase.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
+	SignedDistance(Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
 
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	SignedDistance(SignDist.data,0,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
+	SignedDistance(SignDist.get(),0,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,0,0,0,1,1,1);
 
 	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
 

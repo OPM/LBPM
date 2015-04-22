@@ -55,19 +55,19 @@ int main(int argc, char **argv)
     };
 
     // Create the meshes
-    shared_ptr<IO::PointList> set1( new IO::PointList(N_points) );
+    std::shared_ptr<IO::PointList> set1( new IO::PointList(N_points) );
     for (int i=0; i<N_points; i++) {
         set1->points[i].x = x[i];
         set1->points[i].y = y[i];
         set1->points[i].z = z[i];
     }
-    shared_ptr<IO::TriMesh> trimesh( new IO::TriMesh(N_tri,set1) );
+    std::shared_ptr<IO::TriMesh> trimesh( new IO::TriMesh(N_tri,set1) );
     for (int i=0; i<N_tri; i++) {
         trimesh->A[i] = tri[i][0];
         trimesh->B[i] = tri[i][1];
         trimesh->C[i] = tri[i][2];
     }
-    shared_ptr<IO::TriList> trilist( new IO::TriList(*trimesh) );
+    std::shared_ptr<IO::TriList> trilist( new IO::TriList(*trimesh) );
     for (int i=0; i<N_tri; i++) {
         Point A(x[tri[i][0]],y[tri[i][0]],z[tri[i][0]]);
         Point B(x[tri[i][1]],y[tri[i][1]],z[tri[i][1]]);
@@ -80,8 +80,8 @@ int main(int argc, char **argv)
     }
 
     // Create the variables
-    shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
-    shared_ptr<IO::Variable> dist_list( new IO::Variable() );
+    std::shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
+    std::shared_ptr<IO::Variable> dist_list( new IO::Variable() );
     dist_set1->dim = 1;
     dist_list->dim = 1;
     dist_set1->name = "Distance";
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         // For each domain, load the mesh and check its data
         for (size_t j=0; j<list.size(); j++) {
             for (size_t k=0; k<list[i].domains.size(); k++) {
-                shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
+                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
                 if ( mesh.get()==NULL ) {
                     printf("Failed to load %s\n",meshData[i].meshName.c_str());
                     pass = false;
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
                 }
                 if ( meshData[j].meshName=="pointmesh" ) {
                     // Check the pointmesh
-                    shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
+                    std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
                     if ( pmesh.get()==NULL ) {
                         pass = false;
                         break;
@@ -163,8 +163,8 @@ int main(int argc, char **argv)
                 }
                 if ( meshData[j].meshName=="trimesh" || meshData[j].meshName=="trilist" ) {
                     // Check the trimesh/trilist
-                    shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
-                    shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
+                    std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
+                    std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
                     if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
                         pass = false;
                         break;
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
             }
             for (size_t v=0; v<list[i].variables.size(); v++) {
                 for (size_t k=0; k<list[i].domains.size(); k++) {
-                    shared_ptr<const IO::Variable> variable = 
+                    std::shared_ptr<const IO::Variable> variable = 
                         IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
                     const IO::Variable& var1 = *mesh0->vars[v];
                     const IO::Variable& var2 = *variable;

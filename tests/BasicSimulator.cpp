@@ -390,10 +390,10 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankString,"%05d",rank);
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	//.......................................................................
-	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(SignDist.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	
-//	for (n=0; n<Nx*Ny*Nz; n++)	SignDist.data[n] += (1.0); // map by a pixel to account for interface width
+//	for (n=0; n<Nx*Ny*Nz; n++)	SignDist.get()[n] += (1.0); // map by a pixel to account for interface width
 
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
@@ -411,11 +411,11 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (SignDist.data[n] > 0.0){ 
+				if (SignDist.get()[n] > 0.0){ 
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (SignDist.data[n] > 0.0){ 
+				if (SignDist.get()[n] > 0.0){ 
 					sum++;	
 				}
 			}
@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
-					SignDist.data[n] =  max(SignDist.data[n],1.0*(2.5-k));
+					SignDist.get()[n] =  max(SignDist.get()[n],1.0*(2.5-k));
 				}					
 			}
 		}
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					id[n] = 2;
-					SignDist.data[n] = max(SignDist.data[n],1.0*(k-Nz+2.5));
+					SignDist.get()[n] = max(SignDist.get()[n],1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -1036,7 +1036,7 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, SignDist.data, dist_mem_size);
+	CopyToDevice(dvcSignDist, SignDist.get(), dist_mem_size);
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
 	DoubleArray Phase(Nx,Ny,Nz);
@@ -1204,7 +1204,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.get(), N);
 	//.......................................................................
 	if (Restart == true){
 		if (rank==0) printf("Reading restart file! \n");
@@ -1223,7 +1223,7 @@ int main(int argc, char **argv)
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//......................................................................
-	for (i=0; i<N; i++)	SignDist.data[i] -= (1.0); // 
+	for (i=0; i<N; i++)	SignDist.get()[i] -= (1.0); // 
 	//.......................................................................
 
 	
@@ -1420,7 +1420,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
-	CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+	CopyToHost(Phase_tplus.get(),Phi,N*sizeof(double));
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
@@ -1429,11 +1429,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	DeviceBarrier();
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Phase.data,Phi,N*sizeof(double));
-	CopyToHost(Press.data,Pressure,N*sizeof(double));
-	CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
-	CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
-	CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
+	CopyToHost(Phase.get(),Phi,N*sizeof(double));
+	CopyToHost(Press.get(),Pressure,N*sizeof(double));
+	CopyToHost(Vel_x.get(),&Velocity[0],N*sizeof(double));
+	CopyToHost(Vel_y.get(),&Velocity[N],N*sizeof(double));
+	CopyToHost(Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
@@ -1881,7 +1881,7 @@ int main(int argc, char **argv)
 				//...........................................................................
 				// Copy the phase indicator field for the earlier timestep
 				DeviceBarrier();
-				CopyToHost(Phase_tplus.data,Phi,N*sizeof(double));
+				CopyToHost(Phase_tplus.get(),Phi,N*sizeof(double));
 				//...........................................................................
 			}
 			if (timestep%1000 == 0){
@@ -1892,18 +1892,18 @@ int main(int argc, char **argv)
 				//...........................................................................
 				DeviceBarrier();
 				ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-				CopyToHost(Phase.data,Phi,N*sizeof(double));
-				CopyToHost(Press.data,Pressure,N*sizeof(double));
-				CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
-				CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
-				CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
+				CopyToHost(Phase.get(),Phi,N*sizeof(double));
+				CopyToHost(Press.get(),Pressure,N*sizeof(double));
+				CopyToHost(Vel_x.get(),&Velocity[0],N*sizeof(double));
+				CopyToHost(Vel_y.get(),&Velocity[N],N*sizeof(double));
+				CopyToHost(Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 				MPI_Barrier(MPI_COMM_WORLD);
 			}
 			if (timestep%1000 == 5){
 				//...........................................................................
 				// Copy the phase indicator field for the later timestep
 				DeviceBarrier();
-				CopyToHost(Phase_tminus.data,Phi,N*sizeof(double));
+				CopyToHost(Phase_tminus.get(),Phi,N*sizeof(double));
 				//...........................................................................
 				// Calculate the time derivative of the phase indicator field
 				for (n=0; n<N; n++)	dPdt(n) = 0.1*(Phase_tplus(n) - Phase_tminus(n));
@@ -2413,7 +2413,7 @@ int main(int argc, char **argv)
 
 		sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"dPdt.",LocalRankString);
 		SPEED = fopen(LocalRankFilename,"wb");
-		fwrite(dPdt.data,8,N,SPEED);
+		fwrite(dPdt.get(),8,N,SPEED);
 		fclose(SPEED);
  
 	}

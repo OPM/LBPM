@@ -1,413 +1,330 @@
-#ifndef ARRAY_H_INC
-#define ARRAY_H_INC
+#ifndef included_ArrayClass
+#define included_ArrayClass
 
 #include <iostream>
-#include <string.h>
+#include <memory>
+#include <vector>
+#include "shared_ptr.h"
+#include "common/Utilities.h"
 
 
-// Define a macro to check if the index is valid
-// Only perform the check if we are compiling in debug mode
+#define GET_ARRAY_INDEX(i1,i2,i3) i1+d_N[0]*(i2+d_N[1]*i3)
 #ifdef DEBUG
-    #ifdef USE_CUDA
-        #define CHECK_INDEX(i,j,k) \
-            if ( (i+j*m+k*m*n)<0 || (i+j*m+k*m*n)>=Length ) { \
-                printf("Index is out of bounds\n"); }
-    #else
-        #include "common/Utilities.h"
-        #define CHECK_INDEX(i,j,k) \
-            if ( (i+j*m+k*m*n)<0 || (i+j*m+k*m*n)>=Length ) { \
-                ERROR("Index is out of bounds\n"); }
-    #endif
+    #define CHECK_ARRAY_INDEX(i1,i2,i3) \
+        if ( GET_ARRAY_INDEX(i1,i2,i3)<0 || GET_ARRAY_INDEX(i1,i2,i3)>d_length ) \
+            ERROR("Index exceeds array bounds");
 #else
-    #define CHECK_INDEX(i,j,k) 
+    #define CHECK_ARRAY_INDEX(i1,i2,i3) 
 #endif
 
 
-// ********** ARRAY CLASS INFO **************************************
-/*
- //..............................................................
- // Overview of array classes in Array.h
- //......... Declaration of array objects........................
- // supports integer data (IntArray) or double data (DoubleArray)
- // supports one, two or three dimensional arrays
- IntArray A(m);			// array of integers, Length n
- IntArray A(m,n);		// array of integers, dimensions: m x n
- DoubleArray A(m,n,o);	// array of doubles, dimensions m x n x o	
- //............ Access the size of the array.....................
- A.m;				// size of first dimension
- A.n;				// size of second dimension
- A.o;				// size of third dimension
- A.Length;			// total number of values stored
- //........... Access the array entries .........................
- A(i);				// return data[i] 
- A(i,j);			// return data[j*m+i]
- A(i,j,k);			// return data[k*m*n+j*m+i]
- //..............................................................
+/*!
+ * Class Array is a simple array class
  */
-
-using namespace std;
-
-class  IntArray{
+template<class TYPE>
+class Array
+{
 public:
-	IntArray Copy();
 
-	int Length;
-	int m,n,o;
-	int *data;
-	IntArray();
-	IntArray(int size);
-	IntArray(int nx,int ny);
-	IntArray(int nx,int ny,int nz);
-	~IntArray();
-	
-	void New(int size);
-	void New(int nx, int ny);
-	void New(int nx, int ny, int nz);
-	
-	int & operator()(int i)
-	{ CHECK_INDEX(i,0,0) return data[i];}	
-	int & operator()(int i, int j)
-	{ CHECK_INDEX(i,j,0) return data[j*m+i];}
-	int & operator()(int i, int j, int k)
-	{ CHECK_INDEX(i,j,k) return data[k*m*n+j*m+i];}
-	
-	int e(int i);
-	int e(int i, int j);
-	int e(int i, int j, int k);
-	
-	int *Pointer() {return data;}
+    /*!
+     * Create a new empty Array
+     */
+    Array( );
+
+    /*!
+     * Create a new 1D Array with the given number of elements
+     * @param N             Number of elements in the array
+     */
+    Array( size_t N );
+
+    /*!
+     * Create a new 2D Array with the given number of rows and columns
+     * @param N_rows        Number of rows
+     * @param N_columns     Number of columns
+     */
+    Array( size_t N_rows, size_t N_columns );
+
+    /*!
+     * Create a new 3D Array with the given number of rows and columns
+     * @param N1            Number of rows
+     * @param N2            Number of columns
+     * @param N3            Number of elements in the third dimension
+     */
+    Array( size_t N1, size_t N2, size_t N3 );
+
+    /*!
+     * Create a multi-dimensional Array with the given number of elements
+     * @param N             Number of elements in each dimension
+     */
+    Array( const std::vector<size_t>& N );
+
+    /*!
+     * Copy constructor
+     * @param rhs           Array to copy
+     */
+    Array( const Array& rhs );
+
+    /*!
+     * Assignment operator
+     * @param rhs           Array to copy
+     */
+    Array& operator=( const Array& rhs );
+    
+    
+    /*!
+     * Create a 1D Array view to a raw block of data
+     * @param N             Number of elements in the array
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<Array> view( size_t N, std::shared_ptr<TYPE> data );
+
+    /*!
+     * Create a new 2D Array with the given number of rows and columns
+     * @param N_rows        Number of rows
+     * @param N_columns     Number of columns
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<Array> view( size_t N_rows, size_t N_columns, std::shared_ptr<TYPE> data );
+
+    /*!
+     * Create a new 3D Array view to a raw block of data
+     * @param N1            Number of rows
+     * @param N2            Number of columns
+     * @param N3            Number of elements in the third dimension
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<Array> view( size_t N1, size_t N2, size_t N3, std::shared_ptr<TYPE> data );
+
+    /*!
+     * Create a multi-dimensional Array view to a raw block of data
+     * @param N             Number of elements in each dimension
+     */
+    static std::shared_ptr<Array> view( const std::vector<size_t>& N, std::shared_ptr<TYPE> data );
+
+   
+    
+    /*!
+     * Create a 1D Array view to a raw block of data
+     * @param N             Number of elements in the array
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<const Array> constView( size_t N, std::shared_ptr<const TYPE> data );
+
+    /*!
+     * Create a new 2D Array with the given number of rows and columns
+     * @param N_rows        Number of rows
+     * @param N_columns     Number of columns
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<const Array> constView( size_t N_rows, size_t N_columns, std::shared_ptr<const TYPE> data );
+
+    /*!
+     * Create a new 3D Array view to a raw block of data
+     * @param N1            Number of rows
+     * @param N2            Number of columns
+     * @param N3            Number of elements in the third dimension
+     * @param data          Pointer to the data
+     */
+    static std::shared_ptr<const Array> constView( size_t N1, size_t N2, size_t N3, std::shared_ptr<const TYPE> data );
+
+    /*!
+     * Create a multi-dimensional Array view to a raw block of data
+     * @param N             Number of elements in each dimension
+     */
+    static std::shared_ptr<const Array> constView( const std::vector<size_t>& N, std::shared_ptr<const TYPE> data );
+
+
+    /*!
+     * Convert an array of one type to another.  This may or may not allocate new memory.
+     * @param array         Input array
+     */
+    template<class TYPE2>
+    static std::shared_ptr<Array<TYPE2> > convert( std::shared_ptr<Array<TYPE> > array );
+
+
+    /*!
+     * Convert an array of one type to another.  This may or may not allocate new memory.
+     * @param array         Input array
+     */
+    template<class TYPE2>
+    static std::shared_ptr<const Array<TYPE2> > convert( std::shared_ptr<const Array<TYPE> > array );
+
+
+    /*!
+     * Copy and convert data from another array to this array
+     * @param array         Source array
+     */
+    template<class TYPE2>
+    void copy( const Array<TYPE2>& array );
+
+    /*!
+     * Copy and convert data from a raw vector to this array.
+     *    Note: The current array must be allocated to the proper size first.
+     * @param array         Source array
+     */
+    template<class TYPE2>
+    void copy( const TYPE2* array );
+
+    /*!
+     * Fill the array with the given value
+     * @param value         Value to fill
+     */
+    void fill( const TYPE& value );
+
+
+    //! Destructor
+    ~Array( );
+
+
+    //! Return the size of the Array
+    inline int ndim( ) const { return d_ndim; }
+
+
+    //! Return the size of the Array
+    inline std::vector<size_t> size( ) const { return std::vector<size_t>(d_N,d_N+d_ndim); }
+
+
+    //! Return the size of the Array
+    inline size_t size( int d ) const { return d_N[d]; }
+
+
+    //! Return the size of the Array
+    inline size_t length( ) const { return d_length; }
+
+
+    //! Return true if the Array is empty
+    inline bool empty( ) const { return d_length==0; }
+
+
+    /*!
+     * Resize the Array
+     * @param N             NUmber of elements
+     */
+    void resize( size_t N );
+
+    /*!
+     * Resize the Array
+     * @param N_rows        Number of rows
+     * @param N_columns     Number of columns
+     */
+    void resize( size_t N_rows, size_t N_columns );
+
+    /*!
+     * Resize the Array
+     * @param N1            Number of rows
+     * @param N2            Number of columns
+     * @param N3            Number of elements in the third dimension
+     */
+    void resize( size_t N1, size_t N2, size_t N3 );
+
+    /*!
+     * Resize the Array
+     * @param N             Number of elements in each dimension
+     */
+    void resize( const std::vector<size_t>& N );
+
+
+    /*!
+     * Reshape the Array (total size of array will not change)
+     * @param N             Number of elements in each dimension
+     */
+    void reshape( const std::vector<size_t>& N );
+
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline TYPE& operator()( size_t i ) { CHECK_ARRAY_INDEX(i,0,0) return d_data[i]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline const TYPE& operator()( size_t i ) const { CHECK_ARRAY_INDEX(i,0,0) return d_data[i]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline TYPE& operator()( size_t i, size_t j ) { CHECK_ARRAY_INDEX(i,j,0) return d_data[i+j*d_N[0]]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline const TYPE& operator()( size_t i, size_t j ) const { CHECK_ARRAY_INDEX(i,j,0) return d_data[i+j*d_N[0]]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline TYPE& operator()( size_t i, size_t j, size_t k ) { CHECK_ARRAY_INDEX(i,j,k) return d_data[GET_ARRAY_INDEX(i,j,k)]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline const TYPE& operator()( size_t i, size_t j, size_t k ) const { CHECK_ARRAY_INDEX(i,j,k) return d_data[GET_ARRAY_INDEX(i,j,k)]; }
+
+
+    //! Check if two matricies are equal
+    bool operator==( const Array& rhs ) const;
+
+    //! Check if two matricies are not equal
+    inline bool operator!=( const Array& rhs ) const { return !this->operator==(rhs); }
+
+
+    //! Return the pointer to the raw data
+    inline std::shared_ptr<TYPE> getPtr( ) { return d_ptr; }
+
+    //! Return the pointer to the raw data
+    inline std::shared_ptr<const TYPE> getPtr( ) const { return d_ptr; }
+
+    //! Return the pointer to the raw data
+    inline TYPE* get( ) { return d_data; }
+
+    //! Return the pointer to the raw data
+    inline const TYPE* get( ) const { return d_data; }
+
+
+    //! Return true if NaNs are present
+    inline bool NaNs( ) const;
+
+    //! Return the smallest value
+    inline TYPE min( ) const;
+
+    //! Return the largest value
+    inline TYPE max( ) const;
+
+    //! Return the sum of all elements
+    inline TYPE sum( ) const;
+
+    //! Return the sum of all elements in a given direction
+    std::shared_ptr<Array<TYPE> > sum( int dir ) const;
+
+
+private:
+    int d_ndim;
+    size_t d_N[3];
+    size_t d_length;
+    TYPE *d_data;
+    std::shared_ptr<TYPE> d_ptr;
+    void allocate( const std::vector<size_t>& N );
 };
 
-class  DoubleArray{
-public:
-	DoubleArray Copy();
 
-	int Length;
-	int m;
-	int n;
-	int o;
-	double *data;
-	DoubleArray();
-	DoubleArray(int size);
-	DoubleArray(int nx, int ny);
-	DoubleArray(int nx, int ny, int nz);
-	~DoubleArray();
-	
-	void New(int size);
-	void New(int nx, int ny);
-	void New(int nx, int ny, int nz);
-	
-	double & operator()(int i)
-	{ CHECK_INDEX(i,0,0) return data[i];}	
-	double & operator()(int i, int j)
-	{ CHECK_INDEX(i,j,0) return data[j*m+i];}
-	double & operator()(int i, int j, int k)
-	{ CHECK_INDEX(i,j,k) return data[k*m*n+j*m+i];}
-	double e(int i);
-	double e(int i, int j);
-	double e(int i, int j, int k);
-
-	double *Pointer() {return data;}
-};
-
-/*
- *  Array.cpp
- *
- *  Created by James Mcclure on 3/31/09.
- *  Copyright 2009 __MyCompanyName__. All rights reserved.
- *
- */
-
-// *****************************************
-// ******** class IntArray  ****************
-// *****************************************
-/*IntArray::IntArray();
-IntArray::IntArray(int size);
-IntArray::IntArray(int nx, int ny);
-IntArray::IntArray(int nx, int ny, int nz);
-IntArray::~IntArray();
-void IntArray::New(int size);
-void IntArray::New(int nx, int ny);
-void IntArray::New(int nx, int ny,int nz);
-int IntArray::e(int i);
-int IntArray::e(int i, int j);
-int IntArray::e(int i, int j, int k);
-
-// *****************************************
-// ******** class DoubleArray **************
-// *****************************************
-DoubleArray::DoubleArray();
-DoubleArray::DoubleArray(int size);
-DoubleArray::DoubleArray(int nx, int ny);
-DoubleArray::DoubleArray(int nx, int ny,int nz);
-DoubleArray::~DoubleArray();
-void DoubleArray::New(int size);
-void DoubleArray::New(int nx, int ny);
-void DoubleArray::New(int nx, int ny,int nz);
-double DoubleArray::e(int i);
-double DoubleArray::e(int i, int j);
-double DoubleArray::e(int i, int j, int k);
-extern DoubleArray IncreaseSize(DoubleArray &A, int addLength);
-extern IntArray IncreaseSize(IntArray &A, int addLength);
-*/
-
-/*
- *  Array.cpp
- *
- *  Created by James Mcclure on 3/31/09.
- *  Copyright 2009 __MyCompanyName__. All rights reserved.
- *
- */
-/*
- *  Array.cpp
- *
- *  Created by James Mcclure on 3/31/09.
- *  Copyright 2009 __MyCompanyName__. All rights reserved.
- *
- */
-
-IntArray::IntArray()
-{
-	m=n=o=Length=0;
-}
-
-IntArray::IntArray(int size)
-{
-	data = new int [size];
-	Length = size;
-	m = size;
-	n = 1;
-	o = 1;
-}
-
-IntArray::IntArray(int nx, int ny)
-{
-	m = nx;
-	n = ny;
-	o = 1;
-	Length = m*n;
-	data = new int [Length];
-}
-
-IntArray::IntArray(int nx, int ny, int nz)
-{
-	m = nx;
-	n = ny;
-	o = nz;
-	Length = m*n*o;
-	data = new int [Length];
-}
-
-IntArray::~IntArray()
-{
-	delete[] data;
-}
+typedef Array<int> IntArray;
+typedef Array<double> DoubleArray;
 
 
-void IntArray::New(int size)
-{
-	m=size;
-	n = 1;
-	o = 1;
-	data = new int [size];
-	Length = size;
-}
-
-void IntArray::New(int nx, int ny)
-{
-	m = nx;
-	n = ny;
-	o = 1;
-	Length = m*n;
-	data = new int [Length];
-}
-
-void IntArray::New(int nx, int ny,int nz)
-{
-	m = nx;
-	n = ny;
-	o = nz;
-	Length = m*n*o;
-	data = new int [Length];
-}
-
-int IntArray::e(int i)
-{
-	return data[i];
-}
-
-int IntArray::e(int i, int j)
-{
-	return data[m*j+i];
-}
-
-int IntArray::e(int i, int j, int k)
-{
-	return data[m*n*k+m*j+i];
-}
-
-// *****************************************
-// ******** class DoubleArray **************
-// *****************************************
-DoubleArray::DoubleArray()
-{
-	m=n=o=Length=0;
-}
-
-DoubleArray::DoubleArray(int size)
-{
-	m=size;
-	n = 1;
-	o = 1;
-	data = new double [size];
-	Length = size;
-}
-
-DoubleArray::DoubleArray(int nx, int ny)
-{
-	m = nx;
-	n = ny;
-	o = 1;
-	Length = m*n;
-	data = new double [Length];
-}
-
-DoubleArray::DoubleArray(int nx, int ny,int nz)
-{
-	m = nx;
-	n = ny;
-	o = nz;
-	Length = m*n*o;
-	data = new double [Length];
-}
-
-void DoubleArray::New(int size)
-{
-	m=size;
-	n = 1;
-	o = 1;
-	data = new double [size];
-	Length = size;
-}
-
-void DoubleArray::New(int nx, int ny)
-{
-	m = nx;
-	n = ny;
-	o = 1;
-	Length = m*n;
-	data = new double [Length];
-}
-
-void DoubleArray::New(int nx, int ny,int nz)
-{
-	m = nx;
-	n = ny;
-	o = nz;
-	Length = m*n*o;
-	data = new double [Length];
-}
-
-DoubleArray::~DoubleArray()
-{
-	delete [] data;
-}
-
-double DoubleArray::e(int i)
-{
-	return data[i];
-}	
-
-double DoubleArray::e(int i, int j)
-{
-	return data[j*m+i];
-}
-
-double DoubleArray::e(int i, int j, int k)
-{
-	return data[k*m*n+j*m+i];
-}
-
-extern DoubleArray IncreaseSize(DoubleArray &A, int addLength)
-{
-    if (addLength<0) {
-        printf("IncreaseSize(Array,Length) Length needs to be >0.");
-        return DoubleArray();
-    }
-
-    int newM,newN,newO;
-    if (A.o>1) {
-        if (addLength%(A.m*A.n)!=0) {
-        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m*n");
-            return DoubleArray();
-        }
-        newM = A.m;
-        newN = A.n;
-        newO = A.o + addLength/(A.m*A.n);
-    }
-    else if (A.n>1) {
-        if (addLength%(A.m)!=0) {
-        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m");
-            return DoubleArray();
-        }
-        newM = A.m;
-        newN = A.n + addLength/A.m;
-        newO = 1;
-    }
-    else {
-        newM = A.m + addLength;
-        newN = 1;
-        newO = 1;
-    }
-
-    DoubleArray toReturn(newM,newN,newO);
-    memcpy(toReturn.Pointer(),A.Pointer(),A.Length*sizeof(double));
-    return toReturn;
-}
-extern IntArray IncreaseSize(IntArray &A, int addLength)
-{
-    if (addLength<0) {
-        printf("IncreaseSize(Array,Length) Length needs to be >0.");
-        return IntArray();
-    }
-
-    int newM,newN,newO;
-    if (A.o>1) {
-        if (addLength%(A.m*A.n)!=0) {
-        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m*n");
-            return IntArray();
-        }
-        newM = A.m;
-        newN = A.n;
-        newO = A.o + addLength/(A.m*A.n);
-    }
-    else if (A.n>1) {
-        if (addLength%(A.m)!=0) {
-        	printf("IncreaseSize(Array,Length) Length needs to be a multiple of m");
-            return IntArray();
-        }
-        newM = A.m;
-        newN = A.n + addLength/A.m;
-        newO = 1;
-    }
-    else {
-        newM = A.m + addLength;
-        newN = 1;
-        newO = 1;
-    }
-
-    IntArray toReturn(newM,newN,newO);
-    memcpy(toReturn.Pointer(),A.Pointer(),A.Length*sizeof(int));
-    return toReturn;
-}
-
-DoubleArray DoubleArray::Copy()
-{
-    DoubleArray CopyInto(m,n,o);
-    // Check that the allocation worked.
-    if (CopyInto.Length!=Length) return CopyInto; // Failed.  Already printed an error message.
-    memcpy(CopyInto.Pointer(),Pointer(),Length*sizeof(double));
-    return CopyInto;
-}
+#include "common/Array.hpp"
 
 #endif
+

@@ -51,11 +51,11 @@ std::vector<IO::MeshDatabase> IO::getMeshList( const std::string& path, const st
 
 
 // Read the given mesh domain
-shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& timestep, 
+std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& timestep, 
     const IO::MeshDatabase& meshDatabase, int domain )
 {
     PROFILE_START("getMesh");
-    shared_ptr<IO::Mesh> mesh;
+    std::shared_ptr<IO::Mesh> mesh;
     if ( meshDatabase.format==1 ) {
         // Old format (binary doubles)
         std::string filename = path + "/" + timestep + "/" + meshDatabase.domains[domain].file;
@@ -72,7 +72,7 @@ shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& ti
             ERROR("Error reading file");
         if ( meshDatabase.type==IO::PointMesh ) {
             size_t N = count/3;
-            shared_ptr<PointList> pointlist( new PointList(N) );
+            std::shared_ptr<PointList> pointlist( new PointList(N) );
             std::vector<Point>& P = pointlist->points;
             for (size_t i=0; i<N; i++) {
                 P[i].x = data[3*i+0];
@@ -84,7 +84,7 @@ shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& ti
             if ( count%9 != 0 )
                 ERROR("Error reading file (2)");
             size_t N_tri = count/9;
-            shared_ptr<TriList> trilist( new TriList(N_tri) );
+            std::shared_ptr<TriList> trilist( new TriList(N_tri) );
             std::vector<Point>& A = trilist->A;
             std::vector<Point>& B = trilist->B;
             std::vector<Point>& C = trilist->C;
@@ -138,14 +138,14 @@ shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::string& ti
 
 
 // Read the given variable for the given mesh domain
-shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
+std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::string& timestep, 
     const MeshDatabase& meshDatabase, int domain, const std::string& variable )
 {
     std::pair<std::string,std::string> key(meshDatabase.domains[domain].name,variable);
     std::map<std::pair<std::string,std::string>,DatabaseEntry>::const_iterator it;
     it = meshDatabase.variable_data.find(key);
     if ( it==meshDatabase.variable_data.end() )
-        return shared_ptr<IO::Variable>();
+        return std::shared_ptr<IO::Variable>();
     const DatabaseEntry& database = it->second;
     std::string filename = path + "/" + timestep + "/" + database.file;
     FILE *fid = fopen(filename.c_str(),"rb");
@@ -165,7 +165,7 @@ shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const std::st
     size_t count = fread(data,1,bytes,fid);
     fclose(fid);
     ASSERT(count==bytes);
-    shared_ptr<IO::Variable> var( new IO::Variable() );
+    std::shared_ptr<IO::Variable> var( new IO::Variable() );
     var->dim = dim;
     var->type = static_cast<IO::VariableType>(type);
     var->name = variable;

@@ -244,24 +244,25 @@ inline void CommunicateMeshHalo(DoubleArray &Mesh, MPI_Comm Communicator,
 {
 	int sendtag, recvtag;
 	sendtag = recvtag = 7;
-	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, Mesh.data);
-	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, Mesh.data);
-	PackMeshData(sendList_y, sendCount_y ,sendbuf_y, Mesh.data);
-	PackMeshData(sendList_Y, sendCount_Y ,sendbuf_Y, Mesh.data);
-	PackMeshData(sendList_z, sendCount_z ,sendbuf_z, Mesh.data);
-	PackMeshData(sendList_Z, sendCount_Z ,sendbuf_Z, Mesh.data);
-	PackMeshData(sendList_xy, sendCount_xy ,sendbuf_xy, Mesh.data);
-	PackMeshData(sendList_Xy, sendCount_Xy ,sendbuf_Xy, Mesh.data);
-	PackMeshData(sendList_xY, sendCount_xY ,sendbuf_xY, Mesh.data);
-	PackMeshData(sendList_XY, sendCount_XY ,sendbuf_XY, Mesh.data);
-	PackMeshData(sendList_xz, sendCount_xz ,sendbuf_xz, Mesh.data);
-	PackMeshData(sendList_Xz, sendCount_Xz ,sendbuf_Xz, Mesh.data);
-	PackMeshData(sendList_xZ, sendCount_xZ ,sendbuf_xZ, Mesh.data);
-	PackMeshData(sendList_XZ, sendCount_XZ ,sendbuf_XZ, Mesh.data);
-	PackMeshData(sendList_yz, sendCount_yz ,sendbuf_yz, Mesh.data);
-	PackMeshData(sendList_Yz, sendCount_Yz ,sendbuf_Yz, Mesh.data);
-	PackMeshData(sendList_yZ, sendCount_yZ ,sendbuf_yZ, Mesh.data);
-	PackMeshData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, Mesh.data);
+    double *MeshData = Mesh.get();
+	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, MeshData);
+	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, MeshData);
+	PackMeshData(sendList_y, sendCount_y ,sendbuf_y, MeshData);
+	PackMeshData(sendList_Y, sendCount_Y ,sendbuf_Y, MeshData);
+	PackMeshData(sendList_z, sendCount_z ,sendbuf_z, MeshData);
+	PackMeshData(sendList_Z, sendCount_Z ,sendbuf_Z, MeshData);
+	PackMeshData(sendList_xy, sendCount_xy ,sendbuf_xy, MeshData);
+	PackMeshData(sendList_Xy, sendCount_Xy ,sendbuf_Xy, MeshData);
+	PackMeshData(sendList_xY, sendCount_xY ,sendbuf_xY, MeshData);
+	PackMeshData(sendList_XY, sendCount_XY ,sendbuf_XY, MeshData);
+	PackMeshData(sendList_xz, sendCount_xz ,sendbuf_xz, MeshData);
+	PackMeshData(sendList_Xz, sendCount_Xz ,sendbuf_Xz, MeshData);
+	PackMeshData(sendList_xZ, sendCount_xZ ,sendbuf_xZ, MeshData);
+	PackMeshData(sendList_XZ, sendCount_XZ ,sendbuf_XZ, MeshData);
+	PackMeshData(sendList_yz, sendCount_yz ,sendbuf_yz, MeshData);
+	PackMeshData(sendList_Yz, sendCount_Yz ,sendbuf_Yz, MeshData);
+	PackMeshData(sendList_yZ, sendCount_yZ ,sendbuf_yZ, MeshData);
+	PackMeshData(sendList_YZ, sendCount_YZ ,sendbuf_YZ, MeshData);
 	//......................................................................................
 	MPI_Sendrecv(sendbuf_x,sendCount_x,MPI_DOUBLE,rank_x,sendtag,
 			recvbuf_X,recvCount_X,MPI_DOUBLE,rank_X,recvtag,Communicator,MPI_STATUS_IGNORE);
@@ -300,24 +301,24 @@ inline void CommunicateMeshHalo(DoubleArray &Mesh, MPI_Comm Communicator,
 	MPI_Sendrecv(sendbuf_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,
 			recvbuf_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,Communicator,MPI_STATUS_IGNORE);
 	//........................................................................................
-	UnpackMeshData(recvList_x, recvCount_x ,recvbuf_x, Mesh.data);
-	UnpackMeshData(recvList_X, recvCount_X ,recvbuf_X, Mesh.data);
-	UnpackMeshData(recvList_y, recvCount_y ,recvbuf_y, Mesh.data);
-	UnpackMeshData(recvList_Y, recvCount_Y ,recvbuf_Y, Mesh.data);
-	UnpackMeshData(recvList_z, recvCount_z ,recvbuf_z, Mesh.data);
-	UnpackMeshData(recvList_Z, recvCount_Z ,recvbuf_Z, Mesh.data);
-	UnpackMeshData(recvList_xy, recvCount_xy ,recvbuf_xy, Mesh.data);
-	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvbuf_Xy, Mesh.data);
-	UnpackMeshData(recvList_xY, recvCount_xY ,recvbuf_xY, Mesh.data);
-	UnpackMeshData(recvList_XY, recvCount_XY ,recvbuf_XY, Mesh.data);
-	UnpackMeshData(recvList_xz, recvCount_xz ,recvbuf_xz, Mesh.data);
-	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvbuf_Xz, Mesh.data);
-	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvbuf_xZ, Mesh.data);
-	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvbuf_XZ, Mesh.data);
-	UnpackMeshData(recvList_yz, recvCount_yz ,recvbuf_yz, Mesh.data);
-	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvbuf_Yz, Mesh.data);
-	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvbuf_yZ, Mesh.data);
-	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvbuf_YZ, Mesh.data);
+	UnpackMeshData(recvList_x, recvCount_x ,recvbuf_x, MeshData);
+	UnpackMeshData(recvList_X, recvCount_X ,recvbuf_X, MeshData);
+	UnpackMeshData(recvList_y, recvCount_y ,recvbuf_y, MeshData);
+	UnpackMeshData(recvList_Y, recvCount_Y ,recvbuf_Y, MeshData);
+	UnpackMeshData(recvList_z, recvCount_z ,recvbuf_z, MeshData);
+	UnpackMeshData(recvList_Z, recvCount_Z ,recvbuf_Z, MeshData);
+	UnpackMeshData(recvList_xy, recvCount_xy ,recvbuf_xy, MeshData);
+	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvbuf_Xy, MeshData);
+	UnpackMeshData(recvList_xY, recvCount_xY ,recvbuf_xY, MeshData);
+	UnpackMeshData(recvList_XY, recvCount_XY ,recvbuf_XY, MeshData);
+	UnpackMeshData(recvList_xz, recvCount_xz ,recvbuf_xz, MeshData);
+	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvbuf_Xz, MeshData);
+	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvbuf_xZ, MeshData);
+	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvbuf_XZ, MeshData);
+	UnpackMeshData(recvList_yz, recvCount_yz ,recvbuf_yz, MeshData);
+	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvbuf_Yz, MeshData);
+	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvbuf_yZ, MeshData);
+	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvbuf_YZ, MeshData);
 }
 
 

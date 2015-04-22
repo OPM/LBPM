@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&D,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
 	//.......................................................................
-	SignedDistance(SignDist.data,nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(SignDist.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
@@ -204,11 +204,11 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (SignDist.data[n] > 0.0){ 
+				if (SignDist(n) > 0.0){ 
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (SignDist.data[n] > 0.0){ 
+				if (SignDist(n) > 0.0){ 
 					sum++;	
 				}
 			}
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.data, N);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.get(), N);
 	//......................................................................
 
 	// ****************************************************

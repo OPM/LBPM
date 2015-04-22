@@ -108,7 +108,7 @@ public:
     //! Constructor for Nt triangles and Np points
     TriMesh( size_t N_tri, size_t N_point );
     //! Constructor for Nt triangles and the given points
-    TriMesh( size_t N_tri, shared_ptr<PointList> points );
+    TriMesh( size_t N_tri, std::shared_ptr<PointList> points );
     //! Constructor from TriList
     TriMesh( const TriList& );
     //! Destructor
@@ -122,7 +122,7 @@ public:
     //! Unpack the data
     virtual void unpack( const std::pair<size_t,void*>& data );
 public:
-    shared_ptr<PointList> vertices;    //!< List of verticies
+    std::shared_ptr<PointList> vertices;    //!< List of verticies
     std::vector<int>    A;                  //!< First vertex
     std::vector<int>    B;                  //!< Second vertex
     std::vector<int>    C;                  //!< Third vertex
@@ -158,18 +158,18 @@ protected:
 */
 struct MeshDataStruct {
     std::string             meshName;
-    shared_ptr<Mesh>   mesh;
-    std::vector<shared_ptr<Variable> >  vars;
+    std::shared_ptr<Mesh>   mesh;
+    std::vector<std::shared_ptr<Variable> >  vars;
 };
 
 
 //! Convert the mesh to a TriMesh (will return NULL if this is invalid)
-shared_ptr<PointList> getPointList( shared_ptr<Mesh> mesh );
-shared_ptr<TriMesh> getTriMesh( shared_ptr<Mesh> mesh );
-shared_ptr<TriList> getTriList( shared_ptr<Mesh> mesh );
-shared_ptr<const PointList> getPointList( shared_ptr<const Mesh> mesh );
-shared_ptr<const TriMesh> getTriMesh( shared_ptr<const Mesh> mesh );
-shared_ptr<const TriList> getTriList( shared_ptr<const Mesh> mesh );
+std::shared_ptr<PointList> getPointList( std::shared_ptr<Mesh> mesh );
+std::shared_ptr<TriMesh> getTriMesh( std::shared_ptr<Mesh> mesh );
+std::shared_ptr<TriList> getTriList( std::shared_ptr<Mesh> mesh );
+std::shared_ptr<const PointList> getPointList( std::shared_ptr<const Mesh> mesh );
+std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh );
+std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh );
 
 
 } // IO namespace

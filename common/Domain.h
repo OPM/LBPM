@@ -31,8 +31,8 @@ struct Domain{
 		nprocx=npx; nprocy=npy; nprocz=npz;
 		N = Nx*Ny*Nz;
 		id = new char [N];
-		BlobLabel.New(Nx,Ny,Nz);
-		BlobGraph.New(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
+		BlobLabel.resize(Nx,Ny,Nz);
+		BlobGraph.resize(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 		BoundaryCondition = BC;
 	}
 	~Domain();
@@ -616,24 +616,25 @@ inline void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 {
 	int sendtag, recvtag;
 	sendtag = recvtag = 7;
-	PackMeshData(sendList_x, sendCount_x ,sendData_x, Mesh.data);
-	PackMeshData(sendList_X, sendCount_X ,sendData_X, Mesh.data);
-	PackMeshData(sendList_y, sendCount_y ,sendData_y, Mesh.data);
-	PackMeshData(sendList_Y, sendCount_Y ,sendData_Y, Mesh.data);
-	PackMeshData(sendList_z, sendCount_z ,sendData_z, Mesh.data);
-	PackMeshData(sendList_Z, sendCount_Z ,sendData_Z, Mesh.data);
-	PackMeshData(sendList_xy, sendCount_xy ,sendData_xy, Mesh.data);
-	PackMeshData(sendList_Xy, sendCount_Xy ,sendData_Xy, Mesh.data);
-	PackMeshData(sendList_xY, sendCount_xY ,sendData_xY, Mesh.data);
-	PackMeshData(sendList_XY, sendCount_XY ,sendData_XY, Mesh.data);
-	PackMeshData(sendList_xz, sendCount_xz ,sendData_xz, Mesh.data);
-	PackMeshData(sendList_Xz, sendCount_Xz ,sendData_Xz, Mesh.data);
-	PackMeshData(sendList_xZ, sendCount_xZ ,sendData_xZ, Mesh.data);
-	PackMeshData(sendList_XZ, sendCount_XZ ,sendData_XZ, Mesh.data);
-	PackMeshData(sendList_yz, sendCount_yz ,sendData_yz, Mesh.data);
-	PackMeshData(sendList_Yz, sendCount_Yz ,sendData_Yz, Mesh.data);
-	PackMeshData(sendList_yZ, sendCount_yZ ,sendData_yZ, Mesh.data);
-	PackMeshData(sendList_YZ, sendCount_YZ ,sendData_YZ, Mesh.data);
+    double *MeshData = Mesh.get();
+	PackMeshData(sendList_x, sendCount_x ,sendData_x, MeshData);
+	PackMeshData(sendList_X, sendCount_X ,sendData_X, MeshData);
+	PackMeshData(sendList_y, sendCount_y ,sendData_y, MeshData);
+	PackMeshData(sendList_Y, sendCount_Y ,sendData_Y, MeshData);
+	PackMeshData(sendList_z, sendCount_z ,sendData_z, MeshData);
+	PackMeshData(sendList_Z, sendCount_Z ,sendData_Z, MeshData);
+	PackMeshData(sendList_xy, sendCount_xy ,sendData_xy, MeshData);
+	PackMeshData(sendList_Xy, sendCount_Xy ,sendData_Xy, MeshData);
+	PackMeshData(sendList_xY, sendCount_xY ,sendData_xY, MeshData);
+	PackMeshData(sendList_XY, sendCount_XY ,sendData_XY, MeshData);
+	PackMeshData(sendList_xz, sendCount_xz ,sendData_xz, MeshData);
+	PackMeshData(sendList_Xz, sendCount_Xz ,sendData_Xz, MeshData);
+	PackMeshData(sendList_xZ, sendCount_xZ ,sendData_xZ, MeshData);
+	PackMeshData(sendList_XZ, sendCount_XZ ,sendData_XZ, MeshData);
+	PackMeshData(sendList_yz, sendCount_yz ,sendData_yz, MeshData);
+	PackMeshData(sendList_Yz, sendCount_Yz ,sendData_Yz, MeshData);
+	PackMeshData(sendList_yZ, sendCount_yZ ,sendData_yZ, MeshData);
+	PackMeshData(sendList_YZ, sendCount_YZ ,sendData_YZ, MeshData);
 	//......................................................................................
 	MPI_Sendrecv(sendData_x,sendCount_x,MPI_DOUBLE,rank_x,sendtag,
 			recvData_X,recvCount_X,MPI_DOUBLE,rank_X,recvtag,Comm,MPI_STATUS_IGNORE);
@@ -672,24 +673,24 @@ inline void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	MPI_Sendrecv(sendData_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,
 			recvData_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,Comm,MPI_STATUS_IGNORE);
 	//........................................................................................
-	UnpackMeshData(recvList_x, recvCount_x ,recvData_x, Mesh.data);
-	UnpackMeshData(recvList_X, recvCount_X ,recvData_X, Mesh.data);
-	UnpackMeshData(recvList_y, recvCount_y ,recvData_y, Mesh.data);
-	UnpackMeshData(recvList_Y, recvCount_Y ,recvData_Y, Mesh.data);
-	UnpackMeshData(recvList_z, recvCount_z ,recvData_z, Mesh.data);
-	UnpackMeshData(recvList_Z, recvCount_Z ,recvData_Z, Mesh.data);
-	UnpackMeshData(recvList_xy, recvCount_xy ,recvData_xy, Mesh.data);
-	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvData_Xy, Mesh.data);
-	UnpackMeshData(recvList_xY, recvCount_xY ,recvData_xY, Mesh.data);
-	UnpackMeshData(recvList_XY, recvCount_XY ,recvData_XY, Mesh.data);
-	UnpackMeshData(recvList_xz, recvCount_xz ,recvData_xz, Mesh.data);
-	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvData_Xz, Mesh.data);
-	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvData_xZ, Mesh.data);
-	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvData_XZ, Mesh.data);
-	UnpackMeshData(recvList_yz, recvCount_yz ,recvData_yz, Mesh.data);
-	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvData_Yz, Mesh.data);
-	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvData_yZ, Mesh.data);
-	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, Mesh.data);
+	UnpackMeshData(recvList_x, recvCount_x ,recvData_x, MeshData);
+	UnpackMeshData(recvList_X, recvCount_X ,recvData_X, MeshData);
+	UnpackMeshData(recvList_y, recvCount_y ,recvData_y, MeshData);
+	UnpackMeshData(recvList_Y, recvCount_Y ,recvData_Y, MeshData);
+	UnpackMeshData(recvList_z, recvCount_z ,recvData_z, MeshData);
+	UnpackMeshData(recvList_Z, recvCount_Z ,recvData_Z, MeshData);
+	UnpackMeshData(recvList_xy, recvCount_xy ,recvData_xy, MeshData);
+	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvData_Xy, MeshData);
+	UnpackMeshData(recvList_xY, recvCount_xY ,recvData_xY, MeshData);
+	UnpackMeshData(recvList_XY, recvCount_XY ,recvData_XY, MeshData);
+	UnpackMeshData(recvList_xz, recvCount_xz ,recvData_xz, MeshData);
+	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvData_Xz, MeshData);
+	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvData_xZ, MeshData);
+	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvData_XZ, MeshData);
+	UnpackMeshData(recvList_yz, recvCount_yz ,recvData_yz, MeshData);
+	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvData_Yz, MeshData);
+	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvData_yZ, MeshData);
+	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
 }
 
 void Domain::BlobComm(MPI_Comm Communicator){
@@ -697,24 +698,25 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	int sendtag, recvtag;
 	sendtag = recvtag = 51;
 	//......................................................................................
-	PackBlobData(sendList_x, sendCount_x ,sendBuf_x, BlobLabel.data);
-	PackBlobData(sendList_X, sendCount_X ,sendBuf_X, BlobLabel.data);
-	PackBlobData(sendList_y, sendCount_y ,sendBuf_y, BlobLabel.data);
-	PackBlobData(sendList_Y, sendCount_Y ,sendBuf_Y, BlobLabel.data);
-	PackBlobData(sendList_z, sendCount_z ,sendBuf_z, BlobLabel.data);
-	PackBlobData(sendList_Z, sendCount_Z ,sendBuf_Z, BlobLabel.data);
-	PackBlobData(sendList_xy, sendCount_xy ,sendBuf_xy, BlobLabel.data);
-	PackBlobData(sendList_Xy, sendCount_Xy ,sendBuf_Xy, BlobLabel.data);
-	PackBlobData(sendList_xY, sendCount_xY ,sendBuf_xY, BlobLabel.data);
-	PackBlobData(sendList_XY, sendCount_XY ,sendBuf_XY, BlobLabel.data);
-	PackBlobData(sendList_xz, sendCount_xz ,sendBuf_xz, BlobLabel.data);
-	PackBlobData(sendList_Xz, sendCount_Xz ,sendBuf_Xz, BlobLabel.data);
-	PackBlobData(sendList_xZ, sendCount_xZ ,sendBuf_xZ, BlobLabel.data);
-	PackBlobData(sendList_XZ, sendCount_XZ ,sendBuf_XZ, BlobLabel.data);
-	PackBlobData(sendList_yz, sendCount_yz ,sendBuf_yz, BlobLabel.data);
-	PackBlobData(sendList_Yz, sendCount_Yz ,sendBuf_Yz, BlobLabel.data);
-	PackBlobData(sendList_yZ, sendCount_yZ ,sendBuf_yZ, BlobLabel.data);
-	PackBlobData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, BlobLabel.data);
+    int *BlobLabelData = BlobLabel.get();
+	PackBlobData(sendList_x, sendCount_x ,sendBuf_x, BlobLabelData);
+	PackBlobData(sendList_X, sendCount_X ,sendBuf_X, BlobLabelData);
+	PackBlobData(sendList_y, sendCount_y ,sendBuf_y, BlobLabelData);
+	PackBlobData(sendList_Y, sendCount_Y ,sendBuf_Y, BlobLabelData);
+	PackBlobData(sendList_z, sendCount_z ,sendBuf_z, BlobLabelData);
+	PackBlobData(sendList_Z, sendCount_Z ,sendBuf_Z, BlobLabelData);
+	PackBlobData(sendList_xy, sendCount_xy ,sendBuf_xy, BlobLabelData);
+	PackBlobData(sendList_Xy, sendCount_Xy ,sendBuf_Xy, BlobLabelData);
+	PackBlobData(sendList_xY, sendCount_xY ,sendBuf_xY, BlobLabelData);
+	PackBlobData(sendList_XY, sendCount_XY ,sendBuf_XY, BlobLabelData);
+	PackBlobData(sendList_xz, sendCount_xz ,sendBuf_xz, BlobLabelData);
+	PackBlobData(sendList_Xz, sendCount_Xz ,sendBuf_Xz, BlobLabelData);
+	PackBlobData(sendList_xZ, sendCount_xZ ,sendBuf_xZ, BlobLabelData);
+	PackBlobData(sendList_XZ, sendCount_XZ ,sendBuf_XZ, BlobLabelData);
+	PackBlobData(sendList_yz, sendCount_yz ,sendBuf_yz, BlobLabelData);
+	PackBlobData(sendList_Yz, sendCount_Yz ,sendBuf_Yz, BlobLabelData);
+	PackBlobData(sendList_yZ, sendCount_yZ ,sendBuf_yZ, BlobLabelData);
+	PackBlobData(sendList_YZ, sendCount_YZ ,sendBuf_YZ, BlobLabelData);
 	//......................................................................................
 	MPI_Sendrecv(sendBuf_x,sendCount_x,MPI_INT,rank_x,sendtag,
 			recvBuf_X,recvCount_X,MPI_INT,rank_X,recvtag,Comm,MPI_STATUS_IGNORE);
@@ -753,24 +755,24 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	MPI_Sendrecv(sendBuf_yZ,sendCount_yZ,MPI_INT,rank_yZ,sendtag,
 			recvBuf_Yz,recvCount_Yz,MPI_INT,rank_Yz,recvtag,Comm,MPI_STATUS_IGNORE);
 	//........................................................................................
-	UnpackBlobData(recvList_x, recvCount_x ,recvBuf_x, BlobLabel.data);
-	UnpackBlobData(recvList_X, recvCount_X ,recvBuf_X, BlobLabel.data);
-	UnpackBlobData(recvList_y, recvCount_y ,recvBuf_y, BlobLabel.data);
-	UnpackBlobData(recvList_Y, recvCount_Y ,recvBuf_Y, BlobLabel.data);
-	UnpackBlobData(recvList_z, recvCount_z ,recvBuf_z, BlobLabel.data);
-	UnpackBlobData(recvList_Z, recvCount_Z ,recvBuf_Z, BlobLabel.data);
-	UnpackBlobData(recvList_xy, recvCount_xy ,recvBuf_xy, BlobLabel.data);
-	UnpackBlobData(recvList_Xy, recvCount_Xy ,recvBuf_Xy, BlobLabel.data);
-	UnpackBlobData(recvList_xY, recvCount_xY ,recvBuf_xY, BlobLabel.data);
-	UnpackBlobData(recvList_XY, recvCount_XY ,recvBuf_XY, BlobLabel.data);
-	UnpackBlobData(recvList_xz, recvCount_xz ,recvBuf_xz, BlobLabel.data);
-	UnpackBlobData(recvList_Xz, recvCount_Xz ,recvBuf_Xz, BlobLabel.data);
-	UnpackBlobData(recvList_xZ, recvCount_xZ ,recvBuf_xZ, BlobLabel.data);
-	UnpackBlobData(recvList_XZ, recvCount_XZ ,recvBuf_XZ, BlobLabel.data);
-	UnpackBlobData(recvList_yz, recvCount_yz ,recvBuf_yz, BlobLabel.data);
-	UnpackBlobData(recvList_Yz, recvCount_Yz ,recvBuf_Yz, BlobLabel.data);
-	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, BlobLabel.data);
-	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, BlobLabel.data);
+	UnpackBlobData(recvList_x, recvCount_x ,recvBuf_x, BlobLabelData);
+	UnpackBlobData(recvList_X, recvCount_X ,recvBuf_X, BlobLabelData);
+	UnpackBlobData(recvList_y, recvCount_y ,recvBuf_y, BlobLabelData);
+	UnpackBlobData(recvList_Y, recvCount_Y ,recvBuf_Y, BlobLabelData);
+	UnpackBlobData(recvList_z, recvCount_z ,recvBuf_z, BlobLabelData);
+	UnpackBlobData(recvList_Z, recvCount_Z ,recvBuf_Z, BlobLabelData);
+	UnpackBlobData(recvList_xy, recvCount_xy ,recvBuf_xy, BlobLabelData);
+	UnpackBlobData(recvList_Xy, recvCount_Xy ,recvBuf_Xy, BlobLabelData);
+	UnpackBlobData(recvList_xY, recvCount_xY ,recvBuf_xY, BlobLabelData);
+	UnpackBlobData(recvList_XY, recvCount_XY ,recvBuf_XY, BlobLabelData);
+	UnpackBlobData(recvList_xz, recvCount_xz ,recvBuf_xz, BlobLabelData);
+	UnpackBlobData(recvList_Xz, recvCount_Xz ,recvBuf_Xz, BlobLabelData);
+	UnpackBlobData(recvList_xZ, recvCount_xZ ,recvBuf_xZ, BlobLabelData);
+	UnpackBlobData(recvList_XZ, recvCount_XZ ,recvBuf_XZ, BlobLabelData);
+	UnpackBlobData(recvList_yz, recvCount_yz ,recvBuf_yz, BlobLabelData);
+	UnpackBlobData(recvList_Yz, recvCount_Yz ,recvBuf_Yz, BlobLabelData);
+	UnpackBlobData(recvList_yZ, recvCount_yZ ,recvBuf_yZ, BlobLabelData);
+	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, BlobLabelData);
 	//......................................................................................
 }
 

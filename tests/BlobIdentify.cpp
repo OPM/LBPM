@@ -343,9 +343,9 @@ int main(int argc, char **argv)
 				// Otherwise, this point has already been assigned - ignore
 
 				// Make sure list blob_nodes is large enough
-				if ( nblobs > b.Length-1){
+				if ( nblobs > (int)b.length()-1){
 					printf("Increasing size of blob list \n");
-					b = IncreaseSize(b,b.Length);
+					b.resize(2*b.length());
 				}
 			}
 		}
@@ -433,7 +433,7 @@ int main(int argc, char **argv)
 
       	FILE *BLOBS;
 	BLOBS = fopen("Blobs.dat","wb");
-	fwrite(GlobalBlobID.data,4,Nx*Ny*Nz,BLOBS);
+	fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
 	fclose(BLOBS);
 	
 }

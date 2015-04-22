@@ -201,37 +201,37 @@ public:
 		Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
 		ncubes=(Nx-2)*(Ny-2)*(Nz-2);
-		cubeList.New(3,ncubes);
+		cubeList.resize(3,ncubes);
 
 		// Global arrays
-		BlobLabel.New(Nx,Ny,Nz);
-		SDn.New(Nx,Ny,Nz);
-		SDs.New(Nx,Ny,Nz);
-		Phase.New(Nx,Ny,Nz);
-		Press.New(Nx,Ny,Nz);
-		dPdt.New(Nx,Ny,Nz);
-		MeanCurvature.New(Nx,Ny,Nz);
-		GaussCurvature.New(Nx,Ny,Nz);
-		SDs_x.New(Nx,Ny,Nz);		// Gradient of the signed distance
-		SDs_y.New(Nx,Ny,Nz);
-		SDs_z.New(Nx,Ny,Nz);
-		SDn_x.New(Nx,Ny,Nz);		// Gradient of the signed distance
-		SDn_y.New(Nx,Ny,Nz);
-		SDn_z.New(Nx,Ny,Nz);
-		DelPhi.New(Nx,Ny,Nz);
-		Phase_tplus.New(Nx,Ny,Nz);
-		Phase_tminus.New(Nx,Ny,Nz);
-		Vel_x.New(Nx,Ny,Nz);		// Gradient of the phase indicator field
-		Vel_y.New(Nx,Ny,Nz);
-		Vel_z.New(Nx,Ny,Nz);
+		BlobLabel.resize(Nx,Ny,Nz);
+		SDn.resize(Nx,Ny,Nz);
+		SDs.resize(Nx,Ny,Nz);
+		Phase.resize(Nx,Ny,Nz);
+		Press.resize(Nx,Ny,Nz);
+		dPdt.resize(Nx,Ny,Nz);
+		MeanCurvature.resize(Nx,Ny,Nz);
+		GaussCurvature.resize(Nx,Ny,Nz);
+		SDs_x.resize(Nx,Ny,Nz);		// Gradient of the signed distance
+		SDs_y.resize(Nx,Ny,Nz);
+		SDs_z.resize(Nx,Ny,Nz);
+		SDn_x.resize(Nx,Ny,Nz);		// Gradient of the signed distance
+		SDn_y.resize(Nx,Ny,Nz);
+		SDn_z.resize(Nx,Ny,Nz);
+		DelPhi.resize(Nx,Ny,Nz);
+		Phase_tplus.resize(Nx,Ny,Nz);
+		Phase_tminus.resize(Nx,Ny,Nz);
+		Vel_x.resize(Nx,Ny,Nz);		// Gradient of the phase indicator field
+		Vel_y.resize(Nx,Ny,Nz);
+		Vel_z.resize(Nx,Ny,Nz);
 		//.........................................
 		// Allocate cube storage space
-		CubeValues.New(2,2,2);
-		nw_tris.New(3,20);
-		ns_tris.New(3,20);
-		ws_tris.New(3,20);
-		nws_seg.New(2,20);
-		local_sol_tris.New(3,18);
+		CubeValues.resize(2,2,2);
+		nw_tris.resize(3,20);
+		ns_tris.resize(3,20);
+		ws_tris.resize(3,20);
+		nws_seg.resize(2,20);
+		local_sol_tris.resize(3,18);
 		nw_pts=DTMutableList<Point>(20);
 		ns_pts=DTMutableList<Point>(20);
 		ws_pts=DTMutableList<Point>(20);
@@ -240,27 +240,27 @@ public:
 		local_sol_pts=DTMutableList<Point>(20);
 		tmp=DTMutableList<Point>(20);
 		//.........................................
-		Values.New(20);
-		DistanceValues.New(20);
-		KGwns_values.New(20);
-		KNwns_values.New(20);
-		InterfaceSpeed.New(20);
-		NormalVector.New(60);
+		Values.resize(20);
+		DistanceValues.resize(20);
+		KGwns_values.resize(20);
+		KNwns_values.resize(20);
+		InterfaceSpeed.resize(20);
+		NormalVector.resize(60);
 		//.........................................
-		van.New(3);
-		vaw.New(3);
-		vawn.New(3);
-		vawns.New(3);
-		Gwn.New(6);
-		Gns.New(6);
-		Gws.New(6);
-		van_global.New(3);
-		vaw_global.New(3);
-		vawn_global.New(3);
-		vawns_global.New(3);
-		Gwn_global.New(6);
-		Gns_global.New(6);
-		Gws_global.New(6);
+		van.resize(3);
+		vaw.resize(3);
+		vawn.resize(3);
+		vawns.resize(3);
+		Gwn.resize(6);
+		Gns.resize(6);
+		Gws.resize(6);
+		van_global.resize(3);
+		vaw_global.resize(3);
+		vawn_global.resize(3);
+		vawns_global.resize(3);
+		Gwn_global.resize(6);
+		Gns_global.resize(6);
+		Gws_global.resize(6);
 		//.........................................
 		if (Dm.rank==0){
 			TIMELOG = fopen("timelog.tcat","a+");
@@ -453,27 +453,27 @@ void TwoPhase::ComputeLocal(){
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					nwp_volume += 0.125;
 					// volume the excludes the interfacial region
-					if (DelPhi.data[n] < 1e-4){
+					if (DelPhi(n) < 1e-4){
 						vol_n += 0.125;
 						// pressure
-						pan += 0.125*Press.data[n];
+						pan += 0.125*Press(n);
 						// velocity
-						van(0) += 0.125*Vel_x.data[n];
-						van(1) += 0.125*Vel_y.data[n];
-						van(2) += 0.125*Vel_z.data[n];
+						van(0) += 0.125*Vel_x(n);
+						van(1) += 0.125*Vel_y(n);
+						van(2) += 0.125*Vel_z(n);
 					}
 				}
 				else{
 					wp_volume += 0.125;
-					if (DelPhi.data[n] < 1e-4){
+					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
-						paw += 0.125*Press.data[n];
+						paw += 0.125*Press(n);
 						// velocity
-						vaw(0) += 0.125*Vel_x.data[n];
-						vaw(1) += 0.125*Vel_y.data[n];
-						vaw(2) += 0.125*Vel_z.data[n];
+						vaw(0) += 0.125*Vel_x(n);
+						vaw(1) += 0.125*Vel_y(n);
+						vaw(2) += 0.125*Vel_z(n);
 					}
 				}
 			}
@@ -533,14 +533,14 @@ void TwoPhase::ComputeLocalBlob(){
 	label=0; 
 	nblobs_global = 0;
 	for (n=0; n<Nx*Ny*Nz; n++){
-	  if (label < BlobLabel.data[n]) label = BlobLabel.data[n];
+	  if (label < BlobLabel(n)) label = BlobLabel(n);
 	}
 	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 	//BlobAverages.Set(nblobs_global);
-	BlobAverages.New(BLOB_AVG_COUNT,nblobs_global);
+	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
+    BlobAverages.fill(0.0);
 	// Perform averaging
-	for (int idx=0; idx<BlobAverages.m*BlobAverages.n; idx++) BlobAverages.data[idx] = 0.0;
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
@@ -563,29 +563,29 @@ void TwoPhase::ComputeLocalBlob(){
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					BlobAverages(1,label) += 0.125;
 					// volume the excludes the interfacial region
-					if (DelPhi.data[n] < 1e-4){
+					if (DelPhi(n) < 1e-4){
 					  BlobAverages(0,label) += 0.125;
 						// pressure
-					  BlobAverages(2,label ) += 0.125*Press.data[n];
+					  BlobAverages(2,label ) += 0.125*Press(n);
 						// velocity
-						BlobAverages(9,label) += 0.125*Vel_x.data[n];
-						BlobAverages(10,label) += 0.125*Vel_y.data[n];
-						BlobAverages(11,label) += 0.125*Vel_z.data[n];
+						BlobAverages(9,label) += 0.125*Vel_x(n);
+						BlobAverages(10,label) += 0.125*Vel_y(n);
+						BlobAverages(11,label) += 0.125*Vel_z(n);
 					}
 				}
 
 				else{
 					wp_volume += 0.125;
-					if (DelPhi.data[n] < 1e-4){
+					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
-						if (isnan(Press.data[n])) printf("Pressure is nan!\n");
-						else paw += 0.125*Press.data[n];
+						if (isnan(Press(n))) printf("Pressure is nan!\n");
+						else paw += 0.125*Press(n);
 						// velocity
-						vaw(0) += 0.125*Vel_x.data[n];
-						vaw(1) += 0.125*Vel_y.data[n];
-						vaw(2) += 0.125*Vel_z.data[n];
+						vaw(0) += 0.125*Vel_x(n);
+						vaw(1) += 0.125*Vel_y(n);
+						vaw(2) += 0.125*Vel_z(n);
 					}
 				}
 			}
