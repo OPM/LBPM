@@ -16,15 +16,14 @@ int main (int argc, char *argv[])
 	printf("Unit test for analysis framework \n");
 
 	//  printf("Radius = %s \n,"RADIUS);  
-	int SIZE = N*N*N;
 	int Nx,Ny,Nz;
 	Nx = Ny = Nz = N;
-	int i,j,k,p,q,r;
+	int i,j,k,p;
 	
 //	double *Solid; // cylinder
 //	double *Phase; // region of the cylinder	
-//	Solid = new double [SIZE];
-//	Phase = new double [SIZE];
+//	Solid = new double [N*N*N];
+//	Phase = new double [N*N*N];
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Phase(Nx,Ny,Nz);
 	DoubleArray Fx(Nx,Ny,Nz);
@@ -74,10 +73,9 @@ int main (int argc, char *argv[])
 	DoubleArray wn_curvature(20);
 	//	IntArray store;
 	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
-	double s,s1,s2,s3;		// Triangle sides (lengths)
 	Point A,B,C,P;
 	//	double area;
 	
@@ -155,7 +153,7 @@ int main (int argc, char *argv[])
 		n_local_sol_pts = 0;
 		n_local_nws_pts = 0;
 		
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 
 		// Construct the interfaces and common curve

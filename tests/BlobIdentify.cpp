@@ -193,22 +193,7 @@ int main(int argc, char **argv)
     DoubleArray Phase(Nx,Ny,Nz);
     DoubleArray SignDist(Nx,Ny,Nz);
     Phase.fill(0);
-    SignDist.fill(0);
-    
-    // Filenames used
-    char LocalRankString[8];
-    char LocalRankFilename[40];
-    char LocalRestartFile[40];
-    char BaseFilename[20];
-    char tmpstr[10];
-    
-    for (int k=0; k<Nz; k++){
-        for (int j=0; j<Ny; j++){
-            for (int i=0; i<Nx; i++){
-                SignDist(i,j,k) = -100.0;
-            }
-        }
-    }
+    SignDist.fill(-100.0);
     
     // read the files and populate main arrays
     for (int kproc=0; kproc<nprocz; kproc++){
@@ -295,9 +280,8 @@ int main(int argc, char **argv)
             for (int iproc=0; iproc<nprocx; iproc++){
 
                 int proc = kproc*nprocx*nprocy + jproc*nprocx + iproc;
-
-                sprintf(LocalRankString,"%05d",proc);
-                sprintf(LocalRankFilename,"%s%s","BlobLabel.",LocalRankString);
+                char LocalRankFilename[40];
+                sprintf(LocalRankFilename,"BlobLabel.%05i",proc);
 
                 for (int k=0; k<nz; k++){
                     for (int j=0; j<ny; j++){

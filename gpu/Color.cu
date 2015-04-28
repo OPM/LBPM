@@ -5,7 +5,8 @@
 
 __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
-	int i,j,k,n,N;
+	//int i,j,k;
+	int n,N;
 
 	N = Nx*Ny*Nz;
 
@@ -16,9 +17,9 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 		if (n<N){
 			
 		//.......Back out the 3-D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
+		//k = n/(Nx*Ny);
+		//j = (n-Nx*Ny*k)/Nx;
+		//i = n-Nx*Ny*k-Nx*j;
 
 		if ( ID[n] == 1){
 			Den[n] = 1.0;

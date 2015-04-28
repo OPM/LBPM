@@ -17,7 +17,6 @@
 #include "IO/Writer.h"
 #include "ProfilerApp.h"
 
-#define CBUB
 #define USE_NEW_WRITER
 
 using namespace std;
@@ -142,7 +141,7 @@ int main(int argc, char **argv)
 	double din,dout;
 	double wp_saturation;
 	bool pBC,Restart;
-	int i,j,k,p,n;
+	int i,j,k,n;
 
 	// pmmc threshold values
 	double fluid_isovalue,solid_isovalue;
@@ -322,7 +321,6 @@ int main(int argc, char **argv)
 	char *id;
 	id = new char[N];
 	int sum = 0;
-	double sum_local;
 	double iVol_global = 1.0/(1.0*Nx*Ny*Nz*nprocs);
 	double porosity = 0;
 
@@ -999,8 +997,7 @@ int main(int argc, char **argv)
 	cDistOdd = new double[9*N];
 
 	// data needed to perform CPU-based averaging
-	double *Vel;
-	Vel = new double[3*N];		// fluid velocity
+	//double *Vel = new double[3*N];		// fluid velocity
 
 	DoubleArray MeanCurvature(Nx,Ny,Nz);
 	DoubleArray GaussCurvature(Nx,Ny,Nz);
@@ -1119,6 +1116,8 @@ int main(int argc, char **argv)
 	packThreads=512;
 	edgeGrid=1;
 	faceGrid=Nx*Ny/packThreads;
+    NULL_USE(faceGrid);
+    NULL_USE(edgeGrid);
 	//...........................................................................	
 
 	
@@ -2189,6 +2188,7 @@ int main(int argc, char **argv)
 
         PROFILE_STOP(bubbleCountName);
 	}
+    NULL_USE(sat_w);
 
 	//************************************************************************/
 	DeviceBarrier();
@@ -2229,10 +2229,10 @@ int main(int argc, char **argv)
 	fclose(PHASE);
 */	//************************************************************************/
     PROFILE_SAVE("TestBubble");
-	return 0;
 	
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
 	// ****************************************************
+	return 0;
 }

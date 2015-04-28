@@ -230,9 +230,7 @@ int main(int argc, char **argv)
 	// Filenames used
 	char LocalRankString[8];
 	char LocalRankFilename[40];
-	char LocalRestartFile[40];
 	char BaseFilename[20];
-	char tmpstr[10];
 	sprintf(BaseFilename,"%s","dPdt.");
 	                 
 	int proc,iglobal,kglobal,jglobal;
@@ -484,13 +482,13 @@ int main(int argc, char **argv)
 	double efawns,Jwn,Kwn;
 	double trawn,trJwn,trRwn;
 	double As,dummy;
-	double dEs,dAwn,dAns;	// Global surface energy (calculated by rank=0)
+	//  double dEs,dAwn,dAns;	// Global surface energy (calculated by rank=0)
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
-	double s,s1,s2,s3;		// Triangle sides (lengths)
+	//double s,s1,s2,s3;		// Triangle sides (lengths)
 	Point A,B,C,P;
 	//	double area;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
@@ -656,8 +654,6 @@ int main(int argc, char **argv)
 	int n_nw_tris_beg, n_ns_tris_beg, n_ws_tris_beg, n_nws_seg_beg;
 	int start=0,finish;
 	int a,c;
-	int newton_steps = 0;
-	double blob_volume;
 	
 	printf("-----------------------------------------------\n");
 	printf("Computing TCAT averages based on connectivity \n");
@@ -694,7 +690,6 @@ int main(int argc, char **argv)
 		n_ws_tris_beg = n_ws_tris;
 		n_nws_seg_beg = n_nws_seg;
 		// Loop over all cubes
-		blob_volume = 0;	// Initialize the volume for blob a to zero
 		nwp_volume = 0.0;
 		
 		// Compute phase averages
@@ -796,7 +791,7 @@ int main(int argc, char **argv)
 	
 			//*******************************************************************
 			// Reset the triangle counts to zero
-			n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+			n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 			n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 			
 			n_nw_tris_beg = n_nw_tris;
@@ -864,6 +859,10 @@ int main(int argc, char **argv)
 		}
 		
 	}  // End of the blob loop
+	NULL_USE(n_nw_tris_beg);
+    NULL_USE(n_ns_tris_beg);
+    NULL_USE(n_ws_tris_beg);
+    NULL_USE(n_nws_seg_beg);
 		
 	nblobs -= 1;
 	printf("-----------------------------------------------\n");

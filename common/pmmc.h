@@ -3792,7 +3792,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	double length;
 	double fxx,fyy,fzz,fxy,fxz,fyz,fx,fy,fz;
 	double sxx,syy,szz,sxy,sxz,syz,sx,sy,sz;
-	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
+//	double Axx,Axy,Axz,Ayx,Ayy,Ayz,Azx,Azy,Azz;
 //	double Tx[8],Ty[8],Tz[8];	// Tangent vector
 //	double Nx[8],Ny[8],Nz[8];	// Principle normal
 	double twnsx,twnsy,twnsz,nwnsx,nwnsy,nwnsz,K; // tangent,normal and curvature
@@ -3970,8 +3970,6 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	NULL_USE(sxx); NULL_USE(syy); NULL_USE(szz);
     NULL_USE(sxy); NULL_USE(sxz); NULL_USE(syz);
     NULL_USE(sx);  NULL_USE(sy);  NULL_USE(sz);
-	NULL_USE(Axx); NULL_USE(Ayy); NULL_USE(Azz);
-    NULL_USE(Axy); NULL_USE(Axz); NULL_USE(Ayz);
 }
 
 
@@ -3982,12 +3980,8 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 									  int i, int j, int k, int npts, int ntris)
 {
 	Point A,B,C,P;
-	int p;
-	double vA,vB,vC;
-	double vAx,vBx,vCx,vAy,vBy,vCy,vAz,vBz,vCz;
 	double x,y,z;
 	double s,s1,s2,s3,temp;
-	double px,py,pz;
 	double norm, zeta;
 
 	TriLinPoly Px,Py,Pz,Pt;

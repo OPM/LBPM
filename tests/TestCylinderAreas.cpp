@@ -13,15 +13,14 @@ int main (int argc, char *argv[])
 {
 	
 	//  printf("Radius = %s \n,"RADIUS);  
-	int SIZE = N*N*N;
 	int Nx,Ny,Nz;
 	Nx = Ny = Nz = N;
-	int i,j,k,p,q,r;
+	int i,j,k,p,r;
 	
 //	double *Solid; // cylinder
 //	double *Phase; // region of the cylinder	
-//	Solid = new double [SIZE];
-//	Phase = new double [SIZE];
+//	Solid = new double [N*N*N];
+//	Phase = new double [N*N*N];
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Phase(Nx,Ny,Nz);
 	double fluid_isovalue = 0.0;
@@ -36,9 +35,6 @@ int main (int argc, char *argv[])
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
-	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
-	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
-	double As_global;
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	//	int count_in=0,count_out=0;
@@ -58,7 +54,7 @@ int main (int argc, char *argv[])
 	DTMutableList<Point> tmp(20);
 	//	IntArray store;
 	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 	
 	double s,s1,s2,s3;		// Triangle sides (lengths)
@@ -135,7 +131,7 @@ int main (int argc, char *argv[])
 		n_local_sol_pts = 0;
 		n_local_nws_pts = 0;
 		
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 
 		// Construct the interfaces and common curve
@@ -246,7 +242,7 @@ int main (int argc, char *argv[])
 		}
 		//*******************************************************************
 		// Reset the triangle counts to zero
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 		//	n_ns_tris_beg = 0;//n_ns_tris;
 		//	n_ws_tris_beg = 0;//n_ws_tris;

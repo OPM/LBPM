@@ -197,7 +197,6 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
         }
     }
     // Go over all cubes again -> add any that do not contain nw phase
-    bool add=1;            // Set to false if any corners contain nw-phase ( F > vF)
     size_t count_in=0,count_out=0;
     size_t nodx,nody,nodz;
     for (size_t k=0; k<Nz-1; k++ ) {

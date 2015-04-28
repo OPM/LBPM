@@ -13,14 +13,13 @@ using namespace std;
 int main(int argc, char **argv)
 {
 	int i,j,k;
-	int Nx,Ny,Nz,N;
+	int Nx,Ny,Nz;
 	double Lx,Ly,Lz;
 	double fluid_isovalue=0.0;
 	double solid_isovalue=0.0;
 
 	Lx = Ly = Lz = 1.0;
 	Nx = Ny = Nz = 102;
-	N = Nx*Ny*Nz;
 
 	//...........................................................................
 	// Set up the cube list
@@ -48,7 +47,7 @@ int main(int argc, char **argv)
 
 	DoubleArray wn_curvature(20);
 
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 
 	// Initialize arrays for local solid surface
@@ -110,7 +109,7 @@ int main(int argc, char **argv)
 		n_local_sol_pts = 0;
 		n_local_nws_pts = 0;
 
-		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
+		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
 
 		// Construct the interfaces and common curve

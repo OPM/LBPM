@@ -429,7 +429,6 @@ void TwoPhase::UpdateMeshValues(){
 }
 void TwoPhase::ComputeLocal(){
 	int i,j,k,n;
-	double delphi;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	for (int c=0;c<ncubes;c++){
@@ -525,9 +524,8 @@ void TwoPhase::ComputeLocal(){
 }
 
 void TwoPhase::ComputeLocalBlob(){
-        int i,j,k,n,label;
+    int i,j,k,n,label;
 	
-	double delphi;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
         // get the maximum label locally -- then compute number of global blobs
 	label=0; 
