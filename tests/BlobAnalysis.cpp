@@ -5,7 +5,8 @@
 
 #include <iostream>
 #include <math.h>
-#include "pmmc.h"
+#include "common/pmmc.h"
+#include "analysis/analysis.h"
 //#include "Domain.h"
 
 #define NUM_AVERAGES 30

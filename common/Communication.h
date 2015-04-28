@@ -14,6 +14,76 @@
 using namespace std;
 
 
+/*!
+ * @brief  Rank info structure
+ * @details  Structure used to hold the ranks for the current process and it's neighbors
+ */
+struct RankInfoStruct {
+    int nx;                 //!<  The number of processors in the x direction
+    int ny;                 //!<  The number of processors in the y direction
+    int nz;                 //!<  The number of processors in the z direction
+    int ix;                 //!<  The index of the current process in the x direction
+    int jy;                 //!<  The index of the current process in the y direction
+    int kz;                 //!<  The index of the current process in the z direction
+    int rank[3][3][3];      //!<  The rank for the neighbor [i][j][k]
+    RankInfoStruct();
+    RankInfoStruct( int rank, int nprocx, int nprocy, int nprocz );
+};
+
+
+/*!
+ * @brief  Communicate halo
+ * @details  Fill the halo cells in an array from the neighboring processes
+ */
+template<class TYPE>
+class fillHalo
+{
+public:
+    /*!
+     * @brief  Default constructor
+     * @param[in] info          Rank and neighbor rank info
+     * @param[in] nx            Number of local cells in the x direction
+     * @param[in] ny            Number of local cells in the y direction
+     * @param[in] nz            Number of local cells in the z direction
+     * @param[in] ngx           Number of ghost cells in the x direction
+     * @param[in] ngy           Number of ghost cells in the y direction
+     * @param[in] ngz           Number of ghost cells in the z direction
+     * @param[in] tag           Initial tag to use for the communication (we will require tag:tag+26)
+     * @param[in] depth         Maximum depth to support
+     */
+    fillHalo( const RankInfoStruct& info, int nx, int ny, int nz, 
+        int ngx, int ngy, int ngz, int tag, int depth,
+        bool fill_face=true, bool fill_edge=true, bool fill_corner=true );
+
+    //!  Destructor
+    ~fillHalo( );
+
+    /*!
+     * @brief  Communicate the halos
+
+     * @param[in] array         The array on which we fill the halos
+     */
+    void fill( Array<TYPE>& array );
+
+private:
+    RankInfoStruct info;
+    int nx, ny, nz, ngx, ngy, ngz, depth;
+    bool fill_pattern[3][3][3];
+    int tag[3][3][3];
+    int N_send_recv[3][3][3];
+    TYPE *mem;
+    TYPE *send[3][3][3], *recv[3][3][3];
+    MPI_Request send_req[3][3][3], recv_req[3][3][3];
+    MPI_Comm comm;
+    MPI_Datatype datatype;
+    fillHalo();                             // Private empty constructor
+    fillHalo(const fillHalo&);              // Private copy constructor
+    fillHalo& operator=(const fillHalo&);   // Private assignment operator
+    void pack( const Array<TYPE>& array, int i, int j, int k, TYPE *buffer );
+    void unpack( Array<TYPE>& array, int i, int j, int k, const TYPE *buffer );
+};
+
+
 //***************************************************************************************
 inline void PackMeshData(int *list, int count, double *sendbuf, double *data){
 	// Fill in the phase ID values from neighboring processors
@@ -35,50 +105,15 @@ inline void UnpackMeshData(int *list, int count, double *recvbuf, double *data){
 	}
 }
 
-//***************************************************************************************
-inline int getRankForBlock( int nprocx, int nprocy, int nprocz, int i, int j, int k )
-{
-	int i2 = (i+nprocx)%nprocx;
-	int j2 = (j+nprocy)%nprocy;
-	int k2 = (k+nprocz)%nprocz;
-	return i2 + j2*nprocx + k2*nprocx*nprocy;
-}
-inline void InitializeRanks( const int rank, const int nprocx, const int nprocy, const int nprocz,
+
+// Initialize the ranks (this is deprecated, see RankInfoStruct)
+void InitializeRanks( const int rank, const int nprocx, const int nprocy, const int nprocz,
 	int& iproc, int& jproc, int& kproc, 
 	int& rank_x, int& rank_y, int& rank_z, 
 	int& rank_X, int& rank_Y, int& rank_Z,
 	int& rank_xy, int& rank_XY, int& rank_xY, int& rank_Xy,
 	int& rank_xz, int& rank_XZ, int& rank_xZ, int& rank_Xz,
-	int& rank_yz, int& rank_YZ, int& rank_yZ, int& rank_Yz )
-{
-	// map the rank to the block index
-	iproc = rank%nprocx;
-	jproc = (rank/nprocx)%nprocy;
-	kproc = rank/(nprocx*nprocy);
-
-	// set up the neighbor ranks
-    int i = iproc;
-    int j = jproc;
-    int k = kproc;
-	rank_X = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k);
-	rank_x = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k);
-	rank_Y = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k);
-	rank_y = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k);
-	rank_Z = getRankForBlock(nprocx,nprocy,nprocz,i,j,k+1);
-	rank_z = getRankForBlock(nprocx,nprocy,nprocz,i,j,k-1);
-	rank_XY = getRankForBlock(nprocx,nprocy,nprocz,i+1,j+1,k);
-	rank_xy = getRankForBlock(nprocx,nprocy,nprocz,i-1,j-1,k);
-	rank_Xy = getRankForBlock(nprocx,nprocy,nprocz,i+1,j-1,k);
-	rank_xY = getRankForBlock(nprocx,nprocy,nprocz,i-1,j+1,k);
-	rank_XZ = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k+1);
-	rank_xz = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k-1);
-	rank_Xz = getRankForBlock(nprocx,nprocy,nprocz,i+1,j,k-1);
-	rank_xZ = getRankForBlock(nprocx,nprocy,nprocz,i-1,j,k+1);
-	rank_YZ = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k+1);
-	rank_yz = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k-1);
-	rank_Yz = getRankForBlock(nprocx,nprocy,nprocz,i,j+1,k-1);
-	rank_yZ = getRankForBlock(nprocx,nprocy,nprocz,i,j-1,k+1);
-}
+	int& rank_yz, int& rank_YZ, int& rank_yZ, int& rank_Yz );
 
 
 //***************************************************************************************
@@ -323,4 +358,7 @@ inline void CommunicateMeshHalo(DoubleArray &Mesh, MPI_Comm Communicator,
 
 
 #endif
+
+#include "common/Communication.hpp"
+
 

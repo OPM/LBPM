@@ -5,8 +5,9 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "Communication.h"
+#include "common/Communication.h"
 #include "common/MPI_Helpers.h"
+#include "common/Array.h"
 
 using namespace std;
 
@@ -182,11 +183,84 @@ int test_communication( MPI_Comm comm, int nprocx, int nprocy, int nprocz )
 }
 
 
+template<class TYPE>
+int testHalo( MPI_Comm comm, int nprocx, int nprocy, int nprocz, int depth )
+{
+    int rank,nprocs;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
+    if ( rank==0 )
+        printf("\nRunning Halo test %i %i %i %i\n",nprocx,nprocy,nprocz,depth);
+
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+
+    int nx = 10;
+    int ny = 11;
+    int nz = 7;
+    std::vector<size_t> size(4);
+    size[0] = nx+2;
+    size[1] = ny+2;
+    size[2] = nz+2;
+    size[3] = depth;
+    Array<TYPE> array(size);
+    array.fill(-1);
+    
+    // Fill the local array
+    int Nx = nx*nprocx;
+    int Ny = ny*nprocy;
+    int Nz = nz*nprocz;
+    for (int i=0; i<nx; i++) {
+        for (int j=0; j<ny; j++) {
+            for (int k=0; k<nz; k++) {
+                for (int d=0; d<depth; d++) {
+                    int iglobal = i + rank_info.ix*nx;
+                    int jglobal = j + rank_info.jy*ny;
+                    int kglobal = k + rank_info.kz*nz;
+                    int ijk = iglobal + jglobal*Nx + kglobal*Nx*Ny + d*Nx*Ny*Nz;
+                    array(i+1,j+1,k+1,d) = ijk;
+                }
+            }
+        }
+    }
+
+    // Communicate the halo
+    fillHalo<TYPE> fillData(rank_info,nx,ny,nz,1,1,1,0,depth);
+    fillData.fill(array);
+
+    // Check the results
+    bool pass = true;
+    for (int i=-1; i<nx+1; i++) {
+        for (int j=-1; j<ny+1; j++) {
+            for (int k=-1; k<nz+1; k++) {
+                for (int d=0; d<depth; d++) {
+                    int iglobal = i + rank_info.ix*nx;
+                    int jglobal = j + rank_info.jy*ny;
+                    int kglobal = k + rank_info.kz*nz;
+                    iglobal = (iglobal+Nx)%Nx;
+                    jglobal = (jglobal+Ny)%Ny;
+                    kglobal = (kglobal+Nz)%Nz;
+                    int ijk = iglobal + jglobal*Nx + kglobal*Nx*Ny + d*Nx*Ny*Nz;
+                    if ( array(i+1,j+1,k+1,d) != ijk )
+                        pass = false;
+                }
+            }
+        }
+    }
+    int N_errors = 0;
+    if ( !pass ) {
+        std::cout << "Failed halo test\n";
+        N_errors++;
+    }
+    return N_errors;
+}
+
+
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    int nprocs;
+    int rank,nprocs;
     MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
 
     // Run the test with different domains
@@ -200,11 +274,33 @@ int main(int argc, char **argv)
         N_errors += test_communication( MPI_COMM_WORLD, 1, 2, 2 );
     }
 
+    // Run the halo tests with different domains
+    N_errors += testHalo<int>( MPI_COMM_WORLD, nprocs, 1, 1, 1 );
+    N_errors += testHalo<int>( MPI_COMM_WORLD, 1, nprocs, 1, 1 );
+    N_errors += testHalo<int>( MPI_COMM_WORLD, 1, 1, nprocs, 1 );
+    N_errors += testHalo<double>( MPI_COMM_WORLD, nprocs, 1, 1, 3 );
+    N_errors += testHalo<double>( MPI_COMM_WORLD, 1, nprocs, 1, 3 );
+    N_errors += testHalo<double>( MPI_COMM_WORLD, 1, 1, nprocs, 3 );
+    if ( nprocs==4 ) {
+        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 2, 1, 1 );
+        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 1, 2, 1 );
+        N_errors += testHalo<int>( MPI_COMM_WORLD, 1, 2, 2, 1 );
+    }
+    if ( nprocs==8 ) {
+        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 2, 2, 1 );
+    }
+
     // Finished
     MPI_Barrier(MPI_COMM_WORLD);
     int N_errors_global=0;
     MPI_Allreduce( &N_errors, &N_errors_global, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD );
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
+    if ( rank==0 ) {
+        if ( N_errors_global==0 )
+            std::cout << "All tests passed\n";
+        else
+            std::cout << "Some tests failed\n";
+    }
     return N_errors_global;
 }

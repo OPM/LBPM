@@ -8,6 +8,7 @@ INSTALL_LBPM_EXE( TestBubble )
 INSTALL_LBPM_EXE( BasicSimulator )
 INSTALL_LBPM_EXE( BlobAnalysis )
 INSTALL_LBPM_EXE( BlobIdentify )
+INSTALL_LBPM_EXE( BlobIdentifyParallel )
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 

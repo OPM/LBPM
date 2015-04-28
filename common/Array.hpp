@@ -69,9 +69,8 @@ void Array<TYPE>::allocate( const std::vector<size_t>& N )
         d_N[0] = 0;
         d_length = 0;
     }
-    if ( d_length==0 )
-        d_ptr.reset();
-    else
+    d_ptr.reset();
+    if ( d_length > 0 )
         d_ptr = std::shared_ptr<TYPE>(new TYPE[d_length],DeleteArray<TYPE>);
     d_data = d_ptr.get();
     if ( d_length>0 && d_data==NULL )
@@ -90,7 +89,7 @@ Array<TYPE>& Array<TYPE>::operator=( const Array& rhs )
 {
     if ( this == &rhs ) 
         return *this;
-    this->allocate( std::vector<size_t>(rhs.d_N,rhs.d_N+rhs.d_data) );
+    this->allocate( rhs.size() );
     for (size_t i=0; i<d_length; i++)
         this->d_data[i] = rhs.d_data[i];
     return *this;
@@ -152,15 +151,17 @@ void Array<TYPE>::resize( const std::vector<size_t>& N )
     allocate(N);
     // Copy the old values
     if ( d_length > 0 ) {
-        ASSERT(sizeof(d_N)/sizeof(size_t)==3);
+        ASSERT(sizeof(d_N)/sizeof(size_t)==4);
         TYPE *data1 = old_data.get();
         TYPE *data2 = d_data;
-        for (size_t k=0; k<std::min(N1[2],N2[2]); k++) {
-            for (size_t j=0; j<std::min(N1[1],N2[1]); j++) {
-                for (size_t i=0; i<std::min(N1[0],N2[0]); i++) {
-                    size_t index1 = i + j*N1[0] + k*N1[0]*N1[1];
-                    size_t index2 = i + j*N2[0] + k*N2[0]*N2[1];
-                    data2[index2] = data1[index1];
+        for (size_t m=0; m<std::min(N1[3],N2[3]); m++) {
+            for (size_t k=0; k<std::min(N1[2],N2[2]); k++) {
+                for (size_t j=0; j<std::min(N1[1],N2[1]); j++) {
+                    for (size_t i=0; i<std::min(N1[0],N2[0]); i++) {
+                        size_t index1 = i + j*N1[0] + k*N1[0]*N1[1] + m*N1[0]*N1[1]*N1[2];
+                        size_t index2 = i + j*N2[0] + k*N2[0]*N2[1] + m*N2[0]*N2[1]*N1[2];
+                        data2[index2] = data1[index1];
+                    }
                 }
             }
         }
@@ -293,8 +294,8 @@ template<class TYPE>
 template<class TYPE2>
 void Array<TYPE>::copy( const Array<TYPE2>& array )
 {
-    resize( std::vector<size_t>(array.d_N,array.d_N+array.d_ndim) );
-    const TYPE2 *src = array.d_data;
+    resize( array.size() );
+    const TYPE2 *src = array.get();
     for (size_t i=0; i<d_length; i++)
         d_data[i] = static_cast<TYPE>(src[i]);
 }

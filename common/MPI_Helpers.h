@@ -57,6 +57,10 @@ inline int MPI_WORLD_RANK( ) {
     return rank;
 }
 
+//! Return the appropriate MPI datatype for a class
+template<class TYPE>
+MPI_Datatype getMPItype();
+
 
 //! Template function to return the buffer size required to pack a class
 template<class TYPE>

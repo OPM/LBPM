@@ -8,13 +8,13 @@
 #include "common/Utilities.h"
 
 
-#define GET_ARRAY_INDEX(i1,i2,i3) i1+d_N[0]*(i2+d_N[1]*i3)
+#define GET_ARRAY_INDEX(i1,i2,i3,i4) i1+d_N[0]*(i2+d_N[1]*(i3+d_N[2]*i4))
 #ifdef DEBUG
-    #define CHECK_ARRAY_INDEX(i1,i2,i3) \
-        if ( GET_ARRAY_INDEX(i1,i2,i3)<0 || GET_ARRAY_INDEX(i1,i2,i3)>d_length ) \
+    #define CHECK_ARRAY_INDEX(i1,i2,i3,i4) \
+        if ( GET_ARRAY_INDEX(i1,i2,i3,i4)<0 || GET_ARRAY_INDEX(i1,i2,i3,i4)>d_length ) \
             ERROR("Index exceeds array bounds");
 #else
-    #define CHECK_ARRAY_INDEX(i1,i2,i3) 
+    #define CHECK_ARRAY_INDEX(i1,i2,i3,i4) 
 #endif
 
 
@@ -236,42 +236,56 @@ public:
      * @param i             The row index
      * @param j             The column index
      */
-    inline TYPE& operator()( size_t i ) { CHECK_ARRAY_INDEX(i,0,0) return d_data[i]; }
+    inline TYPE& operator()( size_t i ) { CHECK_ARRAY_INDEX(i,0,0,0) return d_data[i]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      * @param j             The column index
      */
-    inline const TYPE& operator()( size_t i ) const { CHECK_ARRAY_INDEX(i,0,0) return d_data[i]; }
+    inline const TYPE& operator()( size_t i ) const { CHECK_ARRAY_INDEX(i,0,0,0) return d_data[i]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      * @param j             The column index
      */
-    inline TYPE& operator()( size_t i, size_t j ) { CHECK_ARRAY_INDEX(i,j,0) return d_data[i+j*d_N[0]]; }
+    inline TYPE& operator()( size_t i, size_t j ) { CHECK_ARRAY_INDEX(i,j,0,0) return d_data[i+j*d_N[0]]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      * @param j             The column index
      */
-    inline const TYPE& operator()( size_t i, size_t j ) const { CHECK_ARRAY_INDEX(i,j,0) return d_data[i+j*d_N[0]]; }
+    inline const TYPE& operator()( size_t i, size_t j ) const { CHECK_ARRAY_INDEX(i,j,0,0) return d_data[i+j*d_N[0]]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      * @param j             The column index
      */
-    inline TYPE& operator()( size_t i, size_t j, size_t k ) { CHECK_ARRAY_INDEX(i,j,k) return d_data[GET_ARRAY_INDEX(i,j,k)]; }
+    inline TYPE& operator()( size_t i, size_t j, size_t k ) { CHECK_ARRAY_INDEX(i,j,k,0) return d_data[GET_ARRAY_INDEX(i,j,k,0)]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      * @param j             The column index
      */
-    inline const TYPE& operator()( size_t i, size_t j, size_t k ) const { CHECK_ARRAY_INDEX(i,j,k) return d_data[GET_ARRAY_INDEX(i,j,k)]; }
+    inline const TYPE& operator()( size_t i, size_t j, size_t k ) const { CHECK_ARRAY_INDEX(i,j,k,0) return d_data[GET_ARRAY_INDEX(i,j,k,0)]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline TYPE& operator()( size_t i, size_t j, size_t k, size_t m ) { CHECK_ARRAY_INDEX(i,j,k,m) return d_data[GET_ARRAY_INDEX(i,j,k,m)]; }
+
+    /*!
+     * Access the desired element
+     * @param i             The row index
+     * @param j             The column index
+     */
+    inline const TYPE& operator()( size_t i, size_t j, size_t k, size_t m ) const { CHECK_ARRAY_INDEX(i,j,k,m) return d_data[GET_ARRAY_INDEX(i,j,k,m)]; }
 
 
     //! Check if two matricies are equal
@@ -312,7 +326,7 @@ public:
 
 private:
     int d_ndim;
-    size_t d_N[3];
+    size_t d_N[4];
     size_t d_length;
     TYPE *d_data;
     std::shared_ptr<TYPE> d_ptr;

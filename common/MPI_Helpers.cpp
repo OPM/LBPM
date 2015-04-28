@@ -2,6 +2,34 @@
 #include "common/Utilities.h"
 
 
+/********************************************************
+* Return the MPI data type                              *
+********************************************************/
+template<> MPI_Datatype getMPItype<char>() {
+    return MPI_CHAR;
+}
+template<> MPI_Datatype getMPItype<unsigned char>() {
+    return MPI_UNSIGNED_CHAR;
+}
+template<> MPI_Datatype getMPItype<int>() {
+    return MPI_INT;
+}
+template<> MPI_Datatype getMPItype<long>() {
+    return MPI_LONG;
+}
+template<> MPI_Datatype getMPItype<unsigned long>() {
+    return MPI_UNSIGNED_LONG;
+}
+template<> MPI_Datatype getMPItype<long long>() {
+    return MPI_LONG_LONG;
+}
+template<> MPI_Datatype getMPItype<float>() {
+    return MPI_FLOAT;
+}
+template<> MPI_Datatype getMPItype<double>() {
+    return MPI_DOUBLE;
+}
+
 
 /********************************************************
 * Concrete implimentations for packing/unpacking        *
