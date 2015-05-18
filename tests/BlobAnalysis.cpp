@@ -935,6 +935,7 @@ int main(int argc, char **argv)
 	printf("vol_w = %f \n", vol_w);
 	
 	printf("-----------------------------------------------\n");
+	double pwn=0.0;
 	vol_n = nwp_volume = 0.0;
 	pan = 0.0;
 	awn  = ans = lwns = 0.0;
@@ -958,6 +959,7 @@ int main(int argc, char **argv)
 	// Compute the averages over the entire non-wetting phsae
 	for (a=0; a<nblobs; a++){
 		nwp_volume += BlobAverages(0,a);
+		pwn += (BlobAverages(1,a)-pw)*BlobAverages(2,a);
 		pan += BlobAverages(1,a)*BlobAverages(28,a);
 		awn += BlobAverages(2,a);
 		ans += BlobAverages(3,a);
@@ -993,6 +995,7 @@ int main(int argc, char **argv)
 		// Subtract the features one-by-one
 		nwp_volume -= BlobAverages(0,a);
 		pan -= BlobAverages(1,a)*BlobAverages(28,a);
+		pwn -= (BlobAverages(1,a)-pw)*BlobAverages(2,a);
 		awn -= BlobAverages(2,a);
 		ans -= BlobAverages(3,a);
 		Jwn -= BlobAverages(4,a)*BlobAverages(2,a);
@@ -1034,14 +1037,14 @@ int main(int argc, char **argv)
 			sw = 1.0 - nwp_volume*iVol/porosity;
 			
 			JwnD = -Jwn*D/awn;
+			pn = pan/vol_n;
 			trJwnD = -trJwn*D/trawn;
 			cwns = -efawns / lwns;
-			pn = pan/vol_n;
 			awnD = awn*D*iVol;
 			awsD = aws*D*iVol;
 			ansD = ans*D*iVol;
 			lwnsDD = lwns*D*D*iVol;
-			pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
+			pc = pwn*D/0.058/awn; 	// hard-coded surface tension due to being lazy
 			
 			fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
 			fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
