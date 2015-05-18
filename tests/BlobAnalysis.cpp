@@ -954,7 +954,7 @@ int main(int argc, char **argv)
 	printf("Sauter mean diamter = %f \n",D);
 	printf("WARNING: lazy coder hard-coded the surface tension as 0.058 \n");
 	FILE *BLOBSTATES= fopen("blobstates.tcat","a");
-	
+	fprintf(BLOBSTATES,"%.5g %.5g %.5g\n",vol_w,pw,aws);
 	// Compute the averages over the entire non-wetting phsae
 	for (a=0; a<nblobs; a++){
 		nwp_volume += BlobAverages(0,a);
@@ -1030,7 +1030,7 @@ int main(int argc, char **argv)
 		Gws(4) += BlobAverages(24,a)*BlobAverages(3,a);
 		Gws(5) += BlobAverages(25,a)*BlobAverages(3,a);
 		
-		if (fabs(1.0 - nwp_volume*iVol/porosity - sw) > 0.0025 || a == 0){
+		if (fabs(1.0 - nwp_volume*iVol/porosity - sw) > 0.0025 || a == 1){
 			sw = 1.0 - nwp_volume*iVol/porosity;
 			
 			JwnD = -Jwn*D/awn;
