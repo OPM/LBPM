@@ -252,6 +252,11 @@ int main(int argc, char **argv)
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
+
+    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
+
     for (int k=0; k<nz+2; k++){
         for (int j=0; j<ny+2; j++){
             for (int i=0; i<nx+2; i++){
@@ -259,10 +264,6 @@ int main(int argc, char **argv)
             }
         }
     }
-
-    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
-    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     double beta = 0.95;
 
