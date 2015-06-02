@@ -249,7 +249,7 @@ int main(int argc, char **argv)
     for (int i=0; i<N; i++) Averages.SDs(i) -= 1.0; // map the distance
 
     nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-    		Averages.Phase.get(),Averages.SDs.get(),vF,vS,Averages.BlobLabel.get());
+    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     double beta = 0.95;
