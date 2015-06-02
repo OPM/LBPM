@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <math.h>
-#include "common/pmmc.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "ProfilerApp.h"
@@ -14,22 +13,6 @@
 //#include "Domain.h"
 
 using namespace std;
-
-
-inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
-{
-    int n;
-    double value;
-    ifstream File(FILENAME,ios::binary);
-    for (n=0; n<N; n++){
-        // Write the two density values
-        File.read((char*) &value, sizeof(value));
-        Data[n] = value;
-
-    }
-    File.close();
-}
-
 
 void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleArray& SignDist )
 {
@@ -161,6 +144,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 
+	int BC=0;
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
@@ -187,7 +171,6 @@ int main(int argc, char **argv)
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     // Write the local blob ids
-    char LocalRankFilename[100];
     sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
     FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
     fwrite(GlobalBlobID.get(),4,GlobalBlobID.length(),BLOBLOCAL);
