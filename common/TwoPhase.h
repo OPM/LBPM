@@ -487,38 +487,46 @@ void TwoPhase::ComputeLocal(){
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
-		// Integrate the contact angle
-		efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
 
-		// Integrate the mean curvature
-		Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-		Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		// wn interface averages
+		if (n_nw_pts > 0){
+			awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+			Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+			Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
-		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+			// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+			pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+					i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
 
-		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+			pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+					i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
 
-		// Compute the normal speed of the interface
-		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
-				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+			// Compute the normal speed of the interface
+			pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+					NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+		}
+		// wns common curve averages
+		if (n_local_nws_pts > 0){
+			efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+					local_nws_pts,i,j,k,n_local_nws_pts);
 
-		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
+			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+					local_nws_pts,i,j,k,n_local_nws_pts);
 
-		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
-				nws_pts, n_nws_pts, i, j, k);
+			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+					nws_pts, n_nws_pts, i, j, k);
 
-		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+			lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		}
 
-		// Compute the surface orientation and the interfacial area
-		awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-		ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		// Solid interface averagees
+		if (n_local_sol_tris > 0){
+			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+
+			// Compute the surface orientation and the interfacial area
+			ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+		}
 		//...........................................................................
 	}
 }
@@ -562,9 +570,9 @@ void TwoPhase::ComputeLocalBlob(){
 					BlobAverages(1,label) += 0.125;
 					// volume the excludes the interfacial region
 					if (DelPhi(n) < 1e-4){
-					  BlobAverages(0,label) += 0.125;
+						BlobAverages(0,label) += 0.125;
 						// pressure
-					  BlobAverages(2,label ) += 0.125*Press(n);
+						BlobAverages(2,label ) += 0.125*Press(n);
 						// velocity
 						BlobAverages(9,label) += 0.125*Vel_x(n);
 						BlobAverages(10,label) += 0.125*Vel_y(n);
@@ -597,39 +605,48 @@ void TwoPhase::ComputeLocalBlob(){
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 
-		// Integrate the contact angle
-		BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
+		// wn interface averages
+		if (n_nw_pts> 0){
+			BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+			BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
-		// Integrate the mean curvature
-		BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-		BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+			// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+			pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+					i,j,k,n_nw_pts,n_nw_tris,trimdist,BlobAverages(12,label),BlobAverages(13,label));
 
-		// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-		pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-						 i,j,k,n_nw_pts,n_nw_tris,trimdist,BlobAverages(12,label),BlobAverages(13,label));
+			pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+					i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
 
-		pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-				i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+			// Compute the normal speed of the interface
+			pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+					NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 
-		// Compute the normal speed of the interface
-		pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
-				NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+			BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
 
-		pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
-				local_nws_pts,i,j,k,n_local_nws_pts);
+		}
 
-		pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
-				nws_pts, n_nws_pts, i, j, k);
+		// Common curve averages
+		if (n_local_nws_pts > 0){
+			BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+					local_nws_pts,i,j,k,n_local_nws_pts);
 
-		As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+					local_nws_pts,i,j,k,n_local_nws_pts);
 
-		// Compute the surface orientation and the interfacial area
-		BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-		BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-		aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
-		//...........................................................................
+			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+					nws_pts, n_nws_pts, i, j, k);
+
+			BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+		}
+
+		// Solid interface averages
+		if (n_local_sol_pts > 0){
+			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+			// Compute the surface orientation and the interfacial area
+			BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+			//...........................................................................
+		}
 	}
 }
 
