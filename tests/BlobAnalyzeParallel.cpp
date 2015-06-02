@@ -153,7 +153,10 @@ int main(int argc, char **argv)
         ERROR("Insufficient number of processors");
 
     // Get the rank info
+	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	TwoPhase Averages(Dm);
+	int N = (nx+2)*(ny+2)*(nz+2);
 
     // Read the local file
     DoubleArray Phase;
@@ -199,7 +202,7 @@ int main(int argc, char **argv)
     // Compute porosity
 	double porosity,sum,sum_global;
     sum=0.0;
-    for (int n=0; n<Nx*Ny*Nz; n++){
+    for (int n=0; n<(nx+2)*(ny+2)*(nz+2); n++){
         double phi,da,db,press,vx,vy,vz;
         double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
         da = Den[n];
