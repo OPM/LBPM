@@ -632,7 +632,7 @@ void TwoPhase::ComputeLocalBlob(){
 		}
 
 		// Solid interface averages
-		if (local_sol_pts > 0){
+		if (n_local_sol_pts > 0){
 			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 			// Compute the surface orientation and the interfacial area
 			BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
