@@ -9,7 +9,7 @@
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "ProfilerApp.h"
-
+#include "TwoPhase.h"
 
 //#include "Domain.h"
 
