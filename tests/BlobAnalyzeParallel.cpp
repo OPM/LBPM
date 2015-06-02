@@ -278,87 +278,89 @@ int main(int argc, char **argv)
     int b=0;
 
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
-    int dimx = Averages.BlobAverages.size(0);
-    int dimy = Averages.BlobAverages.size(1);
+    int dimx = (int)Averages.BlobAverages.size(0);
+    int dimy = (int)Averages.BlobAverages.size(1);
     int TotalBlobInfoSize=dimx*dimy;
 
-    FILE *BLOBLOG;
-    if (rank==0){
-      	BLOBLOG=fopen("blobs.tcat","w");
-        //printf("dimx=%i \n",dimx);
-    }
     //      BlobContainer Blobs;
     DoubleArray RecvBuffer(dimx);
     //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) printf("All ranks passed gate \n");
 
-    for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
+    for (int b=0; b<dimy; b++){
 
-      MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-      for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
-      MPI_Barrier(MPI_COMM_WORLD);
-      if (Averages.BlobAverages(0,b) > 0.0){
-	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
-	Vn = Averages.BlobAverages(1,b);
-	pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
-	awn = Averages.BlobAverages(3,b);
-	ans = Averages.BlobAverages(4,b);
-	if (awn != 0.0){
-	  Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
-	  Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
-	}
-	else Jwn=Kwn=0.0;
+    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    	for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
+    	MPI_Barrier(MPI_COMM_WORLD);
 
-	trawn = Averages.BlobAverages(12,b);
-	if (trawn != 0.0){
-	  trJwn = Averages.BlobAverages(13,b)/trawn;
-	}
-	else trJwn=0.0;
+    	if (Averages.BlobAverages(0,b) > 0.0){
+    		double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
+    		Vn = Averages.BlobAverages(1,b);
+    		pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
+    		awn = Averages.BlobAverages(3,b);
+    		ans = Averages.BlobAverages(4,b);
+    		if (awn != 0.0){
+    			Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
+    			Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
+    		}
+    		else Jwn=Kwn=0.0;
 
-	lwns = Averages.BlobAverages(7,b);
-	if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
-	else  cwns=0.0;
-	Averages.BlobAverages(2,b) = pn;
-	Averages.BlobAverages(5,b) = trJwn;
-	Averages.BlobAverages(6,b) = Kwn;
-	Averages.BlobAverages(8,b) = cwns;
-	//	Averages.BlobAverages(13,b) = trJwn;
+    		trawn = Averages.BlobAverages(12,b);
+    		if (trawn != 0.0){
+    			trJwn = Averages.BlobAverages(13,b)/trawn;
+    		}
+    		else trJwn=0.0;
 
-      }
+    		lwns = Averages.BlobAverages(7,b);
+    		if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
+    		else  cwns=0.0;
+    		Averages.BlobAverages(2,b) = pn;
+    		Averages.BlobAverages(5,b) = trJwn;
+    		Averages.BlobAverages(6,b) = Kwn;
+    		Averages.BlobAverages(8,b) = cwns;
+    		//	Averages.BlobAverages(13,b) = trJwn;
+
+    	}
     }
 
+    if (rank==0) printf("Sorting blobs by volume \n");
     Averages.SortBlobs();
 
-      if (rank==0){
-	//	printf("Reduced blob %i \n",b);
-	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
-    for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
-      if (Averages.BlobAverages(0,b) > 0.0){
-	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
-	Vn = Averages.BlobAverages(1,b);
-	pn = Averages.BlobAverages(2,b);
-	awn = Averages.BlobAverages(3,b);
-	ans = Averages.BlobAverages(4,b);
-	Jwn = Averages.BlobAverages(5,b);
-	Kwn = Averages.BlobAverages(6,b);
-	lwns = Averages.BlobAverages(7,b);
-	cwns = Averages.BlobAverages(8,b);
+    FILE *BLOBLOG;
+    if (rank==0){
+    	printf("Writing the blob list \n");
+      	BLOBLOG=fopen("blobs.tcat","w");
 
-      fprintf(BLOBLOG,"%.5g ", Vn); //Vn
-      fprintf(BLOBLOG,"%.5g ", pn); //pn
-      fprintf(BLOBLOG,"%.5g ", awn); //awn
-      fprintf(BLOBLOG,"%.5g ", ans); //ans
-      fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
-      fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
-      fprintf(BLOBLOG,"%.5g ", lwns); //lwns
-      fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
-      }
+    	//	printf("Reduced blob %i \n",b);
+    	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
+    	for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
+    		if (Averages.BlobAverages(0,b) > 0.0){
+    			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
+    			Vn = Averages.BlobAverages(1,b);
+    			pn = Averages.BlobAverages(2,b);
+    			awn = Averages.BlobAverages(3,b);
+    			ans = Averages.BlobAverages(4,b);
+    			Jwn = Averages.BlobAverages(5,b);
+    			Kwn = Averages.BlobAverages(6,b);
+    			lwns = Averages.BlobAverages(7,b);
+    			cwns = Averages.BlobAverages(8,b);
+
+    			fprintf(BLOBLOG,"%.5g ", Vn); //Vn
+    			fprintf(BLOBLOG,"%.5g ", pn); //pn
+    			fprintf(BLOBLOG,"%.5g ", awn); //awn
+    			fprintf(BLOBLOG,"%.5g ", ans); //ans
+    			fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
+    			fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
+    			fprintf(BLOBLOG,"%.5g ", lwns); //lwns
+    			fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
+    		}
+    	}
+    	fclose(BLOBLOG);
     }
-      }
-    if (rank==0)  fclose(BLOBLOG);
 
     double Length=1.0;
+    printf("Writing the blob states \n");
     if (rank==0) WriteBlobStates(Averages,Length,porosity);
 
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
@@ -367,8 +369,8 @@ int main(int argc, char **argv)
 
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Finalize();
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
     return 0;  
 }
 
