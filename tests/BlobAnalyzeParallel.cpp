@@ -152,6 +152,15 @@ int main(int argc, char **argv)
     if ( nprocs < nprocx*nprocy*nprocz )
         ERROR("Insufficient number of processors");
 
+	// Filenames used
+	char LocalRankString[8];
+	char LocalRankFilename[40];
+	char LocalRestartFile[40];
+	char tmpstr[10];
+	sprintf(LocalRankString,"%05d",rank);
+//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
