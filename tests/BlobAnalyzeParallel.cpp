@@ -225,6 +225,7 @@ int main(int argc, char **argv)
         vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
         vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
         vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+        Averages.SDs(n)=SignDist.data[n];
         Averages.Phase(n)=(da-db)/(da+db);
         Averages.Phase_tplus(n)=(da-db)/(da+db);
         Averages.Phase_tminus(n)=(da-db)/(da+db);
@@ -246,6 +247,10 @@ int main(int argc, char **argv)
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
     for (int i=0; i<N; i++) Averages.SDs(i) -= 1.0; // map the distance
+
+    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+    		Averages.Phase.get(),Averages.SDs.get(),vF,vS,Averages.BlobLabel.get());
+    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     double beta = 0.95;
 
