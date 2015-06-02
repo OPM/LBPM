@@ -191,54 +191,60 @@ int main(int argc, char **argv)
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
 	if (rank==0) printf("Populate arrays \n");
-    // Compute porosity
+	// Compute porosity
 	double porosity,sum,sum_global;
-    sum=0.0;
-    for (int n=0; n<(nx+2)*(ny+2)*(nz+2); n++){
-        double phi,da,db,press,vx,vy,vz;
-        double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
-        da = Den[n];
-        db = Den[N+n];
-        f0 = DistEven[n];
-        f2 = DistEven[N+n];
-        f4 = DistEven[2*N+n];
-        f6 = DistEven[3*N+n];
-        f8 = DistEven[4*N+n];
-        f10 = DistEven[5*N+n];
-        f12 = DistEven[6*N+n];
-        f14 = DistEven[7*N+n];
-        f16 = DistEven[8*N+n];
-        f18 = DistEven[9*N+n];
-        //........................................................................
-        f1 = DistOdd[n];
-        f3 = DistOdd[1*N+n];
-        f5 = DistOdd[2*N+n];
-        f7 = DistOdd[3*N+n];
-        f9 = DistOdd[4*N+n];
-        f11 = DistOdd[5*N+n];
-        f13 = DistOdd[6*N+n];
-        f15 = DistOdd[7*N+n];
-        f17 = DistOdd[8*N+n];
-        //.................Compute the velocity...................................
-        press = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
-                                          f9+f12+f11+f14+f13+f16+f15+f18+f17);
-        vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-        vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-        vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
-        Averages.SDs(n)=SignDist.data[n];
-        Averages.Phase(n)=(da-db)/(da+db);
-        Averages.Phase_tplus(n)=(da-db)/(da+db);
-        Averages.Phase_tminus(n)=(da-db)/(da+db);
-        Averages.Press(n)=press;
-        Averages.Vel_x(n)=vx;
-        Averages.Vel_y(n)=vy;
-        Averages.Vel_z(n)=vz;
-	if (Averages.SDs(n) > 0.0){
-	  Dm.id[n]=1;
-	  sum += 1.0;
+	sum=0.0;
+	for (int k=0; k<nz+2; k++){
+		for (int j=0; j<ny+2; j++){
+			for (int i=0; i<nx+2; i++){
+				double phi,da,db,press,vx,vy,vz;
+				int n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
+				double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
+				da = Den[n];
+				db = Den[N+n];
+				f0 = DistEven[n];
+				f2 = DistEven[N+n];
+				f4 = DistEven[2*N+n];
+				f6 = DistEven[3*N+n];
+				f8 = DistEven[4*N+n];
+				f10 = DistEven[5*N+n];
+				f12 = DistEven[6*N+n];
+				f14 = DistEven[7*N+n];
+				f16 = DistEven[8*N+n];
+				f18 = DistEven[9*N+n];
+				//........................................................................
+				f1 = DistOdd[n];
+				f3 = DistOdd[1*N+n];
+				f5 = DistOdd[2*N+n];
+				f7 = DistOdd[3*N+n];
+				f9 = DistOdd[4*N+n];
+				f11 = DistOdd[5*N+n];
+				f13 = DistOdd[6*N+n];
+				f15 = DistOdd[7*N+n];
+				f17 = DistOdd[8*N+n];
+				//.................Compute the velocity...................................
+				press = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
+						f9+f12+f11+f14+f13+f16+f15+f18+f17);
+				vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+				vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+				vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+				// Assign array components needed for averaging
+				Averages.SDs(i,j,k)=SignDist(i,j,k);
+				Averages.Phase(i,j,k)=(da-db)/(da+db);
+				Averages.Phase_tplus(i,j,k)=(da-db)/(da+db);
+				Averages.Phase_tminus(i,j,k)=(da-db)/(da+db);
+				Averages.Press(i,j,k)=press;
+				Averages.Vel_x(i,j,k)=vx;
+				Averages.Vel_y(i,j,k)=vy;
+				Averages.Vel_z(i,j,k)=vz;
+				if (Averages.SDs(i,j,k) > 0.0){
+					Dm.id[n]=1;
+					sum += 1.0;
+				}
+				else Dm.id[n]=0;
+			}
+		}
 	}
-	else Dm.id[n]=0;
-    }
     delete [] DistEven;
     delete [] DistOdd;
 
@@ -246,7 +252,13 @@ int main(int argc, char **argv)
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
-    for (int i=0; i<N; i++) Averages.SDs(i) -= 1.0; // map the distance
+    for (int k=0; k<nz+2; k++){
+        for (int j=0; j<ny+2; j++){
+            for (int i=0; i<nx+2; i++){
+            	Averages.SDs(i,j,k) -= 1.0; // map the distance
+            }
+        }
+    }
 
     nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
     		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
