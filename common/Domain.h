@@ -45,7 +45,7 @@ struct Domain{
     double Lx,Ly,Lz,Volume;
 	int rank;
 	int BoundaryCondition;
-    const RankInfoStruct rank_info;
+    RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Comm Comm;		// MPI Communicator for this domain
 
