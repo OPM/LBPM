@@ -253,10 +253,10 @@ int main(int argc, char **argv)
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
 
-    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+ //   nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+  //  		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 
-    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
+//    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     for (int k=0; k<nz+2; k++){
         for (int j=0; j<ny+2; j++){
@@ -276,7 +276,6 @@ int main(int argc, char **argv)
     Averages.UpdateMeshValues();
     Averages.ComputeLocalBlob();
     Averages.Reduce();
-    int b=0;
 
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
     int dimx = (int)Averages.BlobAverages.size(0);
