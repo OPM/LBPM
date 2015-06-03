@@ -2,6 +2,7 @@
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
+#include "analysis/analysis.h"
 #include <vector>
 
 #define BLOB_AVG_COUNT 26
