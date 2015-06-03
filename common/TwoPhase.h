@@ -547,7 +547,10 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComputeLocalBlob(){
     int i,j,k,n,label;
-	
+	double vF,vS;
+	vF = 0.0; vS= -1.0;
+    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
+
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
         // get the maximum label locally -- then compute number of global blobs
 	label=0; 
@@ -558,6 +561,12 @@ void TwoPhase::ComputeLocalBlob(){
 	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
 	nblobs_global+=1;
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+
+    nblobs_global = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
+    		Phase,SDs,vF,vS,BlobLabel);
+
+	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+
 	//BlobAverages.Set(nblobs_global);
 	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
     BlobAverages.fill(0.0);
