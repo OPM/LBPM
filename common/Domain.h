@@ -788,6 +788,11 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 
 	int Q=26;
     int q,i,j,k,n;
+    double dt=0.25;
+    int in,jn,kn,nn;
+    double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
+    double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
+
     const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
         {1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
         {0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},
@@ -799,14 +804,9 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
         weights[q] = sqrt(1.0*(D3Q27[q][0]*D3Q27[q][0]) + 1.0*(D3Q27[q][1]*D3Q27[q][1]) + 1.0*(D3Q27[q][2]*D3Q27[q][2]));
     }
 
+    fillHalo<double> fillData(Dm.rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1);
+
     int count = 0;
-    double dt=0.25;
-    int in,jn,kn,nn;
-    double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
-    double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
-
-    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-
     while (count < timesteps){
 
         printf("count=%i \n",count);
@@ -815,11 +815,11 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
         fillData.fill(Distance);
 
         // Execute the next timestep
-        for (k=1;k<Nz-1;k++){
-            for (j=1;j<Ny-1;j++){
-                for (i=1;i<Nx-1;i++){
+        for (k=1;k<Dm.Nz-1;k++){
+            for (j=1;j<Dm.Ny-1;j++){
+                for (i=1;i<Dm.Nx-1;i++){
 
-                    n = k*Nx*Ny + j*Nx + i;
+                	n = k*Dm.Nx*Dm.Ny+j*Dm.Nx+i;
                     sign = Distance(i,j,k) / fabs(Distance(i,j,k));
 
               /*
@@ -874,9 +874,6 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                             if (!(jn < Ny) ) jn = k;
                             if (!(kn < Nz) ) kn = k;
                             */
-
-                            // 1-D index
-                            nn = kn*Nx*Ny + jn*Nx + in;
 
                             // Compute the gradient using upwind finite differences
                             Dqx = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqx;
