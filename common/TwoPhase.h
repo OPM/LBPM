@@ -542,6 +542,7 @@ void TwoPhase::ComputeLocalBlob(){
 	  if (label < BlobLabel(n)) label = BlobLabel(n);
 	}
 	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
+	nblobs_global+=1;
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 	//BlobAverages.Set(nblobs_global);
 	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
