@@ -230,9 +230,9 @@ int main(int argc, char **argv)
 				vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
 				// Assign array components needed for averaging
 				Averages.SDs(i,j,k)=SignDist(i,j,k);
-				Averages.Phase(i,j,k)=(da-db)/(da+db);
-				Averages.Phase_tplus(i,j,k)=(da-db)/(da+db);
-				Averages.Phase_tminus(i,j,k)=(da-db)/(da+db);
+				Averages.Phase(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
+				Averages.Phase_tplus(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
+				Averages.Phase_tminus(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
 				Averages.Press(i,j,k)=press;
 				Averages.Vel_x(i,j,k)=vx;
 				Averages.Vel_y(i,j,k)=vy;
@@ -255,6 +255,7 @@ int main(int argc, char **argv)
 
     nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
     		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     for (int k=0; k<nz+2; k++){
