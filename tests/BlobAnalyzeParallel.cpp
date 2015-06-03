@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     }
 
     double Length=1.0;
-    printf("Writing the blob states \n");
+    if (rank==0) printf("Writing the blob states \n");
     if (rank==0) WriteBlobStates(Averages,Length,porosity);
 
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
