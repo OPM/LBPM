@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 
     	//	printf("Reduced blob %i \n",b);
     	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
-    	for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
+    	for (int b=0; b<dimy; b++){
     		if (Averages.BlobAverages(0,b) > 0.0){
     			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
     			Vn = Averages.BlobAverages(1,b);
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     }
 
     double Length=1.0;
-    printf("Writing the blob states \n");
+    if (rank==0) printf("Writing the blob states \n");
     if (rank==0) WriteBlobStates(Averages,Length,porosity);
 
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
