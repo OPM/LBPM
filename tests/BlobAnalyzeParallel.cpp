@@ -286,7 +286,7 @@ int main(int argc, char **argv)
     DoubleArray RecvBuffer(dimx);
     //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank==0) printf("All ranks passed gate \n");
+    if (rank==0) printf("Number of components is %i \n",dimy);
 
     for (int b=0; b<dimy; b++){
 
