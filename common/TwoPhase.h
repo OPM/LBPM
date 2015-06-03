@@ -301,15 +301,29 @@ public:
 
 void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *DistData){
 
-	double temp=0.5/Beta;
-	for (int n=0; n<Nx*Ny*Nz; n++){
-		double value = ColorData[n];
+	double factor,temp,value;
+	factor=0.5/Beta;
+/*	for (int n=0; n<Nx*Ny*Nz; n++){
+	 	value = ColorData[n];
 		if (value > 0.999 ) DistData[n] = 4.0;
 		else if (value < -0.999 ) DistData[n] = -4.0;
-		else 	DistData[n] = temp*log((1.0+value)/(1.0-value));
+		else 	DistData[n] = factor*log((1.0+value)/(1.0-value));
 	}
 
-//	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
+	// Initialize to -1,1 (segmentation)
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				value = ColorData[n];
+				temp = factor*log((1.0+value)/(1.0-value));
+				if (temp > 1.0) DistData(i,j,k) = 1.0;
+				else if (temp < -1.0) DistData(i,j,k) = -1.0;
+				else DistData(i,j,k) = temp;
+			}
+		}
+	}
+*/
+	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
 void TwoPhase::ComputeDelPhi(){
@@ -768,7 +782,7 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k){
 
 	label=BlobLabel(i,j,k);
 	label=max(label,BlobLabel(i+1,j,k));
-      	label=max(label,BlobLabel(i,j+1,k));
+    label=max(label,BlobLabel(i,j+1,k));
 	label=max(label,BlobLabel(i+1,j+1,k));
 	label=max(label,BlobLabel(i,j,k+1));
 	label=max(label,BlobLabel(i+1,j,k+1));
