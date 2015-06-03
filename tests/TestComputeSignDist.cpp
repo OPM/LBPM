@@ -11,13 +11,13 @@
 #include <fstream>
 #include <Array.h>
 
-inline void SSO(DoubleArray &Distance, IntArray &ID, int timesteps){
+inline void SSO(DoubleArray &Distance, char *ID, int timesteps){
 
 	int Q=26;
-	int q,i,j,k;
-	int Nx = ID.m;
-	int Ny = ID.n;
-	int Nz = ID.o;
+	int q,i,j,k,n;
+	int Nx = Distance.m;
+	int Ny = Distance.n;
+	int Nz = Distance.o;
 	const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
 	{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 	{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},
@@ -30,40 +30,58 @@ inline void SSO(DoubleArray &Distance, IntArray &ID, int timesteps){
 	}
 
 	// Initialize the Distance from ID
-	for (i=0; i<Nx*Ny*Nz; i++) Distance.data[i] = -0.5;
-	for (k=1;k<Nz-1;k++){
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
+//	for (i=0; i<Nx*Ny*Nz; i++) Distance.data[i] = -0.5;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n=k*Nx*Ny+j*Nx+i;
 				// Initialize distance to +/- 1
-				Distance(i,j,k) = 1.0*ID(i,j,k)-0.5;
+				Distance(i,j,k) = 1.0*ID[n]-0.5;
 			}
 		}
 	}
 
 	int count = 0;
-	double dt=1.0;
-	int n,in,jn,kn,nn;
+	double dt=0.1;
+	int in,jn,kn,nn;
 	double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
 	double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
 
+	printf("Number of timesteps is %i \n",timesteps);
+	printf("Mesh is %i,%i,%i \n",Nx,Ny,Nz);
+
 	while (count < timesteps){
 
-		for (k=1;k<Nz-1;k++){
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
+		printf("count=%i \n",count);
+		for (k=0;k<Nz;k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
 
 					n = k*Nx*Ny + j*Nx + i;
 					sign = Distance.data[n] / fabs(Distance.data[n]);
 
 					//............Compute the Gradient...................................
-					nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
-					ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
-					nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
+					if (!(i+1<Nx)) 	nx=0.5*Distance(i,j,k);
+					else 			nx=0.5*Distance(i+1,j,k);;
+					if (!(j+1<Ny)) 	ny=0.5*Distance(i,j,k);
+					else 			ny=0.5*Distance(i,j+1,k);
+					if (!(k+1<Nz)) 	nz=0.5*Distance(i,j,k);
+					else 			nz=0.5*Distance(i,j,k+1);
+					if (i<1)  		nx-=0.5*Distance(i,j,k);
+					else 			nx-=0.5*Distance(i-1,j,k);
+					if (j<1) 		ny-=0.5*Distance(i,j,k);
+					else 			ny-=0.5*Distance(i,j-1,k);
+					if (k<1)  		nz-=0.5*Distance(i,j,k);
+					else 			nz-=0.5*Distance(i,j,k-1);
+
+//					nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
+	//				ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
+		//			nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
 
 					W = 0.0;	Dx = Dy = Dz = 0.0;
 					if (nx*nx+ny*ny+nz*nz > 0.0){
-						for (q=0; q<27; q++){
+						for (q=0; q<26; q++){
 							Cqx = 1.0*D3Q27[q][0];
 							Cqy = 1.0*D3Q27[q][1];
 							Cqz = 1.0*D3Q27[q][2];
@@ -72,12 +90,19 @@ inline void SSO(DoubleArray &Distance, IntArray &ID, int timesteps){
 							jn = j + D3Q27[q][1];
 							kn = k + D3Q27[q][2];
 							// make sure the neighbor is in the domain (periodic BC)
-							if (in < 0 ) in +=Nx;
+			/*				if (in < 0 ) in +=Nx;
 							if (jn < 0 ) jn +=Ny;
 							if (kn < 0 ) kn +=Nz;
 							if (!(in < Nx) ) in -=Nx;
 							if (!(jn < Ny) ) jn -=Ny;
 							if (!(kn < Nz) ) kn -=Nz;
+			*/				// symmetric boundary
+							if (in < 0 ) in = i;
+							if (jn < 0 ) jn = j;
+							if (kn < 0 ) kn = k;
+							if (!(in < Nx) ) in = i;
+							if (!(jn < Ny) ) jn = k;
+							if (!(kn < Nz) ) kn = k;
 							// 1-D index
 							nn = kn*Nx*Ny + jn*Nx + in;
 
@@ -103,20 +128,18 @@ inline void SSO(DoubleArray &Distance, IntArray &ID, int timesteps){
 						norm = sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
 					}
 					else{
-						norm = 0.7;
+						norm = 0.0;
 					}
 					Distance.data[n] += dt*sign*(1.0 - norm);
 
-					// Disallow any change in phase position
-					if (Distance.data[n]*ID.data[n] < 0) Distance.data[n] = -Distance.data[n];
+					// Disallow any change in phase
+					if (Distance.data[n]*2.0*(ID[n]-1.0) < 0) Distance.data[n] = -Distance.data[n];
 				}
 			}
 		}
 
 		count++;
 	}
-
-
 }
 
 int main(){
@@ -136,28 +159,31 @@ int main(){
 	double fxm,fym,fzm,fxp,fyp,fzp;	
 	double fxy,fXy,fxY,fXY,fxz,fXz,fxZ,fXZ,fyz,fYz,fyZ,fYZ;
 	double nx,ny,nz;
-
 	
 	int ip,im,jp,jm,kp,km;
 	
 	int count = 0;
 	double sign;
-	double dt=0.01;
+	double dt=1.0;
 	printf("Nx=%i, Ny=%i, Nz= %i, \n",Nx,Ny,Nz);
 	
-	short int *id;
+	char *id;
 
 #ifdef READMEDIA
 	Nx = 347;
 	Ny = 347;
 	Nz = 235;
+	Nx = 512;
+	Ny = 512;
+	Nz = 512;
 	N = Nx*Ny*Nz;
-	id = new short int [N];
-	FILE *INPUT = fopen("Solid.dat",'rb');
-	fread(id,4,N*,Ny*Nz,INPUT)
+	id = new char [N];
+
+	FILE *INPUT = fopen("Solid.dat","rb");
+	fread(id,1,Nx*Ny*Nz,INPUT);
 	fclose(INPUT);
 #else
-	id = new short int [N];
+	id = new char [N];
 	double BubbleRadius = 5;
 	// Initialize the bubble
 	for (k=0;k<Nz;k++){
@@ -176,6 +202,21 @@ int main(){
 	}
 #endif
 	
+	DoubleArray Distance(Nx,Ny,Nz);
+	// Initialize the signed distance function
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				// Initialize distance to +/- 1
+				Distance(i,j,k) = 2.0*ID[n]-1.0;
+			}
+		}
+	}
+
+	printf("Initialized! Converting to Signed Distance function \n");
+	SSO(Distance,id,20);
+
 /*	double *f,*f_old,*f_new;
 	f = new double[N];
 	f_old = new double[N];
@@ -184,9 +225,11 @@ int main(){
 	for (int n=0; n<N; n++)	Distance.data[n] = 0.5*(id[n]-1);
 	for (int n=0; n<N; n++)	f_old[n] = Distance.data[n];
 	for (int n=0; n<N; n++)	f_new[n] = Distance.data[n];
+	for (int n=0; n<N; n++)	f[n] = Distance.data[n];
 
 	count=0;
-	while (count < 10000 && dt > 1.0e-6){
+	dt=1.0;
+	while (count < 10 && dt > 1.0e-6){
 
 		err = 0.0;
 		for (k=0;k<Nz;k++){
@@ -306,7 +349,7 @@ int main(){
 					f_y = 0.5*(f[k*Nx*Ny + jp*Nx + i] - f[k*Nx*Ny + jm*Nx + i]);
 					f_z = 0.5*(f[kp*Nx*Ny + j*Nx + i] - f[km*Nx*Ny + j*Nx + i]);					
 
-					if (id[n] > 0){
+					if (id[n] < 0){
 						if ( nx > 0.0)	f_x = fxp;
 						else			f_x = fxm;
 						if ( ny > 0.0)	f_y = fyp;
@@ -348,8 +391,8 @@ int main(){
 		
 		count++;			
 	}
+*/
 
-	*/
 	FILE *DIST;
 	DIST = fopen("SignDist","wb");
 	fwrite(Distance.data,8,N,DIST);
