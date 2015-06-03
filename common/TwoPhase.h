@@ -289,6 +289,7 @@ public:
 	void UpdateMeshValues();
 	void UpdateSolid();
 	void ComputeDelPhi();
+	void SSO(DoubleArray &Distance, char *ID, int timesteps);
 	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
 	void ComputeLocal();
 	void ComputeLocalBlob();
@@ -299,6 +300,123 @@ public:
 	void SortBlobs();
 
 };
+
+inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, int timesteps){
+
+    int Q=26;
+    int q,i,j,k,n;
+    const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+        {1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
+        {0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},
+        {-1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1}};
+
+    double weights[26];
+    // Compute the weights from the finite differences
+    for (q=0; q<Q; q++){
+        weights[q] = sqrt(1.0*(D3Q27[q][0]*D3Q27[q][0]) + 1.0*(D3Q27[q][1]*D3Q27[q][1]) + 1.0*(D3Q27[q][2]*D3Q27[q][2]));
+    }
+
+    int count = 0;
+    double dt=0.25;
+    int in,jn,kn,nn;
+    double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
+    double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
+//    double f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
+
+    printf("Number of timesteps is %i \n",timesteps);
+    printf("Mesh is %i,%i,%i \n",Nx,Ny,Nz);
+
+    while (count < timesteps){
+
+        printf("count=%i \n",count);
+        for (k=0;k<Nz;k++){
+            for (j=0;j<Ny;j++){
+                for (i=0;i<Nx;i++){
+
+                    n = k*Nx*Ny + j*Nx + i;
+                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
+
+                    //............Compute the Gradient...................................
+                    if (!(i+1<Nx)) 	nx=0.5*Distance(i,j,k);
+                    else 			nx=0.5*Distance(i+1,j,k);;
+                    if (!(j+1<Ny)) 	ny=0.5*Distance(i,j,k);
+                    else 			ny=0.5*Distance(i,j+1,k);
+                    if (!(k+1<Nz)) 	nz=0.5*Distance(i,j,k);
+                    else 			nz=0.5*Distance(i,j,k+1);
+                    if (i<1)  		nx-=0.5*Distance(i,j,k);
+                    else 			nx-=0.5*Distance(i-1,j,k);
+                    if (j<1) 		ny-=0.5*Distance(i,j,k);
+                    else 			ny-=0.5*Distance(i,j-1,k);
+                    if (k<1)  		nz-=0.5*Distance(i,j,k);
+                    else 			nz-=0.5*Distance(i,j,k-1);
+
+                    //					nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
+                    //				ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
+                    //			nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
+
+                    W = 0.0;	Dx = Dy = Dz = 0.0;
+                    if (nx*nx+ny*ny+nz*nz > 0.0){
+                        for (q=0; q<26; q++){
+                            Cqx = 1.0*D3Q27[q][0];
+                            Cqy = 1.0*D3Q27[q][1];
+                            Cqz = 1.0*D3Q27[q][2];
+                            // get the associated neighbor
+                            in = i + D3Q27[q][0];
+                            jn = j + D3Q27[q][1];
+                            kn = k + D3Q27[q][2];
+                            // make sure the neighbor is in the domain (periodic BC)
+                            /*				if (in < 0 ) in +=Nx;
+                             if (jn < 0 ) jn +=Ny;
+                             if (kn < 0 ) kn +=Nz;
+                             if (!(in < Nx) ) in -=Nx;
+                             if (!(jn < Ny) ) jn -=Ny;
+                             if (!(kn < Nz) ) kn -=Nz;
+                             */				// symmetric boundary
+                            if (in < 0 ) in = i;
+                            if (jn < 0 ) jn = j;
+                            if (kn < 0 ) kn = k;
+                            if (!(in < Nx) ) in = i;
+                            if (!(jn < Ny) ) jn = k;
+                            if (!(kn < Nz) ) kn = k;
+                            // 1-D index
+                            nn = kn*Nx*Ny + jn*Nx + in;
+
+                            // Compute the gradient using upwind finite differences
+                            Dqx = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqx;
+                            Dqy = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqy;
+                            Dqz = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqz;
+
+                            // Only include upwind derivatives
+                            if (sign*(nx*Cqx + ny*Cqy + nz*Cqz) < 0.0 ){
+
+                                Dx += Dqx;
+                                Dy += Dqy;
+                                Dz += Dqz;
+                                W += weights[q];
+                            }
+                        }
+                        // Normalize by the weight to get the approximation to the gradient
+                        Dx /= W;
+                        Dy /= W;
+                        Dz /= W;
+
+                        norm = sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+                    }
+                    else{
+                        norm = 0.0;
+                    }
+                    Distance(i,j,k) += dt*sign*(1.0 - norm);
+
+                    // Disallow any change in phase
+                    if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
+                }
+            }
+        }
+
+        count++;
+    }
+}
+
 
 void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *DistData){
 
