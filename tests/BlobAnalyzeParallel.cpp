@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	int BC=0;
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+ //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
 	int N = (nx+2)*(ny+2)*(nz+2);
 
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     readRankData( rank, nx+2, ny+2, nz+2, Phase, SignDist );
 
     // Communication the halos
-    fillHalo<double> fillData(rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.rank_info,nx,ny,nz,1,1,1,0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
     double vF=0.0;
     double vS=0.0;
     IntArray GlobalBlobID;
-    int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+    int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,Dm.rank_info,
         Phase,SignDist,vF,vS,GlobalBlobID);
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 

@@ -289,7 +289,7 @@ public:
 	void UpdateMeshValues();
 	void UpdateSolid();
 	void ComputeDelPhi();
-	void SSO(DoubleArray &Distance, char *ID, int timesteps);
+	void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps);
 	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
 	void ComputeLocal();
 	void ComputeLocalBlob();
@@ -301,7 +301,7 @@ public:
 
 };
 
-inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, int timesteps){
+inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 
     int Q=26;
     int q,i,j,k,n;
@@ -323,20 +323,27 @@ inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, int timesteps){
     double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
 //    double f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
 
+    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+
+
     printf("Number of timesteps is %i \n",timesteps);
     printf("Mesh is %i,%i,%i \n",Nx,Ny,Nz);
 
     while (count < timesteps){
 
         printf("count=%i \n",count);
-        for (k=0;k<Nz;k++){
-            for (j=0;j<Ny;j++){
-                for (i=0;i<Nx;i++){
+
+        // Communicate the halo of values
+        fillData.fill(Distance);
+
+        for (k=1;k<Nz-1;k++){
+            for (j=1;j<Ny-1;j++){
+                for (i=1;i<Nx-1;i++){
 
                     n = k*Nx*Ny + j*Nx + i;
                     sign = Distance(i,j,k) / fabs(Distance(i,j,k));
 
-                    //............Compute the Gradient...................................
+              /*
                     if (!(i+1<Nx)) 	nx=0.5*Distance(i,j,k);
                     else 			nx=0.5*Distance(i+1,j,k);;
                     if (!(j+1<Ny)) 	ny=0.5*Distance(i,j,k);
@@ -349,10 +356,12 @@ inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, int timesteps){
                     else 			ny-=0.5*Distance(i,j-1,k);
                     if (k<1)  		nz-=0.5*Distance(i,j,k);
                     else 			nz-=0.5*Distance(i,j,k-1);
+                    */
 
-                    //					nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
-                    //				ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
-                    //			nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
+                    //............Compute the Gradient...................................
+                    nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
+                    ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
+                    nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
 
                     W = 0.0;	Dx = Dy = Dz = 0.0;
                     if (nx*nx+ny*ny+nz*nz > 0.0){
@@ -364,20 +373,24 @@ inline void TwoPhase::SSO(DoubleArray &Distance, char *ID, int timesteps){
                             in = i + D3Q27[q][0];
                             jn = j + D3Q27[q][1];
                             kn = k + D3Q27[q][2];
+
                             // make sure the neighbor is in the domain (periodic BC)
                             /*				if (in < 0 ) in +=Nx;
+                             * 	don't need this in parallel since MPI handles the halos
                              if (jn < 0 ) jn +=Ny;
                              if (kn < 0 ) kn +=Nz;
                              if (!(in < Nx) ) in -=Nx;
                              if (!(jn < Ny) ) jn -=Ny;
                              if (!(kn < Nz) ) kn -=Nz;
-                             */				// symmetric boundary
+                             			// symmetric boundary
                             if (in < 0 ) in = i;
                             if (jn < 0 ) jn = j;
                             if (kn < 0 ) kn = k;
                             if (!(in < Nx) ) in = i;
                             if (!(jn < Ny) ) jn = k;
                             if (!(kn < Nz) ) kn = k;
+                            */
+
                             // 1-D index
                             nn = kn*Nx*Ny + jn*Nx + in;
 
@@ -668,7 +681,7 @@ void TwoPhase::ComputeLocalBlob(){
     int i,j,k,n,label;
 	double vF,vS;
 	vF = 0.0; vS= -1.0;
-    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
+//    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
         // get the maximum label locally -- then compute number of global blobs
@@ -681,7 +694,7 @@ void TwoPhase::ComputeLocalBlob(){
 	nblobs_global+=1;
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
-    nblobs_global = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
+    nblobs_global = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm.rank_info,
     		Phase,SDs,vF,vS,BlobLabel);
 
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
