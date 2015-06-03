@@ -7,7 +7,9 @@
 #include <math.h>
 #include "common/Communication.h"
 #include "analysis/analysis.h"
-//#include "ProfilerApp.h"
+#ifdef PROFILE
+	#include "ProfilerApp.h"
+#endif
 #include "TwoPhase.h"
 
 //#include "Domain.h"
@@ -98,10 +100,12 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
- //   PROFILE_ENABLE(0);
- //   PROFILE_DISABLE_TRACE();
- //   PROFILE_SYNCHRONIZE();
- //   PROFILE_START("main");
+#ifdef PROFILE
+	PROFILE_ENABLE(0);
+    PROFILE_DISABLE_TRACE();
+    PROFILE_SYNCHRONIZE();
+    PROFILE_START("main");
+#endif
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
@@ -366,9 +370,10 @@ int main(int argc, char **argv)
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);*/
-
-//    PROFILE_STOP("main");
-//    PROFILE_SAVE("BlobIdentifyParallel",false);
+#ifdef PROFILE
+    PROFILE_STOP("main");
+    PROFILE_SAVE("BlobIdentifyParallel",false);
+#endif
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;  
