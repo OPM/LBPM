@@ -21,8 +21,11 @@ int main(int argc, char **argv)
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
 	
 	int i,j,k,n,nn;
+	int iproc,jproc,kproc;
 	int nx,ny,nz;
 	int Nx, Ny, Nz, N;
+    int nprocx, nprocy, nprocz, nspheres;
+    double Lx, Ly, Lz;
 	Nx = Ny = Nz = 50;
 	N = Nx*Ny*Nz;
 	
@@ -33,8 +36,6 @@ int main(int argc, char **argv)
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
-    int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-    double Lx, Ly, Lz;
     ifstream domain("Domain.in");
     domain >> nprocx;
     domain >> nprocy;
