@@ -60,6 +60,7 @@ int main(int argc, char **argv)
 				x = (nx-2)*Dm.iproc+i;
 				y = (ny-2)*Dm.jproc+j;
 				z = (nz-2)*Dm.kproc+k;
+				n = k*nx*ny+j*nx+i;
 
 				// Initialize phase positions
 				if ((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1) < BubbleRadius*BubbleRadius){
@@ -89,7 +90,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
 
 	printf("Initialized! Converting to Signed Distance function \n");
-	SSO(Distance,id,Dm,10);
+	SSO(Distance,id,Dm,1);
 
 	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"Dist.%05i",rank);
