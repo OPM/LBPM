@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <Array.h>
+#include <Domain.h>
 
 int main(int argc, char **argv)
 {
