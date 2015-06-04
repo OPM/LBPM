@@ -118,17 +118,34 @@ int main(int argc, char **argv)
     //.......................................................................
     int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
     double Lx, Ly, Lz;
-    ifstream domain("Domain.in");
-    domain >> nprocx;
-    domain >> nprocy;
-    domain >> nprocz;
-    domain >> nx;
-    domain >> ny;
-    domain >> nz;
-    domain >> nspheres;
-    domain >> Lx;
-    domain >> Ly;
-    domain >> Lz;
+
+    if (rank==0){
+    	ifstream domain("Domain.in");
+    	domain >> nprocx;
+    	domain >> nprocy;
+    	domain >> nprocz;
+    	domain >> nx;
+    	domain >> ny;
+    	domain >> nz;
+    	domain >> nspheres;
+    	domain >> Lx;
+    	domain >> Ly;
+    	domain >> Lz;
+    }
+	MPI_Barrier(MPI_COMM_WORLD);
+	// Computational domain
+	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	//.................................................
+	MPI_Barrier(MPI_COMM_WORLD);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -181,6 +198,14 @@ int main(int argc, char **argv)
     fwrite(GlobalBlobID.get(),4,GlobalBlobID.length(),BLOBLOCAL);
     fclose(BLOBLOCAL);
     printf("Wrote BlobLabel.%05i \n",rank);
+
+	sprintf(LocalRankString,"%05d",rank);
+//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+//	WriteLocalSolidID(LocalRankFilename, id, N);
+	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (rank == 0) cout << "Domain set." << endl;
 
     //.......................................................................
 	//copies of data needed to perform checkpointing from cpu
@@ -266,9 +291,8 @@ int main(int argc, char **argv)
     if (rank==0) printf("Porosity = %f \n",porosity);
     Dm.CommInit(MPI_COMM_WORLD);
 
- //   nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-  //  		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
-
+//    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+//    Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 //    if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     for (int k=0; k<nz+2; k++){
