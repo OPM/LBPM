@@ -47,6 +47,7 @@ int main(int argc, char **argv)
 	Dm.CommInit(MPI_COMM_WORLD);
 
 	nx+=2; ny+=2; nz+=2;
+	N = nx*ny*nz;
 	int count = 0;
 
 	char *id;
