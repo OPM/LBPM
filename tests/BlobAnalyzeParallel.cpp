@@ -196,9 +196,6 @@ int main(int argc, char **argv)
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
 	if (rank==0) printf("Populate arrays \n");
-	// Compute porosity
-	double porosity,sum,sum_global;
-	sum=0.0;
 	for (int k=0; k<nz+2; k++){
 		for (int j=0; j<ny+2; j++){
 			for (int i=0; i<nx+2; i++){
@@ -242,17 +239,28 @@ int main(int argc, char **argv)
 				Averages.Vel_x(i,j,k)=vx;
 				Averages.Vel_y(i,j,k)=vy;
 				Averages.Vel_z(i,j,k)=vz;
-				if (Averages.SDs(i,j,k) > 0.0){
-					Dm.id[n]=1;
-					sum += 1.0;
-				}
-				else Dm.id[n]=0;
+
 			}
 		}
 	}
     delete [] DistEven;
     delete [] DistOdd;
 
+	// Compute porosity
+	double porosity,sum,sum_global;
+	sum=0.0;
+    for (int k=1; k<nz+1; k++){
+        for (int j=1; j<ny+1; j++){
+            for (int i=1; i<nx+1; i++){
+				int n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
+				if (Averages.SDs(i,j,k) > 0.0){
+					Dm.id[n]=1;
+					sum += 1.0;
+				}
+				else Dm.id[n]=0;
+            }
+        }
+    }
     MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
