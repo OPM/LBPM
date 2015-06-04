@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	DoubleArray Distance(Nx,Ny,Nz);
+	DoubleArray Distance(nx,ny,nz);
 	// Initialize the signed distance function
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
