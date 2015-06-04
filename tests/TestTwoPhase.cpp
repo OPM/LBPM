@@ -106,7 +106,6 @@ int main(int argc, char **argv)
 	Averages.PrintAll(timestep);
 	//....................................................................
 
-
 	if (rank==0){
 		FILE *PHASE;
 		PHASE = fopen("Phase.00000","wb");

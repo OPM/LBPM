@@ -34,7 +34,6 @@ struct Domain{
 		BlobLabel.resize(Nx,Ny,Nz);
 		BlobGraph.resize(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 		BoundaryCondition = BC;
-		rank_info = RankInfoStruct(rank,nprocx,nprocy,nprocz);
 	}
 	~Domain();
 
@@ -45,7 +44,6 @@ struct Domain{
     double Lx,Ly,Lz,Volume;
 	int rank;
 	int BoundaryCondition;
-    RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Comm Comm;		// MPI Communicator for this domain
 
@@ -803,8 +801,8 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     for (q=0; q<Q; q++){
         weights[q] = sqrt(1.0*(D3Q27[q][0]*D3Q27[q][0]) + 1.0*(D3Q27[q][1]*D3Q27[q][1]) + 1.0*(D3Q27[q][2]*D3Q27[q][2]));
     }
-
-    fillHalo<double> fillData(Dm.rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1);
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+    fillHalo<double> fillData(rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1);
 
     int count = 0;
     while (count < timesteps){
