@@ -24,7 +24,8 @@ struct Domain{
 
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
 			double lx, double ly, double lz, int BC){
-	        Volume = nx*ny*nx*npx*npy*npz*1.0;
+
+	    Volume = nx*ny*nx*npx*npy*npz*1.0;
 		Nx = nx+2; Ny = ny+2; Nz = nz+2; 
 		Lx = lx, Ly = ly, Lz = lz;
 		rank = rnk;
