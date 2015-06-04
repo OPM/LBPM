@@ -34,6 +34,7 @@ struct Domain{
 		BlobLabel.resize(Nx,Ny,Nz);
 		BlobGraph.resize(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 		BoundaryCondition = BC;
+		rank_info=RankInfoStruct(rank,nprocx,nprocy,nprocz);
 	}
 	~Domain();
 
@@ -44,6 +45,7 @@ struct Domain{
     double Lx,Ly,Lz,Volume;
 	int rank;
 	int BoundaryCondition;
+	RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Comm Comm;		// MPI Communicator for this domain
 
