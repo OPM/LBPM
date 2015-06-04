@@ -7,7 +7,9 @@
 #include <math.h>
 #include "common/Communication.h"
 #include "analysis/analysis.h"
-#include "ProfilerApp.h"
+#ifdef PROFILE
+	#include "ProfilerApp.h"
+#endif
 #include "TwoPhase.h"
 
 //#include "Domain.h"
@@ -98,10 +100,12 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    PROFILE_ENABLE(0);
+#ifdef PROFILE
+	PROFILE_ENABLE(0);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("main");
+#endif
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
@@ -147,7 +151,7 @@ int main(int argc, char **argv)
 	int BC=0;
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+ //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
 	int N = (nx+2)*(ny+2)*(nz+2);
 
@@ -157,6 +161,7 @@ int main(int argc, char **argv)
     readRankData( rank, nx+2, ny+2, nz+2, Phase, SignDist );
 
     // Communication the halos
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
     fillHalo<double> fillData(rank_info,nx,ny,nz,1,1,1,0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
@@ -166,7 +171,7 @@ int main(int argc, char **argv)
     double vF=0.0;
     double vS=0.0;
     IntArray GlobalBlobID;
-    int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
+    int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,Dm.rank_info,
         Phase,SignDist,vF,vS,GlobalBlobID);
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
@@ -191,9 +196,6 @@ int main(int argc, char **argv)
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
 	if (rank==0) printf("Populate arrays \n");
-	// Compute porosity
-	double porosity,sum,sum_global;
-	sum=0.0;
 	for (int k=0; k<nz+2; k++){
 		for (int j=0; j<ny+2; j++){
 			for (int i=0; i<nx+2; i++){
@@ -237,17 +239,28 @@ int main(int argc, char **argv)
 				Averages.Vel_x(i,j,k)=vx;
 				Averages.Vel_y(i,j,k)=vy;
 				Averages.Vel_z(i,j,k)=vz;
-				if (Averages.SDs(i,j,k) > 0.0){
-					Dm.id[n]=1;
-					sum += 1.0;
-				}
-				else Dm.id[n]=0;
+
 			}
 		}
 	}
     delete [] DistEven;
     delete [] DistOdd;
 
+	// Compute porosity
+	double porosity,sum,sum_global;
+	sum=0.0;
+    for (int k=1; k<nz+1; k++){
+        for (int j=1; j<ny+1; j++){
+            for (int i=1; i<nx+1; i++){
+				int n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
+				if (Averages.SDs(i,j,k) > 0.0){
+					Dm.id[n]=1;
+					sum += 1.0;
+				}
+				else Dm.id[n]=0;
+            }
+        }
+    }
     MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
@@ -366,9 +379,10 @@ int main(int argc, char **argv)
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);*/
-
+#ifdef PROFILE
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
+#endif
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;  

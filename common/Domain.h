@@ -34,6 +34,7 @@ struct Domain{
 		BlobLabel.resize(Nx,Ny,Nz);
 		BlobGraph.resize(18,MAX_BLOB_COUNT,MAX_BLOB_COUNT);
 		BoundaryCondition = BC;
+		rank_info=RankInfoStruct(rank,nprocx,nprocy,nprocz);
 	}
 	~Domain();
 
@@ -41,9 +42,10 @@ struct Domain{
 	int Nx,Ny,Nz,N;
 	int iproc,jproc,kproc;
  	int nprocx,nprocy,nprocz;
-        double Lx,Ly,Lz,Volume;
+    double Lx,Ly,Lz,Volume;
 	int rank;
 	int BoundaryCondition;
+	RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Comm Comm;		// MPI Communicator for this domain
 
@@ -775,6 +777,142 @@ void Domain::BlobComm(MPI_Comm Communicator){
 	UnpackBlobData(recvList_YZ, recvCount_YZ ,recvBuf_YZ, BlobLabelData);
 	//......................................................................................
 }
+inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
+	/*
+	 * This routine converts the data in the Distance array to a signed distance
+	 * by solving the equation df/dt = sign(1-|grad f|), where Distance provides
+	 * the values of f on the mesh associated with domain Dm
+	 * It has been tested with segmented data initialized to values [-1,1]
+	 * and will converge toward the signed distance to the surface bounding the associated phases
+	 */
+
+	int Q=26;
+    int q,i,j,k,n;
+    double dt=0.1;
+    int in,jn,kn,nn;
+    double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
+    double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
+
+    const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+        {1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
+        {0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1},{1,1,1},{-1,-1,-1},{1,1,-1},{-1,-1,1},
+        {-1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1}};
+
+    double weights[26];
+    // Compute the weights from the finite differences
+    for (q=0; q<Q; q++){
+        weights[q] = sqrt(1.0*(D3Q27[q][0]*D3Q27[q][0]) + 1.0*(D3Q27[q][1]*D3Q27[q][1]) + 1.0*(D3Q27[q][2]*D3Q27[q][2]));
+    }
+
+    int xdim,ydim,zdim;
+    xdim=Dm.Nx-2;
+    ydim=Dm.Ny-2;
+    zdim=Dm.Nz-2;
+    fillHalo<double> fillData(Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+
+    int count = 0;
+    while (count < timesteps){
+
+        // Communicate the halo of values
+        fillData.fill(Distance);
+
+        // Execute the next timestep
+        for (k=1;k<Dm.Nz-1;k++){
+            for (j=1;j<Dm.Ny-1;j++){
+                for (i=1;i<Dm.Nx-1;i++){
+
+                	n = k*Dm.Nx*Dm.Ny+j*Dm.Nx+i;
+                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
+
+              /*
+                    if (!(i+1<Nx)) 	nx=0.5*Distance(i,j,k);
+                    else 			nx=0.5*Distance(i+1,j,k);;
+                    if (!(j+1<Ny)) 	ny=0.5*Distance(i,j,k);
+                    else 			ny=0.5*Distance(i,j+1,k);
+                    if (!(k+1<Nz)) 	nz=0.5*Distance(i,j,k);
+                    else 			nz=0.5*Distance(i,j,k+1);
+                    if (i<1)  		nx-=0.5*Distance(i,j,k);
+                    else 			nx-=0.5*Distance(i-1,j,k);
+                    if (j<1) 		ny-=0.5*Distance(i,j,k);
+                    else 			ny-=0.5*Distance(i,j-1,k);
+                    if (k<1)  		nz-=0.5*Distance(i,j,k);
+                    else 			nz-=0.5*Distance(i,j,k-1);
+                    */
+
+                    //............Compute the Gradient...................................
+                    nx = 0.5*(Distance(i+1,j,k) - Distance(i-1,j,k));
+                    ny = 0.5*(Distance(i,j+1,k) - Distance(i,j-1,k));
+                    nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
+
+                    W = 0.0;	Dx = Dy = Dz = 0.0;
+                    // Ignore any values that have distances less than a lattice unit
+                    // since sometimes the positions may be guessed more accurately from
+                    // another source (such as a simulation)
+                    // also ignore places where the gradient is zero since this will not
+                    // result in any local change to Distance
+                    if (nx*nx+ny*ny+nz*nz > 0.0 && !(Distance(i,j,k)*Distance(i,j,k) < 1.0) ){
+                        for (q=0; q<26; q++){
+                            Cqx = 1.0*D3Q27[q][0];
+                            Cqy = 1.0*D3Q27[q][1];
+                            Cqz = 1.0*D3Q27[q][2];
+                            // get the associated neighbor
+                            in = i + D3Q27[q][0];
+                            jn = j + D3Q27[q][1];
+                            kn = k + D3Q27[q][2];
+
+                            // make sure the neighbor is in the domain (periodic BC)
+                            /*				if (in < 0 ) in +=Nx;
+                             * 	don't need this in parallel since MPI handles the halos
+                             if (jn < 0 ) jn +=Ny;
+                             if (kn < 0 ) kn +=Nz;
+                             if (!(in < Nx) ) in -=Nx;
+                             if (!(jn < Ny) ) jn -=Ny;
+                             if (!(kn < Nz) ) kn -=Nz;
+                             			// symmetric boundary
+                            if (in < 0 ) in = i;
+                            if (jn < 0 ) jn = j;
+                            if (kn < 0 ) kn = k;
+                            if (!(in < Nx) ) in = i;
+                            if (!(jn < Ny) ) jn = k;
+                            if (!(kn < Nz) ) kn = k;
+                            */
+
+                            // Compute the gradient using upwind finite differences
+                            Dqx = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqx;
+                            Dqy = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqy;
+                            Dqz = weights[q]*(Distance(i,j,k) - Distance(in,jn,kn))*Cqz;
+
+                            // Only include upwind derivatives
+                            if (sign*(nx*Cqx + ny*Cqy + nz*Cqz) < 0.0 ){
+
+                                Dx += Dqx;
+                                Dy += Dqy;
+                                Dz += Dqz;
+                                W += weights[q];
+                            }
+                        }
+                        // Normalize by the weight to get the approximation to the gradient
+                        Dx /= W;
+                        Dy /= W;
+                        Dz /= W;
+
+                        norm = sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+                    }
+                    else{
+                        norm = 0.0;
+                    }
+                    Distance(i,j,k) += dt*sign*(1.0 - norm);
+
+                    // Disallow any change in phase
+                    if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
+                }
+            }
+        }
+
+        count++;
+    }
+}
+
 
 inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad)
 {
