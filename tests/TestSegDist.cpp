@@ -27,33 +27,21 @@ int main(int argc, char **argv)
     int nprocx, nprocy, nprocz, nspheres;
     double Lx, Ly, Lz;
 	Nx = Ny = Nz = 50;
+	nx = ny = nz = 50;
 	N = Nx*Ny*Nz;
+	nprocx=nprocy=nprocz=2;
+	Lx = Ly = Lz = 1.0;
+	int BC=0;
+
 	
 	if (nprocs != 8){
 		ERROR("TestSegDist: Number of MPI processes must be equal to 8");
 	}
 
-    //.......................................................................
-    // Reading the domain information file
-    //.......................................................................
-    ifstream domain("Domain.in");
-    domain >> nprocx;
-    domain >> nprocy;
-    domain >> nprocz;
-    domain >> nx;
-    domain >> ny;
-    domain >> nz;
-    domain >> nspheres;
-    domain >> Lx;
-    domain >> Ly;
-    domain >> Lz;
-
-    nprocx=nprocy=nprocz=2;
     if (nprocx !=2 || nprocz !=2 || nprocy !=2 ){
 		ERROR("TestSegDist: MPI process grid must be 2x2x2");
 	}
 
-	int BC=0;
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	nx+=2; ny+=2; nz+=2;
