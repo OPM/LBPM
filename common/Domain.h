@@ -803,8 +803,12 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     for (q=0; q<Q; q++){
         weights[q] = sqrt(1.0*(D3Q27[q][0]*D3Q27[q][0]) + 1.0*(D3Q27[q][1]*D3Q27[q][1]) + 1.0*(D3Q27[q][2]*D3Q27[q][2]));
     }
-    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
-    fillHalo<double> fillData(rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1);
+
+    int xdim,ydim,zdim;
+    xdim=Dm.Nx-2;
+    ydim=Dm.Ny-2;
+    zdim=Dm.Nz-2;
+    fillHalo<double> fillData(Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
 
     int count = 0;
     while (count < timesteps){

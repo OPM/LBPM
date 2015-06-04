@@ -161,7 +161,8 @@ int main(int argc, char **argv)
     readRankData( rank, nx+2, ny+2, nz+2, Phase, SignDist );
 
     // Communication the halos
-    fillHalo<double> fillData(Dm.rank_info,nx,ny,nz,1,1,1,0,1);
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+    fillHalo<double> fillData(rank_info,nx,ny,nz,1,1,1,0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 
