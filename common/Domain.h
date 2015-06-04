@@ -788,7 +788,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 
 	int Q=26;
     int q,i,j,k,n;
-    double dt=0.25;
+    double dt=0.1;
     int in,jn,kn,nn;
     double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
     double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;

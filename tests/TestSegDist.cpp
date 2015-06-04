@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
 	char *id;
 	id = new char [N];
-	double BubbleRadius = 5;
+	double BubbleRadius = 25;
 	// Initialize the bubble
 	int x,y,z;
 	for (k=1;k<nz-1;k++){
@@ -76,10 +76,10 @@ int main(int argc, char **argv)
 	
 	DoubleArray Distance(nx,ny,nz);
 	// Initialize the signed distance function
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n=k*Nx*Ny+j*Nx+i;
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
 				Distance(i,j,k) = 2.0*id[n]-1.0;
 			}
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
 
 	printf("Initialized! Converting to Signed Distance function \n");
-	SSO(Distance,id,Dm,1);
+	SSO(Distance,id,Dm,10);
 
 	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"Dist.%05i",rank);
