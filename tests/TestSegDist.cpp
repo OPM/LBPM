@@ -45,10 +45,9 @@ int main(int argc, char **argv)
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 
-
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
-	
+
 	char *id;
 	id = new char [N];
 	double BubbleRadius = 5;
@@ -83,6 +82,10 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
+	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
+	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
 
 	printf("Initialized! Converting to Signed Distance function \n");
 	SSO(Distance,id,Dm,10);
