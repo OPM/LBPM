@@ -57,9 +57,9 @@ int main(int argc, char **argv)
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
-				x = (nx-2)*iproc+i;
-				y = (ny-2)*jproc+i;
-				z = (nz-2)*kproc+i;
+				x = (nx-2)*Dm.iproc+i;
+				y = (ny-2)*Dm.jproc+j;
+				z = (nz-2)*Dm.kproc+k;
 
 				// Initialize phase positions
 				if ((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1) < BubbleRadius*BubbleRadius){
