@@ -813,8 +813,6 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     int count = 0;
     while (count < timesteps){
 
-        printf("count=%i \n",count);
-
         // Communicate the halo of values
         fillData.fill(Distance);
 
