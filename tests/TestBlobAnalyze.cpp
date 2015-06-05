@@ -187,6 +187,17 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
 	//.......................................................................
+	for ( k=1;k<Nz-1;k++){
+		for ( j=1;j<Ny-1;j++){
+			for ( i=1;i<Nx-1;i++){
+				n = k*Nx*Ny+j*Nx+i;
+					Dm.id[n] = 1;
+			}
+		}
+	}
+	//.......................................................................
+    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
+	//.......................................................................
 
 	//.......................................................................
 	SignedDistance(Averages.Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
@@ -217,9 +228,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	//.......................................................................
-    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
-	//.......................................................................
 
     double beta = 0.95;
     Averages.SetupCubes(Dm);
