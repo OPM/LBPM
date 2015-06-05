@@ -206,7 +206,6 @@ int main(int argc, char **argv)
 	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
-
     //.......................................................................
 	//copies of data needed to perform checkpointing from cpu
 	double *Den, *DistEven, *DistOdd;
@@ -256,7 +255,7 @@ int main(int argc, char **argv)
 				vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
 				vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
 				// Assign array components needed for averaging
-				Averages.SDs(i,j,k)=SignDist(i,j,k);
+				//Averages.SDs(i,j,k)=SignDist(i,j,k);
 				Averages.Phase(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
 				Averages.Phase_tplus(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
 				Averages.Phase_tminus(i,j,k)=Phase(i,j,k);//(da-db)/(da+db);
@@ -274,10 +273,10 @@ int main(int argc, char **argv)
 	// Compute porosity
 	double porosity,sum,sum_global;
 	sum=0.0;
-    for (int k=1; k<nz+1; k++){
-        for (int j=1; j<ny+1; j++){
-            for (int i=1; i<nx+1; i++){
-				int n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
+    for (int k=1; k<Dm.Nz-1; k++){
+        for (int j=1; j<Dm.Ny-1; j++){
+            for (int i=1; i<Dm.Nx-1; i++){
+				int n = k*Dm.Nx*Dm.Ny+j*Dm.Nx+i;
 				if (Averages.SDs(i,j,k) > 0.0){
 					Dm.id[n]=1;
 					sum += 1.0;
@@ -286,10 +285,11 @@ int main(int argc, char **argv)
             }
         }
     }
+    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
+
     MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
-    Dm.CommInit(MPI_COMM_WORLD);
 
 //    nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
 //    Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
