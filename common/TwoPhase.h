@@ -563,11 +563,6 @@ void TwoPhase::ComputeLocalBlob(){
 	nblobs_global+=1;
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
-    nblobs_global = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm.rank_info,
-    		Phase,SDs,vF,vS,BlobLabel);
-
-	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
-
 	//BlobAverages.Set(nblobs_global);
 	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
     BlobAverages.fill(0.0);

@@ -166,6 +166,19 @@ int main(int argc, char **argv)
 	Nx = nx+2;
 	Ny = ny+2;
 	Nz = nz+2;
+	if (rank == 0) cout << "Domain set." << endl;
+	//.......................................................................
+	for ( k=1;k<Nz-1;k++){
+		for ( j=1;j<Ny-1;j++){
+			for ( i=1;i<Nx-1;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				Dm.id[n] = 1;
+			}
+		}
+	}
+	//.......................................................................
+    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
+	//.......................................................................
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
 	if (rank==1) printf("nspheres =%i \n",nspheres);
 	//.......................................................................
@@ -185,20 +198,6 @@ int main(int argc, char **argv)
 	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//...........................................................................
 	MPI_Barrier(MPI_COMM_WORLD);
-	if (rank == 0) cout << "Domain set." << endl;
-	//.......................................................................
-	for ( k=1;k<Nz-1;k++){
-		for ( j=1;j<Ny-1;j++){
-			for ( i=1;i<Nx-1;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				Dm.id[n] = 1;
-			}
-		}
-	}
-	//.......................................................................
-    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
-	//.......................................................................
-
 	//.......................................................................
 	SignedDistance(Averages.Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   Dm.iproc,Dm.jproc,Dm.kproc,Dm.nprocx,Dm.nprocy,Dm.nprocz);
@@ -230,6 +229,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	double vF,vS;
+	vF = vS = 0.0;
+    nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+
+	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	if (rank==0) printf("Computing averages \n");
     double beta = 0.95;
