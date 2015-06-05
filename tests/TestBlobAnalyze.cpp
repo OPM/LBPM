@@ -234,7 +234,6 @@ int main(int argc, char **argv)
 	double vF,vS;
 	vF = vS = 0.0;
 
-	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	if (rank==0) printf("Computing averages \n");
     double beta = 0.95;
