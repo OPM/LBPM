@@ -247,7 +247,7 @@ int main(int argc, char **argv)
     // Write the local blob ids
     sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
     FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
-    fwrite(GlobalBlobID.get(),4,GlobalBlobID.length(),BLOBLOCAL);
+    fwrite(Averages.BlobLabel.get(),4,Averages.BlobLabel.length(),BLOBLOCAL);
     fclose(BLOBLOCAL);
     printf("Wrote BlobLabel.%05i \n",rank);
 
