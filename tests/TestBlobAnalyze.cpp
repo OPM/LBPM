@@ -233,8 +233,6 @@ int main(int argc, char **argv)
 
 	double vF,vS;
 	vF = vS = 0.0;
-    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
@@ -246,6 +244,12 @@ int main(int argc, char **argv)
     Averages.Initialize();
 	if (rank==0) printf("updating mesh halos \n");
     Averages.UpdateMeshValues();
+
+	if (rank==0) printf("computing blobs \n");
+    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+
 	if (rank==0) printf("computing local averages  \n");
     Averages.ComputeLocalBlob();
 	if (rank==0) printf("reducing averages  \n");
