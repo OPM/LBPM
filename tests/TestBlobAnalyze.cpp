@@ -201,7 +201,6 @@ int main(int argc, char **argv)
 				// Shrink the sphere sizes by two voxels to make sure they don't touch
 				Averages.SDs(i,j,k) = 100.0;
 				Averages.Phase(i,j,k) -= 2.0;
-				Averages.Phase(i,j,k) = -Averages.Phase(i,j,k);
 				if (Averages.Phase(i,j,k) > 0.0){
 					Dm.id[n] = 2;
 				}
