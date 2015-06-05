@@ -549,7 +549,7 @@ void TwoPhase::ComputeLocal(){
 void TwoPhase::ComputeLocalBlob(){
     int i,j,k,n,label;
 	double vF,vS;
-	vF = 0.0; vS= -1.0;
+	vF = 0.0; vS=0.0;
 //    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};

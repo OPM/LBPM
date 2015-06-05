@@ -207,6 +207,13 @@ int main(int argc, char **argv)
 				else{
 					Dm.id[n] = 1;
 				}
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Phase_tplus(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Phase_tminus(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Press(i,j,k) = 0.0;
+				Averages.Vel_x(i,j,k) = 0.0;
+				Averages.Vel_y(i,j,k) = 0.0;
+				Averages.Vel_z(i,j,k) = 0.0;
 			}
 		}
 	}
