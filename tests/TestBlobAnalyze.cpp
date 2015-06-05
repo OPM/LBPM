@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 
 	double vF,vS;
 	vF = vS = 0.0;
-    nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
     		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
