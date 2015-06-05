@@ -245,6 +245,7 @@ int main(int argc, char **argv)
 
 	if (rank==0) printf("Writing blobs \n");
     // Write the local blob ids
+	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
     FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
     fwrite(Averages.BlobLabel.get(),4,Averages.BlobLabel.length(),BLOBLOCAL);
