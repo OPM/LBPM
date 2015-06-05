@@ -205,6 +205,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
+	if (rank==0) printf("Initializing the system \n");
 	for ( k=1;k<Nz-1;k++){
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (rank==0) printf("Computing averages \n");
     double beta = 0.95;
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
