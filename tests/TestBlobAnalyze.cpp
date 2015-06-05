@@ -231,6 +231,13 @@ int main(int argc, char **argv)
     Averages.ComputeLocalBlob();
     Averages.Reduce();
 
+	if (rank==0){
+		FILE *PHASE;
+		PHASE = fopen("Phase.00000","wb");
+		fwrite(Averages.SDn.get(),8,Nx*Ny*Nz,PHASE);
+		fclose(PHASE);
+	}
+
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
     int dimx = (int)Averages.BlobAverages.size(0);
     int dimy = (int)Averages.BlobAverages.size(1);
