@@ -1,4 +1,4 @@
-`// Sequential blob analysis 
+// Sequential blob analysis 
 // Reads parallel simulation data and performs connectivity analysis
 // and averaging on a blob-by-blob basis
 // James E. McClure 2014
@@ -104,12 +104,12 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-#ifdef PROFILE
+    Utilities::setAbortBehavior( true, true, true );
+    Utilities::setErrorHandlers();
 	PROFILE_ENABLE(0);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("main");
-#endif
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
@@ -477,10 +477,8 @@ int main(int argc, char **argv)
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);*/
-#ifdef PROFILE
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
-#endif
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;  

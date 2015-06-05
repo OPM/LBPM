@@ -179,8 +179,12 @@ void term_func()
 static void setTerminateErrorHandler()
 {
     std::set_terminate( term_func );
-    signal(SIGSEGV,&term_func_abort);
     signal(SIGABRT,&term_func_abort);
+    signal(SIGFPE,&term_func_abort);
+    signal(SIGILL,&term_func_abort);
+    signal(SIGINT,&term_func_abort);
+    signal(SIGSEGV,&term_func_abort);
+    signal(SIGTERM,&term_func_abort);
 }
 void Utilities::setErrorHandlers()
 {
