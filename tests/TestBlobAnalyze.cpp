@@ -235,14 +235,13 @@ int main(int argc, char **argv)
 	vF = vS = 0.0;
 
 
-	if (rank==0) printf("Computing averages \n");
     double beta = 0.95;
+	if (rank==0) printf("initializing the system \n");
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
-	if (rank==0) printf("initializing the system \n");
     Averages.Initialize();
-	if (rank==0) printf("updating mesh halos \n");
     Averages.UpdateMeshValues();
+    Dm.CommunicateMeshHalo(Averages.Phase);
 
 	if (rank==0) printf("computing blobs \n");
     int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
