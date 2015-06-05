@@ -233,7 +233,6 @@ int main(int argc, char **argv)
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
     Averages.Initialize();
-    Averages.ComputeDelPhi();
     Averages.UpdateMeshValues();
     Averages.ComputeLocalBlob();
     Averages.Reduce();
