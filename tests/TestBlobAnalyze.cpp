@@ -239,6 +239,7 @@ int main(int argc, char **argv)
     Averages.ComputeLocalBlob();
     Averages.Reduce();
 
+	if (rank==0) printf("Writing blobs \n");
 	if (rank==0){
 		FILE *PHASE;
 		PHASE = fopen("Phase.00000","wb");
@@ -246,6 +247,7 @@ int main(int argc, char **argv)
 		fclose(PHASE);
 	}
 
+	if (rank==0) printf("Sorting averages \n");
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
     int dimx = (int)Averages.BlobAverages.size(0);
     int dimy = (int)Averages.BlobAverages.size(1);
