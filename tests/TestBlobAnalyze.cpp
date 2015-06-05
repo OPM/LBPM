@@ -234,20 +234,22 @@ int main(int argc, char **argv)
     double beta = 0.95;
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
+	if (rank==0) printf("initializing the system \n");
     Averages.Initialize();
-	if (rank==0) printf("updating mesh \n");
+	if (rank==0) printf("updating mesh halos \n");
     Averages.UpdateMeshValues();
-	if (rank==0) printf("computing blobs  \n");
+	if (rank==0) printf("computing local averages  \n");
     Averages.ComputeLocalBlob();
+	if (rank==0) printf("reducing averages  \n");
     Averages.Reduce();
 
 	if (rank==0) printf("Writing blobs \n");
-	if (rank==0){
-		FILE *PHASE;
-		PHASE = fopen("Phase.00000","wb");
-		fwrite(Averages.SDn.get(),8,Nx*Ny*Nz,PHASE);
-		fclose(PHASE);
-	}
+    // Write the local blob ids
+    sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
+    FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
+    fwrite(GlobalBlobID.get(),4,GlobalBlobID.length(),BLOBLOCAL);
+    fclose(BLOBLOCAL);
+    printf("Wrote BlobLabel.%05i \n",rank);
 
 	if (rank==0) printf("Sorting averages \n");
     //  Blobs.Set(Averages.BlobAverages.NBLOBS);
