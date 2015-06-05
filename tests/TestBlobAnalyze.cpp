@@ -235,7 +235,9 @@ int main(int argc, char **argv)
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
     Averages.Initialize();
+	if (rank==0) printf("updating mesh \n");
     Averages.UpdateMeshValues();
+	if (rank==0) printf("computing blobs  \n");
     Averages.ComputeLocalBlob();
     Averages.Reduce();
 
