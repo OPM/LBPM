@@ -1,4 +1,4 @@
-// Sequential blob analysis 
+`// Sequential blob analysis 
 // Reads parallel simulation data and performs connectivity analysis
 // and averaging on a blob-by-blob basis
 // James E. McClure 2014
@@ -28,16 +28,20 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
 }
 
 inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
-	FILE *BLOBSTATES= fopen("blobstates.tcat","w");
 	int a;
 	double iVol=1.0/TCAT.Dm.Volume;
 	double PoreVolume;
 	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
 	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
 	nwp_volume=vol_n=pan=awn=ans=Jwn=Kwn=lwns=clwns=pawn=0.0;
+	sw = TCAT.sat_w;
 	pw = TCAT.paw_global;
 	aws = TCAT.aws;
-	// Compute the averages over the entire non-wetting phsae
+	// Compute the averages over the entire non-wetting phase
+	printf("Writing blobstates.tcat for %i components \n",TCAT.nblobs_global);
+	FILE *BLOBSTATES;
+	BLOBSTATES = fopen("./blobstates.tcat","w");
+	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
 	for (a=0; a<TCAT.nblobs_global; a++){
 		vol_n += TCAT.BlobAverages(0,a);
 		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
@@ -396,9 +400,79 @@ int main(int argc, char **argv)
     	fclose(BLOBLOG);
     }
 
-    double Length=1.0;
-    if (rank==0) printf("Writing the blob states \n");
-    if (rank==0) WriteBlobStates(Averages,Length,porosity);
+    if (rank==0) {
+      int a;
+      double D=1.0;
+	double iVol=1.0/Averages.Dm.Volume;
+	double PoreVolume;
+	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
+	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
+	nwp_volume=vol_n=pan=awn=ans=Jwn=Kwn=lwns=clwns=pawn=0.0;
+	sw = Averages.sat_w;
+	pw = Averages.paw_global;
+	aws = Averages.aws;
+	// Compute the averages over the entire non-wetting phase
+	printf("Writing blobstates.tcat for %i components \n",Averages.nblobs_global);
+	FILE *BLOBSTATES;
+	BLOBSTATES = fopen("./blobstates.tcat","w");
+	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
+	for (a=0; a<Averages.nblobs_global; a++){
+		vol_n += Averages.BlobAverages(0,a);
+		pan += Averages.BlobAverages(2,a)*Averages.BlobAverages(0,a);
+		awn += Averages.BlobAverages(3,a);
+		ans += Averages.BlobAverages(4,a);
+		Jwn += Averages.BlobAverages(5,a)*Averages.BlobAverages(3,a);
+		Kwn += Averages.BlobAverages(6,a)*Averages.BlobAverages(3,a);
+		lwns += Averages.BlobAverages(7,a);
+		clwns += Averages.BlobAverages(8,a)*Averages.BlobAverages(7,a);
+		nwp_volume += Averages.BlobAverages(1,a);
+		pawn += Averages.BlobAverages(2,a)*Averages.BlobAverages(3,a);
+	}
+
+	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
+	PoreVolume=Averages.wp_volume_global + nwp_volume;
+	// Subtract off portions of non-wetting phase in order of size
+	for (a=Averages.nblobs_global-1; a>0; a--){
+		// Subtract the features one-by-one
+		vol_n -= Averages.BlobAverages(0,a);
+		pan -= Averages.BlobAverages(2,a)*Averages.BlobAverages(0,a);
+		awn -= Averages.BlobAverages(3,a);
+		ans -= Averages.BlobAverages(4,a);
+		Jwn -= Averages.BlobAverages(5,a)*Averages.BlobAverages(3,a);
+		Kwn -= Averages.BlobAverages(6,a)*Averages.BlobAverages(3,a);
+		lwns -= Averages.BlobAverages(7,a);
+		clwns -= Averages.BlobAverages(8,a)*Averages.BlobAverages(7,a);
+		nwp_volume -= Averages.BlobAverages(1,a);
+		pawn -= Averages.BlobAverages(2,a)*Averages.BlobAverages(3,a);
+
+		// Update wetting phase averages
+		aws += Averages.BlobAverages(4,a);
+		if (vol_n > 64){	// Only consider systems with "large enough" blobs -- 4^3
+			if (fabs(1.0 - nwp_volume/PoreVolume - sw) > 0.005 || a == 1){
+				sw = 1.0 - nwp_volume/PoreVolume;
+
+				JwnD = Jwn*D/awn;
+				//trJwnD = -trJwn*D/trawn;
+				cwns = clwns / lwns;
+				pwn = (pawn/awn-pw)*D/0.058;
+				pn = pan/vol_n;
+				awnD = awn*D*iVol;
+				awsD = aws*D*iVol;
+				ansD = ans*D*iVol;
+				lwnsDD = lwns*D*D*iVol;
+				pc = (pn-pw)*D/0.058; 	// hard-coded surface tension due to being lazy
+
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g ",sw,pn,pw);
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g ",awnD,awsD,ansD,lwnsDD);
+				fprintf(BLOBSTATES,"%.5g %.5g %.5g %.5g %i\n",pc,pwn,JwnD,cwns,a);
+			}
+		}
+	}
+	fclose(BLOBSTATES);
+
+    }
+
+    //WriteBlobStates(Averages,Length,porosity);
 
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
