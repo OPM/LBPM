@@ -104,12 +104,6 @@ int main(int argc, char **argv)
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    Utilities::setAbortBehavior( true, true, true );
-    Utilities::setErrorHandlers();
-	PROFILE_ENABLE(0);
-    PROFILE_DISABLE_TRACE();
-    PROFILE_SYNCHRONIZE();
-    PROFILE_START("main");
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
@@ -122,6 +116,8 @@ int main(int argc, char **argv)
     //.......................................................................
     int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
     double Lx, Ly, Lz;
+    int Nx,Ny,Nz;
+    int i,j,k,n;
 
     if (rank==0){
     	ifstream domain("Domain.in");
@@ -167,7 +163,9 @@ int main(int argc, char **argv)
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
 	int N = (nx+2)*(ny+2)*(nz+2);
-
+	Nx = nx+2;
+	Ny = ny+2;
+	Nz = nz+2;
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
 	if (rank==1) printf("nspheres =%i \n",nspheres);
 	//.......................................................................
@@ -189,11 +187,13 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	if (rank == 0) cout << "Domain set." << endl;
 	//.......................................................................
+	char *id;
+	id = new char[Nx*Ny*Nz];
 	DoubleArray Phase(Nx,Ny,Nz);
 	DoubleArray SignDist(Nx,Ny,Nz);
 	//.......................................................................
 	SignedDistance(Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
-					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
+					   Dm.iproc,Dm.jproc,Dm.kproc,Dm.nprocx,Dm.nprocy,Dm.nprocz);
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
@@ -216,10 +216,6 @@ int main(int argc, char **argv)
 	//.......................................................................
     Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
 	//.......................................................................
-
-    MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    porosity = sum_global/Dm.Volume;
-    if (rank==0) printf("Porosity = %f \n",porosity);
 
     double beta = 0.95;
     Averages.SetupCubes(Dm);
@@ -390,8 +386,7 @@ int main(int argc, char **argv)
     /*FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);*/
-    PROFILE_STOP("main");
-    PROFILE_SAVE("BlobIdentifyParallel",false);
+
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;  
