@@ -33,7 +33,6 @@ int main(int argc, char **argv)
 	Lx = Ly = Lz = 1.0;
 	int BC=0;
 
-	
 	if (nprocs != 8){
 		ERROR("TestSegDist: Number of MPI processes must be equal to 8");
 	}

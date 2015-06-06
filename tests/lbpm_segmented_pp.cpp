@@ -1,0 +1,189 @@
+/*
+ * Pre-processor to generate signed distance function from segmented data
+ * segmented data should be stored in a raw binary file as 1-byte integer (type char)
+ */
+// Compute the signed distance from a digitized image 
+// Two phases are present
+// Phase 1 has value -1
+// Phase 2 has value 1
+// this code uses the segmented image to generate the signed distance 
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <iostream>
+#include <fstream>
+#include <Array.h>
+#include <Domain.h>
+
+int main(int argc, char **argv)
+{
+	// Initialize MPI
+	int rank, nprocs;
+	MPI_Init(&argc,&argv);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+	
+    //.......................................................................
+    // Reading the domain information file
+    //.......................................................................
+    int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
+    double Lx, Ly, Lz;
+    int Nx,Ny,Nz;
+    int i,j,k,n;
+	int BC=0;
+    char Filename[40];
+    int xStart,yStart,zStart;
+
+    if (rank==0){
+    	ifstream domain("Domain.in");
+    	domain >> nprocx;
+    	domain >> nprocy;
+    	domain >> nprocz;
+    	domain >> nx;
+    	domain >> ny;
+    	domain >> nz;
+    	domain >> nspheres;
+    	domain >> Lx;
+    	domain >> Ly;
+    	domain >> Lz;
+
+    	ifstream domain("Segmented.in");
+    	domain >> Filename; // Name of data file containing segmented data
+    	domain >> Nx;   	// size of the binary file
+    	domain >> Ny;
+    	domain >> Nz;
+    	domain >> xStart;	// offset for the starting voxel
+    	domain >> yStart;
+    	domain >> zStart;
+    }
+	MPI_Barrier(MPI_COMM_WORLD);
+	// Computational domain
+	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	//.................................................
+	MPI_Barrier(MPI_COMM_WORLD);
+
+    // Check that the number of processors >= the number of ranks
+    if ( rank==0 ) {
+        printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
+        printf("Number of MPI ranks used: %i \n", nprocs);
+        printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
+    }
+    if ( nprocs < nprocx*nprocy*nprocz ){
+        ERROR("Insufficient number of processors");
+    }
+    char *SegData;
+    SegData = new char[Nx*Ny*Nz];
+    // Rank=0 reads the entire segmented data and distributes to worker processes
+    if (rank==0){
+    	FILE *SEGDAT = fopen(Filename,"rb");
+    	if (SEGDAT==NULL) ERROR("Error reading segmented data");
+    	fread(SegData,1,Nx*Ny*Nz,SEGDAT);
+    	fclose(SEGDAT);
+        printf("Read segmented data from %s \n",Filename);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Get the rank info
+    N = (nx+2)*(ny+2)*(nz+2);
+	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	// Set up the sub-domains
+	if (rank==0){
+		char *tmp;
+		tmp = new char[(nx+2)*(ny+2)*(nz+2)];
+		for (int kp=0; kp<Dm.kproc; kp++){
+			for (int jp=0; jp<Dm.jproc; jp++){
+				for (int jp=0; ip<Dm.iproc; ip++){
+					// rank of the process that gets this subdomain
+					int rnk = kp*Dm.nprocx*Dm.nprocy + jp*Dm.nprocx + ip;
+					// Pack and send the subdomain for rnk
+					for (k=0;k<nz+2;k++){
+						for (j=0;j<ny+2;j++){
+							for (i=0;i<nx+2;j++){
+								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+								int nglobal = zstart*Nx*Ny + ystart*Nx + xstart +
+												kproc*nprocx*nprocy*nx*ny*nz+ jproc*nprocx*nx*ny*nz
+												 + iproc*nx*ny*nz + k*nx*ny + j*nx + i;
+								tmp[nlocal] = SegDat[nglobal];
+							}
+						}
+					}
+					MPI_Send(&tmp,N,MPI_CHAR,rnk,15,MPI_COMM_WORLD);
+				}
+			}
+		}
+	}
+	else{
+		// Recieve the subdomain from rank = 0
+		MPI_Recv(&Dm.id,N,MPI_CHAR,0,15,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	Dm.CommInit(MPI_COMM_WORLD);
+
+	nx+=2; ny+=2; nz+=2;
+	int count = 0;
+
+	char *id;
+	id = new char [N];
+	double BubbleRadius = 25;
+	// Initialize the bubble
+	int x,y,z;
+	for (k=1;k<nz-1;k++){
+		for (j=1;j<ny-1;j++){
+			for (i=1;i<nx-1;i++){
+				x = (nx-2)*Dm.iproc+i;
+				y = (ny-2)*Dm.jproc+j;
+				z = (nz-2)*Dm.kproc+k;
+				n = k*nx*ny+j*nx+i;
+
+				// Initialize phase positions
+				if ((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1) < BubbleRadius*BubbleRadius){
+					id[n] = 0;
+				}
+				else{
+					id[n]=1;
+				}
+			}
+		}
+	}
+	
+	DoubleArray Distance(nx,ny,nz);
+	// Initialize the signed distance function
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n=k*nx*ny+j*nx+i;
+				// Initialize distance to +/- 1
+				Distance(i,j,k) = 2.0*id[n]-1.0;
+			}
+		}
+	}
+
+	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
+	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
+	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
+
+	printf("Initialized! Converting to Signed Distance function \n");
+	SSO(Distance,id,Dm,10);
+
+	char LocalRankFilename[40];
+    sprintf(LocalRankFilename,"Dist.%05i",rank);
+    FILE *DIST = fopen(LocalRankFilename,"wb");
+    fwrite(Distance.get(),8,Distance.length(),DIST);
+    fclose(DIST);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Finalize();
+    return 0;
+
+}

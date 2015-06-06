@@ -305,7 +305,6 @@ int main(int argc, char **argv)
     		Averages.BlobAverages(6,b) = Kwn;
     		Averages.BlobAverages(8,b) = cwns;
     		//	Averages.BlobAverages(13,b) = trJwn;
-
     	}
     }
 
