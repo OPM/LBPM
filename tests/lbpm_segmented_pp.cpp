@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Get the rank info
-    N = (nx+2)*(ny+2)*(nz+2);
+    int N = (nx+2)*(ny+2)*(nz+2);
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	// Set up the sub-domains
 	if (rank==0){
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
-	int N=nx*ny*nz;
+	N=nx*ny*nz;
 
 	char *id;
 	id = new char [N];
