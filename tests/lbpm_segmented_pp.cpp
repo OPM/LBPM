@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 		tmp = new char[(nx+2)*(ny+2)*(nz+2)];
 		for (int kp=0; kp<Dm.kproc; kp++){
 			for (int jp=0; jp<Dm.jproc; jp++){
-				for (int jp=0; ip<Dm.iproc; ip++){
+				for (int ip=0; ip<Dm.iproc; ip++){
 					// rank of the process that gets this subdomain
 					int rnk = kp*Dm.nprocx*Dm.nprocy + jp*Dm.nprocx + ip;
 					// Pack and send the subdomain for rnk
