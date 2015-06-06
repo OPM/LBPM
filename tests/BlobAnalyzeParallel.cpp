@@ -315,6 +315,8 @@ int main(int argc, char **argv)
     Averages.ComputeDelPhi();
     Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.SDn.get());
     Averages.UpdateMeshValues();
+    Dm.CommunicateMeshHalo(Averages.Phase);
+
     Averages.ComputeLocalBlob();
     Averages.Reduce();
 
