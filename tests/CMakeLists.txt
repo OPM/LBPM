@@ -2,6 +2,7 @@
 INSTALL_LBPM_EXE( lb2_Color_wia_mpi )
 INSTALL_LBPM_EXE( lbpm_color_simulator )
 INSTALL_LBPM_EXE( lbpm_sphere_pp )
+INSTALL_LBPM_EXE( lbpm_segmented_pp )
 INSTALL_LBPM_EXE( lbpm_disc_pp )
 INSTALL_LBPM_EXE( lbpm_BlobAnalysis )
 INSTALL_LBPM_EXE( TestBubble )
@@ -9,7 +10,7 @@ INSTALL_LBPM_EXE( BasicSimulator )
 INSTALL_LBPM_EXE( BlobAnalysis )
 INSTALL_LBPM_EXE( BlobIdentify )
 INSTALL_LBPM_EXE( BlobIdentifyParallel )
-INSTALL_LBPM_EXE( BlobAnalyzeParallel )
+#INSTALL_LBPM_EXE( BlobAnalyzeParallel )
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
