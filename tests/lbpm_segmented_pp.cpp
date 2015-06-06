@@ -49,14 +49,14 @@ int main(int argc, char **argv)
     	domain >> Ly;
     	domain >> Lz;
 
-    	ifstream domain("Segmented.in");
-    	domain >> Filename; // Name of data file containing segmented data
-    	domain >> Nx;   	// size of the binary file
-    	domain >> Ny;
-    	domain >> Nz;
-    	domain >> xStart;	// offset for the starting voxel
-    	domain >> yStart;
-    	domain >> zStart;
+    	ifstream image("Segmented.in");
+    	image >> Filename; // Name of data file containing segmented data
+    	image >> Nx;   	// size of the binary file
+    	image >> Ny;
+    	image >> Nz;
+    	image >> xStart;	// offset for the starting voxel
+    	image >> yStart;
+    	image >> zStart;
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
@@ -111,10 +111,10 @@ int main(int argc, char **argv)
 						for (j=0;j<ny+2;j++){
 							for (i=0;i<nx+2;j++){
 								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-								int nglobal = zstart*Nx*Ny + ystart*Nx + xstart +
-												kproc*nprocx*nprocy*nx*ny*nz+ jproc*nprocx*nx*ny*nz
-												 + iproc*nx*ny*nz + k*nx*ny + j*nx + i;
-								tmp[nlocal] = SegDat[nglobal];
+								int nglobal = zStart*Nx*Ny + yStart*Nx + xStart +
+												kp*nprocx*nprocy*nx*ny*nz+ jp*nprocx*nx*ny*nz
+												 + ip*nx*ny*nz + k*nx*ny + j*nx + i;
+								tmp[nlocal] = SegData[nglobal];
 							}
 						}
 					}
@@ -132,6 +132,7 @@ int main(int argc, char **argv)
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
+	int N=nx*ny*nz;
 
 	char *id;
 	id = new char [N];
