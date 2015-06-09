@@ -1,12 +1,8 @@
 /*
  * Pre-processor to generate signed distance function from segmented data
  * segmented data should be stored in a raw binary file as 1-byte integer (type char)
+ * will output distance functions for phases
  */
-// Compute the signed distance from a digitized image 
-// Two phases are present
-// Phase 1 has value -1
-// Phase 2 has value 1
-// this code uses the segmented image to generate the signed distance 
 
 
 #include <stdio.h>
@@ -35,6 +31,7 @@ int main(int argc, char **argv)
 	int BC=0;
     char Filename[40];
     int xStart,yStart,zStart;
+    char fluidValue,solidValue;
 
     if (rank==0){
     	ifstream domain("Domain.in");
@@ -50,13 +47,15 @@ int main(int argc, char **argv)
     	domain >> Lz;
 
     	ifstream image("Segmented.in");
-    	image >> Filename; // Name of data file containing segmented data
-    	image >> Nx;   	// size of the binary file
+    	image >> Filename; 	// Name of data file containing segmented data
+    	image >> Nx;   		// size of the binary file
     	image >> Ny;
     	image >> Nz;
     	image >> xStart;	// offset for the starting voxel
     	image >> yStart;
     	image >> zStart;
+    	image >> solidValue; // value assigned to the solid phase
+    	image >> fluidValue; // value assigned to the non-wetting phase
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
@@ -136,24 +135,12 @@ int main(int argc, char **argv)
 
 	char *id;
 	id = new char [N];
-	double BubbleRadius = 25;
 	// Initialize the bubble
 	int x,y,z;
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
-				x = (nx-2)*Dm.iproc+i;
-				y = (ny-2)*Dm.jproc+j;
-				z = (nz-2)*Dm.kproc+k;
-				n = k*nx*ny+j*nx+i;
-
-				// Initialize phase positions
-				if ((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1) < BubbleRadius*BubbleRadius){
-					id[n] = 0;
-				}
-				else{
-					id[n]=1;
-				}
+				if Dm.id[];
 			}
 		}
 	}
@@ -169,7 +156,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
 	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
 	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
 	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
