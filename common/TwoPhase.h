@@ -561,8 +561,25 @@ void TwoPhase::ComputeLocalBlob(){
 	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
 	nblobs_global+=1;
 */
+
+	// Initialize the blob ID
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (SDs(i,j,k) < 0.0){
+					// Solid phase
+					BlobLabel(i,j,k) = -2;
+				}
+				else{
+					BlobLabel(i,j,k) = -1;
+				}
+			}
+		}
+	}
+
     nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
     		Phase,SDs,vF,vS,BlobLabel);
+
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	//BlobAverages.Set(nblobs_global);
