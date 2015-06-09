@@ -140,7 +140,6 @@ int main(int argc, char **argv)
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
-				if Dm.id[];
 			}
 		}
 	}
