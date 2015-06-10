@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 				n = k*nx*ny+j*nx+i;
 				bool solid=false;
 				for (int idx=0; idx<solidValues.size(); idx++){
-					if (Dm.id[n] == solidValues(idx)) solid=true;
+					if (Dm.id[n] == solidValues[idx]) solid=true;
 				}
 				if (solid==true)			id[n] = 0;
 				else						id[n] = 1;
