@@ -63,12 +63,12 @@ int main(int argc, char **argv)
     	getline(image,line);
     	std::istringstream solidLine(line);
     	while (solidLine >> n)	solidValues.push_back(n);
-    	printf("Read %i solid values \n",n);
+    	printf("Read %i solid values \n",solidValues.size());
 
     	getline(image,line);
     	std::istringstream nwpLine(line);
     	while (nwpLine >> n)	nwpValues.push_back(n);
-    	printf("Read %i nwp values \n",n);
+    	printf("Read %i nwp values \n",nwpValues.size());
 
 
 //    	image >> solidValue; // value assigned to the solid phase
@@ -160,13 +160,15 @@ int main(int argc, char **argv)
 
 	char *id;
 	id = new char [N];
-	// Initialize the bubble
-	int x,y,z;
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
 				n = k*nx*ny+j*nx+i;
-				if (Dm.id[n] == solidValue)	id[n] = 0;
+				bool solid=false;
+				for (int idx=0; idx<solidValues.size(); idx++){
+					if (Dm.id[n] == solidValues(idx)) solid=true;
+				}
+				if (solid==true)			id[n] = 0;
 				else						id[n] = 1;
 			}
 		}
