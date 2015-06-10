@@ -140,6 +140,9 @@ int main(int argc, char **argv)
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
+				n = k*nx*ny+j*nx+i;
+				if (Dm.id[n] == solidValue)	id[n] = 0;
+				else						id[n] = 1;
 			}
 		}
 	}
@@ -151,7 +154,7 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Distance(i,j,k) = 2.0*id[n]-1.0;
+				Distance(i,j,k) = 1.0*id[n]-0.5;
 			}
 		}
 	}
@@ -163,10 +166,29 @@ int main(int argc, char **argv)
 	SSO(Distance,id,Dm,10);
 
 	char LocalRankFilename[40];
+
     sprintf(LocalRankFilename,"Dist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
     fwrite(Distance.get(),8,Distance.length(),DIST);
     fclose(DIST);
+
+    int symrank,sympz;
+    sympz = 2*nprocz - kproc;
+    symrank = sympz*nprocx*nprocy + jproc*nprocx + iproc;
+
+    DoubleArray SymDist(nx,ny,nz);
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				SymDist(i,j,nz-k-1)=Distance(i,j,k);
+			}
+		}
+    }
+
+    sprintf(LocalRankFilename,"Dist.%05i",symrank);
+    FILE *SYMDIST = fopen(LocalRankFilename,"wb");
+    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
+    fclose(SYMDIST);
 
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
