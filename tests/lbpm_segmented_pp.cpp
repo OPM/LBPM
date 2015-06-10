@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 
     int symrank,sympz;
     sympz = 2*nprocz - kproc;
-    symrank = sympz*nprocx*nprocy + jproc*nprocx + iproc;
+    symrank = sympz*nprocx*nprocy + Dm.jproc*nprocx + Dm.iproc;
 
     DoubleArray SymDist(nx,ny,nz);
 	for (k=0;k<nz;k++){
