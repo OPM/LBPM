@@ -13,6 +13,37 @@
 #include <sstream>
 #include <Array.h>
 #include <Domain.h>
+#include <TwoPhase.h>
+
+inline void WriteBlobs(TwoPhase Averages){
+	printf("Writing the blob list \n");
+    FILE *BLOBLOG;
+  	BLOBLOG=fopen("blobs.tcat","w");
+	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
+	for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
+		if (Averages.BlobAverages(0,b) > 0.0){
+			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
+			Vn = Averages.BlobAverages(1,b);
+			pn = Averages.BlobAverages(2,b);
+			awn = Averages.BlobAverages(3,b);
+			ans = Averages.BlobAverages(4,b);
+			Jwn = Averages.BlobAverages(5,b);
+			Kwn = Averages.BlobAverages(6,b);
+			lwns = Averages.BlobAverages(7,b);
+			cwns = Averages.BlobAverages(8,b);
+
+			fprintf(BLOBLOG,"%.5g ", Vn); //Vn
+			fprintf(BLOBLOG,"%.5g ", pn); //pn
+			fprintf(BLOBLOG,"%.5g ", awn); //awn
+			fprintf(BLOBLOG,"%.5g ", ans); //ans
+			fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
+			fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
+			fprintf(BLOBLOG,"%.5g ", lwns); //lwns
+			fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
+		}
+	}
+	fclose(BLOBLOG);
+}
 
 int main(int argc, char **argv)
 {
@@ -60,19 +91,6 @@ int main(int argc, char **argv)
     	image >> yStart;
     	image >> zStart;
 
-    	getline(image,line);
-    	std::istringstream solidLine(line);
-    	while (solidLine >> n)	solidValues.push_back(n);
-    	printf("Read %i solid values \n",solidValues.size());
-
-    	getline(image,line);
-    	std::istringstream nwpLine(line);
-    	while (nwpLine >> n)	nwpValues.push_back(n);
-    	printf("Read %i nwp values \n",nwpValues.size());
-
-
-//    	image >> solidValue; // value assigned to the solid phase
-//   	image >> fluidValue; // value assigned to the non-wetting phase
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
@@ -98,61 +116,18 @@ int main(int argc, char **argv)
     if ( nprocs < nprocx*nprocy*nprocz ){
         ERROR("Insufficient number of processors");
     }
-    char *SegData;
-    SegData = new char[Nx*Ny*Nz];
-    // Rank=0 reads the entire segmented data and distributes to worker processes
-    if (rank==0){
-    	FILE *SEGDAT = fopen(Filename,"rb");
-    	if (SEGDAT==NULL) ERROR("Error reading segmented data");
-    	fread(SegData,1,Nx*Ny*Nz,SEGDAT);
-    	fclose(SEGDAT);
-        printf("Read segmented data from %s \n",Filename);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    // Get the rank info
+	char LocalRankFilename[40];
+
     int N = (nx+2)*(ny+2)*(nz+2);
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				n = k*nx*ny+j*nx+i;
-				Dm.id[n] = 1;
-			}
-		}
-	}
-	// Set up the sub-domains
-	if (rank==0){
-		char *tmp;
-		tmp = new char[(nx+2)*(ny+2)*(nz+2)];
-		for (int kp=0; kp<Dm.kproc; kp++){
-			for (int jp=0; jp<Dm.jproc; jp++){
-				for (int ip=0; ip<Dm.iproc; ip++){
-					// rank of the process that gets this subdomain
-					int rnk = kp*Dm.nprocx*Dm.nprocy + jp*Dm.nprocx + ip;
-					// Pack and send the subdomain for rnk
-					for (k=0;k<nz+2;k++){
-						for (j=0;j<ny+2;j++){
-							for (i=0;i<nx+2;j++){
-								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-								int nglobal = zStart*Nx*Ny + yStart*Nx + xStart +
-												kp*nprocx*nprocy*nx*ny*nz+ jp*nprocx*nx*ny*nz
-												 + ip*nx*ny*nz + k*nx*ny + j*nx + i;
-								tmp[nlocal] = SegData[nglobal];
-							}
-						}
-					}
-					MPI_Send(&tmp,N,MPI_CHAR,rnk,15,MPI_COMM_WORLD);
-				}
-			}
-		}
-	}
-	else{
-		// Recieve the subdomain from rank = 0
-		MPI_Recv(&Dm.id,N,MPI_CHAR,0,15,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
-	Dm.CommInit(MPI_COMM_WORLD);
+	// Read the phase ID
+    sprintf(LocalRankFilename,"ID.%05i",rank);
+    FILE *ID = fopen(LocalRankFilename,"rb");
+    fread(Dm.id,1,N,ID);
+    fclose(ID);
+    // Initialize the domain and communication
+    Dm.CommInit(MPI_COMM_WORLD);
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
@@ -160,63 +135,179 @@ int main(int argc, char **argv)
 
 	char *id;
 	id = new char [N];
-	for (k=1;k<nz-1;k++){
-		for (j=1;j<ny-1;j++){
-			for (i=1;i<nx-1;i++){
+	TwoPhase Averages(Dm);
+//	DoubleArray Distance(nx,ny,nz);
+//	DoubleArray Phase(nx,ny,nz);
+
+	// Solve for the position of the solid phase
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
-				bool solid=false;
-				for (int idx=0; idx<solidValues.size(); idx++){
-					if (Dm.id[n] == solidValues[idx]) solid=true;
-				}
-				if (solid==true)			id[n] = 0;
-				else						id[n] = 1;
+				// Initialize the solid phase
+				if (Dm.id[n] == 0)	id[n] = 0;
+				else				id[n] = 1;
 			}
 		}
 	}
-	
-	DoubleArray Distance(nx,ny,nz);
 	// Initialize the signed distance function
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Distance(i,j,k) = 1.0*id[n]-0.5;
+				Averages.SDs(i,j,k) = 1.0*id[n]-0.5;
 			}
 		}
 	}
-	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
-	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
-	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
+	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	SSO(Averages.SDs,id,Dm,10);
 
-	printf("Initialized! Converting to Signed Distance function \n");
-	SSO(Distance,id,Dm,10);
-
-	char LocalRankFilename[40];
-
-    sprintf(LocalRankFilename,"Dist.%05i",rank);
+    sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Distance.get(),8,Distance.length(),DIST);
+    fwrite(Averages.SDs.get(),8,Averages.SDs.length(),DIST);
     fclose(DIST);
 
-    int symrank,sympz;
-    sympz = 2*nprocz - Dm.kproc;
-    symrank = sympz*nprocx*nprocy + Dm.jproc*nprocx + Dm.iproc;
-
-    DoubleArray SymDist(nx,ny,nz);
+	// Solve for the position of the non-wetting phase
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
-				SymDist(i,j,nz-k-1)=Distance(i,j,k);
+				n = k*nx*ny+j*nx+i;
+				// Initialize the solid phase
+				if (Dm.id[n] == 2)	id[n] = 1;
+				else				id[n] = 0;
 			}
 		}
+	}
+	// Initialize the signed distance function
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n=k*nx*ny+j*nx+i;
+				// Initialize distance to +/- 1
+				Averages.Phase(i,j,k) = 1.0*id[n]-0.5;
+			}
+		}
+	}
+	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
+	SSO(Averages.Phase,id,Dm,10);
+
+    sprintf(LocalRankFilename,"Phase.%05i",rank);
+    FILE *PHASE = fopen(LocalRankFilename,"wb");
+    fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
+    fclose(PHASE);
+
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n=k*nx*ny+j*nx+i;
+				Averages.Phase(i,j,k) += 1.0;
+				if (Averages.SDs(i,j,k) > 0.0){
+					if (Averages.Phase(i,j,k) > 0.0){
+						Dm.id[n] = 2;
+					}
+					else{
+						Dm.id[n] = 1;
+					}
+				}
+				else{
+					Dm.id[n] = 0;
+				}
+				// Initialize distance to +/- 1
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
+				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.DelPhi(i,j,k) = 0.0;
+				Averages.Press(i,j,k) = 0.0;
+				Averages.Vel_x(i,j,k) = 0.0;
+				Averages.Vel_y(i,j,k) = 0.0;
+				Averages.Vel_z(i,j,k) = 0.0;
+			}
+		}
+	}
+
+/*	double vF,vS;
+	vF = vS = 0.0;
+
+    double beta = 0.95;
+	if (rank==0) printf("initializing the system \n");
+    Averages.SetupCubes(Dm);
+    Averages.UpdateSolid();
+    Averages.Initialize();
+    Averages.UpdateMeshValues();
+    Dm.CommunicateMeshHalo(Averages.Phase);
+
+//	if (rank==0) printf("computing blobs \n");
+//    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+//    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+//	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+
+	if (rank==0) printf("computing local averages  \n");
+    Averages.ComputeLocalBlob();
+	if (rank==0) printf("reducing averages  \n");
+    Averages.Reduce();
+
+	if (rank==0) printf("Writing blobs \n");
+    // Write the local blob ids
+    sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
+    FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
+    fwrite(Averages.BlobLabel.get(),4,Averages.BlobLabel.length(),BLOBLOCAL);
+    fclose(BLOBLOCAL);
+    printf("Wrote BlobLabel.%05i \n",rank);
+
+	if (rank==0) printf("Sorting averages \n");
+    //  Blobs.Set(Averages.BlobAverages.NBLOBS);
+    int dimx = (int)Averages.BlobAverages.size(0);
+    int dimy = (int)Averages.BlobAverages.size(1);
+    int TotalBlobInfoSize=dimx*dimy;
+
+    //      BlobContainer Blobs;
+    DoubleArray RecvBuffer(dimx);
+    //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank==0) printf("Number of components is %i \n",dimy);
+
+    for (int b=0; b<dimy; b++){
+
+    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    	for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
+    	MPI_Barrier(MPI_COMM_WORLD);
+
+    	if (Averages.BlobAverages(0,b) > 0.0){
+    		double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
+    		Vn = Averages.BlobAverages(1,b);
+    		pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
+    		awn = Averages.BlobAverages(3,b);
+    		ans = Averages.BlobAverages(4,b);
+    		if (awn != 0.0){
+    			Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
+    			Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
+    		}
+    		else Jwn=Kwn=0.0;
+
+    		trawn = Averages.BlobAverages(12,b);
+    		if (trawn != 0.0){
+    			trJwn = Averages.BlobAverages(13,b)/trawn;
+    		}
+    		else trJwn=0.0;
+
+    		lwns = Averages.BlobAverages(7,b);
+    		if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
+    		else  cwns=0.0;
+    		Averages.BlobAverages(2,b) = pn;
+    		Averages.BlobAverages(5,b) = trJwn;
+    		Averages.BlobAverages(6,b) = Kwn;
+    		Averages.BlobAverages(8,b) = cwns;
+    		//	Averages.BlobAverages(13,b) = trJwn;
+    	}
     }
 
-    sprintf(LocalRankFilename,"Dist.%05i",symrank);
-    FILE *SYMDIST = fopen(LocalRankFilename,"wb");
-    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
-    fclose(SYMDIST);
+    if (rank==0) printf("Sorting blobs by volume \n");
+    Averages.SortBlobs();
 
+    if (rank==0)   WriteBlobs(Averages);
+*/
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
     return 0;

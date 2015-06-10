@@ -26,6 +26,35 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
     ReadBinaryFile(file1, Phase.get(), nx*ny*nz);
     ReadBinaryFile(file2, SignDist.get(), nx*ny*nz);
 }
+inline void WriteBlobs(TwoPhase Averages){
+	printf("Writing the blob list \n");
+    FILE *BLOBLOG;
+  	BLOBLOG=fopen("blobs.tcat","w");
+	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
+	for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
+		if (Averages.BlobAverages(0,b) > 0.0){
+			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
+			Vn = Averages.BlobAverages(1,b);
+			pn = Averages.BlobAverages(2,b);
+			awn = Averages.BlobAverages(3,b);
+			ans = Averages.BlobAverages(4,b);
+			Jwn = Averages.BlobAverages(5,b);
+			Kwn = Averages.BlobAverages(6,b);
+			lwns = Averages.BlobAverages(7,b);
+			cwns = Averages.BlobAverages(8,b);
+
+			fprintf(BLOBLOG,"%.5g ", Vn); //Vn
+			fprintf(BLOBLOG,"%.5g ", pn); //pn
+			fprintf(BLOBLOG,"%.5g ", awn); //awn
+			fprintf(BLOBLOG,"%.5g ", ans); //ans
+			fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
+			fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
+			fprintf(BLOBLOG,"%.5g ", lwns); //lwns
+			fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
+		}
+	}
+	fclose(BLOBLOG);
+}
 
 inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	int a;
@@ -311,36 +340,8 @@ int main(int argc, char **argv)
     if (rank==0) printf("Sorting blobs by volume \n");
     Averages.SortBlobs();
 
-    FILE *BLOBLOG;
     if (rank==0){
-    	printf("Writing the blob list \n");
-      	BLOBLOG=fopen("blobs.tcat","w");
-
-    	//	printf("Reduced blob %i \n",b);
-    	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
-    	for (int b=0; b<dimy; b++){
-    		if (Averages.BlobAverages(0,b) > 0.0){
-    			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
-    			Vn = Averages.BlobAverages(1,b);
-    			pn = Averages.BlobAverages(2,b);
-    			awn = Averages.BlobAverages(3,b);
-    			ans = Averages.BlobAverages(4,b);
-    			Jwn = Averages.BlobAverages(5,b);
-    			Kwn = Averages.BlobAverages(6,b);
-    			lwns = Averages.BlobAverages(7,b);
-    			cwns = Averages.BlobAverages(8,b);
-
-    			fprintf(BLOBLOG,"%.5g ", Vn); //Vn
-    			fprintf(BLOBLOG,"%.5g ", pn); //pn
-    			fprintf(BLOBLOG,"%.5g ", awn); //awn
-    			fprintf(BLOBLOG,"%.5g ", ans); //ans
-    			fprintf(BLOBLOG,"%.5g ", Jwn); //Jwn
-    			fprintf(BLOBLOG,"%.5g ", Kwn); //Kwn
-    			fprintf(BLOBLOG,"%.5g ", lwns); //lwns
-    			fprintf(BLOBLOG,"%.5g\n",cwns); //cwns
-    		}
-    	}
-    	fclose(BLOBLOG);
+    	WriteBlobs(Averages);
     }
 
     if (rank==0) {

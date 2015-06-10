@@ -592,6 +592,7 @@ void TwoPhase::ComputeLocalBlob(){
 		j = cubeList(1,c);
 		k = cubeList(2,c);
 		label=GetCubeLabel(i,j,k);
+		if (!(label < nblobs_global)) ERROR("common/TwoPhase.h (ComputeBlobLocal): Error in blob labeling algorithm");
 
 		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
