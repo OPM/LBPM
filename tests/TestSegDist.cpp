@@ -43,6 +43,14 @@ int main(int argc, char **argv)
 
     // Get the rank info
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n = k*nx*ny+j*nx+i;
+				Dm.id[n] = 1;
+			}
+		}
+	}
 	Dm.CommInit(MPI_COMM_WORLD);
 
 	nx+=2; ny+=2; nz+=2;

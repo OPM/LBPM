@@ -10,6 +10,7 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <Array.h>
 #include <Domain.h>
 
@@ -31,7 +32,11 @@ int main(int argc, char **argv)
 	int BC=0;
     char Filename[40];
     int xStart,yStart,zStart;
-    char fluidValue,solidValue;
+  //  char fluidValue,solidValue;
+
+    std::vector<char> solidValues;
+    std::vector<char> nwpValues;
+    std::string line;
 
     if (rank==0){
     	ifstream domain("Domain.in");
@@ -54,8 +59,20 @@ int main(int argc, char **argv)
     	image >> xStart;	// offset for the starting voxel
     	image >> yStart;
     	image >> zStart;
-    	image >> solidValue; // value assigned to the solid phase
-    	image >> fluidValue; // value assigned to the non-wetting phase
+
+    	getline(image,line);
+    	std::istringstream solidLine(line);
+    	while (solidLine >> n)	solidValues.push_back(n);
+    	printf("Read %i solid values \n",n);
+
+    	getline(image,line);
+    	std::istringstream nwpLine(line);
+    	while (nwpLine >> n)	nwpValues.push_back(n);
+    	printf("Read %i nwp values \n",n);
+
+
+//    	image >> solidValue; // value assigned to the solid phase
+//   	image >> fluidValue; // value assigned to the non-wetting phase
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
@@ -96,6 +113,14 @@ int main(int argc, char **argv)
     // Get the rank info
     int N = (nx+2)*(ny+2)*(nz+2);
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				n = k*nx*ny+j*nx+i;
+				Dm.id[n] = 1;
+			}
+		}
+	}
 	// Set up the sub-domains
 	if (rank==0){
 		char *tmp;
