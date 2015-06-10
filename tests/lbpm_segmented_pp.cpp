@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     fclose(DIST);
 
     int symrank,sympz;
-    sympz = 2*nprocz - kproc;
+    sympz = 2*nprocz - Dm.kproc;
     symrank = sympz*nprocx*nprocy + Dm.jproc*nprocx + Dm.iproc;
 
     DoubleArray SymDist(nx,ny,nz);
