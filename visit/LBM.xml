@@ -5,6 +5,7 @@
     </FilePatterns>
     <CXXFLAGS> 
         -I${LBPM_INSTALL_DIR}/include
+        -I${TIMER_INCLUDE}
         ${MPI_CXXFLAGS}
         ${TIMER_CXXFLAGS}
     </CXXFLAGS>

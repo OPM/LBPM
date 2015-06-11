@@ -81,7 +81,7 @@ std::vector<MeshDatabase> read( const std::string& filename );
 
 
 //! Return the mesh type
-IO::MeshType meshType( std::shared_ptr<IO::Mesh> mesh );
+IO::MeshType meshType( const IO::Mesh& mesh );
 
 
 } // IO namespace

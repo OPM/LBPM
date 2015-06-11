@@ -60,6 +60,9 @@ namespace Utilities
     //! Function to get the resolution of time
     double tick();
 
+    //! Factor a number into it's prime factors
+    std::vector<int> factor(size_t number);
+
 } // namespace Utilities
 
 

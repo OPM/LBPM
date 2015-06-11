@@ -100,6 +100,9 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
                 C[i].z = data[9*i+8];
             }
             mesh = trilist;
+        } else if ( meshDatabase.type==IO::VolumeMesh ) {
+            // this was never supported in the old format
+            mesh = std::shared_ptr<DomainMesh>( new DomainMesh() );
         } else {
             ERROR("Unknown mesh type");
         }
@@ -124,6 +127,8 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
             mesh.reset( new IO::TriMesh() );
         } else if ( meshDatabase.meshClass=="TriList" ) {
             mesh.reset( new IO::TriList() );
+        } else if ( meshDatabase.meshClass=="DomainMesh" ) {
+            mesh.reset( new IO::DomainMesh() );
         } else {
             ERROR("Unknown mesh class");
         }
@@ -170,11 +175,8 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     var->type = static_cast<IO::VariableType>(type);
     var->name = variable;
     var->data.resize(N);
-    double *var_data = NULL;
-    if ( !var->data.empty() )
-        var_data = &var->data[0];
     if ( precision=="double" ) {
-        memcpy(var_data,data,bytes);
+        memcpy(var->data.get(),data,bytes);
     } else {
         ERROR("Format not implimented");
     }

@@ -60,10 +60,18 @@ public:
 
     /*!
      * @brief  Communicate the halos
-
      * @param[in] array         The array on which we fill the halos
      */
     void fill( Array<TYPE>& array );
+
+    /*!
+     * @brief  Copy data from the src array to the dst array
+     * @param[in] src           The src array with or without halos
+     * @param[in] dst           The dst array with or without halos
+     */
+    template<class TYPE1, class TYPE2>
+    void copy( const Array<TYPE1>& src, Array<TYPE2>& dst );
+
 
 private:
     RankInfoStruct info;
