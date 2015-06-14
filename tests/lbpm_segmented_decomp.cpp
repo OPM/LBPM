@@ -4,7 +4,6 @@
  * will output distance functions for phases
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -63,6 +62,7 @@ int main(int argc, char **argv)
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
+	//.................................................
 	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -73,6 +73,13 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	//.................................................
+	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&xStart,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&yStart,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&zStart,1,MPI_INT,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -111,6 +118,9 @@ int main(int argc, char **argv)
 	}
 	Dm.CommInit(MPI_COMM_WORLD);
 
+	// number of sites to use for periodic boundary condition transition zone
+	int z_transition_size = nprocz*nz - Nz - zStart;
+
 	// Set up the sub-domains
 	if (rank==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
@@ -130,7 +140,10 @@ int main(int argc, char **argv)
 							for (i=0;i<nx+2;i++){
 								int x = xStart + ip*nx + i-1;
 								int y = yStart + jp*ny + j-1;
-								int z = zStart + kp*nz + k-1;
+						//		int z = zStart + kp*nz + k-1;
+								int z = zStart + kp*nz + k-1 - z_transition_size/2;
+								if (z<0) 		z=0;
+								if (!(z<Nz))	z=Nz-1;
 								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
 								int nglobal = z*Nx*Ny+y*Nx+x;
 								tmp[nlocal] = SegData[nglobal];
