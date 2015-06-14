@@ -3,8 +3,6 @@
  * segmented data should be stored in a raw binary file as 1-byte integer (type char)
  * will output distance functions for phases
  */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -146,7 +144,7 @@ int main(int argc, char **argv)
 				n = k*nx*ny+j*nx+i;
 				// Initialize the solid phase
 				if (Dm.id[n] == 0)	id[n] = 0;
-				else				id[n] = 1;
+				else		      	id[n] = 1;
 			}
 		}
 	}
@@ -175,7 +173,7 @@ int main(int argc, char **argv)
 				n = k*nx*ny+j*nx+i;
 				// Initialize the solid phase
 				if (Dm.id[n] == 2)	id[n] = 1;
-				else				id[n] = 0;
+				else	       		id[n] = 0;
 			}
 		}
 	}
@@ -215,7 +213,6 @@ int main(int argc, char **argv)
 				}
 				// Initialize distance to +/- 1
 				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
-				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.DelPhi(i,j,k) = 0.0;
@@ -227,7 +224,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-/*	double vF,vS;
+	double vF,vS;
 	vF = vS = 0.0;
 
     double beta = 0.95;
@@ -237,16 +234,20 @@ int main(int argc, char **argv)
     Averages.Initialize();
     Averages.UpdateMeshValues();
     Dm.CommunicateMeshHalo(Averages.Phase);
+    Dm.CommunicateMeshHalo(Averages.SDn);
 
-//	if (rank==0) printf("computing blobs \n");
-//    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-//    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+	if (rank==0) printf("computing blobs \n");
+ //   int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+  //  		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 //	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
+//     int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+//					 Averages.SDn,Averages.SDs,vF,vS,Averages.BlobLabel);
+
 	if (rank==0) printf("computing local averages  \n");
-    Averages.ComputeLocalBlob();
+	Averages.ComputeLocalBlob();
 	if (rank==0) printf("reducing averages  \n");
-    Averages.Reduce();
+	//    Averages.Reduce();
 
 	if (rank==0) printf("Writing blobs \n");
     // Write the local blob ids
@@ -307,7 +308,7 @@ int main(int argc, char **argv)
     Averages.SortBlobs();
 
     if (rank==0)   WriteBlobs(Averages);
-*/
+
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
     return 0;
