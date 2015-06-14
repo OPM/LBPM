@@ -527,7 +527,8 @@ void TwoPhase::ComputeLocal(){
 			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
-			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
+					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
 					nws_pts, n_nws_pts, i, j, k);
 
 			lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
@@ -566,7 +567,6 @@ void TwoPhase::ComputeLocalBlob(){
 
 	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
-
 	// Check the blob ID
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -593,7 +593,7 @@ void TwoPhase::ComputeLocalBlob(){
 		k = cubeList(2,c);
 		label=GetCubeLabel(i,j,k);
 		if (!(label < nblobs_global)) ERROR("common/TwoPhase.h (ComputeBlobLocal): Error in blob labeling algorithm");
-		printf("Array Size: %i x %i, label=%i, %i,%i,%i, SDs=%f \n",BlobAverages.size(0),BlobAverages.size(1),label,i,j,k,SDs(i,j,k));
+      		//printf("Array Size: %i x %i, label=%i, %i,%i,%i, SDs=%f \n",BlobAverages.size(0),BlobAverages.size(1),label,i,j,k,SDs(i,j,k));
 
 		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
@@ -646,13 +646,13 @@ void TwoPhase::ComputeLocalBlob(){
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
 		
-		printf("nw=%i,nws=%i,ws=%i,ns=%i \n",n_nw_pts,n_local_nws_pts,n_ws_pts,n_ns_pts);
-		printf("%i,%i,%i,%i,%i,%i,%i,%i\n",BlobLabel(i,j,k),BlobLabel(i+1,j,k),BlobLabel(i,j+1,k),BlobLabel(i+1,j+1,k),BlobLabel(i,j,k+1),BlobLabel(i+1,j,k+1),BlobLabel(i,j+1,k+1),BlobLabel(i+1,j+1,k+1));
-		printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDn(i,j,k),SDn(i+1,j,k),SDn(i,j+1,k),SDn(i+1,j+1,k),SDn(i,j,k+1),SDn(i+1,j,k+1),SDn(i,j+1,k+1),SDn(i+1,j+1,k+1));
+		//printf("nw=%i,nws=%i,ws=%i,ns=%i \n",n_nw_pts,n_local_nws_pts,n_ws_pts,n_ns_pts);
+		//printf("%i,%i,%i,%i,%i,%i,%i,%i\n",BlobLabel(i,j,k),BlobLabel(i+1,j,k),BlobLabel(i,j+1,k),BlobLabel(i+1,j+1,k),BlobLabel(i,j,k+1),BlobLabel(i+1,j,k+1),BlobLabel(i,j+1,k+1),BlobLabel(i+1,j+1,k+1));
+		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDn(i,j,k),SDn(i+1,j,k),SDn(i,j+1,k),SDn(i+1,j+1,k),SDn(i,j,k+1),SDn(i+1,j,k+1),SDn(i,j+1,k+1),SDn(i+1,j+1,k+1));
 		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",Phase(i,j,k),Phase(i+1,j,k),Phase(i,j+1,k),Phase(i+1,j+1,k),Phase(i,j,k+1),Phase(i+1,j,k+1),Phase(i,j+1,k+1),Phase(i+1,j+1,k+1));
-		printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDs(i,j,k),SDs(i+1,j,k),SDs(i,j+1,k),SDs(i+1,j+1,k),SDs(i,j,k+1),SDs(i+1,j,k+1),SDs(i,j+1,k+1),SDs(i+1,j+1,k+1));
+		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDs(i,j,k),SDs(i+1,j,k),SDs(i,j+1,k),SDs(i+1,j+1,k),SDs(i,j,k+1),SDs(i+1,j,k+1),SDs(i,j+1,k+1),SDs(i+1,j+1,k+1));
 		// wn interface averages
-		if (n_nw_pts>0 ){
+		if (n_nw_pts>0  && label >=0 ){
 			BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 			BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
@@ -672,28 +672,33 @@ void TwoPhase::ComputeLocalBlob(){
 		}
 		
 		// Common curve averages
-		if (n_local_nws_pts > 0 ){
+		if (n_local_nws_pts > 0  && label >=0 ){
 			BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
 			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
-			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			//			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			//		nws_pts, n_nws_pts, i, j, k);
+
+			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
+					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
 					nws_pts, n_nws_pts, i, j, k);
+
 
 			BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		}
 
 		// Solid interface averages
-		if (n_local_sol_pts > 0 ){
+		if (n_local_sol_pts > 0  && label >=0 ){
 			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 			// Compute the surface orientation and the interfacial area
 			
 			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 			//...........................................................................
 		}
-		if (n_ns_pts > 0 ){
+		if (n_ns_pts > 0  && label >=0 ){
 		  BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
 		}
 	}
