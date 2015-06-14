@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 		printf("Distributing subdomains across %i processors \n",nprocs);
 		printf("Process grid: %i x %i x %i \n",Dm.nprocx,Dm.nprocy,Dm.nprocz);
 		printf("Subdomain size: %i \n",N);
-
+		printf("Size of transition region: %i \n, z_transition_size);
 		char *tmp;
 		tmp = new char[N];
 		for (int kp=0; kp<nprocz; kp++){
