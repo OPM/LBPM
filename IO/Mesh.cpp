@@ -292,6 +292,72 @@ void TriMesh::unpack( const std::pair<size_t,void*>& data_in )
 
 
 /****************************************************
+* Domain mesh                                       *
+****************************************************/
+DomainMesh::DomainMesh():
+    nprocx(0), nprocy(0), nprocz(0), rank(0),
+    nx(0), ny(0), nz(0),
+    Lx(0), Ly(0), Lz(0)
+{
+}
+DomainMesh::DomainMesh( RankInfoStruct data, 
+    int nx2, int ny2, int nz2, double Lx2, double Ly2, double Lz2 ):
+    nprocx(data.nx), nprocy(data.ny), nprocz(data.nz), rank(data.rank[1][1][1]),
+    nx(nx2), ny(ny2), nz(nz2),
+    Lx(Lx2), Ly(Ly2), Lz(Lz2)
+{
+}
+DomainMesh::~DomainMesh()
+{
+}
+size_t DomainMesh::numberPointsVar( VariableType type ) const
+{
+    size_t N = 0;
+    if ( type==NodeVariable )
+        N = (nx+1)*(ny+1)*(nz+1);
+    else if ( type==SurfaceVariable )
+        N = (nx+1)*ny*nz + nx*(ny+1)*nz + nx*ny*(nz+1);
+    else if ( type==VolumeVariable )
+        N = nx*ny*nz;
+    return N;
+}
+std::pair<size_t,void*> DomainMesh::pack( int level ) const
+{
+    std::pair<size_t,void*> data(0,NULL);
+    data.first = 7*sizeof(double);
+    data.second = new double[7];
+    int *data_int = reinterpret_cast<int*>(data.second);
+    double *data_double = &reinterpret_cast<double*>(data.second)[4];
+    data_int[0] = nprocx;
+    data_int[1] = nprocy;
+    data_int[2] = nprocz;
+    data_int[3] = rank;
+    data_int[4] = nx;
+    data_int[5] = ny;
+    data_int[6] = nz;
+    data_double[0] = Lx;
+    data_double[1] = Ly;
+    data_double[2] = Lz;
+    return data;
+}
+void DomainMesh::unpack( const std::pair<size_t,void*>& data )
+{
+    const int *data_int = reinterpret_cast<const int*>(data.second);
+    const double *data_double = &reinterpret_cast<const double*>(data.second)[4];
+    nprocx = data_int[0];
+    nprocy = data_int[1];
+    nprocz = data_int[2];
+    rank = data_int[3];
+    nx = data_int[4];
+    ny = data_int[5];
+    nz = data_int[6];
+    Lx = data_double[0];
+    Ly = data_double[1];
+    Lz = data_double[2];
+}
+
+
+/****************************************************
 * Converters                                        *
 ****************************************************/
 std::shared_ptr<PointList> getPointList( std::shared_ptr<Mesh> mesh )

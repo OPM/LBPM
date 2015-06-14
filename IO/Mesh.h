@@ -5,7 +5,9 @@
 #include <string.h>
 #include <vector>
 
+#include "common/Array.h"
 #include "common/PointList.h"
+#include "common/Communication.h"
 #include "shared_ptr.h"
 
 
@@ -129,9 +131,36 @@ public:
 };
 
 
+/*! \class Domain
+    \brief A class used to hold the domain
+*/
+class DomainMesh: public Mesh
+{
+public:
+    //! Empty constructor
+    DomainMesh();
+    //! Default constructor
+    DomainMesh( RankInfoStruct rank_data, int nx, int ny, int nz, double Lx, double Ly, double Lz );
+    //! Destructor
+    virtual ~DomainMesh();
+    //! Mesh class name
+    virtual std::string className() const { return "DomainMesh"; }
+    //! Number of points for the given variable type
+    virtual size_t numberPointsVar( VariableType type ) const;
+    //! Pack the data
+    virtual std::pair<size_t,void*> pack( int level ) const;
+    //! Unpack the data
+    virtual void unpack( const std::pair<size_t,void*>& data );
+public:
+    int nprocx, nprocy, nprocz, rank;
+    int nx, ny, nz;
+    double Lx, Ly, Lz;
+};
+
+
 
 /*! \class Variable
-    \brief A base class fore variables
+    \brief A base class for variables
 */
 struct Variable
 {
@@ -140,7 +169,7 @@ public:
     unsigned int dim;           //!< Number of points per grid point (1: scalar, 3: vector, ...)
     VariableType type;          //!< Variable type
     std::string name;           //!< Variable name
-    std::vector<double> data;   //!< Variable data
+    Array<double> data;         //!< Variable data
     //! Empty constructor
     Variable(): type(NullVariable) {}
     //! Destructor

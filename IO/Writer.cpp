@@ -29,7 +29,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
         std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
         IO::MeshDatabase mesh_entry;
         mesh_entry.name = meshData[i].meshName;
-        mesh_entry.type = meshType(mesh);
+        mesh_entry.type = meshType(*mesh);
         mesh_entry.meshClass = meshData[i].mesh->className();
         mesh_entry.format = 1;
         IO::DatabaseEntry domain;
@@ -42,7 +42,8 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             //for (size_t j=0; j<meshData[i].vars.size(); j++)
             //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
-        if ( std::dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
+        const std::string meshClass = mesh->className();
+        if ( meshClass=="PointList" ) {
             // List of points
             std::shared_ptr<IO::PointList> pointlist = std::dynamic_pointer_cast<IO::PointList>(mesh);
             const std::vector<Point>& P = pointlist->points;
@@ -51,8 +52,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
                 x[0] = P[i].x;  x[1] = P[i].y;  x[2] = P[i].z;
                 fwrite(x,sizeof(double),3,fid);
             }
-        } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || 
-                    std::dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
+        } else if ( meshClass=="TriList" || meshClass=="TriMesh" ) {
             // Triangle mesh
             std::shared_ptr<IO::TriList> trilist = IO::getTriList(mesh);
             const std::vector<Point>& A = trilist->A;
@@ -65,6 +65,8 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
                 tri[6] = C[i].x;  tri[7] = C[i].y;  tri[8] = C[i].z;
                 fwrite(tri,sizeof(double),9,fid);
             }
+        } else if ( meshClass=="DomainMesh" ) {
+            // This format was never supported with the old format
         } else {
             ERROR("Unknown mesh");
         }
@@ -87,7 +89,7 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
     // Create the MeshDatabase
     IO::MeshDatabase database;
     database.name = mesh.meshName;
-    database.type = meshType(mesh.mesh);
+    database.type = meshType(*(mesh.mesh));
     database.meshClass = mesh.mesh->className();
     database.format = format;
     // Write the mesh
@@ -117,8 +119,8 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
             std::pair<std::pair<std::string,std::string>,IO::DatabaseEntry>(key,variable) );
         int dim = mesh.vars[i]->dim;
         int type = static_cast<int>(mesh.vars[i]->type);
-        size_t N = mesh.vars[i]->data.size();
-        const void* data = N==0 ? 0:&mesh.vars[i]->data[0];
+        size_t N = mesh.vars[i]->data.length();
+        const double* data = N==0 ? NULL:mesh.vars[i]->data.get();
         if ( type == static_cast<int>(IO::NullVariable) ) {
             ERROR("Variable type not set");
         }

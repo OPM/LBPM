@@ -78,28 +78,42 @@ int main(int argc, char **argv)
             return -1;
         }
     }
+    RankInfoStruct rank_data( rank, nprocs, 1, 1 );
+    std::shared_ptr<IO::DomainMesh> domain( new IO::DomainMesh(rank_data,6,7,8,1.0,1.0,1.0) );
 
     // Create the variables
     std::shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
     std::shared_ptr<IO::Variable> dist_list( new IO::Variable() );
+    std::shared_ptr<IO::Variable> domain_var( new IO::Variable() );
     dist_set1->dim = 1;
     dist_list->dim = 1;
+    domain_var->dim = 1;
     dist_set1->name = "Distance";
     dist_list->name = "Distance";
+    domain_var->name = "Distance";
     dist_set1->type = IO::NodeVariable;
     dist_list->type = IO::NodeVariable;
+    domain_var->type = IO::VolumeVariable;
     dist_set1->data.resize( N_points );
     for (int i=0; i<N_points; i++)
-        dist_set1->data[i] = distance(set1->points[i]);
-    dist_list->data.resize( 3*N_tri );
+        dist_set1->data(i) = distance(set1->points[i]);
+    dist_list->data.resize( 3, N_tri );
     for (int i=0; i<N_tri; i++) {
-        dist_list->data[3*i+0] = distance(trilist->A[i]);
-        dist_list->data[3*i+1] = distance(trilist->B[i]);
-        dist_list->data[3*i+2] = distance(trilist->C[i]);
+        dist_list->data(0,i) = distance(trilist->A[i]);
+        dist_list->data(1,i) = distance(trilist->B[i]);
+        dist_list->data(2,i) = distance(trilist->C[i]);
+    }
+    domain_var->data.resize(domain->nx,domain->ny,domain->nz);
+    for (int i=0; i<domain->nx; i++) {
+        for (int j=0; j<domain->ny; j++) {
+            for (int k=0; k<domain->nz; k++) {
+                domain_var->data(i,j,k) = distance(Point(i,j,k));
+            }
+        }
     }
 
     // Create the MeshDataStruct
-    std::vector<IO::MeshDataStruct> meshData(3);
+    std::vector<IO::MeshDataStruct> meshData(4);
     meshData[0].meshName = "pointmesh";
     meshData[0].mesh = set1;
     meshData[0].vars.push_back(dist_set1);
@@ -109,10 +123,16 @@ int main(int argc, char **argv)
     meshData[2].meshName = "trilist";
     meshData[2].mesh = trilist;
     meshData[2].vars.push_back(dist_list);
+    meshData[3].meshName = "domain";
+    meshData[3].mesh = domain;
+    meshData[3].vars.push_back(domain_var);
 
     // Write the data
-    IO::writeData( 0, meshData, 1 );
-    IO::writeData( 3, meshData, 2 );
+    std::vector<int> format(2,0);
+    format[0] = 2;
+    format[1] = 1;
+    IO::writeData( 0, meshData, format[0] );
+    IO::writeData( 3, meshData, format[1] );
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Get a list of the timesteps 
@@ -142,14 +162,14 @@ int main(int argc, char **argv)
         }
         // For each domain, load the mesh and check its data
         for (size_t j=0; j<list.size(); j++) {
-            for (size_t k=0; k<list[i].domains.size(); k++) {
+            for (size_t k=0; k<list[j].domains.size(); k++) {
                 std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
                 if ( mesh.get()==NULL ) {
-                    printf("Failed to load %s\n",meshData[i].meshName.c_str());
+                    printf("Failed to load %s\n",list[j].name.c_str());
                     pass = false;
                     break;
                 }
-                if ( meshData[j].meshName=="pointmesh" ) {
+                if ( list[j].name=="pointmesh" ) {
                     // Check the pointmesh
                     std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
                     if ( pmesh.get()==NULL ) {
@@ -161,7 +181,7 @@ int main(int argc, char **argv)
                         break;
                     }                    
                 }
-                if ( meshData[j].meshName=="trimesh" || meshData[j].meshName=="trilist" ) {
+                if ( list[j].name=="trimesh" || list[j].name=="trilist" ) {
                     // Check the trimesh/trilist
                     std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
                     std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
@@ -192,6 +212,16 @@ int main(int argc, char **argv)
                             pass = false;
                     }
                 }
+                if ( list[j].name=="domain" && format[i]>2 ) {
+                    // Check the domain mesh
+                    const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
+                    if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
+                        pass = false;
+                    if ( mesh1.nx!=domain->nx || mesh1.ny!=domain->ny || mesh1.nz!=domain->nz )
+                        pass = false;
+                    if ( mesh1.Lx!=domain->Lx || mesh1.Ly!=domain->Ly || mesh1.Lz!=domain->Lz )
+                        pass = false;
+                }
             }
         }
         if ( pass ) {
@@ -201,7 +231,7 @@ int main(int argc, char **argv)
             continue;
         }
         // For each domain, load the variables and check their data
-        if ( i==0 )
+        if ( format[i]==1 )
             continue;   // Format 1 does not support variables
         for (size_t j=0; j<list.size(); j++) {
             const IO::MeshDataStruct* mesh0 = NULL;
@@ -211,8 +241,8 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-            for (size_t v=0; v<list[i].variables.size(); v++) {
-                for (size_t k=0; k<list[i].domains.size(); k++) {
+            for (size_t v=0; v<list[j].variables.size(); v++) {
+                for (size_t k=0; k<list[j].domains.size(); k++) {
                     std::shared_ptr<const IO::Variable> variable = 
                         IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
                     const IO::Variable& var1 = *mesh0->vars[v];
@@ -220,10 +250,10 @@ int main(int argc, char **argv)
                     pass = var1.name == var2.name;
                     pass = pass && var1.dim == var2.dim;
                     pass = pass && var1.type == var2.type;
-                    pass = pass && var1.data.size() == var2.data.size();
+                    pass = pass && var1.data.length() == var2.data.length();
                     if ( pass ) {
-                        for (size_t m=0; m<var1.data.size(); m++)
-                            pass = pass && approx_equal(var1.data[m],var2.data[m]);
+                        for (size_t m=0; m<var1.data.length(); m++)
+                            pass = pass && approx_equal(var1.data(m),var2.data(m));
                     }
                     if ( pass ) {
                         ut.passes("Variables match");

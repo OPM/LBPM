@@ -199,4 +199,60 @@ void fillHalo<TYPE>::unpack( Array<TYPE>& data, int i0, int j0, int k0, const TY
 }
 
 
+/********************************************************
+*  Function to remove the ghost halo                    *
+********************************************************/
+template<class TYPE>
+template<class TYPE1, class TYPE2>
+void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
+{
+    ASSERT(src.size(0)==nx||src.size(0)==nx+2*ngx);
+    ASSERT(dst.size(0)==nx||dst.size(0)==nx+2*ngx);
+    bool src_halo = src.size(0)==nx+2*ngx;
+    bool dst_halo = dst.size(0)==nx+2*ngx;
+    if ( src_halo ) {
+        ASSERT(src.size(0)==nx+2*ngx);
+        ASSERT(src.size(1)==ny+2*ngy);
+        ASSERT(src.size(2)==nz+2*ngz);
+    } else {
+        ASSERT(src.size(0)==nx);
+        ASSERT(src.size(1)==ny);
+        ASSERT(src.size(2)==nz);
+    }
+    if ( dst_halo ) {
+        ASSERT(dst.size(0)==nx+2*ngx);
+        ASSERT(dst.size(1)==ny+2*ngy);
+        ASSERT(dst.size(2)==nz+2*ngz);
+    } else {
+        ASSERT(dst.size(0)==nx);
+        ASSERT(dst.size(1)==ny);
+        ASSERT(dst.size(2)==nz);
+    }
+    if ( src_halo == dst_halo ) {
+        // Src and dst halos match
+        for (size_t i=0; i<src.length(); i++)
+            dst(i) = src(i);
+    } else if ( src_halo && !dst_halo ) {
+        // Src has halos
+        for (size_t k=0; k<nz; k++) {
+            for (size_t j=0; j<ny; j++) {
+                for (size_t i=0; i<nx; i++) {
+                    dst(i,j,k) = src(i+ngx,j+ngy,k+ngz);
+                }
+            }
+        }
+    } else if ( !src_halo && dst_halo ) {
+        // Src has halos
+        for (size_t k=0; k<nz; k++) {
+            for (size_t j=0; j<ny; j++) {
+                for (size_t i=0; i<nx; i++) {
+                    dst(i+ngx,j+ngy,k+ngz) = src(i,j,k);
+                }
+            }
+        }
+        fill(dst);
+    }
+}
+
+
 #endif

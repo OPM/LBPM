@@ -399,14 +399,16 @@ std::vector<MeshDatabase> read( const std::string& filename )
 
 
 // Return the mesh type
-IO::MeshType meshType( std::shared_ptr<IO::Mesh> mesh )
+IO::MeshType meshType( const IO::Mesh& mesh )
 {
     IO::MeshType type = IO::Unknown;
-    if ( std::dynamic_pointer_cast<IO::PointList>(mesh).get()!=NULL ) {
+    const std::string meshClass = mesh.className();
+    if ( meshClass=="PointList" ) {
         type = IO::PointMesh;
-    } else if ( std::dynamic_pointer_cast<IO::TriList>(mesh).get()!=NULL || 
-                std::dynamic_pointer_cast<IO::TriMesh>(mesh).get()!=NULL ) {
+    } else if ( meshClass=="TriList" || meshClass=="TriMesh" ) {
         type = IO::SurfaceMesh;
+    } else if ( meshClass=="DomainMesh" ) {
+        type = IO::VolumeMesh;
     } else {
         ERROR("Unknown mesh");
     }

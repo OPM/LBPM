@@ -216,7 +216,7 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestat
         mmd->name = database[i].name;
         mmd->meshType = vtkMeshType(database[i].type);
         mmd->spatialDimension = 3;
-        mmd->topologicalDimension = -1;
+        mmd->topologicalDimension = vtkTopDim(database[i].type);
         if ( mmd->meshType==AVT_SURFACE_MESH )
             mmd->topologicalDimension = 2;
         mmd->numBlocks = database[i].domains.size();
@@ -240,11 +240,11 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestat
             IO::VariableDatabase variable = database[i].variables[j];
             std::string varname = variable.name + "/" + mmd->name;
             avtCentering center = AVT_UNKNOWN_CENT;
-            if ( variable.type==IO::VariableType::NodeVariable ) {
+            if ( variable.type==IO::NodeVariable ) {
                 center = AVT_NODECENT;
-            } else if ( variable.type==IO::VariableType::SurfaceVariable ) {
+            } else if ( variable.type==IO::SurfaceVariable ) {
                 center = AVT_ZONECENT;
-            } else if ( variable.type==IO::VariableType::VolumeVariable ) {
+            } else if ( variable.type==IO::VolumeVariable ) {
                 center = AVT_ZONECENT;
             }
             if ( variable.dim==1 ) {

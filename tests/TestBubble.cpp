@@ -2170,14 +2170,14 @@ int main(int argc, char **argv)
                 dist->name = "distance";
                 dist->dim = 1;
                 dist->type = IO::NodeVariable;
-                dist->data.resize(3*mesh->A.size());
+                dist->data.resize(3,mesh->A.size());
                 for (size_t i=0; i<mesh->A.size(); i++) {
                     const Point& a = mesh->A[i];
                     const Point& b = mesh->B[i];
                     const Point& c = mesh->C[i];
-                    dist->data[3*i+0] = sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
-                    dist->data[3*i+1] = sqrt(b.x*b.x+b.y*b.y+b.z*b.z);
-                    dist->data[3*i+2] = sqrt(c.x*c.x+c.y*c.y+c.z*c.z);
+                    dist->data(0,i) = sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
+                    dist->data(1,i) = sqrt(b.x*b.x+b.y*b.y+b.z*b.z);
+                    dist->data(2,i) = sqrt(c.x*c.x+c.y*c.y+c.z*c.z);
                 }
                 meshData[k].vars.push_back(dist);
             }
