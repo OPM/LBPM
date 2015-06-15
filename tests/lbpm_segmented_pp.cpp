@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("computing local averages  \n");
 	Averages.ComputeLocalBlob();
 	if (rank==0) printf("reducing averages  \n");
-	//    Averages.Reduce();
+	Averages.Reduce();
 
 	if (rank==0) printf("Writing blobs \n");
     // Write the local blob ids
