@@ -119,7 +119,8 @@ int main(int argc, char **argv)
 	Dm.CommInit(MPI_COMM_WORLD);
 
 	// number of sites to use for periodic boundary condition transition zone
-	int z_transition_size = nprocz*nz - Nz - zStart;
+	int z_transition_size = (nprocz*nz - (Nz - zStart))/2;
+	if (z_transition_size < 0) z_transition_size=0;
 
 	// Set up the sub-domains
 	if (rank==0){
@@ -141,8 +142,8 @@ int main(int argc, char **argv)
 								int x = xStart + ip*nx + i-1;
 								int y = yStart + jp*ny + j-1;
 						//		int z = zStart + kp*nz + k-1;
-								int z = zStart + kp*nz + k-1 - z_transition_size/2;
-								if (z<0) 		z=0;
+								int z = zStart + kp*nz + k-1 - z_transition_size;
+								if (z<zStart) 	z=zStart;
 								if (!(z<Nz))	z=Nz-1;
 								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
 								int nglobal = z*Nx*Ny+y*Nx+x;
