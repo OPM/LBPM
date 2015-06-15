@@ -229,7 +229,8 @@ int main(int argc, char **argv)
 					Dm.id[n] = 0;
 				}
 				// Initialize distance to +/- 1
-				Averages.SDn(i,j,k) = Averages.Phase(i,j,k)-1.0;
+				// Dilation of the non-wetting phase
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k)+1.0;
 				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
