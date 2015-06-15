@@ -43,6 +43,19 @@ inline void WriteBlobs(TwoPhase Averages){
 	fclose(BLOBLOG);
 }
 
+inline void MeanFilter(DoubleArray &Mesh){
+	for (int k=1; k<Mesh.size(2)-1; k++){
+		for (int j=1; j<Mesh.size(1)-1; j++){
+			for (int i=1; i<Mesh.size(0)-1; i++){
+				double sum;
+				sum=Mesh(i,j,k)+Mesh(i+1,j,k)+Mesh(i-1,j,k)+Mesh(i,j+1,k)+Mesh(i,j-1,k)+
+						+Mesh(i,j,k+1)+Mesh(i,j,k-1);
+				Mesh(i,j,k) = sum/7.0;
+			}
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -154,10 +167,12 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Averages.SDs(i,j,k) = 1.0*id[n]-0.5;
+				Averages.SDs(i,j,k) = 2.0*id[n]-1.0;
 			}
 		}
 	}
+	MeanFilter(Averages.SDs);
+
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 	SSO(Averages.SDs,id,Dm,10);
 
@@ -183,10 +198,12 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Averages.Phase(i,j,k) = 1.0*id[n]-0.5;
+				Averages.Phase(i,j,k) = 2.0*id[n]-1.0;
 			}
 		}
 	}
+	MeanFilter(Averages.Phase);
+
 	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
 	SSO(Averages.Phase,id,Dm,10);
 
@@ -212,7 +229,8 @@ int main(int argc, char **argv)
 					Dm.id[n] = 0;
 				}
 				// Initialize distance to +/- 1
-				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k)-1.0;
+				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.DelPhi(i,j,k) = 0.0;
