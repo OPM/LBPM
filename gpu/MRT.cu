@@ -1,13 +1,17 @@
-#include <cuda.h>
-
+//*************************************************************************
 // CUDA kernels for single-phase MRT code
 // James McClure
 //*************************************************************************
-__global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz, int S)
+#include <cuda.h>
+
+#define NBLOCKS 32
+#define NTHREADS 128
+
+__global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
-
+	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 
 		//........Get 1-D index for this thread....................
@@ -46,7 +50,7 @@ __global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int 
 	}
 }
 
-__global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz, int S)
+__global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions
@@ -55,7 +59,7 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 	double vx,vy,vz;
 
 	N = Nx*Ny*Nz;
-
+	int S = N/NBLOCKS/NTHREADS + 1;
 	// S - number of threadblocks per grid block
 	for (int s=0; s<S; s++){
 
@@ -102,7 +106,7 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 }
 
 //*************************************************************************
-__global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz, int S,
+__global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 
@@ -119,7 +123,7 @@ __global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 	N = Nx*Ny*Nz;
 
 	char id;
-
+	int S = N/NBLOCKS/NTHREADS + 1;
 	// S - number of threadblocks per grid block
 	for (int s=0; s<S; s++){
 //	for (int n=0; n<N; n++){
@@ -296,17 +300,15 @@ __global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 	}
 }
 
-extern "C" void dvc_MRT(int nblocks, int nthreads, int S, char *ID,
-		double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,
-		int Nx, int Ny, int Nz)
+extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz)
 {
-	MRT <<< nblocks, nthreads >>>  (ID, f_even, f_odd, Nx, Ny, Nz, S,rlxA, rlxB, Fx, Fy, Fz);
+	MRT <<< NBLOCKS,NTHREADS>>>  (ID, f_even, f_odd, Nx, Ny, Nz, rlxA, rlxB, Fx, Fy, Fz);
 }
 
-extern "C" void dvc_InitD3Q19( int nblocks, int nthreads, int S,
-		char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
+extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
-	INITIALIZE <<< nblocks, nthreads >>>  (ID, f_even, f_odd, Nx, Ny, Nz, S);
+	
+	INITIALIZE <<< NBLOCKS, NTHREADS >>>  (ID, f_even, f_odd, Nx, Ny, Nz);
 }
 
 
