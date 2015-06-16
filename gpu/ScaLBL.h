@@ -9,3 +9,15 @@ extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, i
 extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz);
 
 extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz);
+
+extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel,
+				int Nx, int Ny, int Nz);
+
+extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
+									int Nx, int Ny, int Nz);
+
+extern "C" void PressureBC_inlet(double *disteven, double *distodd, double din,
+								  int Nx, int Ny, int Nz);
+
+extern "C" void PressureBC_outlet(double *disteven, double *distodd, double dout,
+								   int Nx, int Ny, int Nz, int outlet);
