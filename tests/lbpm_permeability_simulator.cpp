@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	// Initialized domain and averaging framework for Two-Phase Flow
+	double viscosity=(tau-0.5)/3.0;
 	// Initialized domain and averaging framework for Two-Phase Flow
 	int BC=pBC;
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -906,6 +906,8 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	//...........................................................................
+	double *Vel;
+	Vel = new double [N];
 
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
@@ -926,6 +928,24 @@ int main(int argc, char **argv)
 	// Finalize setup for averaging domain
 	Averages.SetupCubes(Dm);
 	Averages.UpdateSolid();
+	// Initialize two phase flow variables (all wetting phase)
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				Averages.Phase(i,j,k) = -1.0;
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.DelPhi(i,j,k) = 0.0;
+				Averages.Press(i,j,k) = 0.0;
+				Averages.Vel_x(i,j,k) = 0.0;
+				Averages.Vel_y(i,j,k) = 0.0;
+				Averages.Vel_z(i,j,k) = 0.0;
+			}
+		}
+	}
+
 	//.......................................................................
 
 	if (rank==0 && pBC){
@@ -1170,8 +1190,73 @@ int main(int argc, char **argv)
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
-			
+			// copy the velocity
+			CopyToHost(Velocity,Vel,N*sizeof(double));
+			// Compute the macroscopic fluid velocity
+			double vawx,vawy,vawz,Vw;
+			double vawx_global,vawy_global,vawz_global,Vw_global;
+			vawx=vawy=vawz=0.0;
+			for (k=1; k<Nz-1; k++){
+				for (j=1; j<Ny-1; j++){
+					for (i=1; i<Nx-1; i++){
+						n=k*Nx*Ny+j*Nx+i;
+						if (id[n]>0){
+							vawx+=Vel[n];
+							vawy+=Vel[N+n];
+							vawz+=Vel[2*N+n];
+							Vw+=1.0;
+						}
+					}
+				}
+			}
+			// Reduce to get the global averages
+			MPI_Barrier(MPI_COMM_WORLD);
+			MPI_Allreduce(&vawx,&vawx_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vawy,&vawy_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&vawz,&vawz_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Allreduce(&Vw,&Vw_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+			MPI_Barrier(MPI_COMM_WORLD);
+			// Compute volume averaged velocity
+			vawx = vawx_global/Vw_global;
+			vawy = vawy_global/Vw_global;
+			vawz = vawz_global/Vw_global;
+
+			// Way more work than necessary -- this is just to get the solid interfacial area!!
+			Averages.Initialize();
+			Averages.UpdateMeshValues();
+			Averages.ComputeLocal();
+			Averages.Reduce();
+
+			if (rank==0){
+				// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
+				//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
+				//  Description of Non-Darcy Flows in Porous Medium Systems
+				//  Physical Review E 87 (3), 033012
+				//  Fo := density*reference_length^3*(density*force) / (viscosity^2)
+				//	Re := density*reference_length*velocity / viscosity
+				//  Fo = a*Re + b*Re^2
+				// *************************************************************************
+				//viscosity = (tau-0.5)*0.333333333333333333;
+				double D32 = 6.0*(Dm.Volume-Vw_global)/Averages.As_global;
+				printf("Sauter Mean Diameter = %f \n",D32);
+				double mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				double Fo = reference_length*D32*D32*mag_force/viscosity/viscosity;
+				// .... 1-D flow should be aligned with force ...
+				double velocity = vawx*Fx/mag_force + vawy*Fy/mag_force
+						+ vawz*Fz/mag_force;
+				double err1D = fabs((velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
+				//.......... Computation of the Reynolds number Re ..............
+				double Re = D32*velocity/viscosity;
+				printf("Relative error for 1D representation: %f \n",err1D);
+				printf("Dimensionless force: %f \n", Fo);
+				printf("Reynolds number: %f \n", Re);
+				printf("Permeability: %f \n", Re/Fo);
+			}
 		}
 	}
 	//************************************************************************/
