@@ -971,8 +971,8 @@ int main(int argc, char **argv)
 	//.........................................
 	
 	sendtag = recvtag = 5;
-
-	err = 1.0; 	
+	double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
+	err = vel_prev = 1.0;
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax && err > tol ){
@@ -1232,6 +1232,10 @@ int main(int argc, char **argv)
 			Averages.ComputeLocal();
 			Averages.Reduce();
 
+			// Check for steady macroscopic velocity
+			velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
+			err=fabs(velocity-vel_prev)/velocity;
+
 			if (rank==0){
 				// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
 				//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
@@ -1242,20 +1246,21 @@ int main(int argc, char **argv)
 				//  Fo = a*Re + b*Re^2
 				// *************************************************************************
 				//viscosity = (tau-0.5)*0.333333333333333333;
-				double D32 = 6.0*(Dm.Volume-Vw_global)/Averages.As_global;
+				D32 = 6.0*(Dm.Volume-Vw_global)/Averages.As_global;
 				printf("Sauter Mean Diameter = %f \n",D32);
-				double mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-				double Fo = D32*D32*D32*mag_force/viscosity/viscosity;
+				mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				Fo = D32*D32*D32*mag_force/viscosity/viscosity;
 				// .... 1-D flow should be aligned with force ...
-				double velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
-				double err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
+				velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
+				err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
 				//.......... Computation of the Reynolds number Re ..............
-				double Re = D32*velocity/viscosity;
+				Re = D32*velocity/viscosity;
 				printf("Relative error for 1D representation: %f \n",err1D);
 				printf("Dimensionless force: %f \n", Fo);
 				printf("Reynolds number: %f \n", Re);
 				printf("Permeability: %f \n", Re/Fo);
 			}
+
 		}
 	}
 	//************************************************************************/
