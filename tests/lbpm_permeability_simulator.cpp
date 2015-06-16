@@ -1237,15 +1237,15 @@ int main(int argc, char **argv)
 				//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
 				//  Description of Non-Darcy Flows in Porous Medium Systems
 				//  Physical Review E 87 (3), 033012
-				//  Fo := density*reference_length^3*(density*force) / (viscosity^2)
-				//	Re := density*reference_length*velocity / viscosity
+				//  Fo := density*D32^3*(density*force) / (viscosity^2)
+				//	Re := density*D32*velocity / viscosity
 				//  Fo = a*Re + b*Re^2
 				// *************************************************************************
 				//viscosity = (tau-0.5)*0.333333333333333333;
 				double D32 = 6.0*(Dm.Volume-Vw_global)/Averages.As_global;
 				printf("Sauter Mean Diameter = %f \n",D32);
 				double mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-				double Fo = reference_length*D32*D32*mag_force/viscosity/viscosity;
+				double Fo = D32*D32*D32*mag_force/viscosity/viscosity;
 				// .... 1-D flow should be aligned with force ...
 				double velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
 				double err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
