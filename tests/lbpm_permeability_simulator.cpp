@@ -907,7 +907,6 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	//...........................................................................
 
-
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
 	//...........................................................................
@@ -1140,7 +1139,7 @@ int main(int argc, char **argv)
 		UnpackDist(6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
 		//...Map recieve list for the yz edge <<<16)................................
 		UnpackDist(7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
-		//...Map recieve list for the yZ edge <<<18)................................
+		//...Map recieve list for the yZ edge <<<18)....................`............
 		UnpackDist(8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
 		//...Map recieve list for the Yz edge <<<17)................................
 		UnpackDist(9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
@@ -1170,7 +1169,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+			//	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 	}

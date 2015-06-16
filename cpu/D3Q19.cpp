@@ -227,7 +227,7 @@ extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, i
 	}
 }
 
-extern "C" void ComputeVelocityD319(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz, int S)
+extern "C" void ComputeVelocityD319(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions
