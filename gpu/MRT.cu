@@ -305,10 +305,4 @@ extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double
 	MRT <<< NBLOCKS,NTHREADS>>>  (ID, f_even, f_odd, Nx, Ny, Nz, rlxA, rlxB, Fx, Fy, Fz);
 }
 
-extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
-{
-	
-	INITIALIZE <<< NBLOCKS, NTHREADS >>>  (ID, f_even, f_odd, Nx, Ny, Nz);
-}
-
 
