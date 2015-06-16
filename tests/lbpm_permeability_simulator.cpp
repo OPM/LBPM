@@ -955,8 +955,6 @@ int main(int argc, char **argv)
 		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 	}
 
-	
-
 	int timestep = 0;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
@@ -1186,8 +1184,8 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			MPI_Barrier(MPI_COMM_WORLD);
-
 		}
 	}
 	//************************************************************************/
