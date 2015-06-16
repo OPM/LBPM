@@ -1247,9 +1247,8 @@ int main(int argc, char **argv)
 				double mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				double Fo = reference_length*D32*D32*mag_force/viscosity/viscosity;
 				// .... 1-D flow should be aligned with force ...
-				double velocity = vawx*Fx/mag_force + vawy*Fy/mag_force
-						+ vawz*Fz/mag_force;
-				double err1D = fabs((velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
+				double velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
+				double err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
 				//.......... Computation of the Reynolds number Re ..............
 				double Re = D32*velocity/viscosity;
 				printf("Relative error for 1D representation: %f \n",err1D);
