@@ -8,6 +8,7 @@
 
 #include "Domain.h"
 #include "Extras.h"
+#include "ScaLBL.h"
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"

@@ -320,10 +320,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
@@ -377,15 +373,6 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-	
-	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s > 0.0 && !pBC){
-		phi_s = -phi_s;
-	 	das = (phi_s+1.0)*0.5;
-		dbs = 1.0 - das;
-		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
-		FlipID(id,Nx*Ny*Nz);
-	}
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
@@ -918,7 +905,6 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
 	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
 
 
@@ -975,7 +961,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
-		ColorCollideOpt( ID,f_even,f_odd,rlxA,rlxB,Fx,Fy,Fz,Nx,Ny,Nz);
+		MRT( ID,f_even,f_odd,rlxA,rlxB,Fx,Fy,Fz,Nx,Ny,Nz);
 		//*************************************************************************
 
 		//...................................................................................
