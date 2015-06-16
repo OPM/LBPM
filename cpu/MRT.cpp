@@ -35,7 +35,7 @@ extern "C" void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int 
 				f_even[9*N+n] = -1.0;
 			}
 		}
-	}
+	
 }
 
 extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
@@ -85,7 +85,7 @@ extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 			}
 		}
 	}
-}
+
 
 //*************************************************************************
 extern "C" void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
@@ -273,5 +273,5 @@ extern "C" void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 			}
 		}
 	}
-}
+
 
