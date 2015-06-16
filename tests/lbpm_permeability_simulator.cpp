@@ -1171,7 +1171,6 @@ int main(int argc, char **argv)
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			MPI_Barrier(MPI_COMM_WORLD);
-
 			
 		}
 	}
