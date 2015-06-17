@@ -1223,12 +1223,12 @@ int main(int argc, char **argv)
 				err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
 				//.......... Computation of the Reynolds number Re ..............
 				Re = D32*velocity/viscosity;
-				printf("Force: %f,%f,%f \n",Fx,Fy,Fz);
-				printf("Velocity: %f,%f,%f \n",vawx,vawy,vawz);
-				printf("Relative error for 1D representation: %f \n",err1D);
-				printf("Dimensionless force: %f \n", Fo);
-				printf("Reynolds number: %f \n", Re);
-				printf("Permeability: %f \n", Re/Fo);
+				printf("Force: %.5g,%.5g,%.5g \n",Fx,Fy,Fz);
+				printf("Velocity: %.5g,%.5g,%.5g \n",vawx,vawy,vawz);
+				printf("Relative error for 1D representation: %.5g \n",err1D);
+				printf("Dimensionless force: %5g \n", Fo);
+				printf("Reynolds number: %.5g \n", Re);
+				printf("Dimensionless Permeability (k/D^2): %.5g \n", Re/Fo);
 			}
 			
 		}
