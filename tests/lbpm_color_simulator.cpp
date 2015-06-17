@@ -142,7 +142,9 @@ int main(int argc, char **argv)
 	double das, dbs, phi_s;
 	double din,dout;
 	double wp_saturation;
-	bool pBC,Restart;
+	int BoundaryCondition;
+	int InitialCondition;
+//	bool pBC,Restart;
 	int i,j,k,n;
 
 	// pmmc threshold values
@@ -177,8 +179,8 @@ int main(int argc, char **argv)
 		input >> Fy;
 		input >> Fz;
 		// Line 6: Pressure Boundary conditions
-		input >> Restart;
-		input >> pBC;
+		input >> InitialCondition;
+		input >> BoundaryCondition;
 		input >> din;
 		input >> dout;
 		// Line 7: time-stepping criteria
@@ -215,8 +217,8 @@ int main(int argc, char **argv)
 	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
+	MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&InitialCondition,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -272,13 +274,24 @@ int main(int argc, char **argv)
 		printf("Force(z) = %f \n", Fz);
 		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
+		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
+		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
+		if (InitialCondition==0) printf("Initial conditions assigned randomly \n");
+		if (InitialCondition==1) printf("Initial conditions from restart file \n");
+		if (InitialCondition==2) printf("Initial conditions assigned from segmented data \n");
 		printf("********************************************************\n");
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
 	// Initialized domain and averaging framework for Two-Phase Flow
-	int BC=pBC;
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	bool pBC;
+	if (BoundaryCondition==1)	pBC=true;
+	else						pBC=false;
+	bool Restart;
+	if (InitialCondition==1)    Restart=true;
+	else 						Restart=false;
+
+	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	TwoPhase Averages(Dm);
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
@@ -316,7 +329,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
 	//...........................................................................
 	if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
@@ -359,8 +372,8 @@ int main(int argc, char **argv)
 	}
 
 	// Generate the residual NWP 
-	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+	if (BoundaryCondition==0 && InitialCondition==0 && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+	if (BoundaryCondition==0 && InitialCondition==0) GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
 	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
@@ -1000,6 +1013,17 @@ int main(int argc, char **argv)
 		CopyToDevice(Den,cDen,2*N*sizeof(double));
 		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
+	if (InitialCondition == true){
+		if (rank==0) printf("Initialize from segmented data: solid=0, wetting=1, nonwetting=2 \n");
+	    sprintf(LocalRankFilename,"ID.%05i",rank);
+	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	    fread(id,1,N,IDFILE);
+	    fclose(IDFILE);
+		CopyToDevice(ID, id, N);
+		InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 	}
 
 	//......................................................................
