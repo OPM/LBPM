@@ -1661,7 +1661,7 @@ int main(int argc, char **argv)
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
 			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-			Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.Phase_tplus.get());
+			//			Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus.get());
 			//...........................................................................
 		}
 		if (timestep%1000 == 0){
@@ -1684,11 +1684,11 @@ int main(int argc, char **argv)
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
 			CopyToHost(Averages.Phase_tminus.get(),Phi,N*sizeof(double));
-			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.get(),Averages.Phase_tminus.get());
+			//Averages.ColorToSignedDistance(beta,Averages.Phase_tminus.get(),Averages.Phase_tminus.get());
 			//....................................................................
 			Averages.Initialize();
 			Averages.ComputeDelPhi();
-			Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.SDn.get());
+			Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
 			Averages.Reduce();

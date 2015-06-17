@@ -209,7 +209,7 @@ int main(int argc, char **argv)
     Averages.UpdateSolid();
     Averages.Initialize();
     Averages.ComputeDelPhi();
-    Averages.ColorToSignedDistance(beta,Averages.Phase.get(),Averages.SDn.get());
+    Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
     Averages.UpdateMeshValues();
     Averages.ComputeLocalBlob();
     Averages.Reduce();

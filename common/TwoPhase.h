@@ -289,7 +289,7 @@ public:
 	void UpdateMeshValues();
 	void UpdateSolid();
 	void ComputeDelPhi();
-	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
+	void ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData);
 	void ComputeLocal();
 	void ComputeLocalBlob();
 	void Reduce();
@@ -327,7 +327,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		}
 	}
 
-	SSO(DistData,id,Dm,10);
+	SSO(DistData,Dm.id,Dm,10);
 
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
