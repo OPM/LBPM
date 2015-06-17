@@ -1194,48 +1194,17 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
 			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-			// copy the velocity
-			CopyToHost(Vel,Velocity,3*N*sizeof(double));
-			// Compute the macroscopic fluid velocity
-			double vawx,vawy,vawz,Vw;
-			double vawx_global,vawy_global,vawz_global,Vw_global;
-			vawx=vawy=vawz=0.0;
-			for (k=1; k<Nz-1; k++){
-				for (j=1; j<Ny-1; j++){
-					for (i=1; i<Nx-1; i++){
-						n=k*Nx*Ny+j*Nx+i;
-						if (id[n]>0){
-							vawx+=Vel[n];
-							vawy+=Vel[N+n];
-							vawz+=Vel[2*N+n];
-							Vw+=1.0;
-						}
-					}
-				}
-			}
-			// Reduce to get the global averages
-			MPI_Barrier(MPI_COMM_WORLD);
-			MPI_Allreduce(&vawx,&vawx_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vawy,&vawy_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&vawz,&vawz_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Allreduce(&Vw,&Vw_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-			MPI_Barrier(MPI_COMM_WORLD);
-			// Compute volume averaged velocity
-			vawx = vawx_global/Vw_global;
-			vawy = vawy_global/Vw_global;
-			vawz = vawz_global/Vw_global;
 
 			// Way more work than necessary -- this is just to get the solid interfacial area!!
 			Averages.Initialize();
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
 			Averages.Reduce();
-
-			// Check for steady macroscopic velocity
-			velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
-			err=fabs(velocity-vel_prev)/velocity;
-
-			if (rank==0){
+			
+			double vawx = -Averages.vaw_global(0);
+			double vawy = -Averages.vaw_global(1);
+			double vawz = -Averages.vaw_global(2);
+		       if (rank==0){
 				// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
 				//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
 				//  Description of Non-Darcy Flows in Porous Medium Systems
@@ -1245,7 +1214,7 @@ int main(int argc, char **argv)
 				//  Fo = a*Re + b*Re^2
 				// *************************************************************************
 				//viscosity = (tau-0.5)*0.333333333333333333;
-				D32 = 6.0*(Dm.Volume-Vw_global)/Averages.As_global;
+				D32 = 6.0*(Dm.Volume-Averages.vol_w_global)/Averages.As_global;
 				printf("Sauter Mean Diameter = %f \n",D32);
 				mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				Fo = D32*D32*D32*mag_force/viscosity/viscosity;
@@ -1254,12 +1223,14 @@ int main(int argc, char **argv)
 				err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
 				//.......... Computation of the Reynolds number Re ..............
 				Re = D32*velocity/viscosity;
+				printf("Force: %f,%f,%f \n",Fx,Fy,Fz);
+				printf("Velocity: %f,%f,%f \n",vawx,vawy,vawz);
 				printf("Relative error for 1D representation: %f \n",err1D);
 				printf("Dimensionless force: %f \n", Fo);
 				printf("Reynolds number: %f \n", Re);
 				printf("Permeability: %f \n", Re/Fo);
 			}
-
+			
 		}
 	}
 	//************************************************************************/
