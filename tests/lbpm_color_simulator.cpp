@@ -429,7 +429,7 @@ int main(int argc, char **argv)
 	//.........................................................
 	
 	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s > 0.0 && !pBC){
+	if (phi_s > 0.0 && BoundaryCondition==0){
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
 		dbs = 1.0 - das;
