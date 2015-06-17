@@ -907,7 +907,7 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	//...........................................................................
 	double *Vel;
-	Vel = new double [N];
+	Vel = new double [3*N];
 
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
@@ -1194,9 +1194,8 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
 			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-			MPI_Barrier(MPI_COMM_WORLD);
 			// copy the velocity
-			CopyToHost(Velocity,Vel,N*sizeof(double));
+			CopyToHost(Vel,Velocity,3*N*sizeof(double));
 			// Compute the macroscopic fluid velocity
 			double vawx,vawy,vawz,Vw;
 			double vawx_global,vawy_global,vawz_global,Vw_global;
