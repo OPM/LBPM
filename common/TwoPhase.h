@@ -309,7 +309,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 		if (value > 0.999 ) DistData[n] = 4.0;
 		else if (value < -0.999 ) DistData[n] = -4.0;
 		else 	DistData[n] = factor*log((1.0+value)/(1.0-value));
-	}
+		if (DistData[n] > 1.0)  DistData[n] = 1.0;
+		if (DistData[n] < -1.0) DistData[n] = -1.0;
+	}*/
 
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
@@ -323,8 +325,10 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 			}
 		}
 	}
-*/
-	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
+
+	SSO(DistData,id,Dm,10);
+
+//	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
 void TwoPhase::ComputeDelPhi(){
