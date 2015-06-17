@@ -1015,7 +1015,7 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
-	if (InitialCondition == true){
+	if (InitialCondition == 2){
 		if (rank==0) printf("Initialize from segmented data: solid=0, wetting=1, nonwetting=2 \n");
 	    sprintf(LocalRankFilename,"ID.%05i",rank);
 	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
