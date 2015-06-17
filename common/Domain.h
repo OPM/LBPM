@@ -905,7 +905,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                     Distance(i,j,k) += dt*sign*(1.0 - norm);
 
                     // Disallow any change in phase
-                    if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
+                   // if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
                 }
             }
         }
