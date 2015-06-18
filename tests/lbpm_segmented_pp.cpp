@@ -186,8 +186,8 @@ int main(int argc, char **argv)
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
-				// Initialize the solid phase
-				if (Dm.id[n] == 2)	id[n] = 1;
+				// Initialize the non-wetting phase
+				if (Dm.id[n] == 1)	id[n] = 1;
 				else	       		id[n] = 0;
 			}
 		}

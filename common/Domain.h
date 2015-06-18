@@ -846,12 +846,9 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                     nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
 
                     W = 0.0;	Dx = Dy = Dz = 0.0;
-                    // Ignore any values that have distances less than a lattice unit
-                    // since sometimes the positions may be guessed more accurately from
-                    // another source (such as a simulation)
                     // also ignore places where the gradient is zero since this will not
                     // result in any local change to Distance
-                    if (nx*nx+ny*ny+nz*nz > 0.0 && !(Distance(i,j,k)*Distance(i,j,k) < 1.0) ){
+                    if (nx*nx+ny*ny+nz*nz > 0.0 ){
                         for (q=0; q<26; q++){
                             Cqx = 1.0*D3Q27[q][0];
                             Cqy = 1.0*D3Q27[q][1];

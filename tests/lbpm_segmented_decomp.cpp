@@ -180,39 +180,20 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-/*	char *id;
-	id = new char [N];
-	for (k=0;k<nz;k++){
+	/*	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
+				if (Dm.id[n] == 1) Dm.id[n]=2;
+				else if (Dm.id[n] == 2) Dm.id[n]=1;
 				// Initialize the solid phase
 //				if (Dm.id[n] == 0)	id[n] = 0;
 //				else				id[n] = 1;
 			}
 		}
 	}
-	
-	DoubleArray Distance(nx,ny,nz);
-	// Initialize the signed distance function
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				n=k*nx*ny+j*nx+i;
-				// Initialize distance to +/- 1
-				Distance(i,j,k) = 1.0*id[n]-0.5;
-			}
-		}
-	}
 	*/
-//	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
-//	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
-//	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
-
-//	printf("Initialized! Converting to Signed Distance function \n");
-//	SSO(Distance,id,Dm,10);
-
-	char LocalRankFilename[40];
+       char LocalRankFilename[40];
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");
