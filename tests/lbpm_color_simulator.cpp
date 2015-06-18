@@ -374,6 +374,16 @@ int main(int argc, char **argv)
 	// Generate the residual NWP 
 	if (BoundaryCondition==0 && InitialCondition==0 && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	if (BoundaryCondition==0 && InitialCondition==0) GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+	if (InitialCondition == 2){
+	    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+	    sprintf(LocalRankFilename,"ID.%05i",rank);
+	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	    fread(id,1,N,IDFILE);
+	    fclose(IDFILE);
+	    //	    CopyToDevice(ID, id, N);
+	}
+
 	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
@@ -996,16 +1006,6 @@ int main(int argc, char **argv)
 	//				MAIN  VARIABLES INITIALIZED HERE
 	//...........................................................................
 	//...........................................................................
-	if (InitialCondition == 2){
-	    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-	    sprintf(LocalRankFilename,"ID.%05i",rank);
-	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	    fread(id,1,N,IDFILE);
-	    fclose(IDFILE);
-	    CopyToDevice(ID, id, N);
-	}
-
 	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
@@ -1766,7 +1766,10 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 	
 
-//#ifdef WriteOutput	
+//#ifdef WriteOutput
+	DeviceBarrier();
+	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
