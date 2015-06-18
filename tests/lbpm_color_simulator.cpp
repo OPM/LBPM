@@ -996,12 +996,22 @@ int main(int argc, char **argv)
 	//				MAIN  VARIABLES INITIALIZED HERE
 	//...........................................................................
 	//...........................................................................
+	if (InitialCondition == 2){
+	    if (rank==0) printf("Initialize from segmented data: solid=0, wetting=1, nonwetting=2 \n");
+	    sprintf(LocalRankFilename,"ID.%05i",rank);
+	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	    fread(id,1,N,IDFILE);
+	    fclose(IDFILE);
+	    CopyToDevice(ID, id, N);
+	}
+
+	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-	//......................................................................
-
 	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+	//......................................................................
 
 	if (Restart == true){
 		if (rank==0) printf("Reading restart file! \n");
@@ -1013,17 +1023,6 @@ int main(int argc, char **argv)
 		CopyToDevice(Den,cDen,2*N*sizeof(double));
 		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
-	}
-
-	if (InitialCondition == 2){
-		if (rank==0) printf("Initialize from segmented data: solid=0, wetting=1, nonwetting=2 \n");
-	    sprintf(LocalRankFilename,"ID.%05i",rank);
-	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	    fread(id,1,N,IDFILE);
-	    fclose(IDFILE);
-		CopyToDevice(ID, id, N);
-		InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 	}
 
 	//......................................................................
