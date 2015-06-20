@@ -118,9 +118,11 @@ int main(int argc, char **argv)
 
 	int InitialWetting;
 	double Saturation;
-	if (argc == 3){
-		sscanf(argv[1],"%lf",&Saturation);
-		sscanf(argv[2],"%d",&InitialWetting);
+	//	if (argc == 3){
+	//sscanf(argv[1],"%lf",&Saturation);
+	//sscanf(argv[2],"%d",&InitialWetting);
+	Saturation=strtod(argv[1],NULL);
+	InitialWetting=atoi(argv[2]);
 		if (rank==0){
 			printf("Initializing wetting phase saturation of %f \n",Saturation);
 			if (InitialWetting == 1)
@@ -128,7 +130,7 @@ int main(int argc, char **argv)
 			else
 				printf("Begin from connected non-wetting phase \n");
 		}
-	}
+		//	}
 
 	if (InitialWetting == 1)	Saturation=1.0-Saturation;
     //.......................................................................
@@ -136,7 +138,6 @@ int main(int argc, char **argv)
     //.......................................................................
     int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
     double Lx, Ly, Lz;
-    int Nx,Ny,Nz;
     int i,j,k,n;
 	int BC=0;
 
@@ -196,21 +197,22 @@ int main(int argc, char **argv)
     for (int k=0; k<nz; k++){
         for (int j=0; j<ny; j++){
             for (int i=0; i<nx; i++){
+	      n = k*nx*ny+j*nx+i;
             	if (SignDist(i,j,k) < 0.0)  id[n] = 0;
-            	else 						id[n] = 2;
+            	else 			    id[n] = 2;
             }
         }
     }
 
 	// Generate the residual NWP
 	if (rank==0) printf("Initializing with NWP saturation = %f \n",Saturation);
-	GenerateResidual(id,Nx,Ny,Nz,Saturation);
+	GenerateResidual(id,nx,ny,nz,Saturation);
 
-	if (InitialWetting == 1)	FlipID(id,Nx*Ny*Nz);
+	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");
-    fread(id,1,N,ID);
+    fwrite(id,1,N,ID);
     fclose(ID);
 
     MPI_Barrier(MPI_COMM_WORLD);
