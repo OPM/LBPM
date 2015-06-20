@@ -442,10 +442,10 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
 
-	// Generate the residual NWP 
+	/*	// Generate the residual NWP 
 	if (!pBC && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
 	if (!pBC)	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
-	
+	*/
 #endif
 
 	//.........................................................
@@ -477,6 +477,7 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
+	/*
 #ifdef USE_EXP_CONTACT_ANGLE
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s < 0.0 && !pBC){
@@ -497,7 +498,7 @@ int main(int argc, char **argv)
 	}
 	
 #endif
-
+	*/
 	// Set up MPI communication structurese
 	if (rank==0)	printf ("Setting up communication control structures \n");
 	//......................................................................................

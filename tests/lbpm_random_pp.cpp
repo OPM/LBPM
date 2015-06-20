@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <Array.h>
+#include <Domain.h>
 
 inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation)
 {
@@ -202,8 +203,8 @@ int main(int argc, char **argv)
     }
 
 	// Generate the residual NWP
-	if (rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+	if (rank==0) printf("Initializing with NWP saturation = %f \n",Saturation);
+	GenerateResidual(id,Nx,Ny,Nz,Saturation);
 
 	if (InitialWetting == 1)	FlipID(id,Nx*Ny*Nz);
 
