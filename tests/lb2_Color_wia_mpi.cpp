@@ -23,6 +23,104 @@
  * James E. McClure 2013-2014
  */
 
+
+// The functions GenerateResidual and FlipID may be deprecated
+// see lbpm_random_pp for latest version
+inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation)
+{
+	//.......................................................................
+	int i,j,k,n,Number,N;
+	int x,y,z,ii,jj,kk;
+	int sizeX,sizeY,sizeZ;
+	int *SizeX, *SizeY, *SizeZ;
+
+#ifdef NORANDOM
+	srand(10009);
+#else
+	srand(time(NULL));
+#endif
+//	float bin;
+	//.......................................................................
+	N = Nx*Ny*Nz;
+
+	int bin, binCount;
+	ifstream Dist("BlobSize.in");
+	Dist >> binCount;
+//	printf("Number of blob sizes: %i \n",binCount);
+	SizeX = new int [binCount];
+	SizeY = new int [binCount];
+	SizeZ = new int [binCount];
+	for (bin=0; bin<binCount; bin++){
+		Dist >> SizeX[bin];
+		Dist >> SizeY[bin];
+		Dist >> SizeZ[bin];
+	//	printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
+	}
+	Dist.close();
+	//.......................................................................
+//	cout << "Generating blocks... " << endl;
+	// Count for the total number of oil nodes
+	int count = 0;
+	// Count the total number of non-solid nodes
+	int total = 0;
+	for (i=0;i<N;i++){
+		if (ID[i] != 0) total++;
+	}
+
+	float sat = 0.f;
+	Number = 0;		// number of features
+	while (sat < Saturation){
+		Number++;
+		// Randomly generate a point in the domain
+		x = Nx*float(rand())/float(RAND_MAX);
+		y = Ny*float(rand())/float(RAND_MAX);
+		z = Nz*float(rand())/float(RAND_MAX);
+
+		bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
+		sizeX = SizeX[bin];
+		sizeY = SizeY[bin];
+		sizeZ = SizeZ[bin];
+
+//		cout << "Sampling from bin no. " << floor(bin) << endl;
+//		cout << "Feature size is: " << sizeX << "x" << sizeY << "x" << sizeZ << endl;
+
+		for (k=z;k<z+sizeZ;k++){
+			for (j=y;j<y+sizeY;j++){
+				for (i=x;i<x+sizeX;i++){
+					// Identify nodes in the domain (periodic BC)
+					ii = i;
+					jj = j;
+					kk = k;
+					if (ii < 1)			ii+=(Nx-2);
+					if (jj < 1)			jj+=(Ny-2);
+					if (kk < 1)			kk+=(Nz-2);
+					if (!(ii < Nx-1))		ii-=(Nx-2);
+					if (!(jj < Ny-1))		jj-=(Ny-2);
+					if (!(kk < Nz-1))		kk-=(Nz-2);
+
+					n = kk*Nx*Ny+jj*Nx+ii;
+
+					if (ID[n] == 2){
+						ID[n] = 1;
+						count++;
+					}
+				}
+			}
+		}
+		sat = float(count)/total;
+	}
+	//.......................................................................
+}
+
+
+inline void FlipID(char *ID, int N)
+{
+	for (int n=0; n<N; n++){
+		if  	 (ID[n] == 1)	ID[n] = 2;
+		else if  (ID[n] == 2)	ID[n] = 1;
+	}
+}
+
 #define USE_NEW_WRITER
 
 using namespace std;
@@ -487,7 +585,7 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-	
+/*
 #ifdef USE_EXP_CONTACT_ANGLE
 	// If negative phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s < 0.0 && !pBC){
@@ -508,7 +606,7 @@ int main(int argc, char **argv)
 	}
 
 #endif
-
+*/
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);

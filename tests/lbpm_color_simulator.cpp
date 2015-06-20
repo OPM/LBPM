@@ -372,9 +372,9 @@ int main(int argc, char **argv)
 	}
 
 	// Generate the residual NWP 
-	if (BoundaryCondition==0 && InitialCondition==0 && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-	if (BoundaryCondition==0 && InitialCondition==0) GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
-	if (InitialCondition == 2){
+//	if (BoundaryCondition==0 && InitialCondition==0 && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
+//	if (BoundaryCondition==0 && InitialCondition==0) GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
+//	if (InitialCondition == 2){
 	    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	    sprintf(LocalRankFilename,"ID.%05i",rank);
 	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
@@ -382,7 +382,7 @@ int main(int argc, char **argv)
 	    fread(id,1,N,IDFILE);
 	    fclose(IDFILE);
 	    //	    CopyToDevice(ID, id, N);
-	}
+//	}
 
 	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 	
-	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
+/*	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
 	if (phi_s > 0.0 && BoundaryCondition==0){
 		phi_s = -phi_s;
 	 	das = (phi_s+1.0)*0.5;
@@ -446,6 +446,7 @@ int main(int argc, char **argv)
 		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
 		FlipID(id,Nx*Ny*Nz);
 	}
+*/
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
