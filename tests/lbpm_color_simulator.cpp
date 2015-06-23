@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -1041,7 +1041,6 @@ int main(int argc, char **argv)
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
 	//*************************************************************************
-//	ComputePhi(ID, Phi, Copy, Den, N, S);
 	ComputePhi(ID, Phi, Den, N);
 	//*************************************************************************
 	//...................................................................................
@@ -1300,10 +1299,9 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Carry out the density streaming step for mass transport
 		//*************************************************************************
-//		DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC, S);
-		//*************************************************************************
 		MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
 								ColorGrad, Velocity, beta, N, pBC);
+		//*************************************************************************
 			
 
 		//*************************************************************************
@@ -1464,7 +1462,6 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Compute the phase indicator field 
 		//*************************************************************************
-//		ComputePhi(ID, Phi, Copy, Den, N);
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 
