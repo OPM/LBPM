@@ -1085,24 +1085,23 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
-	int idx,n,q,Cqx,Cqy,Cqz;
-	//	int sendLoc;
-
+	char id;
+	int n;
 	double f0,f1,f2,f3,f4,f5,f6;
 	double na,nb;		// density values
 	double ux,uy,uz;	// flow velocity
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
-	double sp,delta;
-	//double feq[6];		// equilibrium distributions
-	// Set of Discrete velocities for the D3Q19 Model
-	//int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+	double delta;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+
+		if (n<N)
+			id = ID[n];
+			if ( id > 0){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];
