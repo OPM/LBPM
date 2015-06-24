@@ -6,7 +6,8 @@ extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int N
 
 extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz);
 
-extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz);
+extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, 
+			double Fx, double Fy, double Fz,int Nx, int Ny, int Nz);
 
 extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel,
 				int Nx, int Ny, int Nz);
