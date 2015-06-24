@@ -47,6 +47,11 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 	
+	double das=0.0;
+	double dbs=1.0;
+	double beta=0.95;
+	bool pBC=false;
+	int i,j,k,n;
 	int Nx,Ny,Nz,N;
 	Nx=Nz=Ny=100;
 	N = Nx*Ny*Nz;
