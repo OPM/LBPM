@@ -1094,9 +1094,9 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
 	double sp,delta;
-	double feq[6];		// equilibrium distributions
+	//double feq[6];		// equilibrium distributions
 	// Set of Discrete velocities for the D3Q19 Model
-	int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+	//int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
@@ -1144,45 +1144,68 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			A_even[n] = 0.3333333333333333*na;
 			B_even[n] = 0.3333333333333333*nb;
 			// Non-Stationary equilibrium distributions
-			feq[0] = 0.1111111111111111*(1+4.5*ux);
-			feq[1] = 0.1111111111111111*(1-4.5*ux);
-			feq[2] = 0.1111111111111111*(1+4.5*uy);
-			feq[3] = 0.1111111111111111*(1-4.5*uy);
-			feq[4] = 0.1111111111111111*(1+4.5*uz);
-			feq[5] = 0.1111111111111111*(1-4.5*uz);
-			// Construction and streaming for the components
-			for (idx=0; idx<3; idx++){
-				//...............................................
-				// Distribution index
-				q = 2*idx;
-				// Associated discrete velocity
-				Cqx = D3Q7[idx][0];
-				Cqy = D3Q7[idx][1];
-				Cqz = D3Q7[idx][2];
-				// Generate the Equilibrium Distribution
-				a1 = na*feq[q];
-				b1 = nb*feq[q];
-				a2 = na*feq[q+1];
-				b2 = nb*feq[q+1];
-				// Recolor the distributions
-				if (C > 0.0){
-					sp = nx*double(Cqx)+ny*double(Cqy)+nz*double(Cqz);
-					//if (idx > 2)	sp = 0.7071067811865475*sp;
-					//delta = sp*min( min(a1,a2), min(b1,b2) );
-					delta = na*nb/(na+nb)*0.1111111111111111*sp;
-					//if (a1>0 && b1>0){
-					a1 += beta*delta;
-					a2 -= beta*delta;
-					b1 -= beta*delta;
-					b2 += beta*delta;
-				}
-				// Save the re-colored distributions
-				A_odd[N*idx+n] 		= a1;
-				A_even[N*(idx+1)+n] = a2;
-				B_odd[N*idx+n] 		= b1;
-				B_even[N*(idx+1)+n] = b2;
-				//...............................................
+			//feq[0] = 0.1111111111111111*(1+4.5*ux);
+			//feq[1] = 0.1111111111111111*(1-4.5*ux);
+			//feq[2] = 0.1111111111111111*(1+4.5*uy);
+			//feq[3] = 0.1111111111111111*(1-4.5*uy);
+			//feq[4] = 0.1111111111111111*(1+4.5*uz);
+			//feq[5] = 0.1111111111111111*(1-4.5*uz);
+			
+			//...............................................
+			// q = 0,2,4
+			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+			a1 = na*(0.1111111111111111*(1+4.5*ux));
+			b1 = nb*(0.1111111111111111*(1+4.5*ux));
+			a2 = na*(0.1111111111111111*(1-4.5*ux));
+			b2 = nb*(0.1111111111111111*(1-4.5*ux));
+			if (C > 0.0){
+				delta = na*nb/(na+nb)*0.1111111111111111*nx;
+				a1 += beta*delta;
+				a2 -= beta*delta;
+				b1 -= beta*delta;
+				b2 += beta*delta;
 			}
+			A_odd[n] 	= a1;
+			A_even[N+n] = a2;
+			B_odd[n] 	= b1;
+			B_even[N+n] = b2;
+			//...............................................
+			// q = 2
+			// Cq = {0,1,0}
+			a1 = na*(0.1111111111111111*(1+4.5*uy));
+			b1 = nb*(0.1111111111111111*(1+4.5*uy));
+			a2 = na*(0.1111111111111111*(1-4.5*uy));
+			b2 = nb*(0.1111111111111111*(1-4.5*uy));
+			if (C > 0.0){
+				delta = na*nb/(na+nb)*0.1111111111111111*ny;
+				a1 += beta*delta;
+				a2 -= beta*delta;
+				b1 -= beta*delta;
+				b2 += beta*delta;
+			}
+			A_odd[N+n] 	= a1;
+			A_even[2*N+n] = a2;
+			B_odd[N+n] 	= b1;
+			B_even[2*N+n] = b2;
+			//...............................................
+			// q = 4
+			// Cq = {0,0,1}
+			a1 = na*(0.1111111111111111*(1+4.5*uz));
+			b1 = nb*(0.1111111111111111*(1+4.5*uz));
+			a2 = na*(0.1111111111111111*(1-4.5*uz));
+			b2 = nb*(0.1111111111111111*(1-4.5*uz));
+			if (C > 0.0){
+				delta = na*nb/(na+nb)*0.1111111111111111*nz;
+				a1 += beta*delta;
+				a2 -= beta*delta;
+				b1 -= beta*delta;
+				b2 += beta*delta;
+			}
+			A_odd[2*N+n] = a1;
+			A_even[3*N+n] = a2;
+			B_odd[2*N+n] = b1;
+			B_even[3*N+n] = b2;
+			//...............................................
 		}
 	}
 }
