@@ -356,9 +356,9 @@ int main(int argc, char **argv)
 	}
 	sum=0;
 	pore_vol = 0.0;
-	for ( k=1;k<Nz-1;k++){
-		for ( j=1;j<Ny-1;j++){
-			for ( i=1;i<Nx-1;i++){
+	for ( k=0;k<Nz;k++){
+		for ( j=0;j<Ny;j++){
+			for ( i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
 				if (Averages.SDs(n) > 0.0){
 					id[n] = 2;	
@@ -371,20 +371,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// Generate the residual NWP 
-//	if (BoundaryCondition==0 && InitialCondition==0 && rank==0) printf("Initializing with NWP saturation = %f \n",wp_saturation);
-//	if (BoundaryCondition==0 && InitialCondition==0) GenerateResidual(id,Nx,Ny,Nz,wp_saturation);
-//	if (InitialCondition == 2){
-	    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-	    sprintf(LocalRankFilename,"ID.%05i",rank);
-	    FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	    if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	    fread(id,1,N,IDFILE);
-	    fclose(IDFILE);
-	    //	    CopyToDevice(ID, id, N);
-//	}
+	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	if (IDFILE==NULL) ERROR("Error opening file: %s\n",LocalRankFilename);
+	fread(id,1,N,IDFILE);
+	fclose(IDFILE);
 
-	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
 	kstart = 1;
@@ -437,16 +430,7 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-	
-/*	// If positive phi_s is chosen, flip the ID for the wetting and non-wetting phase
-	if (phi_s > 0.0 && BoundaryCondition==0){
-		phi_s = -phi_s;
-	 	das = (phi_s+1.0)*0.5;
-		dbs = 1.0 - das;
-		if (rank == 0)	printf("Resetting phi_s = %f, das = %f, dbs = %f \n", phi_s, das, dbs);
-		FlipID(id,Nx*Ny*Nz);
-	}
-*/
+
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
@@ -980,7 +964,6 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 	double *Phi,*Den;
-//	double *Copy;
 	double *ColorGrad, *Velocity, *Pressure, *dvcSignDist;
 	//...........................................................................
 	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
@@ -995,7 +978,6 @@ int main(int argc, char **argv)
 	cDistEven = new double[10*N];
 	cDistOdd = new double[9*N];
 	//...........................................................................
-
 
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
