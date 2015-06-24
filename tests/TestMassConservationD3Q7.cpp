@@ -1,4 +1,20 @@
 // Unit test to test mass conservation for D3Q7 mass transport LBE
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <iostream>
+#include <exception>
+#include <stdexcept>
+#include <fstream>
+
+#include "Domain.h"
+#include "Extras.h"
+#include "ScaLBL.h"
+#include "D3Q7.h"
+#include "Color.h"
+#include "Communication.h"
+#include "TwoPhase.h"
+#include "common/MPI_Helpers.h"
 
 int main(int argc, char **argv)
 {
