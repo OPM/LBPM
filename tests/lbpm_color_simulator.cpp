@@ -374,7 +374,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: %s\n",LocalRankFilename);
+	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
 
