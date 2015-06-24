@@ -703,7 +703,9 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N)
+			id = ID[n];
+			if ( id != 0){
 
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
@@ -1078,7 +1080,8 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			Velocity[N+n] = jy;
 			Velocity[2*N+n] = jz;
 			//***************************************************************
-		}	// check if n is in the solid
+
+		}	}// check if n is in the solid
 	} // loop over n
 }
 
@@ -1101,7 +1104,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 
 		if (n<N)
 			id = ID[n];
-			if ( id > 0){
+			if ( id != 0){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];

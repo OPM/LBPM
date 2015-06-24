@@ -1118,7 +1118,7 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 
 	for (n=0; n<N; n++){
 		id = ID[n];
-		if (id > 0 ){
+		if (id != 0 ){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];
