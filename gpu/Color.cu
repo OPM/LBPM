@@ -696,6 +696,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
 	// additional variables needed for computations
 	double rho,jx,jy,jz,C,nx,ny,nz;
+	char id;
 
 	N = Nx*Ny*Nz;
 
@@ -1088,7 +1089,6 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
-	char id;
 	int n;
 	double f0,f1,f2,f3,f4,f5,f6;
 	double na,nb;		// density values
@@ -1096,6 +1096,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
 	double delta;
+	char id;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
