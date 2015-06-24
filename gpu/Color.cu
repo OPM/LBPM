@@ -704,7 +704,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N)
+		if (n<N) {
 			id = ID[n];
 			if ( id != 0){
 
@@ -1082,7 +1082,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			Velocity[2*N+n] = jz;
 			//***************************************************************
 
-		}	}// check if n is in the solid
+			}// check if n is in the solid
 	} // loop over n
 }
 
