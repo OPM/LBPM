@@ -130,6 +130,9 @@ int main(int argc, char **argv)
 				if (fabs(DenFinal[n] - DenOriginal[n]) > 1e-15){
 					final = DenFinal[n];
 					original = DenOriginal[n];
+					if (ID[n] == 0) printf("Solid phase! \n");
+					if (ID[n] == 1) printf("Wetting phase! \n");
+					if (ID[n] == 2) printf("Non-wetting phase! \n");							
 					printf("Mass not conserved: wetting component, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 					CleanCheck=false;
 				}
