@@ -133,13 +133,16 @@ int main(int argc, char **argv)
 					if (id[n] == 0) printf("Solid phase! \n");
 					if (id[n] == 1) printf("Wetting phase! \n");
 					if (id[n] == 2) printf("Non-wetting phase! \n");							
-					printf("Mass not conserved: wetting component, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
+					printf("Mass not conserved: WP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 					CleanCheck=false;
 				}
 				if (fabs(DenFinal[N+n] - DenOriginal[N+n]) > 1e-15){
+					if (id[n] == 0) printf("Solid phase! \n");
+					if (id[n] == 1) printf("Wetting phase! \n");
+					if (id[n] == 2) printf("Non-wetting phase! \n");
 					final = DenFinal[N+n];
 					original = DenOriginal[N+n];
-					printf("Mass not conserved: wetting component, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
+					printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 					CleanCheck=false;
 				}
 			}
