@@ -276,13 +276,11 @@ int main(int argc, char **argv)
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
-		if (InitialCondition==0) printf("Initial conditions assigned randomly \n");
-		if (InitialCondition==1) printf("Initial conditions from restart file \n");
-		if (InitialCondition==2) printf("Initial conditions assigned from segmented data \n");
+		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
+		if (InitialCondition==1) printf("Initial conditions asdsigned from restart file \n");
 		printf("********************************************************\n");
 	}
 
-	// Initialized domain and averaging framework for Two-Phase Flow
 	// Initialized domain and averaging framework for Two-Phase Flow
 	bool pBC;
 	if (BoundaryCondition==1)	pBC=true;
