@@ -1127,6 +1127,9 @@ int main(int argc, char **argv)
 		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 
+	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
@@ -1761,47 +1764,6 @@ int main(int argc, char **argv)
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
-
-	
-/*	sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
-	FILE *SPEED;
-	SPEED = fopen(LocalRankFilename,"wb");
-	fwrite(dPdt.get(),8,N,SPEED);
-	fclose(SPEED);
-	
-	sprintf(LocalRankFilename,"%s%s","DenA.",LocalRankString);
-	FILE *DENA;
-	DENA = fopen(LocalRankFilename,"wb");
-	fwrite(&Den[0],8,N,DENA);
-	fclose(DENA);
-	
-	sprintf(LocalRankFilename,"%s%s","DenB.",LocalRankString);
-	FILE *DENB;
-	DENB = fopen(LocalRankFilename,"wb");
-	fwrite(&Den[N],8,N,DENB);
-	fclose(DENB);
-	
-	sprintf(LocalRankFilename,"%s%s","GradMag.",LocalRankString);
-	FILE *GRAD;
-	GRAD = fopen(LocalRankFilename,"wb");
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				Phase(i,j,k) = sqrt(Phase_x(i,j,k)*Phase_x(i,j,k) + Phase_y(i,j,k)*Phase_y(i,j,k) + Phase_z(i,j,k)*Phase_z(i,j,k));
-			}
-		}
-	}
-	fwrite(Phase.get(),8,N,GRAD);
-	fclose(GRAD);
-*/	
-/*	double *DensityValues;
-	DensityValues = new double [2*N];
-	CopyToHost(DensityValues,Copy,2*N*sizeof(double));
-	FILE *PHASE;
-	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(DensityValues,8,2*N,PHASE);
-	fclose(PHASE);
-*/	//************************************************************************/
 
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
