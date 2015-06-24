@@ -1150,7 +1150,6 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
-
 	int timestep = 0;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
