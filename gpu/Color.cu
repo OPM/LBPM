@@ -1083,6 +1083,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			//***************************************************************
 
 			}// check if n is in the solid
+			}
 	} // loop over n
 }
 
