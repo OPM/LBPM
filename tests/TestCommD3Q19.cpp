@@ -274,7 +274,6 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Assign the phase ID field
 	//.......................................................................
-	if (rank==0) printf("Assigning phase ID from file \n");
 	char LocalRankString[8];
 	sprintf(LocalRankString,"%05d",rank);
 	char LocalRankFilename[40];
@@ -283,7 +282,9 @@ int main(int argc, char **argv)
 	char *id;
 	id = new char[Nx*Ny*Nz];
 
-/*	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+/*
+ * 	if (rank==0) printf("Assigning phase ID from file \n");
+ * 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
@@ -1083,7 +1084,7 @@ int main(int argc, char **argv)
 	int check;
 	CopyToHost(f_even_host,f_even,10*dist_mem_size);
 	CopyToHost(f_odd_host,f_odd,9*dist_mem_size);
-	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+//	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
 	int timestep = 0;
