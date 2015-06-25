@@ -888,7 +888,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-	CopyToDevice(f_odd_host, f_odd, 9*dist_mem_size);
+	CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
 /*	CopyToDevice(&f_even[0],&f_even_host[0],dist_mem_size);
 	CopyToDevice(&f_odd[0],&f_odd_host[0],dist_mem_size);
 	CopyToDevice(&f_even[1],&f_even_host[1],dist_mem_size);
