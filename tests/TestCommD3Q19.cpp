@@ -1082,8 +1082,15 @@ int main(int argc, char **argv)
 
 	//...........................................................................	
 	int check;
-	CopyToHost(f_even_host,f_even,10*dist_mem_size);
-	CopyToHost(f_odd_host,f_odd,9*dist_mem_size);
+	CopyToHost(&f_even_host[0],&f_even[0],dist_mem_size);
+	CopyToHost(&f_odd_host[0],&f_odd[0],dist_mem_size);
+	CopyToHost(&f_even_host[1],&f_even[1],dist_mem_size);
+	CopyToHost(&f_odd_host[1],&f_odd[1],dist_mem_size);
+	CopyToHost(&f_even_host[2],&f_even[2],dist_mem_size);
+	CopyToHost(&f_odd_host[2],&f_odd[2],dist_mem_size);
+	CopyToHost(&f_even_host[3],&f_even[3],dist_mem_size);
+	CopyToHost(&f_odd_host[3],&f_odd[3],dist_mem_size);
+
 //	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
