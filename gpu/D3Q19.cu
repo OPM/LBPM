@@ -350,10 +350,18 @@ extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int sta
 //*************************************************************************
 extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz){
 	dvc_InitD3Q19<<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Nx, Ny, Nz);
+        cudaError_t err = cudaGetLastError();
+        if (cudaSuccess != err){
+           printf("CUDA error in InitD3Q19: %s \n",cudaGetErrorString(err));
+        }
+
 }
 extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
 	dvc_SwapD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
-
+        cudaError_t err = cudaGetLastError();
+        if (cudaSuccess != err){
+           printf("CUDA error in SwapD3Q19: %s \n",cudaGetErrorString(err));
+        }
 }
 extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int \
 Ny, int Nz){
