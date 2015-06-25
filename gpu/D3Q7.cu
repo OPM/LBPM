@@ -168,8 +168,9 @@ __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *dist
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N){
 		id = ID[n];
-		if (n<N && id > 0 ){
+		if ( id != 0 ){
 			// Read the distributions
 			f0 = disteven[n];
 			f2 = disteven[N+n];
@@ -180,6 +181,7 @@ __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *dist
 			f5 = distodd[2*N+n];
 			// Compute the density
 			Den[n] = f0+f1+f2+f3+f4+f5+f6;
+			}
 		}
 	}
 }

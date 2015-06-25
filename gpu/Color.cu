@@ -1169,9 +1169,9 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 				b1 -= beta*delta;
 				b2 += beta*delta;
 			}
-			A_odd[n] 	= a1;
+			A_odd[n] = a1;
 			A_even[N+n] = a2;
-			B_odd[n] 	= b1;
+			B_odd[n] = b1;
 			B_even[N+n] = b2;
 			//...............................................
 			// q = 2
@@ -1187,9 +1187,9 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 				b1 -= beta*delta;
 				b2 += beta*delta;
 			}
-			A_odd[N+n] 	= a1;
+			A_odd[N+n] = a1;
 			A_even[2*N+n] = a2;
-			B_odd[N+n] 	= b1;
+			B_odd[N+n] = b1;
 			B_even[2*N+n] = b2;
 			//...............................................
 			// q = 4
@@ -1377,15 +1377,19 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 	double Na,Nb;
 	//...................................................................
 	// Update Phi
+	char id;
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N){
+		   id=ID[n];
+		   if (id != 0){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];
 			Phi[n] = (Na-Nb)/(Na+Nb);
+			}
 		}
 	}
 	//...................................................................
