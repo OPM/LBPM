@@ -168,7 +168,10 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (CleanCheck) return 0;
+	if (CleanCheck){
+		if (rank==0) printf("Test passed: mass conservation for D3Q7 \n");
+		return 0;
+	}
 	else 			return 1;
 	
 	// ****************************************************
