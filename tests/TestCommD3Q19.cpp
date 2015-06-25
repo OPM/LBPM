@@ -298,7 +298,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Compute the media porosity
 	//.......................................................................
-	int sum;
+	double sum;
 	double sum_local=0.0, porosity, iVol_global;
 	iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 	char component = 0; // solid phase
