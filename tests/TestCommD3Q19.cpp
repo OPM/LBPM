@@ -903,7 +903,7 @@ int main(int argc, char **argv)
 	CopyToDevice(&f_odd[5],&f_odd_host[5],dist_mem_size);
 	CopyToDevice(&f_even[6],&f_even_host[6]],dist_mem_size);
 	CopyToDevice(&f_odd[6],&f_odd_host[6],dist_mem_size);
-	CopyToDevice(&f_even[7],&f_even_host76],dist_mem_size);
+	CopyToDevice(&f_even[7],&f_even_host[7],dist_mem_size);
 	CopyToDevice(&f_odd[7],&f_odd_host[7],dist_mem_size);
 	CopyToDevice(&f_even[8],&f_even_host[8],dist_mem_size);
 	CopyToDevice(&f_odd[8],&f_odd_host[8],dist_mem_size);
@@ -1115,7 +1115,7 @@ int main(int argc, char **argv)
 	CopyToHost(&f_odd_host[5],&f_odd[5],dist_mem_size);
 	CopyToHost(&f_even_host[6],&f_even[6]],dist_mem_size);
 	CopyToHost(&f_odd_host[6],&f_odd[6],dist_mem_size);
-	CopyToHost(&f_even_host[7],&f_even76],dist_mem_size);
+	CopyToHost(&f_even_host[7],&f_even[7],dist_mem_size);
 	CopyToHost(&f_odd_host[7],&f_odd[7],dist_mem_size);
 	CopyToHost(&f_even_host[8],&f_even[8],dist_mem_size);
 	CopyToHost(&f_odd_host[8],&f_odd[8],dist_mem_size);
