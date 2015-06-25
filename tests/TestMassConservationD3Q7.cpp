@@ -120,7 +120,10 @@ int main(int argc, char **argv)
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	
+	ComputePhi(ID, Phi, Den, N);
+	ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
+	//..................................................................................
+
 	//*************************************************************************
 	// 		Carry out the density streaming step for mass transport
 	//*************************************************************************
@@ -132,7 +135,9 @@ int main(int argc, char **argv)
 	ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	//..................................................................................
-	
+	ComputePhi(ID, Phi, Den, N);
+	ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
+	//..................................................................................
 
 	// Compare and make sure mass is conserved at every lattice site
 	bool CleanCheck = true;
