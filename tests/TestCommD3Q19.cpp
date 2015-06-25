@@ -887,8 +887,27 @@ int main(int argc, char **argv)
 	if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
 	//...........................................................................
 	GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-	CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
+//	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
+//	CopyToDevice(f_odd_host, f_odd, 9*dist_mem_size);
+	CopyToDevice(&f_even[0],&f_even_host[0],dist_mem_size);
+	CopyToDevice(&f_odd[0],&f_odd_host[0],dist_mem_size);
+	CopyToDevice(&f_even[1],&f_even_host[1],dist_mem_size);
+	CopyToDevice(&f_odd[1],&f_odd_host[1],dist_mem_size);
+	CopyToDevice(&f_even[2],&f_even_host[2],dist_mem_size);
+	CopyToDevice(&f_odd[2],&f_odd_host[2],dist_mem_size);
+	CopyToDevice(&f_even[3],&f_even_host[3],dist_mem_size);
+	CopyToDevice(&f_odd[3],&f_odd_host[3],dist_mem_size);
+	CopyToDevice(&f_even[4],&f_even_host[4],dist_mem_size);
+	CopyToDevice(&f_odd[4],&f_odd_host[4],dist_mem_size);
+	CopyToDevice(&f_even[5],&f_even_host[5],dist_mem_size);
+	CopyToDevice(&f_odd[5],&f_odd_host[5],dist_mem_size);
+	CopyToDevice(&f_even[6],&f_even_host[6]],dist_mem_size);
+	CopyToDevice(&f_odd[6],&f_odd_host[6],dist_mem_size);
+	CopyToDevice(&f_even[7],&f_even_host76],dist_mem_size);
+	CopyToDevice(&f_odd[7],&f_odd_host[7],dist_mem_size);
+	CopyToDevice(&f_even[8],&f_even_host[8],dist_mem_size);
+	CopyToDevice(&f_odd[8],&f_odd_host[8],dist_mem_size);
+	CopyToDevice(&f_even[9],&f_even_host[9],dist_mem_size);
 	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1090,7 +1109,17 @@ int main(int argc, char **argv)
 	CopyToHost(&f_odd_host[2],&f_odd[2],dist_mem_size);
 	CopyToHost(&f_even_host[3],&f_even[3],dist_mem_size);
 	CopyToHost(&f_odd_host[3],&f_odd[3],dist_mem_size);
-
+	CopyToHost(&f_even_host[4],&f_even[4],dist_mem_size);
+	CopyToHost(&f_odd_host[4],&f_odd[4],dist_mem_size);
+	CopyToHost(&f_even_host[5],&f_even[5],dist_mem_size);
+	CopyToHost(&f_odd_host[5],&f_odd[5],dist_mem_size);
+	CopyToHost(&f_even_host[6],&f_even[6]],dist_mem_size);
+	CopyToHost(&f_odd_host[6],&f_odd[6],dist_mem_size);
+	CopyToHost(&f_even_host[7],&f_even76],dist_mem_size);
+	CopyToHost(&f_odd_host[7],&f_odd[7],dist_mem_size);
+	CopyToHost(&f_even_host[8],&f_even[8],dist_mem_size);
+	CopyToHost(&f_odd_host[8],&f_odd[8],dist_mem_size);
+	CopyToHost(&f_even_host[9],&f_even[9],dist_mem_size);
 //	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
