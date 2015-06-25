@@ -260,6 +260,8 @@ int main(int argc, char **argv)
 	iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
 
 	int BoundaryCondition=0;
+	double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
+
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 
 	Nx += 2;
@@ -299,8 +301,7 @@ int main(int argc, char **argv)
 	// Compute the media porosity
 	//.......................................................................
 	double sum;
-	double sum_local=0.0, porosity, iVol_global;
-	iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
+	double sum_local=0.0, porosity;
 	char component = 0; // solid phase
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
