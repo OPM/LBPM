@@ -887,9 +887,9 @@ int main(int argc, char **argv)
 	if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
 	//...........................................................................
 	GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-//	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-//	CopyToDevice(f_odd_host, f_odd, 9*dist_mem_size);
-	CopyToDevice(&f_even[0],&f_even_host[0],dist_mem_size);
+	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
+	CopyToDevice(f_odd_host, f_odd, 9*dist_mem_size);
+/*	CopyToDevice(&f_even[0],&f_even_host[0],dist_mem_size);
 	CopyToDevice(&f_odd[0],&f_odd_host[0],dist_mem_size);
 	CopyToDevice(&f_even[1],&f_even_host[1],dist_mem_size);
 	CopyToDevice(&f_odd[1],&f_odd_host[1],dist_mem_size);
@@ -908,6 +908,7 @@ int main(int argc, char **argv)
 	CopyToDevice(&f_even[8],&f_even_host[8],dist_mem_size);
 	CopyToDevice(&f_odd[8],&f_odd_host[8],dist_mem_size);
 	CopyToDevice(&f_even[9],&f_even_host[9],dist_mem_size);
+*/
 	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -1101,7 +1102,9 @@ int main(int argc, char **argv)
 
 	//...........................................................................	
 	int check;
-	CopyToHost(&f_even_host[0],&f_even[0],dist_mem_size);
+	CopyToHost(f_even_host,f_even,10*dist_mem_size);
+	CopyToHost(f_odd_host,f_odd,9*dist_mem_size);
+/*	CopyToHost(&f_even_host[0],&f_even[0],dist_mem_size);
 	CopyToHost(&f_odd_host[0],&f_odd[0],dist_mem_size);
 	CopyToHost(&f_even_host[1],&f_even[1],dist_mem_size);
 	CopyToHost(&f_odd_host[1],&f_odd[1],dist_mem_size);
@@ -1120,6 +1123,7 @@ int main(int argc, char **argv)
 	CopyToHost(&f_even_host[8],&f_even[8],dist_mem_size);
 	CopyToHost(&f_odd_host[8],&f_odd[8],dist_mem_size);
 	CopyToHost(&f_even_host[9],&f_even[9],dist_mem_size);
+	*/
 //	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
