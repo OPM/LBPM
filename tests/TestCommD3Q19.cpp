@@ -293,6 +293,7 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
 				id[n] = 1;
 				Dm.id[n] = id[n];
 			}
