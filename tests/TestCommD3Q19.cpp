@@ -889,6 +889,8 @@ int main(int argc, char **argv)
 	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
 	CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
 	DeviceBarrier();
+	MPI_Barrier(MPI_COMM_WORLD);
+
 	//...........................................................................
 
 	//...................................................................................
@@ -1075,6 +1077,7 @@ int main(int argc, char **argv)
 	UnpackDist(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 	//...................................................................................
 	DeviceBarrier();
+	MPI_Barrier(MPI_COMM_WORLD);
 
 	//...........................................................................	
 	int check;
