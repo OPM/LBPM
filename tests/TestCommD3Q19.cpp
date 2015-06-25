@@ -283,15 +283,17 @@ int main(int argc, char **argv)
 	char *id;
 	id = new char[Nx*Ny*Nz];
 
-	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+/*	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
+	*/
 	// Setup the domain
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
+				id[n] = 1;
 				Dm.id[n] = id[n];
 			}
 		}
