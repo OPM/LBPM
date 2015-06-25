@@ -843,11 +843,14 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Allocating distributions \n");
 	//......................device distributions.................................
 	double *f_even,*f_odd;
-	double *A_even,*A_odd,*B_even,*B_odd;
-	double *f_even_host,*f_odd_host;
 	//...........................................................................
 	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
 	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+	//...........................................................................
+	double *f_even_host,*f_odd_host;
+	f_even_host = new double [10*N];
+	f_odd_host = new double [9*N];
+	//...........................................................................
 
 	// Write the communcation structure into a file for debugging
 	char LocalCommFile[40];
