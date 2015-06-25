@@ -1,5 +1,6 @@
 // Basic cuda functions callable from C/C++ code
 #include <cuda.h>
+#include <stdio.h>
 
 extern "C" void AllocateDeviceMemory(void** address, size_t size){
        	cudaMalloc(address,size);
