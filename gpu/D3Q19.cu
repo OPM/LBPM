@@ -1,3 +1,4 @@
+#include <stdio.h>
 #define NBLOCKS 32
 #define NTHREADS 128
 
