@@ -1077,7 +1077,7 @@ int main(int argc, char **argv)
 	//...........................................................................	
 	int check;
 	CopyToHost(f_even_host,f_even,10*N*sizeof(double));
-	CopyToHost(f_odd_host,f_even,9*N*sizeof(double));
+	CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
 	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
