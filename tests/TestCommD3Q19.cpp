@@ -210,8 +210,6 @@ int main(int argc, char **argv)
 		domain >> Ly;
 		domain >> Lz;
 		//.......................................................................
-
-		// **************************************************************
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
@@ -240,11 +238,10 @@ int main(int argc, char **argv)
 	// **************************************************************
 
 	if (nprocs != nprocx*nprocy*nprocz){
-		printf("Fatal error in processor number! \n");
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
 		printf("nprocz =  %i \n",nprocz);
-		abort();		
+		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
 	}
 
 	if (rank==0){
@@ -259,9 +256,8 @@ int main(int argc, char **argv)
 	jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 	iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
 
-	int BoundaryCondition=0;
 	double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-
+	int BoundaryCondition=0;
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
