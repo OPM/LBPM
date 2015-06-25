@@ -263,6 +263,11 @@ int main(int argc, char **argv)
 	double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	
+	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
+			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
+			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
+			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 
 	Nx += 2;
 	Ny += 2;
