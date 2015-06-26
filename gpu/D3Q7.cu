@@ -71,7 +71,7 @@ __global__ void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *De
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
 
-			if (ID[n] > 0){
+			if (ID[n] != 0){
 				value = Den[n];
 				f_even[n] = 0.3333333333333333*value;
 				f_odd[n] = 0.1111111111111111*value;		//double(100*n)+1.f;
