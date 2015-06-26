@@ -1084,7 +1084,6 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 
 			}// check if n is in the solid
 			}
-
 	} // loop over n
 }
 
@@ -1384,13 +1383,13 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-//		   id=ID[n];
-//		   if (id != 0){
+		   id=ID[n];
+		   if (id != 0){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];
 			Phi[n] = (Na-Nb)/(Na+Nb);
-//			}
+			}
 		}
 	}
 	//...................................................................
