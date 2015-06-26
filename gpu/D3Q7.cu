@@ -98,7 +98,7 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 	int i,j,k,n,nn,N;
 	// distributions
 	double f1,f2,f3,f4,f5,f6;
-
+	char id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
@@ -106,7 +106,9 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 
-		if (n<N && ID[n] > 0){
+		if (n<N ){
+		   	id = ID[n];
+			if (id != 0){
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;
@@ -150,6 +152,7 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 				distodd[2*N+n] = f6;
 				disteven[3*N+nn] = f5;
 				//	}
+			}
 			}
 		}
 	}
