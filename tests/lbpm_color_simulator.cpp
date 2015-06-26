@@ -943,6 +943,15 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
 	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	// Don't compute in the halo
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				if (i==0 || i==Nx-1 || j==0 || j=Ny-1 || k==0 || k == Nz-1)	id[n] = 0;
+			}
+		}
+	}
 	// Copy to the device
 	CopyToDevice(ID, id, N);
 	//...........................................................................
@@ -1765,16 +1774,6 @@ int main(int argc, char **argv)
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
-
-	char *dvcid;
-	dvcid = new char [N];
-	CopyToHost(dvcid,ID,N*sizeof(char));
-	sprintf(LocalRankFilename,"%s%s","DVCID.",LocalRankString);
-	FILE *DVCID;
-	DVCID = fopen(LocalRankFilename,"wb");
-	fwrite(dvcid,1,N,DVCID);
-	fclose(DVCID);
-
 
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
