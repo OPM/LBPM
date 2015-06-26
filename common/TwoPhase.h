@@ -468,8 +468,8 @@ void TwoPhase::ComputeLocal(){
 		//...........................................................................
 		// Compute volume averages
 		for (int p=0;p<8;p++){
-
-			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+			int np_cube = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+			if ( Dm.id[n] != 0 ){
 				// 1-D index for this cube corner
 				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 				// compute the norm of the gradient of the phase indicator field
@@ -612,8 +612,8 @@ void TwoPhase::ComputeLocalBlob(){
 		//...........................................................................
 		// Compute volume averages
 		for (int p=0;p<8;p++){
-
-			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+			int np_cube = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+			if ( Dm.id[n] != 0 ){
 				// 1-D index for this cube corner
 				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 				// compute the norm of the gradient of the phase indicator field
