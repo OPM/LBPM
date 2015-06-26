@@ -401,9 +401,9 @@ int main(int argc, char **argv)
 	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
 	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				// Local value to send
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] != 0){
@@ -893,7 +893,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	//...........................................................................
-
+	
 	//...................................................................................
 	PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
 	PackDist(4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
@@ -996,18 +996,18 @@ int main(int argc, char **argv)
 	MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,MPI_COMM_WORLD,&req1[17]);
 	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_WORLD,&req2[17]);
 	//...................................................................................
-
+	
 	//*************************************************************************
 	// 		Swap the distributions for momentum transport
 	//*************************************************************************
 	SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	//*************************************************************************
-
+	
 	//...................................................................................
 	// Wait for completion of D3Q19 communication
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
-
+	
 	//...................................................................................
 	// Unpack the distributions on the device
 	//...................................................................................
@@ -1084,7 +1084,7 @@ int main(int argc, char **argv)
 	int check;
 	CopyToHost(f_even_host,f_even,10*N*sizeof(double));
 	CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
-//	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//...........................................................................
 
 	int timestep = 0;

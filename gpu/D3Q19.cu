@@ -63,11 +63,14 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 {
 	int n,N;
 	N = Nx*Ny*Nz;
+	char id;
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N ){
+		   id = ID[n];
+		   if (id !=0 ){
 			f_even[n] = 0.3333333333333333;
 			f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
 			f_even[N+n] = 0.055555555555555555;	//double(100*n)+2.f;
@@ -94,6 +97,7 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 				f_odd[q*N+n] = -1.0;
 			}
 			f_even[9*N+n] = -1.0;
+		}
 		}
 	}
 }
