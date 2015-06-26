@@ -563,6 +563,8 @@ int main(int argc, char **argv)
 			recvCount_xz, recvCount_XZ, recvCount_xZ, recvCount_Xz,
 			recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz );
 	//**********************************************************************************
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (rank==0)	printf ("Setting up receive lists \n");
 	//......................................................................................
 	int *recvList_x, *recvList_y, *recvList_z, *recvList_X, *recvList_Y, *recvList_Z;
 	int *recvList_xy, *recvList_yz, *recvList_xz, *recvList_Xy, *recvList_Yz, *recvList_xZ;
