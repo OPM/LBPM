@@ -1584,7 +1584,7 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		if (timestep%1000 == 5){
+		if (timestep%100 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
