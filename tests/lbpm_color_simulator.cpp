@@ -1766,6 +1766,16 @@ int main(int argc, char **argv)
 	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
 
+	char *dvcid;
+	dvcid = new char [N];
+	CopyToHost(dvcid,ID,N*sizeof(char));
+	sprintf(LocalRankFilename,"%s%s","DVCID.",LocalRankString);
+	FILE *DVCID;
+	DVCID = fopen(LocalRankFilename,"wb");
+	fwrite(dvcid,1,N,DVCID);
+	fclose(DVCID);
+
+
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
