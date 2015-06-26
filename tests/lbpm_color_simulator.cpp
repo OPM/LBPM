@@ -948,7 +948,7 @@ int main(int argc, char **argv)
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (i==0 || i==Nx-1 || j==0 || j=Ny-1 || k==0 || k == Nz-1)	id[n] = 0;
+				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
 			}
 		}
 	}
