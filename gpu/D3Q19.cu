@@ -145,7 +145,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(i+1<Nx))	nn -= Nx;			// periodic BC along the x-boundary
 			//if (i+1<Nx){
 			f2 = disteven[N+nn];					// pull neighbor for distribution 2
-			if (f2 > 0){
+			if (f2 > 0.0){
 				distodd[n] = f2;
 				disteven[N+nn] = f1;
 			}
@@ -155,7 +155,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(j+1<Ny))	nn -= Nx*Ny;		// Perioidic BC along the y-boundary
 			//if (j+1<Ny){
 			f4 = disteven[2*N+nn];				// pull neighbor for distribution 4
-			if (f4 > 0){
+			if (f4 > 0.0){
 				distodd[N+n] = f4;
 				disteven[2*N+nn] = f3;
 				//	}
@@ -165,7 +165,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (k+1<Nz){
 			f6 = disteven[3*N+nn];				// pull neighbor for distribution 6
-			if (f6 > 0){
+			if (f6 > 0.0){
 				distodd[2*N+n] = f6;
 				disteven[3*N+nn] = f5;
 				//	}
@@ -176,7 +176,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(j+1<Ny))		nn -= Nx*Ny;	// Perioidic BC along the y-boundary
 			//if ((i+1<Nx) && (j+1<Ny)){
 			f8 = disteven[4*N+nn];				// pull neighbor for distribution 8
-			if (f8 > 0){
+			if (f8 > 0.0){
 				distodd[3*N+n] = f8;
 				disteven[4*N+nn] = f7;
 				//	}
@@ -187,7 +187,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (j-1<0)		nn += Nx*Ny;	// Perioidic BC along the y-boundary
 			//if (!(i-1<0) && (j+1<Ny)){
 			f10 = disteven[5*N+nn];					// pull neighbor for distribution 9
-			if (f10 > 0){
+			if (f10 > 0.0){
 				distodd[4*N+n] = f10;
 				disteven[5*N+nn] = f9;
 				//	}
@@ -198,7 +198,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;	// Perioidic BC along the z-boundary
 			//if ( !(i-1<0) && !(k-1<0)){
 			f12 = disteven[6*N+nn];				// pull distribution 11
-			if (f12 > 0){
+			if (f12 > 0.0){
 				distodd[5*N+n] = f12;
 				disteven[6*N+nn] = f11;
 				//	}
@@ -209,7 +209,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (k-1<0)		nn += Nx*Ny*Nz;	// Perioidic BC along the z-boundary
 			//if (!(i-1<0) && (k+1<Nz)){
 			f14 = disteven[7*N+nn];				// pull neighbor for distribution 13
-			if (f14 > 0){
+			if (f14 > 0.0){
 				distodd[6*N+n] = f14;
 				disteven[7*N+nn] = f13;
 				//	}
@@ -220,7 +220,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (!(j-1<0) && !(k-1<0)){
 			f16 = disteven[8*N+nn];				// pull neighbor for distribution 15
-			if (f16 > 0){
+			if (f16 > 0.0){
 				distodd[7*N+n] = f16;
 				disteven[8*N+nn] = f15;
 				//	}
@@ -231,7 +231,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (k-1<0)		nn += Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (!(j-1<0) && (k+1<Nz)){
 			f18 = disteven[9*N+nn];				// pull neighbor for distribution 17
-			if (f18 > 0){
+			if (f18 > 0.0){
 				distodd[8*N+n] = f18;
 				disteven[9*N+nn] = f17;
 				//	}
