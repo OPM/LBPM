@@ -1169,10 +1169,10 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 				b1 -= beta*delta;
 				b2 += beta*delta;
 			}
-			A_odd[n] = a1;
-			A_even[N+n] = a2;
-			B_odd[n] = b1;
-			B_even[N+n] = b2;
+			A_odd[n] = a2;
+			A_even[N+n] = a1;
+			B_odd[n] = b2;
+			B_even[N+n] = b1;
 			//...............................................
 			// q = 2
 			// Cq = {0,1,0}
@@ -1187,10 +1187,10 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 				b1 -= beta*delta;
 				b2 += beta*delta;
 			}
-			A_odd[N+n] = a1;
-			A_even[2*N+n] = a2;
-			B_odd[N+n] = b1;
-			B_even[2*N+n] = b2;
+			A_odd[N+n] = a2;
+			A_even[2*N+n] = a1;
+			B_odd[N+n] = b2;
+			B_even[2*N+n] = b1;
 			//...............................................
 			// q = 4
 			// Cq = {0,0,1}
@@ -1205,10 +1205,10 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 				b1 -= beta*delta;
 				b2 += beta*delta;
 			}
-			A_odd[2*N+n] = a1;
-			A_even[3*N+n] = a2;
-			B_odd[2*N+n] = b1;
-			B_even[3*N+n] = b2;
+			A_odd[2*N+n] = a2;
+			A_even[3*N+n] = a1;
+			B_odd[2*N+n] = b2;
+			B_even[3*N+n] = b1;
 			//...............................................
 		}
 	}
