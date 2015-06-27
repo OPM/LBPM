@@ -1561,7 +1561,7 @@ int main(int argc, char **argv)
 		// Timestep completed!
 		timestep++;
 		//...................................................................
-		if (timestep%5000 == 4995){
+		if (timestep%100 == 95){
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
@@ -1569,7 +1569,7 @@ int main(int argc, char **argv)
 	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
 			//...........................................................................
 		}
-		if (timestep%5000 == 0){
+		if (timestep%100 == 0){
 			//...........................................................................
 			// Copy the data for for the analysis timestep
 			//...........................................................................
@@ -1584,7 +1584,7 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		if (timestep%5000 == 5){
+		if (timestep%100 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
@@ -1757,7 +1757,6 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 	
 
-//#ifdef WriteOutput
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 
@@ -1765,15 +1764,24 @@ int main(int argc, char **argv)
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Phase.get(),8,N,PHASE);
-//	fwrite(MeanCurvature.get(),8,N,PHASE);
 	fclose(PHASE);
-//#endif
 
 	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
+
+
+	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+	double * Grad;
+	Grad = new double [3*N];
+	CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
+	sprintf(LocalRankFilename,"%s%s","ColorGrad.",LocalRankString);
+	FILE *GRAD;
+	GRAD = fopen(LocalRankFilename,"wb");
+	fwrite(Grad,8,3*N,GRAD);
+	fclose(GRAD);
 
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
