@@ -1077,9 +1077,10 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			distodd[7*N+n] = f15;
 			distodd[8*N+n] = f17;
 			//...Store the Velocity..........................
-			Velocity[n] = jx;
-			Velocity[N+n] = jy;
-			Velocity[2*N+n] = jz;
+			if (!(rho>0.0)){ jx=jy=jz=0.0; rho=1.0;}
+			Velocity[n] = jx/rho;
+			Velocity[N+n] = jy/rho;
+			Velocity[2*N+n] = jz/rho;
 			//***************************************************************
 
 			}// check if n is in the solid
