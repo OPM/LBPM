@@ -1312,9 +1312,9 @@ int main(int argc, char **argv)
 	// Number of memory references from the swap algorithm (per timestep)
 	// 18 reads and 18 writes for each lattice site
 	double MemoryRefs = (Nx-2)*(Ny-2)*(Nz-2)*36;
+	// number of memory references for the swap algorithm - GigaBytes / second
+	if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9);
 	// Report bandwidth in Gigabits per second
-	// number of memory references for the swap algorithm
-	if (rank==0) printf("DRAM bandwidth (per process)= %f Gbit/sec \n",MemoryRefs*64*timestep/1e9);
 	// communication bandwidth includes both send and recieve
 	if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",CommunicationCount*128*timestep/1e9);
 	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*CommunicationCount*128*timestep/1e9);
