@@ -168,16 +168,16 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	// compute the velocity and
+	printf("Checking that the correct velocity is retained \n");
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
 	Aodd = new double[3*N];
 	Beven = new double[4*N];
-	Aodd = new double[3*N];
-	CopyToHost(Aeven,A_even,4*N*sizeof(double));
-	CopyToHost(Aodd,A_odd,3*N*sizeof(double));
-	CopyToHost(Beven,B_even,4*N*sizeof(double));
-	CopyToHost(Bodd,B_odd,3*N*sizeof(double));
+	Bodd = new double[3*N];
+	CopyToHost(Aeven,A_even,4*dist_mem_size);
+	CopyToHost(Aodd,A_odd,3*dist_mem_size);
+	CopyToHost(Beven,B_even,4*dist_mem_size);
+	CopyToHost(Bodd,B_odd,3*dist_mem_size);
 	double rho,ux,uy,uz;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -195,6 +195,20 @@ int main(int argc, char **argv)
 							if (id[n] == 2) printf("Non-wetting phase! \n");
 							final = ux/rho;
 							printf("Momentum (x) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
+							CleanCheck=false;
+					}
+					if ( fabs(0.1-uy / rho) > 1e-13 ){
+							if (id[n] == 1) printf("Wetting phase! \n");
+							if (id[n] == 2) printf("Non-wetting phase! \n");
+							final = uy/rho;
+							printf("Momentum (y) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
+							CleanCheck=false;
+					}
+					if ( fabs(0.1-uz / rho) > 1e-13 ){
+							if (id[n] == 1) printf("Wetting phase! \n");
+							if (id[n] == 2) printf("Non-wetting phase! \n");
+							final = uz/rho;
+							printf("Momentum (z) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
 							CleanCheck=false;
 					}
 				}
