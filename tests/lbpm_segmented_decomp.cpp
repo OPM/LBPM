@@ -93,10 +93,10 @@ int main(int argc, char **argv)
         ERROR("Insufficient number of processors");
     }
     char *SegData;
-    SegData = new char[Nx*Ny*Nz];
     // Rank=0 reads the entire segmented data and distributes to worker processes
     if (rank==0){
     	printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);
+	SegData = new char[Nx*Ny*Nz];
     	FILE *SEGDAT = fopen(Filename,"rb");
     	if (SEGDAT==NULL) ERROR("Error reading segmented data");
     	fread(SegData,1,Nx*Ny*Nz,SEGDAT);
@@ -180,7 +180,8 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-	/*	for (k=0;k<nz;k++){
+	// Really need a better way to do this -- this is to flip convention for a particular data set
+       	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
@@ -192,7 +193,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	*/
+	
        char LocalRankFilename[40];
 
     sprintf(LocalRankFilename,"ID.%05i",rank);

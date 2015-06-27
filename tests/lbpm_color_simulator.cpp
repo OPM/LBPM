@@ -1561,7 +1561,7 @@ int main(int argc, char **argv)
 		// Timestep completed!
 		timestep++;
 		//...................................................................
-		if (timestep%100 == 95){
+		if (timestep%1000 == 995){
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
@@ -1569,7 +1569,7 @@ int main(int argc, char **argv)
 	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
 			//...........................................................................
 		}
-		if (timestep%100 == 0){
+		if (timestep%1000 == 0){
 			//...........................................................................
 			// Copy the data for for the analysis timestep
 			//...........................................................................
@@ -1584,7 +1584,7 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-		if (timestep%100 == 5){
+		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
@@ -1766,7 +1766,7 @@ int main(int argc, char **argv)
 	fwrite(Averages.Phase.get(),8,N,PHASE);
 	fclose(PHASE);
 
-	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
+	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Press.get(),8,N,PRESS);
@@ -1782,7 +1782,7 @@ int main(int argc, char **argv)
 	GRAD = fopen(LocalRankFilename,"wb");
 	fwrite(Grad,8,3*N,GRAD);
 	fclose(GRAD);
-
+	*/
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
