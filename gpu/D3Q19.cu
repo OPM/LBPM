@@ -251,14 +251,19 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double vx,vy,vz;
-
+	char id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N){
+		   id = ID[n];
+		   if (id==0){
+		      vel[n] = 0.0; vel[N+n] = 0.0; vel[2*N+n]=0.0;
+		   }
+		   else{
 			//........................................................................
 			// Registers to store the distributions
 			//........................................................................
@@ -290,7 +295,7 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 			vel[N+n] = vy;
 			vel[2*N+n] = vz;
 			//........................................................................
-
+			}
 		}
 	}
 }
