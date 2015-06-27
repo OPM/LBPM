@@ -1292,7 +1292,6 @@ int main(int argc, char **argv)
 		//...................................................................
 	}
 	//************************************************************************/
-
 	stoptime = MPI_Wtime();
 	//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 	cputime = stoptime - starttime;
@@ -1300,10 +1299,25 @@ int main(int argc, char **argv)
 	double MLUPS = double(Nx*Ny*Nz*timestep)/cputime/1000000;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0) printf("CPU time = %f \n", cputime);
-	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
 	MLUPS *= nprocs;
-	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
+
+	// Number of double precision values sent and recieved by each process (per timestep)
+	double CommunicationCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
+			sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
+			sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
+			sendCount_yz+sendCount_Yz+sendCount_yZ+sendCount_YZ;
+	// Number of memory references from the swap algorithm (per timestep)
+	// 18 reads and 18 writes for each lattice site
+	double MemoryRefs = (Nx-2)*(Ny-2)*(Nz-2)*36;
+	// Report bandwidth in Gigabits per second
+	// number of memory references for the swap algorithm
+	if (rank==0) printf("DRAM bandwidth (per process)= %f Gbit/sec \n",MemoryRefs*64*timestep/1e9);
+	// communication bandwidth includes both send and recieve
+	if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",CommunicationCount*128*timestep/1e9);
+	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*CommunicationCount*128*timestep/1e9);
 
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
