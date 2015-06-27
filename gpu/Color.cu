@@ -814,6 +814,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			//...............................................
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C == 0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1114,6 +1115,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			ny = ColorGrad[N+n];
 			nz = ColorGrad[2*N+n];
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C == 0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1254,6 +1256,7 @@ __global__  void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doub
 				ny = ColorGrad[N+n];
 				nz = ColorGrad[2*N+n];
 				C = sqrt(nx*nx+ny*ny+nz*nz);
+				if (C == 0.0) C=1.0;
 				nx = nx/C;
 				ny = ny/C;
 				nz = nz/C;
