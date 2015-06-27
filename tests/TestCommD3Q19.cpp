@@ -1286,6 +1286,7 @@ int main(int argc, char **argv)
 		UnpackDist(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 		//...................................................................................
 
+		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 		// Iteration completed!
 		timestep++;
