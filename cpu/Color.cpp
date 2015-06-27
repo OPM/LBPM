@@ -494,6 +494,7 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			nz = ColorGrad[2*N+n];
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -827,6 +828,7 @@ extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, do
 			//...............................................
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1125,6 +1127,7 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 			ny = ColorGrad[N+n];
 			nz = ColorGrad[2*N+n];
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
