@@ -168,6 +168,40 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	// compute the velocity and
+	double *Aeven,*Aodd,*Beven,*Bodd;
+	Aeven = new double[4*N];
+	Aodd = new double[3*N];
+	Beven = new double[4*N];
+	Aodd = new double[3*N];
+	CopyToHost(Aeven,A_even,4*N*sizeof(double));
+	CopyToHost(Aodd,A_odd,3*N*sizeof(double));
+	CopyToHost(Beven,B_even,4*N*sizeof(double));
+	CopyToHost(Bodd,B_odd,3*N*sizeof(double));
+	double rho,ux,uy,uz;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				rho = ux = uy = uz = 0.0;
+				n = k*Nx*Ny + j*Nx + i;
+				if (id[n] != 0){
+					rho = Aeven[n]+Aeven[N+n]+Aeven[2*N+n]+Aeven[3*N+n]+Aodd[n]+Aodd[N+n]+Aodd[2*N+n]+
+							Beven[n]+Beven[N+n]+Beven[2*N+n]+Beven[3*N+n]+Bodd[n]+Bodd[N+n]+Bodd[2*N+n];
+					ux = Aeven[N+n] - Aodd[n] + Beven[N+n] - Bodd[n];
+					uy = Aeven[2*N+n] - Aodd[N+n] + Beven[2*N+n] - Bodd[N+n];
+					uz = Aeven[3*N+n] - Aodd[2*N+n] + Beven[3*N+n] - Bodd[2*N+n];
+					if ( fabs(0.1-ux / rho) > 1e-13 ){
+							if (id[n] == 1) printf("Wetting phase! \n");
+							if (id[n] == 2) printf("Non-wetting phase! \n");
+							final = ux/rho;
+							printf("Momentum (x) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
+							CleanCheck=false;
+					}
+				}
+			}
+		}
+	}
+
 	if (CleanCheck){
 		if (rank==0) printf("Test passed: mass conservation for D3Q7 \n");
 		return 0;
