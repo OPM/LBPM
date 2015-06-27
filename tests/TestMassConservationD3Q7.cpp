@@ -169,6 +169,7 @@ int main(int argc, char **argv)
 		}
 	}
 	printf("Checking that the correct velocity is retained \n");
+	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
 	Aodd = new double[3*N];
@@ -190,21 +191,21 @@ int main(int argc, char **argv)
 					ux = Aeven[N+n] - Aodd[n] + Beven[N+n] - Bodd[n];
 					uy = Aeven[2*N+n] - Aodd[N+n] + Beven[2*N+n] - Bodd[N+n];
 					uz = Aeven[3*N+n] - Aodd[2*N+n] + Beven[3*N+n] - Bodd[2*N+n];
-					if ( fabs(0.1-ux / rho) > 1e-13 ){
+					if ( fabs(0.1+ux / rho) > 1e-13 ){
 							if (id[n] == 1) printf("Wetting phase! \n");
 							if (id[n] == 2) printf("Non-wetting phase! \n");
 							final = ux/rho;
 							printf("Momentum (x) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
 							CleanCheck=false;
 					}
-					if ( fabs(0.1-uy / rho) > 1e-13 ){
+					if ( fabs(0.1+uy / rho) > 1e-13 ){
 							if (id[n] == 1) printf("Wetting phase! \n");
 							if (id[n] == 2) printf("Non-wetting phase! \n");
 							final = uy/rho;
 							printf("Momentum (y) not conserved, site=%i,%i,%i, final = %f \n",i,j,k,final);
 							CleanCheck=false;
 					}
-					if ( fabs(0.1-uz / rho) > 1e-13 ){
+					if ( fabs(0.1+uz / rho) > 1e-13 ){
 							if (id[n] == 1) printf("Wetting phase! \n");
 							if (id[n] == 2) printf("Non-wetting phase! \n");
 							final = uz/rho;
