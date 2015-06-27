@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	printf("Checking that the correct velocity is retained \n");
+	if (rank==0) printf("Checking that the correct velocity is retained \n");
 	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
@@ -219,9 +219,11 @@ int main(int argc, char **argv)
 
 	if (CleanCheck){
 		if (rank==0) printf("Test passed: mass conservation for D3Q7 \n");
-		return 0;
 	}
-	else 			return 1;
+	else {
+		if (rank==0) printf("Test failed!: mass conservation for D3Q7 \n");
+
+	}
 	
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
