@@ -307,7 +307,7 @@ __global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *di
 	// distributions
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	chard id;
+	char id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
