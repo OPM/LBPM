@@ -302,15 +302,18 @@ __global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *di
 	// distributions
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-
+	chard id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
-			//........................................................................
+		if (n<N){
+			id = ID[n];
+			if (id == 0)  Pressure[n] = 0.0;
+			else{
+			//.......................................................................
 			// Registers to store the distributions
 			//........................................................................
 			f0 = disteven[n];
@@ -336,7 +339,7 @@ __global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *di
 			//.................Compute the velocity...................................
 			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
 					f9+f12+f11+f14+f13+f16+f15+f18+f17);
-
+			}
 		}
 	}
 }
