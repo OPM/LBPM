@@ -475,28 +475,30 @@ void TwoPhase::ComputeLocal(){
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					nwp_volume += 0.125;
+					// velocity
+					     van(0) += 0.125*Vel_x(n);
+						van(1) += 0.125*Vel_y(n);
+						van(2) += 0.125*Vel_z(n);
 					// volume the excludes the interfacial region
 					if (DelPhi(n) < 1e-4){
 						vol_n += 0.125;
 						// pressure
 						pan += 0.125*Press(n);
-						// velocity
-						van(0) += 0.125*Vel_x(n);
-						van(1) += 0.125*Vel_y(n);
-						van(2) += 0.125*Vel_z(n);
+						
 					}
 				}
 				else{
 					wp_volume += 0.125;
+					// velocity
+						vaw(0) += 0.125*Vel_x(n);
+						vaw(1) += 0.125*Vel_y(n);
+						vaw(2) += 0.125*Vel_z(n);
 					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
 						paw += 0.125*Press(n);
-						// velocity
-						vaw(0) += 0.125*Vel_x(n);
-						vaw(1) += 0.125*Vel_y(n);
-						vaw(2) += 0.125*Vel_z(n);
+						
 					}
 				}
 			}
@@ -751,15 +753,20 @@ void TwoPhase::Reduce(){
 	// (density of both components = 1.0)
 	if (vol_w_global > 0.0){
 		paw_global = paw_global / vol_w_global;
-		vaw_global(0) = vaw_global(0) / vol_w_global;
-		vaw_global(1) = vaw_global(1) / vol_w_global;
-		vaw_global(2) = vaw_global(2) / vol_w_global;
+	}
+	if (wp_volume_global > 0.0){
+		vaw_global(0) = vaw_global(0) / wp_volume_global;
+		vaw_global(1) = vaw_global(1) / wp_volume_global;
+		vaw_global(2) = vaw_global(2) / wp_volume_global;
+
 	}
 	if (vol_n_global > 0.0){
 		pan_global = pan_global / vol_n_global;
-		van_global(0) = van_global(0) / vol_n_global;
-		van_global(1) = van_global(1) / vol_n_global;
-		van_global(2) = van_global(2) / vol_n_global;
+	}
+	if (nwp_volume_global > 0.0){
+		van_global(0) = van_global(0) / nwp_volume_global;
+		van_global(1) = van_global(1) / nwp_volume_global;
+		van_global(2) = van_global(2) / nwp_volume_global;
 	}
 	// Normalize surface averages by the interfacial area
 	if (awn_global > 0.0){
