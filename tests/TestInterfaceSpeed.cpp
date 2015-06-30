@@ -2,10 +2,6 @@
 #include <math.h>
 
 #include "TwoPhase.h"
-#include "Extras.h"
-#include "D3Q19.h"
-#include "D3Q7.h"
-#include "Color.h"
 #include "common/MPI_Helpers.h"
 #include "Communication.h"
 #include "IO/Mesh.h"
@@ -26,7 +22,6 @@ int main (int argc, char *argv[])
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-
 
 	int npx,npy,npz;
 	int i,j,k,n;
