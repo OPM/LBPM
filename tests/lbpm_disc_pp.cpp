@@ -9,7 +9,6 @@
 
 #include "pmmc.h"
 #include "Domain.h"
-#include "Extras.h"
 #include "Communication.h"
 
 /*
