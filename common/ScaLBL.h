@@ -21,6 +21,20 @@ extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf
 
 extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,double *recvbuf, double *dist, int Nx, int Ny, int Nz);
 
+extern "C" void PackValues(int *list, int count, double *sendbuf, double *Data, int N);
+
+extern "C" void UnpackValues(int *list, int count, double *recvbuf, double *Data, int N);
+
+extern "C" void PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N);
+
+extern "C" void UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N);
+
+extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz);
+
+extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz);
+
+extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den,
+                                                                                int Nx, int Ny, int Nz);
 extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz);
 
 extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz);
