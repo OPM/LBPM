@@ -164,11 +164,30 @@ ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	MPI_Comm_group(Dm.Comm,&Group);
 	MPI_Comm_create(Dm.Comm,Group,&MPI_COMM_SCALBL);
 	//......................................................................................
-	// Copy the domain size and communication counts from Dm
+	// Copy the domain size and communication information directly from Dm
 	Nx = Dm.Nx;
 	Ny = Dm.Ny;
 	Nz = Dm.Nz;
 	N = Nx*Ny*Nz;
+	rank=Dm.rank;
+	rank_x=Dm.rank_x;
+	rank_y=Dm.rank_y;
+	rank_z=Dm.rank_z;
+	rank_X=Dm.rank_X;
+	rank_Y=Dm.rank_Y;
+	rank_Z=Dm.rank_Z;
+	rank_xy=Dm.rank_xy;
+	rank_XY=Dm.rank_XY;
+	rank_xY=Dm.rank_xY;
+	rank_Xy=Dm.rank_Xy;
+	rank_xz=Dm.rank_xz;
+	rank_XZ=Dm.rank_XZ;
+	rank_xZ=Dm.rank_xZ;
+	rank_Xz=Dm.rank_Xz;
+	rank_yz=Dm.rank_yz;
+	rank_YZ=Dm.rank_YZ;
+	rank_yZ=Dm.rank_yZ;
+	rank_Yz=Dm.rank_Yz;
 	sendCount_x=Dm.sendCount_x;
 	sendCount_y=Dm.sendCount_y;
 	sendCount_z=Dm.sendCount_z;
