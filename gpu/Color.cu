@@ -965,7 +965,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			//					PERFORM RELAXATION PROCESS
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
-			if (C == 0.0)	nx = ny = nz = 1.0;
+			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
@@ -1079,10 +1079,9 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			distodd[7*N+n] = f15;
 			distodd[8*N+n] = f17;
 			//...Store the Velocity..........................
-			if (!(rho>0.0)){ jx=jy=jz=0.0; rho=1.0;}
-			Velocity[n] = jx/rho;
-			Velocity[N+n] = jy/rho;
-			Velocity[2*N+n] = jz/rho;
+			Velocity[n] = jx;
+			Velocity[N+n] = jy;
+			Velocity[2*N+n] = jz;
 			//***************************************************************
 
 			}// check if n is in the solid

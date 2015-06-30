@@ -978,7 +978,7 @@ extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, do
 			//					PERFORM RELAXATION PROCESS
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
-			if (C == 0.0)	nx = ny = nz = 1.0;
+			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
