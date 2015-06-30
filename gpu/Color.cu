@@ -1108,7 +1108,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 
 		if (n<N)
 			id = ID[n];
-			if ( id != 0){
+			if ( id > 0){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];
