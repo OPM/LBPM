@@ -152,7 +152,7 @@ public:
 	void RecvHalo(double *data);
 };
 
-void ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
+ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	//......................................................................................
 	Lock=false; // unlock the communicator
 	//......................................................................................
@@ -320,7 +320,7 @@ void ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	//......................................................................................
 }
 
-void ScaLBL_Communicator::~ScaLBL_Communicator(){
+ScaLBL_Communicator::~ScaLBL_Communicator(){
 	// destrutor does nothing (bad idea)
 	// -- note that there needs to be a way to free memory allocated on the device!!!
 }
