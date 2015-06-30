@@ -129,6 +129,7 @@ private:
 	//......................................................................................
 	// These variables are all private to prevent external things from modifying them!!
 	//......................................................................................
+	int rank;
 	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
 	int rank_xy,rank_XY,rank_xY,rank_Xy;
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
