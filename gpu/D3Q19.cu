@@ -70,7 +70,7 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N ){
 		   id = ID[n];
-		   if (id !=0 ){
+		   if (id > 0 ){
 			f_even[n] = 0.3333333333333333;
 			f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
 			f_even[N+n] = 0.055555555555555555;	//double(100*n)+2.f;
@@ -119,7 +119,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){ 
 		   id = ID[n];
-		   if (id != 0){
+		   if (id > 0){
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;
