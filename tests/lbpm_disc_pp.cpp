@@ -160,7 +160,6 @@ int main(int argc, char **argv)
 
 	// Variables that specify the computational domain  
 	string FILENAME;
-	unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
 	int ndiscs;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
