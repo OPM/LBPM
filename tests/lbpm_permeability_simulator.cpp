@@ -486,12 +486,9 @@ int main(int argc, char **argv)
 		// Pack and send the D3Q19 distributions
 		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
 		//*************************************************************************
-
-		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
 		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-		//*************************************************************************
 		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
