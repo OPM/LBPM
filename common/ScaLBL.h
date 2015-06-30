@@ -3,7 +3,7 @@
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
  *  This libarry contains the essential components of the LBM
  *     - streaming implementations
- *     - collision terms for different physics
+ *     - collision terms to model various physics
  *     - communication framework for the LBM
  *  Refer to Domain.h for setup of parallel domains
  */
@@ -70,7 +70,7 @@ extern "C" void ColorBC_outlet(double *Phi, double *Den, double *A_even, double 
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz);
 
 class ScaLBL_Communicator{
-	ScaLBL_Communicator(){
+	ScaLBL_Communicator(Domain &Dm){
 	}
 	~ScaLBL_Communicator(){
 	}
@@ -302,7 +302,8 @@ void ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	CopyToDevice(dvcRecvList_yZ,Dm.recvList_yZ,recvCount_yZ*sizeof(int));
 	CopyToDevice(dvcRecvList_Yz,Dm.recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
-	MPI_Barrier(Dm.Comm);
+	MPI_Barrier(MPI_COMM_SCALBL);
+	//......................................................................................
 }
 
 void ScaLBL_Communicator::SendD3Q19(double *f_even, double *f_odd){
