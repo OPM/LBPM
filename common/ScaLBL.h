@@ -11,6 +11,8 @@
 
 extern "C" void AllocateDeviceMemory(void** address, size_t size);
 
+//extern "C" void FreeDeviceMemory(void** address);
+
 extern "C" void CopyToDevice(void* dest, void* source, size_t size);
 
 extern "C" void CopyToHost(void* dest, void* source, size_t size);
@@ -84,10 +86,8 @@ extern "C" void ColorBC_outlet(double *Phi, double *Den, double *A_even, double 
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz);
 
 class ScaLBL_Communicator{
-	ScaLBL_Communicator(Domain &Dm){
-	}
-	~ScaLBL_Communicator(){
-	}
+	ScaLBL_Communicator(Domain &Dm);
+	~ScaLBL_Communicator();
 private:
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 				// only one set of Send requests can be active at any time (per instance)
@@ -320,6 +320,11 @@ void ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	//......................................................................................
 }
 
+void ScaLBL_Communicator::~ScaLBL_Communicator(){
+	// destrutor does nothing (bad idea)
+	// -- note that there needs to be a way to free memory allocated on the device!!!
+}
+
 void ScaLBL_Communicator::SendD3Q19(double *f_even, double *f_odd){
 
 	if (Lock==true){
@@ -433,7 +438,7 @@ void ScaLBL_Communicator::SendD3Q19(double *f_even, double *f_odd){
 	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_SCALBL,&req2[17]);
 }
 
-void ScaLBL_Communicator::RecvD3Q19(double *f_even, double *f_odd, Domain &Dm){
+void ScaLBL_Communicator::RecvD3Q19(double *f_even, double *f_odd){
 	//...................................................................................
 	// Wait for completion of D3Q19 communication
 	MPI_Waitall(18,req1,stat1);
@@ -511,7 +516,7 @@ void ScaLBL_Communicator::RecvD3Q19(double *f_even, double *f_odd, Domain &Dm){
 	//...................................................................................
 
 }
-void ScaLBL_Communicator::BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd, Domain &Dm){
+void ScaLBL_Communicator::BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd){
 
 	if (Lock==true){
 		ERROR("ScaLBL Error (SendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
