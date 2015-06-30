@@ -5,11 +5,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include "Domain.h"
-#include "D3Q19.h"
-#include "D3Q7.h"
-#include "Array.h"
-#include "Extras.h"
+#include "ScaLBL.h"
 #include "common/MPI_Helpers.h"
 
 using namespace std;

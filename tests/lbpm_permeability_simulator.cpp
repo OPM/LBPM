@@ -6,8 +6,6 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "Domain.h"
-#include "Extras.h"
 #include "ScaLBL.h"
 #include "Communication.h"
 #include "TwoPhase.h"
