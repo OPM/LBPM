@@ -70,7 +70,7 @@ __global__ void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *De
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-		   id = ID[n]
+		   id = ID[n];
 			if (id > 0){
 				value = Den[n];
 				f_even[n] = 0.3333333333333333*value;
