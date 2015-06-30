@@ -644,7 +644,7 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.RecvHalo(Phi);
 		//*************************************************************************
 
-		deviceBarrier();
+		DeviceBarrier();
 		
 		if (pBC && kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
