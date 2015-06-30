@@ -7,7 +7,7 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 {
 	//int i,j,k;
 	int n,N;
-
+	char id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
@@ -15,18 +15,19 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-			
+		
+		id=ID[n];	
 		//.......Back out the 3-D indices for node n..............
 		//k = n/(Nx*Ny);
 		//j = (n-Nx*Ny*k)/Nx;
 		//i = n-Nx*Ny*k-Nx*j;
 
-		if ( ID[n] == 1){
+		if ( id == 1){
 			Den[n] = 1.0;
 			Den[N+n] = 0.0;
 			Phi[n] = 1.0;
 		}
-		else if ( ID[n] == 2){
+		else if ( id == 2){
 			Den[n] = 0.0;
 			Den[N+n] = 1.0;
 			Phi[n] = -1.0;
@@ -706,7 +707,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N) {
 			id = ID[n];
-			if ( id != 0){
+			if ( id > 0){
 
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
@@ -1388,7 +1389,7 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
 		   id=ID[n];
-		   if (id != 0){
+		   if (id > 0){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];

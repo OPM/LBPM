@@ -1416,31 +1416,7 @@ extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 		}
 	}
 }
-/*
-extern "C" void ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S)
-{
-	int n;
-	double Na,Nb;
-	//...................................................................
-	// Update Phi
-	for (n=0; n<N; n++){
 
-		if (ID[n] > 0 && n<N){
-			// Get the density value (Streaming already performed)
-			Na = Den[2*n];
-			Nb = Den[2*n+1];
-			Phi[n] = (Na-Nb)/(Na+Nb);
-			// Store the copy of the current density
-			Copy[2*n] = Na;
-			Copy[2*n+1] = Nb;
-			// Zero the Density value to get ready for the next streaming
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 0.0;
-		}
-	}
-	//...................................................................
-}
-*/
 extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 {
 	int n;
@@ -1449,7 +1425,7 @@ extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 	// Update Phi
 	for (n=0; n<N; n++){
 
-		if (ID[n] > 0 && n<N){
+		if (ID[n] > 0 ){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];
