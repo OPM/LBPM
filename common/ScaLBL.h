@@ -341,7 +341,21 @@ ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	CopyToDevice(dvcRecvList_Yz,Dm.recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
 	MPI_Barrier(MPI_COMM_SCALBL);
+	DeviceBarrier();
 	//......................................................................................
+	SendCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
+				sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
+				sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
+				sendCount_yz+sendCount_Yz+sendCount_yZ+sendCount_YZ;
+
+	RecvCount = recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z+
+			recvCount_xy+recvCount_Xy+recvCount_xY+recvCount_XY+
+			recvCount_xZ+recvCount_Xz+recvCount_xZ+recvCount_XZ+
+			recvCount_yz+recvCount_Yz+recvCount_yZ+recvCount_YZ;
+
+	CommunicationCount = SendCount+RecvCount;
+	//......................................................................................
+
 }
 
 ScaLBL_Communicator::~ScaLBL_Communicator(){
@@ -359,6 +373,7 @@ void ScaLBL_Communicator::SendD3Q19(double *f_even, double *f_odd){
 	}
 	// assign tag of 19 to D3Q19 communication
 	sendtag = recvtag = 19;
+	DeviceBarrier();
 	// Pack the distributions
 	PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
 	PackDist(4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
@@ -460,18 +475,6 @@ void ScaLBL_Communicator::SendD3Q19(double *f_even, double *f_odd){
 	MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,MPI_COMM_SCALBL,&req2[16]);
 	MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,MPI_COMM_SCALBL,&req1[17]);
 	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_SCALBL,&req2[17]);
-
-	SendCount = sendCount_x+sendCount_X+sendCount_y+sendCount_Y+sendCount_z+sendCount_Z+
-				sendCount_xy+sendCount_Xy+sendCount_xY+sendCount_XY+
-				sendCount_xZ+sendCount_Xz+sendCount_xZ+sendCount_XZ+
-				sendCount_yz+sendCount_Yz+sendCount_yZ+sendCount_YZ;
-
-	RecvCount = recvCount_x+recvCount_X+recvCount_y+recvCount_Y+recvCount_z+recvCount_Z+
-			recvCount_xy+recvCount_Xy+recvCount_xY+recvCount_XY+
-			recvCount_xZ+recvCount_Xz+recvCount_xZ+recvCount_XZ+
-			recvCount_yz+recvCount_Yz+recvCount_yZ+recvCount_YZ;
-
-	CommunicationCount = SendCount+RecvCount;
 }
 
 void ScaLBL_Communicator::RecvD3Q19(double *f_even, double *f_odd){
@@ -479,6 +482,8 @@ void ScaLBL_Communicator::RecvD3Q19(double *f_even, double *f_odd){
 	// Wait for completion of D3Q19 communication
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
+	DeviceBarrier();
+
 	//...................................................................................
 	// Unpack the distributions on the device
 	//...................................................................................
@@ -560,6 +565,7 @@ void ScaLBL_Communicator::BiSendD3Q7(double *A_even, double *A_odd, double *B_ev
 	else{
 		Lock=true;
 	}
+	DeviceBarrier();
 	//...................................................................................
 	sendtag = recvtag = 7;
 	//...................................................................................
@@ -603,6 +609,7 @@ void ScaLBL_Communicator::BiRecvD3Q7(double *A_even, double *A_odd, double *B_ev
 	// Wait for completion of D3Q19 communication
 	MPI_Waitall(6,req1,stat1);
 	MPI_Waitall(6,req2,stat2);
+	DeviceBarrier();
 	//...................................................................................
 	// Unpack the distributions on the device
 	//...................................................................................
@@ -640,6 +647,7 @@ void ScaLBL_Communicator::SendHalo(double *data){
 	else{
 		Lock=true;
 	}
+	DeviceBarrier();
 	//...................................................................................
 	sendtag = recvtag = 1;
 	//...................................................................................
