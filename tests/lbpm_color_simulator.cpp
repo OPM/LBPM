@@ -449,6 +449,7 @@ int main(int argc, char **argv)
 	}
 	// Copy to the device
 	CopyToDevice(ID, id, N);
+	DeviceBarrier();
 	//...........................................................................
 
 	//...........................................................................
@@ -498,6 +499,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+	DeviceBarrier();
 	//......................................................................
 
 	if (Restart == true){
@@ -567,6 +569,7 @@ int main(int argc, char **argv)
 	CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
 	CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
