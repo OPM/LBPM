@@ -517,6 +517,8 @@ int main(int argc, char **argv)
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+	DeviceBarrier();
+	MPI_Barrier(MPI_COMM_WORLD);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0); //
@@ -533,6 +535,8 @@ int main(int argc, char **argv)
 	//*************************************************************************
 	ScaLBL_Comm.SendHalo(Phi);
 	ScaLBL_Comm.RecvHalo(Phi);
+	DeviceBarrier();
+	MPI_Barrier(MPI_COMM_WORLD);
 	//*************************************************************************
 
 	if (rank==0 && pBC){
@@ -569,8 +573,6 @@ int main(int argc, char **argv)
 	CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
 	CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
 	//...........................................................................
 	
 	int timestep = 0;
@@ -579,6 +581,7 @@ int main(int argc, char **argv)
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
+	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 	starttime = MPI_Wtime();
 	//.........................................
