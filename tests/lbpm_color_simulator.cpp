@@ -601,6 +601,7 @@ int main(int argc, char **argv)
 							 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
 		//*************************************************************************
 
+		DeviceBarrier();
 		//*************************************************************************
 		// Pack and send the D3Q19 distributions
 		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
@@ -624,6 +625,7 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 		//*************************************************************************
 
+		DeviceBarrier();
 		//*************************************************************************
 		// Pack and send the D3Q7 distributions
 		ScaLBL_Comm.BiSendD3Q7(A_even, A_odd, B_even, B_odd);
@@ -631,7 +633,6 @@ int main(int argc, char **argv)
 
 		SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
 		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
-		
 		//*************************************************************************
 		// Wait for communication and unpack the D3Q7 distributions
 		ScaLBL_Comm.BiRecvD3Q7(A_even, A_odd, B_even, B_odd);
@@ -644,6 +645,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Compute the phase indicator field 
 		//*************************************************************************
+		DeviceBarrier();
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 		ScaLBL_Comm.SendHalo(Phi);
