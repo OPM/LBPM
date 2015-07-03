@@ -1157,9 +1157,9 @@ inline void WriteCheckpoint(char *FILENAME, double *cDen, double *cDistEven, dou
 	ofstream File(FILENAME,ios::binary);
 	for (n=0; n<N; n++){
 		// Write the two density values
-		value = cDen[2*n];
+		value = cDen[n];
 		File.write((char*) &value, sizeof(value));
-		value = cDen[2*n+1];
+		value = cDen[N+n];
 		File.write((char*) &value, sizeof(value));
 		// Write the even distributions
 		for (q=0; q<10; q++){
@@ -1184,10 +1184,10 @@ inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, doub
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n] = value;
+		cDen[n] = value;
 	//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n+1] = value;
+		cDen[N+n] = value;
 	//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
 		for (q=0; q<10; q++){
