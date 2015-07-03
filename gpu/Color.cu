@@ -16,8 +16,8 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
 		
-		id=ID[n];	
-		//.......Back out the 3-D indices for node n..............
+  		id=ID[n];	
+ 		//.......Back out the 3-D indices for node n..............
 		//k = n/(Nx*Ny);
 		//j = (n-Nx*Ny*k)/Nx;
 		//i = n-Nx*Ny*k-Nx*j;
@@ -1108,7 +1108,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 
 		if (n<N)
 			id = ID[n];
-			if ( id > 0){
+			if ( id != 0){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];
@@ -1165,7 +1165,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			b1 = nb*(0.1111111111111111*(1+4.5*ux));
 			a2 = na*(0.1111111111111111*(1-4.5*ux));
 			b2 = nb*(0.1111111111111111*(1-4.5*ux));
-			if (C > 0.0){
+			if (na*nb > 0.0){
 				delta = na*nb/(na+nb)*0.1111111111111111*nx;
 				a1 += beta*delta;
 				a2 -= beta*delta;
@@ -1183,7 +1183,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			b1 = nb*(0.1111111111111111*(1+4.5*uy));
 			a2 = na*(0.1111111111111111*(1-4.5*uy));
 			b2 = nb*(0.1111111111111111*(1-4.5*uy));
-			if (C > 0.0){
+			if (na*nb > 0.0){
 				delta = na*nb/(na+nb)*0.1111111111111111*ny;
 				a1 += beta*delta;
 				a2 -= beta*delta;
@@ -1201,7 +1201,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			b1 = nb*(0.1111111111111111*(1+4.5*uz));
 			a2 = na*(0.1111111111111111*(1-4.5*uz));
 			b2 = nb*(0.1111111111111111*(1-4.5*uz));
-			if (C > 0.0){
+			if (na*nb > 0.0){
 				delta = na*nb/(na+nb)*0.1111111111111111*nz;
 				a1 += beta*delta;
 				a2 -= beta*delta;
