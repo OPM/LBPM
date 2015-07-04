@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.SDs);
 
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	SSO(Averages.SDs,id,Dm,10);
+	SSO(Averages.SDs,id,Dm,20);
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.Phase);
 
 	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
-	SSO(Averages.Phase,id,Dm,10);
+	SSO(Averages.Phase,id,Dm,20);
 
     sprintf(LocalRankFilename,"Phase.%05i",rank);
     FILE *PHASE = fopen(LocalRankFilename,"wb");
