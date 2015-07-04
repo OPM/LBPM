@@ -150,8 +150,8 @@ extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, 
 	int N = Nx*Ny*Nz;
 	
 	for (n=0; n<N; n++){
-		id = ID[n];
-		if (id > 0 ){
+		//id = ID[n];
+		//if (id > 0 ){
 			// Read the distributions
 			f0 = disteven[n];
 			f2 = disteven[N+n];
@@ -162,6 +162,6 @@ extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, 
 			f5 = distodd[2*N+n];
 			// Compute the density
 			Den[n] = f0+f1+f2+f3+f4+f5+f6;
-		}
+		//}
 	}
 }
