@@ -1208,6 +1208,11 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 			b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
 			a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
 			b2 = nb*(0.1111111111111111*(1-4.5*uz)+delta);
+
+			A_odd[2*N+n] = a1;
+			A_even[3*N+n] = a2;
+			B_odd[2*N+n] = b1;
+			B_even[3*N+n] = b2;
 			//...............................................
 
 	/*		// Construction and streaming for the components
