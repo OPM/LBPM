@@ -1147,7 +1147,7 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			nab = 1.0/(na+nb);
 			//........................................................................
 			delta = beta*na*nb*nab*0.1111111111111111*nx;
-		      	if (!(na*nb*nab>0)) delta=0;
+		      	if (na*nb*nab<0.0)) delta=0.0;
 			   		  
 			a1 = na*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nb*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -1163,7 +1163,8 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			// q = 2
 			// Cq = {0,1,0}
 			delta = beta*na*nb*nab*0.1111111111111111*ny;
-			if (!(na*nb*nab>0)) delta=0;
+		      	if (na*nb*nab<0.0)) delta=0.0;
+
 			a1 = na*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nb*(0.1111111111111111*(1+4.5*uy))-delta;
 			a2 = na*(0.1111111111111111*(1-4.5*uy))-delta;
@@ -1177,7 +1178,8 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			// q = 4
 			// Cq = {0,0,1}
 			delta = beta*na*nb*nab*0.1111111111111111*nz;
-			if (!(na*nb*nab>0)) delta=0;
+		      	if (na*nb*nab<0.0)) delta=0.0;
+
 			a1 = na*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
 			a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
