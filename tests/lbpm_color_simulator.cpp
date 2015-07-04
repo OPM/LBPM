@@ -497,6 +497,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
+	DeviceBarrier();
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 	DeviceBarrier();
@@ -533,6 +534,7 @@ int main(int argc, char **argv)
 	//*************************************************************************
 	ComputePhi(ID, Phi, Den, N);
 	//*************************************************************************
+	DeviceBarrier();
 	ScaLBL_Comm.SendHalo(Phi);
 	ScaLBL_Comm.RecvHalo(Phi);
 	DeviceBarrier();
@@ -622,6 +624,8 @@ int main(int argc, char **argv)
 		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
 
+		DeviceBarrier();
+		MPI_Barrier(MPI_COMM_WORLD);
 		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
@@ -633,6 +637,7 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.BiSendD3Q7(A_even, A_odd, B_even, B_odd);
 		//*************************************************************************
 
+		DeviceBarrier();
 		SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
 		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
 
@@ -643,7 +648,8 @@ int main(int argc, char **argv)
 		// Wait for communication and unpack the D3Q7 distributions
 		ScaLBL_Comm.BiRecvD3Q7(A_even, A_odd, B_even, B_odd);
 		//*************************************************************************
-		
+
+		DeviceBarrier();
 		//..................................................................................
 		ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 		ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
@@ -657,6 +663,7 @@ int main(int argc, char **argv)
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 		ScaLBL_Comm.SendHalo(Phi);
+		DeviceBarrier();
 		ScaLBL_Comm.RecvHalo(Phi);
 		//*************************************************************************
 
