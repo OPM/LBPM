@@ -1110,87 +1110,98 @@ __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_od
 			id = ID[n];
 			if ( id != 0){
 
-			//.....Load the Color gradient.........
-			nx = ColorGrad[n];
-			ny = ColorGrad[N+n];
-			nz = ColorGrad[2*N+n];
-			C = sqrt(nx*nx+ny*ny+nz*nz);
-			if (C == 0.0) C=1.0;
-			nx = nx/C;
-			ny = ny/C;
-			nz = nz/C;
-			//....Load the flow velocity...........
-			ux = Velocity[n];
-			uy = Velocity[N+n];
-			uz = Velocity[2*N+n];
-			//........................................................................
-			//					READ THE DISTRIBUTIONS
-			//		(read from opposite array due to previous swap operation)
-			//........................................................................
-			f2 = A_odd[n];
-			f4 = A_odd[N+n];
-			f6 = A_odd[2*N+n];
-			f0 = A_even[n];
-			f1 = A_even[N+n];
-			f3 = A_even[2*N+n];
-			f5 = A_even[3*N+n];
-			na = f0+f1+f2+f3+f4+f5+f6;
-			//........................................................................
-			f2 = B_odd[n];
-			f4 = B_odd[N+n];
-			f6 = B_odd[2*N+n];
-			f0 = B_even[n];
-			f1 = B_even[N+n];
-			f3 = B_even[2*N+n];
-			f5 = B_even[3*N+n];
-			nb = f0+f1+f2+f3+f4+f5+f6;
-			nab = 1.0/(na+nb);
-			//........................................................................
-			delta = beta*na*nb*nab*0.1111111111111111*nx;
-		      	if (na*nb*nab<0.0)) delta=0.0;
-			   		  
-			a1 = na*(0.1111111111111111*(1+4.5*ux))+delta;
-			b1 = nb*(0.1111111111111111*(1+4.5*ux))-delta;
-			a2 = na*(0.1111111111111111*(1-4.5*ux))-delta;
-			b2 = nb*(0.1111111111111111*(1-4.5*ux))+delta;
+            //.....Load the Color gradient.........
+            nx = ColorGrad[n];
+            ny = ColorGrad[N+n];
+            nz = ColorGrad[2*N+n];
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            if (C==0.0) C=1.0;
+            nx = nx/C;
+            ny = ny/C;
+            nz = nz/C;
+            //....Load the flow velocity...........
+            ux = Velocity[n];
+            uy = Velocity[N+n];
+            uz = Velocity[2*N+n];
+            //........................................................................
+            //					READ THE DISTRIBUTIONS
+            //		(read from opposite array due to previous swap operation)
+            //........................................................................
+            f2 = A_odd[n];
+            f4 = A_odd[N+n];
+            f6 = A_odd[2*N+n];
+            f0 = A_even[n];
+            f1 = A_even[N+n];
+            f3 = A_even[2*N+n];
+            f5 = A_even[3*N+n];
+            na = f0+f1+f2+f3+f4+f5+f6;
+            //........................................................................
+            f2 = B_odd[n];
+            f4 = B_odd[N+n];
+            f6 = B_odd[2*N+n];
+            f0 = B_even[n];
+            f1 = B_even[N+n];
+            f3 = B_even[2*N+n];
+            f5 = B_even[3*N+n];
+            nb = f0+f1+f2+f3+f4+f5+f6;
+            nab = 1.0/(na+nb);
+            //........................................................................
+            //....Instantiate the density distributions
+            // Generate Equilibrium Distributions and stream
+            // Stationary value - distribution 0
+            A_even[n] = 0.3333333333333333*na;
+            B_even[n] = 0.3333333333333333*nb;
+            // Non-Stationary equilibrium distributions
+            //feq[0] = 0.1111111111111111*(1+4.5*ux);
+            //feq[1] = 0.1111111111111111*(1-4.5*ux);
+            //feq[2] = 0.1111111111111111*(1+4.5*uy);
+            //feq[3] = 0.1111111111111111*(1-4.5*uy);
+            //feq[4] = 0.1111111111111111*(1+4.5*uz);
+            //feq[5] = 0.1111111111111111*(1-4.5*uz);
 
-			A_odd[n]	= a1;
-			A_even[N+n] = a2;
-			B_odd[n]  = b1;
-			B_even[N+n] = b2;
-			//........................................................................
-			
-			// q = 2
-			// Cq = {0,1,0}
-			delta = beta*na*nb*nab*0.1111111111111111*ny;
-		      	if (na*nb*nab<0.0)) delta=0.0;
+            //...............................................
+            // q = 0,2,4
+            // Cq = {1,0,0}, {0,1,0}, {0,0,1}
+            delta = beta*na*nb*nab*0.1111111111111111*nx;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*ux))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*ux))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*ux))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*ux))+delta;
 
-			a1 = na*(0.1111111111111111*(1+4.5*uy))+delta;
-			b1 = nb*(0.1111111111111111*(1+4.5*uy))-delta;
-			a2 = na*(0.1111111111111111*(1-4.5*uy))-delta;
-			b2 = nb*(0.1111111111111111*(1-4.5*uy))+delta;
+            A_odd[n] 	= a1;
+            A_even[N+n] = a2;
+            B_odd[n] 	= b1;
+            B_even[N+n] = b2;
+            //...............................................
+            // q = 2
+            // Cq = {0,1,0}
+            delta = beta*na*nb*nab*0.1111111111111111*ny;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*uy))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*uy))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*uy))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*uy))+delta;
 
-			A_odd[N+n]  = a1;
-			A_even[2*N+n] = a2;
-			B_odd[N+n]  = b1;
-			B_even[2*N+n] = b2;
-			//........................................................................
-			// q = 4
-			// Cq = {0,0,1}
-			delta = beta*na*nb*nab*0.1111111111111111*nz;
-		      	if (na*nb*nab<0.0)) delta=0.0;
+            A_odd[N+n] 	= a1;
+            A_even[2*N+n] = a2;
+            B_odd[N+n] 	= b1;
+            B_even[2*N+n] = b2;
+            //...............................................
+            // q = 4
+            // Cq = {0,0,1}
+            delta = beta*na*nb*nab*0.1111111111111111*nz;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*uz))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*uz))+delta;
 
-			a1 = na*(0.1111111111111111*(1+4.5*uz))+delta;
-			b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
-			a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
-			b2 = nb*(0.1111111111111111*(1-4.5*uz))+delta;
-			
-			A_odd[2*N+n] = a1;
-			A_even[3*N+n] = a2;
-			B_odd[2*N+n] = b1;
-			B_even[3*N+n] = b2;
-			//........................................................................
-			
+            A_odd[2*N+n] = a1;
+            A_even[3*N+n] = a2;
+            B_odd[2*N+n] = b1;
+            B_even[3*N+n] = b2;
+
 		}
 	}
 }

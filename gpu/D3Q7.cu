@@ -109,57 +109,55 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 		if (n<N ){
 		   	id = ID[n];
 			if (id > 0){
-			//.......Back out the 3-D indices for node n..............
-			k = n/(Nx*Ny);
-			j = (n-Nx*Ny*k)/Nx;
-			i = n-Nx*Ny*k-Nz*j;
-			//........................................................................
-			// Retrieve even distributions from the local node (swap convention)
-			//		f0 = disteven[n];  // Does not particupate in streaming
-			f1 = distodd[n];
-			f3 = distodd[N+n];
-			f5 = distodd[2*N+n];
-			//........................................................................
+                //.......Back out the 3-D indices for node n..............
+                k = n/(Nx*Ny);
+                j = (n-Nx*Ny*k)/Nx;
+                i = n-Nx*Ny*k-Nz*j;
+                //........................................................................
+                // Retrieve even distributions from the local node (swap convention)
+                //		f0 = disteven[n];  // Does not particupate in streaming
+                f1 = distodd[n];
+                f3 = distodd[N+n];
+                f5 = distodd[2*N+n];
+                //........................................................................
 
-			//........................................................................
-			// Retrieve odd distributions from neighboring nodes (swap convention)
-			//........................................................................
-			nn = n+1;							// neighbor index (pull convention)
-			if (!(i+1<Nx))	nn -= Nx;			// periodic BC along the x-boundary
-			//if (i+1<Nx){
-			f2 = disteven[N+nn];					// pull neighbor for distribution 2
-			if (!(f2 < 0.0)){
-				distodd[n] = f2;
-				disteven[N+nn] = f1;
-			}
-			//}
-			//........................................................................
-			nn = n+Nx;							// neighbor index (pull convention)
-			if (!(j+1<Ny))	nn -= Nx*Ny;		// Perioidic BC along the y-boundary
-			//if (j+1<Ny){
-			f4 = disteven[2*N+nn];				// pull neighbor for distribution 4
-			if (!(f4 < 0.0)){
-				distodd[N+n] = f4;
-				disteven[2*N+nn] = f3;
-				//	}
-			}
-			//........................................................................
-			nn = n+Nx*Ny;						// neighbor index (pull convention)
-			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
-			//if (k+1<Nz){
-			f6 = disteven[3*N+nn];				// pull neighbor for distribution 6
-			if (!(f6 < 0.0)){
-				distodd[2*N+n] = f6;
-				disteven[3*N+nn] = f5;
-				//	}
-			}
+                //........................................................................
+                // Retrieve odd distributions from neighboring nodes (swap convention)
+                //........................................................................
+                nn = n+1;							// neighbor index (pull convention)
+                if (!(i+1<Nx))	nn -= Nx;			// periodic BC along the x-boundary
+                //if (i+1<Nx){
+                f2 = disteven[N+nn];					// pull neighbor for distribution 2
+                if (!(f2 < 0.0)){
+                    distodd[n] = f2;
+                    disteven[N+nn] = f1;
+                }
+                //}
+                //........................................................................
+                nn = n+Nx;							// neighbor index (pull convention)
+                if (!(j+1<Ny))	nn -= Nx*Ny;		// Perioidic BC along the y-boundary
+                //if (j+1<Ny){
+                f4 = disteven[2*N+nn];				// pull neighbor for distribution 4
+                if (!(f4 < 0.0)){
+                    distodd[N+n] = f4;
+                    disteven[2*N+nn] = f3;
+                }
+                //........................................................................
+                nn = n+Nx*Ny;						// neighbor index (pull convention)
+                if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
+                //if (k+1<Nz){
+                f6 = disteven[3*N+nn];				// pull neighbor for distribution 6
+                if (!(f6 < 0.0)){
+                    distodd[2*N+n] = f6;
+                    disteven[3*N+nn] = f5;
+                }
 			}
 		}
 	}
 }
 
 //*************************************************************************
-__global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den, 
+__global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den,
 		int Nx, int Ny, int Nz)
 {
 	char id;
@@ -172,19 +170,19 @@ __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *dist
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-		id = ID[n];
-		if ( id > 0 ){
-			// Read the distributions
-			f0 = disteven[n];
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f1 = distodd[n];
-			f3 = distodd[N+n];
-			f5 = distodd[2*N+n];
-			// Compute the density
-			Den[n] = f0+f1+f2+f3+f4+f5+f6;
-			}
+            id = ID[n];
+            if (id > 0 ){
+                // Read the distributions
+                f0 = disteven[n];
+                f2 = disteven[N+n];
+                f4 = disteven[2*N+n];
+                f6 = disteven[3*N+n];
+                f1 = distodd[n];
+                f3 = distodd[N+n];
+                f5 = distodd[2*N+n];
+                // Compute the density
+                Den[n] = f0+f1+f2+f3+f4+f5+f6;
+            }
 		}
 	}
 }
