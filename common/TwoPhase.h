@@ -476,7 +476,7 @@ void TwoPhase::ComputeLocal(){
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					nwp_volume += 0.125;
 					// velocity
-					     van(0) += 0.125*Vel_x(n);
+					    van(0) += 0.125*Vel_x(n);
 						van(1) += 0.125*Vel_y(n);
 						van(2) += 0.125*Vel_z(n);
 					// volume the excludes the interfacial region
@@ -619,31 +619,32 @@ void TwoPhase::ComputeLocalBlob(){
 				// compute the norm of the gradient of the phase indicator field
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					// volume
 					BlobAverages(1,label) += 0.125;
+					// velocity
+					BlobAverages(9,label) += 0.125*Vel_x(n);
+					BlobAverages(10,label) += 0.125*Vel_y(n);
+					BlobAverages(11,label) += 0.125*Vel_z(n);
 					// volume the excludes the interfacial region
 					if (DelPhi(n) < 1e-4 ){
 						BlobAverages(0,label) += 0.125;
 						// pressure
 						BlobAverages(2,label ) += 0.125*Press(n);
-						// velocity
-						BlobAverages(9,label) += 0.125*Vel_x(n);
-						BlobAverages(10,label) += 0.125*Vel_y(n);
-						BlobAverages(11,label) += 0.125*Vel_z(n);
 					}
 				}
 
 				else{
 					wp_volume += 0.125;
+					// velocity
+					vaw(0) += 0.125*Vel_x(n);
+					vaw(1) += 0.125*Vel_y(n);
+					vaw(2) += 0.125*Vel_z(n);
 					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
 						if (isnan(Press(n))) printf("Pressure is nan!\n");
 						else paw += 0.125*Press(n);
-						// velocity
-						vaw(0) += 0.125*Vel_x(n);
-						vaw(1) += 0.125*Vel_y(n);
-						vaw(2) += 0.125*Vel_z(n);
 					}
 				}
 			}
