@@ -71,7 +71,7 @@ extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, i
 			f_even[3*N+n] = 0.1111111111111111*value;	//double(100*n)+6.f;
 		}
 		else{
-			for(int q=0; q<2; q++){
+			for(int q=0; q<3; q++){
 				f_even[q*N+n] = -1.0;
 				f_odd[q*N+n] = -1.0;
 			}
