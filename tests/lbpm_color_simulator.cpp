@@ -587,7 +587,7 @@ int main(int argc, char **argv)
 	//.........................................
 	
 	sendtag = recvtag = 5;
-
+			// Copy the data to the CPU
 	err = 1.0; 	
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
@@ -614,6 +614,8 @@ int main(int argc, char **argv)
 								ColorGrad, Velocity, beta, N, pBC);
 		//*************************************************************************
 
+		DeviceBarrier();
+		MPI_Barrier(MPI_COMM_WORLD);
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
@@ -633,11 +635,15 @@ int main(int argc, char **argv)
 
 		SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
 		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
+
+		DeviceBarrier();
+		MPI_Barrier(MPI_COMM_WORLD);
+
 		//*************************************************************************
 		// Wait for communication and unpack the D3Q7 distributions
 		ScaLBL_Comm.BiRecvD3Q7(A_even, A_odd, B_even, B_odd);
 		//*************************************************************************
-
+		
 		//..................................................................................
 		ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 		ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
@@ -646,6 +652,8 @@ int main(int argc, char **argv)
 		// 		Compute the phase indicator field 
 		//*************************************************************************
 		DeviceBarrier();
+		MPI_Barrier(MPI_COMM_WORLD);
+
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
 		ScaLBL_Comm.SendHalo(Phi);
