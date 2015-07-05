@@ -211,7 +211,7 @@ int main(int argc, char **argv)
     FILE *PHASE = fopen(LocalRankFilename,"wb");
     fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
     fclose(PHASE);
-
+/*
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -327,6 +327,7 @@ int main(int argc, char **argv)
     Averages.SortBlobs();
 
     if (rank==0)   WriteBlobs(Averages);
+    */
 
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
