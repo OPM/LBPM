@@ -135,6 +135,7 @@ int main(int argc, char **argv)
 	int bin, binCount;
 	ifstream Dist("BlobSize.in");
 	Dist >> binCount;
+	int *SizeX, *SizeY, *SizeZ;
 //	printf("Number of blob sizes: %i \n",binCount);
 	SizeX = new int [binCount];
 	SizeY = new int [binCount];
@@ -202,8 +203,8 @@ int main(int argc, char **argv)
 
 						n = kk*Nx*Ny+jj*Nx+ii;
 
-						if (ID[n] == 2){
-							ID[n] = 1;
+						if (id[n] == 2){
+							id[n] = 1;
 							//count++;
 						}
 
@@ -215,7 +216,7 @@ int main(int argc, char **argv)
 	    for (int k=0; k<nz; k++){
 	        for (int j=0; j<ny; j++){
 	            for (int i=0; i<nx; i++){
-					if (ID[n] == 1){
+					if (id[n] == 1){
 						count++;
 					}
 	            }
@@ -227,8 +228,6 @@ int main(int argc, char **argv)
 	}
 
 	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
-
-
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");
