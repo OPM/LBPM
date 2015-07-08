@@ -181,26 +181,28 @@ int main(int argc, char **argv)
 		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
 
 		if (rank==0) printf("Broadcast block at %i,%i,%i \n",x,y,z);
-		if (x-sizeX < (iproc+1)*(Nx-2) && y-sizeX < (jproc+1)*(Ny-2) && z-sizeX < (kproc+1)*(Nz-2) &&
-				x+sizeX  > iproc*(Nx-2) && y+sizeY > jproc*(Ny-2) && z+sizeZ > kproc*(Nz-2) ){
 
-			x -= iproc*(Nx-2);
-			y -= jproc*(Ny-2);
-			z -= kproc*(Nz-2);
+		for (k=z;k<z+sizeZ;k++){
+			for (j=y;j<y+sizeY;j++){
+				for (i=x;i<x+sizeX;i++){
 
-			for (k=z;k<z+sizeZ;k++){
-				for (j=y;j<y+sizeY;j++){
-					for (i=x;i<x+sizeX;i++){
-						// Identify nodes in the domain (periodic BC)
-						ii = i;
-						jj = j;
-						kk = k;
-						if (ii < 1)			ii+=(Nx-2);
-						if (jj < 1)			jj+=(Ny-2);
-						if (kk < 1)			kk+=(Nz-2);
-						if (!(ii < Nx-1))		ii-=(Nx-2);
-						if (!(jj < Ny-1))		jj-=(Ny-2);
-						if (!(kk < Nz-1))		kk-=(Nz-2);
+					// Identify nodes in the domain (periodic BC)
+					ii = i;
+					jj = j;
+					kk = k;
+
+					if (ii>nprocx*(Nx-2)) ii-=nprocx*(Nx-2);
+					if (jj>nprocy*(Ny-2)) jj-=nprocy*(Ny-2);
+					if (kk>nprocz*(Nz-2)) kk-=nprocz*(Nz-2);
+
+					// Check if this is in the subdomain
+					if (ii < (iproc+1)*(Nx-2) && jj < (jproc+1)*(Ny-2) && kk < (kproc+1)*(Nz-2) &&
+							ii  > iproc*(Nx-2) && jj > jproc*(Ny-2) && kk > kproc*(Nz-2) ){
+
+						// Map from global to local coordinates
+						ii -= iproc*(Nx-2);
+						jj -= jproc*(Ny-2);
+						kk -= kproc*(Nz-2);
 
 						n = kk*Nx*Ny+jj*Nx+ii;
 
@@ -214,15 +216,15 @@ int main(int argc, char **argv)
 			}
 		}
 		count = 0;
-	    for (int k=0; k<nz; k++){
-	        for (int j=0; j<ny; j++){
-	            for (int i=0; i<nx; i++){
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
 					if (id[n] == 1){
 						count++;
 					}
-	            }
-	        }
-	    }
+				}
+			}
+		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 		sat = float(countGlobal)/totalGlobal;
 		if (rank==0) printf("New count=%i\n",countGlobal);
