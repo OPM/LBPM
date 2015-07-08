@@ -180,8 +180,9 @@ int main(int argc, char **argv)
 		MPI_Bcast(&sizeY,1,MPI_INT,0,MPI_COMM_WORLD);
 		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
 
-		if (x+sizeX < (iproc+1)*(Nx-2) && y+sizeY < (jproc+1)*(Ny-2) && z+sizeZ < (kproc+1)*(Nz-2) &&
-				x-sizeX  > iproc*(Nx-2) && y-sizeY > jproc*(Nz-2) && z-sizeZ > kproc*(Nz-2) ){
+		if (rank==0) printf("Broadcast block at %i,%i,%i \n",x,y,z);
+		if (x-sizeX < (iproc+1)*(Nx-2) && y-sizeX < (jproc+1)*(Ny-2) && z-sizeX < (kproc+1)*(Nz-2) &&
+				x+sizeX  > iproc*(Nx-2) && y+sizeY > jproc*(Ny-2) && z+sizeZ > kproc*(Nz-2) ){
 
 			x -= iproc*(Nx-2);
 			y -= jproc*(Ny-2);
@@ -224,7 +225,8 @@ int main(int argc, char **argv)
 	    }
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 		sat = float(countGlobal)/totalGlobal;
-
+		if (rank==0) printf("New count=%i\n",countGlobal);
+		if (rank==0) printf("New saturation=%f\n",sat);
 	}
 
 	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
