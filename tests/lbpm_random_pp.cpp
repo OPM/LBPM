@@ -233,6 +233,21 @@ int main(int argc, char **argv)
 
 	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
 
+
+		count = 0;
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					if (id[n] == 1){
+						count++;
+					}
+				}
+			}
+		}
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+		sat = float(countGlobal)/totalGlobal;
+	if (rank==0) printf("Final saturation=%f\n",sat);
+
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");
     fwrite(id,1,N,ID);
