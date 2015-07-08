@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	int Ny = ny;
 	int Nz = nz;
 	float sat = 0.f;
-	Number = 0;		// number of features
+	int Number = 0;		// number of features
 	while (sat < Saturation){
 		if (rank==0){
 			Number++;
