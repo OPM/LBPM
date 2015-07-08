@@ -56,39 +56,53 @@ inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation
 	float sat = 0.f;
 	Number = 0;		// number of features
 	while (sat < Saturation){
-		Number++;
-		// Randomly generate a point in the domain
-		x = Nx*float(rand())/float(RAND_MAX);
-		y = Ny*float(rand())/float(RAND_MAX);
-		z = Nz*float(rand())/float(RAND_MAX);
+		if (rank==0){
+			Number++;
+			// Randomly generate a point in the domain
+			x = (Nx-2)*nprocx*float(rand())/float(RAND_MAX);
+			y = (Ny-2)*nprocy*float(rand())/float(RAND_MAX);
+			z = (Nz-2)*nprocz*float(rand())/float(RAND_MAX);
 
-		bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
-		sizeX = SizeX[bin];
-		sizeY = SizeY[bin];
-		sizeZ = SizeZ[bin];
+			bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
+			sizeX = SizeX[bin];
+			sizeY = SizeY[bin];
+			sizeZ = SizeZ[bin];
+		}
+		MPI_Bcast(&x,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&z,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeX,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeY,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
 
-//		cout << "Sampling from bin no. " << floor(bin) << endl;
-//		cout << "Feature size is: " << sizeX << "x" << sizeY << "x" << sizeZ << endl;
+		if (x+sizeX < (iproc+1)*(Nx-2) && y+sizeY < (jproc+1)*(Ny-2) && z+sizeZ < (kproc+1)*(Nz-2) &&
+				x-sizeX  > iproc*(Nx-2) && y-sizeY > jproc*(Nz-2) && z-sizeZ > kproc*(Nz-2) ){
 
-		for (k=z;k<z+sizeZ;k++){
-			for (j=y;j<y+sizeY;j++){
-				for (i=x;i<x+sizeX;i++){
-					// Identify nodes in the domain (periodic BC)
-					ii = i;
-					jj = j;
-					kk = k;
-					if (ii < 1)			ii+=(Nx-2);
-					if (jj < 1)			jj+=(Ny-2);
-					if (kk < 1)			kk+=(Nz-2);
-					if (!(ii < Nx-1))		ii-=(Nx-2);
-					if (!(jj < Ny-1))		jj-=(Ny-2);
-					if (!(kk < Nz-1))		kk-=(Nz-2);
+			x -= iproc*(Nx-2);
+			y -= jproc*(Ny-2);
+			z -= kproc*(Nz-2);
 
-					n = kk*Nx*Ny+jj*Nx+ii;
+			for (k=z;k<z+sizeZ;k++){
+				for (j=y;j<y+sizeY;j++){
+					for (i=x;i<x+sizeX;i++){
+						// Identify nodes in the domain (periodic BC)
+						ii = i;
+						jj = j;
+						kk = k;
+						if (ii < 1)			ii+=(Nx-2);
+						if (jj < 1)			jj+=(Ny-2);
+						if (kk < 1)			kk+=(Nz-2);
+						if (!(ii < Nx-1))		ii-=(Nx-2);
+						if (!(jj < Ny-1))		jj-=(Ny-2);
+						if (!(kk < Nz-1))		kk-=(Nz-2);
 
-					if (ID[n] == 2){
-						ID[n] = 1;
-						count++;
+						n = kk*Nx*Ny+jj*Nx+ii;
+
+						if (ID[n] == 2){
+							ID[n] = 1;
+							count++;
+						}
+
 					}
 				}
 			}
@@ -182,6 +196,10 @@ int main(int argc, char **argv)
 
 	char LocalRankFilename[40];
 
+	int BoundaryCondition=0;
+	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	TwoPhase Averages(Dm);
+
 	nx+=2; ny+=2; nz+=2;
 	int N = nx*ny*nz;
     char *id;
@@ -194,21 +212,121 @@ int main(int argc, char **argv)
     fread(SignDist.get(),8,N,DIST);
     fclose(DIST);
 
+	int count,countGlobal,totalGlobal;
+    count = 0;
     for (int k=0; k<nz; k++){
         for (int j=0; j<ny; j++){
             for (int i=0; i<nx; i++){
-	      n = k*nx*ny+j*nx+i;
+            	n = k*nx*ny+j*nx+i;
             	if (SignDist(i,j,k) < 0.0)  id[n] = 0;
-            	else 			    id[n] = 2;
+            	else{
+            		id[n] = 2;
+            		count++;
+            	}
             }
         }
     }
+	// total Global is the number of nodes in the pore-space
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+
+    Dm.CommInit(MPI_COMM_WORLD);
+    int iproc = Dm.iproc;
+    int jproc = Dm.jproc;
+    int kproc = Dm.kproc;
+
+	int bin, binCount;
+	ifstream Dist("BlobSize.in");
+	Dist >> binCount;
+//	printf("Number of blob sizes: %i \n",binCount);
+	SizeX = new int [binCount];
+	SizeY = new int [binCount];
+	SizeZ = new int [binCount];
+	for (bin=0; bin<binCount; bin++){
+		Dist >> SizeX[bin];
+		Dist >> SizeY[bin];
+		Dist >> SizeZ[bin];
+	//	printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
+	}
+	Dist.close();
 
 	// Generate the residual NWP
 	if (rank==0) printf("Initializing with NWP saturation = %f \n",Saturation);
-	GenerateResidual(id,nx,ny,nz,Saturation);
+	//	GenerateResidual(id,nx,ny,nz,Saturation);
+
+	int x,y,z,bin;
+	int sizeX,sizeY,sizeZ;
+	float sat = 0.f;
+	Number = 0;		// number of features
+	while (sat < Saturation){
+		if (rank==0){
+			Number++;
+			// Randomly generate a point in the domain
+			x = (Nx-2)*nprocx*float(rand())/float(RAND_MAX);
+			y = (Ny-2)*nprocy*float(rand())/float(RAND_MAX);
+			z = (Nz-2)*nprocz*float(rand())/float(RAND_MAX);
+
+			bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
+			sizeX = SizeX[bin];
+			sizeY = SizeY[bin];
+			sizeZ = SizeZ[bin];
+		}
+		MPI_Bcast(&x,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&z,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeX,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeY,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
+
+		if (x+sizeX < (iproc+1)*(Nx-2) && y+sizeY < (jproc+1)*(Ny-2) && z+sizeZ < (kproc+1)*(Nz-2) &&
+				x-sizeX  > iproc*(Nx-2) && y-sizeY > jproc*(Nz-2) && z-sizeZ > kproc*(Nz-2) ){
+
+			x -= iproc*(Nx-2);
+			y -= jproc*(Ny-2);
+			z -= kproc*(Nz-2);
+
+			for (k=z;k<z+sizeZ;k++){
+				for (j=y;j<y+sizeY;j++){
+					for (i=x;i<x+sizeX;i++){
+						// Identify nodes in the domain (periodic BC)
+						ii = i;
+						jj = j;
+						kk = k;
+						if (ii < 1)			ii+=(Nx-2);
+						if (jj < 1)			jj+=(Ny-2);
+						if (kk < 1)			kk+=(Nz-2);
+						if (!(ii < Nx-1))		ii-=(Nx-2);
+						if (!(jj < Ny-1))		jj-=(Ny-2);
+						if (!(kk < Nz-1))		kk-=(Nz-2);
+
+						n = kk*Nx*Ny+jj*Nx+ii;
+
+						if (ID[n] == 2){
+							ID[n] = 1;
+							//count++;
+						}
+
+					}
+				}
+			}
+		}
+		count = 0;
+	    for (int k=0; k<nz; k++){
+	        for (int j=0; j<ny; j++){
+	            for (int i=0; i<nx; i++){
+					if (ID[n] == 1){
+						count++;
+					}
+	            }
+	        }
+	    }
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+		sat = float(countGlobal)/totalGlobal;
+
+	}
 
 	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
+
+
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");
