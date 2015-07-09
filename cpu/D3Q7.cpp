@@ -71,7 +71,7 @@ extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, i
 			f_even[3*N+n] = 0.1111111111111111*value;	//double(100*n)+6.f;
 		}
 		else{
-			for(int q=0; q<2; q++){
+			for(int q=0; q<3; q++){
 				f_even[q*N+n] = -1.0;
 				f_odd[q*N+n] = -1.0;
 			}
@@ -111,7 +111,7 @@ extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, in
 			if (!(i+1<Nx))	nn -= Nx;			// periodic BC along the x-boundary
 			//if (i+1<Nx){
 			f2 = disteven[N+nn];					// pull neighbor for distribution 2
-			if (!(f2 < 0)){
+			if (!(f2 < 0.0)){
 				distodd[n] = f2;
 				disteven[N+nn] = f1;
 			}
@@ -121,7 +121,7 @@ extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, in
 			if (!(j+1<Ny))	nn -= Nx*Ny;		// Perioidic BC along the y-boundary
 			//if (j+1<Ny){
 			f4 = disteven[2*N+nn];				// pull neighbor for distribution 4
-			if (!(f4 < 0)){
+			if (!(f4 < 0.0)){
 				distodd[N+n] = f4;
 				disteven[2*N+nn] = f3;
 				//	}
@@ -131,7 +131,7 @@ extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, in
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (k+1<Nz){
 			f6 = disteven[3*N+nn];				// pull neighbor for distribution 6
-			if (!(f6 < 0)){
+			if (!(f6 < 0.0)){
 				distodd[2*N+n] = f6;
 				disteven[3*N+nn] = f5;
 				//	}

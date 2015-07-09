@@ -1,23 +1,11 @@
-//*************************************************************************
-// CUDA kernels for single-phase MRT code
-// James McClure
-//*************************************************************************
-#include <cuda.h>
 
-#define NBLOCKS 32
-#define NTHREADS 128
-
-__global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
+extern "C" void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
-	int S = N/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
 
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+	for (n=0; n<N; n++){
 
-		if (n<N){
 			if (ID[n] > 0){
 				f_even[n] = 0.3333333333333333;
 				f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
@@ -47,10 +35,10 @@ __global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int 
 				f_even[9*N+n] = -1.0;
 			}
 		}
-	}
+	
 }
 
-__global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
+extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions
@@ -59,14 +47,8 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 	double vx,vy,vz;
 
 	N = Nx*Ny*Nz;
-	int S = N/NBLOCKS/NTHREADS + 1;
-	// S - number of threadblocks per grid block
-	for (int s=0; s<S; s++){
+	for (n=0; n<N; n++){
 
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-
-		if (n<N){
 			if (ID[n] > 0){
 				//........................................................................
 				// Registers to store the distributions
@@ -103,10 +85,10 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 			}
 		}
 	}
-}
+
 
 //*************************************************************************
-__global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
+extern "C" void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 
@@ -123,16 +105,9 @@ __global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 	N = Nx*Ny*Nz;
 
 	char id;
-	int S = N/NBLOCKS/NTHREADS + 1;
-	// S - number of threadblocks per grid block
-	for (int s=0; s<S; s++){
-//	for (int n=0; n<N; n++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-
+	for (n=0; n<N; n++){
 		id = ID[n];
 
-		if (n<N){
 			if (id > 0){
 				//........................................................................
 				// Registers to store the distributions - read based on swap convention
@@ -298,11 +273,5 @@ __global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 			}
 		}
 	}
-}
-
-extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz)
-{
-	MRT <<< NBLOCKS,NTHREADS>>>  (ID, f_even, f_odd, Nx, Ny, Nz, rlxA, rlxB, Fx, Fy, Fz);
-}
 
 

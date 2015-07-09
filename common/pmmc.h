@@ -3785,7 +3785,10 @@ inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point>
 
 }
 
-inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN, DoubleArray &KG,
+inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, 
+				DoubleArray &f_x, DoubleArray &f_y, DoubleArray &f_z,
+				DoubleArray &s_x, DoubleArray &s_y, DoubleArray &s_z, 
+				DoubleArray &KN, DoubleArray &KG,
 		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
 	
 	int p,i,j,k;
@@ -3802,35 +3805,35 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 	Point P,A,B;
 	// Local trilinear approximation for tangent and normal vector
 	TriLinPoly Tx,Ty,Tz,Nx,Ny,Nz,Sx,Sy,Sz;
-	
+
 	// Loop over the cube and compute the derivatives
 	for (k=kc; k<kc+2; k++){
 		for (j=jc; j<jc+2; j++){
 			for (i=ic; i<ic+2; i++){
-				
+			  
 				// Compute all of the derivatives using finite differences
 				// fluid phase indicator field
-				fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
-				fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
-				fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
-				fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
+			  //	fx = 0.5*(f(i+1,j,k) - f(i-1,j,k));
+			  //    fy = 0.5*(f(i,j+1,k) - f(i,j-1,k));
+			  //	fz = 0.5*(f(i,j,k+1) - f(i,j,k-1));
+				/*fxx = f(i+1,j,k) - 2.0*f(i,j,k) + f(i-1,j,k);
 				fyy = f(i,j+1,k) - 2.0*f(i,j,k) + f(i,j-1,k);
 				fzz = f(i,j,k+1) - 2.0*f(i,j,k) + f(i,j,k-1);
 				fxy = 0.25*(f(i+1,j+1,k) - f(i+1,j-1,k) - f(i-1,j+1,k) + f(i-1,j-1,k));
 				fxz = 0.25*(f(i+1,j,k+1) - f(i+1,j,k-1) - f(i-1,j,k+1) + f(i-1,j,k-1));
 				fyz = 0.25*(f(i,j+1,k+1) - f(i,j+1,k-1) - f(i,j-1,k+1) + f(i,j-1,k-1));
-
+				*/
 				// solid distance function
-				sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
-				sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
-				sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
-				sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
+			  //	sx = 0.5*(s(i+1,j,k) - s(i-1,j,k));
+			  //	sy = 0.5*(s(i,j+1,k) - s(i,j-1,k));
+			  //	sz = 0.5*(s(i,j,k+1) - s(i,j,k-1));
+				/*	sxx = s(i+1,j,k) - 2.0*s(i,j,k) + s(i-1,j,k);
 				syy = s(i,j+1,k) - 2.0*s(i,j,k) + s(i,j-1,k);
 				szz = s(i,j,k+1) - 2.0*s(i,j,k) + s(i,j,k-1);
 				sxy = 0.25*(s(i+1,j+1,k) - s(i+1,j-1,k) - s(i-1,j+1,k) + s(i-1,j-1,k));
 				sxz = 0.25*(s(i+1,j,k+1) - s(i+1,j,k-1) - s(i-1,j,k+1) + s(i-1,j,k-1));
 				syz = 0.25*(s(i,j+1,k+1) - s(i,j+1,k-1) - s(i,j-1,k+1) + s(i,j-1,k-1));
-
+				*/
 /*				// Compute the Jacobean matrix for tangent vector
 				Axx = sxy*fz + sy*fxz - sxz*fy - sz*fxy;
 				Axy = sxz*fx + sz*fxx - sxx*fz - sx*fxz;
@@ -3842,10 +3845,16 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s, DoubleArray &KN,
 				Azy = szz*fx + sz*fxz - sxz*fz - sx*fzz;
 				Azz = sxz*fy + sx*fyz - syz*fx - sy*fxz;
 */
+			  sx = s_x(i,j,k);
+			  sy = s_y(i,j,k);
+			  sz = s_z(i,j,k);
+			  fx = f_x(i,j,k);
+			  fy = f_y(i,j,k);
+			  fz = f_z(i,j,k);
 				// Normal to solid surface
-				Sx.Corners(i-ic,j-jc,k-kc) = sx;
-				Sy.Corners(i-ic,j-jc,k-kc) = sy;
-				Sz.Corners(i-ic,j-jc,k-kc) = sz;
+			  Sx.Corners(i-ic,j-jc,k-kc) = sx;
+			  Sy.Corners(i-ic,j-jc,k-kc) = sy;
+			  Sz.Corners(i-ic,j-jc,k-kc) = sz;
 				
 				// Compute the tangent vector
 				norm = sqrt((sy*fz-sz*fy)*(sy*fz-sz*fy)+(sz*fx-sx*fz)*(sz*fx-sx*fz)+(sx*fy-sy*fx)*(sx*fy-sy*fx));

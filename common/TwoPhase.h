@@ -289,7 +289,7 @@ public:
 	void UpdateMeshValues();
 	void UpdateSolid();
 	void ComputeDelPhi();
-	void ColorToSignedDistance(double Beta, double *ColorData, double *DistData);
+	void ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData);
 	void ComputeLocal();
 	void ComputeLocalBlob();
 	void Reduce();
@@ -300,7 +300,7 @@ public:
 
 };
 
-void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *DistData){
+void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData){
 
 	double factor,temp,value;
 	factor=0.5/Beta;
@@ -309,13 +309,15 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 		if (value > 0.999 ) DistData[n] = 4.0;
 		else if (value < -0.999 ) DistData[n] = -4.0;
 		else 	DistData[n] = factor*log((1.0+value)/(1.0-value));
+		if (DistData[n] > 1.0)  DistData[n] = 1.0;
+		if (DistData[n] < -1.0) DistData[n] = -1.0;
 	}
-
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				value = ColorData[n];
+
+				value = ColorData(i,j,k);
 				temp = factor*log((1.0+value)/(1.0-value));
 				if (temp > 1.0) DistData(i,j,k) = 1.0;
 				else if (temp < -1.0) DistData(i,j,k) = -1.0;
@@ -323,8 +325,17 @@ void TwoPhase::ColorToSignedDistance(double Beta, double *ColorData, double *Dis
 			}
 		}
 	}
+
+	SSO(DistData,Dm.id,Dm,10);
 */
-	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				DistData(i,j,k) = ColorData(i,j,k);
+			}
+		}
+	}
+//	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
 void TwoPhase::ComputeDelPhi(){
@@ -457,36 +468,37 @@ void TwoPhase::ComputeLocal(){
 		//...........................................................................
 		// Compute volume averages
 		for (int p=0;p<8;p++){
-
-			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+			n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+			if ( Dm.id[n] != 0 ){
 				// 1-D index for this cube corner
-				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 				// compute the norm of the gradient of the phase indicator field
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					nwp_volume += 0.125;
+					// velocity
+					    van(0) += 0.125*Vel_x(n);
+						van(1) += 0.125*Vel_y(n);
+						van(2) += 0.125*Vel_z(n);
 					// volume the excludes the interfacial region
 					if (DelPhi(n) < 1e-4){
 						vol_n += 0.125;
 						// pressure
 						pan += 0.125*Press(n);
-						// velocity
-						van(0) += 0.125*Vel_x(n);
-						van(1) += 0.125*Vel_y(n);
-						van(2) += 0.125*Vel_z(n);
+						
 					}
 				}
 				else{
 					wp_volume += 0.125;
+					// velocity
+						vaw(0) += 0.125*Vel_x(n);
+						vaw(1) += 0.125*Vel_y(n);
+						vaw(2) += 0.125*Vel_z(n);
 					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
 						paw += 0.125*Press(n);
-						// velocity
-						vaw(0) += 0.125*Vel_x(n);
-						vaw(1) += 0.125*Vel_y(n);
-						vaw(2) += 0.125*Vel_z(n);
+						
 					}
 				}
 			}
@@ -527,7 +539,8 @@ void TwoPhase::ComputeLocal(){
 			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
-			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
+					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
 					nws_pts, n_nws_pts, i, j, k);
 
 			lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
@@ -547,8 +560,7 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComputeLocalBlob(){
     int i,j,k,n,label;
-	double vF,vS;
-	vF = 0.0; vS=0.0;
+
 //    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
@@ -562,29 +574,29 @@ void TwoPhase::ComputeLocalBlob(){
 	nblobs_global+=1;
 */
 
-	// Initialize the blob ID
+	nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+    		SDn,SDs,fluid_isovalue,solid_isovalue,BlobLabel);
+
+	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+
+	// Check the blob ID
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (SDs(i,j,k) < 0.0){
+				if (SDs(i,j,k) < solid_isovalue){
 					// Solid phase
-					BlobLabel(i,j,k) = -2;
+					if (BlobLabel(i,j,k) != -2) printf("How did that happen \n");
 				}
-				else{
-					BlobLabel(i,j,k) = -1;
+				else if (SDn(i,j,k) > fluid_isovalue){
+					if (BlobLabel(i,j,k) == -1) printf("NWP label error %i, %i, %i\n",i,j,k);
 				}
 			}
 		}
 	}
 
-    nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-    		Phase,SDs,vF,vS,BlobLabel);
-
-	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
-
 	//BlobAverages.Set(nblobs_global);
 	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
-    BlobAverages.fill(0.0);
+	BlobAverages.fill(0.0);
 	// Perform averaging
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
@@ -593,6 +605,7 @@ void TwoPhase::ComputeLocalBlob(){
 		k = cubeList(2,c);
 		label=GetCubeLabel(i,j,k);
 		if (!(label < nblobs_global)) ERROR("common/TwoPhase.h (ComputeBlobLocal): Error in blob labeling algorithm");
+      		//printf("Array Size: %i x %i, label=%i, %i,%i,%i, SDs=%f \n",BlobAverages.size(0),BlobAverages.size(1),label,i,j,k,SDs(i,j,k));
 
 		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
@@ -600,38 +613,38 @@ void TwoPhase::ComputeLocalBlob(){
 		//...........................................................................
 		// Compute volume averages
 		for (int p=0;p<8;p++){
-
-			if ( SDs(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+			n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+			if ( Dm.id[n] != 0 ){
 				// 1-D index for this cube corner
-				n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 				// compute the norm of the gradient of the phase indicator field
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+					// volume
 					BlobAverages(1,label) += 0.125;
+					// velocity
+					BlobAverages(9,label) += 0.125*Vel_x(n);
+					BlobAverages(10,label) += 0.125*Vel_y(n);
+					BlobAverages(11,label) += 0.125*Vel_z(n);
 					// volume the excludes the interfacial region
-					if (DelPhi(n) < 1e-4){
+					if (DelPhi(n) < 1e-4 ){
 						BlobAverages(0,label) += 0.125;
 						// pressure
 						BlobAverages(2,label ) += 0.125*Press(n);
-						// velocity
-						BlobAverages(9,label) += 0.125*Vel_x(n);
-						BlobAverages(10,label) += 0.125*Vel_y(n);
-						BlobAverages(11,label) += 0.125*Vel_z(n);
 					}
 				}
 
 				else{
 					wp_volume += 0.125;
+					// velocity
+					vaw(0) += 0.125*Vel_x(n);
+					vaw(1) += 0.125*Vel_y(n);
+					vaw(2) += 0.125*Vel_z(n);
 					if (DelPhi(n) < 1e-4){
 						// volume the excludes the interfacial region
 						vol_w += 0.125;
 						// pressure
 						if (isnan(Press(n))) printf("Pressure is nan!\n");
 						else paw += 0.125*Press(n);
-						// velocity
-						vaw(0) += 0.125*Vel_x(n);
-						vaw(1) += 0.125*Vel_y(n);
-						vaw(2) += 0.125*Vel_z(n);
 					}
 				}
 			}
@@ -644,9 +657,14 @@ void TwoPhase::ComputeLocalBlob(){
 				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
-
+		
+		//printf("nw=%i,nws=%i,ws=%i,ns=%i \n",n_nw_pts,n_local_nws_pts,n_ws_pts,n_ns_pts);
+		//printf("%i,%i,%i,%i,%i,%i,%i,%i\n",BlobLabel(i,j,k),BlobLabel(i+1,j,k),BlobLabel(i,j+1,k),BlobLabel(i+1,j+1,k),BlobLabel(i,j,k+1),BlobLabel(i+1,j,k+1),BlobLabel(i,j+1,k+1),BlobLabel(i+1,j+1,k+1));
+		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDn(i,j,k),SDn(i+1,j,k),SDn(i,j+1,k),SDn(i+1,j+1,k),SDn(i,j,k+1),SDn(i+1,j,k+1),SDn(i,j+1,k+1),SDn(i+1,j+1,k+1));
+		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",Phase(i,j,k),Phase(i+1,j,k),Phase(i,j+1,k),Phase(i+1,j+1,k),Phase(i,j,k+1),Phase(i+1,j,k+1),Phase(i,j+1,k+1),Phase(i+1,j+1,k+1));
+		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDs(i,j,k),SDs(i+1,j,k),SDs(i,j+1,k),SDs(i+1,j+1,k),SDs(i,j,k+1),SDs(i+1,j,k+1),SDs(i,j+1,k+1),SDs(i+1,j+1,k+1));
 		// wn interface averages
-		if (n_nw_pts> 0){
+		if (n_nw_pts>0  && label >=0 ){
 			BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 			BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 
@@ -664,28 +682,36 @@ void TwoPhase::ComputeLocalBlob(){
 			BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
 
 		}
-
+		
 		// Common curve averages
-		if (n_local_nws_pts > 0){
+		if (n_local_nws_pts > 0  && label >=0 ){
 			BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
 			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
 
-			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			//			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
+			//		nws_pts, n_nws_pts, i, j, k);
+
+			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
+					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
 					nws_pts, n_nws_pts, i, j, k);
+
 
 			BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
 		}
 
 		// Solid interface averages
-		if (n_local_sol_pts > 0){
+		if (n_local_sol_pts > 0  && label >=0 ){
 			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 			// Compute the surface orientation and the interfacial area
-			BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+			
 			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 			//...........................................................................
+		}
+		if (n_ns_pts > 0  && label >=0 ){
+		  BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
 		}
 	}
 }
@@ -728,15 +754,20 @@ void TwoPhase::Reduce(){
 	// (density of both components = 1.0)
 	if (vol_w_global > 0.0){
 		paw_global = paw_global / vol_w_global;
-		vaw_global(0) = vaw_global(0) / vol_w_global;
-		vaw_global(1) = vaw_global(1) / vol_w_global;
-		vaw_global(2) = vaw_global(2) / vol_w_global;
+	}
+	if (wp_volume_global > 0.0){
+		vaw_global(0) = vaw_global(0) / wp_volume_global;
+		vaw_global(1) = vaw_global(1) / wp_volume_global;
+		vaw_global(2) = vaw_global(2) / wp_volume_global;
+
 	}
 	if (vol_n_global > 0.0){
 		pan_global = pan_global / vol_n_global;
-		van_global(0) = van_global(0) / vol_n_global;
-		van_global(1) = van_global(1) / vol_n_global;
-		van_global(2) = van_global(2) / vol_n_global;
+	}
+	if (nwp_volume_global > 0.0){
+		van_global(0) = van_global(0) / nwp_volume_global;
+		van_global(1) = van_global(1) / nwp_volume_global;
+		van_global(2) = van_global(2) / nwp_volume_global;
 	}
 	// Normalize surface averages by the interfacial area
 	if (awn_global > 0.0){
@@ -807,7 +838,7 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k){
 
 	label=BlobLabel(i,j,k);
 	label=max(label,BlobLabel(i+1,j,k));
-    label=max(label,BlobLabel(i,j+1,k));
+	label=max(label,BlobLabel(i,j+1,k));
 	label=max(label,BlobLabel(i+1,j+1,k));
 	label=max(label,BlobLabel(i,j,k+1));
 	label=max(label,BlobLabel(i+1,j,k+1));

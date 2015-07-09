@@ -1,3 +1,4 @@
+#include <stdio.h>
 #define NBLOCKS 32
 #define NTHREADS 128
 
@@ -62,11 +63,14 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 {
 	int n,N;
 	N = Nx*Ny*Nz;
+	char id;
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N ){
+		   id = ID[n];
+		   if (id > 0 ){
 			f_even[n] = 0.3333333333333333;
 			f_odd[n] = 0.055555555555555555;		//double(100*n)+1.f;
 			f_even[N+n] = 0.055555555555555555;	//double(100*n)+2.f;
@@ -94,6 +98,7 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 			}
 			f_even[9*N+n] = -1.0;
 		}
+		}
 	}
 }
 
@@ -102,6 +107,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 {
 	int i,j,k,n,nn,N;
 	// distributions
+	char id;
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	
@@ -111,7 +117,9 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N){ 
+		   id = ID[n];
+		   if (id > 0){
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;
@@ -137,7 +145,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(i+1<Nx))	nn -= Nx;			// periodic BC along the x-boundary
 			//if (i+1<Nx){
 			f2 = disteven[N+nn];					// pull neighbor for distribution 2
-			if (f2 > 0){
+			if (f2 > 0.0){
 				distodd[n] = f2;
 				disteven[N+nn] = f1;
 			}
@@ -147,7 +155,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(j+1<Ny))	nn -= Nx*Ny;		// Perioidic BC along the y-boundary
 			//if (j+1<Ny){
 			f4 = disteven[2*N+nn];				// pull neighbor for distribution 4
-			if (f4 > 0){
+			if (f4 > 0.0){
 				distodd[N+n] = f4;
 				disteven[2*N+nn] = f3;
 				//	}
@@ -157,7 +165,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (k+1<Nz){
 			f6 = disteven[3*N+nn];				// pull neighbor for distribution 6
-			if (f6 > 0){
+			if (f6 > 0.0){
 				distodd[2*N+n] = f6;
 				disteven[3*N+nn] = f5;
 				//	}
@@ -168,7 +176,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(j+1<Ny))		nn -= Nx*Ny;	// Perioidic BC along the y-boundary
 			//if ((i+1<Nx) && (j+1<Ny)){
 			f8 = disteven[4*N+nn];				// pull neighbor for distribution 8
-			if (f8 > 0){
+			if (f8 > 0.0){
 				distodd[3*N+n] = f8;
 				disteven[4*N+nn] = f7;
 				//	}
@@ -179,7 +187,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (j-1<0)		nn += Nx*Ny;	// Perioidic BC along the y-boundary
 			//if (!(i-1<0) && (j+1<Ny)){
 			f10 = disteven[5*N+nn];					// pull neighbor for distribution 9
-			if (f10 > 0){
+			if (f10 > 0.0){
 				distodd[4*N+n] = f10;
 				disteven[5*N+nn] = f9;
 				//	}
@@ -190,7 +198,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;	// Perioidic BC along the z-boundary
 			//if ( !(i-1<0) && !(k-1<0)){
 			f12 = disteven[6*N+nn];				// pull distribution 11
-			if (f12 > 0){
+			if (f12 > 0.0){
 				distodd[5*N+n] = f12;
 				disteven[6*N+nn] = f11;
 				//	}
@@ -201,7 +209,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (k-1<0)		nn += Nx*Ny*Nz;	// Perioidic BC along the z-boundary
 			//if (!(i-1<0) && (k+1<Nz)){
 			f14 = disteven[7*N+nn];				// pull neighbor for distribution 13
-			if (f14 > 0){
+			if (f14 > 0.0){
 				distodd[6*N+n] = f14;
 				disteven[7*N+nn] = f13;
 				//	}
@@ -212,7 +220,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (!(k+1<Nz))	nn -= Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (!(j-1<0) && !(k-1<0)){
 			f16 = disteven[8*N+nn];				// pull neighbor for distribution 15
-			if (f16 > 0){
+			if (f16 > 0.0){
 				distodd[7*N+n] = f16;
 				disteven[8*N+nn] = f15;
 				//	}
@@ -223,7 +231,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			if (k-1<0)		nn += Nx*Ny*Nz;		// Perioidic BC along the z-boundary
 			//if (!(j-1<0) && (k+1<Nz)){
 			f18 = disteven[9*N+nn];				// pull neighbor for distribution 17
-			if (f18 > 0){
+			if (f18 > 0.0){
 				distodd[8*N+n] = f18;
 				disteven[9*N+nn] = f17;
 				//	}
@@ -231,8 +239,117 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			//........................................................................
 			
 		}
+		}
 	}
 }
+
+
+__global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double vx,vy,vz;
+	char id;
+	N = Nx*Ny*Nz;
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N){
+		   id = ID[n];
+		   if (id==0){
+		      vel[n] = 0.0; vel[N+n] = 0.0; vel[2*N+n]=0.0;
+		   }
+		   else{
+			//........................................................................
+			// Registers to store the distributions
+			//........................................................................
+			f2 = disteven[N+n];
+			f4 = disteven[2*N+n];
+			f6 = disteven[3*N+n];
+			f8 = disteven[4*N+n];
+			f10 = disteven[5*N+n];
+			f12 = disteven[6*N+n];
+			f14 = disteven[7*N+n];
+			f16 = disteven[8*N+n];
+			f18 = disteven[9*N+n];
+			//........................................................................
+			f1 = distodd[n];
+			f3 = distodd[1*N+n];
+			f5 = distodd[2*N+n];
+			f7 = distodd[3*N+n];
+			f9 = distodd[4*N+n];
+			f11 = distodd[5*N+n];
+			f13 = distodd[6*N+n];
+			f15 = distodd[7*N+n];
+			f17 = distodd[8*N+n];
+			//.................Compute the velocity...................................
+			vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+			vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+			vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+			//..................Write the velocity.....................................
+			vel[n] = vx;
+			vel[N+n] = vy;
+			vel[2*N+n] = vz;
+			//........................................................................
+			}
+		}
+	}
+}
+
+__global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
+									int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	char id;
+	N = Nx*Ny*Nz;
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<N){
+			id = ID[n];
+			if (id == 0)  Pressure[n] = 0.0;
+			else{
+			//.......................................................................
+			// Registers to store the distributions
+			//........................................................................
+			f0 = disteven[n];
+			f2 = disteven[N+n];
+			f4 = disteven[2*N+n];
+			f6 = disteven[3*N+n];
+			f8 = disteven[4*N+n];
+			f10 = disteven[5*N+n];
+			f12 = disteven[6*N+n];
+			f14 = disteven[7*N+n];
+			f16 = disteven[8*N+n];
+			f18 = disteven[9*N+n];
+			//........................................................................
+			f1 = distodd[n];
+			f3 = distodd[1*N+n];
+			f5 = distodd[2*N+n];
+			f7 = distodd[3*N+n];
+			f9 = distodd[4*N+n];
+			f11 = distodd[5*N+n];
+			f13 = distodd[6*N+n];
+			f15 = distodd[7*N+n];
+			f17 = distodd[8*N+n];
+			//.................Compute the velocity...................................
+			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
+					f9+f12+f11+f14+f13+f16+f15+f18+f17);
+			}
+		}
+	}
+}
+
+
 
 extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
@@ -246,9 +363,25 @@ extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int sta
 //*************************************************************************
 extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz){
 	dvc_InitD3Q19<<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Nx, Ny, Nz);
+        cudaError_t err = cudaGetLastError();
+        if (cudaSuccess != err){
+           printf("CUDA error in InitD3Q19: %s \n",cudaGetErrorString(err));
+        }
+
 }
 extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
 	dvc_SwapD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
-
+        cudaError_t err = cudaGetLastError();
+        if (cudaSuccess != err){
+           printf("CUDA error in SwapD3Q19: %s \n",cudaGetErrorString(err));
+        }
 }
+extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int \
+Ny, int Nz){
 
+        dvc_ComputeVelocityD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, vel, Nx, Ny, Nz);
+}
+extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
+                                                                        int Nx, int Ny, int Nz){
+        dvc_ComputePressureD3Q19<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
+}

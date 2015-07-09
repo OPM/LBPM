@@ -21,7 +21,7 @@
 using namespace std;
 
 //*************************************************************************
-// Implementation of Two-Phase Immiscible LBM using CUDA
+// Implementation of Steady State Single-Phase LBM for permeability measurement
 //*************************************************************************
 inline void PackID(int *list, int count, char *sendbuf, char *ID){
 	// Fill in the phase ID values from neighboring processors
@@ -120,13 +120,12 @@ int main(int argc, char **argv)
 
 	if (rank == 0){
 		printf("********************************************************\n");
-		printf("Running Color LBM	\n");
+		printf("Running Single Phase Permeability Calculation \n");
 		printf("********************************************************\n");
 	}
 
 	// Variables that specify the computational domain  
 	string FILENAME;
-	unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
 	int nspheres;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
@@ -134,13 +133,8 @@ int main(int argc, char **argv)
 	// Color Model parameters
 	int timestepMax, interval;
 	double tau,Fx,Fy,Fz,tol,err;
-	double alpha, beta;
-	double das, dbs, phi_s;
 	double din,dout;
-	double wp_saturation;
-	int BoundaryCondition;
-	int InitialCondition;
-//	bool pBC,Restart;
+	bool pBC,Restart;
 	int i,j,k,n;
 
 	// pmmc threshold values
@@ -154,32 +148,19 @@ int main(int argc, char **argv)
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
 		//.............................................................
-		ifstream input("Color.in");
-		// Line 1: Name of the phase indicator file (s=0,w=1,n=2)
-//		input >> FILENAME;
-		// Line 2: domain size (Nx, Ny, Nz)
-//		input >> Nz;				// number of nodes (x,y,z)
-//		input >> nBlocks;
-//		input >> nthreads;
-		// Line 3: model parameters (tau, alpha, beta, das, dbs)
+		ifstream input("Permeability.in");
+		// Line 1: model parameters (tau, alpha, beta, das, dbs)
 		input >> tau;			// Viscosity parameter
-		input >> alpha;			// Surface Tension parameter
-		input >> beta;			// Width of the interface
-		input >> phi_s;			// value of phi at the solid surface
-//		input >> das;
-//		input >> dbs;
-		// Line 4: wetting phase saturation to initialize
-		input >> wp_saturation;
-		// Line 5: External force components (Fx,Fy, Fz)
+		// Line 2: External force components (Fx,Fy, Fz)
 		input >> Fx;
 		input >> Fy;
 		input >> Fz;
-		// Line 6: Pressure Boundary conditions
-		input >> InitialCondition;
-		input >> BoundaryCondition;
+		// Line 3: Pressure Boundary conditions
+		input >> Restart;
+		input >> pBC;
 		input >> din;
 		input >> dout;
-		// Line 7: time-stepping criteria
+		// Line 4: time-stepping criteria
 		input >> timestepMax;		// max no. of timesteps
 		input >> interval;			// restart interval
 		input >> tol;				// error tolerance
@@ -207,14 +188,8 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	//.................................................
 	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&InitialCondition,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
 	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -240,15 +215,8 @@ int main(int argc, char **argv)
 	RESTART_INTERVAL=interval;
 	// **************************************************************
 	// **************************************************************
-	double Ps = -(das-dbs)/(das+dbs);
 	double rlxA = 1.f/tau;
 	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
-	double xIntPos;
-	xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
-	
-	// Set the density values inside the solid based on the input value phi_s
- 	das = (phi_s+1.0)*0.5;
-	dbs = 1.0 - das;
 	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
@@ -260,32 +228,18 @@ int main(int argc, char **argv)
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("tau = %f \n", tau);
-		printf("alpha = %f \n", alpha);		
-		printf("beta = %f \n", beta);
-		printf("das = %f \n", das);
-		printf("dbs = %f \n", dbs);
-		printf("gamma_{wn} = %f \n", 5.796*alpha);
 		printf("Force(x) = %f \n", Fx);
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
 		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
-		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
-		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
-		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
-		if (InitialCondition==1) printf("Initial conditions asdsigned from restart file \n");
 		printf("********************************************************\n");
 	}
 
+	double viscosity=(tau-0.5)/3.0;
 	// Initialized domain and averaging framework for Two-Phase Flow
-	bool pBC;
-	if (BoundaryCondition==1)	pBC=true;
-	else						pBC=false;
-	bool Restart;
-	if (InitialCondition==1)    Restart=true;
-	else 						Restart=false;
-
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	int BC=pBC;
+	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	TwoPhase Averages(Dm);
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
@@ -323,7 +277,7 @@ int main(int argc, char **argv)
 	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
 	//...........................................................................
 	if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
@@ -350,9 +304,9 @@ int main(int argc, char **argv)
 	}
 	sum=0;
 	pore_vol = 0.0;
-	for ( k=0;k<Nz;k++){
-		for ( j=0;j<Ny;j++){
-			for ( i=0;i<Nx;i++){
+	for ( k=1;k<Nz-1;k++){
+		for ( j=1;j<Ny-1;j++){
+			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
 				if (Averages.SDs(n) > 0.0){
 					id[n] = 2;	
@@ -364,14 +318,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	fread(id,1,N,IDFILE);
-	fclose(IDFILE);
-
+	
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
 	kstart = 1;
@@ -424,7 +371,6 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
-
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
@@ -433,23 +379,13 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 	// Create a communicator for the device
 	ScaLBL_Communicator ScaLBL_Comm(Dm);
-	
+
 	//...........device phase ID.................................................
-	if (rank==0)	printf ("Copy phase ID to device \n");
+	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
 	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-	// Don't compute in the halo
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
-			}
-		}
-	}
 	// Copy to the device
 	CopyToDevice(ID, id, N);
-	DeviceBarrier();
 	//...........................................................................
 
 	//...........................................................................
@@ -459,30 +395,18 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Allocating distributions \n");
 	//......................device distributions.................................
 	double *f_even,*f_odd;
-	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
 	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
 	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
-	double *Phi,*Den;
-	double *ColorGrad, *Velocity, *Pressure, *dvcSignDist;
+	double *Velocity, *Pressure, *dvcSignDist;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
 	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
 	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
-	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
-	//copies of data needed to perform checkpointing from cpu
-	double *cDen, *cDistEven, *cDistOdd;
-	cDen = new double[2*N];
-	cDistEven = new double[10*N];
-	cDistOdd = new double[9*N];
 	//...........................................................................
+	double *Vel;
+	Vel = new double [3*N];
 
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
@@ -494,52 +418,34 @@ int main(int argc, char **argv)
 	//				MAIN  VARIABLES INITIALIZED HERE
 	//...........................................................................
 	//...........................................................................
-	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
-	DeviceBarrier();
 	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-	DeviceBarrier();
 	//......................................................................
 
-	if (Restart == true){
-		if (rank==0) printf("Reading restart file! \n");
-		// Read in the restart file to CPU buffers
-		ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-		// Copy the restart data to the GPU
-		CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
-		CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
-		CopyToDevice(Den,cDen,2*N*sizeof(double));
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-
-	//......................................................................
-	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
-	//.......................................................................
-	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
 	Averages.SetupCubes(Dm);
 	Averages.UpdateSolid();
+	// Initialize two phase flow variables (all wetting phase)
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				Averages.Phase(i,j,k) = -1.0;
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
+				Averages.DelPhi(i,j,k) = 0.0;
+				Averages.Press(i,j,k) = 0.0;
+				Averages.Vel_x(i,j,k) = 0.0;
+				Averages.Vel_y(i,j,k) = 0.0;
+				Averages.Vel_z(i,j,k) = 0.0;
+			}
+		}
+	}
+
 	//.......................................................................
-	
-	//*************************************************************************
-	// 		Compute the phase indicator field and reset Copy, Den
-	//*************************************************************************
-	ComputePhi(ID, Phi, Den, N);
-	//*************************************************************************
-	DeviceBarrier();
-	ScaLBL_Comm.SendHalo(Phi);
-	ScaLBL_Comm.RecvHalo(Phi);
-	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
-	//*************************************************************************
 
 	if (rank==0 && pBC){
 		printf("Setting inlet pressure = %f \n", din);
@@ -547,51 +453,25 @@ int main(int argc, char **argv)
 	}
 	if (pBC && kproc == 0)	{
 		PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 		
 	if (pBC && kproc == nprocz-1){
 		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 
-	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
-
-	//...........................................................................
-	// Copy the phase indicator field for the earlier timestep
-	DeviceBarrier();
-	CopyToHost(Averages.Phase_tplus.get(),Phi,N*sizeof(double));
-	//...........................................................................
-	//...........................................................................
-	// Copy the data for for the analysis timestep
-	//...........................................................................
-	// Copy the phase from the GPU -> CPU
-	//...........................................................................
-	DeviceBarrier();
-	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-	CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
-	CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
-	CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
-	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-	//...........................................................................
-	
 	int timestep = 0;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 	starttime = MPI_Wtime();
 	//.........................................
 	
 	sendtag = recvtag = 5;
-			// Copy the data to the CPU
-	err = 1.0; 	
-	double sat_w_previous = 1.01; // slightly impossible value!
+	double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
+	err = vel_prev = 1.0;
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
 	while (timestep < timestepMax && err > tol ){
@@ -599,101 +479,36 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
-		ColorCollideOpt( ID,f_even,f_odd,Phi,ColorGrad,
-							 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
+		MRT( ID,f_even,f_odd,rlxA,rlxB,Fx,Fy,Fz,Nx,Ny,Nz);
 		//*************************************************************************
 
-		DeviceBarrier();
 		//*************************************************************************
 		// Pack and send the D3Q19 distributions
 		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
-		//*************************************************************************
-
-		//*************************************************************************
-		// 		Carry out the density streaming step for mass transport
-		//*************************************************************************
-		MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
-								ColorGrad, Velocity, beta, N, pBC);
-		//*************************************************************************
-
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
 		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
-
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
-		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 		//*************************************************************************
-
-		DeviceBarrier();
-		//*************************************************************************
-		// Pack and send the D3Q7 distributions
-		ScaLBL_Comm.BiSendD3Q7(A_even, A_odd, B_even, B_odd);
-		//*************************************************************************
-
-		DeviceBarrier();
-		SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
-		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
-
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		//*************************************************************************
-		// Wait for communication and unpack the D3Q7 distributions
-		ScaLBL_Comm.BiRecvD3Q7(A_even, A_odd, B_even, B_odd);
-		//*************************************************************************
-
-		DeviceBarrier();
-		//..................................................................................
-		ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-		ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-		
-		//*************************************************************************
-		// 		Compute the phase indicator field 
-		//*************************************************************************
-		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
-
-		ComputePhi(ID, Phi, Den, N);
-		//*************************************************************************
-		ScaLBL_Comm.SendHalo(Phi);
-		DeviceBarrier();
-		ScaLBL_Comm.RecvHalo(Phi);
-		//*************************************************************************
-
-		DeviceBarrier();
 		
 		if (pBC && kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 			
 		if (pBC && kproc == nprocz-1){
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 		//...................................................................................
-
+		DeviceBarrier();
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		// Timestep completed!
 		timestep++;
-		//...................................................................
-		if (timestep%1000 == 995){
-			//...........................................................................
-			// Copy the phase indicator field for the earlier timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus.get(),Phi,N*sizeof(double));
-	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
-			//...........................................................................
-		}
-		if (timestep%1000 == 0){
+
+		if (timestep%500 == 0){
 			//...........................................................................
 			// Copy the data for for the analysis timestep
 			//...........................................................................
@@ -701,166 +516,48 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
 			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
 			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
-		if (timestep%1000 == 5){
-			//...........................................................................
-			// Copy the phase indicator field for the later timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus.get(),Phi,N*sizeof(double));
-//			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
-			//....................................................................
+
+			// Way more work than necessary -- this is just to get the solid interfacial area!!
 			Averages.Initialize();
-			Averages.ComputeDelPhi();
-			Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
 			Averages.UpdateMeshValues();
 			Averages.ComputeLocal();
 			Averages.Reduce();
-			Averages.PrintAll(timestep);
-			//....................................................................
-		}
-
-		if (timestep%RESTART_INTERVAL == 0){
-			if (pBC){
-				//err = fabs(sat_w - sat_w_previous);
-				//sat_w_previous = sat_w;
-				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
-			}
-			else{
-				// Not clear yet
-			}
-			// Copy the data to the CPU
-			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
-			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-			CopyToHost(cDen,Den,2*N*sizeof(double));
-			// Read in the restart file to CPU buffers
-			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-
-#ifdef WRITE_SURFACES
 			
-			std::shared_ptr<TriList> wn_mesh( new TriList() );
-			wn_mesh->A.reserve(8*ncubes);
-			wn_mesh->B.reserve(8*ncubes);
-			wn_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> ns_mesh( new TriList() );
-			ns_mesh->A.reserve(8*ncubes);
-			ns_mesh->B.reserve(8*ncubes);
-			ns_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> ws_mesh( new TriList() );
-			ws_mesh->A.reserve(8*ncubes);
-			ws_mesh->B.reserve(8*ncubes);
-			ws_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> wns_mesh( new TriList() );
-			wns_mesh->A.reserve(8*ncubes);
-			wns_mesh->B.reserve(8*ncubes);
-			wns_mesh->C.reserve(8*ncubes);
-
-			for (c=0;c<ncubes;c++){
-				// Get cube from the list
-				i = cubeList(0,c);
-				j = cubeList(1,c);
-				k = cubeList(2,c);
-				//...........................................................................
-				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
-						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
-						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-						i, j, k, Nx, Ny, Nz);	
-				//.......................................................................................
-				// Write the triangle lists to text file
-				for (int r=0;r<n_nw_tris;r++){
-					A = nw_pts(nw_tris(0,r));
-					B = nw_pts(nw_tris(1,r));
-					C = nw_pts(nw_tris(2,r));
-					// compare the trianlge orientation against the color gradient
-					// Orientation of the triangle
-					double tri_normal_x = (A.y-B.y)*(B.z-C.z) - (A.z-B.z)*(B.y-C.y);
-					double tri_normal_y = (A.z-B.z)*(B.x-C.x) - (A.x-B.x)*(B.z-C.z);
-					double tri_normal_z = (A.x-B.x)*(B.y-C.y) - (A.y-B.y)*(B.x-C.x);
-
-					double normal_x = Phase_x(i,j,k);
-					double normal_y = Phase_y(i,j,k);
-					double normal_z = Phase_z(i,j,k);
-
-					// If the normals don't point in the same direction, flip the orientation of the triangle
-					// Right hand rule for triangle orientation is used to determine rendering for most software
-					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0){
-						P = A;
-						A = C;
-						C = P;
-					}
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					wn_mesh->A.push_back(A);
-					wn_mesh->B.push_back(B);
-					wn_mesh->C.push_back(C);
-				}		
-				for (int r=0;r<n_ws_tris;r++){
-					A = ws_pts(ws_tris(0,r));
-					B = ws_pts(ws_tris(1,r));
-					C = ws_pts(ws_tris(2,r));
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					ws_mesh->A.push_back(A);
-					ws_mesh->B.push_back(B);
-					ws_mesh->C.push_back(C);
-				}
-				for (int r=0;r<n_ns_tris;r++){
-					A = ns_pts(ns_tris(0,r));
-					B = ns_pts(ns_tris(1,r));
-					C = ns_pts(ns_tris(2,r));
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					ns_mesh->A.push_back(A);
-					ns_mesh->B.push_back(B);
-					ns_mesh->C.push_back(C);
-				}
+			double vawx = -Averages.vaw_global(0);
+			double vawy = -Averages.vaw_global(1);
+			double vawz = -Averages.vaw_global(2);
+		       if (rank==0){
+				// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
+				//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
+				//  Description of Non-Darcy Flows in Porous Medium Systems
+				//  Physical Review E 87 (3), 033012
+				//  Fo := density*D32^3*(density*force) / (viscosity^2)
+				//	Re := density*D32*velocity / viscosity
+				//  Fo = a*Re + b*Re^2
+				// *************************************************************************
+				//viscosity = (tau-0.5)*0.333333333333333333;
+				D32 = 6.0*(Dm.Volume-Averages.vol_w_global)/Averages.As_global;
+				printf("Sauter Mean Diameter = %f \n",D32);
+				mag_force = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				Fo = D32*D32*D32*mag_force/viscosity/viscosity;
+				// .... 1-D flow should be aligned with force ...
+				velocity = vawx*Fx/mag_force + vawy*Fy/mag_force + vawz*Fz/mag_force;
+				err1D = fabs(velocity-sqrt(vawx*vawx+vawy*vawy+vawz*vawz))/velocity;
+				//.......... Computation of the Reynolds number Re ..............
+				Re = D32*velocity/viscosity;
+				printf("Force: %.5g,%.5g,%.5g \n",Fx,Fy,Fz);
+				printf("Velocity: %.5g,%.5g,%.5g \n",vawx,vawy,vawz);
+				printf("Relative error for 1D representation: %.5g \n",err1D);
+				printf("Dimensionless force: %5g \n", Fo);
+				printf("Reynolds number: %.5g \n", Re);
+				printf("Dimensionless Permeability (k/D^2): %.5g \n", Re/Fo);
 			}
-
-			std::vector<MeshDataStruct> meshData(4);
-			meshData[0].meshName = "wn-tris";
-			meshData[0].mesh = wn_mesh;
-			meshData[1].meshName = "ws-tris";
-			meshData[1].mesh = ws_mesh;
-			meshData[2].meshName = "ns-tris";
-			meshData[2].mesh = ns_mesh;
-			meshData[3].meshName = "wns-tris";
-			meshData[3].mesh = wns_mesh;
-			writeData( logcount, meshData );
-
-			logcount++;
-#endif 
+			
 		}
 	}
 	//************************************************************************/
@@ -879,34 +576,7 @@ int main(int argc, char **argv)
 	MLUPS *= nprocs;
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
-	
 
-	DeviceBarrier();
-	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-
-	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
-	FILE *PHASE;
-	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.Phase.get(),8,N,PHASE);
-	fclose(PHASE);
-
-	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
-	FILE *PRESS;
-	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.Press.get(),8,N,PRESS);
-	fclose(PRESS);
-
-
-	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-	double * Grad;
-	Grad = new double [3*N];
-	CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
-	sprintf(LocalRankFilename,"%s%s","ColorGrad.",LocalRankString);
-	FILE *GRAD;
-	GRAD = fopen(LocalRankFilename,"wb");
-	fwrite(Grad,8,3*N,GRAD);
-	fclose(GRAD);
-	*/
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();

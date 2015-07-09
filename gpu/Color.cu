@@ -7,7 +7,7 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 {
 	//int i,j,k;
 	int n,N;
-
+	char id;
 	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
@@ -15,18 +15,19 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<N){
-			
-		//.......Back out the 3-D indices for node n..............
+		
+  		id=ID[n];	
+ 		//.......Back out the 3-D indices for node n..............
 		//k = n/(Nx*Ny);
 		//j = (n-Nx*Ny*k)/Nx;
 		//i = n-Nx*Ny*k-Nx*j;
 
-		if ( ID[n] == 1){
+		if ( id == 1){
 			Den[n] = 1.0;
 			Den[N+n] = 0.0;
 			Phi[n] = 1.0;
 		}
-		else if ( ID[n] == 2){
+		else if ( id == 2){
 			Den[n] = 0.0;
 			Den[N+n] = 1.0;
 			Phi[n] = -1.0;
@@ -120,104 +121,6 @@ __global__  void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, do
 		}
 	}
 }
-
-__global__  void dvc_Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
-{
-	int n,N;
-	// distributions
-	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double vx,vy,vz;
-
-	N = Nx*Ny*Nz;
-
-	int S = N/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
-			//........................................................................
-			// Registers to store the distributions
-			//........................................................................
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
-			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[1*N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
-			//.................Compute the velocity...................................
-			vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-			vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-			vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
-			//..................Write the velocity.....................................
-			vel[n] = vx;
-			vel[N+n] = vy;
-			vel[2*N+n] = vz;
-			//........................................................................
-
-		}
-	}
-}
-
-__global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
-									int Nx, int Ny, int Nz)
-{
-	int n,N;
-	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-
-	N = Nx*Ny*Nz;
-
-	int S = N/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
-			//........................................................................
-			// Registers to store the distributions
-			//........................................................................
-			f0 = disteven[n];
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
-			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[1*N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
-			//.................Compute the velocity...................................
-			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
-					f9+f12+f11+f14+f13+f16+f15+f18+f17);
-
-		}
-	}
-}
-
 //*************************************************************************
 __global__  void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
@@ -794,6 +697,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
 	// additional variables needed for computations
 	double rho,jx,jy,jz,C,nx,ny,nz;
+	char id;
 
 	N = Nx*Ny*Nz;
 
@@ -801,7 +705,9 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N) {
+			id = ID[n];
+			if ( id > 0){
 
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
@@ -909,6 +815,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			//...............................................
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C == 0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1058,7 +965,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			//					PERFORM RELAXATION PROCESS
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
-			if (C == 0.0)	nx = ny = nz = 1.0;
+			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
@@ -1176,111 +1083,125 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 			Velocity[N+n] = jy;
 			Velocity[2*N+n] = jz;
 			//***************************************************************
-		}	// check if n is in the solid
+
+			}// check if n is in the solid
+			}
 	} // loop over n
 }
 
 __global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
-	int idx,n,q,Cqx,Cqy,Cqz;
-	//	int sendLoc;
-
+	int n;
 	double f0,f1,f2,f3,f4,f5,f6;
-	double na,nb;		// density values
+	double na,nb,nab;	// density values
 	double ux,uy,uz;	// flow velocity
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
-	double sp,delta;
-	double feq[6];		// equilibrium distributions
-	// Set of Discrete velocities for the D3Q19 Model
-	int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+	double delta;
+	char id;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
 
-			//.....Load the Color gradient.........
-			nx = ColorGrad[n];
-			ny = ColorGrad[N+n];
-			nz = ColorGrad[2*N+n];
-			C = sqrt(nx*nx+ny*ny+nz*nz);
-			nx = nx/C;
-			ny = ny/C;
-			nz = nz/C;
-			//....Load the flow velocity...........
-			ux = Velocity[n];
-			uy = Velocity[N+n];
-			uz = Velocity[2*N+n];
-			//........................................................................
-			//					READ THE DISTRIBUTIONS
-			//		(read from opposite array due to previous swap operation)
-			//........................................................................
-			f2 = A_odd[n];
-			f4 = A_odd[N+n];
-			f6 = A_odd[2*N+n];
-			f0 = A_even[n];
-			f1 = A_even[N+n];
-			f3 = A_even[2*N+n];
-			f5 = A_even[3*N+n];
-			na = f0+f1+f2+f3+f4+f5+f6;
-			//........................................................................
-			f2 = B_odd[n];
-			f4 = B_odd[N+n];
-			f6 = B_odd[2*N+n];
-			f0 = B_even[n];
-			f1 = B_even[N+n];
-			f3 = B_even[2*N+n];
-			f5 = B_even[3*N+n];
-			nb = f0+f1+f2+f3+f4+f5+f6;
-			//........................................................................
-			//....Instantiate the density distributions
-			// Generate Equilibrium Distributions and stream
-			// Stationary value - distribution 0
-			A_even[n] = 0.3333333333333333*na;
-			B_even[n] = 0.3333333333333333*nb;
-			// Non-Stationary equilibrium distributions
-			feq[0] = 0.1111111111111111*(1+4.5*ux);
-			feq[1] = 0.1111111111111111*(1-4.5*ux);
-			feq[2] = 0.1111111111111111*(1+4.5*uy);
-			feq[3] = 0.1111111111111111*(1-4.5*uy);
-			feq[4] = 0.1111111111111111*(1+4.5*uz);
-			feq[5] = 0.1111111111111111*(1-4.5*uz);
-			// Construction and streaming for the components
-			for (idx=0; idx<3; idx++){
-				//...............................................
-				// Distribution index
-				q = 2*idx;
-				// Associated discrete velocity
-				Cqx = D3Q7[idx][0];
-				Cqy = D3Q7[idx][1];
-				Cqz = D3Q7[idx][2];
-				// Generate the Equilibrium Distribution
-				a1 = na*feq[q];
-				b1 = nb*feq[q];
-				a2 = na*feq[q+1];
-				b2 = nb*feq[q+1];
-				// Recolor the distributions
-				if (C > 0.0){
-					sp = nx*double(Cqx)+ny*double(Cqy)+nz*double(Cqz);
-					//if (idx > 2)	sp = 0.7071067811865475*sp;
-					//delta = sp*min( min(a1,a2), min(b1,b2) );
-					delta = na*nb/(na+nb)*0.1111111111111111*sp;
-					//if (a1>0 && b1>0){
-					a1 += beta*delta;
-					a2 -= beta*delta;
-					b1 -= beta*delta;
-					b2 += beta*delta;
-				}
-				// Save the re-colored distributions
-				A_odd[N*idx+n] 		= a1;
-				A_even[N*(idx+1)+n] = a2;
-				B_odd[N*idx+n] 		= b1;
-				B_even[N*(idx+1)+n] = b2;
-				//...............................................
-			}
+		if (n<N)
+			id = ID[n];
+			if ( id != 0){
+
+            //.....Load the Color gradient.........
+            nx = ColorGrad[n];
+            ny = ColorGrad[N+n];
+            nz = ColorGrad[2*N+n];
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            if (C==0.0) C=1.0;
+            nx = nx/C;
+            ny = ny/C;
+            nz = nz/C;
+            //....Load the flow velocity...........
+            ux = Velocity[n];
+            uy = Velocity[N+n];
+            uz = Velocity[2*N+n];
+            //........................................................................
+            //					READ THE DISTRIBUTIONS
+            //		(read from opposite array due to previous swap operation)
+            //........................................................................
+            f2 = A_odd[n];
+            f4 = A_odd[N+n];
+            f6 = A_odd[2*N+n];
+            f0 = A_even[n];
+            f1 = A_even[N+n];
+            f3 = A_even[2*N+n];
+            f5 = A_even[3*N+n];
+            na = f0+f1+f2+f3+f4+f5+f6;
+            //........................................................................
+            f2 = B_odd[n];
+            f4 = B_odd[N+n];
+            f6 = B_odd[2*N+n];
+            f0 = B_even[n];
+            f1 = B_even[N+n];
+            f3 = B_even[2*N+n];
+            f5 = B_even[3*N+n];
+            nb = f0+f1+f2+f3+f4+f5+f6;
+            nab = 1.0/(na+nb);
+            //........................................................................
+            //....Instantiate the density distributions
+            // Generate Equilibrium Distributions and stream
+            // Stationary value - distribution 0
+            A_even[n] = 0.3333333333333333*na;
+            B_even[n] = 0.3333333333333333*nb;
+            // Non-Stationary equilibrium distributions
+            //feq[0] = 0.1111111111111111*(1+4.5*ux);
+            //feq[1] = 0.1111111111111111*(1-4.5*ux);
+            //feq[2] = 0.1111111111111111*(1+4.5*uy);
+            //feq[3] = 0.1111111111111111*(1-4.5*uy);
+            //feq[4] = 0.1111111111111111*(1+4.5*uz);
+            //feq[5] = 0.1111111111111111*(1-4.5*uz);
+
+            //...............................................
+            // q = 0,2,4
+            // Cq = {1,0,0}, {0,1,0}, {0,0,1}
+            delta = beta*na*nb*nab*0.1111111111111111*nx;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*ux))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*ux))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*ux))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*ux))+delta;
+
+            A_odd[n] 	= a1;
+            A_even[N+n] = a2;
+            B_odd[n] 	= b1;
+            B_even[N+n] = b2;
+            //...............................................
+            // q = 2
+            // Cq = {0,1,0}
+            delta = beta*na*nb*nab*0.1111111111111111*ny;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*uy))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*uy))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*uy))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*uy))+delta;
+
+            A_odd[N+n] 	= a1;
+            A_even[2*N+n] = a2;
+            B_odd[N+n] 	= b1;
+            B_even[2*N+n] = b2;
+            //...............................................
+            // q = 4
+            // Cq = {0,0,1}
+            delta = beta*na*nb*nab*0.1111111111111111*nz;
+            if (!(na*nb*nab>0)) delta=0;
+            a1 = na*(0.1111111111111111*(1+4.5*uz))+delta;
+            b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
+            a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
+            b2 = nb*(0.1111111111111111*(1-4.5*uz))+delta;
+
+            A_odd[2*N+n] = a1;
+            A_even[3*N+n] = a2;
+            B_odd[2*N+n] = b1;
+            B_even[3*N+n] = b2;
+
 		}
 	}
 }
@@ -1324,6 +1245,7 @@ __global__  void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doub
 				ny = ColorGrad[N+n];
 				nz = ColorGrad[2*N+n];
 				C = sqrt(nx*nx+ny*ny+nz*nz);
+				if (C == 0.0) C=1.0;
 				nx = nx/C;
 				ny = ny/C;
 				nz = nz/C;
@@ -1448,15 +1370,19 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 	double Na,Nb;
 	//...................................................................
 	// Update Phi
+	char id;
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N && ID[n] > 0){
+		if (n<N){
+		   id=ID[n];
+		   if (id > 0){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];
 			Phi[n] = (Na-Nb)/(Na+Nb);
+			}
 		}
 	}
 	//...................................................................
@@ -1468,14 +1394,6 @@ extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double 
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz){
 
 	dvc_InitDenColorDistance<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, Distance, das, dbs, beta, xp, Nx, Ny, Nz);
-}
-extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz){
-
-	dvc_Compute_VELOCITY<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, vel, Nx, Ny, Nz);
-}
-extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
-									int Nx, int Ny, int Nz){
-	dvc_ComputePressureD3Q19<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
 }
 extern "C" void ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz){
 	dvc_ComputeColorGradient<<<NBLOCKS,NTHREADS >>>(ID, phi, ColorGrad, Nx, Ny, Nz);

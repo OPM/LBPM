@@ -171,7 +171,7 @@ int main (int argc, char *argv[])
 
 		pmmc_CurveOrientation(Gwns, nws_pts, n_nws_pts, i,j,k);
 
-		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
+		//		pmmc_CurveCurvature(Phase, SignDist, KNwns_values, KGwns_values, KNwns, KGwns, nws_pts, n_nws_pts, i, j, k);
 
 	//	if (n_nw_pts>0) printf("speed %f \n",InterfaceSpeed(0));
 		

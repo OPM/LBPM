@@ -4,7 +4,7 @@ source $MODULESHOME/init/bash
 
 # Set the modules and enviornmental variables
 module load DefApps
-module load PrgEnv-pgi 
+module load PrgEnv-intel
 module unload cray-libsci
 module load cray-mpich ugni xpmem udreg altd
 module load moab torque

@@ -8,7 +8,6 @@
 
 #include "pmmc.h"
 #include "Domain.h"
-#include "Extras.h"
 #include "common/MPI_Helpers.h"
 #include "Communication.h"
 

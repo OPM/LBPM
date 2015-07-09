@@ -4,7 +4,6 @@
  * will output distance functions for phases
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -63,6 +62,7 @@ int main(int argc, char **argv)
     }
 	MPI_Barrier(MPI_COMM_WORLD);
 	// Computational domain
+	//.................................................
 	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -73,6 +73,13 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	//.................................................
+	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&xStart,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&yStart,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&zStart,1,MPI_INT,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 
@@ -86,10 +93,10 @@ int main(int argc, char **argv)
         ERROR("Insufficient number of processors");
     }
     char *SegData;
-    SegData = new char[Nx*Ny*Nz];
     // Rank=0 reads the entire segmented data and distributes to worker processes
     if (rank==0){
     	printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);
+	SegData = new char[Nx*Ny*Nz];
     	FILE *SEGDAT = fopen(Filename,"rb");
     	if (SEGDAT==NULL) ERROR("Error reading segmented data");
     	fread(SegData,1,Nx*Ny*Nz,SEGDAT);
@@ -111,12 +118,16 @@ int main(int argc, char **argv)
 	}
 	Dm.CommInit(MPI_COMM_WORLD);
 
+	// number of sites to use for periodic boundary condition transition zone
+	int z_transition_size = (nprocz*nz - (Nz - zStart))/2;
+	if (z_transition_size < 0) z_transition_size=0;
+
 	// Set up the sub-domains
 	if (rank==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
 		printf("Process grid: %i x %i x %i \n",Dm.nprocx,Dm.nprocy,Dm.nprocz);
 		printf("Subdomain size: %i \n",N);
-
+		printf("Size of transition region: %i \n", z_transition_size);
 		char *tmp;
 		tmp = new char[N];
 		for (int kp=0; kp<nprocz; kp++){
@@ -130,7 +141,10 @@ int main(int argc, char **argv)
 							for (i=0;i<nx+2;i++){
 								int x = xStart + ip*nx + i-1;
 								int y = yStart + jp*ny + j-1;
-								int z = zStart + kp*nz + k-1;
+						//		int z = zStart + kp*nz + k-1;
+								int z = zStart + kp*nz + k-1 - z_transition_size;
+								if (z<zStart) 	z=zStart;
+								if (!(z<Nz))	z=Nz-1;
 								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
 								int nglobal = z*Nx*Ny+y*Nx+x;
 								tmp[nlocal] = SegData[nglobal];
@@ -166,12 +180,13 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-/*	char *id;
-	id = new char [N];
-	for (k=0;k<nz;k++){
+	// Really need a better way to do this -- this is to flip convention for a particular data set
+       	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
+				if (Dm.id[n] == 1) Dm.id[n]=2;
+				else if (Dm.id[n] == 2) Dm.id[n]=1;
 				// Initialize the solid phase
 //				if (Dm.id[n] == 0)	id[n] = 0;
 //				else				id[n] = 1;
@@ -179,26 +194,7 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	DoubleArray Distance(nx,ny,nz);
-	// Initialize the signed distance function
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				n=k*nx*ny+j*nx+i;
-				// Initialize distance to +/- 1
-				Distance(i,j,k) = 1.0*id[n]-0.5;
-			}
-		}
-	}
-	*/
-//	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
-//	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
-//	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
-
-//	printf("Initialized! Converting to Signed Distance function \n");
-//	SSO(Distance,id,Dm,10);
-
-	char LocalRankFilename[40];
+       char LocalRankFilename[40];
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");

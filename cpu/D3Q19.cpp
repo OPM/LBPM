@@ -226,3 +226,95 @@ extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, i
 		}
 	}
 }
+
+extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double vx,vy,vz;
+
+	N = Nx*Ny*Nz;
+
+	for (n=0; n<N; n++){
+		if (ID[n] > 0){
+			//........................................................................
+			// Registers to store the distributions
+			//........................................................................
+			f2 = disteven[N+n];
+			f4 = disteven[2*N+n];
+			f6 = disteven[3*N+n];
+			f8 = disteven[4*N+n];
+			f10 = disteven[5*N+n];
+			f12 = disteven[6*N+n];
+			f14 = disteven[7*N+n];
+			f16 = disteven[8*N+n];
+			f18 = disteven[9*N+n];
+			//........................................................................
+			f1 = distodd[n];
+			f3 = distodd[1*N+n];
+			f5 = distodd[2*N+n];
+			f7 = distodd[3*N+n];
+			f9 = distodd[4*N+n];
+			f11 = distodd[5*N+n];
+			f13 = distodd[6*N+n];
+			f15 = distodd[7*N+n];
+			f17 = distodd[8*N+n];
+			//.................Compute the velocity...................................
+			vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+			vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+			vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+			//..................Write the velocity.....................................
+			vel[n] = vx;
+			vel[N+n] = vy;
+			vel[2*N+n] = vz;
+			//........................................................................
+
+		}
+	}
+}
+
+extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
+									int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+
+	N = Nx*Ny*Nz;
+
+	for (n=0; n<N; n++){
+
+		if (ID[n] > 0){
+			//........................................................................
+			// Registers to store the distributions
+			//........................................................................
+			f0 = disteven[n];
+			f2 = disteven[N+n];
+			f4 = disteven[2*N+n];
+			f6 = disteven[3*N+n];
+			f8 = disteven[4*N+n];
+			f10 = disteven[5*N+n];
+			f12 = disteven[6*N+n];
+			f14 = disteven[7*N+n];
+			f16 = disteven[8*N+n];
+			f18 = disteven[9*N+n];
+			//........................................................................
+			f1 = distodd[n];
+			f3 = distodd[1*N+n];
+			f5 = distodd[2*N+n];
+			f7 = distodd[3*N+n];
+			f9 = distodd[4*N+n];
+			f11 = distodd[5*N+n];
+			f13 = distodd[6*N+n];
+			f15 = distodd[7*N+n];
+			f17 = distodd[8*N+n];
+			//.................Compute the velocity...................................
+			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
+					f9+f12+f11+f14+f13+f16+f15+f18+f17);
+		}
+	}
+}
+

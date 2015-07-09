@@ -328,9 +328,9 @@ void Domain::CommInit(MPI_Comm Communicator){
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
 	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
 	//......................................................................................
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				// Check the phase ID
 				if (id[k*Nx*Ny+j*Nx+i] != 0){
 					// Counts for the six faces
@@ -382,9 +382,9 @@ void Domain::CommInit(MPI_Comm Communicator){
 	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
 	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				// Local value to send
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] != 0){
@@ -846,12 +846,9 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                     nz = 0.5*(Distance(i,j,k+1) - Distance(i,j,k-1));
 
                     W = 0.0;	Dx = Dy = Dz = 0.0;
-                    // Ignore any values that have distances less than a lattice unit
-                    // since sometimes the positions may be guessed more accurately from
-                    // another source (such as a simulation)
                     // also ignore places where the gradient is zero since this will not
                     // result in any local change to Distance
-                    if (nx*nx+ny*ny+nz*nz > 0.0 && !(Distance(i,j,k)*Distance(i,j,k) < 1.0) ){
+                    if (nx*nx+ny*ny+nz*nz > 0.0 ){
                         for (q=0; q<26; q++){
                             Cqx = 1.0*D3Q27[q][0];
                             Cqy = 1.0*D3Q27[q][1];
@@ -905,7 +902,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                     Distance(i,j,k) += dt*sign*(1.0 - norm);
 
                     // Disallow any change in phase
-                    if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
+                   // if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
                 }
             }
         }
@@ -1130,102 +1127,6 @@ inline void SignedDistance(double *Distance, int nspheres, double *List_cx, doub
 	for (n=0; n<N; n++)	Distance[n] = Distance[n]/hx;
 }
 
-inline void GenerateResidual(char *ID, int Nx, int Ny, int Nz, double Saturation)
-{
-	//.......................................................................
-	int i,j,k,n,Number,N;
-	int x,y,z,ii,jj,kk;
-	int sizeX,sizeY,sizeZ;
-	int *SizeX, *SizeY, *SizeZ;
-
-#ifdef NORANDOM
-	srand(10009);
-#else
-	srand(time(NULL));
-#endif
-//	float bin;
-	//.......................................................................
-	N = Nx*Ny*Nz;
-	
-	int bin, binCount;	
-	ifstream Dist("BlobSize.in");
-	Dist >> binCount;
-//	printf("Number of blob sizes: %i \n",binCount);
-	SizeX = new int [binCount];
-	SizeY = new int [binCount];
-	SizeZ = new int [binCount];
-	for (bin=0; bin<binCount; bin++){
-		Dist >> SizeX[bin];
-		Dist >> SizeY[bin];
-		Dist >> SizeZ[bin];
-	//	printf("Blob %i dimension: %i x %i x %i \n",bin, SizeX[bin], SizeY[bin], SizeZ[bin]);
-	}
-	Dist.close();
-	//.......................................................................
-//	cout << "Generating blocks... " << endl;	
-	// Count for the total number of oil nodes 
-	int count = 0;
-	// Count the total number of non-solid nodes
-	int total = 0;
-	for (i=0;i<N;i++){
-		if (ID[i] != 0) total++;
-	}
-	
-	float sat = 0.f;
-	Number = 0;		// number of features
-	while (sat < Saturation){
-		Number++;
-		// Randomly generate a point in the domain
-		x = Nx*float(rand())/float(RAND_MAX);
-		y = Ny*float(rand())/float(RAND_MAX);
-		z = Nz*float(rand())/float(RAND_MAX);
-		
-		bin = int(floor(binCount*float(rand())/float(RAND_MAX)));
-		sizeX = SizeX[bin];
-		sizeY = SizeY[bin];
-		sizeZ = SizeZ[bin];
-		
-//		cout << "Sampling from bin no. " << floor(bin) << endl; 
-//		cout << "Feature size is: " << sizeX << "x" << sizeY << "x" << sizeZ << endl; 
-		
-		for (k=z;k<z+sizeZ;k++){
-			for (j=y;j<y+sizeY;j++){
-				for (i=x;i<x+sizeX;i++){
-					// Identify nodes in the domain (periodic BC)
-					ii = i;
-					jj = j;
-					kk = k;					
-					if (ii < 1)			ii+=(Nx-2);
-					if (jj < 1)			jj+=(Ny-2);
-					if (kk < 1)			kk+=(Nz-2);
-					if (!(ii < Nx-1))		ii-=(Nx-2);
-					if (!(jj < Ny-1))		jj-=(Ny-2);
-					if (!(kk < Nz-1))		kk-=(Nz-2);
-					
-					n = kk*Nx*Ny+jj*Nx+ii;
-					
-					if (ID[n] == 2){
-						ID[n] = 1;
-						count++;
-					}
-				}
-			}
-		}
-		sat = float(count)/total;
-	}
-	//.......................................................................
-}
-
-
-
-inline void FlipID(char *ID, int N)
-{
-	for (int n=0; n<N; n++){
-		if  	 (ID[n] == 1)	ID[n] = 2;
-		else if  (ID[n] == 2)	ID[n] = 1;
-	}
-}
-
 inline void WriteLocalSolidID(char *FILENAME, char *ID, int N)
 {
 	char value;
@@ -1256,9 +1157,9 @@ inline void WriteCheckpoint(char *FILENAME, double *cDen, double *cDistEven, dou
 	ofstream File(FILENAME,ios::binary);
 	for (n=0; n<N; n++){
 		// Write the two density values
-		value = cDen[2*n];
+		value = cDen[n];
 		File.write((char*) &value, sizeof(value));
-		value = cDen[2*n+1];
+		value = cDen[N+n];
 		File.write((char*) &value, sizeof(value));
 		// Write the even distributions
 		for (q=0; q<10; q++){
@@ -1283,10 +1184,10 @@ inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, doub
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n] = value;
+		cDen[n] = value;
 	//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
-		cDen[2*n+1] = value;
+		cDen[N+n] = value;
 	//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
 		for (q=0; q<10; q++){

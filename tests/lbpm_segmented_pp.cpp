@@ -3,8 +3,6 @@
  * segmented data should be stored in a raw binary file as 1-byte integer (type char)
  * will output distance functions for phases
  */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -43,6 +41,19 @@ inline void WriteBlobs(TwoPhase Averages){
 		}
 	}
 	fclose(BLOBLOG);
+}
+
+inline void MeanFilter(DoubleArray &Mesh){
+	for (int k=1; k<Mesh.size(2)-1; k++){
+		for (int j=1; j<Mesh.size(1)-1; j++){
+			for (int i=1; i<Mesh.size(0)-1; i++){
+				double sum;
+				sum=Mesh(i,j,k)+Mesh(i+1,j,k)+Mesh(i-1,j,k)+Mesh(i,j+1,k)+Mesh(i,j-1,k)+
+						+Mesh(i,j,k+1)+Mesh(i,j,k-1);
+				Mesh(i,j,k) = sum/7.0;
+			}
+		}
+	}
 }
 
 int main(int argc, char **argv)
@@ -146,7 +157,7 @@ int main(int argc, char **argv)
 				n = k*nx*ny+j*nx+i;
 				// Initialize the solid phase
 				if (Dm.id[n] == 0)	id[n] = 0;
-				else				id[n] = 1;
+				else		      	id[n] = 1;
 			}
 		}
 	}
@@ -156,12 +167,14 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Averages.SDs(i,j,k) = 1.0*id[n]-0.5;
+				Averages.SDs(i,j,k) = 2.0*id[n]-1.0;
 			}
 		}
 	}
+	MeanFilter(Averages.SDs);
+
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	SSO(Averages.SDs,id,Dm,10);
+	SSO(Averages.SDs,id,Dm,20);
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -173,9 +186,9 @@ int main(int argc, char **argv)
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
-				// Initialize the solid phase
-				if (Dm.id[n] == 2)	id[n] = 1;
-				else				id[n] = 0;
+				// Initialize the non-wetting phase
+				if (Dm.id[n] == 1)	id[n] = 1;
+				else	       		id[n] = 0;
 			}
 		}
 	}
@@ -185,18 +198,20 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Averages.Phase(i,j,k) = 1.0*id[n]-0.5;
+				Averages.Phase(i,j,k) = 2.0*id[n]-1.0;
 			}
 		}
 	}
+	MeanFilter(Averages.Phase);
+
 	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
-	SSO(Averages.Phase,id,Dm,10);
+	SSO(Averages.Phase,id,Dm,20);
 
     sprintf(LocalRankFilename,"Phase.%05i",rank);
     FILE *PHASE = fopen(LocalRankFilename,"wb");
     fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
     fclose(PHASE);
-
+/*
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -214,7 +229,8 @@ int main(int argc, char **argv)
 					Dm.id[n] = 0;
 				}
 				// Initialize distance to +/- 1
-				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
+				// Dilation of the non-wetting phase
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k)+1.0;
 				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
@@ -227,7 +243,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-/*	double vF,vS;
+	double vF,vS;
 	vF = vS = 0.0;
 
     double beta = 0.95;
@@ -237,16 +253,20 @@ int main(int argc, char **argv)
     Averages.Initialize();
     Averages.UpdateMeshValues();
     Dm.CommunicateMeshHalo(Averages.Phase);
+    Dm.CommunicateMeshHalo(Averages.SDn);
 
-//	if (rank==0) printf("computing blobs \n");
-//    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-//    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
+	if (rank==0) printf("computing blobs \n");
+ //   int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+  //  		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
 //	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
+//     int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
+//					 Averages.SDn,Averages.SDs,vF,vS,Averages.BlobLabel);
+
 	if (rank==0) printf("computing local averages  \n");
-    Averages.ComputeLocalBlob();
+	Averages.ComputeLocalBlob();
 	if (rank==0) printf("reducing averages  \n");
-    Averages.Reduce();
+	Averages.Reduce();
 
 	if (rank==0) printf("Writing blobs \n");
     // Write the local blob ids
@@ -307,7 +327,8 @@ int main(int argc, char **argv)
     Averages.SortBlobs();
 
     if (rank==0)   WriteBlobs(Averages);
-*/
+    */
+
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
     return 0;

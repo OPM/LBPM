@@ -112,97 +112,6 @@ extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double 
 }
 
 
-extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz, int S)
-{
-	int n,N;
-	// distributions
-	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double vx,vy,vz;
-
-	N = Nx*Ny*Nz;
-
-	for (n=0; n<N; n++){
-		if (ID[n] > 0){
-			//........................................................................
-			// Registers to store the distributions
-			//........................................................................
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
-			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[1*N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
-			//.................Compute the velocity...................................
-			vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-			vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-			vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
-			//..................Write the velocity.....................................
-			vel[n] = vx;
-			vel[N+n] = vy;
-			vel[2*N+n] = vz;
-			//........................................................................
-
-		}
-	}
-}
-
-extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
-									int Nx, int Ny, int Nz)
-{
-	int n,N;
-	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-
-	N = Nx*Ny*Nz;
-
-	for (n=0; n<N; n++){
-
-		if (ID[n] > 0){
-			//........................................................................
-			// Registers to store the distributions
-			//........................................................................
-			f0 = disteven[n];
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
-			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[1*N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
-			//.................Compute the velocity...................................
-			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
-					f9+f12+f11+f14+f13+f16+f15+f18+f17);
-
-		}
-	}
-}
 
 //*************************************************************************
 extern "C" void ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
@@ -585,6 +494,7 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 			nz = ColorGrad[2*N+n];
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -918,6 +828,7 @@ extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, do
 			//...............................................
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1067,7 +978,7 @@ extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, do
 			//					PERFORM RELAXATION PROCESS
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
-			if (C == 0.0)	nx = ny = nz = 1.0;
+			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
@@ -1198,24 +1109,25 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 	//	int sendLoc;
 
 	double f0,f1,f2,f3,f4,f5,f6;
-	double na,nb;		// density values
+	double na,nb,nab;		// density values
 	double ux,uy,uz;	// flow velocity
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
 	double sp,delta;
-	double feq[6];		// equilibrium distributions
+	//double feq[6];		// equilibrium distributions
 	// Set of Discrete velocities for the D3Q19 Model
-	int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+	//int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
 
 	for (n=0; n<N; n++){
 		id = ID[n];
-		if (id > 0 ){
+		if (id != 0 ){
 
 			//.....Load the Color gradient.........
 			nx = ColorGrad[n];
 			ny = ColorGrad[N+n];
 			nz = ColorGrad[2*N+n];
 			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
 			nz = nz/C;
@@ -1244,6 +1156,7 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 			f3 = B_even[2*N+n];
 			f5 = B_even[3*N+n];
 			nb = f0+f1+f2+f3+f4+f5+f6;
+			nab = 1.0/(na+nb);
 			//........................................................................
 			//....Instantiate the density distributions
 			// Generate Equilibrium Distributions and stream
@@ -1251,13 +1164,58 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 			A_even[n] = 0.3333333333333333*na;
 			B_even[n] = 0.3333333333333333*nb;
 			// Non-Stationary equilibrium distributions
-			feq[0] = 0.1111111111111111*(1+4.5*ux);
-			feq[1] = 0.1111111111111111*(1-4.5*ux);
-			feq[2] = 0.1111111111111111*(1+4.5*uy);
-			feq[3] = 0.1111111111111111*(1-4.5*uy);
-			feq[4] = 0.1111111111111111*(1+4.5*uz);
-			feq[5] = 0.1111111111111111*(1-4.5*uz);
-			// Construction and streaming for the components
+			//feq[0] = 0.1111111111111111*(1+4.5*ux);
+			//feq[1] = 0.1111111111111111*(1-4.5*ux);
+			//feq[2] = 0.1111111111111111*(1+4.5*uy);
+			//feq[3] = 0.1111111111111111*(1-4.5*uy);
+			//feq[4] = 0.1111111111111111*(1+4.5*uz);
+			//feq[5] = 0.1111111111111111*(1-4.5*uz);
+			
+			//...............................................
+			// q = 0,2,4
+			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+			delta = beta*na*nb*nab*0.1111111111111111*nx;
+			if (!(na*nb*nab>0)) delta=0;
+			a1 = na*(0.1111111111111111*(1+4.5*ux))+delta;
+			b1 = nb*(0.1111111111111111*(1+4.5*ux))-delta;
+			a2 = na*(0.1111111111111111*(1-4.5*ux))-delta;
+			b2 = nb*(0.1111111111111111*(1-4.5*ux))+delta;
+
+			A_odd[n] 	= a1;
+			A_even[N+n] = a2;
+			B_odd[n] 	= b1;
+			B_even[N+n] = b2;
+			//...............................................
+			// q = 2
+			// Cq = {0,1,0}
+			delta = beta*na*nb*nab*0.1111111111111111*ny;
+			if (!(na*nb*nab>0)) delta=0;
+			a1 = na*(0.1111111111111111*(1+4.5*uy))+delta;
+			b1 = nb*(0.1111111111111111*(1+4.5*uy))-delta;
+			a2 = na*(0.1111111111111111*(1-4.5*uy))-delta;
+			b2 = nb*(0.1111111111111111*(1-4.5*uy))+delta;
+
+			A_odd[N+n] 	= a1;
+			A_even[2*N+n] = a2;
+			B_odd[N+n] 	= b1;
+			B_even[2*N+n] = b2;
+			//...............................................
+			// q = 4
+			// Cq = {0,0,1}
+			delta = beta*na*nb*nab*0.1111111111111111*nz;
+			if (!(na*nb*nab>0)) delta=0;
+			a1 = na*(0.1111111111111111*(1+4.5*uz))+delta;
+			b1 = nb*(0.1111111111111111*(1+4.5*uz))-delta;
+			a2 = na*(0.1111111111111111*(1-4.5*uz))-delta;
+			b2 = nb*(0.1111111111111111*(1-4.5*uz))+delta;
+
+			A_odd[2*N+n] = a1;
+			A_even[3*N+n] = a2;
+			B_odd[2*N+n] = b1;
+			B_even[3*N+n] = b2;
+			//...............................................
+
+	/*		// Construction and streaming for the components
 			for (idx=0; idx<3; idx++){
 				//...............................................
 				// Distribution index
@@ -1290,6 +1248,7 @@ extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, do
 				B_even[N*(idx+1)+n] = b2;
 				//...............................................
 			}
+	*/
 		}
 	}
 }
@@ -1446,31 +1405,7 @@ extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 		}
 	}
 }
-/*
-extern "C" void ComputePhi(char *ID, double *Phi, double *Copy, double *Den, int N, int S)
-{
-	int n;
-	double Na,Nb;
-	//...................................................................
-	// Update Phi
-	for (n=0; n<N; n++){
 
-		if (ID[n] > 0 && n<N){
-			// Get the density value (Streaming already performed)
-			Na = Den[2*n];
-			Nb = Den[2*n+1];
-			Phi[n] = (Na-Nb)/(Na+Nb);
-			// Store the copy of the current density
-			Copy[2*n] = Na;
-			Copy[2*n+1] = Nb;
-			// Zero the Density value to get ready for the next streaming
-			Den[2*n] = 0.0;
-			Den[2*n+1] = 0.0;
-		}
-	}
-	//...................................................................
-}
-*/
 extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 {
 	int n;
@@ -1479,7 +1414,7 @@ extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 	// Update Phi
 	for (n=0; n<N; n++){
 
-		if (ID[n] > 0 && n<N){
+		if (ID[n] > 0 ){
 			// Get the density value (Streaming already performed)
 			Na = Den[n];
 			Nb = Den[N+n];

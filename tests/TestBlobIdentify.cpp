@@ -81,11 +81,12 @@ int main(int argc, char **argv)
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+#ifdef USE_TIMER
     PROFILE_ENABLE(0);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("main");
-
+#endif
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
         printf("Testing Blob Identification \n");
@@ -176,8 +177,10 @@ int main(int argc, char **argv)
     }
 
     // Finished
+#ifdef USE_TIMER
     PROFILE_STOP("main");
     PROFILE_SAVE("TestBlobIdentify",false);
+#endif
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;  
