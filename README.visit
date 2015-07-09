@@ -4,9 +4,9 @@ Checkout code and create a cmake script to compile plug-in.
 Example commands for Rhea:
 
 Load the proper modules
-   module load visit
-   module load cmake
+   module unload intel gcc
    module load gcc/4.8.2
+   module load cmake
 
 Configure cmake to build the plug-in
     cmake                                       \
@@ -16,10 +16,9 @@ Configure cmake to build the plug-in
         -D USE_MPI=false                        \
         -D USE_CUDA=false                       \
         -D USE_VISIT=true                       \
-            -D VISIT_ROOT_DIR=/sw/rhea/visit    \
+            -D VISIT_ROOT_DIR=/sw/rhea/visit/2.9.0/linux-x86_64 \
         -D USE_TIMER=false                      \
         ../../LBPM-WIA
-
 
 
 Build the visit plug-in
