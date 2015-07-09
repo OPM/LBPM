@@ -8,6 +8,7 @@ Load the proper modules
    module load gcc/4.8.2
    module load cmake
 
+
 Configure cmake to build the plug-in
     cmake                                       \
         -D CMAKE_BUILD_TYPE:STRING=Release      \
@@ -16,19 +17,21 @@ Configure cmake to build the plug-in
         -D USE_MPI=false                        \
         -D USE_CUDA=false                       \
         -D USE_VISIT=true                       \
-            -D VISIT_ROOT_DIR=/sw/rhea/visit/2.9.0/linux-x86_64 \
+            -D VISIT_ROOT_DIR=/sw/redhat6/visit \
         -D USE_TIMER=false                      \
         ../../LBPM-WIA
 
 
 Build the visit plug-in
+    make install -j 8
     make visit
 
-Check that the visit plug-in installed in ~/.visit/2.7.1/linux-x86_64/plugins/databases
+Check that the visit plug-in installed in ~/.visit/2.9.0/linux-x86_64/plugins/databases
+where 2.9.0 is the current version of visit on rhea
 It should have created several shared libraries:
     libELBMDatabase_par.so  libELBMDatabase_ser.so  libILBMDatabase.so  libMLBMDatabase.so
 
-Install visit on local machine (2.7.3)
+Install visit on local machine (2.9.0)
 
 Start visit on local machine
 
