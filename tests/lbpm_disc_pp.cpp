@@ -290,7 +290,7 @@ int main(int argc, char **argv)
 		printf("************ \n");
 	}
 
-	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
+	if (nprocx > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocx > 1? \n");
 	//.......................................................................
 	SignedDistanceDiscPack(SignDist.get(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
