@@ -307,8 +307,8 @@ int main(int argc, char **argv)
 //				dst = (iproc*(Nx-2)+i-1)*1.0;
 //				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
 				// Add walls at the boundary
-				if ( (jproc*(Ny-2)+ j-1)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
-				if ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
+				if ( (jproc*(Ny-2)+j-2)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
+				if ((Ny-2)*nprocy-2-(jproc*(Ny-2)+j-1)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
 				// Assign the Signed Distance where valid
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
