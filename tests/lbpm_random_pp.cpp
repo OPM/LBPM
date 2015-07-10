@@ -191,9 +191,9 @@ int main(int argc, char **argv)
 					jj = j;
 					kk = k;
 
-					if (ii>nprocx*(Nx-2)) ii-=nprocx*(Nx-2);
-					if (jj>nprocy*(Ny-2)) jj-=nprocy*(Ny-2);
-					if (kk>nprocz*(Nz-2)) kk-=nprocz*(Nz-2);
+					if (ii>nprocx*(Nx-2)+1) ii-=nprocx*(Nx-2);
+					if (jj>nprocy*(Ny-2)+1) jj-=nprocy*(Ny-2);
+					if (kk>nprocz*(Nz-2)+1) kk-=nprocz*(Nz-2);
 
 					// Check if this is in the subdomain
 					if (ii < (iproc+1)*(Nx-2) && jj < (jproc+1)*(Ny-2) && kk < (kproc+1)*(Nz-2) &&
