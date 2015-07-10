@@ -5,11 +5,12 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
+#include "MPI_Helpers.h"    // This includes mpi.h
+
 
 /*
  * Pre-Processor to generate signed distance function from disc packing

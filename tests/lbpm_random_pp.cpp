@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&sizeY,1,MPI_INT,0,MPI_COMM_WORLD);
 		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
 
-		if (rank==0) printf("Broadcast block at %i,%i,%i \n",x,y,z);
+		//if (rank==0) printf("Broadcast block at %i,%i,%i \n",x,y,z);
 
 		for (k=z;k<z+sizeZ;k++){
 			for (j=y;j<y+sizeY;j++){
@@ -227,11 +227,26 @@ int main(int argc, char **argv)
 		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 		sat = float(countGlobal)/totalGlobal;
-		if (rank==0) printf("New count=%i\n",countGlobal);
-		if (rank==0) printf("New saturation=%f\n",sat);
+		//if (rank==0) printf("New count=%i\n",countGlobal);
+		//if (rank==0) printf("New saturation=%f\n",sat);
 	}
 
 	if (InitialWetting == 1)	FlipID(id,nx*ny*nz);
+
+
+		count = 0;
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					if (id[n] == 1){
+						count++;
+					}
+				}
+			}
+		}
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+		sat = float(countGlobal)/totalGlobal;
+	if (rank==0) printf("Final saturation=%f\n",sat);
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"wb");

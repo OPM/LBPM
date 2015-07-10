@@ -18,28 +18,40 @@
     #define MPI_COMM_WORLD 0
     #define MPI_COMM_SELF 0
     #define MPI_STATUS_IGNORE NULL
-    enum MPI_Datatype { MPI_LOGICAL, MPI_CHAR, MPI_INT, MPI_DOUBLE };
-    enum MPI_Op { MPI_SUM };
+    enum MPI_Datatype { MPI_LOGICAL, MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_INT, 
+        MPI_UNSIGNED, MPI_LONG, MPI_UNSIGNED_LONG, MPI_LONG_LONG, MPI_FLOAT, MPI_DOUBLE };
+    enum MPI_Op { MPI_MIN, MPI_MAX, MPI_SUM };
+    enum MPI_Group {  };
     // Fake MPI functions
 	int MPI_Init(int*,char***);
 	int MPI_Finalize();
     int MPI_Comm_size( MPI_Comm, int *size );
     int MPI_Comm_rank( MPI_Comm, int *rank );
     int MPI_Barrier(MPI_Comm);
+    int MPI_Wait(MPI_Request*,MPI_Status*);
     int MPI_Waitall(int,MPI_Request[],MPI_Status[]);
     int MPI_Bcast(void*,int,MPI_Datatype,int,MPI_Comm);
+    int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+             MPI_Comm comm);
+    int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+             MPI_Comm comm, MPI_Status *status);
     int MPI_Isend(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
               MPI_Comm comm, MPI_Request *request);
     int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source,
               int tag, MPI_Comm comm, MPI_Request *request);
     int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
                   MPI_Datatype datatype, MPI_Op op, MPI_Comm comm);
+    int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm);
     int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                 int dest, int sendtag,
                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
                 int source, int recvtag,
                 MPI_Comm comm, MPI_Status *status);
     double MPI_Wtime( void );
+    int MPI_Comm_group(MPI_Comm comm, MPI_Group *group);
+    int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
 #endif
 
 

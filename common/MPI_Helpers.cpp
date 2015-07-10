@@ -162,7 +162,23 @@ int MPI_Waitall( int, MPI_Request[], MPI_Status[] )
 {
     return 0;
 }
+int MPI_Wait( MPI_Request*, MPI_Status* )
+{
+    return 0;
+}
 int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
+         MPI_Comm comm)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+         MPI_Comm comm, MPI_Status *status)
 {
     ERROR("Not implimented yet");
     return 0;
@@ -185,11 +201,28 @@ int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
     ERROR("Not implimented yet");
     return 0;
 }
+int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                  void *recvbuf, int recvcount, MPI_Datatype recvtype,
+                  MPI_Comm comm)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
 int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                 int dest, int sendtag,
                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
                 int source, int recvtag,
                 MPI_Comm comm, MPI_Status *status)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm)
 {
     ERROR("Not implimented yet");
     return 0;
