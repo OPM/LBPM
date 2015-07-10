@@ -5,11 +5,12 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <mpi.h>
 
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
+#include "MPI_Helpers.h"    // This includes mpi.h
+
 
 /*
  * Pre-Processor to generate signed distance function from disc packing
@@ -151,6 +152,8 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
+	int depth;
+
 	if (rank == 0){
 		printf("********************************************************\n");
 		printf("Running Disc Packing Pre-Processor for LBPM-WIA	\n");
@@ -200,8 +203,10 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
-	
+
 	// **************************************************************
+	if (argc > 1)	depth=atoi(argv[1]);
+	else			depth=Nz;
 	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
@@ -227,6 +232,7 @@ int main(int argc, char **argv)
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
 		printf("Sub-domain size = %ix%ix%i \n", Nx,Ny,Nz);
 		printf("Physical domain size = %fx%fx%f \n",Lx,Ly,Lz);
+		printf("Micromodel depth = %i voxels",depth);
 	}
 
 
@@ -284,6 +290,7 @@ int main(int argc, char **argv)
 		printf("************ \n");
 	}
 
+	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
 	//.......................................................................
 	SignedDistanceDiscPack(SignDist.get(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
@@ -293,8 +300,13 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				dst = (iproc*(Nx-2)+i-1)*1.0;
-				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
+				// Assign the micromodel depth
+				dst = 1.0*(i-2);
+				if (1.0*(depth+2-i) < dst) dst = 1.0*(depth+2-i);
+				if (dst < SignDist(i,j,k)) 		SignDist(i,j,k) = dst;
+//				dst = (iproc*(Nx-2)+i-1)*1.0;
+//				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
+				// Add walls at the boundary
 				if ( (jproc*(Ny-2)+ j-1)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
 				if ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
 				// Assign the Signed Distance where valid
