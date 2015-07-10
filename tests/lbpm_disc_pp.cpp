@@ -300,17 +300,19 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				dst = (iproc*(Nx-2)+i-1)*1.0;
-				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
+				// Assign the micromodel depth
+				dst = 1.0*(i-2);
+				if (1.0*(depth+2-i) < dst) dst = 1.0*(depth+2-i);
+				if (dst < SignDist(i,j,k)) 		SignDist(i,j,k) = dst;
+//				dst = (iproc*(Nx-2)+i-1)*1.0;
+//				if ((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1 < dst) 		dst = 1.0*((Nx-2)*nprocx-2-iproc*(Nx-2)-i+1);
+				// Add walls at the boundary
 				if ( (jproc*(Ny-2)+ j-1)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
 				if ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
 				// Assign the Signed Distance where valid
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
-				// Assign the micromodel depth
-				dst = 1.0*(k-2);
-				if (1.0*(depth+2-k) < dst) dst = 1.0*(depth+2-k);
-				if (dst < SignDist(i,j,k)) 		SignDist(i,j,k) = dst;
+
 
 				n = k*Nx*Ny+j*Nx+i;
 				id[n] = 0;
