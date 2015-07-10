@@ -312,8 +312,6 @@ int main(int argc, char **argv)
 				// Assign the Signed Distance where valid
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
-
-
 				n = k*Nx*Ny+j*Nx+i;
 				id[n] = 0;
 			}
