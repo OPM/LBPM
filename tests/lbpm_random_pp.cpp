@@ -125,7 +125,6 @@ int main(int argc, char **argv)
 
 	int BoundaryCondition=0;
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-	for
 
 	nx+=2; ny+=2; nz+=2;
 	int N = nx*ny*nz;
@@ -302,24 +301,24 @@ int main(int argc, char **argv)
 	sendID_XZ = new char [Dm.sendCount_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new char [recvCount_x];
-	recvID_y = new char [recvCount_y];
-	recvID_z = new char [recvCount_z];
-	recvID_X = new char [recvCount_X];
-	recvID_Y = new char [recvCount_Y];
-	recvID_Z = new char [recvCount_Z];
-	recvID_xy = new char [recvCount_xy];
-	recvID_yz = new char [recvCount_yz];
-	recvID_xz = new char [recvCount_xz];
-	recvID_Xy = new char [recvCount_Xy];
-	recvID_xZ = new char [recvCount_xZ];
-	recvID_xY = new char [recvCount_xY];
-	recvID_yZ = new char [recvCount_yZ];
-	recvID_Yz = new char [recvCount_Yz];
-	recvID_Xz = new char [recvCount_Xz];
-	recvID_XY = new char [recvCount_XY];
-	recvID_YZ = new char [recvCount_YZ];
-	recvID_XZ = new char [recvCount_XZ];
+	recvID_x = new char [Dm.recvCount_x];
+	recvID_y = new char [Dm.recvCount_y];
+	recvID_z = new char [Dm.recvCount_z];
+	recvID_X = new char [Dm.recvCount_X];
+	recvID_Y = new char [Dm.recvCount_Y];
+	recvID_Z = new char [Dm.recvCount_Z];
+	recvID_xy = new char [Dm.recvCount_xy];
+	recvID_yz = new char [Dm.recvCount_yz];
+	recvID_xz = new char [Dm.recvCount_xz];
+	recvID_Xy = new char [Dm.recvCount_Xy];
+	recvID_xZ = new char [Dm.recvCount_xZ];
+	recvID_xY = new char [Dm.recvCount_xY];
+	recvID_yZ = new char [Dm.recvCount_yZ];
+	recvID_Yz = new char [Dm.recvCount_Yz];
+	recvID_Xz = new char [Dm.recvCount_Xz];
+	recvID_XY = new char [Dm.recvCount_XY];
+	recvID_YZ = new char [Dm.recvCount_YZ];
+	recvID_XZ = new char [Dm.recvCount_XZ];
 	//......................................................................................
 	sendtag = recvtag = 7;
 	PackID(Dm.sendList_x, Dm.sendCount_x ,sendID_x, id);
@@ -342,41 +341,41 @@ int main(int argc, char **argv)
 	PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
 	//......................................................................................
 	MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x,sendtag,
-			recvID_X,recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X,sendtag,
-			recvID_x,recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y,sendtag,
-			recvID_Y,recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y,sendtag,
-			recvID_y,recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z,sendtag,
-			recvID_Z,recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z,sendtag,
-			recvID_z,recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy,sendtag,
-			recvID_XY,recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY,sendtag,
-			recvID_xy,recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy,sendtag,
-			recvID_xY,recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY,sendtag,
-			recvID_Xy,recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz,sendtag,
-			recvID_XZ,recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ,sendtag,
-			recvID_xz,recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz,sendtag,
-			recvID_xZ,recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ,sendtag,
-			recvID_Xz,recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz,sendtag,
-			recvID_YZ,recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ,sendtag,
-			recvID_yz,recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz,sendtag,
-			recvID_yZ,recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
-			recvID_Yz,recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
 	//......................................................................................
 	UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
 	UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
