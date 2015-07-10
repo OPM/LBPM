@@ -320,6 +320,7 @@ int main(int argc, char **argv)
 	recvID_YZ = new char [Dm.recvCount_YZ];
 	recvID_XZ = new char [Dm.recvCount_XZ];
 	//......................................................................................
+	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 	PackID(Dm.sendList_x, Dm.sendCount_x ,sendID_x, id);
 	PackID(Dm.sendList_X, Dm.sendCount_X ,sendID_X, id);
