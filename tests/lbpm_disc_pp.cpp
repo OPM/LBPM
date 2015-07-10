@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 				// Assign the micromodel depth
 				dst = 1.0*(k-2);
 				if (1.0*(depth+2-k) < dst) dst = 1.0*(depth+2-k);
-				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
+				if (dst < SignDist(i,j,k)) 		SignDist(i,j,k) = dst;
 
 				n = k*Nx*Ny+j*Nx+i;
 				id[n] = 0;
