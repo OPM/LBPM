@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
 		printf("Sub-domain size = %ix%ix%i \n", Nx,Ny,Nz);
 		printf("Physical domain size = %fx%fx%f \n",Lx,Ly,Lz);
-		printf("Micromodel depth = %i voxels" depth);
+		printf("Micromodel depth = %i voxels",depth);
 	}
 
 
