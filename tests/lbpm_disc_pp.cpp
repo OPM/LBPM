@@ -151,6 +151,8 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
+	int depth;
+
 	if (rank == 0){
 		printf("********************************************************\n");
 		printf("Running Disc Packing Pre-Processor for LBPM-WIA	\n");
@@ -200,8 +202,10 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
-	
+
 	// **************************************************************
+	if (argc > 1)	depth=atoi(argv[1]);
+	else			depth=Nz;
 	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
@@ -227,6 +231,7 @@ int main(int argc, char **argv)
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
 		printf("Sub-domain size = %ix%ix%i \n", Nx,Ny,Nz);
 		printf("Physical domain size = %fx%fx%f \n",Lx,Ly,Lz);
+		printf("Micromodel depth = %i voxels" depth);
 	}
 
 
@@ -284,6 +289,7 @@ int main(int argc, char **argv)
 		printf("************ \n");
 	}
 
+	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
 	//.......................................................................
 	SignedDistanceDiscPack(SignDist.get(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
@@ -298,6 +304,11 @@ int main(int argc, char **argv)
 				if ( (jproc*(Ny-2)+ j-1)*1.0 < dst) 				dst = (jproc*(Ny-2)+j-2)*1.0;
 				if ((Ny-2)*nprocx-(jproc*(Ny-2)+j-2)*1.0 < dst) 	dst = ((Ny-2)*nprocy-(jproc*(Ny-2)+j-2))*1.0;
 				// Assign the Signed Distance where valid
+				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
+
+				// Assign the micromodel depth
+				dst = 1.0*(k-2);
+				if (1.0*(depth+2-k) < dst) dst = 1.0*(depth+2-k);
 				if (dst < SignDist(i,j,k)) 			SignDist(i,j,k) = dst;
 
 				n = k*Nx*Ny+j*Nx+i;
