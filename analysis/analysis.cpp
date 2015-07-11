@@ -64,7 +64,7 @@ int ComputePhaseComponent(IntArray &ComponentLabel,
 					if (nodz < 0 ){ nodz = Nz-1; }        // Periodic BC for z
 					if (nodz > Nz-1 ){ nodz = 0; }
 				} else {
-					if ( nodx<0 || nodx>=m || nody<0 || nody>=n || nodz<0 || nodz>=o )
+					if ( nodx<0 || nodx>=Nx || nody<0 || nody>=Ny || nodz<0 || nodz>=Nz )
 						continue;
 				}
 				site = nodz*Nx*Ny+nody*Nx+nodx;
@@ -311,7 +311,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     return nblobs;
 }
 
-int ComputeLocalPhaseComponent(IntArray &PhaseLabel, char VALUE, IntArray &ComponentLabel, bool periodic )
+int ComputeLocalPhaseComponent(IntArray &PhaseID, char VALUE, IntArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
     size_t Nx = ComponentLabel.size(0);
@@ -602,7 +602,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info,
 }
 
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_info,
-    const IntArray& PhaseID, int VALUE, IntArray& GlobalBlobID )
+    const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
     const int rank = rank_info.rank[1][1][1];
