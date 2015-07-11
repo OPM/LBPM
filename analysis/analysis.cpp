@@ -602,7 +602,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info,
 }
 
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_info,
-    const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
+    IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
     const int rank = rank_info.rank[1][1][1];
