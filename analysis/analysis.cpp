@@ -12,16 +12,17 @@ inline const TYPE* getPtr( const std::vector<TYPE>& x ) { return x.empty() ? NUL
 /******************************************************************
  * Compute the blobs                                              *
  ******************************************************************/
-int ComputePhaseComponent(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
-		char *ID, char value,
+int ComputePhaseComponent(IntArray &ComponentLabel,
+		IntArray &PhaseID, int VALUE, int &ncomponents,
 		int startx, int starty, int startz, IntArray &temp, bool periodic)
 {
-	// Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
-	// F>vf => oil phase S>vs => in porespace
-	// update the list of blobs, indicator mesh
-	int Nx = F.size(0);  // maxima for the meshes
-	int Ny = F.size(1);
-	int Nz = F.size(2);
+
+	// Get the dimensions
+	int Nx = PhaseID.size(0);  // maxima for the meshes
+	int Ny = PhaseID.size(1);
+	int Nz = PhaseID.size(2);
+
+	ComponentLabel.resize(Nx,Ny,Nz);
 
 	int cubes_in_blob=0;
 	int nrecent = 1;                    // number of nodes added at most recent sweep
@@ -29,7 +30,7 @@ int ComputePhaseComponent(IntArray &blobs, int &nblobs, int &ncubes, IntArray &i
 	temp(1,0) = starty;
 	temp(2,0) = startz;
 	int ntotal = 1;                     // total number of nodes in blob
-	indicator(startx,starty,startz) = nblobs;
+	ComponentLabel(startx,starty,startz) = ncomponents;
 
 	int p,s,x,y,z,site,start,finish,nodx,nody,nodz;
 	int imin=startx,imax=startx,jmin=starty,jmax=starty;    // initialize maxima / minima
@@ -67,15 +68,15 @@ int ComputePhaseComponent(IntArray &blobs, int &nblobs, int &ncubes, IntArray &i
 						continue;
 				}
 				site = nodz*Nx*Ny+nody*Nx+nodx;
-				if ( ID[site] == value && indicator(nodx,nody,nodz) == -1 ){
+				if ( PhaseID(nodx,nody,nodz) == VALUE && ComponentLabel(nodx,nody,nodz) == -1 ){
 					// Node is a part of the blob - add it to the list
 					temp(0,ntotal) = nodx;
 					temp(1,ntotal) = nody;
 					temp(2,ntotal) = nodz;
 					ntotal++;
 					nrecent++;
-					// Update the indicator map
-					indicator(nodx,nody,nodz) = nblobs;
+					// Update the component map for phase
+					ComponentLabel(nodx,nody,nodz) = ncomponents;
 					// Update the min / max for the cube loop
 					if ( nodx < imin ){ imin = nodx; }
 					if ( nodx > imax ){ imax = nodx; }
@@ -310,29 +311,26 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     return nblobs;
 }
 
-int ComputeLocalPhaseComponent(char *ID, char VALUE, IntArray& LocalBlobID, bool periodic )
+int ComputeLocalPhaseComponent(IntArray &PhaseLabel, char VALUE, IntArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
-    size_t Nx = LocalBlobID.size(0);
-    size_t Ny = LocalBlobID.size(1);
-    size_t Nz = LocalBlobID.size(2);
+    size_t Nx = ComponentLabel.size(0);
+    size_t Ny = ComponentLabel.size(1);
+    size_t Nz = ComponentLabel.size(2);
     // Compute the local blob ids
     const int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
     size_t N = Nx*Ny*Nz;
-    int nblobs = 0;
-    int ncubes = 0;         // total number of nodes in any blob
-    IntArray blobs(3,N);    // store indices for blobs (cubes)
+    int ncomponents = 0;
     IntArray temp(3,N);     // temporary storage array
-    IntArray b(N);          // number of nodes in each blob
+
     for (size_t k=0; k<Nz; k++ ) {
         for (size_t j=0; j<Ny; j++) {
             for (size_t i=0; i<Nx; i++) {
-            	int n = k*Nx*Ny+j*Nx+i;
-                if ( ID[n] != value) {
+                if ( PhaseID(i,j,k) == VALUE) {
                     // Solid phase
-                    LocalBlobID(i,j,k) = -2;
+                    ComponentLabel(i,j,k) = -2;
                 } else{
-                    LocalBlobID(i,j,k) = -1;
+                    ComponentLabel(i,j,k) = -1;
                 }
             }
         }
@@ -340,50 +338,17 @@ int ComputeLocalPhaseComponent(char *ID, char VALUE, IntArray& LocalBlobID, bool
     for (size_t k=0; k<Nz; k++ ) {
         for (size_t j=0; j<Ny; j++) {
             for (size_t i=0; i<Nx; i++) {
-            	int n = k*Nx*Ny+j*Nx+i;
-                if ( LocalBlobID(i,j,k)==-1 && ID[n] == VALUE) {
-                    // node i,j,k is in the porespace
-                    b(nblobs) = ComputePhaseComponent(blobs,nblobs,ncubes,ID,VALUE,i,j,k,temp,periodic);
-                    nblobs++;
-                }
-                if ( nblobs > (int)b.length()-1){
-                    printf("Increasing size of blob list \n");
-                    b.resize(2*b.length());
+                if ( ComponentLabel(i,j,k)==-1 && PhaseID(i,j,k) == VALUE) {
+                	// component is part of the phase we want
+                    ComputePhaseComponent(ComponentLabel,PhaseID, VALUE, ncomponents,
+                    		i,j,k,temp,periodic);
+                    ncomponents++;
                 }
             }
         }
     }
-    // Go over all cubes again -> add any that do not contain nw phase
-    size_t count_in=0,count_out=0;
-    size_t nodx,nody,nodz;
-    for (size_t k=0; k<Nz-1; k++ ) {
-        for (size_t j=0; j<Ny-1; j++) {
-            for (size_t i=0; i<Nx-1; i++) {
-                // Loop over cube corners
-                int add=1;      // initialize to true - add unless corner occupied by nw-phase
-                for (int p=0; p<8; p++) {
-                    nodx=i+cube[p][0];
-                    nody=j+cube[p][1];
-                    nodz=k+cube[p][2];
-                    if ( LocalBlobID(nodx,nody,nodz) > -1 ){
-                        // corner occupied by nw-phase  -> do not add
-                        add = 0;
-                    }
-                }
-                if ( add == 1 ){
-                    blobs(0,ncubes) = i;
-                    blobs(1,ncubes) = j;
-                    blobs(2,ncubes) = k;
-                    ncubes++;
-                    count_in++;
-                }
-                else { count_out++; }
-            }
-        }
-    }
-    b(nblobs) = count_in;
     PROFILE_STOP("ComputeLocalPhaseComponent");
-    return nblobs;
+    return ncomponents;
 }
 
 /******************************************************************
@@ -513,6 +478,139 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info,
     // First compute the local ids
     IntArray LocalIDs;
     int nblobs = ComputeLocalBlobIDs(Phase,SignDist,vF,vS,LocalIDs,false);
+    std::vector<int> N_blobs(nprocs,0);
+    PROFILE_START("ComputeGlobalBlobIDs-Allgather",1);
+    MPI_Allgather(&nblobs,1,MPI_INT,getPtr(N_blobs),1,MPI_INT,MPI_COMM_WORLD);
+    PROFILE_STOP("ComputeGlobalBlobIDs-Allgather",1);
+    int64_t N_blobs_tot = 0;
+    int offset = 0;
+    for (int i=0; i<rank; i++)
+        offset += N_blobs[i];
+    for (int i=0; i<nprocs; i++)
+        N_blobs_tot += N_blobs[i];
+    INSIST(N_blobs_tot<0x80000000,"Maximum number of blobs exceeded");
+    // Compute temporary global ids
+    for (size_t i=0; i<LocalIDs.length(); i++) {
+        if ( LocalIDs(i) >= 0 )
+            LocalIDs(i) += offset;
+    }
+    // Copy the ids and get the neighbors through the halos
+    GlobalBlobID = LocalIDs;
+    fillHalo<int> fillData(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillData.fill(GlobalBlobID);
+    // Create a list of all neighbor ranks (excluding self)
+    std::vector<int> neighbors;
+    neighbors.push_back( rank_info.rank[0][1][1] );
+    neighbors.push_back( rank_info.rank[2][1][1] );
+    neighbors.push_back( rank_info.rank[1][0][1] );
+    neighbors.push_back( rank_info.rank[1][2][1] );
+    neighbors.push_back( rank_info.rank[1][1][0] );
+    neighbors.push_back( rank_info.rank[1][1][2] );
+    std::unique(neighbors.begin(),neighbors.end());
+    if ( std::find(neighbors.begin(),neighbors.end(),rank) != neighbors.end() )
+        neighbors.erase(std::find(neighbors.begin(),neighbors.end(),rank));
+    // Create a map of all local ids to the neighbor ids
+    std::map<int64_t,global_id_info_struct> map;
+    std::set<int64_t> local;
+    for (size_t i=0; i<LocalIDs.length(); i++) {
+        if ( LocalIDs(i)>=0 ) {
+            local.insert(LocalIDs(i));
+            if ( LocalIDs(i)!=GlobalBlobID(i) )
+                map[LocalIDs(i)].remote_ids.insert(GlobalBlobID(i));
+        }
+    }
+    std::map<int64_t,global_id_info_struct>::iterator it;
+    for (it=map.begin(); it!=map.end(); ++it) {
+        it->second.new_id = it->first;
+        local.erase(it->first);
+    }
+    // Get the number of ids we will recieve from each rank
+    int N_send = map.size();
+    std::vector<int> N_recv(neighbors.size(),0);
+    std::vector<MPI_Request> send_req(neighbors.size());
+    std::vector<MPI_Request> recv_req(neighbors.size());
+    std::vector<MPI_Status> status(neighbors.size());
+    for (size_t i=0; i<neighbors.size(); i++) {
+        MPI_Isend( &N_send,    1, MPI_INT, neighbors[i], 0, MPI_COMM_WORLD, &send_req[i] );
+        MPI_Irecv( &N_recv[i], 1, MPI_INT, neighbors[i], 0, MPI_COMM_WORLD, &recv_req[i] );
+    }
+    MPI_Waitall(neighbors.size(),getPtr(send_req),getPtr(status));
+    MPI_Waitall(neighbors.size(),getPtr(recv_req),getPtr(status));
+    // Allocate memory for communication
+    int64_t *send_buf = new int64_t[2*N_send];
+    std::vector<int64_t*> recv_buf(neighbors.size());
+    for (size_t i=0; i<neighbors.size(); i++)
+        recv_buf[i] = new int64_t[2*N_recv[i]];
+    // Compute a map for the remote ids, and new local id for each id
+    std::map<int64_t,int64_t> remote_map;
+    for (it=map.begin(); it!=map.end(); ++it) {
+        int64_t id = it->first;
+        std::set<int64_t>::const_iterator it2;
+        for (it2=it->second.remote_ids.begin(); it2!=it->second.remote_ids.end(); ++it2) {
+            int64_t id2 = *it2;
+            id = std::min(id,id2);
+            remote_map.insert(std::pair<int64_t,int64_t>(id2,id2));
+        }
+        it->second.new_id = id;
+    }
+    // Iterate until we are done
+    int iteration = 1;
+    PROFILE_START("ComputeGlobalBlobIDs-loop",1);
+    while ( 1 ) {
+        iteration++;
+        // Send the local ids and their new value to all neighbors
+        updateRemoteIds( map, neighbors, N_send, N_recv,send_buf, recv_buf, remote_map );
+        // Compute a new local id for each local id
+        bool changed = updateLocalIds( remote_map, map );
+        // Check if we are finished
+        int test = changed ? 1:0;
+        int result = 0;
+        MPI_Allreduce(&test,&result,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+        if ( result==0 )
+            break;
+    }
+    PROFILE_STOP("ComputeGlobalBlobIDs-loop",1);
+    // Relabel the ids
+    std::vector<int> final_map(nblobs,-1);
+    for (it=map.begin(); it!=map.end(); ++it)
+        final_map[it->first-offset] = it->second.new_id;
+    for (std::set<int64_t>::const_iterator it2=local.begin(); it2!=local.end(); ++it2)
+        final_map[*it2-offset] = *it2;
+    int ngx = (GlobalBlobID.size(0)-nx)/2;
+    int ngy = (GlobalBlobID.size(1)-ny)/2;
+    int ngz = (GlobalBlobID.size(2)-nz)/2;
+    for (size_t k=ngz; k<GlobalBlobID.size(2)-ngz; k++) {
+        for (size_t j=ngy; j<GlobalBlobID.size(1)-ngy; j++) {
+            for (size_t i=ngx; i<GlobalBlobID.size(0)-ngx; i++) {
+                int id = GlobalBlobID(i,j,k);
+                if ( id >= 0 )
+                    GlobalBlobID(i,j,k) = final_map[id-offset];
+            }
+        }
+    }
+    // Fill the ghosts
+    fillHalo<int> fillData2(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillData2.fill(GlobalBlobID);
+    // Reorder based on size (and compress the id space
+    int N_blobs_global = ReorderBlobIDs2(GlobalBlobID,N_blobs_tot,ngx,ngy,ngz);
+    // Finished
+    delete [] send_buf;
+    for (size_t i=0; i<neighbors.size(); i++)
+        delete [] recv_buf[i];
+    PROFILE_STOP("ComputeGlobalBlobIDs");
+    return N_blobs_global;
+}
+
+int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_info,
+    const IntArray& PhaseID, int VALUE, IntArray& GlobalBlobID )
+{
+    PROFILE_START("ComputeGlobalBlobIDs");
+    const int rank = rank_info.rank[1][1][1];
+	int nprocs;
+	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    // First compute the local ids
+    IntArray LocalIDs;
+    int nblobs = ComputeLocalPhaseComponent(PhaseID,VALUE,LocalIDs,false);
     std::vector<int> N_blobs(nprocs,0);
     PROFILE_START("ComputeGlobalBlobIDs-Allgather",1);
     MPI_Allgather(&nblobs,1,MPI_INT,getPtr(N_blobs),1,MPI_INT,MPI_COMM_WORLD);

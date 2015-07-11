@@ -488,100 +488,11 @@ int main(int argc, char **argv)
 	printf("Execute blob identification algorithm... \n");
 
 	/* ****************************************************************
-				IDENTIFY ALL BLOBS: F > vF, S > vS
+				IDENTIFY ALL COMPONENTS FOR BOTH PHASES
 	****************************************************************** */
-	// Find blob domains, number of blobs
-	int nblobs = 0;					// number of blobs
-	int ncubes = 0;					// total number of nodes in any blob
-	int N = (Nx-1)*(Ny-1)*(Nz-1);		// total number of nodes
-	IntArray blobs(3,N);	// store indices for blobs (cubes)
-	IntArray temp(3,N);	// temporary storage array
-	IntArray  b(N);		// number of nodes in each blob
-	
-/*	std::vector<int> BlobList;
-	BlobList.reserve[10000];
+    int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,false);
+    int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,false);
 
-	std::vector<int> TempBlobList;
-	TempBlobList.reserve[10000];
-*/
-	double vF=0.0;
-	double vS=0.0;
-	double trimdist=1.0;
-	// Loop over z=0 first -> blobs attached to this end considered "connected" for LB simulation
-	i=0;
-	int number=0;
-	for (k=0;k<1;k++){
-		for (j=0;j<Ny;j++){
-			if ( Phase(i,j,k) > vF ){
-				if ( SignDist(i,j,k) > vS ){
-					// node i,j,k is in the porespace
-					number = number+ComputeBlob(blobs,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
-				}
-			}
-		}
-	}
-	// Specify the blob on the z axis
-	if (ncubes > 0){
-		b(nblobs) = number;
-//		BlobList.push_back[number];
-		printf("Number of non-wetting phase blobs is: %i \n",nblobs-1);
-		nblobs++;
-	}
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=1;i<Nx;i++){
-				if ( LocalBlobID(i,j,k) == -1 ){
-					if ( Phase(i,j,k) > vF ){
-						if ( SignDist(i,j,k) > vS ){
-							// node i,j,k is in the porespace
-							b(nblobs) = ComputeBlob(blobs,nblobs,ncubes,LocalBlobID,Phase,SignDist,vF,vS,i,j,k,temp);
-							nblobs++;
-						}
-					}
-				}
-				// Otherwise, this point has already been assigned - ignore
-
-				// Make sure list blob_nodes is large enough
-				if ( nblobs > (int)b.length()-1){
-					printf("Increasing size of blob list \n");
-					b.resize(2*b.length());
-				}
-			}
-		}
-	}
-	// Go over all cubes again -> add any that do not contain nw phase
-	bool add=1;			// Set to false if any corners contain nw-phase ( F > vF)
-//	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-	int count_in=0,count_out=0;
-	int nodx,nody,nodz;
-	for (k=0;k<Nz-1;k++){
-		for (j=0;j<Ny-1;j++){
-			for (i=0;i<Nx-1;i++){
-				// Loop over cube corners
-				add=1;				// initialize to true - add unless corner occupied by nw-phase
-				for (p=0;p<8;p++){
-					nodx=i+cube[p][0];
-					nody=j+cube[p][1];
-					nodz=k+cube[p][2];
-					if ( LocalBlobID(nodx,nody,nodz) > -1 ){
-						// corner occupied by nw-phase  -> do not add
-						add = 0;
-					}
-				}
-				if ( add == 1 ){
-					blobs(0,ncubes) = i;
-					blobs(1,ncubes) = j;
-					blobs(2,ncubes) = k;
-					ncubes++;
-					count_in++;
-				}
-				else { count_out++; }
-			}
-		}
-	}
-	b(nblobs) = count_in;
-	nblobs++;
-	
 	DoubleArray BlobAverages(NUM_AVERAGES,nblobs);
 	
 	// Map the signed distance for the analysis
