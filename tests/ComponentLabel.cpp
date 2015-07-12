@@ -396,13 +396,13 @@ int main(int argc, char **argv)
 				}
 				else if (Phase(i,j,k) < 0){
 					// non-wetting phase
-					PhaseLabel(i,j,k) = 1;
+					PhaseLabel(i,j,k) = 2;
 					//WP(i,j,k) = -2;
 					//NWP(i,j,k) = -1;
 				}
 				else {
 					// wetting phase
-					PhaseLabel(i,j,k) = 2;
+					PhaseLabel(i,j,k) = 1;
 					//WP(i,j,k) = -1;
 					//NWP(i,j,k) = -2;
 				}
