@@ -490,8 +490,8 @@ int main(int argc, char **argv)
 	/* ****************************************************************
 				IDENTIFY ALL COMPONENTS FOR BOTH PHASES
 	****************************************************************** */
-    int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,false);
-    int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,false);
+    int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,true);
+    int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,true);
 
     printf("Number of WP components = %i \n",number_WP_components);
     printf("Number of NWP components = %i \n",number_NWP_components);
