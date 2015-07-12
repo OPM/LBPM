@@ -41,6 +41,18 @@ int ComputeBlob( IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
 int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist, 
     double vF, double vS, IntArray& LocalBlobID, bool periodic=true );
 
+/*!
+ *  @brief Compute blob of an arbitrary phase
+ *  @details Compute the connected components for Phase(i,j,k)=VALUE
+ *  @return the number of connected components of the phase
+ *  @param[in] PhaseID
+ *  @param[in] VALUE
+ *  @param[out] ComponentLabel
+ *  @param[in] periodic
+ */
+
+int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &ComponentLabel,
+		bool periodic )
 
 /*!
  * @brief  Compute the blob

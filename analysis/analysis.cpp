@@ -311,7 +311,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     return nblobs;
 }
 
-int ComputeLocalPhaseComponent(IntArray &PhaseID, char VALUE, IntArray &ComponentLabel, bool periodic )
+int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
     size_t Nx = ComponentLabel.size(0);
