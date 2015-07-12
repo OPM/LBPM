@@ -391,20 +391,20 @@ int main(int argc, char **argv)
 				if (SignDist(i,j,k) < 0.0){
 					// Solid phase 
 					PhaseLabel(i,j,k) = 0;
-					WP(i,j,k) = -2;
-					NWP(i,j,k) = -2;
+					//WP(i,j,k) = -2;
+					//NWP(i,j,k) = -2;
 				}
 				else if (Phase(i,j,k) < 0){
 					// non-wetting phase
 					PhaseLabel(i,j,k) = 1;
-					WP(i,j,k) = -2;
-					NWP(i,j,k) = -1;
+					//WP(i,j,k) = -2;
+					//NWP(i,j,k) = -1;
 				}
 				else {
 					// wetting phase
 					PhaseLabel(i,j,k) = 2;
-					WP(i,j,k) = -1;
-					NWP(i,j,k) = -2;
+					//WP(i,j,k) = -1;
+					//NWP(i,j,k) = -2;
 				}
 			}
 		}
@@ -492,6 +492,9 @@ int main(int argc, char **argv)
 	****************************************************************** */
     int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,false);
     int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,false);
+
+    printf("Number of WP components = %i \n",number_WP_components);
+    printf("Number of NWP components = %i \n",number_NWP_components);
 
 	DoubleArray BlobAverages(NUM_AVERAGES,number_NWP_components);
 	

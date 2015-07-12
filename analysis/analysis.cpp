@@ -328,9 +328,9 @@ int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &Component
             for (size_t i=0; i<Nx; i++) {
                 if ( PhaseID(i,j,k) == VALUE) {
                     // Solid phase
-                    ComponentLabel(i,j,k) = -2;
-                } else{
                     ComponentLabel(i,j,k) = -1;
+                } else{
+                    ComponentLabel(i,j,k) = -2;
                 }
             }
         }
