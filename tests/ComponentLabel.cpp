@@ -513,15 +513,15 @@ int main(int argc, char **argv)
 
 	printf("Media porosity is %f \n",porosity);
 
-	FILE *NWP;
-	NWP = fopen("NWP.dat","wb");
-	fwrite(NWP.get(),4,Nx*Ny*Nz,NWP);
-	fclose(NWP);
+	FILE *NWP_FILE;
+	NWP_FILE = fopen("NWP.dat","wb");
+	fwrite(NWP.get(),4,Nx*Ny*Nz,NWP_FILE);
+	fclose(NWP_FILE);
 
-	FILE *WP;
-	WP = fopen("WP.dat","wb");
-	fwrite(WP.get(),4,Nx*Ny*Nz,WP);
-	fclose(WP);
+	FILE *WP_FILE;
+	WP_FILE = fopen("WP.dat","wb");
+	fwrite(WP.get(),4,Nx*Ny*Nz,WP_FILE);
+	fclose(WP_FILE);
 	
 	FILE *DISTANCE;
 	DISTANCE = fopen("SignDist.dat","wb");
