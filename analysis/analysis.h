@@ -52,7 +52,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
  */
 
 int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &ComponentLabel,
-		bool periodic )
+		bool periodic );
 
 /*!
  * @brief  Compute the blob
