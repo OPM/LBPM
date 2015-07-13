@@ -553,8 +553,8 @@ void TwoPhase::ComponentAverages(){
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	NumberComponents_WP = ComputeGlobalPhaseComponent(Nx,Ny,Nz,Dm.rank_info,PhaseID,1,Label_WP);
-	NumberComponents_NWP = ComputeGlobalPhaseComponent(Nx,Ny,Nz,Dm.rank_info,PhaseID,1,Label_NWP);
+	NumberComponents_WP = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm.rank_info,PhaseID,1,Label_WP);
+	NumberComponents_NWP = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm.rank_info,PhaseID,1,Label_NWP);
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
@@ -847,7 +847,6 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_WP(VWNSX,b) = vawns(0);
 			ComponentAverages_WP(VWNSY,b) = vawns(1);
 			ComponentAverages_WP(VWNSZ,b) = vawns(2);
-
 		}
 	}
 }
