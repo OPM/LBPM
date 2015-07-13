@@ -553,7 +553,6 @@ void TwoPhase::ComponentAverages(){
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	printf("Label_WP size: %i x %i x %i \n", Label_WP.size(0),Label_WP.size(1),Label_WP.size(2) );
 	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,2,Label_WP);
 	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,1,Label_NWP);
 
