@@ -73,6 +73,8 @@ class TwoPhase{
 	DoubleArray InterfaceSpeed;
 	DoubleArray NormalVector;
 
+	DoubleArray RecvBuffer;
+
 	// CSV / text file where time history of averages is saved
 	FILE *TIMELOG;
 	FILE *NWPLOG;
@@ -731,6 +733,7 @@ void TwoPhase::ComponentAverages(){
 	}
 
 	// Globally reduce the non-wetting phase averages
+	RecvBuffer.resize(BLOB_AVG_COUNT);
 	for (int b=0; b<NumberComponents_NWP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
