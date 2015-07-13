@@ -734,13 +734,13 @@ void TwoPhase::ComponentAverages(){
 
 	// Globally reduce the non-wetting phase averages
 	RecvBuffer.resize(BLOB_AVG_COUNT);
-	printf("Reducing the NWP averages \n")
+	printf("Reducing the NWP averages \n");
 	for (int b=0; b<NumberComponents_NWP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
 	}
-	printf("Finalizing the NWP averages \n")
+	printf("Finalizing the NWP averages \n");
 	for (int b=0; b<NumberComponents_NWP; b++){
 		if (ComponentAverages_NWP(VOL,b) > 0.0){
 			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
@@ -796,14 +796,14 @@ void TwoPhase::ComponentAverages(){
 	}
 
 	// reduce the wetting phase averages
-	printf("Reducing the WP averages \n")
+	printf("Reducing the WP averages \n");
 	for (int b=0; b<NumberComponents_WP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_WP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
-	printf("Finalizing the WP averages \n")
+	printf("Finalizing the WP averages \n");
 	for (int b=0; b<NumberComponents_WP; b++){
 		if (ComponentAverages_WP(VOL,b) > 0.0){
 			double Vw,pw,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
