@@ -22,7 +22,7 @@ int ComputePhaseComponent(IntArray &ComponentLabel,
 	int Ny = PhaseID.size(1);
 	int Nz = PhaseID.size(2);
 
-	ComponentLabel.resize(Nx,Ny,Nz);
+	//ComponentLabel.resize(Nx,Ny,Nz);
 
 	int cubes_in_blob=0;
 	int nrecent = 1;                    // number of nodes added at most recent sweep
