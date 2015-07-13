@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 
 	//.......................................................................
 	// Finalize setup for averaging domain
-	Averages.SetupCubes(Dm);
+	//Averages.SetupCubes(Dm);
 	Averages.UpdateSolid();
 	// Initialize two phase flow variables (all wetting phase)
 	for (k=0;k<Nz;k++){

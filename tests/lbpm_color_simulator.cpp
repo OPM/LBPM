@@ -525,7 +525,7 @@ int main(int argc, char **argv)
 	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
-	Averages.SetupCubes(Dm);
+	//Averages.SetupCubes(Dm);
 	Averages.UpdateSolid();
 	//.......................................................................
 	
