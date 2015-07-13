@@ -238,7 +238,7 @@ public:
 	}
 
 	void Initialize();
-	void SetupCubes(Domain &Dm);
+//	void SetupCubes(Domain &Dm);
 	void UpdateMeshValues();
 	void UpdateSolid();
 	void ComputeDelPhi();
@@ -334,7 +334,7 @@ void TwoPhase::Initialize(){
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
 }
-
+/*
 void TwoPhase::SetupCubes(Domain &Dm){
 	int i,j,k;
 	kstart = 1;
@@ -354,7 +354,7 @@ void TwoPhase::SetupCubes(Domain &Dm){
 	}
 	ncubes = nc;
 }
-
+*/
 void TwoPhase::UpdateSolid(){
 	Dm.CommunicateMeshHalo(SDs);
 	//...........................................................................
@@ -430,104 +430,104 @@ void TwoPhase::ComputeLocal(){
 	int i,j,k,n;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	for (int c=0;c<ncubes;c++){
-		// Get cube from the list
-		i = cubeList(0,c);
-		j = cubeList(1,c);
-		k = cubeList(2,c);
-		//...........................................................................
-		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
-		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
-		//...........................................................................
-		// Compute volume averages
-		for (int p=0;p<8;p++){
-			n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-			if ( Dm.id[n] != 0 ){
-				// 1-D index for this cube corner
-				// compute the norm of the gradient of the phase indicator field
-				// Compute the non-wetting phase volume contribution
-				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-					nwp_volume += 0.125;
-					// velocity
-					    van(0) += 0.125*Vel_x(n);
-						van(1) += 0.125*Vel_y(n);
-						van(2) += 0.125*Vel_z(n);
-					// volume the excludes the interfacial region
-					if (DelPhi(n) < 1e-4){
-						vol_n += 0.125;
-						// pressure
-						pan += 0.125*Press(n);
-						
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				//...........................................................................
+				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
+				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
+				//...........................................................................
+				// Compute volume averages
+				for (int p=0;p<8;p++){
+					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+					if ( Dm.id[n] != 0 ){
+						// 1-D index for this cube corner
+						// compute the norm of the gradient of the phase indicator field
+						// Compute the non-wetting phase volume contribution
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+							nwp_volume += 0.125;
+							// velocity
+							van(0) += 0.125*Vel_x(n);
+							van(1) += 0.125*Vel_y(n);
+							van(2) += 0.125*Vel_z(n);
+							// volume the excludes the interfacial region
+							if (DelPhi(n) < 1e-4){
+								vol_n += 0.125;
+								// pressure
+								pan += 0.125*Press(n);
+
+							}
+						}
+						else{
+							wp_volume += 0.125;
+							// velocity
+							vaw(0) += 0.125*Vel_x(n);
+							vaw(1) += 0.125*Vel_y(n);
+							vaw(2) += 0.125*Vel_z(n);
+							if (DelPhi(n) < 1e-4){
+								// volume the excludes the interfacial region
+								vol_w += 0.125;
+								// pressure
+								paw += 0.125*Press(n);
+
+							}
+						}
 					}
 				}
-				else{
-					wp_volume += 0.125;
-					// velocity
-						vaw(0) += 0.125*Vel_x(n);
-						vaw(1) += 0.125*Vel_y(n);
-						vaw(2) += 0.125*Vel_z(n);
-					if (DelPhi(n) < 1e-4){
-						// volume the excludes the interfacial region
-						vol_w += 0.125;
-						// pressure
-						paw += 0.125*Press(n);
-						
-					}
+
+				//...........................................................................
+				// Construct the interfaces and common curve
+				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
+						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+						i, j, k, Nx, Ny, Nz);
+
+
+				// wn interface averages
+				if (n_nw_pts > 0){
+					awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+					Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+					Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+
+					// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
+					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+
+					pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+
+					// Compute the normal speed of the interface
+					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 				}
+				// wns common curve averages
+				if (n_local_nws_pts > 0){
+					efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+							local_nws_pts,i,j,k,n_local_nws_pts);
+
+					pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+							local_nws_pts,i,j,k,n_local_nws_pts);
+
+					pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
+							SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
+							nws_pts, n_nws_pts, i, j, k);
+
+					lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+				}
+
+				// Solid interface averagees
+				if (n_local_sol_tris > 0){
+					As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+
+					// Compute the surface orientation and the interfacial area
+					ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+					aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+				}
+				//...........................................................................
 			}
 		}
-
-		//...........................................................................
-		// Construct the interfaces and common curve
-		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
-				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
-				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-				i, j, k, Nx, Ny, Nz);
-
-
-		// wn interface averages
-		if (n_nw_pts > 0){
-			awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-			Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-			Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-
-			// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-			pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-					i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
-
-			pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-					i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
-
-			// Compute the normal speed of the interface
-			pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
-					NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
-		}
-		// wns common curve averages
-		if (n_local_nws_pts > 0){
-			efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-					local_nws_pts,i,j,k,n_local_nws_pts);
-
-			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
-					local_nws_pts,i,j,k,n_local_nws_pts);
-
-			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
-					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
-					nws_pts, n_nws_pts, i, j, k);
-
-			lwns +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
-		}
-
-		// Solid interface averagees
-		if (n_local_sol_tris > 0){
-			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
-
-			// Compute the surface orientation and the interfacial area
-			ans += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-		}
-		//...........................................................................
 	}
 }
 
@@ -549,168 +549,167 @@ void TwoPhase::ComponentAverages(){
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
 
-	for (int c=0;c<ncubes;c++){
-		// Get cube from the list
-		i = cubeList(0,c);
-		j = cubeList(1,c);
-		k = cubeList(2,c);
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 
-		LabelWP=GetCubeLabel(i,j,k,Label_WP);
-		LabelNWP=GetCubeLabel(i,j,k,Label_NWP);
+				LabelWP=GetCubeLabel(i,j,k,Label_WP);
+				LabelNWP=GetCubeLabel(i,j,k,Label_NWP);
 
-		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
-		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
+				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
+				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
 
-		// Initialize the averaged quantities
-		awn = aws = ans = lwns = 0.0;
-		vawn(0) = vawn(1) = vawn(2) = 0.0;
-		vawns(0) = vawns(1) = vawns(2) = 0.0;
-		Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
-		Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
-		Gws(0) = Gws(1) = Gws(2) = 0.0;
-		Gws(3) = Gws(4) = Gws(5) = 0.0;
-		Gns(0) = Gns(1) = Gns(2) = 0.0;
-		Gns(3) = Gns(4) = Gns(5) = 0.0;
-		KGwns = KNwns = 0.0;
-		Jwn = Kwn = efawns = 0.0;
-		//...........................................................................
-		//...........................................................................
-		// Compute volume averages
-		for (int p=0;p<8;p++){
-			n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-			if ( Dm.id[n] != 0 ){
-				// 1-D index for this cube corner
-				// compute the norm of the gradient of the phase indicator field
-				// Compute the non-wetting phase volume contribution
-				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
-					// volume
-					ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
-					// velocity
-					ComponentAverages_NWP(VX,LabelNWP) += 0.125*Vel_x(n);
-					ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
-					ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
-					// volume the for pressure averaging excludes the interfacial region
-					if (DelPhi(n) < 1e-4 ){
-						ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
-						// pressure
-						ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
+				// Initialize the averaged quantities
+				awn = aws = ans = lwns = 0.0;
+				vawn(0) = vawn(1) = vawn(2) = 0.0;
+				vawns(0) = vawns(1) = vawns(2) = 0.0;
+				Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
+				Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
+				Gws(0) = Gws(1) = Gws(2) = 0.0;
+				Gws(3) = Gws(4) = Gws(5) = 0.0;
+				Gns(0) = Gns(1) = Gns(2) = 0.0;
+				Gns(3) = Gns(4) = Gns(5) = 0.0;
+				KGwns = KNwns = 0.0;
+				Jwn = Kwn = efawns = 0.0;
+				//...........................................................................
+				//...........................................................................
+				// Compute volume averages
+				for (int p=0;p<8;p++){
+					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+					if ( Dm.id[n] != 0 ){
+						// 1-D index for this cube corner
+						// compute the norm of the gradient of the phase indicator field
+						// Compute the non-wetting phase volume contribution
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+							// volume
+							ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
+							// velocity
+							ComponentAverages_NWP(VX,LabelNWP) += 0.125*Vel_x(n);
+							ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
+							ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
+							// volume the for pressure averaging excludes the interfacial region
+							if (DelPhi(n) < 1e-4 ){
+								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
+								// pressure
+								ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
+							}
+						}
+						else{
+							ComponentAverages_WP(VOL,LabelWP) += 0.125;
+							// velocity
+							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
+							ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
+							ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
+							// volume the for pressure averaging excludes the interfacial region
+							if (DelPhi(n) < 1e-4){
+								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
+								ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
+							}
+						}
 					}
 				}
-				else{
-					ComponentAverages_WP(VOL,LabelWP) += 0.125;
-					// velocity
-					ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
-					ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
-					ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
-					// volume the for pressure averaging excludes the interfacial region
-					if (DelPhi(n) < 1e-4){
-						ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
-						ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
-					}
+				//...........................................................................
+				// Construct the interfaces and common curve
+				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
+						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+						i, j, k, Nx, Ny, Nz);
+
+				//...........................................................................
+				// wn interface averages
+				if (n_nw_pts>0  && LabelNWP >=0 ){
+					// Mean curvature
+					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+					ComponentAverages_WP(JWN,LabelWP) += TempLocal;
+					ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
+
+					// Gaussian curvature
+					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+					ComponentAverages_WP(KWN,LabelWP) += TempLocal;
+					ComponentAverages_NWP(KWN,LabelNWP) += TempLocal;
+
+					// Compute the normal speed of the interface
+					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
+							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+					ComponentAverages_WP(VWNX,LabelWP) += vawn(0);
+					ComponentAverages_WP(VWNY,LabelWP) += vawn(1);
+					ComponentAverages_WP(VWNZ,LabelWP) += vawn(2);
+					ComponentAverages_NWP(VWNX,LabelNWP) += vawn(0);
+					ComponentAverages_NWP(VWNY,LabelNWP) += vawn(1);
+					ComponentAverages_NWP(VWNZ,LabelNWP) += vawn(2);
+
+					// Interfacial Area
+					TempLocal = pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+					ComponentAverages_WP(AWN,LabelWP) += TempLocal;
+					ComponentAverages_NWP(AWN,LabelNWP) += TempLocal;
+
+					ComponentAverages_WP(GWNXX,LabelWP) += Gwn(0);
+					ComponentAverages_WP(GWNYY,LabelWP) += Gwn(1);
+					ComponentAverages_WP(GWNZZ,LabelWP) += Gwn(2);
+					ComponentAverages_WP(GWNXY,LabelWP) += Gwn(3);
+					ComponentAverages_WP(GWNXZ,LabelWP) += Gwn(4);
+					ComponentAverages_WP(GWNYZ,LabelWP) += Gwn(5);
+
+					ComponentAverages_NWP(GWNXX,LabelNWP) += Gwn(0);
+					ComponentAverages_NWP(GWNYY,LabelNWP) += Gwn(1);
+					ComponentAverages_NWP(GWNZZ,LabelNWP) += Gwn(2);
+					ComponentAverages_NWP(GWNXY,LabelNWP) += Gwn(3);
+					ComponentAverages_NWP(GWNXZ,LabelNWP) += Gwn(4);
+					ComponentAverages_NWP(GWNYZ,LabelNWP) += Gwn(5);
+
 				}
+				//...........................................................................
+				// Common curve averages
+				if (n_local_nws_pts > 0  && LabelNWP >=0 ){
+					// Contact angle
+					TempLocal = pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+							local_nws_pts,i,j,k,n_local_nws_pts);
+					ComponentAverages_WP(CWNS,LabelWP) += TempLocal;
+					ComponentAverages_NWP(CWNS,LabelNWP) += TempLocal;
+
+					// Kinematic velocity of the common curve
+					pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+							local_nws_pts,i,j,k,n_local_nws_pts);
+					ComponentAverages_WP(VWNSX,LabelWP) += vawns(0);
+					ComponentAverages_WP(VWNSY,LabelWP) += vawns(1);
+					ComponentAverages_WP(VWNSZ,LabelWP) += vawns(2);
+					ComponentAverages_NWP(VWNSX,LabelNWP) += vawns(0);
+					ComponentAverages_NWP(VWNSY,LabelNWP) += vawns(1);
+					ComponentAverages_NWP(VWNSZ,LabelNWP) += vawns(2);
+
+					// Curvature of the common curve
+					pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
+							SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
+							nws_pts, n_nws_pts, i, j, k);
+					ComponentAverages_WP(KNWNS,LabelWP) += KNwns;
+					ComponentAverages_WP(KGWNS,LabelWP) += KGwns;
+					ComponentAverages_NWP(KNWNS,LabelNWP) += KNwns;
+					ComponentAverages_NWP(KGWNS,LabelNWP) += KGwns;
+
+					// Length of the common curve
+					TempLocal = pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+					ComponentAverages_NWP(LWNS,LabelNWP) += TempLocal;
+				}
+				//...........................................................................
+				// Solid interface averages
+				if (n_local_sol_pts > 0  && LabelWP >=0 ){
+					As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
+					// Compute the surface orientation and the interfacial area
+
+					TempLocal = pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+					ComponentAverages_WP(AS,LabelWP) += TempLocal;
+				}
+				if (n_ns_pts > 0  && LabelNWP >=0 ){
+					TempLocal = pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+					ComponentAverages_NWP(AS,LabelNWP) += TempLocal;
+				}
+				//...........................................................................
+
 			}
 		}
-		//...........................................................................
-		// Construct the interfaces and common curve
-		pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
-				nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
-				local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-				i, j, k, Nx, Ny, Nz);
-
-		//...........................................................................
-		// wn interface averages
-		if (n_nw_pts>0  && LabelNWP >=0 ){
-			// Mean curvature
-			TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-			ComponentAverages_WP(JWN,LabelWP) += TempLocal;
-			ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
-
-			// Gaussian curvature
-			TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-			ComponentAverages_WP(KWN,LabelWP) += TempLocal;
-			ComponentAverages_NWP(KWN,LabelNWP) += TempLocal;
-
-			// Compute the normal speed of the interface
-			pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
-					NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
-			ComponentAverages_WP(VAWNX,LabelWP) += vawn(0);
-			ComponentAverages_WP(VAWNY,LabelWP) += vawn(1);
-			ComponentAverages_WP(VAWNZ,LabelWP) += vawn(2);
-			ComponentAverages_NWP(VAWNX,LabelNWP) += vawn(0);
-			ComponentAverages_NWP(VAWNY,LabelNWP) += vawn(1);
-			ComponentAverages_NWP(VAWNZ,LabelNWP) += vawn(2);
-
-			// Interfacial Area
-			TempLocal = pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
-			ComponentAverages_WP(AWN,LabelWP) += TempLocal;
-			ComponentAverages_NWP(AWN,LabelNWP) += TempLocal;
-
-			ComponentAverages_WP(GWNXX,LabelWP) += Gwn(0);
-			ComponentAverages_WP(GWNYY,LabelWP) += Gwn(1);
-			ComponentAverages_WP(GWNZZ,LabelWP) += Gwn(2);
-			ComponentAverages_WP(GWNXY,LabelWP) += Gwn(3);
-			ComponentAverages_WP(GWNXZ,LabelWP) += Gwn(4);
-			ComponentAverages_WP(GWNYZ,LabelWP) += Gwn(5);
-
-			ComponentAverages_NWP(GWNXX,LabelNWP) += Gwn(0);
-			ComponentAverages_NWP(GWNYY,LabelNWP) += Gwn(1);
-			ComponentAverages_NWP(GWNZZ,LabelNWP) += Gwn(2);
-			ComponentAverages_NWP(GWNXY,LabelNWP) += Gwn(3);
-			ComponentAverages_NWP(GWNXZ,LabelNWP) += Gwn(4);
-			ComponentAverages_NWP(GWNYZ,LabelNWP) += Gwn(5);
-
-		}
-		//...........................................................................
-		// Common curve averages
-		if (n_local_nws_pts > 0  && LabelNWP >=0 ){
-			// Contact angle
-			TempLocal = pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
-					local_nws_pts,i,j,k,n_local_nws_pts);
-			ComponentAverages_WP(CWNS,LabelWP) += TempLocal;
-			ComponentAverages_NWP(CWNS,LabelNWP) += TempLocal;
-
-			// Kinematic velocity of the common curve
-			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
-					local_nws_pts,i,j,k,n_local_nws_pts);
-			ComponentAverages_WP(VAWNSX,LabelWP) += vawns(0);
-			ComponentAverages_WP(VAWNSY,LabelWP) += vawns(1);
-			ComponentAverages_WP(VAWNSZ,LabelWP) += vawns(2);
-			ComponentAverages_NWP(VAWNSX,LabelNWP) += vawns(0);
-			ComponentAverages_NWP(VAWNSY,LabelNWP) += vawns(1);
-			ComponentAverages_NWP(VAWNSZ,LabelNWP) += vawns(2);
-
-			// Curvature of the common curve
-			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
-					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
-					nws_pts, n_nws_pts, i, j, k);
-			ComponentAverages_WP(KNWNS,LabelWP) += KNwns;
-			ComponentAverages_WP(KGWNS,LabelWP) += KGwns;
-			ComponentAverages_NWP(KNWNS,LabelNWP) += KNwns;
-			ComponentAverages_NWP(KGWNS,LabelNWP) += KGwns;
-
-			// Length of the common curve
-			TempLocal = pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
-			ComponentAverages_NWP(LWNS,LabelNWP) += TempLocal;
-		}
-		//...........................................................................
-		// Solid interface averages
-		if (n_local_sol_pts > 0  && LabelWP >=0 ){
-			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
-			// Compute the surface orientation and the interfacial area
-
-			TempLocal = pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-			ComponentAverages_WP(AS,LabelWP) += TempLocal;
-		}
-		if (n_ns_pts > 0  && LabelNWP >=0 ){
-		  TempLocal = pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-		  ComponentAverages_NWP(AS,LabelNWP) += TempLocal;
-		}
-		//...........................................................................
-
 	}
-
 }
 
 
@@ -850,12 +849,12 @@ void TwoPhase::SortBlobs(){
   //printf("-----------------------------------------------\n");
 	int TempLabel,a,aa,bb,i,j,k,idx;
 	double TempValue;
-	IntArray OldLabel(nblobs_global);
-	for (a=0; a<nblobs_global; a++)	OldLabel(a) = a;
+	IntArray OldLabel(NumberComponents_NWP);
+	for (a=0; a<NumberComponents_NWP; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
 	for (aa=0; aa<nblobs_global-1; aa++){
 		for ( bb=aa+1; bb<nblobs_global; bb++){
-			if (BlobAverages(0,aa) < BlobAverages(0,bb)){
+			if (ComponentAverages_NWP(0,aa) < ComponentAverages_NWP(0,bb)){
 				// Exchange location of blobs aa and bb
 				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
 				// switch the label
@@ -864,16 +863,16 @@ void TwoPhase::SortBlobs(){
 				OldLabel(aa) = TempLabel;
 				// switch the averages
 				for (idx=0; idx<BLOB_AVG_COUNT; idx++){
-					TempValue = BlobAverages(idx,bb);
-					BlobAverages(idx,bb) = BlobAverages(idx,aa);
-					BlobAverages(idx,aa) = TempValue;
+					TempValue = ComponentAverages_NWP(idx,bb);
+					ComponentAverages_NWP(idx,bb) = ComponentAverages_NWP(idx,aa);
+					ComponentAverages_NWP(idx,aa) = TempValue;
 				}
 			}
 		}		
 	}
 	
-	IntArray NewLabel(nblobs_global);
-	for (aa=0; aa<nblobs_global; aa++){
+	IntArray NewLabel(NumberComponents_NWP);
+	for (aa=0; aa<NumberComponents_NWP; aa++){
 		// Match the new label for original blob aa
 		bb=0;
 		while (OldLabel(bb) != aa)	bb++;
@@ -885,9 +884,9 @@ void TwoPhase::SortBlobs(){
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (BlobLabel(i,j,k) > -1){
-					TempLabel = NewLabel(BlobLabel(i,j,k));
-					BlobLabel(i,j,k) = TempLabel;
+				if (Label_NWP(i,j,k) > -1){
+					TempLabel = NewLabel(Label_NWP(i,j,k));
+					Label_NWP(i,j,k) = TempLabel;
 				}
 			}
 		}

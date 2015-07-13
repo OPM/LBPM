@@ -67,11 +67,11 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	pw = TCAT.paw_global;
 	aws = TCAT.aws;
 	// Compute the averages over the entire non-wetting phase
-	printf("Writing blobstates.tcat for %i components \n",TCAT.nblobs_global);
+	printf("Writing blobstates.tcat for %i components \n",TCAT.NumberComponents_NWP);
 	FILE *BLOBSTATES;
 	BLOBSTATES = fopen("./blobstates.tcat","w");
 	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
-	for (a=0; a<TCAT.nblobs_global; a++){
+	for (a=0; a<TCAT.NumberComponents_NWP; a++){
 		vol_n += TCAT.ComponentAverages_NWP(0,a);
 		pan += TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(0,a);
 		awn += TCAT.ComponentAverages_NWP(3,a);
@@ -87,7 +87,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
 	PoreVolume=TCAT.wp_volume_global + nwp_volume;
 	// Subtract off portions of non-wetting phase in order of size
-	for (a=TCAT.nblobs_global-1; a>0; a--){
+	for (a=TCAT.NumberComponents_NWP-1; a>0; a--){
 		// Subtract the features one-by-one
 		vol_n -= TCAT.ComponentAverages_NWP(0,a);
 		pan -= TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(0,a);
@@ -356,11 +356,11 @@ int main(int argc, char **argv)
 	pw = Averages.paw_global;
 	aws = Averages.aws;
 	// Compute the averages over the entire non-wetting phase
-	printf("Writing blobstates.tcat for %i components \n",Averages.nblobs_global);
+	printf("Writing blobstates.tcat for %i components \n",Averages.NumberComponents_NWP);
 	FILE *BLOBSTATES;
 	BLOBSTATES = fopen("./blobstates.tcat","w");
 	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
-	for (a=0; a<Averages.nblobs_global; a++){
+	for (a=0; a<Averages.NumberComponents_NWP; a++){
 		vol_n += Averages.ComponentAverages_NWP(0,a);
 		pan += Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(0,a);
 		awn += Averages.ComponentAverages_NWP(3,a);
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
 	PoreVolume=Averages.wp_volume_global + nwp_volume;
 	// Subtract off portions of non-wetting phase in order of size
-	for (a=Averages.nblobs_global-1; a>0; a--){
+	for (a=Averages.NumberComponents_NWP-1; a>0; a--){
 		// Subtract the features one-by-one
 		vol_n -= Averages.ComponentAverages_NWP(0,a);
 		pan -= Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(0,a);
