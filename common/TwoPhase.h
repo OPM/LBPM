@@ -771,9 +771,9 @@ void TwoPhase::ComponentAverages(){
 			else  cwns=0.0;
 
 			ComponentAverages_NWP(PRS,b) = pn;
-			ComponentAverages_NWP(VNX,b) = van(0);
-			ComponentAverages_NWP(VNY,b) = van(1);
-			ComponentAverages_NWP(VNZ,b) = van(2);
+			ComponentAverages_NWP(VX,b) = van(0);
+			ComponentAverages_NWP(VY,b) = van(1);
+			ComponentAverages_NWP(VZ,b) = van(2);
 			ComponentAverages_NWP(VSQ,b) = vsq;
 
 			ComponentAverages_NWP(JWN,b) = Jwn;
