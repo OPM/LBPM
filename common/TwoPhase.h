@@ -609,10 +609,9 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-4 ){
+							if (DelPhi(n) < 1e-2 ){
 								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
-								// pressure
-								ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
+								ComponentAverages_NWP(PRS,LabelNWP) += 0.125*Press(n);
 							}
 						}
 						else if (!(LabelWP < 0)){
@@ -625,7 +624,7 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-4){
+							if (DelPhi(n) < 1e-2){
 								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
 								ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
 							}
@@ -1011,7 +1010,7 @@ void TwoPhase::PrintComponents(int timestep){
 			fprintf(NWPLOG,"%i ",timestep-5);
 			fprintf(NWPLOG,"%i ",b);
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VOL,b));
-			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRIMVOL,b));
+//			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRIMVOL,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(PRS,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(AWN,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(ANS,b));
@@ -1042,7 +1041,7 @@ void TwoPhase::PrintComponents(int timestep){
 			fprintf(WPLOG,"%i ",timestep-5);
 			fprintf(WPLOG,"%i ",b);
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VOL,b));
-			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRIMVOL,b));
+//			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRIMVOL,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(PRS,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(AWN,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(ANS,b));
