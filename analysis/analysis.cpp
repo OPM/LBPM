@@ -629,10 +629,8 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_inf
     }
     // Copy the ids and get the neighbors through the halos
     GlobalBlobID = LocalIDs;
-    printf("fillData %ix%ix%i \n",nx,ny,nz);
     fillHalo<int> fillData(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
     fillData.fill(GlobalBlobID);
-    printf("Failure here \n");
     // Create a list of all neighbor ranks (excluding self)
     std::vector<int> neighbors;
     neighbors.push_back( rank_info.rank[0][1][1] );
