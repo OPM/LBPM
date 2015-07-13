@@ -559,6 +559,9 @@ void TwoPhase::ComponentAverages(){
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
 
+	ComponentAverages_WP.fill(0.0);
+	ComponentAverages_NWP.fill(0.0);
+	
 	if (Dm.rank==0){
 		printf("Number of wetting phase components is %i \n",NumberComponents_WP);
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
