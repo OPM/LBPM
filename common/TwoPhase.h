@@ -598,7 +598,7 @@ void TwoPhase::ComponentAverages(){
 						// 1-D index for this cube corner
 						// compute the norm of the gradient of the phase indicator field
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.0 && !(Label_NWP < 0) ){
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.0 && !(LabelNWP < 0) ){
 							// volume
 							ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
 							// velocity
@@ -615,7 +615,7 @@ void TwoPhase::ComponentAverages(){
 								ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
 							}
 						}
-						else if (!(Label_WP < 0)){
+						else if (!(LabelWP < 0)){
 							ComponentAverages_WP(VOL,LabelWP) += 0.125;
 							// velocity
 							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
