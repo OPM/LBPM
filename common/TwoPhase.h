@@ -1011,6 +1011,7 @@ void TwoPhase::PrintComponents(int timestep){
 			fprintf(NWPLOG,"%i ",timestep-5);
 			fprintf(NWPLOG,"%i ",b);
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VOL,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRIMVOL,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(PRS,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(AWN,b));
 			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(ANS,b));
@@ -1041,6 +1042,7 @@ void TwoPhase::PrintComponents(int timestep){
 			fprintf(WPLOG,"%i ",timestep-5);
 			fprintf(WPLOG,"%i ",b);
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VOL,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRIMVOL,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(PRS,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(AWN,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(ANS,b));
