@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
-    Averages.SetupCubes(Dm);
+   // Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
     Averages.Initialize();
     Averages.UpdateMeshValues();

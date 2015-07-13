@@ -409,11 +409,11 @@ void TwoPhase::UpdateMeshValues(){
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (SignDist(i,j,k) < 0.0){
+				if (SDs(i,j,k) < 0.0){
 					// Solid phase
 					PhaseID(i,j,k) = 0;
 				}
-				else if (Phase(i,j,k) < 0){
+				else if (Phase(i,j,k) < 0.0){
 					// non-wetting phase
 					PhaseID(i,j,k) = 2;
 				}
