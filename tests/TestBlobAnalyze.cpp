@@ -31,17 +31,17 @@ inline void WriteBlobs(TwoPhase Averages){
     FILE *BLOBLOG;
   	BLOBLOG=fopen("blobs.tcat","w");
 	fprintf(BLOBLOG,"%.5g %.5g %.5g\n",Averages.vol_w_global,Averages.paw_global,Averages.aws_global);
-	for (int b=0; b<(int)Averages.BlobAverages.size(1); b++){
-		if (Averages.BlobAverages(0,b) > 0.0){
+	for (int b=0; b<(int)Averages.ComponentAverages_NWP.size(1); b++){
+		if (Averages.ComponentAverages_NWP(0,b) > 0.0){
 			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns;
-			Vn = Averages.BlobAverages(1,b);
-			pn = Averages.BlobAverages(2,b);
-			awn = Averages.BlobAverages(3,b);
-			ans = Averages.BlobAverages(4,b);
-			Jwn = Averages.BlobAverages(5,b);
-			Kwn = Averages.BlobAverages(6,b);
-			lwns = Averages.BlobAverages(7,b);
-			cwns = Averages.BlobAverages(8,b);
+			Vn = Averages.ComponentAverages_NWP(1,b);
+			pn = Averages.ComponentAverages_NWP(2,b);
+			awn = Averages.ComponentAverages_NWP(3,b);
+			ans = Averages.ComponentAverages_NWP(4,b);
+			Jwn = Averages.ComponentAverages_NWP(5,b);
+			Kwn = Averages.ComponentAverages_NWP(6,b);
+			lwns = Averages.ComponentAverages_NWP(7,b);
+			cwns = Averages.ComponentAverages_NWP(8,b);
 
 			fprintf(BLOBLOG,"%.5g ", Vn); //Vn
 			fprintf(BLOBLOG,"%.5g ", pn); //pn
@@ -72,16 +72,16 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	BLOBSTATES = fopen("./blobstates.tcat","w");
 	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
 	for (a=0; a<TCAT.nblobs_global; a++){
-		vol_n += TCAT.BlobAverages(0,a);
-		pan += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
-		awn += TCAT.BlobAverages(3,a);
-		ans += TCAT.BlobAverages(4,a);
-		Jwn += TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
-		Kwn += TCAT.BlobAverages(6,a)*TCAT.BlobAverages(3,a);
-		lwns += TCAT.BlobAverages(7,a);
-		clwns += TCAT.BlobAverages(8,a)*TCAT.BlobAverages(7,a);
-		nwp_volume += TCAT.BlobAverages(1,a);
-		pawn += TCAT.BlobAverages(2,a)*TCAT.BlobAverages(3,a);
+		vol_n += TCAT.ComponentAverages_NWP(0,a);
+		pan += TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(0,a);
+		awn += TCAT.ComponentAverages_NWP(3,a);
+		ans += TCAT.ComponentAverages_NWP(4,a);
+		Jwn += TCAT.ComponentAverages_NWP(5,a)*TCAT.ComponentAverages_NWP(3,a);
+		Kwn += TCAT.ComponentAverages_NWP(6,a)*TCAT.ComponentAverages_NWP(3,a);
+		lwns += TCAT.ComponentAverages_NWP(7,a);
+		clwns += TCAT.ComponentAverages_NWP(8,a)*TCAT.ComponentAverages_NWP(7,a);
+		nwp_volume += TCAT.ComponentAverages_NWP(1,a);
+		pawn += TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(3,a);
 	}
 
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
@@ -89,19 +89,19 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	// Subtract off portions of non-wetting phase in order of size
 	for (a=TCAT.nblobs_global-1; a>0; a--){
 		// Subtract the features one-by-one
-		vol_n -= TCAT.BlobAverages(0,a);
-		pan -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(0,a);
-		awn -= TCAT.BlobAverages(3,a);
-		ans -= TCAT.BlobAverages(4,a);
-		Jwn -= TCAT.BlobAverages(5,a)*TCAT.BlobAverages(3,a);
-		Kwn -= TCAT.BlobAverages(6,a)*TCAT.BlobAverages(3,a);
-		lwns -= TCAT.BlobAverages(7,a);
-		clwns -= TCAT.BlobAverages(8,a)*TCAT.BlobAverages(7,a);
-		nwp_volume -= TCAT.BlobAverages(1,a);
-		pawn -= TCAT.BlobAverages(2,a)*TCAT.BlobAverages(3,a);
+		vol_n -= TCAT.ComponentAverages_NWP(0,a);
+		pan -= TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(0,a);
+		awn -= TCAT.ComponentAverages_NWP(3,a);
+		ans -= TCAT.ComponentAverages_NWP(4,a);
+		Jwn -= TCAT.ComponentAverages_NWP(5,a)*TCAT.ComponentAverages_NWP(3,a);
+		Kwn -= TCAT.ComponentAverages_NWP(6,a)*TCAT.ComponentAverages_NWP(3,a);
+		lwns -= TCAT.ComponentAverages_NWP(7,a);
+		clwns -= TCAT.ComponentAverages_NWP(8,a)*TCAT.ComponentAverages_NWP(7,a);
+		nwp_volume -= TCAT.ComponentAverages_NWP(1,a);
+		pawn -= TCAT.ComponentAverages_NWP(2,a)*TCAT.ComponentAverages_NWP(3,a);
 
 		// Update wetting phase averages
-		aws += TCAT.BlobAverages(4,a);
+		aws += TCAT.ComponentAverages_NWP(4,a);
 		if (vol_n > 64){	// Only consider systems with "large enough" blobs -- 4^3
 			if (fabs(1.0 - nwp_volume/PoreVolume - sw) > 0.005 || a == 1){
 				sw = 1.0 - nwp_volume/PoreVolume;
@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 //	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	if (rank==0) printf("computing local averages  \n");
-    Averages.ComputeLocalBlob();
+    Averages.ComponentAverages();
 	if (rank==0) printf("reducing averages  \n");
     Averages.Reduce();
 
@@ -286,54 +286,54 @@ int main(int argc, char **argv)
 	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
     FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.BlobLabel.get(),4,Averages.BlobLabel.length(),BLOBLOCAL);
+    fwrite(Averages.Label_NWP.get(),4,Averages.Label_NWP.length(),BLOBLOCAL);
     fclose(BLOBLOCAL);
     printf("Wrote BlobLabel.%05i \n",rank);
 
 	if (rank==0) printf("Sorting averages \n");
-    //  Blobs.Set(Averages.BlobAverages.NBLOBS);
-    int dimx = (int)Averages.BlobAverages.size(0);
-    int dimy = (int)Averages.BlobAverages.size(1);
+    //  Blobs.Set(Averages.ComponentAverages_NWP.NBLOBS);
+    int dimx = (int)Averages.ComponentAverages_NWP.size(0);
+    int dimy = (int)Averages.ComponentAverages_NWP.size(1);
     int TotalBlobInfoSize=dimx*dimy;
 
     //      BlobContainer Blobs;
     DoubleArray RecvBuffer(dimx);
-    //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    //    MPI_Allreduce(&Averages.ComponentAverages_NWP.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank==0) printf("Number of components is %i \n",dimy);
 
     for (int b=0; b<dimy; b++){
 
-    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    	for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
+    	MPI_Allreduce(&Averages.ComponentAverages_NWP(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    	for (int idx=0; idx<dimx-1; idx++) Averages.ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
     	MPI_Barrier(MPI_COMM_WORLD);
 
-    	if (Averages.BlobAverages(0,b) > 0.0){
+    	if (Averages.ComponentAverages_NWP(0,b) > 0.0){
     		double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
-    		Vn = Averages.BlobAverages(1,b);
-    		pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
-    		awn = Averages.BlobAverages(3,b);
-    		ans = Averages.BlobAverages(4,b);
+    		Vn = Averages.ComponentAverages_NWP(1,b);
+    		pn = Averages.ComponentAverages_NWP(2,b)/Averages.ComponentAverages_NWP(0,b);
+    		awn = Averages.ComponentAverages_NWP(3,b);
+    		ans = Averages.ComponentAverages_NWP(4,b);
     		if (awn != 0.0){
-    			Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
-    			Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
+    			Jwn = Averages.ComponentAverages_NWP(5,b)/Averages.ComponentAverages_NWP(3,b);
+    			Kwn = Averages.ComponentAverages_NWP(6,b)/Averages.ComponentAverages_NWP(3,b);
     		}
     		else Jwn=Kwn=0.0;
 
-    		trawn = Averages.BlobAverages(12,b);
+    		trawn = Averages.ComponentAverages_NWP(12,b);
     		if (trawn != 0.0){
-    			trJwn = Averages.BlobAverages(13,b)/trawn;
+    			trJwn = Averages.ComponentAverages_NWP(13,b)/trawn;
     		}
     		else trJwn=0.0;
 
-    		lwns = Averages.BlobAverages(7,b);
-    		if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
+    		lwns = Averages.ComponentAverages_NWP(7,b);
+    		if (lwns != 0.0) cwns = Averages.ComponentAverages_NWP(8,b)/Averages.ComponentAverages_NWP(7,b);
     		else  cwns=0.0;
-    		Averages.BlobAverages(2,b) = pn;
-    		Averages.BlobAverages(5,b) = trJwn;
-    		Averages.BlobAverages(6,b) = Kwn;
-    		Averages.BlobAverages(8,b) = cwns;
-    		//	Averages.BlobAverages(13,b) = trJwn;
+    		Averages.ComponentAverages_NWP(2,b) = pn;
+    		Averages.ComponentAverages_NWP(5,b) = trJwn;
+    		Averages.ComponentAverages_NWP(6,b) = Kwn;
+    		Averages.ComponentAverages_NWP(8,b) = cwns;
+    		//	Averages.ComponentAverages_NWP(13,b) = trJwn;
     	}
     }
 
@@ -361,16 +361,16 @@ int main(int argc, char **argv)
 	BLOBSTATES = fopen("./blobstates.tcat","w");
 	if (BLOBSTATES==NULL) ERROR("Cannot open blobstates.tcat for writing");
 	for (a=0; a<Averages.nblobs_global; a++){
-		vol_n += Averages.BlobAverages(0,a);
-		pan += Averages.BlobAverages(2,a)*Averages.BlobAverages(0,a);
-		awn += Averages.BlobAverages(3,a);
-		ans += Averages.BlobAverages(4,a);
-		Jwn += Averages.BlobAverages(5,a)*Averages.BlobAverages(3,a);
-		Kwn += Averages.BlobAverages(6,a)*Averages.BlobAverages(3,a);
-		lwns += Averages.BlobAverages(7,a);
-		clwns += Averages.BlobAverages(8,a)*Averages.BlobAverages(7,a);
-		nwp_volume += Averages.BlobAverages(1,a);
-		pawn += Averages.BlobAverages(2,a)*Averages.BlobAverages(3,a);
+		vol_n += Averages.ComponentAverages_NWP(0,a);
+		pan += Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(0,a);
+		awn += Averages.ComponentAverages_NWP(3,a);
+		ans += Averages.ComponentAverages_NWP(4,a);
+		Jwn += Averages.ComponentAverages_NWP(5,a)*Averages.ComponentAverages_NWP(3,a);
+		Kwn += Averages.ComponentAverages_NWP(6,a)*Averages.ComponentAverages_NWP(3,a);
+		lwns += Averages.ComponentAverages_NWP(7,a);
+		clwns += Averages.ComponentAverages_NWP(8,a)*Averages.ComponentAverages_NWP(7,a);
+		nwp_volume += Averages.ComponentAverages_NWP(1,a);
+		pawn += Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(3,a);
 	}
 
 	// Compute the pore voume (sum of wetting an non-wetting phase volumes)
@@ -378,19 +378,19 @@ int main(int argc, char **argv)
 	// Subtract off portions of non-wetting phase in order of size
 	for (a=Averages.nblobs_global-1; a>0; a--){
 		// Subtract the features one-by-one
-		vol_n -= Averages.BlobAverages(0,a);
-		pan -= Averages.BlobAverages(2,a)*Averages.BlobAverages(0,a);
-		awn -= Averages.BlobAverages(3,a);
-		ans -= Averages.BlobAverages(4,a);
-		Jwn -= Averages.BlobAverages(5,a)*Averages.BlobAverages(3,a);
-		Kwn -= Averages.BlobAverages(6,a)*Averages.BlobAverages(3,a);
-		lwns -= Averages.BlobAverages(7,a);
-		clwns -= Averages.BlobAverages(8,a)*Averages.BlobAverages(7,a);
-		nwp_volume -= Averages.BlobAverages(1,a);
-		pawn -= Averages.BlobAverages(2,a)*Averages.BlobAverages(3,a);
+		vol_n -= Averages.ComponentAverages_NWP(0,a);
+		pan -= Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(0,a);
+		awn -= Averages.ComponentAverages_NWP(3,a);
+		ans -= Averages.ComponentAverages_NWP(4,a);
+		Jwn -= Averages.ComponentAverages_NWP(5,a)*Averages.ComponentAverages_NWP(3,a);
+		Kwn -= Averages.ComponentAverages_NWP(6,a)*Averages.ComponentAverages_NWP(3,a);
+		lwns -= Averages.ComponentAverages_NWP(7,a);
+		clwns -= Averages.ComponentAverages_NWP(8,a)*Averages.ComponentAverages_NWP(7,a);
+		nwp_volume -= Averages.ComponentAverages_NWP(1,a);
+		pawn -= Averages.ComponentAverages_NWP(2,a)*Averages.ComponentAverages_NWP(3,a);
 
 		// Update wetting phase averages
-		aws += Averages.BlobAverages(4,a);
+		aws += Averages.ComponentAverages_NWP(4,a);
 		if (vol_n > 64){	// Only consider systems with "large enough" blobs -- 4^3
 			if (fabs(1.0 - nwp_volume/PoreVolume - sw) > 0.005 || a == 1){
 				sw = 1.0 - nwp_volume/PoreVolume;
