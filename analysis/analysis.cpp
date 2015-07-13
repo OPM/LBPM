@@ -312,9 +312,9 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
 int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
-    size_t Nx = ComponentLabel.size(0);
-    size_t Ny = ComponentLabel.size(1);
-    size_t Nz = ComponentLabel.size(2);
+    size_t Nx = PhaseID.size(0);
+    size_t Ny = PhaseID.size(1);
+    size_t Nz = PhaseID.size(2);
     // Compute the local blob ids
 
 	ComponentLabel.resize(Nx,Ny,Nz);
