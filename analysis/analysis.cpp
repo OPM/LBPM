@@ -22,8 +22,6 @@ int ComputePhaseComponent(IntArray &ComponentLabel,
 	int Ny = PhaseID.size(1);
 	int Nz = PhaseID.size(2);
 
-	ComponentLabel.resize(Nx,Ny,Nz);
-
 	int cubes_in_blob=0;
 	int nrecent = 1;                    // number of nodes added at most recent sweep
 	temp(0,0) = startx;                 // Set the initial point as a "seed" for the sweeps
@@ -318,6 +316,9 @@ int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &Component
     size_t Ny = ComponentLabel.size(1);
     size_t Nz = ComponentLabel.size(2);
     // Compute the local blob ids
+
+	ComponentLabel.resize(Nx,Ny,Nz);
+
     const int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
     size_t N = Nx*Ny*Nz;
     int ncomponents = 0;
