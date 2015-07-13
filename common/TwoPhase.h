@@ -1006,6 +1006,7 @@ void TwoPhase::PrintAll(int timestep){
 
 void TwoPhase::PrintComponents(int timestep){
 	if (Dm.rank==0){
+		printf("PRINT COMPONENT AVEREAGES: time = %i \n",timestep);
 		for (int b=0; b<NumberComponents_NWP; b++){
 			fprintf(NWPLOG,"%i ",timestep-5);
 			fprintf(NWPLOG,"%i ",b);
@@ -1035,7 +1036,6 @@ void TwoPhase::PrintComponents(int timestep){
 			fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(GWNYZ,b));
 		}
 		fflush(NWPLOG);
-
 
 		for (int b=0; b<NumberComponents_WP; b++){
 			fprintf(WPLOG,"%i ",timestep-5);
