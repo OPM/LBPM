@@ -699,11 +699,11 @@ void TwoPhase::ComponentAverages(){
 					// Compute the surface orientation and the interfacial area
 
 					TempLocal = pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-					ComponentAverages_WP(AS,LabelWP) += TempLocal;
+					ComponentAverages_WP(AWS,LabelWP) += TempLocal;
 				}
 				if (n_ns_pts > 0  && LabelNWP >=0 ){
 					TempLocal = pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
-					ComponentAverages_NWP(AS,LabelNWP) += TempLocal;
+					ComponentAverages_NWP(ANS,LabelNWP) += TempLocal;
 				}
 				//...........................................................................
 
@@ -852,8 +852,8 @@ void TwoPhase::SortBlobs(){
 	IntArray OldLabel(NumberComponents_NWP);
 	for (a=0; a<NumberComponents_NWP; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
-	for (aa=0; aa<nblobs_global-1; aa++){
-		for ( bb=aa+1; bb<nblobs_global; bb++){
+	for (aa=0; aa<NumberComponents_NWP-1; aa++){
+		for ( bb=aa+1; bb<NumberComponents_NWP; bb++){
 			if (ComponentAverages_NWP(0,aa) < ComponentAverages_NWP(0,bb)){
 				// Exchange location of blobs aa and bb
 				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
