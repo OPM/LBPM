@@ -768,6 +768,12 @@ void TwoPhase::ComponentAverages(){
 				vawn(0) = ComponentAverages_NWP(VWNSX,b)/awn;
 				vawn(1) = ComponentAverages_NWP(VWNSY,b)/awn;
 				vawn(2) = ComponentAverages_NWP(VWNSZ,b)/awn;
+				Gwn(0) = ComponentAverages_NWP(GWNXX,b)/awn;
+				Gwn(1) = ComponentAverages_NWP(GWNYY,b)/awn;
+				Gwn(2) = ComponentAverages_NWP(GWNZZ,b)/awn;
+				Gwn(3) = ComponentAverages_NWP(GWNXY,b)/awn;
+				Gwn(4) = ComponentAverages_NWP(GWNXZ,b)/awn;
+				Gwn(5) = ComponentAverages_NWP(GWNYZ,b)/awn;
 			}
 			else Jwn=Kwn=0.0;
 
@@ -791,6 +797,13 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_NWP(VWNX,b) = vawn(0);
 			ComponentAverages_NWP(VWNY,b) = vawn(1);
 			ComponentAverages_NWP(VWNZ,b) = vawn(2);
+			
+			ComponentAverages_NWP(GWNXX,b) = Gwn(0);
+			ComponentAverages_NWP(GWNYY,b) = Gwn(1);
+			ComponentAverages_NWP(GWNZZ,b) = Gwn(2);
+			ComponentAverages_NWP(GWNXY,b) = Gwn(3);
+			ComponentAverages_NWP(GWNXZ,b) = Gwn(4);
+			ComponentAverages_NWP(GWNYZ,b) = Gwn(5);
 
 			ComponentAverages_NWP(CWNS,b) = cwns;
 			ComponentAverages_NWP(VWNSX,b) = vawns(0);
@@ -828,6 +841,12 @@ void TwoPhase::ComponentAverages(){
 				vawn(0) = ComponentAverages_WP(VWNSX,b)/awn;
 				vawn(1) = ComponentAverages_WP(VWNSY,b)/awn;
 				vawn(2) = ComponentAverages_WP(VWNSZ,b)/awn;
+				Gwn(0) = ComponentAverages_WP(GWNXX,b)/awn;
+				Gwn(1) = ComponentAverages_WP(GWNYY,b)/awn;
+				Gwn(2) = ComponentAverages_WP(GWNZZ,b)/awn;
+				Gwn(3) = ComponentAverages_WP(GWNXY,b)/awn;
+				Gwn(4) = ComponentAverages_WP(GWNXZ,b)/awn;
+				Gwn(5) = ComponentAverages_WP(GWNYZ,b)/awn;
 			}
 			else Jwn=Kwn=0.0;
 
@@ -851,6 +870,13 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_WP(VWNX,b) = vawn(0);
 			ComponentAverages_WP(VWNY,b) = vawn(1);
 			ComponentAverages_WP(VWNZ,b) = vawn(2);
+			
+			ComponentAverages_WP(GWNXX,b) = Gwn(0);
+			ComponentAverages_WP(GWNYY,b) = Gwn(1);
+			ComponentAverages_WP(GWNZZ,b) = Gwn(2);
+			ComponentAverages_WP(GWNXY,b) = Gwn(3);
+			ComponentAverages_WP(GWNXZ,b) = Gwn(4);
+			ComponentAverages_WP(GWNYZ,b) = Gwn(5);
 
 			ComponentAverages_WP(CWNS,b) = cwns;
 			ComponentAverages_WP(VWNSX,b) = vawns(0);
