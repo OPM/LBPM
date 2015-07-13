@@ -1063,12 +1063,15 @@ void TwoPhase::SortBlobs(){
   //printf("-----------------------------------------------\n");
 	int TempLabel,a,aa,bb,i,j,k,idx;
 	double TempValue;
+	//.......................................................................
+	// Sort NWP components by volume
+	//.......................................................................
 	IntArray OldLabel(NumberComponents_NWP);
 	for (a=0; a<NumberComponents_NWP; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
 	for (aa=0; aa<NumberComponents_NWP-1; aa++){
 		for ( bb=aa+1; bb<NumberComponents_NWP; bb++){
-			if (ComponentAverages_NWP(0,aa) < ComponentAverages_NWP(0,bb)){
+			if (ComponentAverages_NWP(VOL,aa) < ComponentAverages_NWP(VOL,bb)){
 				// Exchange location of blobs aa and bb
 				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
 				// switch the label
@@ -1084,7 +1087,6 @@ void TwoPhase::SortBlobs(){
 			}
 		}		
 	}
-	
 	IntArray NewLabel(NumberComponents_NWP);
 	for (aa=0; aa<NumberComponents_NWP; aa++){
 		// Match the new label for original blob aa
@@ -1092,7 +1094,6 @@ void TwoPhase::SortBlobs(){
 		while (OldLabel(bb) != aa)	bb++;
 		NewLabel(aa) = bb;
 	}
-	
 	// Re-label the blob ID
 	//	printf("Re-labeling the blobs, now indexed by volume \n");
 	for (k=0; k<Nz; k++){
@@ -1105,4 +1106,49 @@ void TwoPhase::SortBlobs(){
 			}
 		}
 	}
+	//.......................................................................
+	// Sort WP components by volume
+	//.......................................................................
+	OldLabel.resize(NumberComponents_WP);
+	for (a=0; a<NumberComponents_WP; a++)	OldLabel(a) = a;
+	// Sort the blob averages based on volume
+	for (aa=0; aa<NumberComponents_WP-1; aa++){
+		for ( bb=aa+1; bb<NumberComponents_WP; bb++){
+			if (ComponentAverages_WP(VOL,aa) < ComponentAverages_WP(VOL,bb)){
+				// Exchange location of blobs aa and bb
+				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
+				// switch the label
+				TempLabel = OldLabel(bb);
+				OldLabel(bb) = OldLabel(aa);
+				OldLabel(aa) = TempLabel;
+				// switch the averages
+				for (idx=0; idx<BLOB_AVG_COUNT; idx++){
+					TempValue = ComponentAverages_WP(idx,bb);
+					ComponentAverages_WP(idx,bb) = ComponentAverages_WP(idx,aa);
+					ComponentAverages_WP(idx,aa) = TempValue;
+				}
+			}
+		}		
+	}
+	NewLabel.resize(NumberComponents_WP);
+	for (aa=0; aa<NumberComponents_WP; aa++){
+		// Match the new label for original blob aa
+		bb=0;
+		while (OldLabel(bb) != aa)	bb++;
+		NewLabel(aa) = bb;
+	}
+	// Re-label the blob ID
+	//	printf("Re-labeling the blobs, now indexed by volume \n");
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (Label_WP(i,j,k) > -1){
+					TempLabel = NewLabel(Label_WP(i,j,k));
+					Label_WP(i,j,k) = TempLabel;
+				}
+			}
+		}
+	}
+	//.......................................................................
+
 }
