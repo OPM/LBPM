@@ -725,7 +725,6 @@ int main(int argc, char **argv)
 			Averages.Initialize();
 			Averages.ComponentAverages();
 			Averages.PrintComponents(timestep);
-
 			//....................................................................
 		}
 
