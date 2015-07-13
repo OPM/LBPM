@@ -722,6 +722,10 @@ int main(int argc, char **argv)
 			Averages.ComputeLocal();
 			Averages.Reduce();
 			Averages.PrintAll(timestep);
+			Averages.Initialize();
+			Averages.ComponentAverages();
+			Averages.PrintComponents(timestep);
+
 			//....................................................................
 		}
 
