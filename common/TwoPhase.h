@@ -573,7 +573,7 @@ void TwoPhase::ComponentAverages(){
 
 				LabelWP=GetCubeLabel(i,j,k,Label_WP);
 				LabelNWP=GetCubeLabel(i,j,k,Label_NWP);
-
+				
 				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
 
@@ -598,7 +598,7 @@ void TwoPhase::ComponentAverages(){
 						// 1-D index for this cube corner
 						// compute the norm of the gradient of the phase indicator field
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.0 && !(Label_NWP < 0) ){
 							// volume
 							ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
 							// velocity
@@ -615,7 +615,7 @@ void TwoPhase::ComponentAverages(){
 								ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
 							}
 						}
-						else{
+						else if (!(Label_WP < 0)){
 							ComponentAverages_WP(VOL,LabelWP) += 0.125;
 							// velocity
 							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
@@ -735,6 +735,9 @@ void TwoPhase::ComponentAverages(){
 		}
 	}
 
+	if (Dm.rank==0){
+		printf("Component averages computed locally -- reducing result... \n");
+	}
 	// Globally reduce the non-wetting phase averages
 	RecvBuffer.resize(BLOB_AVG_COUNT);
 	for (int b=0; b<NumberComponents_NWP; b++){
@@ -1051,7 +1054,7 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k, IntArray &BlobLabel){
 	label=max(label,BlobLabel(i+1,j,k+1));
 	label=max(label,BlobLabel(i,j+1,k+1));
 	label=max(label,BlobLabel(i+1,j+1,k+1));
-	
+		
 	return label;
 }
 
