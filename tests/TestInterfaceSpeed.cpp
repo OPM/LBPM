@@ -90,7 +90,7 @@ int main (int argc, char *argv[])
 
 	//....................................................................
 	// The following only need to be done once
-	Averages.SetupCubes(Dm);
+	//Averages.SetupCubes(Dm);
 	Averages.UpdateSolid(); 	// unless the solid is deformable!
 	//....................................................................
 	// The following need to be called each time new averages are computed
