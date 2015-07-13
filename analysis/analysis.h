@@ -25,7 +25,6 @@ int ComputeBlob( IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
 	   const DoubleArray &F, const DoubleArray &S, double vf, double vs, int startx, int starty,
 	   int startz, IntArray &temp, bool periodic=true );
 
-
 /*!
  * @brief  Compute the blob
  * @details  Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
@@ -73,6 +72,22 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info,
     const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS, 
     IntArray& GlobalBlobID );
 
+/*!
+ * @brief Compute component of the specified phase
+ * @details Compute component of specified phase PhaseID=VALUE
+* @return  Returns the number of cubes in the blob
+ * @param[in] nx            Number of elements in the x-direction
+ * @param[in] ny            Number of elements in the y-direction
+ * @param[in] nz            Number of elements in the z-direction
+ * @param[in] rank_in       MPI communication info
+ * @param[in] PhaseID       Array that identifies the phases
+ * @param[in] VALUE         Identifier for the phase to decompose
+ * @param[out] GlobalBlobID The ids of the blobs for the phase
+ * @return Return the number of components in the specified phase
+ */
+
+int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_info,
+    IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID );
 
 /*!
  * @brief  Reorder the blobs

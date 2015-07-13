@@ -5,83 +5,36 @@
 #include "analysis/analysis.h"
 #include <vector>
 
-#define BLOB_AVG_COUNT 26
+#define BLOB_AVG_COUNT 27
 
-struct BlobContainer{
-
-    BlobContainer(){
-      NBLOBS=0;
-    }
-    ~BlobContainer(){
-    }
-    void Set(int size){
-      if (NBLOBS!=0) delete [] Data;
-      NBLOBS=size;
-      Data = new double [BLOB_AVG_COUNT*size];
-      //Data.resize(size*BLOB_AVG_COUNT);
-      //for (int i=0; i<size*BLOB_AVG_COUNT; i++) Data[i] = 0.0;
-    }
-    int NBLOBS;
-    double * Data;
-  //std::vector<double> Data;
-    
-    // if modified -- make sure to adjust COUNT so that
-    // there is enough memory to save all the averages
-    double Vn(int IDX){return Data[BLOB_AVG_COUNT*IDX];}
-    double pan(int IDX){return Data[BLOB_AVG_COUNT*IDX+1];}
-    double awn(int IDX){return Data[BLOB_AVG_COUNT*IDX+2];}
-    double ans(int IDX){return Data[BLOB_AVG_COUNT*IDX+3];}
-    double Jwn(int IDX){return Data[BLOB_AVG_COUNT*IDX+4];}
-    double Kwn(int IDX){return Data[BLOB_AVG_COUNT*IDX+5];}
-    double lwns(int IDX){return Data[BLOB_AVG_COUNT*IDX+6];}
-    double cwns(int IDX){return Data[BLOB_AVG_COUNT*IDX+7];}
-    double vanx(int IDX){return Data[BLOB_AVG_COUNT*IDX+8];}
-    double vany(int IDX){return Data[BLOB_AVG_COUNT*IDX+9];}
-    double vanz(int IDX){return Data[BLOB_AVG_COUNT*IDX+10];}
-    double vawnx(int IDX){return Data[BLOB_AVG_COUNT*IDX+11];}
-    double vawny(int IDX){return Data[BLOB_AVG_COUNT*IDX+12];}
-    double vawnz(int IDX){return Data[BLOB_AVG_COUNT*IDX+13];}
-    double Gwnxx(int IDX){return Data[BLOB_AVG_COUNT*IDX+14];}
-    double Gwnyy(int IDX){return Data[BLOB_AVG_COUNT*IDX+15];}
-    double Gwnzz(int IDX){return Data[BLOB_AVG_COUNT*IDX+16];}
-    double Gwnxy(int IDX){return Data[BLOB_AVG_COUNT*IDX+17];}
-    double Gwnxz(int IDX){return Data[BLOB_AVG_COUNT*IDX+18];}
-    double Gwnyz(int IDX){return Data[BLOB_AVG_COUNT*IDX+19];}
-    double Gnsxx(int IDX){return Data[BLOB_AVG_COUNT*IDX+20];}
-    double Gnsyy(int IDX){return Data[BLOB_AVG_COUNT*IDX+22];}
-    double Gnszz(int IDX){return Data[BLOB_AVG_COUNT*IDX+23];}
-    double Gnsxy(int IDX){return Data[BLOB_AVG_COUNT*IDX+23];}
-    double Gnsxz(int IDX){return Data[BLOB_AVG_COUNT*IDX+24];}
-    double Gnsyz(int IDX){return Data[BLOB_AVG_COUNT*IDX+25];}
-
-    void Vn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX]+=value;}
-    void pan(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+1]+=value;}
-    void awn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+2]+=value;}
-    void ans(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+3]+=value;}
-    void Jwn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+4]+=value;}
-    void Kwn(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+5]+=value;}
-    void lwns(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+6]+=value;}
-    void cwns(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+7]+=value;}
-    void vanx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+8]+=value;}
-    void vany(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+9]+=value;}
-    void vanz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+10]+=value;}
-    void vawnx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+11]+=value;}
-    void vawny(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+12]+=value;}
-    void vawnz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+13]+=value;}
-    void Gwnxx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+14]+=value;}
-    void Gwnyy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+15]+=value;}
-    void Gwnzz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+16]+=value;}
-    void Gwnxy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+17]+=value;}
-    void Gwnxz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+18]+=value;}
-    void Gwnyz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+19]+=value;}
-    void Gnsxx(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+20]+=value;}
-    void Gnsyy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+22]+=value;}
-    void Gnszz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+23]+=value;}
-    void Gnsxy(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+23]+=value;}
-    void Gnsxz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+24]+=value;}
-    void Gnsyz(int IDX, double value){ Data[BLOB_AVG_COUNT*IDX+25]+=value;}
-
-};
+// Array access for averages defined by the following
+#define VOL 0
+#define TRIMVOL 1
+#define PRS 2
+#define AWN 3
+#define AWS 4
+#define ANS 5
+#define LWNS 6
+#define JWN 7
+#define KWN 8
+#define CWNS 9
+#define KNWNS 10
+#define KGWNS 11
+#define VX 12
+#define VY 13
+#define VZ 14
+#define VWNX 15
+#define VWNY 16
+#define VWNZ 17
+#define VWNSX 18
+#define VWNSY 19
+#define VWNSZ 20
+#define GWNXX 21
+#define GWNYY 22
+#define GWNZZ 23
+#define GWNXY 24
+#define GWNXZ 25
+#define GWNYZ 26
 
 class TwoPhase{
 
@@ -110,8 +63,6 @@ class TwoPhase{
 	IntArray nws_seg;
 	IntArray local_sol_tris;
 
-	IntArray cubeList;
-
 	// Temporary storage arrays
 	DoubleArray CubeValues;
 	DoubleArray Values;
@@ -125,9 +76,9 @@ class TwoPhase{
 	FILE *TIMELOG;
 
 public:
+	//...........................................................................
 	Domain& Dm;
-	int nblobs_global;
-	int ncubes;
+	int NumberComponents_WP,NumberComponents_NWP;
 	//...........................................................................
 	// Averaging variables
 	//...........................................................................
@@ -174,7 +125,9 @@ public:
 	//...........................................................................
 	//...........................................................................
 	int Nx,Ny,Nz;
-	IntArray BlobLabel;
+	IntArray PhaseID;	// Phase ID array (solid=0, non-wetting=1, wetting=2)
+	IntArray Label_WP;
+	IntArray Label_NWP;
 	DoubleArray SDn;
 	DoubleArray SDs;
 	DoubleArray Phase;
@@ -194,18 +147,18 @@ public:
 	DoubleArray Vel_x;		// Velocity
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
-	//	BlobContainer BlobAverages;
-	DoubleArray BlobAverages;
+	//	Container for averages;
+	DoubleArray ComponentAverages_WP;
+	DoubleArray ComponentAverages_NWP;
 	//...........................................................................
 	TwoPhase(Domain &dm) : Dm(dm){
 		Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 		Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
-		ncubes=(Nx-2)*(Ny-2)*(Nz-2);
-		cubeList.resize(3,ncubes);
-
 		// Global arrays
-		BlobLabel.resize(Nx,Ny,Nz);
+		PhaseID.resize(Nx,Ny,Nz);
+		Label_WP.resize(Nx,Ny,Nz);
+		Label_NWP.resize(Nx,Ny,Nz);
 		SDn.resize(Nx,Ny,Nz);
 		SDs.resize(Nx,Ny,Nz);
 		Phase.resize(Nx,Ny,Nz);
@@ -269,7 +222,7 @@ public:
 				// If timelog is empty, write a short header to list the averages
 				//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 				fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
-				fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns sgkvpmawns KNwns KGwns ");	// Scalar averages
+				fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns cwns KNwns KGwns ");	// Scalar averages
 				fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
 				fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");
 				fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
@@ -291,11 +244,11 @@ public:
 	void ComputeDelPhi();
 	void ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData);
 	void ComputeLocal();
-	void ComputeLocalBlob();
+	void ComponentAverages();
 	void Reduce();
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
-	int GetCubeLabel(int i, int j, int k);
+	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
 
 };
@@ -418,6 +371,7 @@ void TwoPhase::UpdateSolid(){
 }
 
 void TwoPhase::UpdateMeshValues(){
+	int i,j,k;
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
@@ -451,6 +405,25 @@ void TwoPhase::UpdateMeshValues(){
 	//...........................................................................
 	Dm.CommunicateMeshHalo(DelPhi);
 	//...........................................................................
+	// Initializing the blob ID
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				if (SignDist(i,j,k) < 0.0){
+					// Solid phase
+					PhaseID(i,j,k) = 0;
+				}
+				else if (Phase(i,j,k) < 0){
+					// non-wetting phase
+					PhaseID(i,j,k) = 2;
+				}
+				else {
+					// wetting phase
+					PhaseID(i,j,k) = 1;
+				}
+			}
+		}
+	}
 
 }
 void TwoPhase::ComputeLocal(){
@@ -558,57 +531,48 @@ void TwoPhase::ComputeLocal(){
 	}
 }
 
-void TwoPhase::ComputeLocalBlob(){
-    int i,j,k,n,label;
-
-//    const RankInfoStruct rank_info(Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz);
+void TwoPhase::ComponentAverages(){
+    int i,j,k,n;
+	int LabelWP,LabelNWP;
+	double TempLocal;
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
-        // get the maximum label locally -- then compute number of global blobs
-	label=0; 
-	nblobs_global = 0;
-/*	for (n=0; n<Nx*Ny*Nz; n++){
-	  if (label < BlobLabel(n)) label = BlobLabel(n);
-	}
-	MPI_Allreduce(&label,&nblobs_global,1,MPI_INT,MPI_MAX,Dm.Comm);
-	nblobs_global+=1;
-*/
 
-	nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-    		SDn,SDs,fluid_isovalue,solid_isovalue,BlobLabel);
+	NumberComponents_WP = ComputeGlobalPhaseComponent(Nx,Ny,Nz,Dm.rank_info,PhaseID,1,Label_WP);
+	NumberComponents_NWP = ComputeGlobalPhaseComponent(Nx,Ny,Nz,Dm.rank_info,PhaseID,1,Label_NWP);
 
-	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
+	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
+	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
 
-	// Check the blob ID
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				if (SDs(i,j,k) < solid_isovalue){
-					// Solid phase
-					if (BlobLabel(i,j,k) != -2) printf("How did that happen \n");
-				}
-				else if (SDn(i,j,k) > fluid_isovalue){
-					if (BlobLabel(i,j,k) == -1) printf("NWP label error %i, %i, %i\n",i,j,k);
-				}
-			}
-		}
+	if (Dm.rank==0){
+		printf("Number of wetting phase components is %i \n",NumberComponents_WP);
+		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
 
-	//BlobAverages.Set(nblobs_global);
-	BlobAverages.resize(BLOB_AVG_COUNT,nblobs_global);
-	BlobAverages.fill(0.0);
-	// Perform averaging
 	for (int c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
 		j = cubeList(1,c);
 		k = cubeList(2,c);
-		label=GetCubeLabel(i,j,k);
-		if (!(label < nblobs_global)) ERROR("common/TwoPhase.h (ComputeBlobLocal): Error in blob labeling algorithm");
-      		//printf("Array Size: %i x %i, label=%i, %i,%i,%i, SDs=%f \n",BlobAverages.size(0),BlobAverages.size(1),label,i,j,k,SDs(i,j,k));
+
+		LabelWP=GetCubeLabel(i,j,k,Label_WP);
+		LabelNWP=GetCubeLabel(i,j,k,Label_NWP);
 
 		n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 		n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
+
+		// Initialize the averaged quantities
+		awn = aws = ans = lwns = 0.0;
+		vawn(0) = vawn(1) = vawn(2) = 0.0;
+		vawns(0) = vawns(1) = vawns(2) = 0.0;
+		Gwn(0) = Gwn(1) = Gwn(2) = 0.0;
+		Gwn(3) = Gwn(4) = Gwn(5) = 0.0;
+		Gws(0) = Gws(1) = Gws(2) = 0.0;
+		Gws(3) = Gws(4) = Gws(5) = 0.0;
+		Gns(0) = Gns(1) = Gns(2) = 0.0;
+		Gns(3) = Gns(4) = Gns(5) = 0.0;
+		KGwns = KNwns = 0.0;
+		Jwn = Kwn = efawns = 0.0;
 		//...........................................................................
 		//...........................................................................
 		// Compute volume averages
@@ -620,31 +584,28 @@ void TwoPhase::ComputeLocalBlob(){
 				// Compute the non-wetting phase volume contribution
 				if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 					// volume
-					BlobAverages(1,label) += 0.125;
+					ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
 					// velocity
-					BlobAverages(9,label) += 0.125*Vel_x(n);
-					BlobAverages(10,label) += 0.125*Vel_y(n);
-					BlobAverages(11,label) += 0.125*Vel_z(n);
-					// volume the excludes the interfacial region
+					ComponentAverages_NWP(VX,LabelNWP) += 0.125*Vel_x(n);
+					ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
+					ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
+					// volume the for pressure averaging excludes the interfacial region
 					if (DelPhi(n) < 1e-4 ){
-						BlobAverages(0,label) += 0.125;
+						ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
 						// pressure
-						BlobAverages(2,label ) += 0.125*Press(n);
+						ComponentAverages_NWP(PRS,LabelNWP ) += 0.125*Press(n);
 					}
 				}
-
 				else{
-					wp_volume += 0.125;
+					ComponentAverages_WP(VOL,LabelWP) += 0.125;
 					// velocity
-					vaw(0) += 0.125*Vel_x(n);
-					vaw(1) += 0.125*Vel_y(n);
-					vaw(2) += 0.125*Vel_z(n);
+					ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
+					ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
+					ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
+					// volume the for pressure averaging excludes the interfacial region
 					if (DelPhi(n) < 1e-4){
-						// volume the excludes the interfacial region
-						vol_w += 0.125;
-						// pressure
-						if (isnan(Press(n))) printf("Pressure is nan!\n");
-						else paw += 0.125*Press(n);
+						ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
+						ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
 					}
 				}
 			}
@@ -657,64 +618,101 @@ void TwoPhase::ComputeLocalBlob(){
 				n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 				n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 				i, j, k, Nx, Ny, Nz);
-		
-		//printf("nw=%i,nws=%i,ws=%i,ns=%i \n",n_nw_pts,n_local_nws_pts,n_ws_pts,n_ns_pts);
-		//printf("%i,%i,%i,%i,%i,%i,%i,%i\n",BlobLabel(i,j,k),BlobLabel(i+1,j,k),BlobLabel(i,j+1,k),BlobLabel(i+1,j+1,k),BlobLabel(i,j,k+1),BlobLabel(i+1,j,k+1),BlobLabel(i,j+1,k+1),BlobLabel(i+1,j+1,k+1));
-		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDn(i,j,k),SDn(i+1,j,k),SDn(i,j+1,k),SDn(i+1,j+1,k),SDn(i,j,k+1),SDn(i+1,j,k+1),SDn(i,j+1,k+1),SDn(i+1,j+1,k+1));
-		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",Phase(i,j,k),Phase(i+1,j,k),Phase(i,j+1,k),Phase(i+1,j+1,k),Phase(i,j,k+1),Phase(i+1,j,k+1),Phase(i,j+1,k+1),Phase(i+1,j+1,k+1));
-		//printf("%f,%f,%f,%f,%f,%f,%f,%f\n",SDs(i,j,k),SDs(i+1,j,k),SDs(i,j+1,k),SDs(i+1,j+1,k),SDs(i,j,k+1),SDs(i+1,j,k+1),SDs(i,j+1,k+1),SDs(i+1,j+1,k+1));
+
+		//...........................................................................
 		// wn interface averages
-		if (n_nw_pts>0  && label >=0 ){
-			BlobAverages(9,label) += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
-			BlobAverages(5,label) += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+		if (n_nw_pts>0  && LabelNWP >=0 ){
+			// Mean curvature
+			TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+			ComponentAverages_WP(JWN,LabelWP) += TempLocal;
+			ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
 
-			// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
-			pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-					i,j,k,n_nw_pts,n_nw_tris,trimdist,BlobAverages(12,label),BlobAverages(13,label));
-
-			pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-					i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
+			// Gaussian curvature
+			TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
+			ComponentAverages_WP(KWN,LabelWP) += TempLocal;
+			ComponentAverages_NWP(KWN,LabelNWP) += TempLocal;
 
 			// Compute the normal speed of the interface
 			pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
 					NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+			ComponentAverages_WP(VAWNX,LabelWP) += vawn(0);
+			ComponentAverages_WP(VAWNY,LabelWP) += vawn(1);
+			ComponentAverages_WP(VAWNZ,LabelWP) += vawn(2);
+			ComponentAverages_NWP(VAWNX,LabelNWP) += vawn(0);
+			ComponentAverages_NWP(VAWNY,LabelNWP) += vawn(1);
+			ComponentAverages_NWP(VAWNZ,LabelNWP) += vawn(2);
 
-			BlobAverages(3,label) += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+			// Interfacial Area
+			TempLocal = pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
+			ComponentAverages_WP(AWN,LabelWP) += TempLocal;
+			ComponentAverages_NWP(AWN,LabelNWP) += TempLocal;
+
+			ComponentAverages_WP(GWNXX,LabelWP) += Gwn(0);
+			ComponentAverages_WP(GWNYY,LabelWP) += Gwn(1);
+			ComponentAverages_WP(GWNZZ,LabelWP) += Gwn(2);
+			ComponentAverages_WP(GWNXY,LabelWP) += Gwn(3);
+			ComponentAverages_WP(GWNXZ,LabelWP) += Gwn(4);
+			ComponentAverages_WP(GWNYZ,LabelWP) += Gwn(5);
+
+			ComponentAverages_NWP(GWNXX,LabelNWP) += Gwn(0);
+			ComponentAverages_NWP(GWNYY,LabelNWP) += Gwn(1);
+			ComponentAverages_NWP(GWNZZ,LabelNWP) += Gwn(2);
+			ComponentAverages_NWP(GWNXY,LabelNWP) += Gwn(3);
+			ComponentAverages_NWP(GWNXZ,LabelNWP) += Gwn(4);
+			ComponentAverages_NWP(GWNYZ,LabelNWP) += Gwn(5);
 
 		}
-		
+		//...........................................................................
 		// Common curve averages
-		if (n_local_nws_pts > 0  && label >=0 ){
-			BlobAverages(8,label) += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
+		if (n_local_nws_pts > 0  && LabelNWP >=0 ){
+			// Contact angle
+			TempLocal = pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
+			ComponentAverages_WP(CWNS,LabelWP) += TempLocal;
+			ComponentAverages_NWP(CWNS,LabelNWP) += TempLocal;
 
+			// Kinematic velocity of the common curve
 			pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 					local_nws_pts,i,j,k,n_local_nws_pts);
+			ComponentAverages_WP(VAWNSX,LabelWP) += vawns(0);
+			ComponentAverages_WP(VAWNSY,LabelWP) += vawns(1);
+			ComponentAverages_WP(VAWNSZ,LabelWP) += vawns(2);
+			ComponentAverages_NWP(VAWNSX,LabelNWP) += vawns(0);
+			ComponentAverages_NWP(VAWNSY,LabelNWP) += vawns(1);
+			ComponentAverages_NWP(VAWNSZ,LabelNWP) += vawns(2);
 
-			//			pmmc_CurveCurvature(SDn, SDs, KNwns_values, KGwns_values, KNwns, KGwns,
-			//		nws_pts, n_nws_pts, i, j, k);
-
-			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y, 
+			// Curvature of the common curve
+			pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
 					    SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
 					nws_pts, n_nws_pts, i, j, k);
+			ComponentAverages_WP(KNWNS,LabelWP) += KNwns;
+			ComponentAverages_WP(KGWNS,LabelWP) += KGwns;
+			ComponentAverages_NWP(KNWNS,LabelNWP) += KNwns;
+			ComponentAverages_NWP(KGWNS,LabelNWP) += KGwns;
 
-
-			BlobAverages(7,label) +=  pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+			// Length of the common curve
+			TempLocal = pmmc_CubeCurveLength(local_nws_pts,n_local_nws_pts);
+			ComponentAverages_NWP(LWNS,LabelNWP) += TempLocal;
 		}
-
+		//...........................................................................
 		// Solid interface averages
-		if (n_local_sol_pts > 0  && label >=0 ){
+		if (n_local_sol_pts > 0  && LabelWP >=0 ){
 			As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 			// Compute the surface orientation and the interfacial area
-			
-			aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
-			//...........................................................................
+
+			TempLocal = pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
+			ComponentAverages_WP(AS,LabelWP) += TempLocal;
 		}
-		if (n_ns_pts > 0  && label >=0 ){
-		  BlobAverages(4,label) += pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		if (n_ns_pts > 0  && LabelNWP >=0 ){
+		  TempLocal = pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
+		  ComponentAverages_NWP(AS,LabelNWP) += TempLocal;
 		}
+		//...........................................................................
+
 	}
+
 }
+
 
 void TwoPhase::Reduce(){
 	int i;
@@ -833,9 +831,8 @@ void TwoPhase::PrintAll(int timestep){
 	}
 }
 
-inline int TwoPhase::GetCubeLabel(int i, int j, int k){
+inline int TwoPhase::GetCubeLabel(int i, int j, int k, IntArray &BlobLabel){
 	int label;
-
 	label=BlobLabel(i,j,k);
 	label=max(label,BlobLabel(i+1,j,k));
 	label=max(label,BlobLabel(i,j+1,k));

@@ -383,7 +383,6 @@ int main(int argc, char **argv)
 	fwrite(Phase.get(),8,Nx*Ny*Nz,PHASE);
 	fclose(PHASE);
 	
-	// Initialize the local blob ID
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
