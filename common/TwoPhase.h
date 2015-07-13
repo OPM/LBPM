@@ -5,7 +5,7 @@
 #include "analysis/analysis.h"
 #include <vector>
 
-#define BLOB_AVG_COUNT 27
+#define BLOB_AVG_COUNT 28
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -23,18 +23,19 @@
 #define VX 12
 #define VY 13
 #define VZ 14
-#define VWNX 15
-#define VWNY 16
-#define VWNZ 17
-#define VWNSX 18
-#define VWNSY 19
-#define VWNSZ 20
-#define GWNXX 21
-#define GWNYY 22
-#define GWNZZ 23
-#define GWNXY 24
-#define GWNXZ 25
-#define GWNYZ 26
+#define VSQ 15
+#define VWNX 16
+#define VWNY 17
+#define VWNZ 18
+#define VWNSX 19
+#define VWNSY 20
+#define VWNSZ 21
+#define GWNXX 22
+#define GWNYY 23
+#define GWNZZ 24
+#define GWNXY 25
+#define GWNXZ 26
+#define GWNYZ 27
 
 class TwoPhase{
 
@@ -74,6 +75,8 @@ class TwoPhase{
 
 	// CSV / text file where time history of averages is saved
 	FILE *TIMELOG;
+	FILE *NWPLOG;
+	FILE *WPLOG;
 
 public:
 	//...........................................................................
@@ -231,6 +234,16 @@ public:
 				fprintf(TIMELOG,"trawn trJwn trRwn\n");								// trimmed curvature for wn surface
 				//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			}
+
+			NWPLOG = fopen("components.NWP.tcat","a+");
+			fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
+			fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
+			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
+
+			WPLOG = fopen("components.WP.tcat","a+");
+			fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
+			fprintf(WPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
+			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
 		}
 	}
 	~TwoPhase(){
@@ -250,7 +263,7 @@ public:
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
-
+	void PrintComponents(int timestep);
 };
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData){
@@ -587,6 +600,9 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VX,LabelNWP) += 0.125*Vel_x(n);
 							ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
 							ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
+							// twice the kinetic energy
+							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
+
 							// volume the for pressure averaging excludes the interfacial region
 							if (DelPhi(n) < 1e-4 ){
 								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
@@ -600,6 +616,9 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
 							ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
 							ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
+							// twice the kinetic energy
+							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
+
 							// volume the for pressure averaging excludes the interfacial region
 							if (DelPhi(n) < 1e-4){
 								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
@@ -708,6 +727,66 @@ void TwoPhase::ComponentAverages(){
 				//...........................................................................
 
 			}
+		}
+	}
+
+	// Globally reduce the non-wetting phase averages
+	for (int b=0; b<NumberComponents_NWP; b++){
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
+
+		if (ComponentAverages_NWP(VOL,b) > 0.0){
+			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
+
+			Vn = ComponentAverages_NWP(VOL,b);
+			awn = ComponentAverages_NWP(AWN,b);
+			ans = ComponentAverages_NWP(ANS,b);
+			van(0) = ComponentAverages_NWP(VX,b)/Vn;
+			van(1) = ComponentAverages_NWP(VY,b)/Vn;
+			van(2) = ComponentAverages_NWP(VZ,b)/Vn;
+			vsq = ComponentAverages_NWP(VSQ,b)/Vn;
+
+			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
+				pn = ComponentAverages_NWP(PRS,b)/ComponentAverages_NWP(TRIMVOL,b);
+			}
+			else pn = 0.0;
+
+			if (awn != 0.0){
+				Jwn = ComponentAverages_NWP(JWN,b)/awn;
+				Kwn = ComponentAverages_NWP(KWN,b)/awn;
+				vawn(0) = ComponentAverages_NWP(VWNSX,b)/awn;
+				vawn(1) = ComponentAverages_NWP(VWNSY,b)/awn;
+				vawn(2) = ComponentAverages_NWP(VWNSZ,b)/awn;
+			}
+			else Jwn=Kwn=0.0;
+
+			lwns = ComponentAverages_NWP(LWNS,b);
+			if (lwns != 0.0){
+				cwns = ComponentAverages_NWP(CWNS,b)/lwns;
+				vawns(0) = ComponentAverages_NWP(VWNSX,b)/lwns;
+				vawns(1) = ComponentAverages_NWP(VWNSY,b)/lwns;
+				vawns(2) = ComponentAverages_NWP(VWNSZ,b)/lwns;
+			}
+			else  cwns=0.0;
+
+			ComponentAverages_NWP(PRS,b) = pn;
+			ComponentAverages_NWP(VNX,b) = van(0);
+			ComponentAverages_NWP(VNY,b) = van(1);
+			ComponentAverages_NWP(VNZ,b) = van(2);
+			ComponentAverages_NWP(VSQ,b) = vsq;
+
+			ComponentAverages_NWP(JWN,b) = Jwn;
+			ComponentAverages_NWP(KWN,b) = Kwn;
+			ComponentAverages_NWP(VWNX,b) = vawn(0);
+			ComponentAverages_NWP(VWNY,b) = vawn(1);
+			ComponentAverages_NWP(VWNZ,b) = vawn(2);
+
+			ComponentAverages_NWP(CWNS,b) = cwns;
+			ComponentAverages_NWP(VWNSX,b) = vawns(0);
+			ComponentAverages_NWP(VWNSY,b) = vawns(1);
+			ComponentAverages_NWP(VWNSZ,b) = vawns(2);
+
 		}
 	}
 }
@@ -827,6 +906,68 @@ void TwoPhase::PrintAll(int timestep){
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
 		fflush(TIMELOG);
+	}
+}
+
+void TwoPhase::PrintComponents(int timestep){
+	if (Dm.rank==0){
+		for (int b=0; b<NumberComponents_NWP; b++){
+			fprintf(NWPLOG,"%i ",timestep-5);
+			fprintf(NWPLOG,"%i ",b);
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VOL,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(PRS,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(AWN,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(ANS,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(JWN,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(KWN,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(LWNS,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CWNS,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VX,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VY,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VZ,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNX,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNY,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNZ,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNSX,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNSY,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VWNSZ,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(VSQ,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXX,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNYY,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNZZ,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXY,b));
+			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXZ,b));
+			fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(GWNYZ,b));
+		}
+
+		for (int b=0; b<NumberComponents_WP; b++){
+			fprintf(WPLOG,"%i ",timestep-5);
+			fprintf(WPLOG,"%i ",b);
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VOL,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(PRS,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(AWN,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(ANS,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(JWN,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(KWN,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(LWNS,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(CWNS,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VX,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VY,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VZ,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNX,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNY,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNZ,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNSX,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNSY,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VWNSZ,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VSQ,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXX,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNYY,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNZZ,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXY,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXZ,b));
+			fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(GWNYZ,b));
+		}
 	}
 }
 
