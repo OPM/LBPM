@@ -789,6 +789,64 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_NWP(VWNSX,b) = vawns(0);
 			ComponentAverages_NWP(VWNSY,b) = vawns(1);
 			ComponentAverages_NWP(VWNSZ,b) = vawns(2);
+		}
+	}
+
+	// reduce the wetting phase averages
+	for (int b=0; b<NumberComponents_WP; b++){
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Allreduce(&ComponentAverages_WP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
+
+		if (ComponentAverages_WP(VOL,b) > 0.0){
+			double Vw,pw,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
+			Vw = ComponentAverages_WP(VOL,b);
+			awn = ComponentAverages_WP(AWN,b);
+			ans = ComponentAverages_WP(ANS,b);
+			vaw(0) = ComponentAverages_WP(VX,b)/Vw;
+			vaw(1) = ComponentAverages_WP(VY,b)/Vw;
+			vaw(2) = ComponentAverages_WP(VZ,b)/Vw;
+			vsq = ComponentAverages_WP(VSQ,b)/Vw;
+
+			if (ComponentAverages_WP(TRIMVOL,b) > 0.0){
+				pw = ComponentAverages_WP(PRS,b)/ComponentAverages_WP(TRIMVOL,b);
+			}
+			else pw = 0.0;
+
+			if (awn != 0.0){
+				Jwn = ComponentAverages_WP(JWN,b)/awn;
+				Kwn = ComponentAverages_WP(KWN,b)/awn;
+				vawn(0) = ComponentAverages_WP(VWNSX,b)/awn;
+				vawn(1) = ComponentAverages_WP(VWNSY,b)/awn;
+				vawn(2) = ComponentAverages_WP(VWNSZ,b)/awn;
+			}
+			else Jwn=Kwn=0.0;
+
+			lwns = ComponentAverages_WP(LWNS,b);
+			if (lwns != 0.0){
+				cwns = ComponentAverages_WP(CWNS,b)/lwns;
+				vawns(0) = ComponentAverages_WP(VWNSX,b)/lwns;
+				vawns(1) = ComponentAverages_WP(VWNSY,b)/lwns;
+				vawns(2) = ComponentAverages_WP(VWNSZ,b)/lwns;
+			}
+			else  cwns=0.0;
+
+			ComponentAverages_WP(PRS,b) = pw;
+			ComponentAverages_WP(VX,b) = vaw(0);
+			ComponentAverages_WP(VY,b) = vaw(1);
+			ComponentAverages_WP(VZ,b) = vaw(2);
+			ComponentAverages_WP(VSQ,b) = vsq;
+
+			ComponentAverages_WP(JWN,b) = Jwn;
+			ComponentAverages_WP(KWN,b) = Kwn;
+			ComponentAverages_WP(VWNX,b) = vawn(0);
+			ComponentAverages_WP(VWNY,b) = vawn(1);
+			ComponentAverages_WP(VWNZ,b) = vawn(2);
+
+			ComponentAverages_WP(CWNS,b) = cwns;
+			ComponentAverages_WP(VWNSX,b) = vawns(0);
+			ComponentAverages_WP(VWNSY,b) = vawns(1);
+			ComponentAverages_WP(VWNSZ,b) = vawns(2);
 
 		}
 	}
