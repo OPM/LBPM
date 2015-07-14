@@ -722,11 +722,11 @@ int main(int argc, char **argv)
 			Averages.ComputeLocal();
 			Averages.Reduce();
 			Averages.PrintAll(timestep);
-			Averages.Initialize();
+/*			Averages.Initialize();
 			Averages.ComponentAverages();
 			Averages.SortBlobs();
 			Averages.PrintComponents(timestep);
-			//....................................................................
+*/			//....................................................................
 		}
 
 		if (timestep%RESTART_INTERVAL == 0){
@@ -884,6 +884,13 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 	
+	//************************************************************************/
+	// Perform component averaging and write tcat averages
+	Averages.Initialize();
+	Averages.ComponentAverages();
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
+	//************************************************************************/
 
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
