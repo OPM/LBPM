@@ -885,12 +885,12 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 	
 	//************************************************************************/
-	// Perform component averaging and write tcat averages
+/*	// Perform component averaging and write tcat averages
 	Averages.Initialize();
 	Averages.ComponentAverages();
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
-	//************************************************************************/
+*/	//************************************************************************/
 
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
