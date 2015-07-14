@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-	// Really need a better way to do this -- this is to flip convention for a particular data set
+/*	// Really need a better way to do this -- this is to flip convention for a particular data set
        	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	
+*/
        char LocalRankFilename[40];
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
