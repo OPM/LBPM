@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 						Averages.Vel_x,Averages.Vel_y,Averages.Vel_z,
 						nx,ny,nz,iproc,jproc,kproc);
 
-				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
+/*				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 				
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
@@ -319,7 +319,7 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-
+*/
 				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
