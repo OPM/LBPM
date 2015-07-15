@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 				
 				proc = kproc*nprocx*nprocy + jproc*nprocx + iproc;
 
-	//			sprintf(LocalRankString,"%05d",proc);
+				sprintf(LocalRankString,"%05d",proc);
 	//		sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	//			printf("Reading file %s \n",LocalRankFilename);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
