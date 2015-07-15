@@ -296,7 +296,8 @@ int main(int argc, char **argv)
 				
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
 
-				ReadFromRank(LocalRankFilename,Averages.Phase,Averages.Press,Averages.Vel_x,Averages.Vel_y,Averages.Vel_z,
+				ReadFromRank(LocalRankFilename,Averages.Phase.get(),Averages.Press.get(),
+						Averages.Vel_x.get(),Averages.Vel_y.get(),Averages.Vel_z.get(),
 						nx,ny,nz,iproc,jproc,kproc);
 
 				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
