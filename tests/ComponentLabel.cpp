@@ -7,7 +7,7 @@
 #include <math.h>
 #include "common/pmmc.h"
 #include "analysis/analysis.h"
-//#include "Domain.h"
+#include "TwoPhase.h"
 
 #define NUM_AVERAGES 30
 
@@ -179,9 +179,17 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 
 int main(int argc, char **argv)
 {
+	// Initialize MPI
+	int rank,nprocs;
+	MPI_Init(&argc,&argv);
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+
 	printf("----------------------------------------------------------\n");
 	printf("COMPUTING TCAT ANALYSIS FOR NON-WETTING PHASE FEATURES \n");
 	printf("----------------------------------------------------------\n");
+
+	if (nprocs != 1) INSIST(nprocs == 1,"Error: ComponentLabel --serial case!");
 
 	//.......................................................................
 	int nprocx,nprocy,nprocz,nprocs;
@@ -214,19 +222,17 @@ int main(int argc, char **argv)
 	
 	nprocs = nprocx*nprocy*nprocz;
 	printf("Number of MPI ranks: %i \n", nprocs);
-	Nx = (nx-2)*nprocx+2;
-	Ny = (ny-2)*nprocy+2;
-	Nz = (nz-2)*nprocz+2;
+	int BoundaryCondition=0;
+	Nx = (nx-2)*nprocx;
+	Ny = (ny-2)*nprocy;
+	Nz = (nz-2)*nprocz;
+	Domain Dm(Nx,Ny,Nz,rank,1,1,1,Lx,Ly,Lz,BoundaryCondition);
+	Nx+=2; Ny+=2; Nz+=2;
 	printf("Full domain size: %i x %i x %i  \n", Nx,Ny,Nz);
 	
-	DoubleArray Phase(Nx,Ny,Nz);
-	DoubleArray SignDist(Nx,Ny,Nz);
-	DoubleArray Press(Nx,Ny,Nz);
-	DoubleArray Vel_x(Nx,Ny,Nz);			// Velocity
-	DoubleArray Vel_y(Nx,Ny,Nz);
-	DoubleArray Vel_z(Nx,Ny,Nz);
-	DoubleArray dPdt(Nx,Ny,Nz);
 	
+	TwoPhase Averages(Dm);
+
 	// Filenames used
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -252,8 +258,8 @@ int main(int argc, char **argv)
 				
 				proc = kproc*nprocx*nprocy + jproc*nprocx + iproc;
 
-				sprintf(LocalRankString,"%05d",proc);
-				sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
+	//			sprintf(LocalRankString,"%05d",proc);
+	//		sprintf(LocalRankFilename,"%s%s","dPdt.",LocalRankString);
 	//			printf("Reading file %s \n",LocalRankFilename);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
 				for (k=1; k<nz-1; k++){
@@ -266,7 +272,9 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							dPdt(iglobal,jglobal,kglobal) = Temp[n]; 
+							Averages.dPdt(iglobal,jglobal,kglobal) = 0.0;
+							Averages.Phase_tplus(iglobal,jglobal,kglobal) = 0.0;
+							Averages.Phase_minus(iglobal,jglobal,kglobal) = 0.0;
 							//........................................................................
 						}
 					}
@@ -287,7 +295,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							SignDist(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.SDs(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
@@ -311,7 +319,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							Press(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.Pressure(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
@@ -330,7 +338,8 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							Phase(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.Phase(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.SDn(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
@@ -344,41 +353,7 @@ int main(int argc, char **argv)
 	
 	delete Temp;
 	
-	IntArray PhaseLabel(Nx,Ny,Nz); // label solid (0), non-wetting phase (1), wetting phase (2)
-	IntArray WP(Nx,Ny,Nz);	// labels for wetting phase components
-	IntArray NWP(Nx,Ny,Nz); // labels for non-wetting phase components
-	DoubleArray MeanCurvature(Nx,Ny,Nz);
-	DoubleArray GaussCurvature(Nx,Ny,Nz);
-	DoubleArray SignDist_x(Nx,Ny,Nz);		// Gradient of the signed distance
-	DoubleArray SignDist_y(Nx,Ny,Nz);
-	DoubleArray SignDist_z(Nx,Ny,Nz);
-	DoubleArray Phase_x(Nx,Ny,Nz);			// Gradient of the phase indicator field
-	DoubleArray Phase_y(Nx,Ny,Nz);
-	DoubleArray Phase_z(Nx,Ny,Nz);
 
-	SetPeriodicBC(SignDist, Nx, Ny, Nz);
-	SetPeriodicBC(Phase, Nx, Ny, Nz);
-	SetPeriodicBC(Press, Nx, Ny, Nz);
-	
-	//...........................................................................
-	// Compute the gradients of the phase indicator and signed distance fields
-	//...........................................................................
-	pmmc_MeshGradient(Phase,Phase_x,Phase_y,Phase_z,Nx,Ny,Nz);
-	pmmc_MeshGradient(SignDist,SignDist_x,SignDist_y,SignDist_z,Nx,Ny,Nz);
-	//...........................................................................
-	// Compute the mesh curvature of the phase indicator field
-	pmmc_MeshCurvature(Phase, MeanCurvature, GaussCurvature, Nx, Ny, Nz);
-	//...........................................................................
-	
-	SetPeriodicBC(MeanCurvature, Nx, Ny, Nz);
-	SetPeriodicBC(GaussCurvature, Nx, Ny, Nz);
-	SetPeriodicBC(SignDist_x, Nx, Ny, Nz);
-	SetPeriodicBC(SignDist_y, Nx, Ny, Nz);
-	SetPeriodicBC(SignDist_z, Nx, Ny, Nz);
-	SetPeriodicBC(Phase_x, Nx, Ny, Nz);
-	SetPeriodicBC(Phase_y, Nx, Ny, Nz);
-	SetPeriodicBC(Phase_z, Nx, Ny, Nz);
-	
 	FILE *PHASE = fopen("Phase.dat","wb");
 	fwrite(Phase.get(),8,Nx*Ny*Nz,PHASE);
 	fclose(PHASE);
@@ -387,115 +362,55 @@ int main(int argc, char **argv)
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (SignDist(i,j,k) < 0.0){
+				n = k*Nx*Ny+j*Nx+i;
+				if (Averages.SDs(i,j,k) < 0.0){
 					// Solid phase 
-					PhaseLabel(i,j,k) = 0;
+					Dm.id[n] = 0;
+					//PhaseLabel(i,j,k) = 0;
 					//WP(i,j,k) = -2;
 					//NWP(i,j,k) = -2;
 				}
-				else if (Phase(i,j,k) < 0){
-					// non-wetting phase
-					PhaseLabel(i,j,k) = 2;
+				else if (Phase(i,j,k) < 0.0){
+					// wetting phase
+					Dm.id[n] = 2;
+					//PhaseLabel(i,j,k) = 2;
 					//WP(i,j,k) = -2;
 					//NWP(i,j,k) = -1;
 				}
 				else {
-					// wetting phase
-					PhaseLabel(i,j,k) = 1;
+					// non-wetting phase
+					Dm.id[n] = 1;
+					//PhaseLabel(i,j,k) = 1;
 					//WP(i,j,k) = -1;
 					//NWP(i,j,k) = -2;
 				}
 			}
 		}
 	}
-	
+
 	// Compute the porosity
 	double porosity=0.0;
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (PhaseLabel(i,j,k) == 0){
+				if (Dm.id[k*Nx*Ny+j*Nx+i] == 0){
 					porosity += 1.0;
 				}
 			}
 		}
 	}
 	porosity /= (Nx*Ny*Nz*1.0);
-
 	printf("Media porosity is %f \n",porosity);
-
-	/* ****************************************************************
-	 VARIABLES FOR THE PMMC ALGORITHM
-	 ****************************************************************** */
-	//...........................................................................
-	// Averaging variables
-	//...........................................................................
-	double awn,ans,aws,lwns,nwp_volume;
-	double sw,vol_n,vol_w,paw,pan;
-	double efawns,Jwn,Kwn;
-	double trawn,trJwn,trRwn;
-	double As,dummy;
-	//  double dEs,dAwn,dAns;	// Global surface energy (calculated by rank=0)
-	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
-	
-	int n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0;
-	int n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-	
-	//double s,s1,s2,s3;		// Triangle sides (lengths)
-	Point A,B,C,P;
-	//	double area;
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-	//	int count_in=0,count_out=0;
-	//	int nodx,nody,nodz;
-	// initialize lists for vertices for surfaces, common line
-	DTMutableList<Point> nw_pts(20);
-	DTMutableList<Point> ns_pts(20);
-	DTMutableList<Point> ws_pts(20);
-	DTMutableList<Point> nws_pts(20);
-	// initialize triangle lists for surfaces
-	IntArray nw_tris(3,20);
-	IntArray ns_tris(3,20);
-	IntArray ws_tris(3,20);
-	// initialize list for line segments
-	IntArray nws_seg(2,20);
-	DTMutableList<Point> tmp(20);
-	
-	// Initialize arrays for local solid surface
-	DTMutableList<Point> local_sol_pts(20);
-	int n_local_sol_pts = 0;
-	IntArray local_sol_tris(3,18);
-	int n_local_sol_tris;
-	DoubleArray values(20);
-	DTMutableList<Point> local_nws_pts(20);
-	int n_local_nws_pts;
-	
-	DoubleArray CubeValues(2,2,2);
-	DoubleArray Values(20);
-	DoubleArray ContactAngle(20);
-	DoubleArray Curvature(20);
-	DoubleArray DistValues(20);
-	DoubleArray InterfaceSpeed(20);
-	DoubleArray NormalVector(60);
-	DoubleArray van(3);
-	DoubleArray vaw(3);
-	DoubleArray vawn(3);
-	DoubleArray Gwn(6);
-	DoubleArray Gns(6);
-	DoubleArray Gws(6);
-	//...........................................................................
-	
-	printf("Execute blob identification algorithm... \n");
+	Dm.CommInit(MPI_COMM_WORLD);
 
 	/* ****************************************************************
 				IDENTIFY ALL COMPONENTS FOR BOTH PHASES
 	****************************************************************** */
-    int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,true);
-    int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,true);
+   // int number_NWP_components = ComputeLocalPhaseComponent(PhaseLabel,1,NWP,true);
+    //int number_WP_components = ComputeLocalPhaseComponent(PhaseLabel,2,WP,true);
 
-    printf("Number of WP components = %i \n",number_WP_components);
-    printf("Number of NWP components = %i \n",number_NWP_components);
-
-	DoubleArray BlobAverages(NUM_AVERAGES,number_NWP_components);
+    //printf("Number of WP components = %i \n",number_WP_components);
+    //printf("Number of NWP components = %i \n",number_NWP_components);
 	
 	// Map the signed distance for the analysis
 	for (i=0; i<Nx*Ny*Nz; i++)	SignDist(i) -= (1.0); 
@@ -512,23 +427,35 @@ int main(int argc, char **argv)
 		}
 	}
 	porosity /= (Nx*Ny*Nz*1.0);
-
 	printf("Media porosity is %f \n",porosity);
+
+	double beta=0.95;
+	Averages.Initialize();
+	Averages.ComputeDelPhi();
+	Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+	Averages.UpdateMeshValues();
+	Averages.ComponentAverages();
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
 
 	FILE *NWP_FILE;
 	NWP_FILE = fopen("NWP.dat","wb");
-	fwrite(NWP.get(),4,Nx*Ny*Nz,NWP_FILE);
+	fwrite(Averages.Label_NWP.get(),4,Nx*Ny*Nz,NWP_FILE);
 	fclose(NWP_FILE);
 
 	FILE *WP_FILE;
 	WP_FILE = fopen("WP.dat","wb");
-	fwrite(WP.get(),4,Nx*Ny*Nz,WP_FILE);
+	fwrite(Averages.Label_WP.get(),4,Nx*Ny*Nz,WP_FILE);
 	fclose(WP_FILE);
 	
 	FILE *DISTANCE;
 	DISTANCE = fopen("SignDist.dat","wb");
-	fwrite(SignDist.get(),8,Nx*Ny*Nz,DISTANCE);
+	fwrite(Averages.SDs.get(),8,Nx*Ny*Nz,DISTANCE);
 	fclose(DISTANCE);
 	
+	// ****************************************************
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Finalize();
+	// ****************************************************
 }
 
