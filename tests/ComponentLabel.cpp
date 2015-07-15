@@ -267,7 +267,7 @@ int main(int argc, char **argv)
 							//........................................................................
 							Averages.dPdt(iglobal,jglobal,kglobal) = 0.0;
 							Averages.Phase_tplus(iglobal,jglobal,kglobal) = 0.0;
-							Averages.Phase_minus(iglobal,jglobal,kglobal) = 0.0;
+							Averages.Phase_tminus(iglobal,jglobal,kglobal) = 0.0;
 							//........................................................................
 						}
 					}
@@ -407,14 +407,14 @@ int main(int argc, char **argv)
     //printf("Number of NWP components = %i \n",number_NWP_components);
 	
 	// Map the signed distance for the analysis
-	for (i=0; i<Nx*Ny*Nz; i++)	SignDist(i) -= (1.0); 
 	
 	// Compute the porosity
 	porosity=0.0;
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (SignDist(i,j,k) > 0.0){ 
+				Averages.SDs(i,j,k) -= (1.0);
+				if (Averages.SDs(i,j,k) > 0.0){
 					porosity += 1.0;
 				}
 			}
@@ -424,6 +424,7 @@ int main(int argc, char **argv)
 	printf("Media porosity is %f \n",porosity);
 
 	double beta=0.95;
+	int timestep=5;
 	Averages.Initialize();
 	Averages.ComputeDelPhi();
 	Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
