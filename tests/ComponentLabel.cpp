@@ -388,7 +388,7 @@ int main(int argc, char **argv)
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				if (Dm.id[k*Nx*Ny+j*Nx+i] == 0){
+				if (Dm.id[k*Nx*Ny+j*Nx+i] != 0){
 					porosity += 1.0;
 				}
 			}
@@ -414,10 +414,10 @@ int main(int argc, char **argv)
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				Averages.SDs(i,j,k) -= (1.0);
 				if (Averages.SDs(i,j,k) > 0.0){
 					porosity += 1.0;
 				}
+				Averages.SDs(i,j,k) -= (1.0);
 			}
 		}
 	}
