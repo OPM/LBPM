@@ -1044,7 +1044,7 @@ void TwoPhase::PrintComponents(int timestep){
 //			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRIMVOL,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(PRS,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(AWN,b));
-			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(ANS,b));
+			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(AWS,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(JWN,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(KWN,b));
 			fprintf(WPLOG,"%.5g ",ComponentAverages_WP(LWNS,b));
