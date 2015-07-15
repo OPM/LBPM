@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <math.h>
-#include "common/pmmc.h"
 #include "analysis/analysis.h"
 #include "TwoPhase.h"
 
@@ -13,7 +12,7 @@
 
 using namespace std;
 
-inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
+/*inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
 {
 	int q,n;
 	double value;
@@ -74,6 +73,7 @@ inline void SetPeriodicBC(DoubleArray &Scalar, int nx, int ny, int nz){
 		}
 	}
 }
+*/
 inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x, 
 							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz, int iproc, int
 							jproc, int kproc)
@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 	if (nprocs != 1) INSIST(nprocs == 1,"Error: ComponentLabel --serial case!");
 
 	//.......................................................................
-	int nprocx,nprocy,nprocz,nprocs;
+	int nprocx,nprocy,nprocz;
 	int Nx, Ny, Nz;
 	int nx,ny,nz;
 	int nspheres;
@@ -243,14 +243,7 @@ int main(int argc, char **argv)
 
 	double * Temp;
 	Temp = new double[nx*ny*nz];
-	
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SignDist(i,j,k) = -100.0;
-			}
-		}
-	}
+
 	// read the files and populate main arrays
 	for ( kproc=0; kproc<nprocz; kproc++){
 		for ( jproc=0; jproc<nprocy; jproc++){
@@ -303,7 +296,8 @@ int main(int argc, char **argv)
 				
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
 
-				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,nx,ny,nz,iproc,jproc,kproc);
+				ReadFromRank(LocalRankFilename,Averages.Phase,Averages.Press,Averages.Vel_x,Averages.Vel_y,Averages.Vel_z,
+						nx,ny,nz,iproc,jproc,kproc);
 
 				sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 				
@@ -319,7 +313,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							Averages.Pressure(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.Press(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
@@ -355,7 +349,7 @@ int main(int argc, char **argv)
 	
 
 	FILE *PHASE = fopen("Phase.dat","wb");
-	fwrite(Phase.get(),8,Nx*Ny*Nz,PHASE);
+	fwrite(Averages.Phase.get(),8,Nx*Ny*Nz,PHASE);
 	fclose(PHASE);
 	
 	// Initializing the blob ID
@@ -370,7 +364,7 @@ int main(int argc, char **argv)
 					//WP(i,j,k) = -2;
 					//NWP(i,j,k) = -2;
 				}
-				else if (Phase(i,j,k) < 0.0){
+				else if (Averages.Phase(i,j,k) < 0.0){
 					// wetting phase
 					Dm.id[n] = 2;
 					//PhaseLabel(i,j,k) = 2;
