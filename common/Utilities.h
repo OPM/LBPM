@@ -51,8 +51,6 @@ namespace Utilities
      */
     size_t getMemoryUsage();
 
-    //! Function to get the current call stack
-    std::vector<std::string> getCallStack();
 
     //! Function to get an arbitrary point in time
     double time();
