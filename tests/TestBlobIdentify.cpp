@@ -26,10 +26,13 @@ struct bubble_struct {
     Point center;
     double radius;
     // Get the distance to the bubble
-    double dist( const Point& p, double Lx, double Ly, double Lz ) const {
-        double x = std::min(fabs(p.x-center.x),std::min(fabs(p.x-center.x-Lx),fabs(p.x-center.x+Lx)));
-        double y = std::min(fabs(p.y-center.y),std::min(fabs(p.y-center.y-Ly),fabs(p.y-center.y+Ly)));
-        double z = std::min(fabs(p.z-center.z),std::min(fabs(p.z-center.z-Lz),fabs(p.z-center.z+Lz)));
+    inline double dist( const Point& p, double Lx, double Ly, double Lz ) const {
+        double x = fabs(p.x-center.x);
+        double y = fabs(p.y-center.y);
+        double z = fabs(p.z-center.z);
+        x = std::min(x,fabs(Lx-x));
+        y = std::min(y,fabs(Ly-y));
+        z = std::min(z,fabs(Lz-z));
         return sqrt(x*x+y*y+z*z)-radius;
     }
     // Check if this bubble overlaps with rhs
@@ -135,7 +138,7 @@ int main(int argc, char **argv)
     MPI_Init(&argc,&argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    PROFILE_ENABLE(0);
+    PROFILE_ENABLE(1);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("main");

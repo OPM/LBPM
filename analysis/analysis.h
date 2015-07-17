@@ -54,7 +54,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
  *  @param[out] ComponentLabel
  *  @param[in] periodic
  */
-int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &ComponentLabel,
+int ComputeLocalPhaseComponent( const IntArray &PhaseID, int VALUE, IntArray &ComponentLabel,
 		bool periodic );
 
 
@@ -73,7 +73,7 @@ int ComputeLocalPhaseComponent(IntArray &PhaseID, int VALUE, IntArray &Component
  * @param[out] LocalBlobID  The ids of the blobs
  * @return  Returns the number of blobs
  */
-int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info, 
+int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
     const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS, 
     IntArray& GlobalBlobID );
 
@@ -91,8 +91,8 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, RankInfoStruct rank_info,
  * @param[out] GlobalBlobID The ids of the blobs for the phase
  * @return Return the number of components in the specified phase
  */
-int ComputeGlobalPhaseComponent( int nx, int ny, int nz, RankInfoStruct rank_info,
-    IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID );
+int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
+    const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID );
 
 
 /*!

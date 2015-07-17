@@ -1103,7 +1103,7 @@ int main(int argc, char **argv)
 //	double vx_w_global,vy_w_global,vz_w_global;	// global phase averaged velocity
 //	double vx_n_global,vy_n_global,vz_n_global;	// global phase averaged velocity
 	double As_global;
-	double dEs,dAwn,dAns;						// Global surface energy (calculated by rank=0)
+	double dEs=0, dAwn=0, dAns=0;				// Global surface energy (calculated by rank=0)
 	double pan_global,paw_global,pc_global;		// local phase averaged pressure
 	DoubleArray van_global(3);
 	DoubleArray vaw_global(3);
@@ -1439,12 +1439,12 @@ int main(int argc, char **argv)
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
 	
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
+	double starttime=0, stoptime=0, cputime=0;
 	
 	sendtag = recvtag = 5;
-	FILE *TIMELOG;
-	FILE *FINALSTATE;
-	FILE *SPEED;
+	FILE *TIMELOG=NULL;
+	FILE *FINALSTATE=NULL;
+	FILE *SPEED=NULL;
 	if (rank==0){
 		TIMELOG= fopen("timelog.tcat","a+");
 		FINALSTATE= fopen("finalstate.tcat","a");
