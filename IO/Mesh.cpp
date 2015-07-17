@@ -326,6 +326,7 @@ std::pair<size_t,void*> DomainMesh::pack( int level ) const
     std::pair<size_t,void*> data(0,NULL);
     data.first = 7*sizeof(double);
     data.second = new double[7];
+    memset(data.second,0,7*sizeof(double));
     int *data_int = reinterpret_cast<int*>(data.second);
     double *data_double = &reinterpret_cast<double*>(data.second)[4];
     data_int[0] = nprocx;
