@@ -85,6 +85,12 @@ extern "C" void ColorBC_inlet(double *Phi, double *Den, double *A_even, double *
 extern "C" void ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz);
 
+extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz);
+
+extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz, int outlet);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
