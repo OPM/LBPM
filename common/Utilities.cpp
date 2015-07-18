@@ -1,5 +1,5 @@
 #include "common/Utilities.h"
-
+#include "common/StackTrace.h"
 
 #include <iostream>
 #include <sstream>
@@ -76,11 +76,11 @@ void Utilities::abort(const std::string &message, const std::string &filename, c
         msg << "Bytes used = " << N_bytes << std::endl;
     }
     if ( abort_printStack ) {
-        std::vector<std::string> stack = Utilities::getCallStack();
+        std::vector<StackTrace::stack_info> stack = StackTrace::getCallStack();
         msg << std::endl;
         msg << "Stack Trace:\n";
         for (size_t i=0; i<stack.size(); i++)
-            msg << "   " << stack[i] << std::endl;
+            msg << "   " << stack[i].print() << std::endl;
     }
     msg << std::endl << message << std::endl;
     // Print the message and abort
@@ -132,28 +132,33 @@ void MPI_error_handler_fun( MPI_Comm *comm, int *err, ... )
 /****************************************************************************
 *  Function to handle unhandled exceptions                                  *
 ****************************************************************************/
+bool tried_MPI_Abort=false;
 void term_func_abort(int err) 
 {
     printf("Exiting due to abort (%i)\n",err);
-    std::vector<std::string> stack = Utilities::getCallStack();
+    std::vector<StackTrace::stack_info> stack = StackTrace::getCallStack();
     std::string message = "Stack Trace:\n";
     for (size_t i=0; i<stack.size(); i++)
-        message += "   " + stack[i] += "\n";
+        message += "   " + stack[i].print() += "\n";
     message += "\nExiting\n";
     // Print the message and abort
     std::cerr << message;
     #ifdef USE_MPI
-        if ( !abort_throwException )
+        if ( !abort_throwException && !tried_MPI_Abort ) {
+            tried_MPI_Abort = true;
             MPI_Abort(MPI_COMM_WORLD,-1);
+        }
     #endif
     exit(-1);
 }
-static int tried_throw = 0;
+#if defined(USE_LINUX) || defined(USE_MAC)
+    static int tried_throw = 0;
+#endif
 void term_func() 
 {
     // Try to re-throw the last error to get the last message
     std::string last_message;
-    #ifdef USE_LINUX
+    #if defined(USE_LINUX) || defined(USE_MAC)
         try {
             if ( tried_throw==0 ) { 
                 tried_throw = 1;
@@ -253,105 +258,8 @@ size_t Utilities::getMemoryUsage()
 
 
 /****************************************************************************
-*  Function to get the current call stack                                   *
+*  Functions to get the time and timer resolution                           *
 ****************************************************************************/
-std::vector<std::string>  Utilities::getCallStack()
-{
-    std::vector<std::string>  stack_list;
-    #if defined(USE_ABI)
-        void *trace[100];
-        memset(trace,0,100*sizeof(void*));
-        Dl_info dlinfo;
-        int status;
-        const char *symname;
-        char *demangled=NULL;
-        int trace_size = backtrace(trace,100);
-        for (int i=0; i<trace_size; ++i) {  
-            if(!dladdr(trace[i], &dlinfo))
-                continue;
-            symname = dlinfo.dli_sname;
-            demangled = abi::__cxa_demangle(symname, NULL, 0, &status);
-            if(status == 0 && demangled)
-                symname = demangled;
-            std::string object = std::string(dlinfo.dli_fname);
-            std::string function = "";
-            if ( symname!=NULL )
-                function = std::string(symname);
-            if ( i!=0 ) {  // Skip the current function
-                std::string stack_item = object + ":   " + function;
-                //stack_item = "object: " + object;
-                //stack_item += "function: " + function;
-                stack_list.push_back(stack_item);
-            }
-            if ( demangled!=NULL ) {
-                free(demangled);
-                demangled=NULL;
-            }
-        } 
-    #elif defined(USE_WINDOWS)
-        ::CONTEXT lContext;
-        ::ZeroMemory( &lContext, sizeof( ::CONTEXT ) );
-        ::RtlCaptureContext( &lContext );
-        ::STACKFRAME64 lFrameStack;
-        ::ZeroMemory( &lFrameStack, sizeof( ::STACKFRAME64 ) );
-        lFrameStack.AddrPC.Offset = lContext.Rip;
-        lFrameStack.AddrFrame.Offset = lContext.Rbp;
-        lFrameStack.AddrStack.Offset = lContext.Rsp;
-        lFrameStack.AddrPC.Mode = lFrameStack.AddrFrame.Mode = lFrameStack.AddrStack.Mode = AddrModeFlat;
-        #ifdef _M_IX86
-            DWORD MachineType = IMAGE_FILE_MACHINE_I386;
-        #endif
-        #ifdef _M_X64
-            DWORD MachineType = IMAGE_FILE_MACHINE_AMD64;
-        #endif
-        #ifdef _M_IA64
-            DWORD MachineType = IMAGE_FILE_MACHINE_IA64;
-        #endif
-        while ( 1 ) {
-            int rtn = ::StackWalk64( MachineType, ::GetCurrentProcess(), ::GetCurrentThread(), 
-                &lFrameStack, MachineType == IMAGE_FILE_MACHINE_I386 ? 0 : &lContext,
-                NULL, &::SymFunctionTableAccess64, &::SymGetModuleBase64, NULL );
-            if( !rtn )
-                break;
-            if( lFrameStack.AddrPC.Offset == 0 )
-                break;
-            ::MEMORY_BASIC_INFORMATION lInfoMemory;
-            ::VirtualQuery( ( ::PVOID )lFrameStack.AddrPC.Offset, &lInfoMemory, sizeof( lInfoMemory ) );
-            if ( lInfoMemory.Type==MEM_PRIVATE )
-                continue;
-            ::DWORD64 lBaseAllocation = reinterpret_cast< ::DWORD64 >( lInfoMemory.AllocationBase );
-            ::TCHAR lNameModule[ 1024 ];
-            ::HMODULE hBaseAllocation = reinterpret_cast< ::HMODULE >( lBaseAllocation );
-            ::GetModuleFileName( hBaseAllocation, lNameModule, 1024 );
-            PIMAGE_DOS_HEADER lHeaderDOS = reinterpret_cast<PIMAGE_DOS_HEADER>( lBaseAllocation );
-            if ( lHeaderDOS==NULL )
-                continue;
-            PIMAGE_NT_HEADERS lHeaderNT = reinterpret_cast<PIMAGE_NT_HEADERS>( lBaseAllocation + lHeaderDOS->e_lfanew );
-            PIMAGE_SECTION_HEADER lHeaderSection = IMAGE_FIRST_SECTION( lHeaderNT );
-            ::DWORD64 lRVA = lFrameStack.AddrPC.Offset - lBaseAllocation;
-            ::DWORD64 lNumberSection = ::DWORD64();
-            ::DWORD64 lOffsetSection = ::DWORD64();
-            for( int lCnt = ::DWORD64(); lCnt < lHeaderNT->FileHeader.NumberOfSections; lCnt++, lHeaderSection++ ) {
-                ::DWORD64 lSectionBase = lHeaderSection->VirtualAddress;
-                ::DWORD64 lSectionEnd = lSectionBase + max( lHeaderSection->SizeOfRawData, lHeaderSection->Misc.VirtualSize );
-                if( ( lRVA >= lSectionBase ) && ( lRVA <= lSectionEnd ) ) {
-                    lNumberSection = lCnt + 1;
-                    lOffsetSection = lRVA - lSectionBase;
-                    break;
-                }
-            }
-            std::stringstream stream;
-            stream << lNameModule << " : 000" << lNumberSection << " : " << reinterpret_cast<void*>(lOffsetSection);
-            stack_list.push_back(stream.str());
-        }
-    #else
-        #warning Stack trace is not supported on this compiler/OS
-    #endif
-    return stack_list;
-}
-
-
-// Functions to get the time and timer resolution
 #if defined(USE_WINDOWS)
     double Utilities::time() 
     { 

@@ -272,15 +272,18 @@ int main(int argc, char **argv)
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
+		if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
 		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
 		if (InitialCondition==1) printf("Initial conditions asdsigned from restart file \n");
 		printf("********************************************************\n");
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
-	bool pBC;
+	bool pBC,velBC;
 	if (BoundaryCondition==1)	pBC=true;
 	else						pBC=false;
+	if (BoundaryCondition==2)	velBC=true;
+	else						velBC=false;
 	bool Restart;
 	if (InitialCondition==1)    Restart=true;
 	else 						Restart=false;
@@ -376,8 +379,8 @@ int main(int argc, char **argv)
 	int kstart,kfinish;
 	kstart = 1;
 	kfinish = Nz-1;
-	if (pBC && kproc==0)		kstart = 4;
-	if (pBC && kproc==nprocz-1)	kfinish = Nz-4;
+	if (BoundaryCondition >  0 && kproc==0)		kstart = 4;
+	if (BoundaryCondition >  0 && kproc==nprocz-1)	kfinish = Nz-4;
 
 	// Compute the pore volume
 	sum_local = 0.0;
@@ -396,8 +399,8 @@ int main(int argc, char **argv)
 	porosity = pore_vol*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
-	// If pressure boundary conditions are applied remove solid
-	if (pBC && kproc == 0){
+	// If external boundary conditions are applied remove solid
+	if (BoundaryCondition >  0  && kproc == 0){
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -408,7 +411,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (pBC && kproc == nprocz-1){
+	if (BoundaryCondition >  0  && kproc == nprocz-1){
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -541,17 +544,31 @@ int main(int argc, char **argv)
 	MPI_Barrier(MPI_COMM_WORLD);
 	//*************************************************************************
 
-	if (rank==0 && pBC){
+	if (rank==0 && BoundaryCondition==1){
 		printf("Setting inlet pressure = %f \n", din);
 		printf("Setting outlet pressure = %f \n", dout);
 	}
-	if (pBC && kproc == 0)	{
+	if (BoundaryCondition==1 && kproc == 0)	{
 		PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 		
-	if (pBC && kproc == nprocz-1){
+	if (BoundaryCondition==1 && kproc == nprocz-1){
 		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+	}
+
+	if (rank==0 && BoundaryCondition==2){
+		printf("Setting inlet velocity = %f \n", din);
+		printf("Setting outlet velocity = %f \n", dout);
+	}
+	if (BoundaryCondition==2 && kproc == 0)	{
+		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+	}
+
+	if (BoundaryCondition==2 && kproc == nprocz-1){
+		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 
@@ -669,13 +686,23 @@ int main(int argc, char **argv)
 
 		DeviceBarrier();
 		
-		if (pBC && kproc == 0)	{
+		// Pressure boundary conditions
+		if (BoundaryCondition==1 && kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
-			
-		if (pBC && kproc == nprocz-1){
+		if (BoundaryCondition==1 && kproc == nprocz-1){
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
+
+		// Velocity boundary conditions
+		if (BoundaryCondition==2 && kproc == 0)	{
+			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
+		if (BoundaryCondition==2 && kproc == nprocz-1){
+			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 		//...................................................................................

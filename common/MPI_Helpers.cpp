@@ -168,7 +168,6 @@ int MPI_Wait( MPI_Request*, MPI_Status* )
 }
 int MPI_Bcast( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm )
 {
-    ERROR("Not implimented yet");
     return 0;
 }
 int MPI_Send(const void *buf, int count, MPI_Datatype datatype, int dest, int tag,
@@ -204,6 +203,13 @@ int MPI_Allreduce(const void *sendbuf, void *recvbuf, int count,
 int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
                   void *recvbuf, int recvcount, MPI_Datatype recvtype,
                   MPI_Comm comm)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
+int MPI_Allgatherv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+                   void *recvbuf, const int *recvcounts, const int *displs,
+                   MPI_Datatype recvtype, MPI_Comm comm)
 {
     ERROR("Not implimented yet");
     return 0;

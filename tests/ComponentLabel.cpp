@@ -422,7 +422,7 @@ int main(int argc, char **argv)
 		}
 	}
 	porosity /= (Nx*Ny*Nz*1.0);
-	printf("Media porosity is %f \n",porosity);
+	//printf("Media porosity is %f \n",porosity);
 
 	double beta=0.95;
 	int timestep=5;

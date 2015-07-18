@@ -349,7 +349,117 @@ __global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *di
 	}
 }
 
+__global__  void dvc_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double uz;
 
+	N = Nx*Ny*Nz;
+	n = Nx*Ny +  blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (n < 2*Nx*Ny){
+				//........................................................................
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+		//...................................................
+
+		// Determine the outlet flow velocity
+	//	uz = 1.0 - (f0+f4+f3+f2+f1+f8+f7+f9+f10 +
+	//			2*(f5+f15+f18+f11+f14))/din;
+		din = (f0+f4+f3+f2+f1+f8+f7+f9+f10+2*(f5+f15+f18+f11+f14))/(1.0-uz);
+		// Set the unknown distributions:
+		f6 = f5 + 0.3333333333333333*din*uz;
+		f16 = f15 + 0.1666666666666667*din*uz;
+		f17 = f16 + f4 - f3-f15+f18+f8-f7	+f9-f10;
+		f12= (din*uz+f5+ f15+f18+f11+f14-f6-f16-f17-f2+f1-f14+f11-f8+f7+f9-f10)*0.5;
+		f13= din*uz+f5+ f15+f18+f11+f14-f6-f16-f17-f12;
+
+		//........Store in "opposite" memory location..........
+		disteven[3*N+n] = f6;
+		disteven[6*N+n] = f12;
+		distodd[6*N+n] = f13;
+		disteven[8*N+n] = f16;
+		distodd[8*N+n] = f17;
+		//...................................................
+	}
+}
+
+__global__ void dvc_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz, int outlet){
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double uz;
+
+	N = Nx*Ny*Nz;
+	n = outlet +  blockIdx.x*blockDim.x + threadIdx.x;
+
+	// Loop over the boundary - threadblocks delineated by start...finish
+	if ( n<N-Nx*Ny ){
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+		//uz = -1.0 + (f0+f4+f3+f2+f1+f8+f7+f9+f10 + 2*(f6+f16+f17+f12+f13))/dout;
+		dout = (f0+f4+f3+f2+f1+f8+f7+f9+f10 + 2*(f6+f16+f17+f12+f13))/(1.0+uz);
+		f5 = f6 - 0.33333333333333338*dout* uz;
+		f15 = f16 - 0.16666666666666678*dout* uz;
+		f18 = f15 - f4 + f3-f16+f17-f8+f7-f9+f10;
+		f11 = (-dout*uz+f6+ f16+f17+f12+f13-f5-f15-f18+f2-f1-f13+f12+f8-f7-f9+f10)*0.5;
+		f14 = -dout*uz+f6+ f16+f17+f12+f13-f5-f15-f18-f11;
+		//........Store in "opposite" memory location..........
+		distodd[2*N+n] = f5;
+		distodd[5*N+n] = f11;
+		disteven[7*N+n] = f14;
+		distodd[7*N+n] = f15;
+		disteven[9*N+n] = f18;
+		//...................................................
+	}
+}
 
 extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
@@ -384,4 +494,18 @@ Ny, int Nz){
 extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
                                                                         int Nx, int Ny, int Nz){
         dvc_ComputePressureD3Q19<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
+}
+
+extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz){
+	int GRID = Nx*Ny / 512 + 1;
+	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz);
+}
+
+extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz, int outlet){
+	int GRID = Nx*Ny / 512 + 1;
+	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(double *disteven, double *distodd, double uz,
+								   int Nx, int Ny, int Nz, int outlet);
 }

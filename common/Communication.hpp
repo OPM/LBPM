@@ -133,11 +133,11 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
             }
         }
     }
-    // Recv the dst data and unpack
+    // Recv the dst data and unpack (we recive in reverse order to match the sends)
     MPI_Status status;
-    for (int i=0; i<3; i++) {
-        for (int j=0; j<3; j++) {
-            for (int k=0; k<3; k++) {
+    for (int i=2; i>=0; i--) {
+        for (int j=2; j>=0; j--) {
+            for (int k=2; k>=0; k--) {
                 if ( !fill_pattern[i][j][k] )
                     continue;
                 MPI_Wait(&recv_req[i][j][k],&status);
@@ -206,6 +206,7 @@ template<class TYPE>
 template<class TYPE1, class TYPE2>
 void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
 {
+    PROFILE_START("fillHalo::copy",1);
     ASSERT(src.size(0)==nx||src.size(0)==nx+2*ngx);
     ASSERT(dst.size(0)==nx||dst.size(0)==nx+2*ngx);
     bool src_halo = src.size(0)==nx+2*ngx;
@@ -242,7 +243,7 @@ void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
             }
         }
     } else if ( !src_halo && dst_halo ) {
-        // Src has halos
+        // Dst has halos
         for (size_t k=0; k<nz; k++) {
             for (size_t j=0; j<ny; j++) {
                 for (size_t i=0; i<nx; i++) {
@@ -252,6 +253,7 @@ void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
         }
         fill(dst);
     }
+    PROFILE_STOP("fillHalo::copy",1);
 }
 
 

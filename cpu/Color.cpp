@@ -336,6 +336,7 @@ extern "C" void PressureBC_outlet(double *disteven, double *distodd, double dout
 
 	}
 }
+
 //*************************************************************************
 extern "C" void ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz)
 {

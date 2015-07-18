@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "common/Utilities.h"
+#include "common/StackTrace.h"
 #include "common/UnitTest.h"
 #include "common/MPI_Helpers.h"
 
@@ -29,10 +30,13 @@
 // Function to return the call stack
 std::vector<std::string> get_call_stack() 
 {
-    std::vector<std::string> stack = Utilities::getCallStack();
+    std::vector<StackTrace::stack_info> stack = StackTrace::getCallStack();
+    std::vector<std::string> stack2(stack.size());
+    for (size_t i=0; i<stack.size(); i++)
+        stack2[i] = stack[i].print();
     // Trick compiler to skip inline for this function with fake recursion
-    if ( stack.size() > 10000 ) { stack = get_call_stack(); } 
-    return stack;
+    if ( stack.size() > 10000 ) { stack2 = get_call_stack(); } 
+    return stack2;
 }
 
 

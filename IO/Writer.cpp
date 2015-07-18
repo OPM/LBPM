@@ -158,6 +158,7 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
 // Write the mesh data
 void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format )
 {
+    PROFILE_START("writeData");
     int rank = MPI_WORLD_RANK();
     int size = MPI_WORLD_SIZE();
     // Create the output directory
@@ -196,6 +197,7 @@ void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshDat
         fprintf(fid,"%s\n",path);
         fclose(fid);
     }
+    PROFILE_STOP("writeData");
 }
 
 
