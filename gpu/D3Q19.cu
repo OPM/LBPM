@@ -496,14 +496,12 @@ extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd
         dvc_ComputePressureD3Q19<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
 }
 
-extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
-								   int Nx, int Ny, int Nz){
+extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz);
+	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(disteven,distodd, uz, Nx, Ny, Nz);
 }
 
-extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
-								   int Nx, int Ny, int Nz, int outlet){
+extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz, int outlet){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz, int outlet);
+	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(disteven, distodd, uz, Nx, Ny, Nz, outlet);
 }
