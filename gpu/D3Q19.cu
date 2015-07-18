@@ -356,7 +356,7 @@ __global__  void dvc_D3Q19_Velocity_BC_z(double *disteven, double *distodd, doub
 	// distributions
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double uz;
+	double din;
 
 	N = Nx*Ny*Nz;
 	n = Nx*Ny +  blockIdx.x*blockDim.x + threadIdx.x;
@@ -415,7 +415,7 @@ __global__ void dvc_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, doubl
 	// distributions
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double uz;
+	double dout;
 
 	N = Nx*Ny*Nz;
 	n = outlet +  blockIdx.x*blockDim.x + threadIdx.x;
@@ -499,13 +499,11 @@ extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd
 extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
 								   int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(double *disteven, double *distodd, double uz,
-								   int Nx, int Ny, int Nz);
+	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz);
 }
 
 extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
 								   int Nx, int Ny, int Nz, int outlet){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(double *disteven, double *distodd, double uz,
-								   int Nx, int Ny, int Nz, int outlet);
+	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz, int outlet);
 }
