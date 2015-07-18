@@ -386,7 +386,7 @@ void TwoPhase::UpdateSolid(){
 }
 
 void TwoPhase::UpdateMeshValues(){
-	int i,j,k;
+	int i,j,k,n;
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
