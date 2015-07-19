@@ -91,6 +91,8 @@ extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, do
 extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
 								   int Nx, int Ny, int Nz, int outlet);
 
+extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................

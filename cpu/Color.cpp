@@ -1425,6 +1425,13 @@ extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N)
 	//...................................................................
 }
 
+extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
+	int n;
+	for (n=Slice*Nx*Ny; n<(Slice+1)*Nx*Ny; n++){
+		Phi[n] = value;
+	}
+}
+
 /*
 //*************************************************************************
 extern "C" void InitDenColor( int nblocks, int nthreads, int S,

@@ -1387,17 +1387,34 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 	}
 	//...................................................................
 }
+
+__global__  void dvc_SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice)
+{
+	int n = Slice*Nx*Ny +  blockIdx.x*blockDim.x + threadIdx.x;
+	if (n < (Slice+1)*Nx*Ny){
+		Phi[n] = value;
+	}
+}
+
+extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
+	int GRID = Nx*Ny / 512 + 1;
+	dvc_SetPhiSlice_z<<<GRID,512>>>(Phi,value,Nx,Ny,Nz,Slice);
+}
+
 extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz){
 	dvc_InitDenColor<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 }
+
 extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz){
 
 	dvc_InitDenColorDistance<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, Distance, das, dbs, beta, xp, Nx, Ny, Nz);
 }
+
 extern "C" void ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz){
 	dvc_ComputeColorGradient<<<NBLOCKS,NTHREADS >>>(ID, phi, ColorGrad, Nx, Ny, Nz);
 }
+
 extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz,double rlx_setA, double rlx_setB,
 								double alpha, double beta, double Fx, double Fy, double Fz, bool pBC){
@@ -1405,6 +1422,7 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 									alpha, beta, Fx, Fy, Fz, pBC);
 
 }
+
 extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz,double rlx_setA, double rlx_setB,
 								double alpha, double beta, double Fx, double Fy, double Fz){
@@ -1412,6 +1430,7 @@ extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, do
 									alpha, beta, Fx, Fy, Fz);
 
 }
+
 extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC){
 
