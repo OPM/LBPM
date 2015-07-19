@@ -98,10 +98,10 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 	for (n=0; n<N; n++){
 		// Write the two density values
 		File.read((char*) &value, sizeof(value));
-		Den[2*n] = value;
+		Den[n] = value;
 		//	if (n== 66276)	printf("Density a  = %f \n",value);
 		File.read((char*) &value, sizeof(value));
-		Den[2*n+1] = value;
+		Den[N+n] = value;
 
 		//	if (n== 66276)	printf("Density b  = %f \n",value);
 		// Read the even distributions
