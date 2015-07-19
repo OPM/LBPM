@@ -320,8 +320,8 @@ int main(int argc, char **argv)
 					}
 				}
 */
-				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
-				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
+				//sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
+				//ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
 						for (i=1; i<nx-1; i++){
@@ -333,8 +333,8 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							Averages.Phase(iglobal,jglobal,kglobal) = Temp[n];
-							Averages.SDn(iglobal,jglobal,kglobal) = Temp[n];
+							//Averages.Phase(iglobal,jglobal,kglobal) = Temp[n];
+							Averages.SDn(iglobal,jglobal,kglobal) = Averages.Phase(iglobal,jglobal,kglobal);//Temp[n];
 							//........................................................................
 						}
 					}
