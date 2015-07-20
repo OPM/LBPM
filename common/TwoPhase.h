@@ -901,25 +901,20 @@ void TwoPhase::WriteSurfaces(int logcount){
 	int ncubes=(Nx-1)*(Ny-1)*(Nz-1);
 	Point P,A,B,C;
 
-	std::shared_ptr<TriList> wn_mesh( new TriList() );
+	std::shared_ptr<IO::TriList> wn_mesh( new IO::TriList() );
 	wn_mesh->A.reserve(8*ncubes);
 	wn_mesh->B.reserve(8*ncubes);
 	wn_mesh->C.reserve(8*ncubes);
 
-	std::shared_ptr<TriList> ns_mesh( new TriList() );
+	std::shared_ptr<IO::TriList> ns_mesh( new IO::TriList() );
 	ns_mesh->A.reserve(8*ncubes);
 	ns_mesh->B.reserve(8*ncubes);
 	ns_mesh->C.reserve(8*ncubes);
 
-	std::shared_ptr<TriList> ws_mesh( new TriList() );
+	std::shared_ptr<IO::TriList> ws_mesh( new IO::TriList() );
 	ws_mesh->A.reserve(8*ncubes);
 	ws_mesh->B.reserve(8*ncubes);
 	ws_mesh->C.reserve(8*ncubes);
-
-	std::shared_ptr<TriList> wns_mesh( new TriList() );
-	wns_mesh->A.reserve(8*ncubes);
-	wns_mesh->B.reserve(8*ncubes);
-	wns_mesh->C.reserve(8*ncubes);
 
 	for (k=1; k<Nz-1; k++){
 		for (j=1; j<Ny-1; j++){
@@ -1017,8 +1012,6 @@ void TwoPhase::WriteSurfaces(int logcount){
 	meshData[1].mesh = ws_mesh;
 	meshData[2].meshName = "ns-tris";
 	meshData[2].mesh = ns_mesh;
-	meshData[3].meshName = "wns-tris";
-	meshData[3].mesh = wns_mesh;
 	writeData( logcount, meshData );
 
 }
