@@ -564,13 +564,13 @@ int main(int argc, char **argv)
 	}
 	if (BoundaryCondition==2 && kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 	}
 
 	if (BoundaryCondition==2 && kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 	}
 
@@ -700,14 +700,13 @@ int main(int argc, char **argv)
 		// Velocity boundary conditions
 		if (BoundaryCondition==2 && kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==2 && kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-
 		}
 		//...................................................................................
 
@@ -775,127 +774,6 @@ int main(int argc, char **argv)
 			CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-
-#ifdef WRITE_SURFACES
-			
-			std::shared_ptr<TriList> wn_mesh( new TriList() );
-			wn_mesh->A.reserve(8*ncubes);
-			wn_mesh->B.reserve(8*ncubes);
-			wn_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> ns_mesh( new TriList() );
-			ns_mesh->A.reserve(8*ncubes);
-			ns_mesh->B.reserve(8*ncubes);
-			ns_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> ws_mesh( new TriList() );
-			ws_mesh->A.reserve(8*ncubes);
-			ws_mesh->B.reserve(8*ncubes);
-			ws_mesh->C.reserve(8*ncubes);
-			std::shared_ptr<TriList> wns_mesh( new TriList() );
-			wns_mesh->A.reserve(8*ncubes);
-			wns_mesh->B.reserve(8*ncubes);
-			wns_mesh->C.reserve(8*ncubes);
-
-			for (c=0;c<ncubes;c++){
-				// Get cube from the list
-				i = cubeList(0,c);
-				j = cubeList(1,c);
-				k = cubeList(2,c);
-				//...........................................................................
-				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
-						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
-						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
-						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
-						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
-						i, j, k, Nx, Ny, Nz);	
-				//.......................................................................................
-				// Write the triangle lists to text file
-				for (int r=0;r<n_nw_tris;r++){
-					A = nw_pts(nw_tris(0,r));
-					B = nw_pts(nw_tris(1,r));
-					C = nw_pts(nw_tris(2,r));
-					// compare the trianlge orientation against the color gradient
-					// Orientation of the triangle
-					double tri_normal_x = (A.y-B.y)*(B.z-C.z) - (A.z-B.z)*(B.y-C.y);
-					double tri_normal_y = (A.z-B.z)*(B.x-C.x) - (A.x-B.x)*(B.z-C.z);
-					double tri_normal_z = (A.x-B.x)*(B.y-C.y) - (A.y-B.y)*(B.x-C.x);
-
-					double normal_x = Phase_x(i,j,k);
-					double normal_y = Phase_y(i,j,k);
-					double normal_z = Phase_z(i,j,k);
-
-					// If the normals don't point in the same direction, flip the orientation of the triangle
-					// Right hand rule for triangle orientation is used to determine rendering for most software
-					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0){
-						P = A;
-						A = C;
-						C = P;
-					}
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					wn_mesh->A.push_back(A);
-					wn_mesh->B.push_back(B);
-					wn_mesh->C.push_back(C);
-				}		
-				for (int r=0;r<n_ws_tris;r++){
-					A = ws_pts(ws_tris(0,r));
-					B = ws_pts(ws_tris(1,r));
-					C = ws_pts(ws_tris(2,r));
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					ws_mesh->A.push_back(A);
-					ws_mesh->B.push_back(B);
-					ws_mesh->C.push_back(C);
-				}
-				for (int r=0;r<n_ns_tris;r++){
-					A = ns_pts(ns_tris(0,r));
-					B = ns_pts(ns_tris(1,r));
-					C = ns_pts(ns_tris(2,r));
-					// Remap the points
-					A.x += 1.0*iproc*(Nx-2);
-					A.y += 1.0*jproc*(Nx-2);
-					A.z += 1.0*kproc*(Nx-2);
-					B.x += 1.0*iproc*(Nx-2);
-					B.y += 1.0*jproc*(Nx-2);
-					B.z += 1.0*kproc*(Nx-2);
-					C.x += 1.0*iproc*(Nx-2);
-					C.y += 1.0*jproc*(Nx-2);
-					C.z += 1.0*kproc*(Nx-2);
-					ns_mesh->A.push_back(A);
-					ns_mesh->B.push_back(B);
-					ns_mesh->C.push_back(C);
-				}
-			}
-
-			std::vector<MeshDataStruct> meshData(4);
-			meshData[0].meshName = "wn-tris";
-			meshData[0].mesh = wn_mesh;
-			meshData[1].meshName = "ws-tris";
-			meshData[1].mesh = ws_mesh;
-			meshData[2].meshName = "ns-tris";
-			meshData[2].mesh = ns_mesh;
-			meshData[3].meshName = "wns-tris";
-			meshData[3].mesh = wns_mesh;
-			writeData( logcount, meshData );
-
-			logcount++;
-#endif 
 		}
 	}
 	//************************************************************************/
@@ -939,7 +817,6 @@ int main(int argc, char **argv)
 	PRESS = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Press.get(),8,N,PRESS);
 	fclose(PRESS);
-
 
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 	double * Grad;
