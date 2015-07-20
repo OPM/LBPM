@@ -805,6 +805,7 @@ int main(int argc, char **argv)
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 
     // Create the MeshDataStruct
+    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
@@ -827,9 +828,9 @@ int main(int argc, char **argv)
     BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(BlobIDVar);
     
-    Dm.fillData.copy(Averages.SDn,PhaseVar->data);
-    Dm.fillData.copy(Averages.SDs,SignDistVar->data);
-    Dm.fillData.copy(Averages.Label_NWP,BlobIDVar->data);
+    fillData.copy(Averages.SDn,PhaseVar->data);
+    fillData.copy(Averages.SDs,SignDistVar->data);
+    fillData.copy(Averages.Label_NWP,BlobIDVar->data);
     IO::writeData( 0, meshData, 2 );
     
 /*	Averages.WriteSurfaces(0);
