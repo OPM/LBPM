@@ -861,7 +861,7 @@ void TwoPhase::ComponentAverages(){
 
 			lwns = ComponentAverages_WP(LWNS,b);
 			if (lwns != 0.0){
-				cwns = ComponentAverages_WP(CWNS,b)/lwns;
+				cwns = ComponentAverages_WP(SignDistCWNS,b)/lwns;
 				vawns(0) = ComponentAverages_WP(VWNSX,b)/lwns;
 				vawns(1) = ComponentAverages_WP(VWNSY,b)/lwns;
 				vawns(2) = ComponentAverages_WP(VWNSZ,b)/lwns;
@@ -922,12 +922,13 @@ void TwoPhase::WriteSurfaces(int logcount){
 
 				//...........................................................................
 				// Construct the interfaces and common curve
-				pmmc_ConstructLocalCube(SignDist, Phase, solid_isovalue, fluid_isovalue,
-						nw_pts, nw_tris, values, ns_pts, ns_tris, ws_pts, ws_tris,
+				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
 						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
+
 				//.......................................................................................
 				// Write the triangle lists to text file
 				for (int r=0;r<n_nw_tris;r++){
@@ -940,9 +941,9 @@ void TwoPhase::WriteSurfaces(int logcount){
 					double tri_normal_y = (A.z-B.z)*(B.x-C.x) - (A.x-B.x)*(B.z-C.z);
 					double tri_normal_z = (A.x-B.x)*(B.y-C.y) - (A.y-B.y)*(B.x-C.x);
 
-					double normal_x = Phase_x(i,j,k);
-					double normal_y = Phase_y(i,j,k);
-					double normal_z = Phase_z(i,j,k);
+					double normal_x = SDn_x(i,j,k);
+					double normal_y = SDn_y(i,j,k);
+					double normal_z = SDn_z(i,j,k);
 
 					// If the normals don't point in the same direction, flip the orientation of the triangle
 					// Right hand rule for triangle orientation is used to determine rendering for most software
@@ -955,7 +956,7 @@ void TwoPhase::WriteSurfaces(int logcount){
 					A.x += 1.0*Dm.iproc*(Nx-2);
 					A.y += 1.0*Dm.jproc*(Nx-2);
 					A.z += 1.0*Dm.kproc*(Nx-2);
-					B.x += 1.0*Dm.Dm.iproc*(Nx-2);
+					B.x += 1.0*Dm.iproc*(Nx-2);
 					B.y += 1.0*Dm.jproc*(Nx-2);
 					B.z += 1.0*Dm.kproc*(Nx-2);
 					C.x += 1.0*Dm.iproc*(Nx-2);
@@ -1005,14 +1006,16 @@ void TwoPhase::WriteSurfaces(int logcount){
 		}
 	}
 
-	std::vector<MeshDataStruct> meshData(4);
+	std::vector<IO::MeshDataStruct> meshData(4);
 	meshData[0].meshName = "wn-tris";
 	meshData[0].mesh = wn_mesh;
 	meshData[1].meshName = "ws-tris";
 	meshData[1].mesh = ws_mesh;
 	meshData[2].meshName = "ns-tris";
 	meshData[2].mesh = ns_mesh;
-	writeData( logcount, meshData );
+	IO::writeData( logcount, meshData );
+//    IO::writeData( 3, meshData, format[1] );
+
 
 }
 
