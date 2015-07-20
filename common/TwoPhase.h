@@ -1,9 +1,17 @@
 // Header file for two-phase averaging class
+#include <vector>
+
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
 #include "analysis/analysis.h"
-#include <vector>
+
+#include "shared_ptr.h"
+#include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
+#include "IO/MeshDatabase.h"
+#include "IO/Reader.h"
+#include "IO/Writer.h"
 
 #define BLOB_AVG_COUNT 28
 
@@ -261,7 +269,7 @@ public:
 	void ComputeLocal();
 	void ComponentAverages();
 	void Reduce();
-	void WriteSurfaces();
+	void WriteSurfaces(int logcount);
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
@@ -887,7 +895,7 @@ void TwoPhase::ComponentAverages(){
 	}
 }
 
-void TwoPhase::WriteSurfaces(){
+void TwoPhase::WriteSurfaces(int logcount){
 
 	int i,j,k,n;
 	int ncubes=(Nx-1)*(Ny-1)*(Nz-1);
