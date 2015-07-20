@@ -827,9 +827,9 @@ int main(int argc, char **argv)
     BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(BlobIDVar);
     
-    fillData.copy(Averages.SDn,PhaseVar->data);
-    fillData.copy(Averages.SDs,SignDistVar->data);
-    fillData.copy(Averages.Label_NWP,BlobIDVar->data);
+    Dm.fillData.copy(Averages.SDn,PhaseVar->data);
+    Dm.fillData.copy(Averages.SDs,SignDistVar->data);
+    Dm.fillData.copy(Averages.Label_NWP,BlobIDVar->data);
     IO::writeData( 0, meshData, 2 );
     
 /*	Averages.WriteSurfaces(0);
