@@ -804,7 +804,35 @@ int main(int argc, char **argv)
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 
-	Averages.WriteSurfaces(0);
+    // Create the MeshDataStruct
+    std::vector<IO::MeshDataStruct> meshData(1);
+    meshData[0].meshName = "domain";
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
+    PhaseVar->name = "phase";
+    PhaseVar->type = IO::VolumeVariable;
+    PhaseVar->dim = 1;
+    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseVar);
+    SignDistVar->name = "SignDist";
+    SignDistVar->type = IO::VolumeVariable;
+    SignDistVar->dim = 1;
+    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(SignDistVar);
+    BlobIDVar->name = "BlobID";
+    BlobIDVar->type = IO::VolumeVariable;
+    BlobIDVar->dim = 1;
+    BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(BlobIDVar);
+    
+    fillData.copy(Averages.SDn,PhaseVar->data);
+    fillData.copy(Averages.SDs,SignDistVar->data);
+    fillData.copy(Averages.Label_NWP,BlobIDVar->data);
+    IO::writeData( 0, meshData, 2 );
+    
+/*	Averages.WriteSurfaces(0);
 
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
