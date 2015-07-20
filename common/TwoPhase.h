@@ -861,7 +861,7 @@ void TwoPhase::ComponentAverages(){
 
 			lwns = ComponentAverages_WP(LWNS,b);
 			if (lwns != 0.0){
-				cwns = ComponentAverages_WP(SignDistCWNS,b)/lwns;
+				cwns = ComponentAverages_WP(CWNS,b)/lwns;
 				vawns(0) = ComponentAverages_WP(VWNSX,b)/lwns;
 				vawns(1) = ComponentAverages_WP(VWNSY,b)/lwns;
 				vawns(2) = ComponentAverages_WP(VWNSZ,b)/lwns;
@@ -1013,7 +1013,7 @@ void TwoPhase::WriteSurfaces(int logcount){
 	meshData[1].mesh = ws_mesh;
 	meshData[2].meshName = "ns-tris";
 	meshData[2].mesh = ns_mesh;
-	IO::writeData( logcount, meshData );
+	IO::writeData( logcount, meshData, format[2]);
 //    IO::writeData( 3, meshData, format[1] );
 
 
