@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 				// The following turns off communication if external BC are being set
 				if (BoundaryCondition > 0){
 					if (kproc==0 && k==0)			id[n]=0;
-					if (kproc==nproz-1 && k==Nz-1)	id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
 				}
 			}
 		}
