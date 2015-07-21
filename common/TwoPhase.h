@@ -1,9 +1,17 @@
 // Header file for two-phase averaging class
+#include <vector>
+
 #include "pmmc.h"
 #include "Domain.h"
 #include "Communication.h"
 #include "analysis/analysis.h"
-#include <vector>
+
+#include "shared_ptr.h"
+#include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
+#include "IO/MeshDatabase.h"
+#include "IO/Reader.h"
+#include "IO/Writer.h"
 
 #define BLOB_AVG_COUNT 28
 
@@ -261,6 +269,7 @@ public:
 	void ComputeLocal();
 	void ComponentAverages();
 	void Reduce();
+	void WriteSurfaces(int logcount);
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
@@ -886,6 +895,127 @@ void TwoPhase::ComponentAverages(){
 	}
 }
 
+void TwoPhase::WriteSurfaces(int logcount){
+
+	int i,j,k,n;
+	int ncubes=(Nx-1)*(Ny-1)*(Nz-1);
+	Point P,A,B,C;
+
+	std::shared_ptr<IO::TriList> wn_mesh( new IO::TriList() );
+	wn_mesh->A.reserve(8*ncubes);
+	wn_mesh->B.reserve(8*ncubes);
+	wn_mesh->C.reserve(8*ncubes);
+
+	std::shared_ptr<IO::TriList> ns_mesh( new IO::TriList() );
+	ns_mesh->A.reserve(8*ncubes);
+	ns_mesh->B.reserve(8*ncubes);
+	ns_mesh->C.reserve(8*ncubes);
+
+	std::shared_ptr<IO::TriList> ws_mesh( new IO::TriList() );
+	ws_mesh->A.reserve(8*ncubes);
+	ws_mesh->B.reserve(8*ncubes);
+	ws_mesh->C.reserve(8*ncubes);
+
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){		// Get cube from the list
+
+				//...........................................................................
+				// Construct the interfaces and common curve
+				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
+						nw_pts, nw_tris, Values, ns_pts, ns_tris, ws_pts, ws_tris,
+						local_nws_pts, nws_pts, nws_seg, local_sol_pts, local_sol_tris,
+						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
+						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
+						i, j, k, Nx, Ny, Nz);
+
+				//.......................................................................................
+				// Write the triangle lists to text file
+				for (int r=0;r<n_nw_tris;r++){
+					A = nw_pts(nw_tris(0,r));
+					B = nw_pts(nw_tris(1,r));
+					C = nw_pts(nw_tris(2,r));
+					// compare the trianlge orientation against the color gradient
+					// Orientation of the triangle
+					double tri_normal_x = (A.y-B.y)*(B.z-C.z) - (A.z-B.z)*(B.y-C.y);
+					double tri_normal_y = (A.z-B.z)*(B.x-C.x) - (A.x-B.x)*(B.z-C.z);
+					double tri_normal_z = (A.x-B.x)*(B.y-C.y) - (A.y-B.y)*(B.x-C.x);
+
+					double normal_x = SDn_x(i,j,k);
+					double normal_y = SDn_y(i,j,k);
+					double normal_z = SDn_z(i,j,k);
+
+					// If the normals don't point in the same direction, flip the orientation of the triangle
+					// Right hand rule for triangle orientation is used to determine rendering for most software
+					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0){
+						P = A;
+						A = C;
+						C = P;
+					}
+					// Remap the points
+					A.x += 1.0*Dm.iproc*(Nx-2);
+					A.y += 1.0*Dm.jproc*(Nx-2);
+					A.z += 1.0*Dm.kproc*(Nx-2);
+					B.x += 1.0*Dm.iproc*(Nx-2);
+					B.y += 1.0*Dm.jproc*(Nx-2);
+					B.z += 1.0*Dm.kproc*(Nx-2);
+					C.x += 1.0*Dm.iproc*(Nx-2);
+					C.y += 1.0*Dm.jproc*(Nx-2);
+					C.z += 1.0*Dm.kproc*(Nx-2);
+					wn_mesh->A.push_back(A);
+					wn_mesh->B.push_back(B);
+					wn_mesh->C.push_back(C);
+				}
+				for (int r=0;r<n_ws_tris;r++){
+					A = ws_pts(ws_tris(0,r));
+					B = ws_pts(ws_tris(1,r));
+					C = ws_pts(ws_tris(2,r));
+					// Remap the points
+					A.x += 1.0*Dm.iproc*(Nx-2);
+					A.y += 1.0*Dm.jproc*(Nx-2);
+					A.z += 1.0*Dm.kproc*(Nx-2);
+					B.x += 1.0*Dm.iproc*(Nx-2);
+					B.y += 1.0*Dm.jproc*(Nx-2);
+					B.z += 1.0*Dm.kproc*(Nx-2);
+					C.x += 1.0*Dm.iproc*(Nx-2);
+					C.y += 1.0*Dm.jproc*(Nx-2);
+					C.z += 1.0*Dm.kproc*(Nx-2);
+					ws_mesh->A.push_back(A);
+					ws_mesh->B.push_back(B);
+					ws_mesh->C.push_back(C);
+				}
+				for (int r=0;r<n_ns_tris;r++){
+					A = ns_pts(ns_tris(0,r));
+					B = ns_pts(ns_tris(1,r));
+					C = ns_pts(ns_tris(2,r));
+					// Remap the points
+					A.x += 1.0*Dm.iproc*(Nx-2);
+					A.y += 1.0*Dm.jproc*(Nx-2);
+					A.z += 1.0*Dm.kproc*(Nx-2);
+					B.x += 1.0*Dm.iproc*(Nx-2);
+					B.y += 1.0*Dm.jproc*(Nx-2);
+					B.z += 1.0*Dm.kproc*(Nx-2);
+					C.x += 1.0*Dm.iproc*(Nx-2);
+					C.y += 1.0*Dm.jproc*(Nx-2);
+					C.z += 1.0*Dm.kproc*(Nx-2);
+					ns_mesh->A.push_back(A);
+					ns_mesh->B.push_back(B);
+					ns_mesh->C.push_back(C);
+				}
+			}
+		}
+	}
+
+	std::vector<IO::MeshDataStruct> meshData(4);
+	meshData[0].meshName = "wn-tris";
+	meshData[0].mesh = wn_mesh;
+	meshData[1].meshName = "ws-tris";
+	meshData[1].mesh = ws_mesh;
+	meshData[2].meshName = "ns-tris";
+	meshData[2].mesh = ns_mesh;
+	IO::writeData( logcount, meshData, 2);
+
+}
 
 void TwoPhase::Reduce(){
 	int i;
