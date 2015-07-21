@@ -367,6 +367,8 @@ int main(int argc, char **argv)
 				// The following turns off communication if external BC are being set
 				if (BoundaryCondition > 0){
 					if (kproc==0 && k==0)			id[n]=0;
+					if (kproc==0 && k==1)			id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-2)	id[n]=0;
 					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
 				}
 			}
@@ -436,6 +438,22 @@ int main(int argc, char **argv)
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
+
+	// set reservoirs
+	if (BoundaryCondition > 0){
+		for ( k=0;k<Nz;k++){
+			for ( j=0;j<Ny;j++){
+				for ( i=0;i<Nx;i++){
+					// The following turns off communication if external BC are being set
+					if (kproc==0 && k==0)			id[n]=1;
+					if (kproc==0 && k==1)			id[n]=1;
+					if (kproc==nprocz-1 && k==Nz-2)	id[n]=2;
+					if (kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					Dm.id[n] = id[n];
+				}
+			}
+		}
+	}
 
 	//...........................................................................
 	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
