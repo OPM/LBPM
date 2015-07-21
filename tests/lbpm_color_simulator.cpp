@@ -364,6 +364,11 @@ int main(int argc, char **argv)
 				if (Averages.SDs(n) > 0.0){
 					sum++;	
 				}
+				// The following turns off communication if external BC are being set
+				if (BoundaryCondition > 0){
+					if (kproc==0 && k==0)			id[n]=0;
+					if (kproc==nproz-1 && k==Nz-1)	id[n]=0;
+				}
 			}
 		}
 	}
