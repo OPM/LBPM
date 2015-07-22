@@ -824,11 +824,8 @@ int main(int argc, char **argv)
 	Averages.PrintComponents(timestep);
 */	//************************************************************************/
 
-	Averages.Initialize();
-	Averages.ComponentAverages();
-	Averages.SortBlobs();
-	Averages.PrintComponents(timestep);
-
+	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
+	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 
