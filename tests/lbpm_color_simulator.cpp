@@ -824,6 +824,11 @@ int main(int argc, char **argv)
 	Averages.PrintComponents(timestep);
 */	//************************************************************************/
 
+	Averages.Initialize();
+	Averages.ComponentAverages();
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
+
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
 
