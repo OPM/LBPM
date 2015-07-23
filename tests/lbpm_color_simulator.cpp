@@ -447,6 +447,11 @@ int main(int argc, char **argv)
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
 
+	//...........................................................................
+	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device
+	ScaLBL_Communicator ScaLBL_Comm(Dm);
+
 	// set reservoirs
 	if (BoundaryCondition > 0){
 		for ( k=0;k<Nz;k++){
@@ -463,11 +468,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	//...........................................................................
-	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-	// Create a communicator for the device
-	ScaLBL_Communicator ScaLBL_Comm(Dm);
-	
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copy phase ID to device \n");
 	char *ID;
