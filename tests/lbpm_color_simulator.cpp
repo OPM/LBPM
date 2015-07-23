@@ -364,13 +364,6 @@ int main(int argc, char **argv)
 				if (Averages.SDs(n) > 0.0){
 					sum++;	
 				}
-				// The following turns off communication if external BC are being set
-				if (BoundaryCondition > 0){
-					if (kproc==0 && k==0)			id[n]=0;
-					if (kproc==0 && k==1)			id[n]=0;
-					if (kproc==nprocz-1 && k==Nz-2)	id[n]=0;
-					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
-				}
 			}
 		}
 	}
@@ -381,6 +374,21 @@ int main(int argc, char **argv)
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
+
+	for ( k=0;k<Nz;k++){
+		for ( j=0;j<Ny;j++){
+			for ( i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				// The following turns off communication if external BC are being set
+				if (BoundaryCondition > 0){
+					if (kproc==0 && k==0)			id[n]=0;
+					if (kproc==0 && k==1)			id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-2)	id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
+				}
+			}
+		}
+	}
 
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
@@ -822,13 +830,13 @@ int main(int argc, char **argv)
 	Averages.ComponentAverages();
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
-*/	//************************************************************************/
-
+	//************************************************************************/
+/*
 	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-
+*/
     // Create the MeshDataStruct
     fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
