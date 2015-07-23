@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 1;
+					//id[n] = 1;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
 				}					
 			}
@@ -431,7 +431,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 2;
+					//id[n] = 2;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
 				}					
 			}
@@ -457,7 +457,6 @@ int main(int argc, char **argv)
 		for ( k=0;k<Nz;k++){
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
-					// The following turns off communication if external BC are being set
 					if (kproc==0 && k==0)			id[n]=1;
 					if (kproc==0 && k==1)			id[n]=1;
 					if (kproc==nprocz-1 && k==Nz-2)	id[n]=2;
