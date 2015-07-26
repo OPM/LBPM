@@ -443,31 +443,43 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> LabelWPVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> LabelNWPVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PhaseIDVar( new IO::Variable() );
+
     PhaseVar->name = "phase";
     PhaseVar->type = IO::VolumeVariable;
     PhaseVar->dim = 1;
     PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(PhaseVar);
+
     SignDistVar->name = "SignDist";
     SignDistVar->type = IO::VolumeVariable;
     SignDistVar->dim = 1;
     SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(SignDistVar);
+
     LabelNWPVar->name = "LabelNWP";
     LabelNWPVar->type = IO::VolumeVariable;
     LabelNWPVar->dim = 1;
     LabelNWPVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(LabelNWPVar);
+
     LabelWPVar->name = "LabelWP";
     LabelWPVar->type = IO::VolumeVariable;
     LabelWPVar->dim = 1;
     LabelWPVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(LabelWPVar);
 
+    PhaseIDVar->name = "PhaseID";
+    PhaseIDVar->type = IO::VolumeVariable;
+    PhaseIDVar->dim = 1;
+    PhaseIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseIDVar);
+
     fillData.copy(Averages.SDn,PhaseVar->data);
     fillData.copy(Averages.SDs,SignDistVar->data);
     fillData.copy(Averages.Label_WP,LabelWPVar->data);
     fillData.copy(Averages.Label_NWP,LabelNWPVar->data);
+    fillData.copy(Averages.PhaseID,PhaseIDVar->data);
     IO::writeData( 0, meshData, 2 );
 /*
 	FILE *NWP_FILE;
