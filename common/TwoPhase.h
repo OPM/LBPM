@@ -438,12 +438,12 @@ void TwoPhase::UpdateMeshValues(){
 					// Solid phase
 					PhaseID(i,j,k) = 0;
 				}
-				else if (Phase(i,j,k) < 0.0){
-					// non-wetting phase
+				else if (SDn(i,j,k) < 0.0){
+					// wetting phase
 					PhaseID(i,j,k) = 2;
 				}
 				else {
-					// wetting phase
+					// non-wetting phase
 					PhaseID(i,j,k) = 1;
 				}
 			}
