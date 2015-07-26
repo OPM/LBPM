@@ -452,10 +452,15 @@ void TwoPhase::UpdateMeshValues(){
 
 }
 void TwoPhase::ComputeLocal(){
-	int i,j,k,n;
+	int i,j,k,n,kmin,kmax;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	for (k=1; k<Nz-1; k++){
+	// If external boundary conditions are set, do not average over the inlet
+	kmin=1; kmax=Nz-1;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+
+	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 				//...........................................................................
@@ -558,6 +563,7 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComponentAverages(){
     int i,j,k,n;
+    int kmin,kmax;
 	int LabelWP,LabelNWP;
 	double TempLocal;
 
@@ -577,7 +583,12 @@ void TwoPhase::ComponentAverages(){
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
 
-	for (k=1; k<Nz-1; k++){
+	// If external boundary conditions are set, do not average over the inlet
+	kmin=1; kmax=Nz-1;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+
+	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 
