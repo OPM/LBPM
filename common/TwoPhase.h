@@ -568,8 +568,9 @@ void TwoPhase::ComponentAverages(){
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,2,Label_WP);
-	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,1,Label_NWP);
+	LabelNWP=1; LabelWP=2;
+	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
+	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
