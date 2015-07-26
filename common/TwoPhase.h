@@ -514,7 +514,6 @@ void TwoPhase::ComputeLocal(){
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
-
 				// wn interface averages
 				if (n_nw_pts > 0){
 					awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
