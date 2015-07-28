@@ -348,11 +348,6 @@ int main(int argc, char **argv)
 	
 	delete Temp;
 	
-
-	FILE *PHASE = fopen("Phase.dat","wb");
-	fwrite(Averages.Phase.get(),8,Nx*Ny*Nz,PHASE);
-	fclose(PHASE);
-	
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
