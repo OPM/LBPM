@@ -570,7 +570,8 @@ void TwoPhase::ComponentAverages(){
 
 	LabelNWP=1; LabelWP=2;
 	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
-	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
+	//	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
+	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
