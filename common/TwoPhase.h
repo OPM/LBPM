@@ -438,12 +438,12 @@ void TwoPhase::UpdateMeshValues(){
 					// Solid phase
 					PhaseID(i,j,k) = 0;
 				}
-				else if (Phase(i,j,k) < 0.0){
-					// non-wetting phase
+				else if (SDn(i,j,k) < 0.0){
+					// wetting phase
 					PhaseID(i,j,k) = 2;
 				}
 				else {
-					// wetting phase
+					// non-wetting phase
 					PhaseID(i,j,k) = 1;
 				}
 			}
@@ -452,10 +452,15 @@ void TwoPhase::UpdateMeshValues(){
 
 }
 void TwoPhase::ComputeLocal(){
-	int i,j,k,n;
+	int i,j,k,n,kmin,kmax;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	for (k=1; k<Nz-1; k++){
+	// If external boundary conditions are set, do not average over the inlet
+	kmin=1; kmax=Nz-1;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+
+	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 				//...........................................................................
@@ -509,7 +514,6 @@ void TwoPhase::ComputeLocal(){
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
-
 				// wn interface averages
 				if (n_nw_pts > 0){
 					awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
@@ -558,13 +562,15 @@ void TwoPhase::ComputeLocal(){
 
 void TwoPhase::ComponentAverages(){
     int i,j,k,n;
+    int kmin,kmax;
 	int LabelWP,LabelNWP;
 	double TempLocal;
 
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
-	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,2,Label_WP);
-	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,1,Label_NWP);
+	LabelNWP=1; LabelWP=2;
+	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
+	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
@@ -577,7 +583,12 @@ void TwoPhase::ComponentAverages(){
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
 
-	for (k=1; k<Nz-1; k++){
+	// If external boundary conditions are set, do not average over the inlet
+	kmin=1; kmax=Nz-1;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+
+	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 

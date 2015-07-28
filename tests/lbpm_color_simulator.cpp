@@ -364,13 +364,6 @@ int main(int argc, char **argv)
 				if (Averages.SDs(n) > 0.0){
 					sum++;	
 				}
-				// The following turns off communication if external BC are being set
-				if (BoundaryCondition > 0){
-					if (kproc==0 && k==0)			id[n]=0;
-					if (kproc==0 && k==1)			id[n]=0;
-					if (kproc==nprocz-1 && k==Nz-2)	id[n]=0;
-					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
-				}
 			}
 		}
 	}
@@ -381,6 +374,21 @@ int main(int argc, char **argv)
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
+
+	for ( k=0;k<Nz;k++){
+		for ( j=0;j<Ny;j++){
+			for ( i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				// The following turns off communication if external BC are being set
+				if (BoundaryCondition > 0){
+					if (kproc==0 && k==0)			id[n]=0;
+					if (kproc==0 && k==1)			id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-2)	id[n]=0;
+					if (kproc==nprocz-1 && k==Nz-1)	id[n]=0;
+				}
+			}
+		}
+	}
 
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
@@ -412,7 +420,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 1;
+					//id[n] = 1;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
 				}					
 			}
@@ -423,7 +431,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 2;
+					//id[n] = 2;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
 				}					
 			}
@@ -439,12 +447,16 @@ int main(int argc, char **argv)
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
 	Dm.CommInit(MPI_COMM_WORLD);
 
+	//...........................................................................
+	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device
+	ScaLBL_Communicator ScaLBL_Comm(Dm);
+
 	// set reservoirs
 	if (BoundaryCondition > 0){
 		for ( k=0;k<Nz;k++){
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
-					// The following turns off communication if external BC are being set
 					if (kproc==0 && k==0)			id[n]=1;
 					if (kproc==0 && k==1)			id[n]=1;
 					if (kproc==nprocz-1 && k==Nz-2)	id[n]=2;
@@ -455,11 +467,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	//...........................................................................
-	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-	// Create a communicator for the device
-	ScaLBL_Communicator ScaLBL_Comm(Dm);
-	
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copy phase ID to device \n");
 	char *ID;
@@ -822,13 +829,13 @@ int main(int argc, char **argv)
 	Averages.ComponentAverages();
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
-*/	//************************************************************************/
-
+	//************************************************************************/
+/*
 	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
 	CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-
+*/
     // Create the MeshDataStruct
     fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);

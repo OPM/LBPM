@@ -348,11 +348,6 @@ int main(int argc, char **argv)
 	
 	delete Temp;
 	
-
-	FILE *PHASE = fopen("Phase.dat","wb");
-	fwrite(Averages.Phase.get(),8,Nx*Ny*Nz,PHASE);
-	fclose(PHASE);
-	
 	// Initializing the blob ID
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -434,6 +429,54 @@ int main(int argc, char **argv)
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
 
+    // Create the MeshDataStruct
+    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    std::vector<IO::MeshDataStruct> meshData(1);
+    meshData[0].meshName = "domain";
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> LabelWPVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> LabelNWPVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PhaseIDVar( new IO::Variable() );
+
+    PhaseVar->name = "phase";
+    PhaseVar->type = IO::VolumeVariable;
+    PhaseVar->dim = 1;
+    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseVar);
+
+    SignDistVar->name = "SignDist";
+    SignDistVar->type = IO::VolumeVariable;
+    SignDistVar->dim = 1;
+    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(SignDistVar);
+
+    LabelNWPVar->name = "LabelNWP";
+    LabelNWPVar->type = IO::VolumeVariable;
+    LabelNWPVar->dim = 1;
+    LabelNWPVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(LabelNWPVar);
+
+    LabelWPVar->name = "LabelWP";
+    LabelWPVar->type = IO::VolumeVariable;
+    LabelWPVar->dim = 1;
+    LabelWPVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(LabelWPVar);
+
+    PhaseIDVar->name = "PhaseID";
+    PhaseIDVar->type = IO::VolumeVariable;
+    PhaseIDVar->dim = 1;
+    PhaseIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseIDVar);
+
+    fillData.copy(Averages.SDn,PhaseVar->data);
+    fillData.copy(Averages.SDs,SignDistVar->data);
+    fillData.copy(Averages.Label_WP,LabelWPVar->data);
+    fillData.copy(Averages.Label_NWP,LabelNWPVar->data);
+    fillData.copy(Averages.PhaseID,PhaseIDVar->data);
+    IO::writeData( 0, meshData, 2 );
+/*
 	FILE *NWP_FILE;
 	NWP_FILE = fopen("NWP.dat","wb");
 	fwrite(Averages.Label_NWP.get(),4,Nx*Ny*Nz,NWP_FILE);
@@ -448,7 +491,7 @@ int main(int argc, char **argv)
 	DISTANCE = fopen("SignDist.dat","wb");
 	fwrite(Averages.SDs.get(),8,Nx*Ny*Nz,DISTANCE);
 	fclose(DISTANCE);
-	
+	*/
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
