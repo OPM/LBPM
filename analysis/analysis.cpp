@@ -576,6 +576,8 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
         final_map[it->first-offset] = it->second.new_id;
     for (std::set<int64_t>::const_iterator it2=local.begin(); it2!=local.end(); ++it2)
         final_map[*it2-offset] = *it2;
+    for (size_t i=0; i<final_map.size(); i++)
+        ASSERT(final_map[i]>=0);
     int ngx = (IDs.size(0)-nx)/2;
     int ngy = (IDs.size(1)-ny)/2;
     int ngz = (IDs.size(2)-nz)/2;
