@@ -13,7 +13,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 28
+#define BLOB_AVG_COUNT 30
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -44,6 +44,8 @@
 #define GWNXY 25
 #define GWNXZ 26
 #define GWNYZ 27
+#define TRAWN 28
+#define TRJWN 29
 
 class TwoPhase{
 
@@ -610,6 +612,7 @@ void TwoPhase::ComponentAverages(){
 				Gns(3) = Gns(4) = Gns(5) = 0.0;
 				KGwns = KNwns = 0.0;
 				Jwn = Kwn = efawns = 0.0;
+				trawn=trJwn=0.0;
 				//...........................................................................
 				//...........................................................................
 				// Compute volume averages
@@ -669,10 +672,19 @@ void TwoPhase::ComponentAverages(){
 					ComponentAverages_WP(JWN,LabelWP) += TempLocal;
 					ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
 
+
 					// Gaussian curvature
 					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 					ComponentAverages_WP(KWN,LabelWP) += TempLocal;
 					ComponentAverages_NWP(KWN,LabelNWP) += TempLocal;
+
+					// Trimmed Mean curvature
+					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+
+					ComponentAverages_WP(TRAWN,LabelWP) += trawn;
+					ComponentAverages_NWP(TRJWN,LabelNWP) += trJwn;
+
 
 					// Compute the normal speed of the interface
 					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
