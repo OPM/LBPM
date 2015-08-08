@@ -1188,8 +1188,9 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNZZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXZ,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(GWNYZ,b));
-			}
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));			}
 		}
 		fflush(NWPLOG);
 
@@ -1221,7 +1222,10 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNZZ,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXY,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXZ,b));
-				fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(GWNYZ,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
+				fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));
+
 			}
 		}
 		fflush(WPLOG);
