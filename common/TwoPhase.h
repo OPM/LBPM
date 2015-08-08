@@ -250,12 +250,12 @@ public:
 			NWPLOG = fopen("components.NWP.tcat","a+");
 			fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 			fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
+			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
 
 			WPLOG = fopen("components.WP.tcat","a+");
 			fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
 			fprintf(WPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
+			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
 		}
 	}
 	~TwoPhase(){
