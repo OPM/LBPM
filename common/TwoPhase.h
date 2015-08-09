@@ -809,6 +809,10 @@ void TwoPhase::ComponentAverages(){
 			}
 			else Jwn=Kwn=0.0;
 
+			trawn = ComponentAverages_NWP(TRAWN,b);
+			trJwn = ComponentAverages_NWP(TRJWN,b);
+			if (trawn > 0.0) trJwn /= trawn;
+
 			lwns = ComponentAverages_NWP(LWNS,b);
 			if (lwns != 0.0){
 				cwns = ComponentAverages_NWP(CWNS,b)/lwns;
@@ -881,6 +885,10 @@ void TwoPhase::ComponentAverages(){
 				Gwn(5) = ComponentAverages_WP(GWNYZ,b)/awn;
 			}
 			else Jwn=Kwn=0.0;
+
+			trawn = ComponentAverages_WP(TRAWN,b);
+			trJwn = ComponentAverages_WP(TRJWN,b);
+			if (trawn > 0.0) trJwn /= trawn;
 
 			lwns = ComponentAverages_WP(LWNS,b);
 			if (lwns != 0.0){
