@@ -845,6 +845,9 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_NWP(VWNSX,b) = vawns(0);
 			ComponentAverages_NWP(VWNSY,b) = vawns(1);
 			ComponentAverages_NWP(VWNSZ,b) = vawns(2);
+
+			ComponentAverages_NWP(TRJWN,b) = trJwn;
+
 		}
 	}
 
@@ -922,6 +925,8 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_WP(VWNSX,b) = vawns(0);
 			ComponentAverages_WP(VWNSY,b) = vawns(1);
 			ComponentAverages_WP(VWNSZ,b) = vawns(2);
+
+			ComponentAverages_WP(TRJWN,b) = trJwn;
 		}
 	}
 }
