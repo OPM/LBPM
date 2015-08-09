@@ -673,19 +673,18 @@ void TwoPhase::ComponentAverages(){
 					ComponentAverages_WP(JWN,LabelWP) += TempLocal;
 					ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
 
+					// Trimmed Mean curvature
+					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+					ComponentAverages_WP(TRAWN,LabelWP) += trawn;
+					ComponentAverages_WP(TRJWN,LabelWP) += trJwn;
+					ComponentAverages_NWP(TRAWN,LabelNWP) += trawn;
+					ComponentAverages_NWP(TRJWN,LabelNWP) += trJwn;
 
 					// Gaussian curvature
 					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 					ComponentAverages_WP(KWN,LabelWP) += TempLocal;
 					ComponentAverages_NWP(KWN,LabelNWP) += TempLocal;
-
-					// Trimmed Mean curvature
-					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
-
-					ComponentAverages_WP(TRAWN,LabelWP) += trawn;
-					ComponentAverages_NWP(TRJWN,LabelNWP) += trJwn;
-
 
 					// Compute the normal speed of the interface
 					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
