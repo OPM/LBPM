@@ -634,7 +634,7 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-2 ){
+							if (DelPhi(n) < 1e-4 ){
 								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
 								ComponentAverages_NWP(PRS,LabelNWP) += 0.125*Press(n);
 							}
@@ -649,7 +649,7 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-2){
+							if (DelPhi(n) < 1e-4){
 								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
 								ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
 							}
