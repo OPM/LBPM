@@ -224,10 +224,11 @@ int main(int argc, char **argv)
     Dm.CommunicateMeshHalo(Averages.SDn);
     Dm.CommunicateMeshHalo(Averages.SDs);
 
-	if (rank==0) printf("computing phase components \n");
 	int timestep=5;
 	Averages.Initialize();
+	if (rank==0) printf("computing phase components \n");
 	Averages.ComponentAverages();
+	if (rank==0) printf("sorting phase components \n");
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
 
