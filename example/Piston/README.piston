@@ -1,0 +1,8 @@
+# This test case sets up a piston displacment example
+# The case is intended to:
+
+1. Verify that the interface and common curve are computed accurately. 
+
+2. Measure the dynamic contact angle and compare to known relationships
+
+Example input files are provided. 

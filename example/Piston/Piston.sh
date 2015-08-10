@@ -1,27 +1,36 @@
 #!/bin/bash
 
-# This runscript is for the Virginia Tech supercomputer HokieSpeed
-#PBS -l walltime=72:00:00
-# Set the number of nodes, and the number of processors per node (generally should be 6)
-#PBS -l nodes=1:ppn=12
-##PBS -l nodes=hs195
-#PBS -A arcadm
-# Access group, queue, and accounting project
-#PBS -W group_list=arcadm
-#PBS -q large_q
+# Lines assigning various pressure BC for Color.in
+echo "0 1 1.01 0.99" > Color.in.pressures
+echo "0 1 1.0125 0.9875" >> Color.in.pressures
+echo "0 1 1.015 0.985" >> Color.in.pressures
+echo "0 1 1.02 0.98" >> Color.in.pressures
+echo "0 1 1.025 0.975" >> Color.in.pressures
+echo "0 1 1.03 0.97" >> Color.in.pressures
 
-module purge
-module load gcc cuda mvapich2/1.9rc1
+for i in `seq 1 6`; do 
+    # Set up cases for each boundary pressure pair
+    dir="Case"$i
+    echo $dir
+    # copy the domain file
+    cp Domain.in $dir
 
-cd $PBS_O_WORKDIR
+    # set up each case -- parameters are fixed in Color.in, with multiple cases to set the boundary pressure
+    sed -n '1p' Color.in > $dir/Color.in
+    sed -n '2p' Color.in >> $dir/Color.in
+    sed -n '3p' Color.in >> $dir/Color.in
+    sed -n '4p' Color.in >> $dir/Color.in
+#    sed -n '5p' Color.in >> $dir/Color.in
+    # print the pressure values into the input file
+    sed -n "${i}p" Color.in.pressures >> $dir/Color.in
+    sed -n '6p' Color.in >> $dir/Color.in
 
-cat $PBS_NODEFILE > hostfile
+done
 
-echo "------------------------------------------"
-echo "Running LBM using MPI!" 
-echo "Number of processors = " $PBS_NP
-echo "------------------------------------------"
-
-mpirun -np 4 ~/install-LBPM-WIA/bin/lb2_Color_wia_mpi >
+# simulations should be run using the following syntax
+# PRE-PROCESSOR
+#mpirun -np 10 ~/install-LBPM-WIA/bin/lbpm_captube_pp
+# RUN THE SIMULAUTION 
+#mpirun -np 10 ~/install-LBPM-WIA/bin/lbpm_color_simulator
 
 exit;
