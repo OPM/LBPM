@@ -1,6 +1,7 @@
 # Copy the examples to the install folder
 INSTALL_EXAMPLE( Bubble )
 INSTALL_EXAMPLE( ConstrainedBubble )
+INSTALL_EXAMPLE( Piston )
 INSTALL_EXAMPLE( Sph1896 )
 
 # Create unit tests for each example
