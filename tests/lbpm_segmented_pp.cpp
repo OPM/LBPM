@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.SDs);
 
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	SSO(Averages.SDs,id,Dm,20);
+	SSO(Averages.SDs,id,Dm,25);
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -175,18 +175,13 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.Phase);
 
 	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
-	SSO(Averages.Phase,id,Dm,20);
+	SSO(Averages.Phase,id,Dm,25);
 
-    sprintf(LocalRankFilename,"Phase.%05i",rank);
-    FILE *PHASE = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
-    fclose(PHASE);
-/*
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
-				Averages.Phase(i,j,k) += 1.0;
+				Averages.Phase(i,j,k) -= 1.0;
 				if (Averages.SDs(i,j,k) > 0.0){
 					if (Averages.Phase(i,j,k) > 0.0){
 						Dm.id[n] = 2;
@@ -200,8 +195,7 @@ int main(int argc, char **argv)
 				}
 				// Initialize distance to +/- 1
 				// Dilation of the non-wetting phase
-				Averages.SDn(i,j,k) = Averages.Phase(i,j,k)+1.0;
-				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.DelPhi(i,j,k) = 0.0;
@@ -213,6 +207,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+
+    sprintf(LocalRankFilename,"Phase.%05i",rank);
+    FILE *PHASE = fopen(LocalRankFilename,"wb");
+    fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
+    fclose(PHASE);
+
 	double vF,vS;
 	vF = vS = 0.0;
 
@@ -220,84 +220,17 @@ int main(int argc, char **argv)
 	if (rank==0) printf("initializing the system \n");
     Averages.SetupCubes(Dm);
     Averages.UpdateSolid();
-    Averages.Initialize();
     Averages.UpdateMeshValues();
     Dm.CommunicateMeshHalo(Averages.Phase);
     Dm.CommunicateMeshHalo(Averages.SDn);
+    Dm.CommunicateMeshHalo(Averages.SDs);
 
-	if (rank==0) printf("computing blobs \n");
- //   int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-  //  		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
-//	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
-
-//     int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-//					 Averages.SDn,Averages.SDs,vF,vS,Averages.BlobLabel);
-
-	if (rank==0) printf("computing local averages  \n");
-	Averages.ComputeLocalBlob();
-	if (rank==0) printf("reducing averages  \n");
-	Averages.Reduce();
-
-	if (rank==0) printf("Writing blobs \n");
-    // Write the local blob ids
-    sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
-    FILE *BLOBLOCAL = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.BlobLabel.get(),4,Averages.BlobLabel.length(),BLOBLOCAL);
-    fclose(BLOBLOCAL);
-    printf("Wrote BlobLabel.%05i \n",rank);
-
-	if (rank==0) printf("Sorting averages \n");
-    //  Blobs.Set(Averages.BlobAverages.NBLOBS);
-    int dimx = (int)Averages.BlobAverages.size(0);
-    int dimy = (int)Averages.BlobAverages.size(1);
-    int TotalBlobInfoSize=dimx*dimy;
-
-    //      BlobContainer Blobs;
-    DoubleArray RecvBuffer(dimx);
-    //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank==0) printf("Number of components is %i \n",dimy);
-
-    for (int b=0; b<dimy; b++){
-
-    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    	for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
-    	MPI_Barrier(MPI_COMM_WORLD);
-
-    	if (Averages.BlobAverages(0,b) > 0.0){
-    		double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
-    		Vn = Averages.BlobAverages(1,b);
-    		pn = Averages.BlobAverages(2,b)/Averages.BlobAverages(0,b);
-    		awn = Averages.BlobAverages(3,b);
-    		ans = Averages.BlobAverages(4,b);
-    		if (awn != 0.0){
-    			Jwn = Averages.BlobAverages(5,b)/Averages.BlobAverages(3,b);
-    			Kwn = Averages.BlobAverages(6,b)/Averages.BlobAverages(3,b);
-    		}
-    		else Jwn=Kwn=0.0;
-
-    		trawn = Averages.BlobAverages(12,b);
-    		if (trawn != 0.0){
-    			trJwn = Averages.BlobAverages(13,b)/trawn;
-    		}
-    		else trJwn=0.0;
-
-    		lwns = Averages.BlobAverages(7,b);
-    		if (lwns != 0.0) cwns = Averages.BlobAverages(8,b)/Averages.BlobAverages(7,b);
-    		else  cwns=0.0;
-    		Averages.BlobAverages(2,b) = pn;
-    		Averages.BlobAverages(5,b) = trJwn;
-    		Averages.BlobAverages(6,b) = Kwn;
-    		Averages.BlobAverages(8,b) = cwns;
-    		//	Averages.BlobAverages(13,b) = trJwn;
-    	}
-    }
-
-    if (rank==0) printf("Sorting blobs by volume \n");
-    Averages.SortBlobs();
-
-    if (rank==0)   WriteBlobs(Averages);
-    */
+	if (rank==0) printf("computing phase components \n");
+	int timestep=5;
+	Averages.Initialize();
+	Averages.ComponentAverages();
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
 
     MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();
