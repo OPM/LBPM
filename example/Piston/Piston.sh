@@ -12,6 +12,7 @@ for i in `seq 1 6`; do
     # Set up cases for each boundary pressure pair
     dir="Case"$i
     echo $dir
+    mkdir -p $dir
     # copy the domain file
     cp Domain.in $dir
 
