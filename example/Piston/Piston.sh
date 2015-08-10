@@ -28,8 +28,8 @@ for i in `seq 1 6`; do
 done
 
 # simulations should be run using the following syntax
-# PRE-PROCESSOR
-#mpirun -np 10 ~/install-LBPM-WIA/bin/lbpm_captube_pp
+# PRE-PROCESSOR - set the radius to 18 voxel lengths
+#mpirun -np 10 ~/install-LBPM-WIA/bin/lbpm_captube_pp 18 1
 # RUN THE SIMULAUTION 
 #mpirun -np 10 ~/install-LBPM-WIA/bin/lbpm_color_simulator
 
