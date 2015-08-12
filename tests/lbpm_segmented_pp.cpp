@@ -182,17 +182,6 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				Averages.Phase(i,j,k) -= 1.0;
-				if (Averages.SDs(i,j,k) > 0.0){
-					if (Averages.Phase(i,j,k) > 0.0){
-						Dm.id[n] = 2;
-					}
-					else{
-						Dm.id[n] = 1;
-					}
-				}
-				else{
-					Dm.id[n] = 0;
-				}
 				// Initialize distance to +/- 1
 				// Dilation of the non-wetting phase
 				Averages.SDn(i,j,k) = -Averages.Phase(i,j,k);
@@ -204,6 +193,17 @@ int main(int argc, char **argv)
 				Averages.Vel_x(i,j,k) = 0.0;
 				Averages.Vel_y(i,j,k) = 0.0;
 				Averages.Vel_z(i,j,k) = 0.0;
+				if (Averages.SDs(i,j,k) > 0.0){
+					if (Averages.Phase(i,j,k) > 0.0){
+						Dm.id[n] = 2;
+					}
+					else{
+						Dm.id[n] = 1;
+					}
+				}
+				else{
+					Dm.id[n] = 0;
+				}
 			}
 		}
 	}
