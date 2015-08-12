@@ -515,7 +515,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     for (size_t i=0; i<LocalIDs.length(); i++) {
         if ( LocalIDs(i)>=0 ) {
             local.insert(LocalIDs(i));
-            if ( LocalIDs(i)!=IDs(i) )
+            if ( LocalIDs(i)!=IDs(i) && IDs(i)>= 0)
                 map[LocalIDs(i)].remote_ids.insert(IDs(i));
         }
     }
