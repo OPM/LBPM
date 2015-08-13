@@ -592,6 +592,18 @@ int main(int argc, char **argv)
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
+	if (BoundaryCondition==1 && Dm.kproc == 0){
+	  for (n=Nx*Ny; n<2*Nx*Ny; n++){
+	    if (Dm.id[n]>0 && 3.0*Pressure[n] != din) printf("Inlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	  }
+	}
+
+	if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
+	  for (n=Nx*Ny*(Nz-2); n<Nx*Ny*(Nz-1); n++){
+	    if (Dm.id[n]>0 && 3.0*Pressure[n] != dout) printf("Outlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	  }
+	}
+
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
