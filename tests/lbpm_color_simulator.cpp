@@ -375,21 +375,6 @@ int main(int argc, char **argv)
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
 
-	for ( k=0;k<Nz;k++){
-		for ( j=0;j<Ny;j++){
-			for ( i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				// The following turns off communication if external BC are being set
-				if (BoundaryCondition > 0){
-					if (Dm.kproc==0 && k==0)			id[n]=0;
-					if (Dm.kproc==0 && k==1)			id[n]=0;
-					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=0;
-					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=0;
-				}
-			}
-		}
-	}
-
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
 	kstart = 1;
