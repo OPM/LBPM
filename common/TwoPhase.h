@@ -13,7 +13,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 28
+#define BLOB_AVG_COUNT 30
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -44,6 +44,8 @@
 #define GWNXY 25
 #define GWNXZ 26
 #define GWNYZ 27
+#define TRAWN 28
+#define TRJWN 29
 
 class TwoPhase{
 
@@ -248,12 +250,12 @@ public:
 			NWPLOG = fopen("components.NWP.tcat","a+");
 			fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 			fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
+			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
 
 			WPLOG = fopen("components.WP.tcat","a+");
 			fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
 			fprintf(WPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz\n");
+			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
 		}
 	}
 	~TwoPhase(){
@@ -570,8 +572,8 @@ void TwoPhase::ComponentAverages(){
 
 	LabelNWP=1; LabelWP=2;
 	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
-	//	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
-	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
+	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
+	//NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
@@ -611,6 +613,7 @@ void TwoPhase::ComponentAverages(){
 				Gns(3) = Gns(4) = Gns(5) = 0.0;
 				KGwns = KNwns = 0.0;
 				Jwn = Kwn = efawns = 0.0;
+				trawn=trJwn=0.0;
 				//...........................................................................
 				//...........................................................................
 				// Compute volume averages
@@ -631,7 +634,7 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-2 ){
+							if (DelPhi(n) < 1e-4 ){
 								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
 								ComponentAverages_NWP(PRS,LabelNWP) += 0.125*Press(n);
 							}
@@ -646,7 +649,7 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-2){
+							if (DelPhi(n) < 1e-4){
 								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
 								ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
 							}
@@ -669,6 +672,14 @@ void TwoPhase::ComponentAverages(){
 					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 					ComponentAverages_WP(JWN,LabelWP) += TempLocal;
 					ComponentAverages_NWP(JWN,LabelNWP) += TempLocal;
+
+					// Trimmed Mean curvature
+					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+					ComponentAverages_WP(TRAWN,LabelWP) += trawn;
+					ComponentAverages_WP(TRJWN,LabelWP) += trJwn;
+					ComponentAverages_NWP(TRAWN,LabelNWP) += trawn;
+					ComponentAverages_NWP(TRJWN,LabelNWP) += trJwn;
 
 					// Gaussian curvature
 					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
@@ -798,6 +809,10 @@ void TwoPhase::ComponentAverages(){
 			}
 			else Jwn=Kwn=0.0;
 
+			trawn = ComponentAverages_NWP(TRAWN,b);
+			trJwn = ComponentAverages_NWP(TRJWN,b);
+			if (trawn > 0.0) trJwn /= trawn;
+
 			lwns = ComponentAverages_NWP(LWNS,b);
 			if (lwns != 0.0){
 				cwns = ComponentAverages_NWP(CWNS,b)/lwns;
@@ -830,6 +845,9 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_NWP(VWNSX,b) = vawns(0);
 			ComponentAverages_NWP(VWNSY,b) = vawns(1);
 			ComponentAverages_NWP(VWNSZ,b) = vawns(2);
+
+			ComponentAverages_NWP(TRJWN,b) = trJwn;
+
 		}
 	}
 
@@ -871,6 +889,10 @@ void TwoPhase::ComponentAverages(){
 			}
 			else Jwn=Kwn=0.0;
 
+			trawn = ComponentAverages_WP(TRAWN,b);
+			trJwn = ComponentAverages_WP(TRJWN,b);
+			if (trawn > 0.0) trJwn /= trawn;
+
 			lwns = ComponentAverages_WP(LWNS,b);
 			if (lwns != 0.0){
 				cwns = ComponentAverages_WP(CWNS,b)/lwns;
@@ -903,6 +925,8 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_WP(VWNSX,b) = vawns(0);
 			ComponentAverages_WP(VWNSY,b) = vawns(1);
 			ComponentAverages_WP(VWNSZ,b) = vawns(2);
+
+			ComponentAverages_WP(TRJWN,b) = trJwn;
 		}
 	}
 }
@@ -1177,8 +1201,9 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNZZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXZ,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(GWNYZ,b));
-			}
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));			}
 		}
 		fflush(NWPLOG);
 
@@ -1210,7 +1235,10 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNZZ,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXY,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXZ,b));
-				fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(GWNYZ,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
+				fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));
+
 			}
 		}
 		fflush(WPLOG);

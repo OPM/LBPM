@@ -126,9 +126,9 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-    PROFILE_ENABLE(1);
-    PROFILE_ENABLE_TRACE();
-    PROFILE_ENABLE_MEMORY();
+    PROFILE_ENABLE(0);
+    //PROFILE_ENABLE_TRACE();
+    //PROFILE_ENABLE_MEMORY();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("Main");
 
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
 		if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
 		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
-		if (InitialCondition==1) printf("Initial conditions asdsigned from restart file \n");
+		if (InitialCondition==1) printf("Initial conditions assigned from restart file \n");
 		printf("********************************************************\n");
 	}
 
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
 
-	for ( k=0;k<Nz;k++){
+	/*	for ( k=0;k<Nz;k++){
 		for ( j=0;j<Ny;j++){
 			for ( i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
@@ -401,13 +401,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	*/
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
 	kstart = 1;
 	kfinish = Nz-1;
-	if (BoundaryCondition >  0 && kproc==0)		kstart = 4;
-	if (BoundaryCondition >  0 && kproc==nprocz-1)	kfinish = Nz-4;
+	if (BoundaryCondition >  0 && Dm.kproc==0)		kstart = 4;
+	if (BoundaryCondition >  0 && Dm.kproc==nprocz-1)	kfinish = Nz-4;
 
 	// Compute the pore volume
 	sum_local = 0.0;
@@ -427,7 +427,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0  && kproc == 0){
+	if (BoundaryCondition >  0  && Dm.kproc == 0){
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (BoundaryCondition >  0  && kproc == nprocz-1){
+	if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -470,10 +470,10 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (kproc==0 && k==0)			id[n]=1;
-					if (kproc==0 && k==1)			id[n]=1;
-					if (kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					if (kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					if (Dm.kproc==0 && k==0)			id[n]=1;
+					if (Dm.kproc==0 && k==1)			id[n]=1;
+					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
+					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
 					Dm.id[n] = id[n];
 				}
 			}
@@ -591,12 +591,12 @@ int main(int argc, char **argv)
 		printf("Setting inlet pressure = %f \n", din);
 		printf("Setting outlet pressure = %f \n", dout);
 	}
-	if (BoundaryCondition==1 && kproc == 0)	{
+	if (BoundaryCondition==1 && Dm.kproc == 0)	{
 		PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 		
-	if (BoundaryCondition==1 && kproc == nprocz-1){
+	if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
 		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
@@ -605,13 +605,13 @@ int main(int argc, char **argv)
 		printf("Setting inlet velocity = %f \n", din);
 		printf("Setting outlet velocity = %f \n", dout);
 	}
-	if (BoundaryCondition==2 && kproc == 0)	{
+	if (BoundaryCondition==2 && Dm.kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 	}
 
-	if (BoundaryCondition==2 && kproc == nprocz-1){
+	if (BoundaryCondition==2 && Dm.kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
@@ -620,6 +620,18 @@ int main(int argc, char **argv)
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
+	/*	if (BoundaryCondition==1 && Dm.kproc == 0){
+	  for (n=Nx*Ny; n<2*Nx*Ny; n++){
+	    if (Dm.id[n]>0 && 3.0*Pressure[n] != din) printf("Inlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	  }
+	}
+
+	if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
+	  for (n=Nx*Ny*(Nz-2); n<Nx*Ny*(Nz-1); n++){
+	    if (Dm.id[n]>0 && 3.0*Pressure[n] != dout) printf("Outlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	  }
+	}
+	*/
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
@@ -734,22 +746,22 @@ int main(int argc, char **argv)
 		DeviceBarrier();
 		
 		// Pressure boundary conditions
-		if (BoundaryCondition==1 && kproc == 0)	{
+		if (BoundaryCondition==1 && Dm.kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
-		if (BoundaryCondition==1 && kproc == nprocz-1){
+		if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 
 		// Velocity boundary conditions
-		if (BoundaryCondition==2 && kproc == 0)	{
+		if (BoundaryCondition==2 && Dm.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 			//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
-		if (BoundaryCondition==2 && kproc == nprocz-1){
+		if (BoundaryCondition==2 && Dm.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
@@ -787,7 +799,7 @@ int main(int argc, char **argv)
 			MPI_Barrier(MPI_COMM_WORLD);
             PROFILE_STOP("Copy phase");
 		}
-        if ( timestep%100 == 0){
+        if ( timestep%1000 == 0){
             // Compute the global blob id and compare to the previous version
             PROFILE_START("Identify blobs and maps");
 			DeviceBarrier();
@@ -797,7 +809,10 @@ int main(int argc, char **argv)
             int nblobs2 = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
                 Averages.Phase,Averages.SDs,vF,vS,GlobalBlobID2);
             if ( !GlobalBlobID.empty() ) {
+                // Compute the timestep-timestep map
                 ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+                // Renumber the current timestep's ids
+                
             }
             std::swap(GlobalBlobID,GlobalBlobID2);
             PROFILE_STOP("Identify blobs and maps");
@@ -882,6 +897,7 @@ int main(int argc, char **argv)
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
     std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
     PhaseVar->name = "phase";
@@ -889,6 +905,11 @@ int main(int argc, char **argv)
     PhaseVar->dim = 1;
     PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(PhaseVar);
+    PressVar->name = "Pressure";
+    PressVar->type = IO::VolumeVariable;
+    PressVar->dim = 1;
+    PressVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PressVar);
     SignDistVar->name = "SignDist";
     SignDistVar->type = IO::VolumeVariable;
     SignDistVar->dim = 1;
