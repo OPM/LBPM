@@ -1433,19 +1433,19 @@ extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz,
 }
 
 /*
-//*************************************************************************
+// *************************************************************************
 extern "C" void InitDenColor( int nblocks, int nthreads, int S,
 		char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	InitDenColor <<<nblocks, nthreads>>>  (ID, Den, Phi, das, dbs, Nx, Ny, Nz, S);
 }
-//*************************************************************************
+// *************************************************************************
 extern "C" void ComputeColorGradient(int nBlocks, int nthreads, int S,
 		char *ID, double *Phi, double *ColorGrad, int Nx, int Ny, int Nz)
 {
 	ComputeColorGradient<<<nBlocks,nthreads>>>(ID, Phi, ColorGrad, Nx, Ny, Nz, S);
 }
-//*************************************************************************
+// *************************************************************************
 extern "C" void ColorCollide(int nBlocks, int nthreads, int S,
 		char *ID, double *f_even, double *f_odd, double *ColorGrad, double *Velocity,
 		double rlxA, double rlxB,double alpha, double beta, double Fx, double Fy, double Fz,
@@ -1454,7 +1454,7 @@ extern "C" void ColorCollide(int nBlocks, int nthreads, int S,
 	ColorCollide<<<nBlocks, nthreads>>>(ID, f_even, f_odd, ColorGrad, Velocity, Nx, Ny, Nz, S,
 							 rlxA, rlxB, alpha, beta, Fx, Fy, Fz, pBC);
 }
-//*************************************************************************
+// *************************************************************************
 extern "C" void ColorCollideOpt(int nBlocks, int nthreads, int S,
 								char *ID, double *f_even, double *f_odd, double *Phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz,double rlxA, double rlxB, 
@@ -1467,20 +1467,20 @@ extern "C" void ColorCollideOpt(int nBlocks, int nthreads, int S,
 //							 rlxA, rlxB, alpha, beta, Fx, Fy, Fz, pBC);
 }
 
-//*************************************************************************
+// *************************************************************************
 extern "C" void DensityStreamD3Q7(int nBlocks, int nthreads, int S,
 		char *ID, double *Den, double *Copy, double *Phi, double *ColorGrad, double *Velocity,
 		double beta, int Nx, int Ny, int Nz, bool pBC)
 {
 	DensityStreamD3Q7<<<nBlocks, nthreads>>>(ID,Den,Copy,Phi,ColorGrad,Velocity,beta,Nx,Ny,Nz,pBC,S);
 }
-//*************************************************************************
+// *************************************************************************
 extern "C" void ComputePhi(int nBlocks, int nthreads, int S,
 		char *ID, double *Phi, double *Copy, double *Den, int N)
 {
 	ComputePhi<<<nBlocks, nthreads>>>(ID,Phi,Copy,Den,N,S);
 }
-//*************************************************************************
+// *************************************************************************
 extern "C" void ComputePressure(int nBlocks, int nthreads, int S,
 									char *ID, double *disteven, double *distodd, 
 									double *Pressure, int Nx, int Ny, int Nz)

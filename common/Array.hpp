@@ -313,6 +313,19 @@ void Array<TYPE>::fill( const TYPE& value )
         d_data[i] = value;
 }
 
+/********************************************************
+*  std::swap                                            *
+********************************************************/
+template<class TYPE>
+void std::swap(Array<TYPE>& v1, Array<TYPE>& v2)
+{
+    std::swap(v1.d_ndim,v2.d_ndim);
+    std::swap(v1.d_N,v2.d_N);
+    std::swap(v1.d_length,v2.d_length);
+    std::swap(v1.d_data,v2.d_data);
+    std::swap(v1.d_ptr,v2.d_ptr);
+}
+
 
 /********************************************************
 *  Simple math operations                               *

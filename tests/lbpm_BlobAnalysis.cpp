@@ -219,7 +219,7 @@ int main(int argc, char **argv)
     int dimy = Averages.ComponentAverages_NWP.size(1);
     int TotalBlobInfoSize=dimx*dimy;
    
-    FILE *BLOBLOG;
+    FILE *BLOBLOG = NULL;
     if (rank==0){
       	BLOBLOG=fopen("blobs.tcat","w");	
         //printf("dimx=%i \n",dimx);
@@ -312,7 +312,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	double iVol=1.0/TCAT.Dm.Volume;
 	double PoreVolume;
 	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
-	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
+	double sw=0,awnD,awsD,ansD,lwnsDD,JwnD,pc;
 	nwp_volume=vol_n=pan=awn=ans=Jwn=Kwn=lwns=clwns=pawn=0.0;
 	pw = TCAT.paw_global;
 	aws = TCAT.aws;

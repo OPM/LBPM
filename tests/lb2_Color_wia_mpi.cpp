@@ -11,7 +11,10 @@
 #include "TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
+#ifndef CBUB
 #define CBUB
+#endif
+
 
 /*
  * Simulator for two-phase flow in porous media

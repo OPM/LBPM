@@ -11,6 +11,8 @@
 #include "TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
+#include "ProfilerApp.h"
+
 //#define WRITE_SURFACES
 
 /*
@@ -124,6 +126,12 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
+    PROFILE_ENABLE(1);
+    PROFILE_ENABLE_TRACE();
+    PROFILE_ENABLE_MEMORY();
+    PROFILE_SYNCHRONIZE();
+    PROFILE_START("Main");
+
 	// Variables that specify the computational domain  
 	string FILENAME;
 	unsigned int nBlocks, nthreads;
@@ -141,7 +149,7 @@ int main(int argc, char **argv)
 	int BoundaryCondition;
 	int InitialCondition;
 //	bool pBC,Restart;
-	int i,j,k,n;
+	int i,j,k;
 
 	// pmmc threshold values
 	double fluid_isovalue,solid_isovalue;
@@ -235,6 +243,10 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	//.................................................
+
+    // Get the rank info
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 	RESTART_INTERVAL=interval;
@@ -346,7 +358,7 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
+				int n = k*Nx*Ny+j*Nx+i;
 				id[n] = 0;
 			}
 		}
@@ -356,7 +368,7 @@ int main(int argc, char **argv)
 	for ( k=0;k<Nz;k++){
 		for ( j=0;j<Ny;j++){
 			for ( i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
+				int n = k*Nx*Ny+j*Nx+i;
 				if (Averages.SDs(n) > 0.0){
 					id[n] = 2;	
 				}
@@ -378,7 +390,7 @@ int main(int argc, char **argv)
 	for ( k=0;k<Nz;k++){
 		for ( j=0;j<Ny;j++){
 			for ( i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
+				int n = k*Nx*Ny+j*Nx+i;
 				// The following turns off communication if external BC are being set
 				if (BoundaryCondition > 0){
 					if (kproc==0 && k==0)			id[n]=0;
@@ -402,7 +414,7 @@ int main(int argc, char **argv)
 	for ( k=kstart;k<kfinish;k++){
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
-				n = k*Nx*Ny+j*Nx+i;
+				int n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					sum_local += 1.0;
 				}
@@ -419,7 +431,7 @@ int main(int argc, char **argv)
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
+					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 1;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
 				}					
@@ -430,7 +442,7 @@ int main(int argc, char **argv)
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
+					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 2;
 					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
 				}					
@@ -457,6 +469,7 @@ int main(int argc, char **argv)
 		for ( k=0;k<Nz;k++){
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
+					int n = k*Nx*Ny+j*Nx+i;
 					if (kproc==0 && k==0)			id[n]=1;
 					if (kproc==0 && k==1)			id[n]=1;
 					if (kproc==nprocz-1 && k==Nz-2)	id[n]=2;
@@ -475,7 +488,7 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
+				int n = k*Nx*Ny+j*Nx+i;
 				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
 			}
 		}
@@ -643,7 +656,10 @@ int main(int argc, char **argv)
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
+    PROFILE_START("Loop");
+    IntArray GlobalBlobID, GlobalBlobID2;
 	while (timestep < timestepMax && err > tol ){
+        PROFILE_START("Update");
 
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
@@ -741,6 +757,7 @@ int main(int argc, char **argv)
 		//...................................................................................
 
 		MPI_Barrier(MPI_COMM_WORLD);
+        PROFILE_STOP("Update");
 
 		// Timestep completed!
 		timestep++;
@@ -759,6 +776,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase from the GPU -> CPU
 			//...........................................................................
+            PROFILE_START("Copy phase");
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
@@ -767,8 +785,25 @@ int main(int argc, char **argv)
 			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
 			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
+            PROFILE_STOP("Copy phase");
 		}
+        if ( timestep%100 == 0){
+            // Compute the global blob id and compare to the previous version
+            PROFILE_START("Identify blobs and maps");
+			DeviceBarrier();
+			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
+            double vF = 0.0;
+            double vS = 0.0;
+            int nblobs2 = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
+                Averages.Phase,Averages.SDs,vF,vS,GlobalBlobID2);
+            if ( !GlobalBlobID.empty() ) {
+                ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+            }
+            std::swap(GlobalBlobID,GlobalBlobID2);
+            PROFILE_STOP("Identify blobs and maps");
+        }
 		if (timestep%1000 == 5){
+            PROFILE_START("Compute dist");
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
@@ -787,9 +822,11 @@ int main(int argc, char **argv)
 			Averages.SortBlobs();
 			Averages.PrintComponents(timestep);
 */			//....................................................................
+            PROFILE_STOP("Compute dist");
 		}
 
 		if (timestep%RESTART_INTERVAL == 0){
+            PROFILE_START("Save Checkpoint");
 			if (pBC){
 				//err = fabs(sat_w - sat_w_previous);
 				//sat_w_previous = sat_w;
@@ -804,8 +841,11 @@ int main(int argc, char **argv)
 			CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
+            PROFILE_STOP("Save Checkpoint");
+            PROFILE_SAVE("lbpm_colo_simulator",1);
 		}
 	}
+    PROFILE_STOP("Loop");
 	//************************************************************************/
 	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -889,6 +929,8 @@ int main(int argc, char **argv)
 	fwrite(Grad,8,3*N,GRAD);
 	fclose(GRAD);
 	*/
+    PROFILE_STOP("Main");
+    PROFILE_SAVE("lbpm_colo_simulator",1);
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();

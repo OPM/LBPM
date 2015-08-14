@@ -13,27 +13,6 @@
  * @brief  Compute the blob
  * @details  Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
  * @return  Returns the number of cubes in the blob
- * @param[out] blobs        blobs
- * @param[out] nblobs       Number of blobs
- * @param[out] ncubes       Number of cubes
- * @param[out] indicator    indicator
- * @param[in]  F            F
- * @param[in]  S            S
- * @param[in]  vf           vf
- * @param[in]  vs           vs
- * @param[in]  startx       startx
- * @param[in]  starty       starty
- * @param[in/out] temp      temp
- */
-int ComputeBlob( IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
-	   const DoubleArray &F, const DoubleArray &S, double vf, double vs, int startx, int starty,
-	   int startz, IntArray &temp, bool periodic=true );
-
-
-/*!
- * @brief  Compute the blob
- * @details  Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
- * @return  Returns the number of cubes in the blob
  * @param[in] Phase         Phase
  * @param[in] SignDist      SignDist
  * @param[in] vF            vF

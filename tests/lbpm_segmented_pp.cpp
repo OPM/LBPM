@@ -14,9 +14,9 @@
 #include <TwoPhase.h>
 
 inline void MeanFilter(DoubleArray &Mesh){
-	for (int k=1; k<Mesh.size(2)-1; k++){
-		for (int j=1; j<Mesh.size(1)-1; j++){
-			for (int i=1; i<Mesh.size(0)-1; i++){
+	for (int k=1; k<(int)Mesh.size(2)-1; k++){
+		for (int j=1; j<(int)Mesh.size(1)-1; j++){
+			for (int i=1; i<(int)Mesh.size(0)-1; i++){
 				double sum;
 				sum=Mesh(i,j,k)+Mesh(i+1,j,k)+Mesh(i-1,j,k)+Mesh(i,j+1,k)+Mesh(i,j-1,k)+
 						+Mesh(i,j,k+1)+Mesh(i,j,k-1);

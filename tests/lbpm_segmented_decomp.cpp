@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     if ( nprocs < nprocx*nprocy*nprocz ){
         ERROR("Insufficient number of processors");
     }
-    char *SegData;
+    char *SegData = NULL;
     // Rank=0 reads the entire segmented data and distributes to worker processes
     if (rank==0){
     	printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);

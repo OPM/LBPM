@@ -10,220 +10,122 @@ inline const TYPE* getPtr( const std::vector<TYPE>& x ) { return x.empty() ? NUL
 
 
 /******************************************************************
- * Compute the blobs                                              *
- ******************************************************************/
-static int ComputePhaseComponent( IntArray &ComponentLabel,
-		const IntArray &PhaseID, int VALUE, int &ncomponents,
-		int startx, int starty, int startz, IntArray &temp, bool periodic)
+* Compute the blobs                                               *
+******************************************************************/
+int ComputeBlob( const Array<bool>& isPhase, IntArray& LocalBlobID, bool periodic, int start_id )
 {
-
-	// Get the dimensions
-	int Nx = PhaseID.size(0);  // maxima for the meshes
-	int Ny = PhaseID.size(1);
-	int Nz = PhaseID.size(2);
-
-	int cubes_in_blob=0;
-	int nrecent = 1;                    // number of nodes added at most recent sweep
-	temp(0,0) = startx;                 // Set the initial point as a "seed" for the sweeps
-	temp(1,0) = starty;
-	temp(2,0) = startz;
-	int ntotal = 1;                     // total number of nodes in blob
-	ComponentLabel(startx,starty,startz) = ncomponents;
-
-	int p,s,x,y,z,site,start,finish,nodx,nody,nodz;
-	int imin=startx,imax=startx,jmin=starty,jmax=starty;    // initialize maxima / minima
-	int kmin=startz,kmax=startz;
-	int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
-			{1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
-			{1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
-			{1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
-			{-1,-1,1},{-1,-1,-1}};   // directions to neighbors
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-	bool status = 1;                    // status == true => continue to look for points
-	while (status == 1){
-		start = ntotal - nrecent;
-		finish = ntotal;
-		nrecent = 0;                    // set recent points back to zero for next sweep through
-		for (s=start;s<finish;s++){
-			// Loop over recent points; look for new points
-			x = temp(0,s);
-			y = temp(1,s);
-			z = temp(2,s);
-			// Looop over the directions
-			for (p=0;p<26;p++){
-				nodx=x+d[p][0];
-				nody=y+d[p][1];
-				nodz=z+d[p][2];
-				if ( periodic ) {
-					if (nodx < 0 ){ nodx = Nx-1; }        // Periodic BC for x
-					if (nodx > Nx-1 ){ nodx = 0; }
-					if (nody < 0 ){ nody = Ny-1; }        // Periodic BC for y
-					if (nody > Ny-1 ){ nody = 0; }
-					if (nodz < 0 ){ nodz = Nz-1; }        // Periodic BC for z
-					if (nodz > Nz-1 ){ nodz = 0; }
-				} else {
-					if ( nodx<0 || nodx>=Nx || nody<0 || nody>=Ny || nodz<0 || nodz>=Nz )
-						continue;
-				}
-				site = nodz*Nx*Ny+nody*Nx+nodx;
-				if ( PhaseID(nodx,nody,nodz) == VALUE && ComponentLabel(nodx,nody,nodz) == -1 ){
-					// Node is a part of the blob - add it to the list
-					temp(0,ntotal) = nodx;
-					temp(1,ntotal) = nody;
-					temp(2,ntotal) = nodz;
-					ntotal++;
-					nrecent++;
-					// Update the component map for phase
-					ComponentLabel(nodx,nody,nodz) = ncomponents;
-					// Update the min / max for the cube loop
-					if ( nodx < imin ){ imin = nodx; }
-					if ( nodx > imax ){ imax = nodx; }
-					if ( nody < jmin ){ jmin = nody; }
-					if ( nody > jmax ){ jmax = nody; }
-					if ( nodz < kmin ){ kmin = nodz; }
-					if ( nodz > kmax ){ kmax = nodz; }
-				}
-			}
-
-		}
-		if ( nrecent == 0){
-			status = 0;
-		}
-	}
-	return ntotal;
-}
-
-int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
-    const DoubleArray &F, const DoubleArray &S, double vf, double vs, 
-    int startx, int starty, int startz, IntArray &temp, bool periodic)
-{
-    // Compute the blob (F>vf|S>vs) starting from (i,j,k) - oil blob
-    // F>vf => oil phase S>vs => in porespace
-    // update the list of blobs, indicator mesh
-    int m = F.size(0);  // maxima for the meshes
-    int n = F.size(1);
-    int o = F.size(2);
-
-    int cubes_in_blob=0;
-    int nrecent = 1;                    // number of nodes added at most recent sweep
-    temp(0,0) = startx;                 // Set the initial point as a "seed" for the sweeps
-    temp(1,0) = starty;
-    temp(2,0) = startz;
-    int ntotal = 1;                     // total number of nodes in blob
-    indicator(startx,starty,startz) = nblobs;
-
-    int p,s,x,y,z,start,finish,nodx,nody,nodz;
-    int imin=startx,imax=startx,jmin=starty,jmax=starty;    // initialize maxima / minima
-    int kmin=startz,kmax=startz;
-    int d[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
-                    {1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
-                    {1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
-                    {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
-                    {-1,-1,1},{-1,-1,-1}};   // directions to neighbors
-    int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
-    bool status = 1;                    // status == true => continue to look for points
-    while (status == 1){
-        start = ntotal - nrecent;
-        finish = ntotal;
-        nrecent = 0;                    // set recent points back to zero for next sweep through
-        for (s=start;s<finish;s++){
-            // Loop over recent points; look for new points
-            x = temp(0,s);
-            y = temp(1,s);
-            z = temp(2,s);
-            // Looop over the directions
-            for (p=0;p<26;p++){
-                nodx=x+d[p][0];
-                nody=y+d[p][1];
-                nodz=z+d[p][2];
-                if ( periodic ) {
-                    if (nodx < 0 ){ nodx = m-1; }        // Periodic BC for x
-                    if (nodx > m-1 ){ nodx = 0; }
-                    if (nody < 0 ){ nody = n-1; }        // Periodic BC for y
-                    if (nody > n-1 ){ nody = 0; }
-                    if (nodz < 0 ){ nodz = o-1; }        // Periodic BC for z
-                    if (nodz > o-1 ){ nodz = 0; }
-                } else {
-                    if ( nodx<0 || nodx>=m || nody<0 || nody>=n || nodz<0 || nodz>=o )
+    PROFILE_START("ComputeBlob",1);
+    ASSERT(isPhase.size(0)==LocalBlobID.size(0));
+    ASSERT(isPhase.size(1)==LocalBlobID.size(1));
+    ASSERT(isPhase.size(2)==LocalBlobID.size(2));
+    const int Nx = isPhase.size(0);  // maxima for the meshes
+    const int Ny = isPhase.size(1);
+    const int Nz = isPhase.size(2);
+    std::vector<int> map;
+    map.reserve(128);
+    // Get the list of neighbors we need to check
+    int N_neighbors = 0;
+    int d[26][3];
+    bool include_corners = false;   // Do we need to include cells that only touch at a corder/edge
+    if ( include_corners ) {
+        // Include corners/edges as neighbors, check all cells
+        N_neighbors = 26;
+        const int tmp[26][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+                                {1,1,0},{1,-1,0},{-1,1,0},{-1,-1,0},{1,0,1},{-1,0,1},
+                                {1,0,-1},{-1,0,-1},{0,1,1},{0,-1,1},{0,1,-1},{0,-1,-1},
+                                {1,1,1},{1,1,-1},{1,-1,1},{1,-1,-1},{-1,1,1},{-1,1,-1},
+                                {-1,-1,1},{-1,-1,-1}};   // directions to neighbors
+        memcpy(d,tmp,sizeof(tmp));
+    } else {
+        // Do not include corners/edges as neighbors
+        if ( periodic ) {
+            // Include all neighbors for periodic problems
+            N_neighbors = 6;
+            const int tmp[6][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};   // directions to neighbors
+            memcpy(d,tmp,sizeof(tmp));
+        } else {
+            // We only need to include the lower neighbors for non-periodic problems
+            N_neighbors = 3;
+            const int tmp[3][3] = {{-1,0,0},{0,-1,0},{0,0,-1}};   // directions to neighbors
+            memcpy(d,tmp,sizeof(tmp));
+        }
+    }
+    // Loop through all the points
+    int last = start_id-1;
+    std::vector<int> neighbor_ids;
+    neighbor_ids.reserve(N_neighbors);
+    const bool *isPhasePtr = isPhase.get();
+    int *LocalBlobIDPtr = LocalBlobID.get();
+    for (int z=0; z<Nz; z++) {
+        for (int y=0; y<Ny; y++) {
+            for (int x=0; x<Nx; x++) {
+                int index = x + y*Nx + z*Nx*Ny;
+                if ( !isPhasePtr[index] )
+                    continue;
+                // Get all neighbor indicies
+                int N_list=0, neighbor_ids[26];
+                for (int p=0; p<N_neighbors; p++) {
+                    // Get the neighbor index
+                    int x2 = x+d[p][0];
+                    int y2 = y+d[p][1];
+                    int z2 = z+d[p][2];
+                    if ( periodic ) {
+                        x2 = x2<0 ? Nx-1:x2;         // Periodic BC for x
+                        x2 = x2>Nx-1 ? 0:x2;
+                        y2 = y2<0 ? Ny-1:y2;         // Periodic BC for x
+                        y2 = y2>Ny-1 ? 0:y2;
+                        z2 = z2<0 ? Nz-1:z2;         // Periodic BC for x
+                        z2 = z2>Nz-1 ? 0:z2;
+                    } else {
+                        if ( x2<0 || x2>=Nx || y2<0 || y2>=Ny || z2<0 || z2>=Nz )
+                            continue;
+                    }
+                    // Check if a neighbor has a known blob id
+                    size_t index2 = x2 + y2*Nx + z2*Nx*Ny;
+                    int id = LocalBlobIDPtr[index2];
+                    if ( !isPhasePtr[index2] || id<0 )
                         continue;
+                    neighbor_ids[N_list] = id;
+                    N_list++;
                 }
-                if ( F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
-                     && indicator(nodx,nody,nodz) == -1 ){
-                    // Node is a part of the blob - add it to the list
-                    temp(0,ntotal) = nodx;
-                    temp(1,ntotal) = nody;
-                    temp(2,ntotal) = nodz;
-                    ntotal++;
-                    nrecent++;
-                    // Update the indicator map
-                    indicator(nodx,nody,nodz) = nblobs;
-                    // Update the min / max for the cube loop
-                    if ( nodx < imin ){ imin = nodx; }
-                    if ( nodx > imax ){ imax = nodx; }
-                    if ( nody < jmin ){ jmin = nody; }
-                    if ( nody > jmax ){ jmax = nody; }
-                    if ( nodz < kmin ){ kmin = nodz; }
-                    if ( nodz > kmax ){ kmax = nodz; }
-                }
-                else if (F(nodx,nody,nodz) > vf && S(nodx,nody,nodz) > vs
-                         && indicator(nodx,nody,nodz) > -1 &&  indicator(nodx,nody,nodz) != nblobs){
-                    // Some kind of error in algorithm
-                    printf("Error in blob search algorithm!");
-                }
-            }
-
-        }
-        if ( nrecent == 0){
-            status = 0;
-        }
-    }
-    // Use points in temporary storage array to add cubes to the list of blobs
-    if ( imin > 0) { imin = imin-1; }
-//    if ( imax < m-1) { imax = imax+1; }
-    if ( jmin > 0) { jmin = jmin-1; }
-//    if ( jmax < n-1) { jmax = jmax+1; }
-    if ( kmin > 0) { kmin = kmin-1; }
-//    if ( kmax < o-1) { kmax = kmax+1; }
-    int i,j,k;
-    bool add;
-    for (k=kmin;k<kmax;k++){
-        for (j=jmin;j<jmax;j++){
-            for (i=imin;i<imax;i++){
-                // If cube(i,j,k) has any nodes in blob, add it to the list
-                // Loop over cube edges
-                add = 0;
-                for (p=0;p<8;p++){
-                    nodx = i+cube[p][0];
-                    nody = j+cube[p][1];
-                    nodz = k+cube[p][2];
-                    if ( indicator(nodx,nody,nodz) == nblobs ){
-                        // Cube corner is in this blob
-                        add = 1;
-                    }
-                }
-                if (add == 1){
-                    // Add cube to the list
-                    blobs(0,ncubes) = i;
-                    blobs(1,ncubes) = j;
-                    blobs(2,ncubes) = k;
-                    ncubes++;
-                    cubes_in_blob++;
-                    // Loop again to check for overlap
-                    for (p=0;p<8;p++){
-                        nodx = i+cube[p][0];
-                        nody = j+cube[p][1];
-                        nodz = k+cube[p][2];
-                        if (indicator(nodx,nody,nodz) > -1 && indicator(nodx,nody,nodz) != nblobs){
-                            printf("Overlapping cube!");
-                            std::cout << i << ", " << j << ", " << k << std::endl;
-                        }
-                    }
+                if ( N_list==0 ) {
+                    // No neighbors with a blob id, create a new one
+                    LocalBlobIDPtr[index] = last+1;
+                    map.push_back(last+1);
+                    last++;
+                } else if ( N_list==1 ) {
+                    // We have one neighbor
+                    LocalBlobIDPtr[index] = neighbor_ids[0];
+                } else {
+                    // We have multiple neighbors
+                    int id = neighbor_ids[0];
+                    for (int i=1; i<N_list; i++)
+                        id = std::min(id,neighbor_ids[i]);
+                    LocalBlobIDPtr[index] = id;
+                    for (int i=0; i<N_list; i++)
+                        map[neighbor_ids[i]-start_id] = std::min(map[neighbor_ids[i]-start_id],id);
                 }
             }
         }
     }
-
-    return cubes_in_blob;
+    // Collapse the ids that map to another id
+    last = start_id-1;
+    for (int i=0; i<(int)map.size(); i++) {
+        if ( map[i] == i+start_id ) {
+            map[i] = last+1;
+            last++;
+        } else {
+            ASSERT(map[i]<i+start_id);
+            map[i] = map[map[i]-start_id];
+        }
+    }
+    for (int i=0; i<Nx*Ny*Nz; i++) {
+        if ( isPhasePtr[i] ) {
+            LocalBlobIDPtr[i] = map[LocalBlobIDPtr[i]-start_id];
+        }
+    }
+    PROFILE_STOP("ComputeBlob",1);
+    return last-start_id+1;
 }
 
 
@@ -234,120 +136,52 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     double vF, double vS, IntArray& LocalBlobID, bool periodic )
 {
     PROFILE_START("ComputeLocalBlobIDs");
+    ASSERT(SignDist.size(0)==Phase.size(0));
+    ASSERT(SignDist.size(1)==Phase.size(1));
+    ASSERT(SignDist.size(2)==Phase.size(2));
     size_t Nx = Phase.size(0);
     size_t Ny = Phase.size(1);
     size_t Nz = Phase.size(2);
-    ASSERT(SignDist.size(0)==Nx&&SignDist.size(1)==Ny&&SignDist.size(2)==Nz);
     // Initialize output
     LocalBlobID.resize(Nx,Ny,Nz);
     // Compute the local blob ids
-    const int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
     size_t N = Nx*Ny*Nz;
-    int nblobs = 0;
-    int ncubes = 0;         // total number of nodes in any blob
-    IntArray blobs(3,N);    // store indices for blobs (cubes)
-    IntArray temp(3,N);     // temporary storage array
-    IntArray b(N);          // number of nodes in each blob
-    for (size_t k=0; k<Nz; k++ ) {
-        for (size_t j=0; j<Ny; j++) {
-            for (size_t i=0; i<Nx; i++) {
-                if ( SignDist(i,j,k) < 0.0) {
-                    // Solid phase 
-                    LocalBlobID(i,j,k) = -2;
-                } else{
-                    LocalBlobID(i,j,k) = -1;
-                }
-            }
+    Array<bool> isPhase(Nx,Ny,Nz);
+    memset(isPhase.get(),0,Nx*Ny*Nz*sizeof(bool));
+    for (size_t i=0; i<N; i++) {
+        if ( SignDist(i) < 0.0) {
+            // Solid phase 
+            LocalBlobID(i) = -2;
+        } else {
+            LocalBlobID(i) = -1;
+            if ( Phase(i)>vF && SignDist(i)>vS )
+                isPhase(i) = true;
         }
     }
-    for (size_t k=0; k<Nz; k++ ) {
-        for (size_t j=0; j<Ny; j++) {
-            for (size_t i=0; i<Nx; i++) {
-                if ( LocalBlobID(i,j,k)==-1 && Phase(i,j,k)>vF && SignDist(i,j,k)>vS ) {
-                    // node i,j,k is in the porespace
-                    b(nblobs) = ComputeBlob(blobs,nblobs,ncubes,LocalBlobID,
-                        Phase,SignDist,vF,vS,i,j,k,temp,periodic);
-                    nblobs++;                              
-                }
-                if ( nblobs > (int)b.length()-1){
-                    printf("Increasing size of blob list \n");
-                    b.resize(2*b.length());
-                }
-            }
-        }
-    }
-    // Go over all cubes again -> add any that do not contain nw phase
-    size_t count_in=0,count_out=0;
-    size_t nodx,nody,nodz;
-    for (size_t k=0; k<Nz-1; k++ ) {
-        for (size_t j=0; j<Ny-1; j++) {
-            for (size_t i=0; i<Nx-1; i++) {
-                // Loop over cube corners
-                int add=1;      // initialize to true - add unless corner occupied by nw-phase
-                for (int p=0; p<8; p++) {
-                    nodx=i+cube[p][0];
-                    nody=j+cube[p][1];
-                    nodz=k+cube[p][2];
-                    if ( LocalBlobID(nodx,nody,nodz) > -1 ){
-                        // corner occupied by nw-phase  -> do not add
-                        add = 0;
-                    }
-                }
-                if ( add == 1 ){
-                    blobs(0,ncubes) = i;
-                    blobs(1,ncubes) = j;
-                    blobs(2,ncubes) = k;
-                    ncubes++;
-                    count_in++;
-                }
-                else { count_out++; }
-            }
-        }
-    }
-    b(nblobs) = count_in;
+    int nblobs = ComputeBlob( isPhase, LocalBlobID, periodic, 0 );
     PROFILE_STOP("ComputeLocalBlobIDs");
     return nblobs;
 }
-
 int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, IntArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
     size_t Nx = PhaseID.size(0);
     size_t Ny = PhaseID.size(1);
     size_t Nz = PhaseID.size(2);
-    // Compute the local blob ids
-
-	ComponentLabel.resize(Nx,Ny,Nz);
-
-    const int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
     size_t N = Nx*Ny*Nz;
-    int ncomponents = 0;
-    IntArray temp(3,N);     // temporary storage array
-
-    for (size_t k=0; k<Nz; k++ ) {
-        for (size_t j=0; j<Ny; j++) {
-            for (size_t i=0; i<Nx; i++) {
-                if ( PhaseID(i,j,k) == VALUE) {
-                    // Solid phase
-                    ComponentLabel(i,j,k) = -1;
-                } else{
-                    ComponentLabel(i,j,k) = -2;
-                }
-            }
+    // Compute the local blob ids
+	ComponentLabel.resize(Nx,Ny,Nz);
+    Array<bool> isPhase(Nx,Ny,Nz);
+    for (size_t i=0; i<N; i++) {
+        if ( PhaseID(i) == VALUE) {
+            ComponentLabel(i) = -1;
+            isPhase(i) = true;
+        } else{
+            ComponentLabel(i) = -2;
+            isPhase(i) = false;
         }
     }
-    for (size_t k=0; k<Nz; k++ ) {
-        for (size_t j=0; j<Ny; j++) {
-            for (size_t i=0; i<Nx; i++) {
-                if ( ComponentLabel(i,j,k)==-1 && PhaseID(i,j,k) == VALUE) {
-                	// component is part of the phase we want
-                    ComputePhaseComponent(ComponentLabel,PhaseID, VALUE, ncomponents,
-                    		i,j,k,temp,periodic);
-                    ncomponents++;
-                }
-            }
-        }
-    }
+    int ncomponents = ComputeBlob( isPhase, ComponentLabel, periodic, 0 );
     PROFILE_STOP("ComputeLocalPhaseComponent");
     return ncomponents;
 }
@@ -477,6 +311,9 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     const int rank = rank_info.rank[1][1][1];
     int nprocs;
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    const int ngx = (IDs.size(0)-nx)/2;
+    const int ngy = (IDs.size(1)-ny)/2;
+    const int ngz = (IDs.size(2)-nz)/2;
     // Get the number of blobs for each rank
     std::vector<int> N_blobs(nprocs,0);
     PROFILE_START("LocalToGlobalIDs-Allgather",1);
@@ -515,7 +352,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     for (size_t i=0; i<LocalIDs.length(); i++) {
         if ( LocalIDs(i)>=0 ) {
             local.insert(LocalIDs(i));
-            if ( LocalIDs(i)!=IDs(i) )
+            if ( LocalIDs(i)!=IDs(i) && IDs(i)>=0 )
                 map[LocalIDs(i)].remote_ids.insert(IDs(i));
         }
     }
@@ -578,9 +415,6 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
         final_map[*it2-offset] = *it2;
     for (size_t i=0; i<final_map.size(); i++)
         ASSERT(final_map[i]>=0);
-    int ngx = (IDs.size(0)-nx)/2;
-    int ngy = (IDs.size(1)-ny)/2;
-    int ngz = (IDs.size(2)-nz)/2;
     for (size_t k=ngz; k<IDs.size(2)-ngz; k++) {
         for (size_t j=ngy; j<IDs.size(1)-ngy; j++) {
             for (size_t i=ngx; i<IDs.size(0)-ngx; i++) {

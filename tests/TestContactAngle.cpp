@@ -135,6 +135,10 @@ int main (int argc, char *argv[])
 	As = 0.0;
 	for (i=0; i<6; i++) Gwns(i) = 0.0;
 	
+    Jwn = 0;
+    KGwns = 0;
+    KNwns = 0;
+    efawns = 0;
 	for (c=0;c<ncubes;c++){
 		// Get cube from the list
 		i = cubeList(0,c);
