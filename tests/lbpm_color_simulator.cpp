@@ -814,7 +814,7 @@ int main(int argc, char **argv)
                 // Renumber the current timestep's ids
                 
             }
-            std::swap(GlobalBlobID,GlobalBlobID2);
+            GlobalBlobID.swap(GlobalBlobID2);
             PROFILE_STOP("Identify blobs and maps");
         }
 		if (timestep%1000 == 5){

@@ -5,6 +5,7 @@
 #include "common/Utilities.h"
 #include <algorithm>
 #include <limits>
+#include <cstring>
 
 
 template<class TYPE>
@@ -313,17 +314,20 @@ void Array<TYPE>::fill( const TYPE& value )
         d_data[i] = value;
 }
 
+
 /********************************************************
-*  std::swap                                            *
+*  swap                                                 *
 ********************************************************/
 template<class TYPE>
-void std::swap(Array<TYPE>& v1, Array<TYPE>& v2)
+inline void Array<TYPE>::swap( Array<TYPE>& rhs )
 {
-    std::swap(v1.d_ndim,v2.d_ndim);
-    std::swap(v1.d_N,v2.d_N);
-    std::swap(v1.d_length,v2.d_length);
-    std::swap(v1.d_data,v2.d_data);
-    std::swap(v1.d_ptr,v2.d_ptr);
+    std::swap(d_ndim,rhs.d_ndim);
+    std::swap(d_length,rhs.d_length);
+    std::swap(d_data,rhs.d_data);
+    std::swap(d_ptr,rhs.d_ptr);
+    size_t N[4] = {d_N[0],d_N[1],d_N[2],d_N[3]};
+    memcpy(d_N,rhs.d_N,sizeof(d_N));
+    memcpy(rhs.d_N,N,sizeof(d_N));
 }
 
 

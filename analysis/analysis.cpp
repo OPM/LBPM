@@ -441,7 +441,6 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
     IntArray& GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
-    const int rank = rank_info.rank[1][1][1];
 	int nprocs;
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     // First compute the local ids
@@ -455,7 +454,6 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
     const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalPhaseComponent");
-    const int rank = rank_info.rank[1][1][1];
 	int nprocs;
 	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     // First compute the local ids

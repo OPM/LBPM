@@ -323,6 +323,8 @@ public:
     //! Return the sum of all elements in a given direction
     std::shared_ptr<Array<TYPE> > sum( int dir ) const;
 
+    //! Swap the data in this with rhs
+    inline void swap( Array& rhs );
 
 private:
     int d_ndim;

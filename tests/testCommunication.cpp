@@ -42,9 +42,6 @@ int test_communication( MPI_Comm comm, int nprocx, int nprocy, int nprocz )
 
     //**********************************
 
-    int Nx, Ny, Nz;
-    Nx = Ny = Nz = 10;    // Cubic domain
-
     // Set up MPI communication structurese
     if (rank==0)    printf ("Setting up communication control structures \n");
     //......................................................................................
