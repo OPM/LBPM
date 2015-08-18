@@ -808,7 +808,7 @@ void TwoPhase::ComponentAverages(){
 					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
 	for (int b=0; b<NumberComponents_NWP; b++){
-		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(b,idx)=RecvBuffer(b,idx);
+		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx,b);
 	}
 	for (int b=0; b<NumberComponents_NWP; b++){
 		if (ComponentAverages_NWP(VOL,b) > 0.0){
