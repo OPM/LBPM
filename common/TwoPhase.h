@@ -13,7 +13,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 30
+#define BLOB_AVG_COUNT 33
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -46,6 +46,9 @@
 #define GWNYZ 27
 #define TRAWN 28
 #define TRJWN 29
+#define CMX 30
+#define CMY 31
+#define CMZ 32
 
 class TwoPhase{
 
@@ -571,7 +574,19 @@ void TwoPhase::ComponentAverages(){
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	LabelNWP=1; LabelWP=2;
-	NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
+	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
+	//NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
+	// treat all wetting phase is connected
+	NumberComponents_WP=1;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				Label_WP(i,j,k) = 0;
+			}
+		}
+	}
+
+	// Fewer non-wetting phase features are present
 	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
 	//NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
 
@@ -630,6 +645,11 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VX,LabelNWP) += 0.125*Vel_x(n);
 							ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
 							ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
+							// center of mass
+							ComponentAverages_NWP(CMX,LabelNWP) += 0.125*(i+cube[p][0]);
+							ComponentAverages_NWP(CMY,LabelNWP) += 0.125*(j+cube[p][1]);
+							ComponentAverages_NWP(CMZ,LabelNWP) += 0.125*(k+cube[p][2]);
+
 							// twice the kinetic energy
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
@@ -645,6 +665,10 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
 							ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
 							ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
+							// Center of mass
+							ComponentAverages_WP(CMX,LabelWP) += 0.125*(i+cube[p][0]);
+							ComponentAverages_WP(CMY,LabelWP) += 0.125*(j+cube[p][1]);
+							ComponentAverages_WP(CMZ,LabelWP) += 0.125*(k+cube[p][2]);
 							// twice the kinetic energy
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
@@ -771,10 +795,18 @@ void TwoPhase::ComponentAverages(){
 		printf("Component averages computed locally -- reducing result... \n");
 	}
 	// Globally reduce the non-wetting phase averages
-	RecvBuffer.resize(BLOB_AVG_COUNT);
-	for (int b=0; b<NumberComponents_NWP; b++){
+	RecvBuffer.resize(BLOB_AVG_COUNT*NumberComponents_NWP);
+/*	for (int b=0; b<NumberComponents_NWP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
+	}
+	*/
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT*NumberComponents_NWP,
+					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+
+	for (int b=0; b<NumberComponents_NWP; b++){
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
 	}
 	for (int b=0; b<NumberComponents_NWP; b++){
@@ -845,6 +877,10 @@ void TwoPhase::ComponentAverages(){
 			ComponentAverages_NWP(VWNSX,b) = vawns(0);
 			ComponentAverages_NWP(VWNSY,b) = vawns(1);
 			ComponentAverages_NWP(VWNSZ,b) = vawns(2);
+
+			ComponentAverages_NWP(CMX,b) /= Vn;
+			ComponentAverages_NWP(CMY,b) /= Vn;
+			ComponentAverages_NWP(CMZ,b) /= Vn;
 
 			ComponentAverages_NWP(TRJWN,b) = trJwn;
 
