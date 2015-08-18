@@ -253,12 +253,12 @@ public:
 			NWPLOG = fopen("components.NWP.tcat","a+");
 			fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 			fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
+			fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn\n");
 
 			WPLOG = fopen("components.WP.tcat","a+");
 			fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
 			fprintf(WPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz trawn trJwn\n");
+			fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn\n");
 		}
 	}
 	~TwoPhase(){
@@ -1238,6 +1238,9 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(GWNXZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMX,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMY,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
 				fprintf(NWPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));			}
 		}
@@ -1272,6 +1275,9 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXY,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNXZ,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(GWNYZ,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(CMX,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(CMY,b));
+				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(CMZ,b));
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
 				fprintf(WPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));
 
