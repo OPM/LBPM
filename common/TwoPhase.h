@@ -1209,7 +1209,7 @@ void TwoPhase::PrintAll(int timestep){
 void TwoPhase::PrintComponents(int timestep){
 	if (Dm.rank==0){
 		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",ComponentAverages_NWP.size(1),timestep);
-		for (int b=0; b<ComponentAverages_NWP.size(1); b++){
+		for (int b=0; b<NumberComponents_NWP; b++){
 			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				fprintf(NWPLOG,"%i ",timestep-5);
 				fprintf(NWPLOG,"%i ",b);
@@ -1241,13 +1241,13 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMX,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
-				fprintf(NWPLOG,"%.5g ",ComponentAverages_WP(TRAWN,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_WP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRAWN,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(TRJWN,b));
 			}
 		}
 		fflush(NWPLOG);
 
-/*		for (int b=0; b<NumberComponents_WP; b++){
+		for (int b=0; b<NumberComponents_WP; b++){
 			if (ComponentAverages_WP(TRIMVOL,b) > 0.0){
 				fprintf(WPLOG,"%i ",timestep-5);
 				fprintf(WPLOG,"%i ",b);
@@ -1285,7 +1285,6 @@ void TwoPhase::PrintComponents(int timestep){
 			}
 		}
 		fflush(WPLOG);
-*/
 	}
 }
 
