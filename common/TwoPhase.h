@@ -573,9 +573,9 @@ void TwoPhase::AssignComponentLabels(){
 	//NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
 	// treat all wetting phase is connected
 	NumberComponents_WP=1;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				Label_WP(i,j,k) = 0;
 			}
 		}
