@@ -832,11 +832,11 @@ int main(int argc, char **argv)
 			Averages.ComputeLocal();
 			Averages.Reduce();
 			Averages.PrintAll(timestep);
-/*			Averages.Initialize();
+			Averages.Initialize();
 			Averages.ComponentAverages();
 			Averages.SortBlobs();
 			Averages.PrintComponents(timestep);
-*/			//....................................................................
+			//....................................................................
             PROFILE_STOP("Compute dist");
 		}
 
