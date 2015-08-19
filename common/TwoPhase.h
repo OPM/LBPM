@@ -272,6 +272,7 @@ public:
 	void ComputeDelPhi();
 	void ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData);
 	void ComputeLocal();
+	void AssignComponentLabels();
 	void ComponentAverages();
 	void Reduce();
 	void WriteSurfaces(int logcount);
@@ -564,16 +565,10 @@ void TwoPhase::ComputeLocal(){
 		}
 	}
 }
+void TwoPhase::AssignComponentLabels(){
 
-void TwoPhase::ComponentAverages(){
-    int i,j,k,n;
-    int kmin,kmax;
-	int LabelWP,LabelNWP;
-	double TempLocal;
-
-	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
-
-	LabelNWP=1; LabelWP=2;
+	int LabelNWP=1;
+	int LabelWP=2;
 	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
 	//NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
 	// treat all wetting phase is connected
@@ -589,6 +584,16 @@ void TwoPhase::ComponentAverages(){
 	// Fewer non-wetting phase features are present
 	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
 	//NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
+
+}
+
+void TwoPhase::ComponentAverages(){
+    int i,j,k,n;
+    int kmin,kmax;
+	int LabelWP,LabelNWP;
+	double TempLocal;
+
+	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	ComponentAverages_WP.resize(BLOB_AVG_COUNT,NumberComponents_WP);
 	ComponentAverages_NWP.resize(BLOB_AVG_COUNT,NumberComponents_NWP);

@@ -812,8 +812,9 @@ int main(int argc, char **argv)
                 // Compute the timestep-timestep map
                 ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
                 // Renumber the current timestep's ids
-                
             }
+            Averages.NumberComponents_NWP = nblobs2;
+            Averages.Label_NWP.swap(GlobalBlobID2);
             GlobalBlobID.swap(GlobalBlobID2);
             PROFILE_STOP("Identify blobs and maps");
         }
@@ -857,7 +858,7 @@ int main(int argc, char **argv)
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
             PROFILE_STOP("Save Checkpoint");
-            PROFILE_SAVE("lbpm_colo_simulator",1);
+            PROFILE_SAVE("lbpm_color_simulator",1);
 		}
 	}
     PROFILE_STOP("Loop");
