@@ -813,6 +813,8 @@ int main(int argc, char **argv)
             }
             Averages.NumberComponents_NWP = nblobs2;
             Averages.Label_NWP.swap(GlobalBlobID2);
+            Averages.NumberComponents_WP = 1;
+            Averages.Label_WP.fill(0.0);
             GlobalBlobID.swap(GlobalBlobID2);
             PROFILE_STOP("Identify blobs and maps");
         }
