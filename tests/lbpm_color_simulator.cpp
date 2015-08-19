@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 	//...........................................................................
 	
-	int timestep = 0;
+	int timestep = -1;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
 
@@ -771,6 +771,8 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
         PROFILE_STOP("Update");
 
+		// Timestep completed!
+		timestep++;
 		//...................................................................
 		if (timestep%1000 == 995){
 			//...........................................................................
@@ -860,8 +862,6 @@ int main(int argc, char **argv)
             PROFILE_STOP("Save Checkpoint");
             PROFILE_SAVE("lbpm_color_simulator",1);
 		}
-		// Timestep completed!
-		timestep++;
 	}
     PROFILE_STOP("Loop");
 	//************************************************************************/
