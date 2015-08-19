@@ -771,8 +771,6 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
         PROFILE_STOP("Update");
 
-		// Timestep completed!
-		timestep++;
 		//...................................................................
 		if (timestep%1000 == 995){
 			//...........................................................................
@@ -860,6 +858,8 @@ int main(int argc, char **argv)
             PROFILE_STOP("Save Checkpoint");
             PROFILE_SAVE("lbpm_color_simulator",1);
 		}
+		// Timestep completed!
+		timestep++;
 	}
     PROFILE_STOP("Loop");
 	//************************************************************************/
