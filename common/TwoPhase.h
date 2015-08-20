@@ -651,9 +651,9 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
 							ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
 							// center of mass
-							ComponentAverages_NWP(CMX,LabelNWP) += 0.125*(i+cube[p][0]);
-							ComponentAverages_NWP(CMY,LabelNWP) += 0.125*(j+cube[p][1]);
-							ComponentAverages_NWP(CMZ,LabelNWP) += 0.125*(k+cube[p][2]);
+							ComponentAverages_NWP(CMX,LabelNWP) += 0.125*(i+cube[p][0]+Dm.iproc*Nx);
+							ComponentAverages_NWP(CMY,LabelNWP) += 0.125*(j+cube[p][1]+Dm.jproc*Ny);
+							ComponentAverages_NWP(CMZ,LabelNWP) += 0.125*(k+cube[p][2]+Dm.kproc*Nz);
 
 							// twice the kinetic energy
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
@@ -671,9 +671,9 @@ void TwoPhase::ComponentAverages(){
 							ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
 							ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
 							// Center of mass
-							ComponentAverages_WP(CMX,LabelWP) += 0.125*(i+cube[p][0]);
-							ComponentAverages_WP(CMY,LabelWP) += 0.125*(j+cube[p][1]);
-							ComponentAverages_WP(CMZ,LabelWP) += 0.125*(k+cube[p][2]);
+							ComponentAverages_WP(CMX,LabelWP) += 0.125*(i+cube[p][0]+Dm.iproc*Nx);
+							ComponentAverages_WP(CMY,LabelWP) += 0.125*(j+cube[p][1]+Dm.jproc*Ny);
+							ComponentAverages_WP(CMZ,LabelWP) += 0.125*(k+cube[p][2]+Dm.kproc*Nz);
 							// twice the kinetic energy
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
