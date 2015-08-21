@@ -1,7 +1,7 @@
 #include <iostream>
 #include <math.h>
-#include "pmmc.h"
-#include "Domain.h"
+#include "common/pmmc.h"
+#include "common/Domain.h"
 
 using namespace std;
 

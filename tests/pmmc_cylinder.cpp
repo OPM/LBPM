@@ -1,8 +1,8 @@
 #include <iostream>
 #include <math.h>
-#include "pmmc.h"
-//#include "PointList.h"
-//#include "Array.h"
+#include "common/pmmc.h"
+//#include "common/PointList.h"
+//#include "common/Array.h"
 
 #define RADIUS 15
 #define HEIGHT 15.5

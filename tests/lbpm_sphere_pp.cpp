@@ -6,10 +6,10 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "pmmc.h"
-#include "Domain.h"
+#include "common/pmmc.h"
+#include "common/Domain.h"
 #include "common/MPI_Helpers.h"
-#include "Communication.h"
+#include "common/Communication.h"
 
 /*
  * Pre-Processor to generate signed distance function from sphere packing

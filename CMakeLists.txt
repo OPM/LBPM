@@ -19,6 +19,9 @@ ENDIF()
 
 # Set the project name
 PROJECT( LBPM-WIA )
+IF ( NOT CXX_STD )
+    SET( CXX_STD 98 )
+ENDIF()
 
 
 # Set some common paths
@@ -36,6 +39,7 @@ SET( CMAKE_MODULE_PATH ${LBPM_SOURCE_DIR} ${LBPM_SOURCE_DIR}/cmake )
 SET( PROJ LBPM )
 INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake" )
 INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/libraries.cmake" )
+INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LBPM-macros.cmake" )
 
 
 # Check if we are only compiling docs
@@ -56,8 +60,9 @@ INCLUDE( CTest )
 ADD_CUSTOM_TARGET( doc )
 ADD_CUSTOM_TARGET( latex_docs )
 ADD_CUSTOM_TARGET( build-test )
+ADD_CUSTOM_TARGET( build-examples )
 ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN( tests liblbpm-wia.* cpu gpu example common visit IO )
+ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common visit IO )
 
 
 # Check the compile mode and compile flags
@@ -105,6 +110,8 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_LINE_COVERAGE()
     INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SharedPtr.cmake" )
     CONFIGURE_SHARED_PTR( "${LBPM_INSTALL_DIR}/include" "std" )
+    # Set the external library link list
+    SET( EXTERNAL_LIBS ${EXTERNAL_LIBS} ${TIMER_LIBS} )
 ENDIF()
 
 

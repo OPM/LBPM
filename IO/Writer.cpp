@@ -160,7 +160,6 @@ void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshDat
 {
     PROFILE_START("writeData");
     int rank = MPI_WORLD_RANK();
-    int size = MPI_WORLD_SIZE();
     // Create the output directory
     char path[100];
     sprintf(path,"vis%03i",timestep);

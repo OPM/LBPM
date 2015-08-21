@@ -12,8 +12,8 @@ James E. McClure 2015
 #include <stdexcept>
 #include <fstream>
 
-#include "Domain.h"
-#include "TwoPhase.h"
+#include "common/Domain.h"
+#include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 

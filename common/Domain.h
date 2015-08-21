@@ -6,12 +6,12 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <Array.h>
 #include <math.h>
 #include <time.h>
 #include <exception>      // std::exception
 #include <stdexcept>
 
+#include "common/Array.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
@@ -788,9 +788,9 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 	 */
 
 	int Q=26;
-    int q,i,j,k,n;
+    int q,i,j,k;
     double dt=0.1;
-    int in,jn,kn,nn;
+    int in,jn,kn;
     double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
     double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
 
@@ -822,7 +822,6 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
             for (j=1;j<Dm.Ny-1;j++){
                 for (i=1;i<Dm.Nx-1;i++){
 
-                	n = k*Dm.Nx*Dm.Ny+j*Dm.Nx+i;
                     sign = Distance(i,j,k) / fabs(Distance(i,j,k));
 
               /*
@@ -929,7 +928,7 @@ inline void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, do
 	//........read the spheres..................
     // We will read until a blank like or end-of-file is reached
 	int count = 0;
-	while ( !feof(fid) && fgets(line,100,fid)>0 ) {
+	while ( !feof(fid) && fgets(line,100,fid)!=NULL ) {
 		char* line2 = line;
 		List_cx[count] = strtod(line2,&line2);
 		List_cy[count] = strtod(line2,&line2);

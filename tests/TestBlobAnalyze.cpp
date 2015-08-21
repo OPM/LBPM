@@ -7,10 +7,7 @@
 #include <math.h>
 #include "common/Communication.h"
 #include "analysis/analysis.h"
-#ifdef PROFILE
-	#include "ProfilerApp.h"
-#endif
-#include "TwoPhase.h"
+#include "common/TwoPhase.h"
 
 //#include "Domain.h"
 

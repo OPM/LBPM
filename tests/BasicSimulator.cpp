@@ -6,10 +6,10 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "pmmc.h"
-#include "ScaLBL.h"
+#include "common/pmmc.h"
+#include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
-#include "Communication.h"
+#include "common/Communication.h"
 
 //#define CBUB
 //#define WRITE_SURFACES
@@ -123,14 +123,13 @@ int main(int argc, char **argv)
 
 	// Variables that specify the computational domain  
 	string FILENAME;
-	unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
 	int nspheres;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
 	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
 	int timestepMax, interval;
-	double tau,Fx,Fy,Fz,tol,err;
+	double tau,Fx,Fy,Fz,tol;
 	double alpha, beta;
 	double das, dbs, phi_s;
 	double din,dout;
@@ -146,8 +145,6 @@ int main(int argc, char **argv)
 	int SimCount; 		// Number of simulations is 2 x SimCount 
 	double SimDelta; 	// Percent differenc between force pairs
 
-	int RESTART_INTERVAL=20000;
-	
 	if (rank==0){
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
@@ -232,7 +229,8 @@ int main(int argc, char **argv)
 	//.................................................
 	MPI_Barrier(MPI_COMM_WORLD);
 	
-	RESTART_INTERVAL=interval;
+	//int RESTART_INTERVAL=interval;
+
 	// **************************************************************
 	// **************************************************************
 	double Ps = -(das-dbs)/(das+dbs);
@@ -1462,7 +1460,6 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	err = 1.0; 	
 	sat_w_previous = 1.01; // slightly impossible value! 
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	for (int SimNumber=0; SimNumber < 2*SimCount; SimNumber++){

@@ -14,7 +14,6 @@
 
 
 /****************************************************
-* Pack/unpack data from a buffer                    *
 ****************************************************/
 // MeshType
 template<>
@@ -243,7 +242,6 @@ std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, MP
 {
     #ifdef USE_MPI
         PROFILE_START("gatherAll");
-        int rank = MPI_WORLD_RANK();
         int size = MPI_WORLD_SIZE();
         // First pack the mesh data to local buffers
         size_t localsize = 0;

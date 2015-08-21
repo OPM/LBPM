@@ -5,10 +5,10 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "pmmc.h"
-#include "ScaLBL.h"
+#include "common/pmmc.h"
+#include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
-#include "Communication.h"
+#include "common/Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
 #include "ProfilerApp.h"

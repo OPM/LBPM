@@ -9,8 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <Array.h>
-#include <Domain.h>
+#include "common/Array.h"
+#include "common/Domain.h"
 
 inline void FlipID(char *ID, int N)
 {

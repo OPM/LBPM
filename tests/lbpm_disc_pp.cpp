@@ -6,10 +6,10 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "pmmc.h"
-#include "Domain.h"
-#include "Communication.h"
-#include "MPI_Helpers.h"    // This includes mpi.h
+#include "common/pmmc.h"
+#include "common/Domain.h"
+#include "common/Communication.h"
+#include "common/MPI_Helpers.h"    // This includes mpi.h
 
 
 /*

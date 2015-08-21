@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "ScaLBL.h"
-#include "Communication.h"
-#include "TwoPhase.h"
+#include "common/ScaLBL.h"
+#include "common/Communication.h"
+#include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
 #ifndef CBUB
@@ -1065,7 +1065,7 @@ int main(int argc, char **argv)
 	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
 	//......................................................................................
 	// Fill in the phase MeshData from neighboring processors
-	double *sendMeshData_x, *sendMeshData_y, *sendMeshData_z, *sendMeshData_X, *sendMeshData_Y, *sendMeshData_Z;
+	/*double *sendMeshData_x, *sendMeshData_y, *sendMeshData_z, *sendMeshData_X, *sendMeshData_Y, *sendMeshData_Z;
 	double *sendMeshData_xy, *sendMeshData_yz, *sendMeshData_xz, *sendMeshData_Xy, *sendMeshData_Yz, *sendMeshData_xZ;
 	double *sendMeshData_xY, *sendMeshData_yZ, *sendMeshData_Xz, *sendMeshData_XY, *sendMeshData_YZ, *sendMeshData_XZ;
 	double *recvMeshData_x, *recvMeshData_y, *recvMeshData_z, *recvMeshData_X, *recvMeshData_Y, *recvMeshData_Z;
@@ -1109,7 +1109,7 @@ int main(int argc, char **argv)
 	recvMeshData_Xz = new double [recvCount_Xz];
 	recvMeshData_XY = new double [recvCount_XY];
 	recvMeshData_YZ = new double [recvCount_YZ];
-	recvMeshData_XZ = new double [recvCount_XZ];
+	recvMeshData_XZ = new double [recvCount_XZ];*/
 	if (rank==0)	printf ("Devices are ready to communicate. \n");
 	MPI_Barrier(MPI_COMM_WORLD);
 

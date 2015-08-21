@@ -1,9 +1,9 @@
 #include <iostream>
 #include <math.h>
 
-#include "TwoPhase.h"
+#include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
-#include "Communication.h"
+#include "common/Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
 #include "ProfilerApp.h"

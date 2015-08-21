@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
-#include "ScaLBL.h"
+#include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
 
 using namespace std;

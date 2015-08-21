@@ -9,9 +9,9 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <Array.h>
-#include <Domain.h>
-#include <TwoPhase.h>
+#include "common/Array.h"
+#include "common/Domain.h"
+#include "common/TwoPhase.h"
 
 inline void MeanFilter(DoubleArray &Mesh){
 	for (int k=1; k<(int)Mesh.size(2)-1; k++){

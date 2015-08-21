@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "ScaLBL.h"
-#include "Communication.h"
-#include "TwoPhase.h"
+#include "common/ScaLBL.h"
+#include "common/Communication.h"
+#include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
 //#define WRITE_SURFACES

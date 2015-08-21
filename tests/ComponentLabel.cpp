@@ -6,7 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include "analysis/analysis.h"
-#include "TwoPhase.h"
+#include "common/TwoPhase.h"
 
 #define NUM_AVERAGES 30
 
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	int nspheres;
 	double Lx,Ly,Lz;
 	//.......................................................................
-	int i,j,k,n,p,idx;
+	int i,j,k,n;
 	int iproc,jproc,kproc;
 	//.......................................................................
 	// Reading the domain information file

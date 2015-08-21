@@ -86,15 +86,28 @@ MACRO( CONFIGURE_MPI )
     IF ( USE_MPI )
         # Check if we specified the MPI directory
         IF ( MPI_DIRECTORY )
-            # Check the provided MPI directory for include files and the mpi executable
-            VERIFY_PATH ( ${MPI_DIRECTORY} )
-            SET ( MPI_INCLUDE_PATH ${MPI_DIRECTORY}/include )
-            VERIFY_PATH ( ${MPI_INCLUDE_PATH} )
-            IF ( NOT EXISTS ${MPI_INCLUDE_PATH}/mpi.h )
-                MESSAGE( FATAL_ERROR "mpi.h not found in ${MPI_INCLUDE_PATH}" )
+            # Check the provided MPI directory for include files
+            VERIFY_PATH( "${MPI_DIRECTORY}" )
+            IF ( EXISTS "${MPI_DIRECTORY}/include/mpi.h" )
+                SET( MPI_INCLUDE_PATH "${MPI_DIRECTORY}/include" )
+            ELSEIF ( EXISTS "${MPI_DIRECTORY}/Inc/mpi.h" )
+                SET( MPI_INCLUDE_PATH "${MPI_DIRECTORY}/Inc" )
+            ELSE()
+                MESSAGE( FATAL_ERROR "mpi.h not found in ${MPI_DIRECTORY}/include" )
             ENDIF ()
             INCLUDE_DIRECTORIES ( ${MPI_INCLUDE_PATH} )
             SET ( MPI_INCLUDE ${MPI_INCLUDE_PATH} )
+            # Set MPI libraries
+            IF ( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+                FIND_LIBRARY( MSMPI_LIB     NAMES msmpi     PATHS "${MPI_DIRECTORY}/Lib/x64"    NO_DEFAULT_PATH )
+                FIND_LIBRARY( MSMPI_LIB     NAMES msmpi     PATHS "${MPI_DIRECTORY}/Lib/amd64"  NO_DEFAULT_PATH )
+                FIND_LIBRARY( MSMPIFEC_LIB  NAMES msmpifec  PATHS "${MPI_DIRECTORY}/Lib/x64"    NO_DEFAULT_PATH )
+                FIND_LIBRARY( MSMPIFEC_LIB  NAMES msmpifec  PATHS "${MPI_DIRECTORY}/Lib/amd64"  NO_DEFAULT_PATH )
+                FIND_LIBRARY( MSMPIFMC_LIB  NAMES msmpifmc  PATHS "${MPI_DIRECTORY}/Lib/x64"    NO_DEFAULT_PATH )
+                FIND_LIBRARY( MSMPIFMC_LIB  NAMES msmpifmc  PATHS "${MPI_DIRECTORY}/Lib/amd64"  NO_DEFAULT_PATH )
+                SET( MPI_LIBRARIES ${MSMPI_LIB} ${MSMPIFEC_LIB} ${MSMPIFMC_LIB} )
+            ENDIF()
+            # Set the mpi executable
             IF ( MPIEXEC ) 
                 # User specified the MPI command directly, use as is
             ELSEIF ( MPIEXEC_CMD )
@@ -116,14 +129,20 @@ MACRO( CONFIGURE_MPI )
             ENDIF()
         ELSEIF ( MPI_COMPILER )
             # The mpi compiler should take care of everything
+            IF ( MPI_INCLUDE )
+                INCLUDE_DIRECTORIES( ${MPI_INCLUDE} )
+            ENDIF()
         ELSE()
             # Perform the default search for MPI
             INCLUDE ( FindMPI )
             IF ( NOT MPI_FOUND )
+                MESSAGE( "  MPI_INCLUDE = ${MPI_INCLUDE}" )
+                MESSAGE( "  MPI_LINK_FLAGS = ${MPI_LINK_FLAGS}" )
+                MESSAGE( "  MPI_LIBRARIES = ${MPI_LIBRARIES}" )
                 MESSAGE( FATAL_ERROR "Did not find MPI" )
             ENDIF ()
-            INCLUDE_DIRECTORIES ( ${MPI_INCLUDE_PATH} )
-            SET ( MPI_INCLUDE ${MPI_INCLUDE_PATH} )
+            INCLUDE_DIRECTORIES( "${MPI_INCLUDE_PATH}" )
+            SET( MPI_INCLUDE "${MPI_INCLUDE_PATH}" )
         ENDIF()
         # Check if we need to use MPI for serial tests
         CHECK_ENABLE_FLAG( USE_MPI_FOR_SERIAL_TESTS 0 )
@@ -132,12 +151,10 @@ MACRO( CONFIGURE_MPI )
             SET( MPIEXEC mpirun )
         ENDIF()
         IF ( NOT MPIEXEC_NUMPROC_FLAG )
-            SET(MPIEXEC_NUMPROC_FLAG "-n")
+            SET( MPIEXEC_NUMPROC_FLAG "-np" )
         ENDIF()
-        # Check if we need to use MPI for serial tests
-        SET( MPI_CXXFLAGS -DUSE_MPI -I${MPI_INCLUDE} )
         # Set the definitions
-        ADD_DEFINITIONS( "-D USE_MPI" )  
+        ADD_DEFINITIONS( "-DUSE_MPI" )  
         MESSAGE( "Using MPI" )
         MESSAGE( "  MPIEXEC = ${MPIEXEC}" )
         MESSAGE( "  MPIEXEC_NUMPROC_FLAG = ${MPIEXEC_NUMPROC_FLAG}" )
@@ -170,12 +187,8 @@ MACRO( CONFIGURE_SYSTEM )
     ENDIF()
     # Remove extra library links
     # Get the compiler
-    SET_COMPILER ()
+    IDENTIFY_COMPILER()
     CHECK_ENABLE_FLAG( USE_STATIC 0 )
-    IF ( USE_STATIC )
-        SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-static")    # Add static flag
-        SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "-static")  # Add static flag
-    ENDIF()
     # Add system dependent flags
     MESSAGE("System is: ${CMAKE_SYSTEM_NAME}")
     IF ( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
@@ -201,7 +214,12 @@ MACRO( CONFIGURE_SYSTEM )
         # Linux specific system libraries
         SET( SYSTEM_LIBS -lz -lpthread -ldl )
         IF ( NOT USE_STATIC )
-            SET( SYSTEM_LDFLAGS ${SYSTEM_LDFLAGS} -rdynamic )   # Needed for backtrace to print function names
+            # Try to add rdynamic so we have names in backtrace
+            SET( CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS} -rdynamic" )
+            CHECK_CXX_SOURCE_COMPILES( "int main() { return 0;}" rdynamic )
+            IF ( rdynamic )
+                SET( SYSTEM_LDFLAGS ${SYSTEM_LDFLAGS} -rdynamic )
+            ENDIF()
         ENDIF()
         IF ( USING_GCC )
             SET( SYSTEM_LIBS ${SYSTEM_LIBS} -lgfortran )
@@ -217,7 +235,13 @@ MACRO( CONFIGURE_SYSTEM )
         MESSAGE( FATAL_ERROR "OS not detected" )
     ENDIF()
     # Set the compile flags based on the build
-    SET_COMPILE_FLAGS()
+    SET_COMPILER_FLAGS()
+    # Add the static flag if necessary
+    IF ( USE_STATIC )
+        SET_STATIC_FLAGS()
+    ENDIF()
+    # Print some flags
+    MESSAGE( "LDLIBS = ${LDLIBS}" )
 ENDMACRO ()
 
 

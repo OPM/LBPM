@@ -285,9 +285,9 @@ public:
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData){
 
-	double factor,temp,value;
+/*	double factor,temp,value;
 	factor=0.5/Beta;
-/*	for (int n=0; n<Nx*Ny*Nz; n++){
+	for (int n=0; n<Nx*Ny*Nz; n++){
 	 	value = ColorData[n];
 		if (value > 0.999 ) DistData[n] = 4.0;
 		else if (value < -0.999 ) DistData[n] = -4.0;
@@ -568,7 +568,7 @@ void TwoPhase::ComputeLocal(){
 void TwoPhase::AssignComponentLabels(){
 
 	int LabelNWP=1;
-	int LabelWP=2;
+	//int LabelWP=2;
 	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
 	//NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
 	// treat all wetting phase is connected
@@ -826,6 +826,7 @@ void TwoPhase::ComponentAverages(){
 			van(1) = ComponentAverages_NWP(VY,b)/Vn;
 			van(2) = ComponentAverages_NWP(VZ,b)/Vn;
 			vsq = ComponentAverages_NWP(VSQ,b)/Vn;
+            NULL_USE(ans);
 
 			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				pn = ComponentAverages_NWP(PRS,b)/ComponentAverages_NWP(TRIMVOL,b);
@@ -910,6 +911,7 @@ void TwoPhase::ComponentAverages(){
 			vaw(1) = ComponentAverages_WP(VY,b)/Vw;
 			vaw(2) = ComponentAverages_WP(VZ,b)/Vw;
 			vsq = ComponentAverages_WP(VSQ,b)/Vw;
+            NULL_USE(ans);
 
 			if (ComponentAverages_WP(TRIMVOL,b) > 0.0){
 				pw = ComponentAverages_WP(PRS,b)/ComponentAverages_WP(TRIMVOL,b);
@@ -975,7 +977,7 @@ void TwoPhase::ComponentAverages(){
 
 void TwoPhase::WriteSurfaces(int logcount){
 
-	int i,j,k,n;
+	int i,j,k;
 	int ncubes=(Nx-1)*(Ny-1)*(Nz-1);
 	Point P,A,B,C;
 
@@ -1214,7 +1216,7 @@ void TwoPhase::PrintAll(int timestep){
 
 void TwoPhase::PrintComponents(int timestep){
 	if (Dm.rank==0){
-		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",ComponentAverages_NWP.size(1),timestep);
+		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",(int)ComponentAverages_NWP.size(1),timestep);
 		for (int b=0; b<NumberComponents_NWP; b++){
 			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				fprintf(NWPLOG,"%i ",timestep-5);

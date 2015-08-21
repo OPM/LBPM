@@ -9,8 +9,8 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#include <Array.h>
-#include <Domain.h>
+#include "common/Array.h"
+#include "common/Domain.h"
 
 int main(int argc, char **argv)
 {
