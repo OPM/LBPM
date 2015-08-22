@@ -1149,7 +1149,7 @@ inline void WriteLocalSolidDistance(char *FILENAME, double *Distance, int N)
 }
 
 
-inline void WriteCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
+inline void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cDistEven, const double *cDistOdd, int N)
 {
 	int q,n;
 	double value;

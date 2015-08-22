@@ -27,6 +27,7 @@ extern void GlobalFlipInitD3Q19(double *dist_even, double *dist_odd, int Nx, int
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
+    NULL_USE(Z);
 	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
@@ -88,6 +89,7 @@ extern int GlobalCheckDebugDist(double *dist_even, double *dist_odd, int Nx, int
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
+    NULL_USE(Z);
 	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
@@ -161,7 +163,6 @@ int main(int argc, char **argv)
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
-	int sendtag,recvtag;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
 	//**********************************
@@ -417,7 +418,6 @@ int main(int argc, char **argv)
 	starttime = MPI_Wtime();
 	//.........................................
 
-	sendtag = recvtag = 5;
 
 	//************ MAIN ITERATION LOOP (timing communications)***************************************/
 	while (timestep < 100){

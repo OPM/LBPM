@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 
 	// Variables that specify the computational domain  
 	string FILENAME;
-	unsigned int nBlocks, nthreads;
+	//unsigned int nBlocks, nthreads;
 	int Nx,Ny,Nz;		// local sub-domain size
 	int nspheres;		// number of spheres in the packing
 	double Lx,Ly,Lz;	// Domain length
@@ -248,8 +248,8 @@ int main(int argc, char **argv)
 	double fluid_isovalue,solid_isovalue;
 	fluid_isovalue = 0.0;
 	solid_isovalue = 0.0;
-	nBlocks = 32;
-	nthreads = 128;
+	//nBlocks = 32;
+	//nthreads = 128;
 	
 	int RESTART_INTERVAL=20000;
 	

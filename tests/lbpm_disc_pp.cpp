@@ -31,7 +31,7 @@ inline void ReadDiscPacking(int ndiscs, double *List_cx, double *List_cy, double
 	char * line = new char[100];
     // We will read until a blank like or end-of-file is reached
 	int count = 0;
-	while ( !feof(fid) && fgets(line,100,fid)>0 ) {
+	while ( !feof(fid) && fgets(line,100,fid)!=NULL ) {
 		char* line2 = line;
 		List_cx[count] = strtod(line2,&line2);
 		List_cy[count] = strtod(line2,&line2);
@@ -71,6 +71,7 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 	min_x = double(iproc*(Nx-2)-1)*hx;
 	min_y = double(jproc*(Ny-2)-1)*hy;
 	min_z = double(kproc*(Nz-2)-1)*hz;
+    NULL_USE(min_x);
 	//............................................
 
 	//............................................

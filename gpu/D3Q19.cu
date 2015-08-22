@@ -300,8 +300,8 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 	}
 }
 
-__global__  void dvc_ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure, 
-									int Nx, int Ny, int Nz)
+__global__  void dvc_ComputePressureD3Q19(const char *ID, const double *disteven, const double *distodd,
+    double *Pressure, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions

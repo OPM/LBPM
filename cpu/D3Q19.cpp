@@ -388,8 +388,8 @@ extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd
 	}
 }
 
-extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
-									int Nx, int Ny, int Nz)
+extern "C" void ComputePressureD3Q19(const char *ID, const double *disteven, const double *distodd,
+    double *Pressure, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions

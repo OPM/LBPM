@@ -55,9 +55,6 @@ int main(int argc, char **argv)
 	int i,j,k,n;
 
 	// pmmc threshold values
-	double fluid_isovalue,solid_isovalue;
-	fluid_isovalue = 0.0;
-	solid_isovalue = 0.0;
 
 	if (rank==0){
 		//.......................................................................

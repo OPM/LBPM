@@ -74,7 +74,6 @@ int main (int argc, char **argv)
 	DTMutableList<Point> local_nws_pts(20);
 	int n_local_nws_pts;
 	
-	int n_nw_tris_beg, n_ns_tris_beg, n_ws_tris_beg;
 	int c;
 	int newton_steps = 0;
 	//...........................................................................
@@ -152,10 +151,6 @@ int main (int argc, char **argv)
 		
 		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-		
-		n_nw_tris_beg = 0;// n_nw_tris;
-		n_ns_tris_beg = 0;//n_ns_tris;
-		n_ws_tris_beg = 0;//n_ws_tris;
 		
 		// if there is a solid phase interface in the grid cell
 		if (Interface(SignDist,solid_isovalue,i,j,k) == 1){
@@ -387,9 +382,6 @@ int main (int argc, char **argv)
 		// Reset the triangle counts to zero
 		n_nw_pts=0,n_ns_pts=0,n_ws_pts=0,n_nws_pts=0, map=0;
 		n_nw_tris=0, n_ns_tris=0, n_ws_tris=0, n_nws_seg=0;
-		n_nw_tris_beg = 0;// n_nw_tris;
-		//	n_ns_tris_beg = 0;//n_ns_tris;
-		//	n_ws_tris_beg = 0;//n_ws_tris;
 		//	n_nws_seg_beg = n_nws_seg;
 		//*******************************************************************
 	}

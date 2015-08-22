@@ -13,9 +13,9 @@ extern "C" void AllocateDeviceMemory(void** address, size_t size);
 
 //extern "C" void FreeDeviceMemory(void** address);
 
-extern "C" void CopyToDevice(void* dest, void* source, size_t size);
+extern "C" void CopyToDevice(void* dest, const void* source, size_t size);
 
-extern "C" void CopyToHost(void* dest, void* source, size_t size);
+extern "C" void CopyToHost(void* dest, const void* source, size_t size);
 
 extern "C" void DeviceBarrier();
 
@@ -47,8 +47,8 @@ extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double
 extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel,
 		int Nx, int Ny, int Nz);
 
-extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
-									int Nx, int Ny, int Nz);
+extern "C" void ComputePressureD3Q19(const char *ID, const double *disteven, const double *distodd, 
+        double *Pressure, int Nx, int Ny, int Nz);
 
 extern "C" void PressureBC_inlet(double *disteven, double *distodd, double din,
 								  int Nx, int Ny, int Nz);

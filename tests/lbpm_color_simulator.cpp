@@ -12,6 +12,9 @@
 #include "common/MPI_Helpers.h"
 
 #include "ProfilerApp.h"
+#include "threadpool/thread_pool.h"
+
+#include "lbpm_color_simulator.h"
 
 //#define WRITE_SURFACES
 
@@ -108,7 +111,6 @@ int main(int argc, char **argv)
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
-	int sendtag,recvtag;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
 	//**********************************
@@ -152,9 +154,9 @@ int main(int argc, char **argv)
 	int i,j,k;
 
 	// pmmc threshold values
-	double fluid_isovalue,solid_isovalue;
-	fluid_isovalue = 0.0;
-	solid_isovalue = 0.0;
+	//double fluid_isovalue,solid_isovalue;
+	//fluid_isovalue = 0.0;
+	//solid_isovalue = 0.0;
 	
 	int RESTART_INTERVAL=20000;
 	
@@ -255,8 +257,7 @@ int main(int argc, char **argv)
 	double Ps = -(das-dbs)/(das+dbs);
 	double rlxA = 1.f/tau;
 	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
-	double xIntPos;
-	xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
+	//double xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
 	
 	// Set the density values inside the solid based on the input value phi_s
  	das = (phi_s+1.0)*0.5;
@@ -299,6 +300,7 @@ int main(int argc, char **argv)
 	bool Restart;
 	if (InitialCondition==1)    Restart=true;
 	else 						Restart=false;
+    NULL_USE(pBC);  NULL_USE(velBC);
 
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	TwoPhase Averages(Dm);
@@ -523,11 +525,6 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
-	//copies of data needed to perform checkpointing from cpu
-	double *cDen, *cDistEven, *cDistOdd;
-	cDen = new double[2*N];
-	cDistEven = new double[10*N];
-	cDistOdd = new double[9*N];
 	//...........................................................................
 
 	// Copy signed distance for device initialization
@@ -552,12 +549,18 @@ int main(int argc, char **argv)
 	if (Restart == true){
 		if (rank==0) printf("Reading restart file! \n");
 		// Read in the restart file to CPU buffers
+	    double *cDen = new double[2*N];
+	    double *cDistEven = new double[10*N];
+	    double *cDistOdd = new double[9*N];
 		ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 		// Copy the restart data to the GPU
 		CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
 		CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
 		CopyToDevice(Den,cDen,2*N*sizeof(double));
 		DeviceBarrier();
+	    delete [] cDen;
+	    delete [] cDistEven;
+	    delete [] cDistOdd;
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
@@ -651,7 +654,6 @@ int main(int argc, char **argv)
 	CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
 	//...........................................................................
 	
-	int timestep = -1;
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
 
@@ -662,15 +664,21 @@ int main(int argc, char **argv)
 	starttime = MPI_Wtime();
 	//.........................................
 	
-	sendtag = recvtag = 5;
-			// Copy the data to the CPU
 	err = 1.0; 	
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
-    IntArray GlobalBlobID, GlobalBlobID2;
-	while (timestep < timestepMax && err > tol ){
+    int N_procs = ThreadPool::getNumberOfProcessors();
+    std::vector<int> procs(N_procs);
+    for (int i=0; i<N_procs; i++)
+        procs[i] = i;
+    ThreadPool::setProcessAffinity(procs);
+	int timestep = -1;
+    AnalysisWaitIdStruct work_ids;
+    ThreadPool tpool(2);
+    BlobIDstruct last_ids;
+	while (timestep < timestepMax && err > tol ) {
         PROFILE_START("Update");
 
 		//*************************************************************************
@@ -773,98 +781,16 @@ int main(int argc, char **argv)
 
 		// Timestep completed!
 		timestep++;
-		//...................................................................
-		if (timestep%1000 == 995){
-			//...........................................................................
-			// Copy the phase indicator field for the earlier timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus.get(),Phi,N*sizeof(double));
-	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
-			//...........................................................................
-		}
-		if (timestep%1000 == 0){
-			//...........................................................................
-			// Copy the data for for the analysis timestep
-			//...........................................................................
-			// Copy the phase from the GPU -> CPU
-			//...........................................................................
-            PROFILE_START("Copy phase");
-			DeviceBarrier();
-			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-			MPI_Barrier(MPI_COMM_WORLD);
-            PROFILE_STOP("Copy phase");
-		}
-        if ( timestep%1000 == 0){
-            // Compute the global blob id and compare to the previous version
-            PROFILE_START("Identify blobs and maps");
-			DeviceBarrier();
-			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-            double vF = 0.0;
-            double vS = 0.0;
-            int nblobs2 = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
-                Averages.Phase,Averages.SDs,vF,vS,GlobalBlobID2);
-            if ( !GlobalBlobID.empty() ) {
-                // Compute the timestep-timestep map
-                ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
-                // Renumber the current timestep's ids
-            }
-            Averages.NumberComponents_NWP = nblobs2;
-            Averages.Label_NWP.swap(GlobalBlobID2);
-            Averages.NumberComponents_WP = 1;
-            Averages.Label_WP.fill(0.0);
-            GlobalBlobID.swap(GlobalBlobID2);
-            PROFILE_STOP("Identify blobs and maps");
-        }
-		if (timestep%1000 == 5){
-            PROFILE_START("Compute dist");
-			//...........................................................................
-			// Copy the phase indicator field for the later timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus.get(),Phi,N*sizeof(double));
-//			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
-			//....................................................................
-			Averages.Initialize();
-			Averages.ComputeDelPhi();
-			Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
-			Averages.UpdateMeshValues();
-			Averages.ComputeLocal();
-			Averages.Reduce();
-			Averages.PrintAll(timestep);
-			Averages.Initialize();
-			Averages.ComponentAverages();
-			Averages.SortBlobs();
-			Averages.PrintComponents(timestep);
-			//....................................................................
-            PROFILE_STOP("Compute dist");
-		}
 
-		if (timestep%RESTART_INTERVAL == 0){
-            PROFILE_START("Save Checkpoint");
-			if (pBC){
-				//err = fabs(sat_w - sat_w_previous);
-				//sat_w_previous = sat_w;
-				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
-			}
-			else{
-				// Not clear yet
-			}
-			// Copy the data to the CPU
-			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
-			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-			CopyToHost(cDen,Den,2*N*sizeof(double));
-			// Read in the restart file to CPU buffers
-			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-            PROFILE_STOP("Save Checkpoint");
-            PROFILE_SAVE("lbpm_color_simulator",1);
-		}
+        // Run the analysis, blob identification, and write restart files
+        run_analysis(timestep,RESTART_INTERVAL,rank_info,Averages,last_ids,
+            Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
+            LocalRestartFile,tpool,work_ids);
+
 	}
+    tpool.wait_pool_finished();
     PROFILE_STOP("Loop");
-	//************************************************************************/
+	//************************************************************************
 	DeviceBarrier();
 	MPI_Barrier(MPI_COMM_WORLD);
 	stoptime = MPI_Wtime();
@@ -881,14 +807,14 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 	
-	//************************************************************************/
+	// ************************************************************************
 /*	// Perform component averaging and write tcat averages
 	Averages.Initialize();
 	Averages.ComponentAverages();
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
-	//************************************************************************/
-/*
+	// ************************************************************************
+
 	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
@@ -936,7 +862,7 @@ int main(int argc, char **argv)
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(Averages.Phase.get(),8,N,PHASE);
 	fclose(PHASE);
-
+*/
 	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
@@ -960,3 +886,5 @@ int main(int argc, char **argv)
 	MPI_Finalize();
 	// ****************************************************
 }
+
+
