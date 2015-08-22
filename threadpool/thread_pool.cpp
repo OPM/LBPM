@@ -1893,7 +1893,7 @@ void ThreadPool::WorkItem::add_dependencies( size_t N, const ThreadPool::thread_
         throw std::logic_error("Cannot add more than 65000 dependencies");
     }
     for (size_t i=0; i<N; i++) {
-        if ( ids[i].initialized() ) {
+        if ( !ids[i].finished() ) {
             if ( d_N_ids >= d_size ) {
                 thread_id_t* tmp = d_ids;
                 unsigned int N2 = d_size;
@@ -1906,7 +1906,7 @@ void ThreadPool::WorkItem::add_dependencies( size_t N, const ThreadPool::thread_
                 delete [] tmp;
                 d_size = N2;
             }
-            d_ids[d_N_ids+i] = ids[i];
+            d_ids[d_N_ids] = ids[i];
             d_N_ids++;
         }
     }
