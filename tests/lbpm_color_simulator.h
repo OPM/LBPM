@@ -1,10 +1,12 @@
 // Run the analysis, blob identification, and write restart files
+#include "common/Array.h"
 
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopyAverages=0x02, CalcDist=0x02, CreateRestart=0x10 };
 
 
+// Structure used to store ids
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
     ThreadPool::thread_id_t analysis;
@@ -20,10 +22,12 @@ public:
         std::shared_ptr<double> cDistEven_, std::shared_ptr<double>cDistOdd_, int N_ ):
         filename(filename_), cDen(cDen_), cDistEven(cDistEven_), cDistOdd(cDistOdd_), N(N_) {}
     virtual void run() {
+        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         PROFILE_START("Save Checkpoint",1);
         WriteCheckpoint(filename,cDen.get(),cDistEven.get(),cDistOdd.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
         PROFILE_SAVE("lbpm_color_simulator",1);
+        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
 private:
     WriteRestartWorkItem();
@@ -39,30 +43,33 @@ class BlobIdentificationWorkItem: public ThreadPool::WorkItem
 {
 public:
     BlobIdentificationWorkItem( int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
-        std::shared_ptr<const double> phase_, const DoubleArray& dist_,
+        std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
         BlobIDstruct last_id_, BlobIDstruct new_id_ ):
         Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_), phase(phase_), 
         dist(dist_), last_id(last_id_), new_id(new_id_) { }
     virtual void run() {
+        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs and maps",1);
         double vF = 0.0;
         double vS = 0.0;
-        new_id->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,
-            *phase,dist,vF,vS,new_id->second);
+        IntArray& ids = new_id->second;
+        new_id->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids);
         if ( last_id==NULL ) {
             // Compute the timestep-timestep map
-            ID_map_struct map = computeIDMap(last_id->second,new_id->second);
+            const IntArray& old_ids = new_id->second;
+            ID_map_struct map = computeIDMap(old_ids,ids);
             // Renumber the current timestep's ids
             
         }
         PROFILE_STOP("Identify blobs and maps",1);
+        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
 private:
     BlobIdentificationWorkItem();
     int Nx, Ny, Nz;
     const RankInfoStruct& rank_info;
-    std::shared_ptr<const double> phase;
+    std::shared_ptr<const DoubleArray> phase;
     const DoubleArray& dist;
     BlobIDstruct last_id, new_id;
 };
@@ -76,6 +83,7 @@ public:
     AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, BlobIDstruct ids, double beta_ ):
         type(type_), timestep(timestep_), Averages(Averages_), blob_ids(ids), beta(beta_) { }
     virtual void run() {
+        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         Averages.NumberComponents_NWP = blob_ids->first;
         Averages.Label_NWP = blob_ids->second;
         Averages.NumberComponents_WP = 1;
@@ -99,6 +107,7 @@ public:
             Averages.PrintComponents(timestep);
             PROFILE_STOP("Compute dist",1);
         }
+        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
 private:
     AnalysisWorkItem();
@@ -146,23 +155,23 @@ void run_analysis( int timestep, int restart_interval,
     // Copy the appropriate variables to the host (so we can spawn new threads)
     DeviceBarrier();
     PROFILE_START("Copy data to host",1);
-    std::shared_ptr<double> phase;
+    std::shared_ptr<DoubleArray> phase;
     if ( (type&CopyPhaseIndicator)!=0 || (type&CalcDist)!=0 ||
          (type&CopyAverages)!=0 || (type&IdentifyBlobs)!=0 )
     {
-        std::shared_ptr<double>(new double[N],DeleteArray<double>);
-        CopyToHost(phase.get(),Phi,N*sizeof(double));
+        phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
+        CopyToHost(phase->get(),Phi,N*sizeof(double));
     }
     if ( (type&CopyPhaseIndicator)!=0 ) {
-        memcpy(Averages.Phase_tplus.get(),phase.get(),N*sizeof(double));
+        memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
     }
     if ( (type&CalcDist)!=0 ) {
-        memcpy(Averages.Phase_tminus.get(),phase.get(),N*sizeof(double));
+        memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
     }
     if ( (type&CopyAverages) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
         ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-        memcpy(Averages.Phase.get(),phase.get(),N*sizeof(double));
+        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
         DeviceBarrier();
         CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
         CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
@@ -182,7 +191,7 @@ void run_analysis( int timestep, int restart_interval,
 
     // Spawn threads to do blob identification work
     if ( (type&IdentifyBlobs)!=0 ) {
-        BlobIDstruct new_ids;
+        BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
         ThreadPool::WorkItem *work = new BlobIdentificationWorkItem(
             Nx,Ny,Nz,rank_info,phase,Averages.SDs,last_ids,new_ids);
         work->add_dependency(wait.blobID);

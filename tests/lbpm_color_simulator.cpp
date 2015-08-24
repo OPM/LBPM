@@ -133,6 +133,7 @@ int main(int argc, char **argv)
     //PROFILE_ENABLE_MEMORY();
     PROFILE_SYNCHRONIZE();
     PROFILE_START("Main");
+    Utilities::setErrorHandlers();
 
 	// Variables that specify the computational domain  
 	string FILENAME;

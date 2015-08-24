@@ -15,9 +15,7 @@ inline const TYPE* getPtr( const std::vector<TYPE>& x ) { return x.empty() ? NUL
 int ComputeBlob( const Array<bool>& isPhase, IntArray& LocalBlobID, bool periodic, int start_id )
 {
     PROFILE_START("ComputeBlob",1);
-    ASSERT(isPhase.size(0)==LocalBlobID.size(0));
-    ASSERT(isPhase.size(1)==LocalBlobID.size(1));
-    ASSERT(isPhase.size(2)==LocalBlobID.size(2));
+    ASSERT(isPhase.size()==LocalBlobID.size());
     const int Nx = isPhase.size(0);  // maxima for the meshes
     const int Ny = isPhase.size(1);
     const int Nz = isPhase.size(2);
@@ -136,9 +134,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     double vF, double vS, IntArray& LocalBlobID, bool periodic )
 {
     PROFILE_START("ComputeLocalBlobIDs");
-    ASSERT(SignDist.size(0)==Phase.size(0));
-    ASSERT(SignDist.size(1)==Phase.size(1));
-    ASSERT(SignDist.size(2)==Phase.size(2));
+    ASSERT(SignDist.size()==Phase.size());
     size_t Nx = Phase.size(0);
     size_t Ny = Phase.size(1);
     size_t Nz = Phase.size(2);
@@ -170,7 +166,7 @@ int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, IntArray &Com
     size_t Nz = PhaseID.size(2);
     size_t N = Nx*Ny*Nz;
     // Compute the local blob ids
-	ComponentLabel.resize(Nx,Ny,Nz);
+    ComponentLabel.resize(Nx,Ny,Nz);
     Array<bool> isPhase(Nx,Ny,Nz);
     for (size_t i=0; i<N; i++) {
         if ( PhaseID(i) == VALUE) {
@@ -310,7 +306,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     PROFILE_START("LocalToGlobalIDs",1);
     const int rank = rank_info.rank[1][1][1];
     int nprocs;
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     const int ngx = (IDs.size(0)-nx)/2;
     const int ngy = (IDs.size(1)-ny)/2;
     const int ngz = (IDs.size(2)-nz)/2;
@@ -441,8 +437,6 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
     IntArray& GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
-	int nprocs;
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     // First compute the local ids
     int nblobs = ComputeLocalBlobIDs(Phase,SignDist,vF,vS,GlobalBlobID,false);
     // Compute the global ids
@@ -454,8 +448,6 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
     const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalPhaseComponent");
-	int nprocs;
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     // First compute the local ids
     int nblobs = ComputeLocalPhaseComponent(PhaseID,VALUE,GlobalBlobID,false);
     // Compute the global ids
@@ -470,8 +462,8 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
 ******************************************************************/
 void gatherSet( std::set<int>& set )
 {
-	int nprocs;
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int nprocs;
+    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     std::vector<int> send_data(set.begin(),set.end());
     int send_count = send_data.size();
     std::vector<int> recv_count(nprocs,0), recv_disp(nprocs,0);
@@ -487,8 +479,8 @@ void gatherSet( std::set<int>& set )
 }
 void gatherSrcIDMap( std::map<int,std::set<int> >& src_map )
 {
-	int nprocs;
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int nprocs;
+    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
     std::vector<int> send_data;
     for (std::map<int,std::set<int> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
         int id = it->first;
@@ -529,7 +521,7 @@ void addSrcDstIDs( int src_id, std::map<int,std::set<int> >& src_map,
 }
 ID_map_struct computeIDMap( const IntArray& ID1, const IntArray& ID2 )
 {
-    ASSERT(ID1.size(0)==ID2.size(0)&&ID1.size(1)==ID2.size(1)&&ID1.size(2)==ID2.size(2));
+    ASSERT(ID1.size()==ID2.size());
     PROFILE_START("computeIDMap");
 
     // Get a global list of all src/dst ids and the src map for each local blob
