@@ -13,7 +13,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 33
+#define BLOB_AVG_COUNT 36
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -49,6 +49,9 @@
 #define CMX 30
 #define CMY 31
 #define CMZ 32
+#define NVERT 33
+#define NSIDE 34
+#define NFACE 35
 
 class TwoPhase{
 
@@ -694,6 +697,80 @@ void TwoPhase::ComponentAverages(){
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
+
+				for (int p=0; p<n_nw_pts; p++){
+					Point PT = nw_pts(p);
+					// Check that this point is not on a previously computed face
+					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
+						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
+					}
+				}
+				for (int p=0; p<n_nw_tris; p++){
+					// All triangles are added
+					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
+					// Ignore previously computed edges
+					Point A = nw_pts(nw_tris(0,p));
+					Point B = nw_pts(nw_tris(1,p));
+					Point C = nw_pts(nw_tris(2,p));
+
+					// Check side A-B
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side A-C
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side B-C
+					bool newside = true;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+				}
+				for (int p=0; p<n_ns_pts; p++){
+					Point PT = ns_pts(p);
+					// Check that this point is not on a previously computed face
+					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
+						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
+					}
+				}
+				for (int p=0; p<n_ns_tris; p++){
+					// All triangles are added
+					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
+					// Ignore previously computed edges
+					Point A = ns_pts(ns_tris(0,p));
+					Point B = ns_pts(ns_tris(1,p));
+					Point C = ns_pts(ns_tris(2,p));
+
+					// Check side A-B
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side A-C
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side B-C
+					bool newside = true;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+				}
+
 				//...........................................................................
 				// wn interface averages
 				if (n_nw_pts>0  && LabelNWP >=0 && LabelWP >=0 ){
@@ -1248,7 +1325,11 @@ void TwoPhase::PrintComponents(int timestep){
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRAWN,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(NFACE,b));
+
 			}
 		}
 		fflush(NWPLOG);
