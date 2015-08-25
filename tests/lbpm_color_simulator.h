@@ -3,7 +3,7 @@
 
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
-    CopyAverages=0x02, CalcDist=0x02, CreateRestart=0x10 };
+    CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10 };
 
 
 // Structure used to store ids
@@ -154,14 +154,21 @@ void run_analysis( int timestep, int restart_interval,
         // Copy the phase indicator field for the earlier timestep
         type = static_cast<AnalysisType>( type | CopyPhaseIndicator );
     }
+    if ( timestep%200 == 0 ) {
+        // Identify blobs and update global ids in time
+        type = static_cast<AnalysisType>( type | IdentifyBlobs );
+    }
     if ( timestep%1000 == 0 ) {
+        // Copy the averages to the CPU (and identify blobs)
         type = static_cast<AnalysisType>( type | CopyAverages );
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
     if ( timestep%1000 == 5 ) {
+        // Run the analysis
         type = static_cast<AnalysisType>( type | CalcDist );
     }
     if (timestep%restart_interval == 0) {
+        // Write the restart file
         type = static_cast<AnalysisType>( type | CreateRestart );
     }
     

@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-    PROFILE_ENABLE(0);
+    PROFILE_ENABLE(1);
     //PROFILE_ENABLE_TRACE();
     //PROFILE_ENABLE_MEMORY();
     PROFILE_SYNCHRONIZE();
@@ -883,7 +883,7 @@ int main(int argc, char **argv)
 	fclose(GRAD);
 	*/
     PROFILE_STOP("Main");
-    PROFILE_SAVE("lbpm_colo_simulator",1);
+    PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Finalize();

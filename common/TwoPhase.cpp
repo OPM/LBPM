@@ -12,7 +12,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 33
+#define BLOB_AVG_COUNT 36
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -48,6 +48,9 @@
 #define CMX 30
 #define CMY 31
 #define CMZ 32
+#define NVERT 33
+#define NSIDE 34
+#define NFACE 35
 
 
 // Constructor
@@ -159,8 +162,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 {
 /*	double factor,temp,value;
 	factor=0.5/Beta;
-	for (int n=0; n<Nx*Ny*Nz; n++)
-{
+	for (int n=0; n<Nx*Ny*Nz; n++){
 	 	value = ColorData[n];
 		if (value > 0.999 ) DistData[n] = 4.0;
 		else if (value < -0.999 ) DistData[n] = -4.0;
@@ -169,12 +171,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		if (DistData[n] < -1.0) DistData[n] = -1.0;
 	}
 	// Initialize to -1,1 (segmentation)
-	for (int k=0; k<Nz; k++)
-{
-		for (int j=0; j<Ny; j++)
-{
-			for (int i=0; i<Nx; i++)
-{
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				value = ColorData(i,j,k);
 				temp = factor*log((1.0+value)/(1.0-value));
 				if (temp > 1.0) DistData(i,j,k) = 1.0;
@@ -186,12 +185,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 
 	SSO(DistData,Dm.id,Dm,10);
 */
-	for (int k=0; k<Nz; k++)
-{
-		for (int j=0; j<Ny; j++)
-{
-			for (int i=0; i<Nx; i++)
-{
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				DistData(i,j,k) = ColorData(i,j,k);
 			}
 		}
@@ -199,18 +195,16 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
+
 void TwoPhase::ComputeDelPhi()
 {
 	int i,j,k;
 	double fx,fy,fz;
 
 	Dm.CommunicateMeshHalo(Phase);
-	for (k=1; k<Nz-1; k++)
-{
-		for (j=1; j<Ny-1; j++)
-{
-			for (i=1; i<Nx-1; i++)
-{
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				// Compute all of the derivatives using finite differences
 				fx = 0.5*(Phase(i+1,j,k) - Phase(i-1,j,k));
 				fy = 0.5*(Phase(i,j+1,k) - Phase(i,j-1,k));
@@ -220,6 +214,7 @@ void TwoPhase::ComputeDelPhi()
 		}
 	}
 }
+
 
 void TwoPhase::Initialize()
 {
@@ -245,6 +240,8 @@ void TwoPhase::Initialize()
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
 }
+
+
 /*
 void TwoPhase::SetupCubes(Domain &Dm)
 {
@@ -254,12 +251,9 @@ void TwoPhase::SetupCubes(Domain &Dm)
 	if (Dm.BoundaryCondition !=0 && Dm.kproc==0)			kstart = 4;
 	if (Dm.BoundaryCondition !=0 && Dm.kproc==Dm.nprocz-1)	kfinish = Nz-4;
 	nc=0;
-	for (k=kstart; k<kfinish; k++)
-{
-		for (j=1; j<Ny-1; j++)
-{
-			for (i=1; i<Nx-1; i++)
-{
+	for (k=kstart; k<kfinish; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				cubeList(0,nc) = i;
 				cubeList(1,nc) = j;
 				cubeList(2,nc) = k;
@@ -270,6 +264,7 @@ void TwoPhase::SetupCubes(Domain &Dm)
 	ncubes = nc;
 }
 */
+
 
 void TwoPhase::UpdateSolid()
 {
@@ -286,6 +281,7 @@ void TwoPhase::UpdateSolid()
 	Dm.CommunicateMeshHalo(SDs_z);
 	//...........................................................................
 }
+
 
 void TwoPhase::UpdateMeshValues()
 {
@@ -324,20 +320,15 @@ void TwoPhase::UpdateMeshValues()
 	Dm.CommunicateMeshHalo(DelPhi);
 	//...........................................................................
 	// Initializing the blob ID
-	for (k=0; k<Nz; k++)
-{
-		for (j=0; j<Ny; j++)
-{
-			for (i=0; i<Nx; i++)
-{
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (Dm.id[n] == 0)
-{
+				if (Dm.id[n] == 0){
 					// Solid phase
 					PhaseID(i,j,k) = 0;
 				}
-				else if (SDn(i,j,k) < 0.0)
-{
+				else if (SDn(i,j,k) < 0.0){
 					// wetting phase
 					PhaseID(i,j,k) = 2;
 				}
@@ -360,35 +351,28 @@ void TwoPhase::ComputeLocal()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
-	for (k=kmin; k<kmax; k++)
-{
-		for (j=1; j<Ny-1; j++)
-{
-			for (i=1; i<Nx-1; i++)
-{
+	for (k=kmin; k<kmax; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				//...........................................................................
 				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
 				//...........................................................................
 				// Compute volume averages
-				for (int p=0;p<8;p++)
-{
+				for (int p=0;p<8;p++){
 					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-					if ( Dm.id[n] != 0 )
-{
+					if ( Dm.id[n] != 0 ){
 						// 1-D index for this cube corner
 						// compute the norm of the gradient of the phase indicator field
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 )
-{
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
 							nwp_volume += 0.125;
 							// velocity
 							van(0) += 0.125*Vel_x(n);
 							van(1) += 0.125*Vel_y(n);
 							van(2) += 0.125*Vel_z(n);
 							// volume the excludes the interfacial region
-							if (DelPhi(n) < 1e-4)
-{
+							if (DelPhi(n) < 1e-4){
 								vol_n += 0.125;
 								// pressure
 								pan += 0.125*Press(n);
@@ -401,8 +385,7 @@ void TwoPhase::ComputeLocal()
 							vaw(0) += 0.125*Vel_x(n);
 							vaw(1) += 0.125*Vel_y(n);
 							vaw(2) += 0.125*Vel_z(n);
-							if (DelPhi(n) < 1e-4)
-{
+							if (DelPhi(n) < 1e-4){
 								// volume the excludes the interfacial region
 								vol_w += 0.125;
 								// pressure
@@ -423,8 +406,7 @@ void TwoPhase::ComputeLocal()
 						i, j, k, Nx, Ny, Nz);
 
 				// wn interface averages
-				if (n_nw_pts > 0)
-{
+				if (n_nw_pts > 0){
 					awn += pmmc_CubeSurfaceOrientation(Gwn,nw_pts,nw_tris,n_nw_tris);
 					Jwn    += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 					Kwn    += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
@@ -441,8 +423,7 @@ void TwoPhase::ComputeLocal()
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 				}
 				// wns common curve averages
-				if (n_local_nws_pts > 0)
-{
+				if (n_local_nws_pts > 0){
 					efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
 
@@ -457,8 +438,7 @@ void TwoPhase::ComputeLocal()
 				}
 
 				// Solid interface averagees
-				if (n_local_sol_tris > 0)
-{
+				if (n_local_sol_tris > 0){
 					As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 
 					// Compute the surface orientation and the interfacial area
@@ -470,20 +450,19 @@ void TwoPhase::ComputeLocal()
 		}
 	}
 }
+
+
 void TwoPhase::AssignComponentLabels()
 {
 	int LabelNWP=1;
-	//int LabelWP=2;
+	int LabelWP=2;
 	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
 	//NumberComponents_WP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelWP,Label_WP);
 	// treat all wetting phase is connected
 	NumberComponents_WP=1;
-	for (int k=0; k<Nz; k++)
-{
-		for (int j=0; j<Ny; j++)
-{
-			for (int i=0; i<Nx; i++)
-{
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				Label_WP(i,j,k) = 0;
 			}
 		}
@@ -510,8 +489,7 @@ void TwoPhase::ComponentAverages()
 	ComponentAverages_WP.fill(0.0);
 	ComponentAverages_NWP.fill(0.0);
 	
-	if (Dm.rank==0)
-{
+	if (Dm.rank==0){
 		printf("Number of wetting phase components is %i \n",NumberComponents_WP);
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
@@ -521,12 +499,9 @@ void TwoPhase::ComponentAverages()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
-	for (k=kmin; k<kmax; k++)
-{
-		for (j=1; j<Ny-1; j++)
-{
-			for (i=1; i<Nx-1; i++)
-{
+	for (k=kmin; k<kmax; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 				LabelWP=GetCubeLabel(i,j,k,Label_WP);
 				LabelNWP=GetCubeLabel(i,j,k,Label_NWP);
 				
@@ -549,16 +524,13 @@ void TwoPhase::ComponentAverages()
 				//...........................................................................
 				//...........................................................................
 				// Compute volume averages
-				for (int p=0;p<8;p++)
-{
+				for (int p=0;p<8;p++){
 					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-					if ( Dm.id[n] != 0 )
-{
+					if ( Dm.id[n] != 0 ){
 						// 1-D index for this cube corner
 						// compute the norm of the gradient of the phase indicator field
 						// Compute the non-wetting phase volume contribution
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.0 && !(LabelNWP < 0) )
-{
+						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0.0 && !(LabelNWP < 0) ){
 							// volume
 							ComponentAverages_NWP(VOL,LabelNWP) += 0.125;
 							// velocity
@@ -574,14 +546,12 @@ void TwoPhase::ComponentAverages()
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-4 )
-{
+							if (DelPhi(n) < 1e-4 ){
 								ComponentAverages_NWP(TRIMVOL,LabelNWP) += 0.125;
 								ComponentAverages_NWP(PRS,LabelNWP) += 0.125*Press(n);
 							}
 						}
-						else if (!(LabelWP < 0))
-{
+						else if (!(LabelWP < 0)){
 							ComponentAverages_WP(VOL,LabelWP) += 0.125;
 							// velocity
 							ComponentAverages_WP(VX,LabelWP) += 0.125*Vel_x(n);
@@ -595,8 +565,7 @@ void TwoPhase::ComponentAverages()
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
 							// volume the for pressure averaging excludes the interfacial region
-							if (DelPhi(n) < 1e-4)
-{
+							if (DelPhi(n) < 1e-4){
 								ComponentAverages_WP(TRIMVOL,LabelWP) += 0.125;
 								ComponentAverages_WP(PRS,LabelWP) += 0.125*Press(n);
 							}
@@ -612,10 +581,83 @@ void TwoPhase::ComponentAverages()
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
+
+				for (int p=0; p<n_nw_pts; p++){
+					Point PT = nw_pts(p);
+					// Check that this point is not on a previously computed face
+					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
+						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
+					}
+				}
+				for (int p=0; p<n_nw_tris; p++){
+					// All triangles are added
+					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
+					// Ignore previously computed edges
+					Point A = nw_pts(nw_tris(0,p));
+					Point B = nw_pts(nw_tris(1,p));
+					Point C = nw_pts(nw_tris(2,p));
+
+					// Check side A-B
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side A-C
+					newside = true;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side B-C
+					newside = true;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+				}
+				for (int p=0; p<n_ns_pts; p++){
+					Point PT = ns_pts(p);
+					// Check that this point is not on a previously computed face
+					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
+						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
+					}
+				}
+				for (int p=0; p<n_ns_tris; p++){
+					// All triangles are added
+					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
+					// Ignore previously computed edges
+					Point A = ns_pts(ns_tris(0,p));
+					Point B = ns_pts(ns_tris(1,p));
+					Point C = ns_pts(ns_tris(2,p));
+
+					// Check side A-B
+					bool newside = true;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side A-C
+					newside = true;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+
+					// Check side B-C
+					newside = true;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
+					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+				}
+
 				//...........................................................................
 				// wn interface averages
-				if (n_nw_pts>0  && LabelNWP >=0 && LabelWP >=0 )
-{
+				if (n_nw_pts>0  && LabelNWP >=0 && LabelWP >=0 ){
 					// Mean curvature
 					TempLocal = pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,i,j,k,n_nw_pts,n_nw_tris);
 					ComponentAverages_WP(JWN,LabelWP) += TempLocal;
@@ -666,8 +708,7 @@ void TwoPhase::ComponentAverages()
 				}
 				//...........................................................................
 				// Common curve averages
-				if (n_local_nws_pts > 0  && LabelNWP >=0 && LabelWP >=0)
-{
+				if (n_local_nws_pts > 0  && LabelNWP >=0 && LabelWP >=0){
 					// Contact angle
 					TempLocal = pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
@@ -699,16 +740,14 @@ void TwoPhase::ComponentAverages()
 				}
 				//...........................................................................
 				// Solid interface averages
-				if (n_local_sol_pts > 0  && LabelWP >=0)
-{
+				if (n_local_sol_pts > 0  && LabelWP >=0){
 					As  += pmmc_CubeSurfaceArea(local_sol_pts,local_sol_tris,n_local_sol_tris);
 					// Compute the surface orientation and the interfacial area
 
 					TempLocal = pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 					ComponentAverages_WP(AWS,LabelWP) += TempLocal;
 				}
-				if (n_ns_pts > 0  && LabelNWP >=0 )
-{
+				if (n_ns_pts > 0  && LabelNWP >=0 ){
 					TempLocal = pmmc_CubeSurfaceOrientation(Gns,ns_pts,ns_tris,n_ns_tris);
 					ComponentAverages_NWP(ANS,LabelNWP) += TempLocal;
 				}
@@ -718,15 +757,13 @@ void TwoPhase::ComponentAverages()
 		}
 	}
 
-	if (Dm.rank==0)
-{
+	if (Dm.rank==0){
 		printf("Component averages computed locally -- reducing result... \n");
 	}
 	// Globally reduce the non-wetting phase averages
 	RecvBuffer.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
 
-/*	for (int b=0; b<NumberComponents_NWP; b++)
-{
+/*	for (int b=0; b<NumberComponents_NWP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
@@ -736,14 +773,11 @@ void TwoPhase::ComponentAverages()
 	MPI_Allreduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0,0),BLOB_AVG_COUNT*NumberComponents_NWP,
 					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 
-	for (int b=0; b<NumberComponents_NWP; b++)
-{
+	for (int b=0; b<NumberComponents_NWP; b++){
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx,b);
 	}
-	for (int b=0; b<NumberComponents_NWP; b++)
-{
-		if (ComponentAverages_NWP(VOL,b) > 0.0)
-{
+	for (int b=0; b<NumberComponents_NWP; b++){
+		if (ComponentAverages_NWP(VOL,b) > 0.0){
 			double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
 
 			Vn = ComponentAverages_NWP(VOL,b);
@@ -755,14 +789,12 @@ void TwoPhase::ComponentAverages()
 			vsq = ComponentAverages_NWP(VSQ,b)/Vn;
             NULL_USE(ans);
 
-			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0)
-{
+			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				pn = ComponentAverages_NWP(PRS,b)/ComponentAverages_NWP(TRIMVOL,b);
 			}
 			else pn = 0.0;
 
-			if (awn != 0.0)
-{
+			if (awn != 0.0){
 				Jwn = ComponentAverages_NWP(JWN,b)/awn;
 				Kwn = ComponentAverages_NWP(KWN,b)/awn;
 				vawn(0) = ComponentAverages_NWP(VWNSX,b)/awn;
@@ -782,8 +814,7 @@ void TwoPhase::ComponentAverages()
 			if (trawn > 0.0) trJwn /= trawn;
 
 			lwns = ComponentAverages_NWP(LWNS,b);
-			if (lwns != 0.0)
-{
+			if (lwns != 0.0){
 				cwns = ComponentAverages_NWP(CWNS,b)/lwns;
 				vawns(0) = ComponentAverages_NWP(VWNSX,b)/lwns;
 				vawns(1) = ComponentAverages_NWP(VWNSY,b)/lwns;
@@ -825,17 +856,14 @@ void TwoPhase::ComponentAverages()
 	}
 
 	// reduce the wetting phase averages
-	for (int b=0; b<NumberComponents_WP; b++)
-{
+	for (int b=0; b<NumberComponents_WP; b++){
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Allreduce(&ComponentAverages_WP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
-	for (int b=0; b<NumberComponents_WP; b++)
-{
-		if (ComponentAverages_WP(VOL,b) > 0.0)
-{
+	for (int b=0; b<NumberComponents_WP; b++){
+		if (ComponentAverages_WP(VOL,b) > 0.0){
 			double Vw,pw,awn,ans,Jwn,Kwn,lwns,cwns,vsq;
 			Vw = ComponentAverages_WP(VOL,b);
 			awn = ComponentAverages_WP(AWN,b);
@@ -846,14 +874,12 @@ void TwoPhase::ComponentAverages()
 			vsq = ComponentAverages_WP(VSQ,b)/Vw;
             NULL_USE(ans);
 
-			if (ComponentAverages_WP(TRIMVOL,b) > 0.0)
-{
+			if (ComponentAverages_WP(TRIMVOL,b) > 0.0){
 				pw = ComponentAverages_WP(PRS,b)/ComponentAverages_WP(TRIMVOL,b);
 			}
 			else pw = 0.0;
 
-			if (awn != 0.0)
-{
+			if (awn != 0.0){
 				Jwn = ComponentAverages_WP(JWN,b)/awn;
 				Kwn = ComponentAverages_WP(KWN,b)/awn;
 				vawn(0) = ComponentAverages_WP(VWNSX,b)/awn;
@@ -873,8 +899,7 @@ void TwoPhase::ComponentAverages()
 			if (trawn > 0.0) trJwn /= trawn;
 
 			lwns = ComponentAverages_WP(LWNS,b);
-			if (lwns != 0.0)
-{
+			if (lwns != 0.0){
 				cwns = ComponentAverages_WP(CWNS,b)/lwns;
 				vawns(0) = ComponentAverages_WP(VWNSX,b)/lwns;
 				vawns(1) = ComponentAverages_WP(VWNSY,b)/lwns;
@@ -911,6 +936,7 @@ void TwoPhase::ComponentAverages()
 	}
 }
 
+
 void TwoPhase::WriteSurfaces(int logcount)
 {
 	int i,j,k;
@@ -932,12 +958,9 @@ void TwoPhase::WriteSurfaces(int logcount)
 	ws_mesh->B.reserve(8*ncubes);
 	ws_mesh->C.reserve(8*ncubes);
 
-	for (k=1; k<Nz-1; k++)
-{
-		for (j=1; j<Ny-1; j++)
-{
-			for (i=1; i<Nx-1; i++)
-{		// Get cube from the list
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){		// Get cube from the list
 
 				//...........................................................................
 				// Construct the interfaces and common curve
@@ -950,8 +973,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 
 				//.......................................................................................
 				// Write the triangle lists to text file
-				for (int r=0;r<n_nw_tris;r++)
-{
+				for (int r=0;r<n_nw_tris;r++){
 					A = nw_pts(nw_tris(0,r));
 					B = nw_pts(nw_tris(1,r));
 					C = nw_pts(nw_tris(2,r));
@@ -967,8 +989,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 
 					// If the normals don't point in the same direction, flip the orientation of the triangle
 					// Right hand rule for triangle orientation is used to determine rendering for most software
-					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0)
-{
+					if (normal_x*tri_normal_x + normal_y*tri_normal_y + normal_z*tri_normal_z < 0.0){
 						P = A;
 						A = C;
 						C = P;
@@ -987,8 +1008,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 					wn_mesh->B.push_back(B);
 					wn_mesh->C.push_back(C);
 				}
-				for (int r=0;r<n_ws_tris;r++)
-{
+				for (int r=0;r<n_ws_tris;r++){
 					A = ws_pts(ws_tris(0,r));
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
@@ -1006,8 +1026,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 					ws_mesh->B.push_back(B);
 					ws_mesh->C.push_back(C);
 				}
-				for (int r=0;r<n_ns_tris;r++)
-{
+				for (int r=0;r<n_ns_tris;r++){
 					A = ns_pts(ns_tris(0,r));
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
@@ -1077,44 +1096,37 @@ void TwoPhase::Reduce()
 
 	// Normalize the phase averages
 	// (density of both components = 1.0)
-	if (vol_w_global > 0.0)
-{
+	if (vol_w_global > 0.0){
 		paw_global = paw_global / vol_w_global;
 	}
-	if (wp_volume_global > 0.0)
-{
+	if (wp_volume_global > 0.0){
 		vaw_global(0) = vaw_global(0) / wp_volume_global;
 		vaw_global(1) = vaw_global(1) / wp_volume_global;
 		vaw_global(2) = vaw_global(2) / wp_volume_global;
 
 	}
-	if (vol_n_global > 0.0)
-{
+	if (vol_n_global > 0.0){
 		pan_global = pan_global / vol_n_global;
 	}
-	if (nwp_volume_global > 0.0)
-{
+	if (nwp_volume_global > 0.0){
 		van_global(0) = van_global(0) / nwp_volume_global;
 		van_global(1) = van_global(1) / nwp_volume_global;
 		van_global(2) = van_global(2) / nwp_volume_global;
 	}
 	// Normalize surface averages by the interfacial area
-	if (awn_global > 0.0)
-{
+	if (awn_global > 0.0){
 		Jwn_global /= awn_global;
 		Kwn_global /= awn_global;
 		for (i=0; i<3; i++) vawn_global(i) /= awn_global;
 		for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
 	}
-	if (lwns_global > 0.0)
-{
+	if (lwns_global > 0.0){
 		efawns_global /= lwns_global;
 		KNwns_global /= lwns_global;
 		KGwns_global /= lwns_global;
 		for (i=0; i<3; i++)	vawns_global(i) /= lwns_global;
 	}
-	if (trawn_global > 0.0)
-{
+	if (trawn_global > 0.0){
 		trJwn_global /= trawn_global;
 		trRwn_global /= trawn_global;
 		trRwn_global = 2.0*fabs(trRwn_global);
@@ -1144,8 +1156,7 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT)
 
 void TwoPhase::PrintAll(int timestep)
 {
-	if (Dm.rank==0)
-{
+	if (Dm.rank==0){
 		fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
@@ -1170,13 +1181,10 @@ void TwoPhase::PrintAll(int timestep)
 
 void TwoPhase::PrintComponents(int timestep)
 {
-	if (Dm.rank==0)
-{
+	if (Dm.rank==0){
 		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",(int)ComponentAverages_NWP.size(1),timestep);
-		for (int b=0; b<NumberComponents_NWP; b++)
-{
-			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0)
-{
+		for (int b=0; b<NumberComponents_NWP; b++){
+			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				fprintf(NWPLOG,"%i ",timestep-5);
                 if ( Label_NWP_map.empty() ) {
                     // print index
@@ -1214,15 +1222,16 @@ void TwoPhase::PrintComponents(int timestep)
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMY,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRAWN,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(NFACE,b));
 			}
 		}
 		fflush(NWPLOG);
 
-		for (int b=0; b<NumberComponents_WP; b++)
-{
-			if (ComponentAverages_WP(TRIMVOL,b) > 0.0)
-{
+		for (int b=0; b<NumberComponents_WP; b++){
+			if (ComponentAverages_WP(TRIMVOL,b) > 0.0){
 				fprintf(WPLOG,"%i ",timestep-5);
 				fprintf(WPLOG,"%i ",b);
 				fprintf(WPLOG,"%.5g ",ComponentAverages_WP(VOL,b));
