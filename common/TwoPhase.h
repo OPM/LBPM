@@ -721,14 +721,14 @@ void TwoPhase::ComponentAverages(){
 					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
 
 					// Check side A-C
-					bool newside = true;
+					newside = true;
 					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
 					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
 					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
 					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
 
 					// Check side B-C
-					bool newside = true;
+					newside = true;
 					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
 					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
 					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
@@ -757,14 +757,14 @@ void TwoPhase::ComponentAverages(){
 					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
 
 					// Check side A-C
-					bool newside = true;
+					newside = true;
 					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
 					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
 					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
 					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
 
 					// Check side B-C
-					bool newside = true;
+					newside = true;
 					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
 					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
 					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
