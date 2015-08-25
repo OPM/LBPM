@@ -196,7 +196,7 @@ inline vtkDataSet* meshToVTK( std::shared_ptr<const IO::Mesh> mesh )
         mesh2 = DomainToVTK( std::dynamic_pointer_cast<const IO::DomainMesh>(mesh) );
         DebugStream1 << "   Volume mesh created" << std::endl;
     } else {
-        DebugStream1 << "   Error, unknown mesh type" << std::endl;
+        //DebugStream1 << "   Error, unknown mesh type" << std::endl;
         return NULL;
     }
     return mesh2;

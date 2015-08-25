@@ -11,7 +11,7 @@
 using namespace std;
 
 //--------------------------------------------------------------------------------------------------------
-inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
+int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indicator,
 					   DoubleArray &F, DoubleArray &S, double vf, double vs, int startx, int starty,
 					   int startz, IntArray &temp)
 {
@@ -140,7 +140,7 @@ inline int ComputeBlob(IntArray &blobs, int &nblobs, int &ncubes, IntArray &indi
 }
 //--------------------------------------------------------------------------------------------------
 /*
-inline DoubleArray SOLVE( DoubleArray &A, DoubleArray &b)
+DoubleArray SOLVE( DoubleArray &A, DoubleArray &b)
 {
 	// solves the system A*x = b exactly
 
@@ -158,7 +158,7 @@ inline DoubleArray SOLVE( DoubleArray &A, DoubleArray &b)
     return solution;
 }
 //-----------------------------------------------------------------------------
-inline Point NEWTON(Point x0,  DoubleArray &F, double &v,DoubleArray &S, int i, int j, int k, int &newton_steps)
+Point NEWTON(Point x0,  DoubleArray &F, double &v,DoubleArray &S, int i, int j, int k, int &newton_steps)
 {
 	Point pt;
 	// Performs a Newton iteration to compute the point x from initial guess x0
@@ -321,7 +321,7 @@ inline Point NEWTON(Point x0,  DoubleArray &F, double &v,DoubleArray &S, int i, 
  */
 //--------------------------------------------------------------------------------------------------
 
-inline bool vertexcheck(Point &P, int n, int pos, DTMutableList<Point> &cellvertices){
+bool vertexcheck(Point &P, int n, int pos, DTMutableList<Point> &cellvertices){
 
     // returns true if P is a new vertex (one previously unencountered
     bool V = 1;
@@ -337,7 +337,7 @@ inline bool vertexcheck(Point &P, int n, int pos, DTMutableList<Point> &cellvert
 
 //--------------------------------------------------------------------------------------------------
 
-inline bool ShareSide( Point &A,  Point &B)
+bool ShareSide( Point &A,  Point &B)
 {
     // returns true if points A and B share an x,y, or z coordinate
     bool l = 0;
@@ -360,7 +360,7 @@ inline bool ShareSide( Point &A,  Point &B)
 }
 //--------------------------------------------------------------------------------------------------
 
-inline bool Interface( DoubleArray &A, const double v, int i, int j, int k){
+bool Interface( DoubleArray &A, const double v, int i, int j, int k){
     // returns true if grid cell i, j, k contains a section of the interface
     bool Y = 0;
 
@@ -416,7 +416,7 @@ inline bool Interface( DoubleArray &A, const double v, int i, int j, int k){
 }
 //--------------------------------------------------------------------------------------------------
 
-inline bool Fluid_Interface( DoubleArray &A,  DoubleArray &S, const double v, int i, int j, int k){
+bool Fluid_Interface( DoubleArray &A,  DoubleArray &S, const double v, int i, int j, int k){
     // returns true if grid cell i, j, k contains a section of the interface
     bool Y = 0;
 
@@ -470,7 +470,7 @@ inline bool Fluid_Interface( DoubleArray &A,  DoubleArray &S, const double v, in
     return Y;
 }
 //--------------------------------------------------------------------------------------------------
-inline bool Solid( DoubleArray &A, int i, int j, int k){
+bool Solid( DoubleArray &A, int i, int j, int k){
 
     bool X = 0;
 
@@ -504,7 +504,7 @@ inline bool Solid( DoubleArray &A, int i, int j, int k){
 }
 //-------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------
-inline void SOL_SURF(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
+void SOL_SURF(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
 					 int i,int j,int k, int m, int n, int o, DTMutableList<Point>
 					 &cellvertices, int &lengthvertices, IntArray &Tlist, int &nTris,
 					 DoubleArray &values){
@@ -941,7 +941,7 @@ inline void SOL_SURF(DoubleArray &A, const double &v, DoubleArray &B, const doub
 	}
 }
 //-------------------------------------------------------------------------------
-inline void TRIM(DTMutableList<Point> &local_sol_pts, int &n_local_sol_pts, double isovalue,
+void TRIM(DTMutableList<Point> &local_sol_pts, int &n_local_sol_pts, double isovalue,
 				 IntArray &local_sol_tris, int &n_local_sol_tris,
 				 DTMutableList<Point> &ns_pts, int &n_ns_pts, IntArray &ns_tris,
 				 int &n_ns_tris, DTMutableList<Point> &ws_pts, int &n_ws_pts,
@@ -1374,7 +1374,7 @@ inline void TRIM(DTMutableList<Point> &local_sol_pts, int &n_local_sol_pts, doub
 	}
 }
 //-------------------------------------------------------------------------------
-inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k,
+void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k,
 				DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris,
 				int &n_nw_tris)
 {
@@ -2128,7 +2128,7 @@ else if ( A(i,j+1,k+1) == 0){
 
 }
 //-------------------------------------------------------------------------------
-inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k, int &m, int &n, int &o,
+void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k, int &m, int &n, int &o,
 				 DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris, int &n_nw_tris,
 				 DTMutableList<Point> &local_nws_pts, int &n_local_nws_pts)
 {
@@ -2491,7 +2491,7 @@ inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, 
 
 }
 //--------------------------------------------------------------------------------------------------------
-inline void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
+void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
 							 DoubleArray &F, DoubleArray &S, double vF, double vS, 
 							 double &blob_volume, double &ans, double &aws, double &awn, double &lwns,
 							 int Nx, int Ny, int Nz)

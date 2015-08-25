@@ -22,6 +22,16 @@ inline double rand2()
 }
 
 
+// Test if all ranks agree on a value
+bool allAgree( int x ) {
+    int min, max;
+    MPI_Allreduce(&x,&min,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+    MPI_Allreduce(&x,&max,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    return min==max;
+}
+
+
+// Structure to hold a bubble
 struct bubble_struct {
     Point center;
     double radius;
@@ -209,6 +219,7 @@ int main(int argc, char **argv)
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(GlobalBlobID,BlobIDVar->data);
     IO::writeData( 0, meshData, 2 );
+    writeIDMap(ID_map_struct(nblobs),0,"lbpm_id_map.txt");
     int save_it = 1;
 
     // Check the results
@@ -222,6 +233,7 @@ int main(int argc, char **argv)
     // Move the blobs and connect them to the previous ids
     PROFILE_START("constant velocity test");
     if ( rank==0 ) { printf("Running constant velocity blob test\n"); }
+    int id_max = nblobs-1;
     for (int i=0; i<20; i++, save_it++) {
         // Shift all the data
         shift_data( Phase,    3, -2, 1, rank_info );
@@ -236,6 +248,11 @@ int main(int argc, char **argv)
         }
         // Identify the blob maps and renumber the ids
         ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+        std::swap(GlobalBlobID,GlobalBlobID2);
+        std::vector<BlobIDType> new_list;
+        getNewIDs(map,id_max,new_list);
+        renumberIDs(new_list,GlobalBlobID);
+        writeIDMap(map,save_it,"lbpm_id_map.txt");
         bool pass = (int)map.src_dst.size()==nblobs;
         pass = pass && map.created.empty();
         pass = pass && map.destroyed.empty();
@@ -244,11 +261,11 @@ int main(int argc, char **argv)
         pass = pass && map.split.empty();
         pass = pass && map.merge.empty();
         pass = pass && map.merge_split.empty();
+        pass = pass && id_max==nblobs-1;
         if ( !pass ) {
             printf("Error, blob ids do not match in constant velocity test\n");
             N_errors++;
         }
-        GlobalBlobID = GlobalBlobID2;
         // Save the results
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);
@@ -279,6 +296,7 @@ int main(int argc, char **argv)
     fillData.copy(GlobalBlobID,BlobIDVar->data);
     IO::writeData( save_it, meshData, 2 );
     save_it++;
+    id_max = nblobs-1;
     for (int i=0; i<25; i++, save_it++) {
         // Move the bubbles
         for (size_t j=0; j<bubbles.size(); j++) {
@@ -294,6 +312,17 @@ int main(int argc, char **argv)
         int nblobs2 = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID2);
         // Identify the blob maps and renumber the ids
         ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+        std::swap(GlobalBlobID,GlobalBlobID2);
+        std::vector<BlobIDType> new_list;
+        getNewIDs(map,id_max,new_list);
+        renumberIDs(new_list,GlobalBlobID);
+        writeIDMap(map,save_it,"lbpm_id_map.txt");
+        if ( !allAgree(id_max) ) {
+            if ( rank==0 )
+                printf("All ranks do not agree on id_max\n");
+            N_errors++;
+            break;
+        }
         int N1 = 0;
         int N2 = 0;
         if ( rank==0 ) {
@@ -350,7 +379,6 @@ int main(int argc, char **argv)
             N_errors++;
         }
         nblobs = nblobs2;
-        GlobalBlobID = GlobalBlobID2;
         // Save the results
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);

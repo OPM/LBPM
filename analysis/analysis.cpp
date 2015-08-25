@@ -12,7 +12,7 @@ inline const TYPE* getPtr( const std::vector<TYPE>& x ) { return x.empty() ? NUL
 /******************************************************************
 * Compute the blobs                                               *
 ******************************************************************/
-int ComputeBlob( const Array<bool>& isPhase, IntArray& LocalBlobID, bool periodic, int start_id )
+int ComputeBlob( const Array<bool>& isPhase, BlobIDArray& LocalBlobID, bool periodic, int start_id )
 {
     PROFILE_START("ComputeBlob",1);
     ASSERT(isPhase.size()==LocalBlobID.size());
@@ -53,7 +53,7 @@ int ComputeBlob( const Array<bool>& isPhase, IntArray& LocalBlobID, bool periodi
     std::vector<int> neighbor_ids;
     neighbor_ids.reserve(N_neighbors);
     const bool *isPhasePtr = isPhase.get();
-    int *LocalBlobIDPtr = LocalBlobID.get();
+    BlobIDType *LocalBlobIDPtr = LocalBlobID.get();
     for (int z=0; z<Nz; z++) {
         for (int y=0; y<Ny; y++) {
             for (int x=0; x<Nx; x++) {
@@ -131,7 +131,7 @@ int ComputeBlob( const Array<bool>& isPhase, IntArray& LocalBlobID, bool periodi
 * Compute the local blob ids                                      *
 ******************************************************************/
 int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist, 
-    double vF, double vS, IntArray& LocalBlobID, bool periodic )
+    double vF, double vS, BlobIDArray& LocalBlobID, bool periodic )
 {
     PROFILE_START("ComputeLocalBlobIDs");
     ASSERT(SignDist.size()==Phase.size());
@@ -158,7 +158,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     PROFILE_STOP("ComputeLocalBlobIDs");
     return nblobs;
 }
-int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, IntArray &ComponentLabel, bool periodic )
+int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, BlobIDArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
     size_t Nx = PhaseID.size(0);
@@ -186,7 +186,7 @@ int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, IntArray &Com
 /******************************************************************
 * Reorder the global blob ids                                     *
 ******************************************************************/
-static int ReorderBlobIDs2( IntArray& ID, int N_blobs, int ngx, int ngy, int ngz )
+static int ReorderBlobIDs2( BlobIDArray& ID, int N_blobs, int ngx, int ngy, int ngz )
 {
     if ( N_blobs==0 )
         return 0;
@@ -233,7 +233,7 @@ static int ReorderBlobIDs2( IntArray& ID, int N_blobs, int ngx, int ngy, int ngz
     PROFILE_STOP("ReorderBlobIDs2",1);
     return N_blobs2;
 }
-void ReorderBlobIDs( IntArray& ID )
+void ReorderBlobIDs( BlobIDArray& ID )
 {
     PROFILE_START("ReorderBlobIDs");
     int tmp = ID.max()+1;
@@ -301,7 +301,7 @@ static bool updateLocalIds( const std::map<int64_t,int64_t>& remote_map,
     return changed;
 }
 static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
-    int nblobs, IntArray& IDs )
+    int nblobs, BlobIDArray& IDs )
 {
     PROFILE_START("LocalToGlobalIDs",1);
     const int rank = rank_info.rank[1][1][1];
@@ -327,9 +327,9 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
         if ( IDs(i) >= 0 )
             IDs(i) += offset;
     }
-    const Array<int> LocalIDs = IDs;
+    const BlobIDArray LocalIDs = IDs;
     // Copy the ids and get the neighbors through the halos
-    fillHalo<int> fillData(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
     fillData.fill(IDs);
     // Create a list of all neighbor ranks (excluding self)
     std::vector<int> neighbors;
@@ -414,14 +414,14 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     for (size_t k=ngz; k<IDs.size(2)-ngz; k++) {
         for (size_t j=ngy; j<IDs.size(1)-ngy; j++) {
             for (size_t i=ngx; i<IDs.size(0)-ngx; i++) {
-                int id = IDs(i,j,k);
+                BlobIDType id = IDs(i,j,k);
                 if ( id >= 0 )
                     IDs(i,j,k) = final_map[id-offset];
             }
         }
     }
     // Fill the ghosts
-    fillHalo<int> fillData2(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData2(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
     fillData2.fill(IDs);
     // Reorder based on size (and compress the id space
     int N_blobs_global = ReorderBlobIDs2(IDs,N_blobs_tot,ngx,ngy,ngz);
@@ -434,7 +434,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
 }
 int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
     const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS,
-    IntArray& GlobalBlobID )
+    BlobIDArray& GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
     // First compute the local ids
@@ -445,7 +445,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
     return nglobal;
 }
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int VALUE, IntArray &GlobalBlobID )
+    const IntArray &PhaseID, int VALUE, BlobIDArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalPhaseComponent");
     // First compute the local ids
@@ -460,34 +460,48 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
 /******************************************************************
 * Compute the mapping of blob ids between timesteps               *
 ******************************************************************/
-void gatherSet( std::set<int>& set )
+template<class TYPE> inline MPI_Datatype getMPIType();
+template<> inline MPI_Datatype getMPIType<int32_t>() { return MPI_INT; }
+template<> inline MPI_Datatype getMPIType<int64_t>() { 
+    if ( sizeof(int64_t)==sizeof(long int) )
+        return MPI_LONG;
+    else if ( sizeof(int64_t)==sizeof(double) )
+        return MPI_DOUBLE;
+}
+template<class TYPE>
+void gatherSet( std::set<TYPE>& set )
 {
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    std::vector<int> send_data(set.begin(),set.end());
+    MPI_Datatype type = getMPIType<TYPE>();
+    std::vector<TYPE> send_data(set.begin(),set.end());
     int send_count = send_data.size();
     std::vector<int> recv_count(nprocs,0), recv_disp(nprocs,0);
     MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,MPI_COMM_WORLD);
     for (int i=1; i<nprocs; i++)
         recv_disp[i] = recv_disp[i-1] + recv_count[i-1];
-    std::vector<int> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
-    MPI_Allgatherv(getPtr(send_data),send_count,MPI_INT,
-        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),MPI_INT,
+    std::vector<TYPE> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
+    MPI_Allgatherv(getPtr(send_data),send_count,type,
+        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,
         MPI_COMM_WORLD);
     for (size_t i=0; i<recv_data.size(); i++)
         set.insert(recv_data[i]);
 }
-void gatherSrcIDMap( std::map<int,std::set<int> >& src_map )
+template<class TYPE>
+void gatherSrcIDMap( std::map<TYPE,std::set<TYPE> >& src_map )
 {
     int nprocs;
     MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
-    std::vector<int> send_data;
-    for (std::map<int,std::set<int> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
+    MPI_Datatype type = getMPIType<TYPE>();
+    std::vector<TYPE> send_data;
+    typename std::map<TYPE,std::set<TYPE> >::const_iterator it;
+    for (it=src_map.begin(); it!=src_map.end(); ++it) {
         int id = it->first;
-        const std::set<int>& src_ids = it->second;
+        const std::set<TYPE>& src_ids = it->second;
         send_data.push_back(id);
         send_data.push_back(src_ids.size());
-        for (std::set<int>::const_iterator it2=src_ids.begin(); it2!=src_ids.end(); ++it2)
+        typename std::set<TYPE>::const_iterator it2;
+        for (it2=src_ids.begin(); it2!=src_ids.end(); ++it2)
             send_data.push_back(*it2);
     }
     int send_count = send_data.size();
@@ -495,45 +509,45 @@ void gatherSrcIDMap( std::map<int,std::set<int> >& src_map )
     MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,MPI_COMM_WORLD);
     for (int i=1; i<nprocs; i++)
         recv_disp[i] = recv_disp[i-1] + recv_count[i-1];
-    std::vector<int> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
-    MPI_Allgatherv(getPtr(send_data),send_count,MPI_INT,
-        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),MPI_INT,
+    std::vector<TYPE> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
+    MPI_Allgatherv(getPtr(send_data),send_count,type,
+        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,
         MPI_COMM_WORLD);
     size_t i=0;
     while ( i < recv_data.size() ) {
         int id = recv_data[i];
         int count = recv_data[i+1];
         i += 2;
-        std::set<int>& src_ids = src_map[id];
+        std::set<TYPE>& src_ids = src_map[id];
         for (int j=0; j<count; j++,i++)
             src_ids.insert(recv_data[i]);
     }
 }
-void addSrcDstIDs( int src_id, std::map<int,std::set<int> >& src_map, 
-    std::map<int,std::set<int> >& dst_map, std::set<int>& src, std::set<int>& dst )
+void addSrcDstIDs( BlobIDType src_id, std::map<BlobIDType,std::set<BlobIDType> >& src_map, 
+    std::map<BlobIDType,std::set<BlobIDType> >& dst_map, std::set<BlobIDType>& src, std::set<BlobIDType>& dst )
 {
     src.insert(src_id);
-    const std::set<int>& dst_ids = dst_map[src_id];
-    for (std::set<int>::const_iterator it=dst_ids.begin(); it!=dst_ids.end(); ++it) {
+    const std::set<BlobIDType>& dst_ids = dst_map[src_id];
+    for (std::set<BlobIDType>::const_iterator it=dst_ids.begin(); it!=dst_ids.end(); ++it) {
         if ( dst.find(*it)==dst.end() )
             addSrcDstIDs(*it,dst_map,src_map,dst,src);
     }
 }
-ID_map_struct computeIDMap( const IntArray& ID1, const IntArray& ID2 )
+ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2 )
 {
     ASSERT(ID1.size()==ID2.size());
     PROFILE_START("computeIDMap");
 
     // Get a global list of all src/dst ids and the src map for each local blob
-    std::set<int> src_set, dst_set;
-    std::map<int,std::set<int> > src_map;   // Map of the src ids for each dst id
+    std::set<BlobIDType> src_set, dst_set;
+    std::map<BlobIDType,std::set<BlobIDType> > src_map;   // Map of the src ids for each dst id
     for (size_t i=0; i<ID1.length(); i++) {
         if ( ID1(i)>=0 )
             src_set.insert(ID1(i));
         if ( ID2(i)>=0 )
             dst_set.insert(ID2(i));
         if ( ID2(i)>=0 && ID1(i)>=0 ) {
-            std::set<int>& src_ids = src_map[ID2(i)];
+            std::set<BlobIDType>& src_ids = src_map[ID2(i)];
             src_ids.insert(ID1(i));
         }
     }
@@ -542,12 +556,12 @@ ID_map_struct computeIDMap( const IntArray& ID1, const IntArray& ID2 )
     gatherSet( dst_set );
     gatherSrcIDMap( src_map );
     // Compute the dst id map
-    std::map<int,std::set<int> > dst_map;   // Map of the dst ids for each src id
-    for (std::map<int,std::set<int> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
-        int id = it->first;
-        const std::set<int>& src_ids = it->second;
-        for (std::set<int>::const_iterator it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
-            std::set<int>& dst_ids = dst_map[*it2];
+    std::map<BlobIDType,std::set<BlobIDType> > dst_map;   // Map of the dst ids for each src id
+    for (std::map<BlobIDType,std::set<BlobIDType> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
+        BlobIDType id = it->first;
+        const std::set<BlobIDType>& src_ids = it->second;
+        for (std::set<BlobIDType>::const_iterator it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
+            std::set<BlobIDType>& dst_ids = dst_map[*it2];
             dst_ids.insert(id);
         }
     }
@@ -555,53 +569,53 @@ ID_map_struct computeIDMap( const IntArray& ID1, const IntArray& ID2 )
     // Perform the mapping of ids
     ID_map_struct id_map;
     // Find new blobs
-    for (std::set<int>::const_iterator it=dst_set.begin(); it!=dst_set.end(); ++it) {
+    for (std::set<BlobIDType>::const_iterator it=dst_set.begin(); it!=dst_set.end(); ++it) {
         if ( src_map.find(*it)==src_map.end() )
             id_map.created.push_back(*it);
     }
     // Fine blobs that disappeared
-    for (std::set<int>::const_iterator it=src_set.begin(); it!=src_set.end(); ++it) {
+    for (std::set<BlobIDType>::const_iterator it=src_set.begin(); it!=src_set.end(); ++it) {
         if ( dst_map.find(*it)==dst_map.end() )
             id_map.destroyed.push_back(*it);
     }
     // Find blobs with a 1-to-1 mapping
-    std::vector<int> dst_list;
+    std::vector<BlobIDType> dst_list;
     dst_list.reserve(src_map.size());
-    for (std::map<int,std::set<int> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it)
+    for (std::map<BlobIDType,std::set<BlobIDType> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it)
         dst_list.push_back(it->first);
     for (size_t i=0; i<dst_list.size(); i++) {
         int dst_id = dst_list[i];
-        const std::set<int>& src_ids = src_map[dst_id];
+        const std::set<BlobIDType>& src_ids = src_map[dst_id];
         if ( src_ids.size()==1 ) {
             int src_id = *src_ids.begin();
-            const std::set<int>& dst_ids = dst_map[src_id];
+            const std::set<BlobIDType>& dst_ids = dst_map[src_id];
             if ( dst_ids.size()==1 ) {
                 ASSERT(*dst_ids.begin()==dst_id);
                 src_map.erase(dst_id);
                 dst_map.erase(src_id);
-                id_map.src_dst.push_back(std::pair<int,int>(src_id,dst_id));
+                id_map.src_dst.push_back(std::pair<BlobIDType,BlobIDType>(src_id,dst_id));
             }
         }
     }
     // Handle merge/splits
     while ( !dst_map.empty() ) {
         // Get a lit of the src-dst ids
-        std::set<int> src, dst;
+        std::set<BlobIDType> src, dst;
         addSrcDstIDs( dst_map.begin()->first, src_map, dst_map, src, dst );
-        for (std::set<int>::const_iterator it=src.begin(); it!=src.end(); ++it)
+        for (std::set<BlobIDType>::const_iterator it=src.begin(); it!=src.end(); ++it)
             dst_map.erase(*it);
-        for (std::set<int>::const_iterator it=dst.begin(); it!=dst.end(); ++it)
+        for (std::set<BlobIDType>::const_iterator it=dst.begin(); it!=dst.end(); ++it)
             src_map.erase(*it);
         if ( src.size()==1 ) {
             // Bubble split
-            id_map.split.push_back( BlobIDSplitStruct(*src.begin(),std::vector<int>(dst.begin(),dst.end())) );
+            id_map.split.push_back( BlobIDSplitStruct(*src.begin(),std::vector<BlobIDType>(dst.begin(),dst.end())) );
         } else if ( dst.size()==1 ) {
             // Bubble merge
-            id_map.merge.push_back( BlobIDMergeStruct(std::vector<int>(src.begin(),src.end()),*dst.begin()) );
+            id_map.merge.push_back( BlobIDMergeStruct(std::vector<BlobIDType>(src.begin(),src.end()),*dst.begin()) );
         } else {
             // Bubble split/merge
             id_map.merge_split.push_back( BlobIDMergeSplitStruct(
-                std::vector<int>(src.begin(),src.end()), std::vector<int>(dst.begin(),dst.end() ) ) );
+                std::vector<BlobIDType>(src.begin(),src.end()), std::vector<BlobIDType>(dst.begin(),dst.end() ) ) );
         }
     }
     ASSERT(src_map.empty());
@@ -611,4 +625,135 @@ ID_map_struct computeIDMap( const IntArray& ID1, const IntArray& ID2 )
 }
 
 
+/******************************************************************
+* Renumber the ids                                                *
+******************************************************************/
+void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>& new_ids )
+{
+    new_ids.resize(0);
+    // Renumber the ids that map directly
+    for (size_t i=0; i<map.src_dst.size(); i++) {
+        int id1 = map.src_dst[i].second;
+        int id2 = map.src_dst[i].first;
+        map.src_dst[i].second = id2;
+        if ( new_ids.size() < static_cast<size_t>(id1+1) )
+            new_ids.resize(id1+1,-1);
+        new_ids[id1] = id2;
+    }
+    // Renumber the created blobs to create new ids
+    for (size_t i=0; i<map.created.size(); i++) {
+        int id1 = map.created[i];
+        id_max++;
+        int id2 = id_max;
+        map.created[i] = id2;
+        if ( new_ids.size() < static_cast<size_t>(id1+1) )
+            new_ids.resize(id1+1,-1);
+        new_ids[id1] = id2;
+    }
+    // Renumber the blob splits to create new ids
+    for (size_t i=0; i<map.split.size(); i++) {
+        for (size_t j=0; j<map.split[i].second.size(); j++) {
+            int id1 = map.split[i].second[j];
+            id_max++;
+            int id2 = id_max;
+            map.split[i].second[j] = id2;
+            if ( new_ids.size() < static_cast<size_t>(id1+1) )
+                new_ids.resize(id1+1,-1);
+            new_ids[id1] = id2;
+        }
+    }
+    // Renumber the blob merges to create a new id
+    for (size_t i=0; i<map.merge.size(); i++) {
+        int id1 = map.merge[i].second;
+        id_max++;
+        int id2 = id_max;
+        map.merge[i].second = id2;
+        if ( new_ids.size() < static_cast<size_t>(id1+1) )
+            new_ids.resize(id1+1,-1);
+        new_ids[id1] = id2;
+    }
+    // Renumber the blob merge/splits to create new ids
+    for (size_t i=0; i<map.merge_split.size(); i++) {
+        for (size_t j=0; j<map.merge_split[i].second.size(); j++) {
+            int id1 = map.merge_split[i].second[j];
+            id_max++;
+            int id2 = id_max;
+            map.merge_split[i].second[j] = id2;
+            if ( new_ids.size() < static_cast<size_t>(id1+1) )
+                new_ids.resize(id1+1,-1);
+            new_ids[id1] = id2;
+        }
+    }
+
+}
+void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs )
+{
+    size_t N = IDs.length();
+    BlobIDType* ids = IDs.get();
+    for (size_t i=0; i<N; i++) {
+        BlobIDType id = ids[i];
+        if ( id>=0 )
+            ids[i] = new_ids[id];
+    }
+}
+
+
+/******************************************************************
+* Write the id map for the given timestep                         *
+******************************************************************/
+void writeIDMap( const ID_map_struct& map, long long int timestep, const std::string& filename )
+{
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    if ( rank!=0 )
+        return;
+    bool empty = map.created.empty() && map.destroyed.empty() &&
+        map.split.empty() && map.merge.empty() && map.merge_split.empty();
+    for (size_t i=0; i<map.src_dst.size(); i++)
+        empty = empty && map.src_dst[i].first==map.src_dst[i].second;
+    if ( timestep!=0 && empty )
+        return;
+    FILE *fid = NULL;
+    if ( timestep==0 )
+        fid = fopen(filename.c_str(),"wb");
+    else
+        fid = fopen(filename.c_str(),"ab");
+    INSIST(fid!=NULL,std::string("Error opening file: ")+filename);
+    if ( empty ) {
+        fclose(fid);
+        return;
+    }
+    fprintf(fid,"%lli:",timestep);
+    for (size_t i=0; i<map.created.size(); i++)
+        fprintf(fid," -%lli",static_cast<long long int>(map.created[i]));
+    for (size_t i=0; i<map.destroyed.size(); i++)
+        fprintf(fid," %lli-",static_cast<long long int>(map.destroyed[i]));
+    for (size_t i=0; i<map.src_dst.size(); i++) {
+        if ( map.src_dst[i].first!=map.src_dst[i].second )
+            fprintf(fid," %lli-%lli",static_cast<long long int>(map.src_dst[i].first),
+                                    static_cast<long long int>(map.src_dst[i].second));
+    }
+    for (size_t i=0; i<map.split.size(); i++) {
+        fprintf(fid," %lli-%lli",static_cast<long long int>(map.split[i].first),
+                              static_cast<long long int>(map.split[i].second[0]));
+        for (size_t j=1; j<map.split[i].second.size(); j++)
+            fprintf(fid,"/%lli",static_cast<long long int>(map.split[i].second[j]));
+    }
+    for (size_t i=0; i<map.merge.size(); i++) {
+        fprintf(fid," %lli",static_cast<long long int>(map.merge[i].first[0]));
+        for (size_t j=1; j<map.merge[i].first.size(); j++)
+            fprintf(fid,"/%lli",static_cast<long long int>(map.merge[i].first[j]));
+        fprintf(fid,"-%lli",static_cast<long long int>(map.merge[i].second));
+    }
+    for (size_t i=0; i<map.merge_split.size(); i++) {
+        fprintf(fid," %lli",static_cast<long long int>(map.merge_split[i].first[0]));
+        for (size_t j=1; j<map.merge_split[i].first.size(); j++)
+            fprintf(fid,"/%lli",static_cast<long long int>(map.merge_split[i].first[j]));
+        fprintf(fid,"-%lli",static_cast<long long int>(map.merge_split[i].second[0]));
+        for (size_t j=1; j<map.merge_split[i].second.size(); j++)
+            fprintf(fid,"/%lli",static_cast<long long int>(map.merge_split[i].second[j]));
+    }
+    fprintf(fid,"\n");
+    fclose(fid);
+}
 

@@ -1,3 +1,7 @@
+#ifndef pmmc_INC
+#define pmmc_INC
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -10,7 +14,7 @@
 
 using namespace std;
 
-int edgeTable[256]={
+static int edgeTable[256]={
 	0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
 	0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
 	0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -43,8 +47,8 @@ int edgeTable[256]={
 	0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99 , 0x190,
 	0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
 	0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   };
-char triTable[256][16] =
-{{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+static char triTable[256][16] =
+	{{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{1, 8, 3, 9, 8, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -735,7 +739,7 @@ inline bool Solid( DoubleArray &A, int i, int j, int k){
     return X;
 }
 //-------------------------------------------------------------------------------
-Point VertexInterp(const Point &p1, const Point &p2, double valp1, double valp2)
+inline Point VertexInterp(const Point &p1, const Point &p2, double valp1, double valp2)
 {
     return (p1 + (-valp1 / (valp2 - valp1)) * (p2 - p1));
 }
@@ -4032,3 +4036,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	//.............................................................................
 }
 //--------------------------------------------------------------------------------------------------------
+
+
+#endif
+

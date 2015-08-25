@@ -677,8 +677,10 @@ int main(int argc, char **argv)
     ThreadPool::setProcessAffinity(procs);
 	int timestep = -1;
     AnalysisWaitIdStruct work_ids;
-    ThreadPool tpool(2);
-    BlobIDstruct last_ids;
+    ThreadPool tpool(0);
+    BlobIDstruct last_ids, last_index;
+    BlobIDList last_id_map;
+    writeIDMap(ID_map_struct(),0,id_map_filename);
 	while (timestep < timestepMax && err > tol ) {
         PROFILE_START("Update");
 
@@ -784,7 +786,7 @@ int main(int argc, char **argv)
 		timestep++;
 
         // Run the analysis, blob identification, and write restart files
-        run_analysis(timestep,RESTART_INTERVAL,rank_info,Averages,last_ids,
+        run_analysis(timestep,RESTART_INTERVAL,rank_info,Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,tpool,work_ids);
 

@@ -16,7 +16,7 @@
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
-int MAX_BLOB_COUNT=50;
+static int MAX_BLOB_COUNT=50;
 
 using namespace std;
 
@@ -211,7 +211,7 @@ static inline void fgetl( char * str, int num, FILE * stream )
     if ( 0 ) {char *temp = (char *)&ptr; temp++;}
 }
 
-Domain::~Domain(){
+inline Domain::~Domain(){
 	delete sendData_x;
 	delete sendData_y;
 	delete sendData_z;
@@ -250,7 +250,7 @@ Domain::~Domain(){
 	delete recvData_YZ;
 }
 
-void Domain::InitializeRanks()
+inline void Domain::InitializeRanks()
 {
 	// map the rank to the block index
 	iproc = rank%nprocx;
@@ -282,7 +282,7 @@ void Domain::InitializeRanks()
 }
 
 
-void Domain::CommInit(MPI_Comm Communicator){
+inline void Domain::CommInit(MPI_Comm Communicator){
 	int i,j,k,n;
 	int sendtag = 21;
 	int recvtag = 21;
@@ -696,7 +696,7 @@ inline void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
 }
 
-void Domain::BlobComm(MPI_Comm Communicator){
+inline void Domain::BlobComm(MPI_Comm Communicator){
 	//......................................................................................
 	int sendtag, recvtag;
 	sendtag = recvtag = 51;

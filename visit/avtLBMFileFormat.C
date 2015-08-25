@@ -99,9 +99,23 @@
 #endif
 
 
+// Null stream buffer
+class NullBufferClass : public std::streambuf {
+public:
+    virtual std::streamsize xsputn(const char *s, std::streamsize n) { return n; }
+    virtual int overflow(int c) { return 1; }
+    virtual void setOutputStream( std::ostream* ) {}
+};
+
+
 // Output streams
-static IO::ParallelStreamBuffer DebugStreamBuffer1;
-static IO::ParallelStreamBuffer DebugStreamBuffer2;
+#if 0
+    static IO::ParallelStreamBuffer DebugStreamBuffer1;
+    static IO::ParallelStreamBuffer DebugStreamBuffer2;
+#else
+    static NullBufferClass DebugStreamBuffer1;
+    static NullBufferClass DebugStreamBuffer2;
+#endif
 std::ostream DebugStream1(&DebugStreamBuffer1);
 std::ostream DebugStream2(&DebugStreamBuffer2);
 
