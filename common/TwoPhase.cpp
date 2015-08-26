@@ -589,13 +589,13 @@ void TwoPhase::ComponentAverages()
 					for (int p=0; p<n_nw_pts; p++){
 						Point PT = nw_pts(p);
 						// Check that this point is not on a previously computed face
-						if (PT.x < 1e-12 && PT.y < 1e-12 && PT.z < 1e-12)
+						if (PT.x - double(i) < 1e-12 && PT.y - double(j) < 1e-12 && PT.z - double(k) < 1e-12)
 							nvert-=1;
 					}
 					for (int p=0; p<n_ns_pts; p++){
 						Point PT = ns_pts(p);
 						// Check that this point is not on a previously computed face
-						if (PT.x  < 1e-12 && PT.y  < 1e-12 && PT.z < 1e-12)
+						if (PT.x - double(i) < 1e-12 && PT.y - double(j) < 1e-12 && PT.z - double(k) < 1e-12)
 							nvert-=1;
 					}
 					for (int p=0; p<n_nw_tris; p++){
@@ -607,24 +607,25 @@ void TwoPhase::ComponentAverages()
 
 						// Check side A-B
 						bool newside = true;
-						if (A.x < 1e-12 && B.x < 1e-12) newside=false;
-						if (A.y < 1e-12 && B.y < 1e-12) newside=false;
-						if (A.z < 1e-12 && B.z < 1e-12) newside=false;
+						if (A.x - double(i) < 1e-12 && B.x - double(i) < 1e-12) newside=false;
+						if (A.y - double(j) < 1e-12 && B.y - double(j) < 1e-12) newside=false;
+						if (A.z - double(k) < 1e-12 && B.z - double(k) < 1e-12) newside=false;
 						if (!newside) nside-=1;
 
 						// Check side A-C
 						newside = true;
-						if (A.x < 1e-12 && C.x < 1e-12) newside=false;
-						if (A.y < 1e-12 && C.y < 1e-12) newside=false;
-						if (A.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (A.x - double(i)< 1e-12 && C.x - double(i) < 1e-12) newside=false;
+						if (A.y - double(j)< 1e-12 && C.y - double(j)< 1e-12) newside=false;
+						if (A.z - double(k)< 1e-12 && C.z - double(k)< 1e-12) newside=false;
 						if (!newside) nside-=1;
 
 						// Check side B-C
 						newside = true;
-						if (B.x < 1e-12 && C.x < 1e-12) newside=false;
-						if (B.y < 1e-12 && C.y < 1e-12) newside=false;
-						if (B.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (B.x - double(i) < 1e-12 && C.x - double(i) < 1e-12) newside=false;
+						if (B.y - double(j) < 1e-12 && C.y - double(j) < 1e-12) newside=false;
+						if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
 						if (!newside) nside-=1;
+
 					}
 
 					for (int p=0; p<n_ns_tris; p++){
@@ -636,23 +637,23 @@ void TwoPhase::ComponentAverages()
 
 						// Check side A-B
 						bool newside = true;
-						if (A.x < 1e-12 && B.x < 1e-12) newside=false;
-						if (A.y < 1e-12 && B.y < 1e-12) newside=false;
-						if (A.z < 1e-12 && B.z < 1e-12) newside=false;
+						if (A.x - double(i) < 1e-12 && B.x - double(i) < 1e-12) newside=false;
+						if (A.y - double(j) < 1e-12 && B.y - double(j) < 1e-12) newside=false;
+						if (A.z - double(k) < 1e-12 && B.z - double(k) < 1e-12) newside=false;
 						if (!newside) nside-=1;
 
 						// Check side A-C
 						newside = true;
-						if (A.x < 1e-12 && C.x < 1e-12) newside=false;
-						if (A.y < 1e-12 && C.y < 1e-12) newside=false;
-						if (A.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (A.x - double(i)< 1e-12 && C.x - double(i) < 1e-12) newside=false;
+						if (A.y - double(j)< 1e-12 && C.y - double(j)< 1e-12) newside=false;
+						if (A.z - double(k)< 1e-12 && C.z - double(k)< 1e-12) newside=false;
 						if (!newside) nside-=1;
 
 						// Check side B-C
 						newside = true;
-						if (B.x < 1e-12 && C.x < 1e-12) newside=false;
-						if (B.y < 1e-12 && C.y < 1e-12) newside=false;
-						if (B.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (B.x - double(i) < 1e-12 && C.x - double(i) < 1e-12) newside=false;
+						if (B.y - double(j) < 1e-12 && C.y - double(j) < 1e-12) newside=false;
+						if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
 						if (!newside) nside-=1;
 					}
 
