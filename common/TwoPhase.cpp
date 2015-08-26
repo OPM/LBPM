@@ -606,23 +606,23 @@ void TwoPhase::ComponentAverages()
 
 					// Check side A-B
 					bool newside = true;
-					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-12) newside=false;
-					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-12) newside=false;
-					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-12) newside=false;
+					if (A.x - double(i) < 1e-12 && B.x-double(i) < 1e-12) newside=false;
+					if (A.y - double(j) < 1e-12 && B.y-double(j) < 1e-12) newside=false;
+					if (A.z - double(k) < 1e-12 && B.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 
 					// Check side A-C
 					newside = true;
-					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
-					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
-					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (A.x - double(i) < 1e-12 && C.x-double(i) < 1e-12) newside=false;
+					if (A.y - double(j) < 1e-12 && C.y-double(j) < 1e-12) newside=false;
+					if (A.z - double(k) < 1e-12 && C.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 
 					// Check side B-C
 					newside = true;
-					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
-					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
-					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (B.x - double(i) < 1e-12 && C.x-double(i) < 1e-12) newside=false;
+					if (B.y - double(j) < 1e-12 && C.y-double(j) < 1e-12) newside=false;
+					if (B.z - double(k) < 1e-12 && C.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 				}
 
@@ -634,23 +634,23 @@ void TwoPhase::ComponentAverages()
 
 					// Check side A-B
 					bool newside = true;
-					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-12) newside=false;
-					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-12) newside=false;
-					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-12) newside=false;
+					if (A.x - double(i) < 1e-12 && B.x-double(i) < 1e-12) newside=false;
+					if (A.y - double(j) < 1e-12 && B.y-double(j) < 1e-12) newside=false;
+					if (A.z - double(k) < 1e-12 && B.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 
 					// Check side A-C
 					newside = true;
-					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
-					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
-					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (A.x - double(i) < 1e-12 && C.x-double(i) < 1e-12) newside=false;
+					if (A.y - double(j) < 1e-12 && C.y-double(j) < 1e-12) newside=false;
+					if (A.z - double(k) < 1e-12 && C.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 
 					// Check side B-C
 					newside = true;
-					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
-					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
-					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (B.x - double(i) < 1e-12 && C.x-double(i) < 1e-12) newside=false;
+					if (B.y - double(j) < 1e-12 && C.y-double(j) < 1e-12) newside=false;
+					if (B.z - double(k) < 1e-12 && C.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 				}
 				// Add the counts for the vertices, sides and faces from the local cube
