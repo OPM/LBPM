@@ -580,87 +580,88 @@ void TwoPhase::ComponentAverages()
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
-			       
-				int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
-				int nside=2*nvert-3;
-				int nface=nvert-2;
 
-				for (int p=0; p<n_nw_pts; p++){
-					Point PT = nw_pts(p);
-					// Check that this point is not on a previously computed face
-					if (PT.x < 1e-12 && PT.y < 1e-12 && PT.z < 1e-12)
-						nvert-=1;
+				if (n_nw_pts+n_ns_pts > 0){
+					int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
+					int nside=2*nvert-3;
+					int nface=nvert-2;
+
+					for (int p=0; p<n_nw_pts; p++){
+						Point PT = nw_pts(p);
+						// Check that this point is not on a previously computed face
+						if (PT.x < 1e-12 && PT.y < 1e-12 && PT.z < 1e-12)
+							nvert-=1;
+					}
+					for (int p=0; p<n_ns_pts; p++){
+						Point PT = ns_pts(p);
+						// Check that this point is not on a previously computed face
+						if (PT.x  < 1e-12 && PT.y  < 1e-12 && PT.z < 1e-12)
+							nvert-=1;
+					}
+					for (int p=0; p<n_nw_tris; p++){
+
+						// Ignore previously computed edges
+						Point A = nw_pts(nw_tris(0,p));
+						Point B = nw_pts(nw_tris(1,p));
+						Point C = nw_pts(nw_tris(2,p));
+
+						// Check side A-B
+						bool newside = true;
+						if (A.x < 1e-12 && B.x < 1e-12) newside=false;
+						if (A.y < 1e-12 && B.y < 1e-12) newside=false;
+						if (A.z < 1e-12 && B.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+
+						// Check side A-C
+						newside = true;
+						if (A.x < 1e-12 && C.x < 1e-12) newside=false;
+						if (A.y < 1e-12 && C.y < 1e-12) newside=false;
+						if (A.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+
+						// Check side B-C
+						newside = true;
+						if (B.x < 1e-12 && C.x < 1e-12) newside=false;
+						if (B.y < 1e-12 && C.y < 1e-12) newside=false;
+						if (B.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+					}
+
+					for (int p=0; p<n_ns_tris; p++){
+						// Ignore previously computed edges
+						Point A = ns_pts(ns_tris(0,p));
+						Point B = ns_pts(ns_tris(1,p));
+						Point C = ns_pts(ns_tris(2,p));
+						printf("A.x=%f, B.x=%f \n",A.x,B.x);
+
+						// Check side A-B
+						bool newside = true;
+						if (A.x < 1e-12 && B.x < 1e-12) newside=false;
+						if (A.y < 1e-12 && B.y < 1e-12) newside=false;
+						if (A.z < 1e-12 && B.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+
+						// Check side A-C
+						newside = true;
+						if (A.x < 1e-12 && C.x < 1e-12) newside=false;
+						if (A.y < 1e-12 && C.y < 1e-12) newside=false;
+						if (A.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+
+						// Check side B-C
+						newside = true;
+						if (B.x < 1e-12 && C.x < 1e-12) newside=false;
+						if (B.y < 1e-12 && C.y < 1e-12) newside=false;
+						if (B.z < 1e-12 && C.z < 1e-12) newside=false;
+						if (!newside) nside-=1;
+					}
+
+
+					// Add the counts for the vertices, sides and faces from the local cube
+					ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
+					ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
+					ComponentAverages_NWP(NFACE,LabelNWP) += nface;
 				}
-				for (int p=0; p<n_ns_pts; p++){
-					Point PT = ns_pts(p);
-					// Check that this point is not on a previously computed face
-					if (PT.x  < 1e-12 && PT.y  < 1e-12 && PT.z < 1e-12)
-						nvert-=1;
-				}
-				for (int p=0; p<n_nw_tris; p++){
-
-					// Ignore previously computed edges
-					Point A = nw_pts(nw_tris(0,p));
-					Point B = nw_pts(nw_tris(1,p));
-					Point C = nw_pts(nw_tris(2,p));
-
-					// Check side A-B
-					bool newside = true;
-					if (A.x < 1e-12 && B.x < 1e-12) newside=false;
-					if (A.y < 1e-12 && B.y < 1e-12) newside=false;
-					if (A.z < 1e-12 && B.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-
-					// Check side A-C
-					newside = true;
-					if (A.x < 1e-12 && C.x < 1e-12) newside=false;
-					if (A.y < 1e-12 && C.y < 1e-12) newside=false;
-					if (A.z < 1e-12 && C.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-
-					// Check side B-C
-					newside = true;
-					if (B.x < 1e-12 && C.x < 1e-12) newside=false;
-					if (B.y < 1e-12 && C.y < 1e-12) newside=false;
-					if (B.z < 1e-12 && C.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-				}
-
-				for (int p=0; p<n_ns_tris; p++){
-					// Ignore previously computed edges
-					Point A = ns_pts(ns_tris(0,p));
-					Point B = ns_pts(ns_tris(1,p));
-					Point C = ns_pts(ns_tris(2,p));
-					printf("A.x=%f, B.x=%f \n",A.x,B.x);
-
-					// Check side A-B
-					bool newside = true;
-					if (A.x < 1e-12 && B.x < 1e-12) newside=false;
-					if (A.y < 1e-12 && B.y < 1e-12) newside=false;
-					if (A.z < 1e-12 && B.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-
-					// Check side A-C
-					newside = true;
-					if (A.x < 1e-12 && C.x < 1e-12) newside=false;
-					if (A.y < 1e-12 && C.y < 1e-12) newside=false;
-					if (A.z < 1e-12 && C.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-
-					// Check side B-C
-					newside = true;
-					if (B.x < 1e-12 && C.x < 1e-12) newside=false;
-					if (B.y < 1e-12 && C.y < 1e-12) newside=false;
-					if (B.z < 1e-12 && C.z < 1e-12) newside=false;
-					if (!newside) nside-=1;
-				}
-				if (nside < 0) printf("Negative nside \n!");
-				if (nface < 0) printf("Negative nface \n!");
-
-				// Add the counts for the vertices, sides and faces from the local cube
-				ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
-				ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
-				ComponentAverages_NWP(NFACE,LabelNWP) += nface;
 
 				//...........................................................................
 				// wn interface averages
