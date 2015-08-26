@@ -580,7 +580,7 @@ void TwoPhase::ComponentAverages()
 						n_local_sol_tris, n_local_sol_pts, n_nw_pts, n_nw_tris,
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
-
+			       
 				int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
 				int nside=2*nvert-3;
 				int nface=nvert-2;
@@ -631,6 +631,7 @@ void TwoPhase::ComponentAverages()
 					Point A = ns_pts(ns_tris(0,p));
 					Point B = ns_pts(ns_tris(1,p));
 					Point C = ns_pts(ns_tris(2,p));
+					printf("A.x=%f, B.x=%f \n",A.x,B.x);
 
 					// Check side A-B
 					bool newside = true;
