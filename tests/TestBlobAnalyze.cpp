@@ -274,11 +274,13 @@ int main(int argc, char **argv)
 //	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	if (rank==0) printf("computing local averages  \n");
+	Averages.AssignComponentLabels();
     Averages.ComponentAverages();
+    Averages.PrintComponents(int(0));
 	if (rank==0) printf("reducing averages  \n");
-    Averages.Reduce();
+   // Averages.Reduce();
 
-	if (rank==0) printf("Writing blobs \n");
+/*	if (rank==0) printf("Writing blobs \n");
     // Write the local blob ids
 	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"BlobLabel.%05i",rank);
@@ -412,7 +414,7 @@ int main(int argc, char **argv)
 	fclose(BLOBSTATES);
 
     }
-
+*/
     //WriteBlobStates(Averages,Length,porosity);
 
     /*FILE *BLOBS = fopen("Blobs.dat","wb");

@@ -142,7 +142,7 @@ TwoPhase::TwoPhase(Domain &dm) : Dm(dm)
 		NWPLOG = fopen("components.NWP.tcat","a+");
 		fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 		fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn\n");
+		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn vert edge face\n");
 
 		WPLOG = fopen("components.WP.tcat","a+");
 		fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
