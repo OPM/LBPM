@@ -581,17 +581,24 @@ void TwoPhase::ComponentAverages()
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
+				int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
+				int nside=2*nvert-3;
+				int nface=nvert-2;
 
 				for (int p=0; p<n_nw_pts; p++){
 					Point PT = nw_pts(p);
 					// Check that this point is not on a previously computed face
-					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
-						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
-					}
+					if (PT.x - double(i) > 1e-12 && PT.y - double(j) > 1e-12 && PT.z - double(k) > 1e-12)
+						nvert-=1;
+				}
+				for (int p=0; p<n_ns_pts; p++){
+					Point PT = ns_pts(p);
+					// Check that this point is not on a previously computed face
+					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7)
+						nvert-=1;
 				}
 				for (int p=0; p<n_nw_tris; p++){
-					// All triangles are added
-					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
+
 					// Ignore previously computed edges
 					Point A = nw_pts(nw_tris(0,p));
 					Point B = nw_pts(nw_tris(1,p));
@@ -599,35 +606,27 @@ void TwoPhase::ComponentAverages()
 
 					// Check side A-B
 					bool newside = true;
-					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
-					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
-					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-12) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-12) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 
 					// Check side A-C
 					newside = true;
-					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
-					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
-					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 
 					// Check side B-C
 					newside = true;
-					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
-					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
-					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 				}
-				for (int p=0; p<n_ns_pts; p++){
-					Point PT = ns_pts(p);
-					// Check that this point is not on a previously computed face
-					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7) {
-						ComponentAverages_NWP(NVERT,LabelNWP) += 1;
-					}
-				}
+
 				for (int p=0; p<n_ns_tris; p++){
-					// All triangles are added
-					ComponentAverages_NWP(NFACE,LabelNWP) += 1;
 					// Ignore previously computed edges
 					Point A = ns_pts(ns_tris(0,p));
 					Point B = ns_pts(ns_tris(1,p));
@@ -635,25 +634,29 @@ void TwoPhase::ComponentAverages()
 
 					// Check side A-B
 					bool newside = true;
-					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-7) newside=false;
-					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-7) newside=false;
-					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (A.x - double(i) > 1e-7 && B.x-double(i) > 1e-12) newside=false;
+					if (A.y - double(j) > 1e-7 && B.y-double(j) > 1e-12) newside=false;
+					if (A.z - double(k) > 1e-7 && B.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 
 					// Check side A-C
 					newside = true;
-					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
-					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
-					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (A.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
+					if (A.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
+					if (A.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 
 					// Check side B-C
 					newside = true;
-					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-7) newside=false;
-					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-7) newside=false;
-					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-7) newside=false;
-					if (newside) ComponentAverages_NWP(NSIDE,LabelNWP) += 1;
+					if (B.x - double(i) > 1e-7 && C.x-double(i) > 1e-12) newside=false;
+					if (B.y - double(j) > 1e-7 && C.y-double(j) > 1e-12) newside=false;
+					if (B.z - double(k) > 1e-7 && C.z-double(k) > 1e-12) newside=false;
+					if (!newside) nside-=1;
 				}
+				// Add the counts for the vertices, sides and faces from the local cube
+				ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
+				ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
+				ComponentAverages_NWP(NFACE,LabelNWP) += nface;
 
 				//...........................................................................
 				// wn interface averages
