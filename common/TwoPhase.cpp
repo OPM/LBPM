@@ -588,13 +588,13 @@ void TwoPhase::ComponentAverages()
 				for (int p=0; p<n_nw_pts; p++){
 					Point PT = nw_pts(p);
 					// Check that this point is not on a previously computed face
-					if (PT.x - double(i) > 1e-12 && PT.y - double(j) > 1e-12 && PT.z - double(k) > 1e-12)
+					if (PT.x - double(i) < 1e-12 && PT.y - double(j) < 1e-12 && PT.z - double(k) < 1e-12)
 						nvert-=1;
 				}
 				for (int p=0; p<n_ns_pts; p++){
 					Point PT = ns_pts(p);
 					// Check that this point is not on a previously computed face
-					if (PT.x - double(i) > 1e-7 && PT.y - double(j) > 1e-7 && PT.z - double(k) > 1e-7)
+					if (PT.x - double(i) < 1e-12 && PT.y - double(j) < 1e-12 && PT.z - double(k) < 1e-12)
 						nvert-=1;
 				}
 				for (int p=0; p<n_nw_tris; p++){
@@ -653,6 +653,9 @@ void TwoPhase::ComponentAverages()
 					if (B.z - double(k) < 1e-12 && C.z-double(k) < 1e-12) newside=false;
 					if (!newside) nside-=1;
 				}
+				if (nside < 0) printf("Negative nside \n!");
+				if (nface < 0) printf("Negative nface \n!");
+
 				// Add the counts for the vertices, sides and faces from the local cube
 				ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
 				ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
