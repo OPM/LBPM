@@ -678,7 +678,7 @@ void TwoPhase::ComponentAverages()
 					//ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
 					//ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
 					//ComponentAverages_NWP(NFACE,LabelNWP) += nface;
-				//}
+				}
 
 				//...........................................................................
 				// wn interface averages
