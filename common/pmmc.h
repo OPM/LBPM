@@ -1837,6 +1837,320 @@ inline void TRIM(DTMutableList<Point> &local_sol_pts, int &n_local_sol_pts, doub
 		}
 	}
 }
+inline void geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, int &k,
+				DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris,
+				int &n_nw_tris)
+{
+	int N = 0;		// n will be the number of vertices in this grid cell only
+    Point P;
+	Point pt;
+    Point PlaceHolder;
+    int m;
+    int o;
+    int p;
+
+	// Go over each corner -- check to see if the corners are themselves vertices
+	//1
+	if (A(i,j,k) == v){
+		P.x = i;
+		P.y = j;
+		P.z = k;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//2
+	if (A(i+1,j,k) == v){
+		P.x = i+1;
+		P.y = j;
+		P.z = k;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//3
+	if (A(i+1,j+1,k) == v){
+		P.x = i+1;
+		P.y = j+1;
+		P.z = k;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//4
+	if (A(i,j+1,k) == v){
+		P.x = i;
+		P.y = j+1;
+		P.z = k;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//5
+	if (A(i,j,k+1) == v){
+		P.x = i;
+		P.y = j;
+		P.z = k+1;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//6
+	if (A(i+1,j,k+1) == v){
+		P.x = i+1;
+		P.y = j;
+		P.z = k+1;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//7
+	if (A(i+1,j+1,k+1) == v){
+		P.x = i+1;
+		P.y = j+1;
+		P.z = k+1;
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+	//8
+	if (A(i,j+1,k+1) == v){
+		P.x = i;
+		P.y = j+1;
+		P.z = k+1;
+
+		nw_pts(n_nw_pts++) = P;
+		N++;
+	}
+
+    // Go through each side, compute P for sides of box spiraling up
+
+
+//	float val;
+	if ((A(i,j,k)-v)*(A(i+1,j,k)-v) < 0)
+	{
+		// If both points are in the fluid region
+		if (A(i,j,k) != 0 && A(i+1,j,k) != 0){
+			P.x = i + (A(i,j,k)-v)/(A(i,j,k)-A(i+1,j,k));
+			P.y = j;
+			P.z = k;
+
+			nw_pts(n_nw_pts++) =  P;
+			N++;
+		}
+	}
+
+	if ((A(i+1,j,k)-v)*(A(i+1,j+1,k)-v) < 0)
+	{
+		if ( A(i+1,j,k) != 0 && A(i+1,j+1,k) != 0 ){
+			P.x = i+1;
+			P.y = j + (A(i+1,j,k)-v)/(A(i+1,j,k)-A(i+1,j+1,k));
+			P.z = k;
+
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){ // P is a new vertex (not counted twice)
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	if ((A(i+1,j+1,k)-v)*(A(i,j+1,k)-v) < 0 )
+	{
+		if ( A(i+1,j+1,k) != 0 && A(i,j+1,k) != 0 ){
+			P.x = i + (A(i,j+1,k)-v) / (A(i,j+1,k)-A(i+1,j+1,k));
+			P.y = j+1;
+			P.z = k;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){ // P is a new vertex (not counted twice)
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//4
+	if ((A(i,j+1,k)-v)*(A(i,j,k)-v) < 0 )
+	{
+		if (A(i,j+1,k) != 0 && A(i,j,k) != 0 ){
+			P.x = i;
+			P.y = j + (A(i,j,k)-v) / (A(i,j,k)-A(i,j+1,k));
+			P.z = k;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){ // P is a new vertex (not counted twice)
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//5
+	if ((A(i,j,k)-v)*(A(i,j,k+1)-v) < 0 )
+	{
+		if ( A(i,j,k) != 0 && A(i,j,k+1) != 0 ){
+			P.x = i;
+			P.y = j;
+			P.z = k + (A(i,j,k)-v) / (A(i,j,k)-A(i,j,k+1));
+
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){ // P is a new vertex (not counted twice)
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//6
+	if ((A(i+1,j,k)-v)*(A(i+1,j,k+1)-v) < 0 )
+	{
+		if ( A(i+1,j,k) != 0 && A(i+1,j,k+1) != 0 ){
+			P.x = i+1;
+			P.y = j;
+			P.z = k + (A(i+1,j,k)-v) / (A(i+1,j,k)-A(i+1,j,k+1));
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//7
+	if ((A(i+1,j+1,k)-v)*(A(i+1,j+1,k+1)-v) < 0 )
+	{
+		if ( A(i+1,j+1,k) != 0 && A(i+1,j+1,k+1) != 0 ){
+			P.x = i+1;
+			P.y = j+1;
+			P.z = k + (A(i+1,j+1,k)-v) / (A(i+1,j+1,k)-A(i+1,j+1,k+1));
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//8
+	if ((A(i,j+1,k)-v)*(A(i,j+1,k+1)-v) < 0 )
+	{
+		if ( A(i,j+1,k) != 0 && A(i,j+1,k+1) != 0 ){
+			P.x = i;
+			P.y = j+1;
+			P.z = k + (A(i,j+1,k)-v) / (A(i,j+1,k)-A(i,j+1,k+1));
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//9
+	if ((A(i,j,k+1)-v)*(A(i+1,j,k+1)-v) < 0 )
+	{
+		if ( A(i,j,k+1) != 0 && A(i+1,j,k+1) != 0 ){
+			P.x = i + (A(i,j,k+1)-v) / (A(i,j,k+1)-A(i+1,j,k+1));
+			P.y = j;
+			P.z = k+1;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//10
+	if ((A(i+1,j,k+1)-v)*(A(i+1,j+1,k+1)-v) < 0 )
+	{
+		if ( A(i+1,j,k+1) != 0 && A(i+1,j+1,k+1) != 0 ){
+			P.x = i+1;
+			P.y = j + (A(i+1,j,k+1)-v) / (A(i+1,j,k+1)-A(i+1,j+1,k+1));
+			P.z = k+1;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//11
+	if ((A(i+1,j+1,k+1)-v)*(A(i,j+1,k+1)-v) < 0 )
+	{
+		if ( A(i+1,j+1,k+1) != 0 && A(i,j+1,k+1) != 0 ){
+			P.x = i+(A(i,j+1,k+1)-v) / (A(i,j+1,k+1)-A(i+1,j+1,k+1));
+			P.y = j+1;
+			P.z = k+1;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+	//12
+	if ((A(i,j+1,k+1)-v)*(A(i,j,k+1)-v) < 0 )
+	{
+		if ( A(i,j+1,k+1) != 0 && A(i,j,k+1) != 0 ){
+			P.x = i;
+			P.y = j + (A(i,j,k+1)-v) / (A(i,j,k+1)-A(i,j+1,k+1));
+			P.z = k+1;
+			if (vertexcheck(P, N, n_nw_pts, nw_pts) == 1){
+				nw_pts(n_nw_pts++) =  P;
+				N++;
+			}
+		}
+	}
+
+
+    // Assemble the triangles as long as points are found
+    if (N > 0){
+    	for (m = n_nw_pts-N; m < n_nw_pts-2; m++) {
+    		for (o = m+2; o < n_nw_pts-1; o++) {
+    			if (ShareSide(nw_pts(m), nw_pts(o)) == 1) {
+    				PlaceHolder = nw_pts(m+1);
+    				nw_pts(m+1) = nw_pts(o);
+    				nw_pts(o) = PlaceHolder;
+    			}
+    		}
+
+    		// make sure other neighbor of vertex 1 is in last spot
+    		if (m == n_nw_pts-N){
+    			for (p = m+2; p < n_nw_pts-1; p++){
+    				if (ShareSide(nw_pts(m), nw_pts(p)) == 1){
+    					PlaceHolder = nw_pts(n_nw_pts-1);
+    					nw_pts(n_nw_pts-1) = nw_pts(p);
+    					nw_pts(p) = PlaceHolder;
+    				}
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-2), nw_pts(n_nw_pts-3)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
+    					ShareSide( nw_pts(n_nw_pts-N),nw_pts(n_nw_pts-2)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-1);
+    				nw_pts(n_nw_pts-1) = PlaceHolder;
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-2)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-3), nw_pts(n_nw_pts-1)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-4),nw_pts(n_nw_pts-2)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-3);
+    				nw_pts(n_nw_pts-3) = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = PlaceHolder;
+    			}
+    			if (ShareSide( nw_pts(n_nw_pts-N+1), nw_pts(n_nw_pts-3)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-1),nw_pts(n_nw_pts-N+1)) == 1 ){
+    				PlaceHolder = nw_pts(n_nw_pts-2);
+    				nw_pts(n_nw_pts-2) = nw_pts(n_nw_pts-N+1);
+    				nw_pts(n_nw_pts-N+1) = PlaceHolder;
+    			}
+    		}
+    		if ( ShareSide(nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-N+1)) != 1 ){
+    			if (ShareSide( nw_pts(n_nw_pts-N), nw_pts(n_nw_pts-2)) == 1 &&
+    					ShareSide(nw_pts(n_nw_pts-1), nw_pts(n_nw_pts-N+1)) == 1){
+    				PlaceHolder = nw_pts(n_nw_pts-1);
+    				nw_pts(n_nw_pts-1) = nw_pts(n_nw_pts-N);
+    				nw_pts(n_nw_pts-N) = PlaceHolder;
+    			}
+    		}
+    	}
+
+    	// *    *    *   ESTABLISH TRIANGLE CONNECTIONS	   *    *    *
+
+    	for (p=n_nw_pts-N+2; p<n_nw_pts; p++){
+    		nw_tris(0,n_nw_tris) = n_nw_pts-N;
+    		nw_tris(1,n_nw_tris) = p-1;
+    		nw_tris(2,n_nw_tris) = p;
+    		n_nw_tris++;
+    	}
+    }
+}
 //-------------------------------------------------------------------------------
 inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k,
 				DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris,
@@ -4037,14 +4351,14 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 }
 //--------------------------------------------------------------------------------------------------------
 inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
-		int npts, int ntris, int i, int j, int k){
+		int &npts, int &ntris, int &i, int &j, int &k){
 
 	// Compute the Euler characteristic for triangles in a cube
 	// Exclude edges and vertices shared with between multiple cubes
 	double EulerChar;
 	int nvert=npts;
-	int nside=2*npts-3;
-	int nface=npts-2;
+	int nside=2*vert-3;
+	int nface=nvert-2;
 	//if (ntris != nface){
 	//	nface = ntris;
 	//	nside =
@@ -4087,7 +4401,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 		if (!newside) nside-=1;
 
 	}
-	EulerChar = double(nvert - nside + nface);
+	EulerChar = 1.0*(nvert - nside + nface);
 	return EulerChar;
 }
 
