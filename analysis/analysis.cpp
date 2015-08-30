@@ -158,7 +158,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     PROFILE_STOP("ComputeLocalBlobIDs");
     return nblobs;
 }
-int ComputeLocalPhaseComponent(const IntArray &PhaseID, int VALUE, BlobIDArray &ComponentLabel, bool periodic )
+int ComputeLocalPhaseComponent(const IntArray &PhaseID, int &VALUE, BlobIDArray &ComponentLabel, bool periodic )
 {
     PROFILE_START("ComputeLocalPhaseComponent");
     size_t Nx = PhaseID.size(0);
@@ -445,7 +445,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
     return nglobal;
 }
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int VALUE, BlobIDArray &GlobalBlobID )
+    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID )
 {
     PROFILE_START("ComputeGlobalPhaseComponent");
     // First compute the local ids
