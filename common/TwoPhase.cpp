@@ -592,15 +592,16 @@ void TwoPhase::ComponentAverages()
 				 */
 				if (n_nw_pts+n_ns_pts > 0){
 
-					double euler;
+				/*	double euler;
 					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 					euler += geomavg_EulerCharacteristic(ns_pts,ns_tris,n_ns_pts,n_ns_tris,i,j,k);
 					// adjust for double-counted vertices and edges from the common curve
 					if (n_nws_pts > 0) euler += 1.0*n_nws_pts;
-					ComponentAverages_NWP(EULER,LabelNWP) += euler;
-				}
-
-	/*				//...........................................................
+				 */
+					int nvert = n_nw_pts+n_ns_pts-n_nws_pts;
+					int nside = 2*nvert-3;
+					int nface = nvert-2;
+					//...........................................................
 					// Check that this point is not on a previously computed face
 					// Note direction that the marching cubes algorithm marches
 					// In parallel, other sub-domains fill in the lower boundary
@@ -648,7 +649,6 @@ void TwoPhase::ComponentAverages()
 						Point A = ns_pts(ns_tris(0,p));
 						Point B = ns_pts(ns_tris(1,p));
 						Point C = ns_pts(ns_tris(2,p));
-						printf("A.x=%f, B.x=%f \n",A.x,B.x);
 
 						// Check side A-B
 						bool newside = true;
@@ -672,7 +672,8 @@ void TwoPhase::ComponentAverages()
 						if (!newside) nside-=1;
 					}
 					int euler=nvert-nside+nface; // euler characteristic for the cube
-					*/
+					ComponentAverages_NWP(EULER,LabelNWP) += 1.0*euler;
+
 					// Counts for the vertices, sides and faces from the local cube
 					//ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
 					//ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
