@@ -585,11 +585,6 @@ void TwoPhase::ComponentAverages()
 						i, j, k, Nx, Ny, Nz);
 
 
-				/* Compute the Euler characteristic
-				 * count all vertices, edges and faces (triangles)
-				 * Euler Number = vertices - edges + faces
-				 * double geomavg_EulerCharacteristic(PointList, PointCount, TriList, TriCount);
-				 */
 				if (n_nw_pts+n_ns_pts > 0){
 
 					/*	double euler;
@@ -780,52 +775,18 @@ void TwoPhase::ComponentAverages()
 				}
 				//...........................................................................
 
-				// Compute the Euler characteristic
+
+				/* Compute the Euler characteristic
+				 * count all vertices, edges and faces (triangles)
+				 * Euler Number = vertices - edges + faces
+				 * double geomavg_EulerCharacteristic(PointList, PointCount, TriList, TriCount);
+				 */
 				n_nw_pts=n_nw_tris=0;
 				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 				if (n_nw_pts > 0 ){
-					int nvert = n_nw_pts;
-					int nside = 2*nvert-3;
-					int nface = nvert-2;
-					//...........................................................
-					// Check that this point is not on a previously computed face
-					// Note direction that the marching cubes algorithm marches
-					// In parallel, other sub-domains fill in the lower boundary
-					for (int p=0; p<n_nw_pts; p++){
-						Point PT = nw_pts(p);
-						if (PT.x - double(i) < 1e-12)		nvert-=1;
-						else if (PT.y - double(j) < 1e-12) 	nvert-=1;
-						else if (PT.z - double(k) < 1e-12) 	nvert-=1;
-					}
-					// Remove previously computed edges
-					for (int p=0; p<n_nw_tris; p++){
-						Point A = nw_pts(nw_tris(0,p));
-						Point B = nw_pts(nw_tris(1,p));
-						Point C = nw_pts(nw_tris(2,p));
 
-						// Check side A-B
-						bool newside = true;
-						if (A.x - double(i) < 1e-12 && B.x - double(i) < 1e-12) newside=false;
-						if (A.y - double(j) < 1e-12 && B.y - double(j) < 1e-12) newside=false;
-						if (A.z - double(k) < 1e-12 && B.z - double(k) < 1e-12) newside=false;
-						if (!newside) nside-=1;
+					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 
-						// Check side A-C
-						newside = true;
-						if (A.x - double(i)< 1e-12 && C.x - double(i) < 1e-12) newside=false;
-						if (A.y - double(j)< 1e-12 && C.y - double(j) < 1e-12) newside=false;
-						if (A.z - double(k)< 1e-12 && C.z - double(k) < 1e-12) newside=false;
-						if (!newside) nside-=1;
-
-						// Check side B-C
-						newside = true;
-						if (B.x - double(i) < 1e-12 && C.x - double(i) < 1e-12) newside=false;
-						if (B.y - double(j) < 1e-12 && C.y - double(j) < 1e-12) newside=false;
-						if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
-						if (!newside) nside-=1;
-
-					}
-					int euler=nvert-nside+nface; // euler characteristic for the cube
 					ComponentAverages_NWP(EULER,LabelNWP) += 1.0*euler;
 				}
 			}
