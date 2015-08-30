@@ -466,7 +466,7 @@ void TwoPhase::AssignComponentLabels()
 				Label_WP(i,j,k) = 0;
 				if (SDs(i,j,k) > 0.0) PhaseID(i,j,k) = 1;
 				else if (Phase(i,j,k) > 0.0) PhaseID(i,j,k) = 1;
-				else PhaseID(i,j,l) = 2;
+				else PhaseID(i,j,k) = 2;
 			}
 		}
 	}
