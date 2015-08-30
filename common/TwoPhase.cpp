@@ -785,9 +785,9 @@ void TwoPhase::ComponentAverages()
 				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 				if (n_nw_pts > 0 ){
 
-					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
+					double euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 
-					ComponentAverages_NWP(EULER,LabelNWP) += 1.0*euler;
+					ComponentAverages_NWP(EULER,LabelNWP) += euler;
 				}
 			}
 		}
