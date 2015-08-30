@@ -38,7 +38,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
  *  @param[out] ComponentLabel
  *  @param[in] periodic
  */
-int ComputeLocalPhaseComponent( const IntArray &PhaseID, int VALUE, IntArray &ComponentLabel, bool periodic );
+int ComputeLocalPhaseComponent( const IntArray &PhaseID, int &VALUE, IntArray &ComponentLabel, bool periodic );
 
 
 /*!
