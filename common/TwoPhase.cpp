@@ -782,7 +782,7 @@ void TwoPhase::ComponentAverages()
 
 				// Compute the Euler characteristic
 				n_nw_pts=n_nw_tris=0;
-				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw _pts,n_nw_pts,nw_tris,n_nw_tris);
+				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 				if (n_nw_pts > 0 ){
 					int nvert = n_nw_pts;
 					int nside = 2*nvert-3;

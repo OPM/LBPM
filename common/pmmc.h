@@ -4357,7 +4357,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	// Exclude edges and vertices shared with between multiple cubes
 	double EulerChar;
 	int nvert=npts;
-	int nside=2*vert-3;
+	int nside=2*nvert-3;
 	int nface=nvert-2;
 	//if (ntris != nface){
 	//	nface = ntris;
