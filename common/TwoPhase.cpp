@@ -596,7 +596,7 @@ void TwoPhase::ComponentAverages()
 					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 					euler += geomavg_EulerCharacteristic(ns_pts,ns_tris,n_ns_pts,n_ns_tris,i,j,k);
 					// adjust for double-counted vertices and edges from the common curve
-					if (n_nws_pts > 0) euler -= 1.0*n_nws_pts;
+					if (n_nws_pts > 0) euler += 1.0*n_nws_pts;
 					ComponentAverages_NWP(EULER,LabelNWP) += euler;
 				}
 
