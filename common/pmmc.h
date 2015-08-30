@@ -4042,9 +4042,13 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	// Compute the Euler characteristic for triangles in a cube
 	// Exclude edges and vertices shared with between multiple cubes
 	double EulerChar;
-	int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
-	int nside=2*nvert-3;
-	int nface=nvert-2;
+	int nvert=npts;
+	int nside=2*npts-3;
+	int nface=npts-2;
+	//if (ntris != nface){
+	//	nface = ntris;
+	//	nside =
+	//}
 	//...........................................................
 	// Check that this point is not on a previously computed face
 	// Note direction that the marching cubes algorithm marches
@@ -4083,7 +4087,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 		if (!newside) nside-=1;
 
 	}
-
+	EulerChar = double(nvert - nside + nface);
 	return EulerChar;
 }
 
