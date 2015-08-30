@@ -4036,7 +4036,56 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	//.............................................................................
 }
 //--------------------------------------------------------------------------------------------------------
+inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
+		int npts, int ntris, int i, int j, int k){
 
+	// Compute the Euler characteristic for triangles in a cube
+	// Exclude edges and vertices shared with between multiple cubes
+	double EulerChar;
+	int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
+	int nside=2*nvert-3;
+	int nface=nvert-2;
+	//...........................................................
+	// Check that this point is not on a previously computed face
+	// Note direction that the marching cubes algorithm marches
+	// In parallel, other sub-domains fill in the lower boundary
+	for (int p=0; p<npts; p++){
+		Point PT = Points(p);
+		if (PT.x - double(i) < 1e-12)		nvert-=1;
+		else if (PT.y - double(j) < 1e-12) 	nvert-=1;
+		else if (PT.z - double(k) < 1e-12) 	nvert-=1;
+	}
+	// Remove redundantly computed edges (shared by two cubes across a cube face)
+	for (int p=0; p<ntris; p++){
+		Point A = Points(Triangles(0,p));
+		Point B = Points(Triangles(1,p));
+		Point C = Points(Triangles(2,p));
+
+		// Check side A-B
+		bool newside = true;
+		if (A.x - double(i) < 1e-12 && B.x - double(i) < 1e-12) newside=false;
+		if (A.y - double(j) < 1e-12 && B.y - double(j) < 1e-12) newside=false;
+		if (A.z - double(k) < 1e-12 && B.z - double(k) < 1e-12) newside=false;
+		if (!newside) nside-=1;
+
+		// Check side A-C
+		newside = true;
+		if (A.x - double(i)< 1e-12 && C.x - double(i) < 1e-12) newside=false;
+		if (A.y - double(j)< 1e-12 && C.y - double(j) < 1e-12) newside=false;
+		if (A.z - double(k)< 1e-12 && C.z - double(k) < 1e-12) newside=false;
+		if (!newside) nside-=1;
+
+		// Check side B-C
+		newside = true;
+		if (B.x - double(i) < 1e-12 && C.x - double(i) < 1e-12) newside=false;
+		if (B.y - double(j) < 1e-12 && C.y - double(j) < 1e-12) newside=false;
+		if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
+		if (!newside) nside-=1;
+
+	}
+
+	return EulerChar;
+}
 
 #endif
 

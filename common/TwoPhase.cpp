@@ -12,7 +12,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 36
+#define BLOB_AVG_COUNT 34
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -48,10 +48,10 @@
 #define CMX 30
 #define CMY 31
 #define CMZ 32
-#define NVERT 33
-#define NSIDE 34
-#define NFACE 35
-
+#define EULER 33
+//#define NVERT 33
+//#define NSIDE 34
+//#define NFACE 35
 
 // Constructor
 TwoPhase::TwoPhase(Domain &dm) : Dm(dm)
@@ -142,7 +142,7 @@ TwoPhase::TwoPhase(Domain &dm) : Dm(dm)
 		NWPLOG = fopen("components.NWP.tcat","a+");
 		fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 		fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn vert edge face\n");
+		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn Euler\n");
 
 		WPLOG = fopen("components.WP.tcat","a+");
 		fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
@@ -584,26 +584,40 @@ void TwoPhase::ComponentAverages()
 						n_ws_pts, n_ws_tris, n_ns_tris, n_ns_pts, n_local_nws_pts, n_nws_pts, n_nws_seg,
 						i, j, k, Nx, Ny, Nz);
 
-				if (n_nw_pts+n_ns_pts > 0){
-					int nvert=n_nw_pts + n_ns_pts - n_nws_pts;
-					int nside=2*nvert-3;
-					int nface=nvert-2;
 
+				/* Compute the Euler characteristic
+				 * count all vertices, edges and faces (triangles)
+				 * Euler Number = vertices - edges + faces
+				 * double geomavg_EulerCharacteristic(PointList, PointCount, TriList, TriCount);
+				 */
+				if (n_nw_pts+n_ns_pts > 0){
+
+					double euler;
+					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
+					euler += geomavg_EulerCharacteristic(ns_pts,ns_tris,n_ns_pts,n_ns_tris,i,j,k);
+					// adjust for double-counted vertices and edges from the common curve
+					if (n_nws_pts > 0) euler -= 1.0; //(n_nws_pts - n_nws_seg -)
+					ComponentAverages_NWP(EULER,LabelNWP) += euler;
+				}
+
+	/*				//...........................................................
+					// Check that this point is not on a previously computed face
+					// Note direction that the marching cubes algorithm marches
+					// In parallel, other sub-domains fill in the lower boundary
 					for (int p=0; p<n_nw_pts; p++){
 						Point PT = nw_pts(p);
-						// Check that this point is not on a previously computed face
-						if (PT.x - double(i) < 1e-12 || PT.y - double(j) < 1e-12 || PT.z - double(k) < 1e-12)
-							nvert-=1;
+						if (PT.x - double(i) < 1e-12)		nvert-=1;
+						else if (PT.y - double(j) < 1e-12) 	nvert-=1;
+						else if (PT.z - double(k) < 1e-12) 	nvert-=1;
 					}
 					for (int p=0; p<n_ns_pts; p++){
 						Point PT = ns_pts(p);
-						// Check that this point is not on a previously computed face
-						if (PT.x - double(i) < 1e-12 || PT.y - double(j) < 1e-12 || PT.z - double(k) < 1e-12)
-							nvert-=1;
+						if (PT.x - double(i) < 1e-12)		nvert-=1;
+						else if (PT.y - double(j) < 1e-12) 	nvert-=1;
+						else if (PT.z - double(k) < 1e-12) 	nvert-=1;
 					}
+					// Remove previously computed edges
 					for (int p=0; p<n_nw_tris; p++){
-
-						// Ignore previously computed edges
 						Point A = nw_pts(nw_tris(0,p));
 						Point B = nw_pts(nw_tris(1,p));
 						Point C = nw_pts(nw_tris(2,p));
@@ -630,9 +644,7 @@ void TwoPhase::ComponentAverages()
 						if (!newside) nside-=1;
 
 					}
-
 					for (int p=0; p<n_ns_tris; p++){
-						// Ignore previously computed edges
 						Point A = ns_pts(ns_tris(0,p));
 						Point B = ns_pts(ns_tris(1,p));
 						Point C = ns_pts(ns_tris(2,p));
@@ -659,13 +671,13 @@ void TwoPhase::ComponentAverages()
 						if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
 						if (!newside) nside-=1;
 					}
-
-
-					// Add the counts for the vertices, sides and faces from the local cube
-					ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
-					ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
-					ComponentAverages_NWP(NFACE,LabelNWP) += nface;
-				}
+					int euler=nvert-nside+nface; // euler characteristic for the cube
+					*/
+					// Counts for the vertices, sides and faces from the local cube
+					//ComponentAverages_NWP(NVERT,LabelNWP) += nvert;
+					//ComponentAverages_NWP(NSIDE,LabelNWP) += nside;
+					//ComponentAverages_NWP(NFACE,LabelNWP) += nface;
+				//}
 
 				//...........................................................................
 				// wn interface averages
@@ -1235,9 +1247,10 @@ void TwoPhase::PrintComponents(int timestep)
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRAWN,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRJWN,b));
-				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
-				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
-				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(NFACE,b));
+				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(EULER,b));
+//				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
+	//			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
+		//		fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(NFACE,b));
 			}
 		}
 		fflush(NWPLOG);
