@@ -75,7 +75,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
  * @return Return the number of components in the specified phase
  */
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int VALUE, BlobIDArray &GlobalBlobID );
+    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID );
 
 
 /*!
