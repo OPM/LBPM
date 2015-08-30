@@ -1125,7 +1125,7 @@ void TwoPhase::PrintComponents(int timestep)
 	if (Dm.rank==0){
 		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",(int)ComponentAverages_NWP.size(1),timestep);
 		for (int b=0; b<NumberComponents_NWP; b++){
-			if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
+			//if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){
 				fprintf(NWPLOG,"%i ",timestep-5);
                 if ( Label_NWP_map.empty() ) {
                     // print index
@@ -1168,7 +1168,7 @@ void TwoPhase::PrintComponents(int timestep)
 //				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
 	//			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
 		//		fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(NFACE,b));
-			}
+			//}
 		}
 		fflush(NWPLOG);
 
@@ -1230,8 +1230,8 @@ inline int TwoPhase::GetCubeLabel(int i, int j, int k, IntArray &BlobLabel)
 
 void TwoPhase::SortBlobs()
 {
-  //printf("Sorting the blobs based on volume \n");
-  //printf("-----------------------------------------------\n");
+	//printf("Sorting the blobs based on volume \n");
+	//printf("-----------------------------------------------\n");
 	int TempLabel,a,aa,bb,i,j,k,idx;
 	double TempValue;
 	//.......................................................................
@@ -1241,11 +1241,11 @@ void TwoPhase::SortBlobs()
 	for (a=0; a<NumberComponents_NWP; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
 	for (aa=0; aa<NumberComponents_NWP-1; aa++)
-{
+	{
 		for ( bb=aa+1; bb<NumberComponents_NWP; bb++)
-{
+		{
 			if (ComponentAverages_NWP(VOL,aa) < ComponentAverages_NWP(VOL,bb))
-{
+			{
 				// Exchange location of blobs aa and bb
 				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
 				// switch the label
@@ -1254,7 +1254,7 @@ void TwoPhase::SortBlobs()
 				OldLabel(aa) = TempLabel;
 				// switch the averages
 				for (idx=0; idx<BLOB_AVG_COUNT; idx++)
-{
+				{
 					TempValue = ComponentAverages_NWP(idx,bb);
 					ComponentAverages_NWP(idx,bb) = ComponentAverages_NWP(idx,aa);
 					ComponentAverages_NWP(idx,aa) = TempValue;
@@ -1264,7 +1264,7 @@ void TwoPhase::SortBlobs()
 	}
 	IntArray NewLabel(NumberComponents_NWP);
 	for (aa=0; aa<NumberComponents_NWP; aa++)
-{
+	{
 		// Match the new label for original blob aa
 		bb=0;
 		while (OldLabel(bb) != aa)	bb++;
@@ -1273,13 +1273,13 @@ void TwoPhase::SortBlobs()
 	// Re-label the blob ID
 	//	printf("Re-labeling the blobs, now indexed by volume \n");
 	for (k=0; k<Nz; k++)
-{
+	{
 		for (j=0; j<Ny; j++)
-{
+		{
 			for (i=0; i<Nx; i++)
-{
+			{
 				if (Label_NWP(i,j,k) > -1)
-{
+				{
 					TempLabel = NewLabel(Label_NWP(i,j,k));
 					Label_NWP(i,j,k) = TempLabel;
 				}
@@ -1293,11 +1293,11 @@ void TwoPhase::SortBlobs()
 	for (a=0; a<NumberComponents_WP; a++)	OldLabel(a) = a;
 	// Sort the blob averages based on volume
 	for (aa=0; aa<NumberComponents_WP-1; aa++)
-{
+	{
 		for ( bb=aa+1; bb<NumberComponents_WP; bb++)
-{
+		{
 			if (ComponentAverages_WP(VOL,aa) < ComponentAverages_WP(VOL,bb))
-{
+			{
 				// Exchange location of blobs aa and bb
 				//printf("Switch blob %i with %i \n", OldLabel(aa),OldLabel(bb));
 				// switch the label
@@ -1306,7 +1306,7 @@ void TwoPhase::SortBlobs()
 				OldLabel(aa) = TempLabel;
 				// switch the averages
 				for (idx=0; idx<BLOB_AVG_COUNT; idx++)
-{
+				{
 					TempValue = ComponentAverages_WP(idx,bb);
 					ComponentAverages_WP(idx,bb) = ComponentAverages_WP(idx,aa);
 					ComponentAverages_WP(idx,aa) = TempValue;
@@ -1316,7 +1316,7 @@ void TwoPhase::SortBlobs()
 	}
 	NewLabel.resize(NumberComponents_WP);
 	for (aa=0; aa<NumberComponents_WP; aa++)
-{
+	{
 		// Match the new label for original blob aa
 		bb=0;
 		while (OldLabel(bb) != aa)	bb++;
@@ -1325,13 +1325,13 @@ void TwoPhase::SortBlobs()
 	// Re-label the blob ID
 	//	printf("Re-labeling the blobs, now indexed by volume \n");
 	for (k=0; k<Nz; k++)
-{
+	{
 		for (j=0; j<Ny; j++)
-{
+		{
 			for (i=0; i<Nx; i++)
-{
+			{
 				if (Label_WP(i,j,k) > -1)
-{
+				{
 					TempLabel = NewLabel(Label_WP(i,j,k));
 					Label_WP(i,j,k) = TempLabel;
 				}
