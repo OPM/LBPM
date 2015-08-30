@@ -464,16 +464,16 @@ void TwoPhase::AssignComponentLabels()
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				Label_WP(i,j,k) = 0;
-				if (SDs(i,j,k) > 0.0) PhaseID(i,j,k) = 0;
-				else if (Phase(i,j,k) > 0.0) PhaseID(i,j,k) = LabelNWP;
-				else PhaseID(i,j,k) = LabelWP;
+				//if (SDs(i,j,k) > 0.0) PhaseID(i,j,k) = 0;
+				//else if (Phase(i,j,k) > 0.0) PhaseID(i,j,k) = LabelNWP;
+				//else PhaseID(i,j,k) = LabelWP;
 			}
 		}
 	}
 
 	// Fewer non-wetting phase features are present
-	NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
-	//NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
+	//NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
+	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
 
 }
 
