@@ -474,7 +474,6 @@ void TwoPhase::AssignComponentLabels()
 	// Fewer non-wetting phase features are present
 	//NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
 	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
-
 }
 
 void TwoPhase::ComponentAverages()
