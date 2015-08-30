@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("computing local averages  \n");
 	Averages.AssignComponentLabels();
     Averages.ComponentAverages();
-    Averages.PrintComponents(int(0));
+    Averages.PrintComponents(int(5));
 	if (rank==0) printf("reducing averages  \n");
    // Averages.Reduce();
 
