@@ -100,14 +100,13 @@ inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
-	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  // Initialize MPI
+  int rank,nprocs;
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  { // Limit scope so variables that contain communicators will free before MPI_Finialize
+
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -886,8 +885,8 @@ int main(int argc, char **argv)
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Finalize();
-	// ****************************************************
+  } // Limit scope so variables that contain communicators will free before MPI_Finialize
+  MPI_Finalize();
 }
 
 

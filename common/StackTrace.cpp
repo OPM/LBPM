@@ -163,6 +163,7 @@ static std::string get_executable()
                 buf[len] = '\0';
                 exe = std::string(buf);
             }
+            delete [] buf;
         #endif
     } catch (...) {}
     return exe;

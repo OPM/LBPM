@@ -54,35 +54,47 @@
 //#define NFACE 35
 
 // Constructor
-TwoPhase::TwoPhase(Domain &dm) : Dm(dm)
+TwoPhase::TwoPhase(Domain &dm):
+	n_nw_pts(0), n_ns_pts(0), n_ws_pts(0), n_nws_pts(0), n_local_sol_pts(0), n_local_nws_pts(0),
+    n_nw_tris(0), n_ns_tris(0), n_ws_tris(0), n_nws_seg(0), n_local_sol_tris(0),
+    nc(0), kstart(0), kfinish(0), fluid_isovalue(0), solid_isovalue(0),	Volume(0),
+    TIMELOG(NULL), NWPLOG(NULL), WPLOG(NULL), 
+       Dm(dm), NumberComponents_WP(0), NumberComponents_NWP(0), trimdist(0),
+    porosity(0), poreVol(0), awn(0), ans(0), aws(0), lwns(0), wp_volume(0), nwp_volume(0),
+    As(0), dummy(0), vol_w(0), vol_n(0), sat_w(0), sat_w_previous(0),
+    pan(0) ,paw(0),	pan_global(0), paw_global(0), vol_w_global(0), vol_n_global(0),
+    awn_global(0), ans_global(0),aws_global(0), lwns_global(0), efawns(0), efawns_global(0),
+    Jwn(0), Jwn_global(0), Kwn(0), Kwn_global(0), KNwns(0), KNwns_global(0),
+    KGwns(0), KGwns_global(0), trawn(0), trawn_global(0), trJwn(0), trJwn_global(0),
+    trRwn(0), trRwn_global(0), nwp_volume_global(0), wp_volume_global(0),
+    As_global(0), dEs(0), dAwn(0), dAns(0)
 {
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
 	// Global arrays
-	PhaseID.resize(Nx,Ny,Nz);
-	Label_WP.resize(Nx,Ny,Nz);
-	Label_NWP.resize(Nx,Ny,Nz);
-	Label_NWP.resize(Nx,Ny,Nz);
-	SDn.resize(Nx,Ny,Nz);
-	SDs.resize(Nx,Ny,Nz);
-	Phase.resize(Nx,Ny,Nz);
-	Press.resize(Nx,Ny,Nz);
-	dPdt.resize(Nx,Ny,Nz);
-	MeanCurvature.resize(Nx,Ny,Nz);
-	GaussCurvature.resize(Nx,Ny,Nz);
-	SDs_x.resize(Nx,Ny,Nz);		// Gradient of the signed distance
-	SDs_y.resize(Nx,Ny,Nz);
-	SDs_z.resize(Nx,Ny,Nz);
-	SDn_x.resize(Nx,Ny,Nz);		// Gradient of the signed distance
-	SDn_y.resize(Nx,Ny,Nz);
-	SDn_z.resize(Nx,Ny,Nz);
-	DelPhi.resize(Nx,Ny,Nz);
-	Phase_tplus.resize(Nx,Ny,Nz);
-	Phase_tminus.resize(Nx,Ny,Nz);
-	Vel_x.resize(Nx,Ny,Nz);		// Gradient of the phase indicator field
-	Vel_y.resize(Nx,Ny,Nz);
-	Vel_z.resize(Nx,Ny,Nz);
+	PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
+	Label_WP.resize(Nx,Ny,Nz);      Label_WP.fill(0);
+	Label_NWP.resize(Nx,Ny,Nz);     Label_NWP.fill(0);
+	SDn.resize(Nx,Ny,Nz);           SDn.fill(0);
+	SDs.resize(Nx,Ny,Nz);           SDs.fill(0);
+	Phase.resize(Nx,Ny,Nz);         Phase.fill(0);
+	Press.resize(Nx,Ny,Nz);         Press.fill(0);
+	dPdt.resize(Nx,Ny,Nz);          dPdt.fill(0);
+	MeanCurvature.resize(Nx,Ny,Nz); MeanCurvature.fill(0);
+	GaussCurvature.resize(Nx,Ny,Nz); GaussCurvature.fill(0);
+	SDs_x.resize(Nx,Ny,Nz);         SDs_x.fill(0);      // Gradient of the signed distance
+	SDs_y.resize(Nx,Ny,Nz);         SDs_y.fill(0);
+	SDs_z.resize(Nx,Ny,Nz);         SDs_z.fill(0);
+	SDn_x.resize(Nx,Ny,Nz);         SDn_x.fill(0);      // Gradient of the signed distance
+	SDn_y.resize(Nx,Ny,Nz);         SDn_y.fill(0);
+	SDn_z.resize(Nx,Ny,Nz);         SDn_z.fill(0);
+	DelPhi.resize(Nx,Ny,Nz);        DelPhi.fill(0);
+	Phase_tplus.resize(Nx,Ny,Nz);   Phase_tplus.fill(0);
+	Phase_tminus.resize(Nx,Ny,Nz);  Phase_tminus.fill(0);
+	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
+	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
+	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
 	//.........................................
 	// Allocate cube storage space
 	CubeValues.resize(2,2,2);
@@ -155,6 +167,9 @@ TwoPhase::TwoPhase(Domain &dm) : Dm(dm)
 // Destructor
 TwoPhase::~TwoPhase()
 {
+    if ( TIMELOG!=NULL ) { fclose(TIMELOG); }
+    if ( NWPLOG!=NULL ) { fclose(NWPLOG); }
+    if ( WPLOG!=NULL ) { fclose(WPLOG); }
 }
 
 
