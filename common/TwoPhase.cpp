@@ -733,7 +733,12 @@ void TwoPhase::ComponentAverages()
 					n_nw_pts=n_nw_tris=0;
 					geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
-					ComponentAverages_NWP(EULER,LabelNWP) += euler;
+					if (LabelNWP < 0){
+						printf("Error: rank=%i \n"Dm.rank);
+						printf("mesh =%i,%i,%i \n",i+iprocx*(Nx-2),j+jprocx*(Ny-2),k+kprocx*(Nz-2));
+						printf("Label=%i \n"LabelNWP);
+					}
+					else 	ComponentAverages_NWP(EULER,LabelNWP) += euler;
 				}
 			}
 		}
