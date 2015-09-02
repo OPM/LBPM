@@ -728,17 +728,18 @@ void TwoPhase::ComponentAverages()
 				 * Euler Number = vertices - edges + faces
 				 * double geomavg_EulerCharacteristic(PointList, PointCount, TriList, TriCount);
 				 */
-				if (n_nw_pts + n_ns_pts > 0 ){
+				if (LabelNWP >= 0 ){
+				  // find non-wetting phase interface
 					double euler;
 					n_nw_pts=n_nw_tris=0;
 					geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
-					if (LabelNWP < 0){
-					  printf("Error: rank=%i \n",Dm.rank);
-						printf("mesh =%i,%i,%i \n",i+Dm.iproc*(Nx-2),j+Dm.jproc*(Ny-2),k+Dm.kproc*(Nz-2));
-						printf("Label=%i \n",LabelNWP);
-					}
-					else 	ComponentAverages_NWP(EULER,LabelNWP) += euler;
+					//if (LabelNWP < 0){
+					// printf("Error: rank=%i \n",Dm.rank);
+					//	printf("mesh =%i,%i,%i \n",i+Dm.iproc*(Nx-2),j+Dm.jproc*(Ny-2),k+Dm.kproc*(Nz-2));
+					//	printf("Label=%i \n",LabelNWP);
+					//}
+					ComponentAverages_NWP(EULER,LabelNWP) += euler;
 				}
 			}
 		}
@@ -767,9 +768,8 @@ void TwoPhase::ComponentAverages()
 	}
 	*/
 	MPI_Barrier(Dm.Comm);
-//	MPI_Allreduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0,0),BLOB_AVG_COUNT*NumberComponents_NWP,
-//					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	MPI_Reduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+	MPI_Allreduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT*NumberComponents_NWP,					MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	//	MPI_Reduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
 	if (Dm.rank==0){
 		printf("rescaling... \n");
