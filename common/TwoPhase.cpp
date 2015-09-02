@@ -59,10 +59,10 @@ TwoPhase::TwoPhase(Domain &dm):
     n_nw_tris(0), n_ns_tris(0), n_ws_tris(0), n_nws_seg(0), n_local_sol_tris(0),
     nc(0), kstart(0), kfinish(0), fluid_isovalue(0), solid_isovalue(0),	Volume(0),
     TIMELOG(NULL), NWPLOG(NULL), WPLOG(NULL), 
-       Dm(dm), NumberComponents_WP(0), NumberComponents_NWP(0), trimdist(0),
+    Dm(dm), NumberComponents_WP(0), NumberComponents_NWP(0), trimdist(0),
     porosity(0), poreVol(0), awn(0), ans(0), aws(0), lwns(0), wp_volume(0), nwp_volume(0),
     As(0), dummy(0), vol_w(0), vol_n(0), sat_w(0), sat_w_previous(0),
-    pan(0) ,paw(0),	pan_global(0), paw_global(0), vol_w_global(0), vol_n_global(0),
+    pan(0), paw(0), pan_global(0), paw_global(0), vol_w_global(0), vol_n_global(0),
     awn_global(0), ans_global(0),aws_global(0), lwns_global(0), efawns(0), efawns_global(0),
     Jwn(0), Jwn_global(0), Kwn(0), Kwn_global(0), KNwns(0), KNwns_global(0),
     KGwns(0), KGwns_global(0), trawn(0), trawn_global(0), trJwn(0), trJwn_global(0),
@@ -366,6 +366,14 @@ void TwoPhase::ComputeLocal()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) += 1.0;
+			}
+		}
+	}
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -464,6 +472,15 @@ void TwoPhase::ComputeLocal()
 			}
 		}
 	}
+	
+	// Map solid back
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) -= 1.0;
+			}
+		}
+	}
 }
 
 
@@ -516,6 +533,15 @@ void TwoPhase::ComponentAverages()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) += 1.0;
+			}
+		}
+	}
+	
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -712,6 +738,15 @@ void TwoPhase::ComponentAverages()
 			}
 		}
 	}
+	
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) -= 1.0;
+			}
+		}
+	}
 
 	if (Dm.rank==0){
 		printf("Component averages computed locally -- reducing result... \n");
@@ -728,8 +763,7 @@ void TwoPhase::ComponentAverages()
 	MPI_Barrier(Dm.Comm);
 //	MPI_Allreduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0,0),BLOB_AVG_COUNT*NumberComponents_NWP,
 //					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-
-	MPI_Reduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+	MPI_Reduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
 	if (Dm.rank==0){
 		printf("rescaling... \n");
@@ -824,9 +858,8 @@ void TwoPhase::ComponentAverages()
 	// reduce the wetting phase averages
 	for (int b=0; b<NumberComponents_WP; b++){
 		MPI_Barrier(Dm.Comm);
-//		MPI_Allreduce(&ComponentAverages_WP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-		MPI_Reduce(&ComponentAverages_WP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
-
+//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
