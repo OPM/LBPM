@@ -725,9 +725,10 @@ void TwoPhase::ComponentAverages()
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
 	}
 	*/
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Allreduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT*NumberComponents_NWP,
-					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Barrier(Dm.Comm);
+//	MPI_Allreduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0,0),BLOB_AVG_COUNT*NumberComponents_NWP,
+//					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Reduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
 	for (int b=0; b<NumberComponents_NWP; b++){
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx,b);
@@ -813,8 +814,9 @@ void TwoPhase::ComponentAverages()
 
 	// reduce the wetting phase averages
 	for (int b=0; b<NumberComponents_WP; b++){
-		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Barrier(Dm.Comm);
+//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
