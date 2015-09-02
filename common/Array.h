@@ -9,7 +9,7 @@
 
 
 #define GET_ARRAY_INDEX(i1,i2,i3,i4) i1+d_N[0]*(i2+d_N[1]*(i3+d_N[2]*i4))
-#ifdef DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
     #define CHECK_ARRAY_INDEX(i1,i2,i3,i4) \
         if ( GET_ARRAY_INDEX(i1,i2,i3,i4)>d_length ) \
             ERROR("Index exceeds array bounds");

@@ -6,6 +6,7 @@
 extern "C" void AllocateDeviceMemory(void** address, size_t size){
 	//cudaMalloc(address,size);
 	(*address) = malloc(size);
+    memset(*address,0,size);
 	
 	if (*address==NULL){
 		printf("Memory allocation failed! \n");
