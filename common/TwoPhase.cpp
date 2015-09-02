@@ -713,6 +713,7 @@ void TwoPhase::ComponentAverages()
 		}
 	}
 
+	MPI_Barrier(Dm.Comm);
 	if (Dm.rank==0){
 		printf("Component averages computed locally -- reducing result... \n");
 	}
