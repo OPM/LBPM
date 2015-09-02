@@ -125,11 +125,12 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 
 int main(int argc, char **argv)
 {
-	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  // Initialize MPI
+  int rank, nprocs;
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
@@ -208,11 +209,10 @@ int main(int argc, char **argv)
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
 	if (rank==1) printf("nspheres =%i \n",nspheres);
 	//.......................................................................
-	double *cx,*cy,*cz,*rad;
-	cx = new double[nspheres];
-	cy = new double[nspheres];
-	cz = new double[nspheres];
-	rad = new double[nspheres];
+	double *cx = new double[nspheres];
+	double *cy = new double[nspheres];
+	double *cz = new double[nspheres];
+	double *rad = new double[nspheres];
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
@@ -281,8 +281,15 @@ int main(int argc, char **argv)
 	if (rank==0) printf("reducing averages  \n");
    // Averages.Reduce();
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
-    return 0;  
+    // Free memory
+	delete [] cx;
+	delete [] cy;
+	delete [] cz;
+	delete [] rad;
+
+  } // Limit scope so variables that contain communicators will free before MPI_Finialize
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
+  return 0;  
 }
 

@@ -16,11 +16,12 @@
 
 int main(int argc, char **argv)
 {
-	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  // Initialize MPI
+  int rank,nprocs;
+  MPI_Init(&argc,&argv);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  { // Limit scope so Domain can free it's communicator
 
 	printf("Running two-phase averaging test on %i processors \n",nprocs);
 
@@ -103,14 +104,14 @@ int main(int argc, char **argv)
 	//....................................................................
 
 	if (rank==0){
-		FILE *PHASE;
-		PHASE = fopen("Phase.00000","wb");
+		FILE *PHASE = fopen("Phase.00000","wb");
 		fwrite(Averages.MeanCurvature.get(),8,Nx*Ny*Nz,PHASE);
 		fclose(PHASE);
 	}
 	// ****************************************************
 	MPI_Barrier(MPI_COMM_WORLD);
-	return 0;
-	MPI_Finalize();
-	// ****************************************************
+  } // Limit scope so Domain will free it's communicator
+  MPI_Finalize();
+  return 0;
 }
+
