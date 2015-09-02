@@ -3,8 +3,8 @@ source $MODULESHOME/init/bash
 module load cudatoolkit
 module load cmake
 export MPICH_RDMA_ENABLED_CUDA=1
-module swap cray-mpich2 cray-mpich2/5.6.3
-
+#module swap cray-mpich2 cray-mpich2/5.6.3
+module swap PrgEnv-pgi PrgEnv-gnu
 
 # Remove CMake files from previous configures
 rm -rf CMake*
