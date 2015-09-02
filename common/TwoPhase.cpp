@@ -366,6 +366,14 @@ void TwoPhase::ComputeLocal()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) += 1.0;
+			}
+		}
+	}
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -464,6 +472,15 @@ void TwoPhase::ComputeLocal()
 			}
 		}
 	}
+	
+	// Map solid back
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) -= 1.0;
+			}
+		}
+	}
 }
 
 
@@ -516,6 +533,15 @@ void TwoPhase::ComponentAverages()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) += 1.0;
+			}
+		}
+	}
+	
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -709,6 +735,15 @@ void TwoPhase::ComponentAverages()
 					euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 					ComponentAverages_NWP(EULER,LabelNWP) += euler;
 				}
+			}
+		}
+	}
+	
+	// Map solid to erode the fluid so that interfaces can be calculated accurately
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				SDs(i,j,k) -= 1.0;
 			}
 		}
 	}
