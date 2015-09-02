@@ -728,7 +728,7 @@ void TwoPhase::ComponentAverages()
 	MPI_Barrier(Dm.Comm);
 //	MPI_Allreduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0,0),BLOB_AVG_COUNT*NumberComponents_NWP,
 //					MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	MPI_Reduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+	MPI_Reduce(&ComponentAverages_NWP(0,0),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
 	for (int b=0; b<NumberComponents_NWP; b++){
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx,b);
