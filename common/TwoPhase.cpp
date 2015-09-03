@@ -49,9 +49,9 @@
 #define CMY 31
 #define CMZ 32
 #define EULER 33
-//#define NVERT 33
-//#define NSIDE 34
-//#define NFACE 35
+
+
+#define PI 3.14159265359
 
 // Constructor
 TwoPhase::TwoPhase(Domain &dm):
@@ -852,6 +852,8 @@ void TwoPhase::ComponentAverages()
 			ComponentAverages_NWP(CMZ,b) /= Vn;
 
 			ComponentAverages_NWP(TRJWN,b) = trJwn;
+
+			ComponentAverages_NWP(EULER,b) /= (2*PI);
 
 		}
 	}
