@@ -264,10 +264,11 @@ int main(int argc, char **argv)
 	if (rank==0) printf("initializing the system \n");
 
 	Averages.UpdateSolid();
-    Averages.Initialize();
-    Averages.UpdateMeshValues();
     Dm.CommunicateMeshHalo(Averages.Phase);
     Dm.CommunicateMeshHalo(Averages.SDn);
+
+    Averages.Initialize();
+    Averages.UpdateMeshValues();
 
 //	if (rank==0) printf("computing blobs \n");
 //    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
