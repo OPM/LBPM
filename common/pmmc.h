@@ -2151,14 +2151,15 @@ inline double geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, 
     }
 	// Compute the Interfacial Area
 	double s1,s2,s3,s;
+	Point pA,pB,pC;
 	for (int r=n_nw_tris_beg;r<n_nw_tris;r++){
-		A = nw_pts(nw_tris(0,r));
-		B = nw_pts(nw_tris(1,r));
-		C = nw_pts(nw_tris(2,r));
+		pA = nw_pts(nw_tris(0,r));
+		pB = nw_pts(nw_tris(1,r));
+		pC = nw_pts(nw_tris(2,r));
 		// Compute length of sides (assume dx=dy=dz)
-		s1 = sqrt((A.x-B.x)*(A.x-B.x)+(A.y-B.y)*(A.y-B.y)+(A.z-B.z)*(A.z-B.z));
-		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
-		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
+		s1 = sqrt((pA.x-pB.x)*(pA.x-pB.x)+(pA.y-pB.y)*(pA.y-pB.y)+(pA.z-pB.z)*(pA.z-pB.z));
+		s2 = sqrt((pA.x-pC.x)*(pA.x-pC.x)+(pA.y-pC.y)*(pA.y-pC.y)+(pA.z-pC.z)*(pA.z-pC.z));
+		s3 = sqrt((pB.x-pC.x)*(pB.x-pC.x)+(pB.y-pC.y)*(pB.y-pC.y)+(pB.z-pC.z)*(pB.z-pC.z));
 		s = 0.5*(s1+s2+s3);
 		area+=sqrt(s*(s-s1)*(s-s2)*(s-s3));
 	}
