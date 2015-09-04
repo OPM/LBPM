@@ -101,8 +101,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -185,32 +186,32 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.................................................
-	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
-	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&timestepMax,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&interval,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&tol,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
+	MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+	MPI_Bcast(&interval,1,MPI_INT,0,comm);
+	MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 	// Computational domain
-	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	
 	RESTART_INTERVAL=interval;
 	// **************************************************************
@@ -247,7 +248,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -288,7 +289,7 @@ int main(int argc, char **argv)
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	
 	//.......................................................................
@@ -338,8 +339,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-//	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
+//	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = pore_vol*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
@@ -373,7 +374,7 @@ int main(int argc, char **argv)
 	//.........................................................
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	//...........................................................................
 	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -465,7 +466,7 @@ int main(int argc, char **argv)
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
 	
@@ -503,7 +504,7 @@ int main(int argc, char **argv)
 		}
 		//...................................................................................
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 
 		// Timestep completed!
 		timestep++;
@@ -562,7 +563,7 @@ int main(int argc, char **argv)
 	}
 	//************************************************************************/
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -578,7 +579,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

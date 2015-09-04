@@ -101,10 +101,15 @@ inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  int rank,nprocs;
-  MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  int provided_thread_support=-1;
+  //MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
+  MPI_Init_thread(&argc,&argv,MPI_THREAD_SINGLE,&provided_thread_support);
+  if ( provided_thread_support<MPI_THREAD_MULTIPLE )
+    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+  MPI_Comm comm;
+  MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+  int rank = comm_rank(comm);
+  int nprocs = comm_size(comm);
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 	// parallel domain size (# of sub-domains)
@@ -214,42 +219,42 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.................................................
-	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&InitialCondition,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&timestepMax,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&interval,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&tol,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
+	MPI_Bcast(&InitialCondition,1,MPI_INT,0,comm);
+	MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+	MPI_Bcast(&interval,1,MPI_INT,0,comm);
+	MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 	// Computational domain
-	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
 
     // Get the rank info
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	
 	RESTART_INTERVAL=interval;
 	// **************************************************************
@@ -310,7 +315,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -351,7 +356,7 @@ int main(int argc, char **argv)
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages->SDs.get(), N);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	
 	//.......................................................................
@@ -423,8 +428,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-//	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
+//	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = pore_vol*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
@@ -459,7 +464,7 @@ int main(int argc, char **argv)
 
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	//...........................................................................
 	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -561,14 +566,14 @@ int main(int argc, char **argv)
 	    delete [] cDen;
 	    delete [] cDistEven;
 	    delete [] cDistOdd;
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 	}
 
 	//......................................................................
 	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
 	//for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
@@ -587,7 +592,7 @@ int main(int argc, char **argv)
 	ScaLBL_Comm.SendHalo(Phi);
 	ScaLBL_Comm.RecvHalo(Phi);
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//*************************************************************************
 
 	if (rank==0 && BoundaryCondition==1){
@@ -660,26 +665,33 @@ int main(int argc, char **argv)
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
 	
 	err = 1.0; 	
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
+    // Create the thread pool
+    int N_threads = 0;
+    if ( provided_thread_support<MPI_THREAD_MULTIPLE )
+        N_threads = 0;
+    if ( N_threads > 0 ) {
+        // Set the affinity
+        int N_procs = ThreadPool::getNumberOfProcessors();
+        std::vector<int> procs(N_procs);
+        for (int i=0; i<N_procs; i++)
+            procs[i] = i;
+        ThreadPool::setProcessAffinity(procs);
+    }
+    ThreadPool tpool(N_threads);
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
-    int N_procs = ThreadPool::getNumberOfProcessors();
-    std::vector<int> procs(N_procs);
-    for (int i=0; i<N_procs; i++)
-        procs[i] = i;
-    ThreadPool::setProcessAffinity(procs);
 	int timestep = -1;
-    AnalysisWaitIdStruct work_ids;
-    ThreadPool tpool(0);
     BlobIDstruct last_ids, last_index;
     BlobIDList last_id_map;
     writeIDMap(ID_map_struct(),0,id_map_filename);
+    AnalysisWaitIdStruct work_ids;
 	while (timestep < timestepMax && err > tol ) {
         PROFILE_START("Update");
 
@@ -704,7 +716,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
@@ -712,7 +724,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
@@ -729,7 +741,7 @@ int main(int argc, char **argv)
 		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
 
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 
 		//*************************************************************************
 		// Wait for communication and unpack the D3Q7 distributions
@@ -744,7 +756,7 @@ int main(int argc, char **argv)
 		// 		Compute the phase indicator field 
 		//*************************************************************************
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 
 		ComputePhi(ID, Phi, Den, N);
 		//*************************************************************************
@@ -778,7 +790,7 @@ int main(int argc, char **argv)
 		}
 		//...................................................................................
 
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
         PROFILE_STOP("Update");
 
 		// Timestep completed!
@@ -794,7 +806,7 @@ int main(int argc, char **argv)
     PROFILE_STOP("Loop");
 	//************************************************************************
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -823,7 +835,7 @@ int main(int argc, char **argv)
 	CopyToHost(Averages->Phase.get(),Phi,N*sizeof(double));
 */
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
@@ -855,7 +867,7 @@ int main(int argc, char **argv)
     fillData.copy(Averages->SDn,PhaseVar->data);
     fillData.copy(Averages->SDs,SignDistVar->data);
     fillData.copy(Averages->Label_NWP,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2 );
+    IO::writeData( 0, meshData, 2, comm );
     
 /*	Averages->WriteSurfaces(0);
 
@@ -884,8 +896,9 @@ int main(int argc, char **argv)
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
+  MPI_Comm_free(&comm);
   MPI_Finalize();
 }
 

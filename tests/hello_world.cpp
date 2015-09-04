@@ -5,10 +5,9 @@
 
 int main (int argc, char **argv)
 {
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int rank = MPI_WORLD_RANK();
+    int nprocs = MPI_WORLD_SIZE();
 
     for (int i=0; i<nprocs; i++) {
         if ( rank==i )

@@ -266,7 +266,7 @@ int main(int argc, char **argv)
     printf("Execute blob identification algorithm... \n");
     IntArray GlobalBlobID;
     int nblobs = ComputeLocalBlobIDs( Phase, SignDist, vF, vS, GlobalBlobID );
-    ReorderBlobIDs(GlobalBlobID);       // This will reorder by blob size
+    ReorderBlobIDs(GlobalBlobID,MPI_COMM_WORLD);       // This will reorder by blob size
     printf("Identified %i blobs. Writing per-process output files. \n",nblobs);
 
     int sizeLoc = nx*ny*nz;

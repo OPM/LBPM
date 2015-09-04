@@ -102,8 +102,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
     Utilities::setAbortBehavior( true, true, true );
     Utilities::setErrorHandlers();
 	PROFILE_ENABLE(0);
@@ -136,20 +137,20 @@ int main(int argc, char **argv)
     	domain >> Ly;
     	domain >> Lz;
     }
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
     //.......................................................................
 	//copies of data needed to perform checkpointing from cpu
@@ -220,7 +221,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Reading restart file! \n");
 	// Read in the restart file to CPU buffers
 	ReadCheckpoint(LocalRestartFile, Den, DistEven, DistOdd, N);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.........................................................................
 	// Populate the arrays needed to perform averaging
 	if (rank==0) printf("Populate arrays \n");
@@ -289,9 +290,9 @@ int main(int argc, char **argv)
             }
         }
     }
-    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
+    Dm.CommInit(comm); // Initialize communications for domains
 
-    MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,comm);
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
 
@@ -328,14 +329,14 @@ int main(int argc, char **argv)
     //      BlobContainer Blobs;
     DoubleArray RecvBuffer(dimx);
     //    MPI_Allreduce(&Averages.BlobAverages.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     if (rank==0) printf("Number of components is %i \n",dimy);
 
     for (int b=0; b<dimy; b++){
 
-    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    	MPI_Allreduce(&Averages.BlobAverages(0,b),&RecvBuffer(0),dimx,MPI_DOUBLE,MPI_SUM,comm);
     	for (int idx=0; idx<dimx-1; idx++) Averages.BlobAverages(idx,b)=RecvBuffer(idx);
-    	MPI_Barrier(MPI_COMM_WORLD);
+    	MPI_Barrier(comm);
 
     	if (Averages.BlobAverages(0,b) > 0.0){
     		double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
@@ -481,7 +482,7 @@ int main(int argc, char **argv)
     fclose(BLOBS);*/
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     MPI_Finalize();
     return 0;  
 }

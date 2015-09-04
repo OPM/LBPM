@@ -17,8 +17,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	
 	int i,j,k,n,nn;
 	int iproc,jproc,kproc;
@@ -51,7 +52,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	nx+=2; ny+=2; nz+=2;
 	N = nx*ny*nz;
@@ -106,7 +107,7 @@ int main(int argc, char **argv)
     fwrite(Distance.get(),8,Distance.length(),DIST);
     fclose(DIST);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;
 

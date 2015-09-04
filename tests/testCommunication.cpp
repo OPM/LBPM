@@ -221,7 +221,7 @@ int testHalo( MPI_Comm comm, int nprocx, int nprocy, int nprocz, int depth )
     }
 
     // Communicate the halo
-    fillHalo<TYPE> fillData(rank_info,nx,ny,nz,1,1,1,0,depth);
+    fillHalo<TYPE> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,depth);
     fillData.fill(array);
 
     // Check the results
@@ -257,41 +257,42 @@ int main(int argc, char **argv)
     // Initialize MPI
     int rank,nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
 
     // Run the test with different domains
     int N_errors = 0;
-    N_errors += test_communication( MPI_COMM_WORLD, nprocs, 1, 1 );
-    N_errors += test_communication( MPI_COMM_WORLD, 1, nprocs, 1 );
-    N_errors += test_communication( MPI_COMM_WORLD, 1, 1, nprocs );
+    N_errors += test_communication( comm, nprocs, 1, 1 );
+    N_errors += test_communication( comm, 1, nprocs, 1 );
+    N_errors += test_communication( comm, 1, 1, nprocs );
     if ( nprocs==4 ) {
-        N_errors += test_communication( MPI_COMM_WORLD, 2, 2, 1 );
-        N_errors += test_communication( MPI_COMM_WORLD, 2, 1, 2 );
-        N_errors += test_communication( MPI_COMM_WORLD, 1, 2, 2 );
+        N_errors += test_communication( comm, 2, 2, 1 );
+        N_errors += test_communication( comm, 2, 1, 2 );
+        N_errors += test_communication( comm, 1, 2, 2 );
     }
 
     // Run the halo tests with different domains
-    N_errors += testHalo<int>( MPI_COMM_WORLD, nprocs, 1, 1, 1 );
-    N_errors += testHalo<int>( MPI_COMM_WORLD, 1, nprocs, 1, 1 );
-    N_errors += testHalo<int>( MPI_COMM_WORLD, 1, 1, nprocs, 1 );
-    N_errors += testHalo<double>( MPI_COMM_WORLD, nprocs, 1, 1, 3 );
-    N_errors += testHalo<double>( MPI_COMM_WORLD, 1, nprocs, 1, 3 );
-    N_errors += testHalo<double>( MPI_COMM_WORLD, 1, 1, nprocs, 3 );
+    N_errors += testHalo<int>( comm, nprocs, 1, 1, 1 );
+    N_errors += testHalo<int>( comm, 1, nprocs, 1, 1 );
+    N_errors += testHalo<int>( comm, 1, 1, nprocs, 1 );
+    N_errors += testHalo<double>( comm, nprocs, 1, 1, 3 );
+    N_errors += testHalo<double>( comm, 1, nprocs, 1, 3 );
+    N_errors += testHalo<double>( comm, 1, 1, nprocs, 3 );
     if ( nprocs==4 ) {
-        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 2, 1, 1 );
-        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 1, 2, 1 );
-        N_errors += testHalo<int>( MPI_COMM_WORLD, 1, 2, 2, 1 );
+        N_errors += testHalo<int>( comm, 2, 2, 1, 1 );
+        N_errors += testHalo<int>( comm, 2, 1, 2, 1 );
+        N_errors += testHalo<int>( comm, 1, 2, 2, 1 );
     }
     if ( nprocs==8 ) {
-        N_errors += testHalo<int>( MPI_COMM_WORLD, 2, 2, 2, 1 );
+        N_errors += testHalo<int>( comm, 2, 2, 2, 1 );
     }
 
     // Finished
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     int N_errors_global=0;
-    MPI_Allreduce( &N_errors, &N_errors_global, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD );
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Allreduce( &N_errors, &N_errors_global, 1, MPI_INT, MPI_SUM, comm );
+    MPI_Barrier(comm);
     MPI_Finalize();
     if ( rank==0 ) {
         if ( N_errors_global==0 )

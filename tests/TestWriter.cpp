@@ -36,8 +36,9 @@ int main(int argc, char **argv)
 {
     int rank,nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
     Utilities::setAbortBehavior(true,true,false);
     Utilities::setErrorHandlers();
     UnitTest ut;
@@ -131,9 +132,9 @@ int main(int argc, char **argv)
     std::vector<int> format(2,0);
     format[0] = 2;
     format[1] = 1;
-    IO::writeData( 0, meshData, format[0] );
-    IO::writeData( 3, meshData, format[1] );
-    MPI_Barrier(MPI_COMM_WORLD);
+    IO::writeData( 0, meshData, format[0], comm );
+    IO::writeData( 3, meshData, format[1], comm );
+    MPI_Barrier(comm);
 
     // Get a list of the timesteps 
     std::vector<std::string> timesteps = IO::readTimesteps("summary.LBM");
@@ -269,7 +270,7 @@ int main(int argc, char **argv)
     // Finished
     ut.report();
     int N_errors = ut.NumFailGlobal();
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     MPI_Finalize();
     return N_errors;
 }

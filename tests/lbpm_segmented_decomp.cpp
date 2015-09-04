@@ -18,8 +18,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	
     //.......................................................................
     // Reading the domain information file
@@ -60,28 +61,28 @@ int main(int argc, char **argv)
     	image >> zStart;
 
     }
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Computational domain
 	//.................................................
-	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&xStart,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&yStart,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&zStart,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&xStart,1,MPI_INT,0,comm);
+	MPI_Bcast(&yStart,1,MPI_INT,0,comm);
+	MPI_Bcast(&zStart,1,MPI_INT,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -103,7 +104,7 @@ int main(int argc, char **argv)
     	fclose(SEGDAT);
         printf("Read segmented data from %s \n",Filename);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 
     // Get the rank info
     int N = (nx+2)*(ny+2)*(nz+2);
@@ -116,7 +117,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	// number of sites to use for periodic boundary condition transition zone
 	int z_transition_size = (nprocz*nz - (Nz - zStart))/2;
@@ -163,7 +164,7 @@ int main(int argc, char **argv)
 					}
 					else{
 						printf("Sending data to process %i \n", rnk);
-						MPI_Send(tmp,N,MPI_CHAR,rnk,15,MPI_COMM_WORLD);
+						MPI_Send(tmp,N,MPI_CHAR,rnk,15,comm);
 					}
 				}
 			}
@@ -172,9 +173,9 @@ int main(int argc, char **argv)
 	else{
 		// Recieve the subdomain from rank = 0
 		printf("Ready to recieve data %i at process %i \n", N,rank);
-		MPI_Recv(Dm.id,N,MPI_CHAR,0,15,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+		MPI_Recv(Dm.id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
@@ -226,7 +227,7 @@ int main(int argc, char **argv)
     fwrite(symid,1,N,SYMID);
     fclose(SYMID);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;
 

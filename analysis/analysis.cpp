@@ -186,7 +186,7 @@ int ComputeLocalPhaseComponent(const IntArray &PhaseID, int &VALUE, BlobIDArray 
 /******************************************************************
 * Reorder the global blob ids                                     *
 ******************************************************************/
-static int ReorderBlobIDs2( BlobIDArray& ID, int N_blobs, int ngx, int ngy, int ngz )
+static int ReorderBlobIDs2( BlobIDArray& ID, int N_blobs, int ngx, int ngy, int ngz, MPI_Comm comm )
 {
     if ( N_blobs==0 )
         return 0;
@@ -210,7 +210,7 @@ static int ReorderBlobIDs2( BlobIDArray& ID, int N_blobs, int ngx, int ngy, int 
         }
     }
     ASSERT(max_id<N_blobs);
-    MPI_Allreduce(local_size,global_size,N_blobs,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(local_size,global_size,N_blobs,MPI_DOUBLE,MPI_SUM,comm);
     std::vector<std::pair<double,int> > map1(N_blobs);
     int N_blobs2 = 0;
     for (int i=0; i<N_blobs; i++) {
@@ -233,13 +233,13 @@ static int ReorderBlobIDs2( BlobIDArray& ID, int N_blobs, int ngx, int ngy, int 
     PROFILE_STOP("ReorderBlobIDs2",1);
     return N_blobs2;
 }
-void ReorderBlobIDs( BlobIDArray& ID )
+void ReorderBlobIDs( BlobIDArray& ID, MPI_Comm comm )
 {
     PROFILE_START("ReorderBlobIDs");
     int tmp = ID.max()+1;
     int N_blobs = 0;
-    MPI_Allreduce(&tmp,&N_blobs,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
-    ReorderBlobIDs2(ID,N_blobs,1,1,1);
+    MPI_Allreduce(&tmp,&N_blobs,1,MPI_INT,MPI_MAX,comm);
+    ReorderBlobIDs2(ID,N_blobs,1,1,1,comm);
     PROFILE_STOP("ReorderBlobIDs");
 }
 
@@ -257,7 +257,8 @@ static void updateRemoteIds(
     const std::vector<int>& neighbors,
     int N_send, const std::vector<int>& N_recv,
     int64_t *send_buf, std::vector<int64_t*>& recv_buf,
-    std::map<int64_t,int64_t>& remote_map )
+    std::map<int64_t,int64_t>& remote_map,
+    MPI_Comm comm )
 {
     std::vector<MPI_Request> send_req(neighbors.size());
     std::vector<MPI_Request> recv_req(neighbors.size());
@@ -269,8 +270,8 @@ static void updateRemoteIds(
         send_buf[2*i+1] = it->second.new_id;
     }
     for (size_t i=0; i<neighbors.size(); i++) {
-        MPI_Isend( send_buf,    2*N_send,    MPI_LONG_LONG, neighbors[i], 0, MPI_COMM_WORLD, &send_req[i] );
-        MPI_Irecv( recv_buf[i], 2*N_recv[i], MPI_LONG_LONG, neighbors[i], 0, MPI_COMM_WORLD, &recv_req[i] );
+        MPI_Isend( send_buf,    2*N_send,    MPI_LONG_LONG, neighbors[i], 0, comm, &send_req[i] );
+        MPI_Irecv( recv_buf[i], 2*N_recv[i], MPI_LONG_LONG, neighbors[i], 0, comm, &recv_req[i] );
     }
     for (it=map.begin(); it!=map.end(); ++it) {
         remote_map[it->first] = it->second.new_id;
@@ -301,19 +302,18 @@ static bool updateLocalIds( const std::map<int64_t,int64_t>& remote_map,
     return changed;
 }
 static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
-    int nblobs, BlobIDArray& IDs )
+    int nblobs, BlobIDArray& IDs, MPI_Comm comm )
 {
     PROFILE_START("LocalToGlobalIDs",1);
     const int rank = rank_info.rank[1][1][1];
-    int nprocs;
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int nprocs = comm_size(comm);
     const int ngx = (IDs.size(0)-nx)/2;
     const int ngy = (IDs.size(1)-ny)/2;
     const int ngz = (IDs.size(2)-nz)/2;
     // Get the number of blobs for each rank
     std::vector<int> N_blobs(nprocs,0);
     PROFILE_START("LocalToGlobalIDs-Allgather",1);
-    MPI_Allgather(&nblobs,1,MPI_INT,getPtr(N_blobs),1,MPI_INT,MPI_COMM_WORLD);
+    MPI_Allgather(&nblobs,1,MPI_INT,getPtr(N_blobs),1,MPI_INT,comm);
     PROFILE_STOP("LocalToGlobalIDs-Allgather",1);
     int64_t N_blobs_tot = 0;
     int offset = 0;
@@ -329,7 +329,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     }
     const BlobIDArray LocalIDs = IDs;
     // Copy the ids and get the neighbors through the halos
-    fillHalo<BlobIDType> fillData(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
     fillData.fill(IDs);
     // Create a list of all neighbor ranks (excluding self)
     std::vector<int> neighbors;
@@ -364,8 +364,8 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     std::vector<MPI_Request> recv_req(neighbors.size());
     std::vector<MPI_Status> status(neighbors.size());
     for (size_t i=0; i<neighbors.size(); i++) {
-        MPI_Isend( &N_send,    1, MPI_INT, neighbors[i], 0, MPI_COMM_WORLD, &send_req[i] );
-        MPI_Irecv( &N_recv[i], 1, MPI_INT, neighbors[i], 0, MPI_COMM_WORLD, &recv_req[i] );
+        MPI_Isend( &N_send,    1, MPI_INT, neighbors[i], 0, comm, &send_req[i] );
+        MPI_Irecv( &N_recv[i], 1, MPI_INT, neighbors[i], 0, comm, &recv_req[i] );
     }
     MPI_Waitall(neighbors.size(),getPtr(send_req),getPtr(status));
     MPI_Waitall(neighbors.size(),getPtr(recv_req),getPtr(status));
@@ -392,13 +392,13 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     while ( 1 ) {
         iteration++;
         // Send the local ids and their new value to all neighbors
-        updateRemoteIds( map, neighbors, N_send, N_recv,send_buf, recv_buf, remote_map );
+        updateRemoteIds( map, neighbors, N_send, N_recv,send_buf, recv_buf, remote_map, comm );
         // Compute a new local id for each local id
         bool changed = updateLocalIds( remote_map, map );
         // Check if we are finished
         int test = changed ? 1:0;
         int result = 0;
-        MPI_Allreduce(&test,&result,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+        MPI_Allreduce(&test,&result,1,MPI_INT,MPI_SUM,comm);
         if ( result==0 )
             break;
     }
@@ -421,10 +421,10 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
         }
     }
     // Fill the ghosts
-    fillHalo<BlobIDType> fillData2(rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData2(comm,rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
     fillData2.fill(IDs);
     // Reorder based on size (and compress the id space
-    int N_blobs_global = ReorderBlobIDs2(IDs,N_blobs_tot,ngx,ngy,ngz);
+    int N_blobs_global = ReorderBlobIDs2(IDs,N_blobs_tot,ngx,ngy,ngz,comm);
     // Finished
     delete [] send_buf;
     for (size_t i=0; i<neighbors.size(); i++)
@@ -434,24 +434,24 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
 }
 int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
     const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS,
-    BlobIDArray& GlobalBlobID )
+    BlobIDArray& GlobalBlobID, MPI_Comm comm )
 {
     PROFILE_START("ComputeGlobalBlobIDs");
     // First compute the local ids
     int nblobs = ComputeLocalBlobIDs(Phase,SignDist,vF,vS,GlobalBlobID,false);
     // Compute the global ids
-    int nglobal = LocalToGlobalIDs( nx, ny, nz, rank_info, nblobs, GlobalBlobID );
+    int nglobal = LocalToGlobalIDs( nx, ny, nz, rank_info, nblobs, GlobalBlobID, comm );
     PROFILE_STOP("ComputeGlobalBlobIDs");
     return nglobal;
 }
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID )
+    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, MPI_Comm comm )
 {
     PROFILE_START("ComputeGlobalPhaseComponent");
     // First compute the local ids
     int nblobs = ComputeLocalPhaseComponent(PhaseID,VALUE,GlobalBlobID,false);
     // Compute the global ids
-    int nglobal = LocalToGlobalIDs( nx, ny, nz, rank_info, nblobs, GlobalBlobID );
+    int nglobal = LocalToGlobalIDs( nx, ny, nz, rank_info, nblobs, GlobalBlobID, comm );
     PROFILE_STOP("ComputeGlobalPhaseComponent");
     return nglobal;
 }
@@ -469,29 +469,26 @@ template<> inline MPI_Datatype getMPIType<int64_t>() {
         return MPI_DOUBLE;
 }
 template<class TYPE>
-void gatherSet( std::set<TYPE>& set )
+void gatherSet( std::set<TYPE>& set, MPI_Comm comm )
 {
-    int nprocs;
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int nprocs = comm_size(comm);
     MPI_Datatype type = getMPIType<TYPE>();
     std::vector<TYPE> send_data(set.begin(),set.end());
     int send_count = send_data.size();
     std::vector<int> recv_count(nprocs,0), recv_disp(nprocs,0);
-    MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,MPI_COMM_WORLD);
+    MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,comm);
     for (int i=1; i<nprocs; i++)
         recv_disp[i] = recv_disp[i-1] + recv_count[i-1];
     std::vector<TYPE> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
     MPI_Allgatherv(getPtr(send_data),send_count,type,
-        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,
-        MPI_COMM_WORLD);
+        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,comm);
     for (size_t i=0; i<recv_data.size(); i++)
         set.insert(recv_data[i]);
 }
 template<class TYPE>
-void gatherSrcIDMap( std::map<TYPE,std::set<TYPE> >& src_map )
+void gatherSrcIDMap( std::map<TYPE,std::set<TYPE> >& src_map, MPI_Comm comm )
 {
-    int nprocs;
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int nprocs = comm_size(comm);
     MPI_Datatype type = getMPIType<TYPE>();
     std::vector<TYPE> send_data;
     typename std::map<TYPE,std::set<TYPE> >::const_iterator it;
@@ -506,13 +503,12 @@ void gatherSrcIDMap( std::map<TYPE,std::set<TYPE> >& src_map )
     }
     int send_count = send_data.size();
     std::vector<int> recv_count(nprocs,0), recv_disp(nprocs,0);
-    MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,MPI_COMM_WORLD);
+    MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,comm);
     for (int i=1; i<nprocs; i++)
         recv_disp[i] = recv_disp[i-1] + recv_count[i-1];
     std::vector<TYPE> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
     MPI_Allgatherv(getPtr(send_data),send_count,type,
-        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,
-        MPI_COMM_WORLD);
+        getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,comm);
     size_t i=0;
     while ( i < recv_data.size() ) {
         int id = recv_data[i];
@@ -533,7 +529,7 @@ void addSrcDstIDs( BlobIDType src_id, std::map<BlobIDType,std::set<BlobIDType> >
             addSrcDstIDs(*it,dst_map,src_map,dst,src);
     }
 }
-ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2 )
+ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm )
 {
     ASSERT(ID1.size()==ID2.size());
     PROFILE_START("computeIDMap");
@@ -552,9 +548,9 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2 )
         }
     }
     // Communicate the src/dst ids and src id map to all processors and reduce
-    gatherSet( src_set );
-    gatherSet( dst_set );
-    gatherSrcIDMap( src_map );
+    gatherSet( src_set, comm );
+    gatherSet( dst_set, comm );
+    gatherSrcIDMap( src_map, comm );
     // Compute the dst id map
     std::map<BlobIDType,std::set<BlobIDType> > dst_map;   // Map of the dst ids for each src id
     for (std::map<BlobIDType,std::set<BlobIDType> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
@@ -703,8 +699,7 @@ void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs )
 ******************************************************************/
 void writeIDMap( const ID_map_struct& map, long long int timestep, const std::string& filename )
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    int rank = MPI_WORLD_RANK();
     if ( rank!=0 )
         return;
     bool empty = map.created.empty() && map.destroyed.empty() &&

@@ -140,6 +140,11 @@ int MPI_Init(int*,char***)
 {
     return 0;
 }
+int MPI_Init_thread(int*,char***, int required, int *provided )
+{
+    *provided = required;
+    return 0;
+}
 int MPI_Finalize()
 {
     return 0;
@@ -223,6 +228,12 @@ int MPI_Sendrecv(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
     ERROR("Not implimented yet");
     return 0;
 }
+int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, int root, MPI_Comm comm)
+{
+    ERROR("Not implimented yet");
+    return 0;
+}
 int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
 {
     ERROR("Not implimented yet");
@@ -233,9 +244,22 @@ int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm)
     ERROR("Not implimented yet");
     return 0;
 }
+int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
+{
+    *newcomm = comm;
+    return 0;
+}
 double MPI_Wtime( void )
 {
     return 0.0;
+}
+int MPI_Comm_free(MPI_Comm *group)
+{
+    return 0;
+}
+int MPI_Group_free(MPI_Group *group)
+{
+    return 0;
 }
 #endif
 

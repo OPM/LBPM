@@ -20,8 +20,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -222,7 +223,7 @@ int main(int argc, char **argv)
 	}
 	
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

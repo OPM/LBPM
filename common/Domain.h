@@ -171,7 +171,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     xdim=Dm.Nx-2;
     ydim=Dm.Ny-2;
     zdim=Dm.Nz-2;
-    fillHalo<double> fillData(Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
 
     int count = 0;
     while (count < timesteps){

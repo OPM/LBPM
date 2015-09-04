@@ -21,8 +21,9 @@ namespace IO {
  *                          1 - Old mesh format (provided for backward compatibility, cannot write variables)
  *                          2 - New format, 1 file/process, double precision
  *                          3 - New format, 1 file/process, single precision (not finished)
+ * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
-void writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format );
+void writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format, MPI_Comm comm );
 
 
 } // IO namespace

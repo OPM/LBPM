@@ -182,8 +182,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 
 	printf("----------------------------------------------------------\n");
 	printf("COMPUTING TCAT ANALYSIS FOR NON-WETTING PHASE FEATURES \n");
@@ -391,7 +392,7 @@ int main(int argc, char **argv)
 	}
 	porosity /= (Nx*Ny*Nz*1.0);
 	printf("Media porosity is %f \n",porosity);
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	/* ****************************************************************
 				IDENTIFY ALL COMPONENTS FOR BOTH PHASES
@@ -430,7 +431,7 @@ int main(int argc, char **argv)
 	Averages.PrintComponents(timestep);
 
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
@@ -475,7 +476,7 @@ int main(int argc, char **argv)
     fillData.copy(Averages.Label_WP,LabelWPVar->data);
     fillData.copy(Averages.Label_NWP,LabelNWPVar->data);
     fillData.copy(Averages.PhaseID,PhaseIDVar->data);
-    IO::writeData( 0, meshData, 2 );
+    IO::writeData( 0, meshData, 2, comm );
 /*
 	FILE *NWP_FILE;
 	NWP_FILE = fopen("NWP.dat","wb");
@@ -493,7 +494,7 @@ int main(int argc, char **argv)
 	fclose(DISTANCE);
 	*/
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

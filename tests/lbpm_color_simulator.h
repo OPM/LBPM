@@ -53,17 +53,19 @@ public:
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs and maps",1);
+        MPI_Comm newcomm;
+        MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         double vF = 0.0;
         double vS = 0.0;
         IntArray& ids = new_index->second;
-        new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids);
+        new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
         static int max_id = -1;
         new_id->first = new_index->first;
         new_id->second = new_index->second;
         if ( last_id!=NULL ) {
             // Compute the timestep-timestep map
             const IntArray& old_ids = last_id->second;
-            ID_map_struct map = computeIDMap(old_ids,ids);
+            ID_map_struct map = computeIDMap(old_ids,ids,newcomm);
             // Renumber the current timestep's ids
             getNewIDs(map,max_id,*new_list);
             renumberIDs(*new_list,new_id->second);
@@ -74,6 +76,7 @@ public:
             getNewIDs(map,max_id,*new_list);
             writeIDMap(map,timestep,id_map_filename);
         }
+        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Identify blobs and maps",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
@@ -240,8 +243,7 @@ void run_analysis( int timestep, int restart_interval,
 
     // Spawn a thread to write the restart file
     if ( (type&CreateRestart) != 0 ) {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+        int rank = MPI_WORLD_RANK();
         if (pBC) {
             //err = fabs(sat_w - sat_w_previous);
             //sat_w_previous = sat_w;

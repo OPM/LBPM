@@ -156,16 +156,16 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
 
 
 // Write the mesh data
-void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format )
+void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, int format, MPI_Comm comm )
 {
     PROFILE_START("writeData");
-    int rank = MPI_WORLD_RANK();
+    int rank = comm_rank(comm);
     // Create the output directory
     char path[100];
     sprintf(path,"vis%03i",timestep);
     if ( rank == 0 )
         mkdir(path,S_IRWXU|S_IRGRP);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     // Write the mesh files
     std::vector<IO::MeshDatabase> meshes_written;
     if ( format == 1 ) {
@@ -178,7 +178,7 @@ void IO::writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshDat
         ERROR("Unknown format");
     }
     // Gather a complete list of files on rank 0
-    meshes_written = gatherAll(meshes_written,MPI_COMM_WORLD);
+    meshes_written = gatherAll(meshes_written,comm);
     // Write the summary files
     if ( rank == 0 ) {
         // Write the summary file for the current timestep

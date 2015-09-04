@@ -128,8 +128,9 @@ int main(int argc, char **argv)
   // Initialize MPI
   int rank, nprocs;
   MPI_Init(&argc,&argv);
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+  MPI_Comm comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(comm,&rank);
+  MPI_Comm_size(comm,&nprocs);
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
     if ( rank==0 ) {
@@ -159,20 +160,20 @@ int main(int argc, char **argv)
     	domain >> Ly;
     	domain >> Lz;
     }
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -204,7 +205,7 @@ int main(int argc, char **argv)
 		}
 	}
 	//.......................................................................
-    Dm.CommInit(MPI_COMM_WORLD); // Initialize communications for domains
+    Dm.CommInit(comm); // Initialize communications for domains
 	//.......................................................................
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
 	if (rank==1) printf("nspheres =%i \n",nspheres);
@@ -216,14 +217,14 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
-	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.......................................................................
 	SignedDistance(Averages.Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   Dm.iproc,Dm.jproc,Dm.kproc,Dm.nprocx,Dm.nprocy,Dm.nprocz);
@@ -289,7 +290,7 @@ int main(int argc, char **argv)
 	delete [] rad;
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(comm);
   MPI_Finalize();
   return 0;  
 }

@@ -17,13 +17,19 @@
     typedef int MPI_Status;
     #define MPI_COMM_WORLD 0
     #define MPI_COMM_SELF 0
+    #define MPI_COMM_NULL -1
     #define MPI_STATUS_IGNORE NULL
     enum MPI_Datatype { MPI_LOGICAL, MPI_CHAR, MPI_UNSIGNED_CHAR, MPI_INT, 
         MPI_UNSIGNED, MPI_LONG, MPI_UNSIGNED_LONG, MPI_LONG_LONG, MPI_FLOAT, MPI_DOUBLE };
     enum MPI_Op { MPI_MIN, MPI_MAX, MPI_SUM };
-    enum MPI_Group {  };
+    typedef int MPI_Group;
+    #define MPI_THREAD_SINGLE 0
+    #define MPI_THREAD_FUNNELED 1
+    #define MPI_THREAD_SERIALIZED 2
+    #define MPI_THREAD_MULTIPLE 3
     // Fake MPI functions
 	int MPI_Init(int*,char***);
+    int MPI_Init_thread( int *argc, char ***argv, int required, int *provided );
 	int MPI_Finalize();
     int MPI_Comm_size( MPI_Comm, int *size );
     int MPI_Comm_rank( MPI_Comm, int *rank );
@@ -52,24 +58,43 @@
                 void *recvbuf, int recvcount, MPI_Datatype recvtype,
                 int source, int recvtag,
                 MPI_Comm comm, MPI_Status *status);
+    int MPI_Reduce(const void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype,
+               MPI_Op op, int root, MPI_Comm comm);
     double MPI_Wtime( void );
     int MPI_Comm_group(MPI_Comm comm, MPI_Group *group);
     int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm);
+    int MPI_Comm_free(MPI_Comm *group);
+    int MPI_Group_free(MPI_Group *group);
+    int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm);
 #endif
 
 
+//! Get the size of the MPI_Comm
+//  Note: this is a thread and interrupt safe function
+inline int comm_size( MPI_Comm comm ) {
+    int size = 1;
+    MPI_Comm_size( comm, &size );
+    return size;
+}
+    
+
+//! Get the rank of the MPI_Comm
+//  Note: this is a thread and interrupt safe function
+inline int comm_rank( MPI_Comm comm ) {
+    int rank = 1;
+    MPI_Comm_rank( comm, &rank );
+    return rank;
+}
+    
+
 //! Get the size of MPI_COMM_WORLD
 inline int MPI_WORLD_SIZE( ) {
-    int size = 1;
-    MPI_Comm_size( MPI_COMM_WORLD, &size );
-    return size;
+    return comm_size( MPI_COMM_WORLD );
 }
 
 //! Get the size of MPI_COMM_WORLD
 inline int MPI_WORLD_RANK( ) {
-    int rank = 0;
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-    return rank;
+    return comm_rank( MPI_COMM_WORLD );
 }
 
 //! Return the appropriate MPI datatype for a class

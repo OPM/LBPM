@@ -54,8 +54,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 
 	int InitialWetting;
 	double Saturation;
@@ -96,20 +97,20 @@ int main(int argc, char **argv)
 		domain >> Lz;
 
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
 	// Check that the number of processors >= the number of ranks
 	if ( rank==0 ) {
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
@@ -164,9 +165,9 @@ int main(int argc, char **argv)
 		}
 	}
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
 
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
 	int jproc = Dm.jproc;
 	int kproc = Dm.kproc;
@@ -212,12 +213,12 @@ int main(int argc, char **argv)
 			sizeY = SizeY[bin];
 			sizeZ = SizeZ[bin];
 		}
-		MPI_Bcast(&x,1,MPI_INT,0,MPI_COMM_WORLD);
-		MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD);
-		MPI_Bcast(&z,1,MPI_INT,0,MPI_COMM_WORLD);
-		MPI_Bcast(&sizeX,1,MPI_INT,0,MPI_COMM_WORLD);
-		MPI_Bcast(&sizeY,1,MPI_INT,0,MPI_COMM_WORLD);
-		MPI_Bcast(&sizeZ,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast(&x,1,MPI_INT,0,comm);
+		MPI_Bcast(&y,1,MPI_INT,0,comm);
+		MPI_Bcast(&z,1,MPI_INT,0,comm);
+		MPI_Bcast(&sizeX,1,MPI_INT,0,comm);
+		MPI_Bcast(&sizeY,1,MPI_INT,0,comm);
+		MPI_Bcast(&sizeZ,1,MPI_INT,0,comm);
 
 		//if (rank==0) printf("Broadcast block at %i,%i,%i \n",x,y,z);
 
@@ -265,7 +266,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
 		sat = float(countGlobal)/totalGlobal;
 		//if (rank==0) printf("New count=%i\n",countGlobal);
 		//if (rank==0) printf("New saturation=%f\n",sat);
@@ -342,41 +343,41 @@ int main(int argc, char **argv)
 	PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
 	//......................................................................................
 	MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x,sendtag,
-			recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X,sendtag,
-			recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y,sendtag,
-			recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y,sendtag,
-			recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z,sendtag,
-			recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z,sendtag,
-			recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy,sendtag,
-			recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY,sendtag,
-			recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy,sendtag,
-			recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY,sendtag,
-			recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz,sendtag,
-			recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ,sendtag,
-			recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz,sendtag,
-			recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ,sendtag,
-			recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz,sendtag,
-			recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ,sendtag,
-			recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz,sendtag,
-			recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
-			recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+			recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
 	//......................................................................................
 	UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
 	UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
@@ -409,7 +410,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
 	sat = float(countGlobal)/totalGlobal;
 	if (rank==0) printf("Final saturation=%f\n",sat);
 
@@ -418,7 +419,7 @@ int main(int argc, char **argv)
 	fwrite(id,1,N,ID);
 	fclose(ID);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;
 }

@@ -20,8 +20,9 @@ int main (int argc, char *argv[])
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 
 	int npx,npy,npz;
 	int i,j,k,n;
@@ -36,7 +37,7 @@ int main (int argc, char *argv[])
 
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	TwoPhase Averages(Dm);
 	int timestep=0;
@@ -130,7 +131,7 @@ int main (int argc, char *argv[])
 	return toReturn;
 
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	return 0;
 	MPI_Finalize();
 	// ****************************************************

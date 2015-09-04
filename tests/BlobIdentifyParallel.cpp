@@ -49,8 +49,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 #ifdef PROFILE
 	PROFILE_ENABLE(0);
     PROFILE_DISABLE_TRACE();
@@ -99,7 +100,7 @@ int main(int argc, char **argv)
     readRankData( rank, nx+2, ny+2, nz+2, Phase, SignDist );
 
     // Communication the halos
-    fillHalo<double> fillData(rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
     double vS=0.0;
     IntArray GlobalBlobID;
     int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-        Phase,SignDist,vF,vS,GlobalBlobID);
+        Phase,SignDist,vF,vS,GlobalBlobID,comm);
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     // Write the local blob ids
@@ -128,7 +129,7 @@ int main(int argc, char **argv)
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
 #endif
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;  
 }

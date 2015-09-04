@@ -158,8 +158,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -210,27 +211,27 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.................................................
-	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nBlocks,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nthreads,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&timestepMax,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
+	MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
+	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
 
-	MPI_Bcast(&Nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// **************************************************************
 	// **************************************************************
 
@@ -248,7 +249,7 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	kproc = rank/(nprocx*nprocy);
 	jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 	iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
@@ -297,7 +298,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(MPI_COMM_WORLD);
+	Dm.CommInit(comm);
 
 	//.......................................................................
 	// Compute the media porosity
@@ -315,13 +316,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = 1.0-sum*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.......................................................................
 
 	//...........................................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	//...........................................................................
 
@@ -388,7 +389,7 @@ int main(int argc, char **argv)
 	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
 	CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
 	DeviceBarrier();
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//*************************************************************************
 	// Pack and send the D3Q19 distributions
 	ScaLBL_Comm.SendD3Q19(f_even, f_odd);
@@ -414,7 +415,7 @@ int main(int argc, char **argv)
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
 
@@ -435,7 +436,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 
 		DeviceBarrier();
-		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Barrier(comm);
 		// Iteration completed!
 		timestep++;
 		//...................................................................
@@ -464,7 +465,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 
 	// ****************************************************
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 

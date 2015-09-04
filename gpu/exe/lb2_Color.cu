@@ -66,9 +66,11 @@ int main(int argc, char *argv[])
 #ifdef useMPI
 	MPI_Status stat;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_size(comm,&numprocs);
+	MPI_Comm_rank(comm,&rank);
 #else
+    MPI_Comm comm = MPI_COMM_WORLD;
 	numprocs = 1;
 	rank = 0;
 #endif
@@ -124,27 +126,27 @@ int main(int argc, char *argv[])
 #ifdef useMPI
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	//.................................................
-	MPI_Bcast(&Nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nBlocks,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nthreads,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&tau,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&beta,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&das,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,MPI_COMM_WORLD);
-	MPI_Bcast(&din,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&dout,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&timestepMax,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&interval,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&tol,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
+	MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
+	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+	MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+	MPI_Bcast(&interval,1,MPI_INT,0,comm);
+	MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// **************************************************************
 #endif
 	
@@ -242,9 +244,9 @@ int main(int argc, char *argv[])
 		}
 	}
 #ifdef useMPI	//............................................................
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Bcast(&id[0],N,MPI_CHAR,0,MPI_COMM_WORLD);
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
+	MPI_Bcast(&id[0],N,MPI_CHAR,0,comm);
+	MPI_Barrier(comm);
 #endif
 	if (rank == 0) printf("Domain set.\n");
 	//...........................................................................

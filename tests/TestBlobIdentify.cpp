@@ -23,10 +23,10 @@ inline double rand2()
 
 
 // Test if all ranks agree on a value
-bool allAgree( int x ) {
+bool allAgree( int x, MPI_Comm comm ) {
     int min, max;
-    MPI_Allreduce(&x,&min,1,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
-    MPI_Allreduce(&x,&max,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+    MPI_Allreduce(&x,&min,1,MPI_INT,MPI_MIN,comm);
+    MPI_Allreduce(&x,&max,1,MPI_INT,MPI_MAX,comm);
     return min==max;
 }
 
@@ -63,10 +63,9 @@ struct bubble_struct {
 
 
 // Create a random set of bubles
-std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, double Lz )
+std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, double Lz, MPI_Comm comm )
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    int rank = comm_rank(comm);
     std::vector<bubble_struct> bubbles(N_bubbles);
     if ( rank == 0 ) {
         double R0 = 0.2*Lx*Ly*Lz/pow((double)N_bubbles,0.333);
@@ -81,7 +80,7 @@ std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, 
         }
     }
     size_t N_bytes = N_bubbles*sizeof(bubble_struct);
-    MPI_Bcast(&bubbles[0],N_bytes,MPI_CHAR,0,MPI_COMM_WORLD);
+    MPI_Bcast(&bubbles[0],N_bytes,MPI_CHAR,0,comm);
     return bubbles;
 }
 
@@ -114,7 +113,7 @@ void fillBubbleData( const std::vector<bubble_struct>& bubbles, DoubleArray& Pha
 
 
 // Shift all of the data by the given number of cells
-void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct& rank_info )
+void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct& rank_info, MPI_Comm comm )
 {
     int nx = data.size(0)-2;
     int ny = data.size(1)-2;
@@ -123,8 +122,8 @@ void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct
     int ngy = ny+2*abs(sy);
     int ngz = nz+2*abs(sz);
     Array<double> tmp1(nx,ny,nz), tmp2(ngx,ngy,ngz), tmp3(ngx,ngy,ngz);
-    fillHalo<double> fillData1(rank_info,nx,ny,nz,1,1,1,0,1);
-    fillHalo<double> fillData2(rank_info,nx,ny,nz,abs(sx),abs(sy),abs(sz),0,1);
+    fillHalo<double> fillData1(comm,rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData2(comm,rank_info,nx,ny,nz,abs(sx),abs(sy),abs(sz),0,1);
     fillData1.copy(data,tmp1);
     fillData2.copy(tmp1,tmp2);
     fillData2.fill(tmp2);
@@ -146,8 +145,9 @@ int main(int argc, char **argv)
     // Initialize MPI
     int rank, nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
     PROFILE_ENABLE(1);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
@@ -174,11 +174,11 @@ int main(int argc, char **argv)
     // Create the dummy info
     DoubleArray Phase(nx+2,ny+2,nz+2);
     DoubleArray SignDist(nx+2,ny+2,nz+2);
-    std::vector<bubble_struct> bubbles = create_bubbles(20,Lx,Ly,Lz);
+    std::vector<bubble_struct> bubbles = create_bubbles(20,Lx,Ly,Lz,comm);
     fillBubbleData( bubbles, Phase, SignDist, Lx, Ly, Lz, rank_info );
 
     // Communication the halos
-    fillHalo<double> fillData(rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
     double vS=0.0;
     IntArray GlobalBlobID;
     int nblobs = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-        Phase,SignDist,vF,vS,GlobalBlobID);
+        Phase,SignDist,vF,vS,GlobalBlobID,comm);
     if ( rank==0 ) { printf("Identified %i blobs\n",nblobs); }
 
     // Create the MeshDataStruct
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     fillData.copy(Phase,PhaseVar->data);
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(GlobalBlobID,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2 );
+    IO::writeData( 0, meshData, 2, comm );
     writeIDMap(ID_map_struct(nblobs),0,"lbpm_id_map.txt");
     int save_it = 1;
 
@@ -236,18 +236,18 @@ int main(int argc, char **argv)
     int id_max = nblobs-1;
     for (int i=0; i<20; i++, save_it++) {
         // Shift all the data
-        shift_data( Phase,    3, -2, 1, rank_info );
-        shift_data( SignDist, 3, -2, 1, rank_info );
+        shift_data( Phase,    3, -2, 1, rank_info, comm );
+        shift_data( SignDist, 3, -2, 1, rank_info, comm );
         // Find blob domains
         IntArray GlobalBlobID2;
         int nblobs2 = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,
-            Phase,SignDist,vF,vS,GlobalBlobID2);
+            Phase,SignDist,vF,vS,GlobalBlobID2,comm);
         if ( nblobs2 != nblobs ) {
             printf("Error, number of blobs changed under constant velocity (%i,%i)\n",nblobs,nblobs2);
             N_errors++;
         }
         // Identify the blob maps and renumber the ids
-        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2,comm);
         std::swap(GlobalBlobID,GlobalBlobID2);
         std::vector<BlobIDType> new_list;
         getNewIDs(map,id_max,new_list);
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);
         fillData.copy(GlobalBlobID,BlobIDVar->data);
-        IO::writeData( save_it, meshData, 2 );
+        IO::writeData( save_it, meshData, 2, comm );
     }
     PROFILE_STOP("constant velocity test");
 
@@ -286,15 +286,15 @@ int main(int argc, char **argv)
             velocity[i].z = bubbles[i].radius*(2*rand2()-1);
         }
     }
-    MPI_Bcast(&velocity[0],bubbles.size()*sizeof(Point),MPI_CHAR,0,MPI_COMM_WORLD);
+    MPI_Bcast(&velocity[0],bubbles.size()*sizeof(Point),MPI_CHAR,0,comm);
     fillBubbleData( bubbles, Phase, SignDist, Lx, Ly, Lz, rank_info );
     fillData.fill(Phase);
     fillData.fill(SignDist);
-    ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID);
+    ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID,comm);
     fillData.copy(Phase,PhaseVar->data);
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(GlobalBlobID,BlobIDVar->data);
-    IO::writeData( save_it, meshData, 2 );
+    IO::writeData( save_it, meshData, 2, comm );
     save_it++;
     id_max = nblobs-1;
     for (int i=0; i<25; i++, save_it++) {
@@ -309,15 +309,15 @@ int main(int argc, char **argv)
         fillData.fill(SignDist);
         // Compute the ids
         IntArray GlobalBlobID2;
-        int nblobs2 = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID2);
+        int nblobs2 = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID2,comm);
         // Identify the blob maps and renumber the ids
-        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2);
+        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2,comm);
         std::swap(GlobalBlobID,GlobalBlobID2);
         std::vector<BlobIDType> new_list;
         getNewIDs(map,id_max,new_list);
         renumberIDs(new_list,GlobalBlobID);
         writeIDMap(map,save_it,"lbpm_id_map.txt");
-        if ( !allAgree(id_max) ) {
+        if ( !allAgree(id_max,comm) ) {
             if ( rank==0 )
                 printf("All ranks do not agree on id_max\n");
             N_errors++;
@@ -370,8 +370,8 @@ int main(int argc, char **argv)
                 printf("\n");
             }
         }
-        MPI_Bcast(&N1,1,MPI_INT,0,MPI_COMM_WORLD);
-        MPI_Bcast(&N2,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast(&N1,1,MPI_INT,0,comm);
+        MPI_Bcast(&N2,1,MPI_INT,0,comm);
         if ( N1!=nblobs || N2!=nblobs2 ) {
             if ( rank==0 )
                 printf("Error, blob ids do not map in moving bubble test (%i,%i,%i,%i)\n",
@@ -383,7 +383,7 @@ int main(int argc, char **argv)
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);
         fillData.copy(GlobalBlobID,BlobIDVar->data);
-        IO::writeData( save_it, meshData, 2 );
+        IO::writeData( save_it, meshData, 2, comm );
     }
     PROFILE_STOP("moving bubble test");
 
@@ -391,7 +391,7 @@ int main(int argc, char **argv)
     // Finished
     PROFILE_STOP("main");
     PROFILE_SAVE("TestBlobIdentify",false);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
     MPI_Finalize();
     return N_errors;  
 }

@@ -505,7 +505,7 @@ void TwoPhase::AssignComponentLabels()
 
 	// Fewer non-wetting phase features are present
 	//NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,PhaseID,LabelNWP,Label_NWP);
-	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP);
+	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP,Dm.Comm);
 }
 
 void TwoPhase::ComponentAverages()
@@ -761,8 +761,8 @@ void TwoPhase::ComponentAverages()
 	RecvBuffer.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
 
 /*	for (int b=0; b<NumberComponents_NWP; b++){
-		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+		MPI_Barrier(Dm.Comm);
+		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
 	}
 	*/
@@ -865,7 +865,7 @@ void TwoPhase::ComponentAverages()
 	// reduce the wetting phase averages
 	for (int b=0; b<NumberComponents_WP; b++){
 		MPI_Barrier(Dm.Comm);
-//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
@@ -1063,7 +1063,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 	meshData[1].mesh = ws_mesh;
 	meshData[2].meshName = "ns-tris";
 	meshData[2].mesh = ns_mesh;
-	IO::writeData( logcount, meshData, 2);
+	IO::writeData( logcount, meshData, 2, Dm.Comm );
 
 }
 

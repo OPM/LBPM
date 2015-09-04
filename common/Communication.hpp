@@ -10,12 +10,12 @@
 *  Structure to store the rank info                     *
 ********************************************************/
 template<class TYPE>
-fillHalo<TYPE>::fillHalo( const RankInfoStruct& info0, int nx0, int ny0, int nz0, 
+fillHalo<TYPE>::fillHalo( MPI_Comm comm0, const RankInfoStruct& info0, int nx0, int ny0, int nz0, 
     int ngx0, int ngy0, int ngz0, int tag0, int depth0,
     bool fill_face, bool fill_edge, bool fill_corner ):
     info(info0), nx(nx0), ny(ny0), nz(nz0), ngx(ngx0), ngy(ngy0), ngz(ngz0), depth(depth0)
 {
-    comm = MPI_COMM_WORLD;
+    comm = comm0;
     datatype = getMPItype<TYPE>();
     // Set the fill pattern
     memset(fill_pattern,0,sizeof(fill_pattern));

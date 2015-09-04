@@ -31,8 +31,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	
     //.......................................................................
     // Reading the domain information file
@@ -73,20 +74,20 @@ int main(int argc, char **argv)
     	image >> zStart;
 
     }
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&ny,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(comm);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -108,7 +109,7 @@ int main(int argc, char **argv)
     fread(Dm.id,1,N,ID);
     fclose(ID);
     // Initialize the domain and communication
-    Dm.CommInit(MPI_COMM_WORLD);
+    Dm.CommInit(comm);
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
@@ -209,7 +210,7 @@ int main(int argc, char **argv)
 	}
 
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
@@ -235,7 +236,7 @@ int main(int argc, char **argv)
     fillData.copy(Averages.SDn,PhaseVar->data);
     fillData.copy(Averages.SDs,SignDistVar->data);
     fillData.copy(Averages.Label_NWP,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2 );
+    IO::writeData( 0, meshData, 2, comm );
     
  //   sprintf(LocalRankFilename,"Phase.%05i",rank);
   //  FILE *PHASE = fopen(LocalRankFilename,"wb");
@@ -261,7 +262,7 @@ int main(int argc, char **argv)
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
 
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;
 

@@ -51,7 +51,7 @@ public:
      * @param[in] tag           Initial tag to use for the communication (we will require tag:tag+26)
      * @param[in] depth         Maximum depth to support
      */
-    fillHalo( const RankInfoStruct& info, int nx, int ny, int nz, 
+    fillHalo( MPI_Comm comm, const RankInfoStruct& info, int nx, int ny, int nz, 
         int ngx, int ngy, int ngz, int tag, int depth,
         bool fill_face=true, bool fill_edge=true, bool fill_corner=true );
 
