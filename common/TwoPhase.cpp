@@ -147,7 +147,7 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn\n");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"trawn trJwn trRwn Jn An Euler\n");								// trimmed curvature for wn surface
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 
@@ -254,6 +254,7 @@ void TwoPhase::Initialize()
 	KGwns = KNwns = 0.0;
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
+	euler = Jn = An = 0.0;
 }
 
 
@@ -469,6 +470,14 @@ void TwoPhase::ComputeLocal()
 					aws += pmmc_CubeSurfaceOrientation(Gws,ws_pts,ws_tris,n_ws_tris);
 				}
 				//...........................................................................
+				// Compute the integral curvature of the non-wetting phase
+				n_nw_pts=n_nw_tris=0;
+				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
+				// Compute Euler characteristic from integral of gaussian curvature
+				euler += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
+						i,j,k,n_nw_pts,n_nw_tris);
+
+
 			}
 		}
 	}
@@ -730,7 +739,7 @@ void TwoPhase::ComponentAverages()
 				 */
 				if (LabelNWP >= 0 ){
 				  // find non-wetting phase interface
-					double euler;
+//					double euler;
 					n_nw_pts=n_nw_tris=0;
 					geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 					// Compute Euler characteristic from integral of gaussian curvature
@@ -1100,6 +1109,10 @@ void TwoPhase::Reduce()
 	MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&euler,&euler_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&An,&An_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Jn,&Jn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+
 	MPI_Barrier(Dm.Comm);
 
 	// Normalize the phase averages
@@ -1182,7 +1195,8 @@ void TwoPhase::PrintAll(int timestep)
 				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-		fprintf(TIMELOG,"%.5g %.5g %.5g\n",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
+		fprintf(TIMELOG,"%.5g %.5g %.5g\n",euler_global, Jn_global, An_global);						// minkowski measures
 		fflush(TIMELOG);
 	}
 }
