@@ -367,14 +367,6 @@ void TwoPhase::ComputeLocal()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
-	// Map solid to erode the fluid so that interfaces can be calculated accurately
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) += 1.0;
-			}
-		}
-	}
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -472,7 +464,11 @@ void TwoPhase::ComputeLocal()
 				//...........................................................................
 				// Compute the integral curvature of the non-wetting phase
 				n_nw_pts=n_nw_tris=0;
-				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
+				// Compute the non-wetting phase surface and associated area
+				An += geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
+				// Compute the integral of mean curvature
+				Jn += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,
+										i,j,k,n_nw_pts,n_nw_tris);
 				// Compute Euler characteristic from integral of gaussian curvature
 				euler += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
 						i,j,k,n_nw_pts,n_nw_tris);
@@ -482,14 +478,6 @@ void TwoPhase::ComputeLocal()
 		}
 	}
 	
-	// Map solid back
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) -= 1.0;
-			}
-		}
-	}
 }
 
 
