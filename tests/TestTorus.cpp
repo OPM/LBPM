@@ -132,20 +132,24 @@ int main(int argc, char **argv)
 				// Single torus
 				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 				// Double torus
-				y = Dm.jproc*Ny+j - CY1;
+				/*		y = Dm.jproc*Ny+j - CY1;
+				//z = Dm.kproc*Nz+k - CZ +R1;
 				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+				
 				y = Dm.jproc*Ny+j - CY2;
+				//z = Dm.kproc*Nz+k - CZ-R1;
 				Averages.Phase(i,j,k) = min(Averages.Phase(i,j,k),
 						sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2);
-				//..............................................................................
+				*///..............................................................................
 
+				//Averages.Phase(i,j,k) = - Averages.Phase(i,j,k);
 				if (Averages.Phase(i,j,k) > 0.0){
 					Dm.id[n] = 2;
 				}
 				else{
 					Dm.id[n] = 1;
 				}
-				Averages.SDn(i,j,k) = -Averages.Phase(i,j,k);
+				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
 				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
 				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
@@ -176,6 +180,12 @@ int main(int argc, char **argv)
     Averages.ComponentAverages();
     Averages.PrintComponents(int(5));
 	if (rank==0) printf("reducing averages  \n");
+
+
+    Averages.Initialize();
+    Averages.ComputeLocal();
+    Averages.Reduce();
+    Averages.PrintAll(int(5));
    // Averages.Reduce();
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
