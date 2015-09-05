@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 	// Assign the phase ID field based and the signed distance
 	//.......................................................................
     double R1,R2;
-    double CX,CY,CZ;
+    double CX,CY,CZ,CY1,CY2;
     CX=Nx*nprocx*0.5;
     CY=Ny*nprocy*0.5;
     CZ=Nz*nprocz*0.5;
