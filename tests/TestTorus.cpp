@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     CX=Nx*nprocx*0.5;
     CY=Ny*nprocy*0.5;
     CZ=Nz*nprocz*0.5;
-    R1 = Nx*nprocx*0.3; // middle radius
+    R1 = Nx*nprocx*0.2; // middle radius
     R2 = Nx*nprocx*0.1; // donut thickness
     //
     CY1=Nx*nprocx*0.5+R1;
