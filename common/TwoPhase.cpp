@@ -147,7 +147,7 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn Jn An Euler\n");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"trawn trJwn trRwn Euler Jn An\n");					// trimmed curvature & minkowski measures
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 
@@ -463,6 +463,7 @@ void TwoPhase::ComputeLocal()
 				}
 				//...........................................................................
 				// Compute the integral curvature of the non-wetting phase
+
 				n_nw_pts=n_nw_tris=0;
 				// Compute the non-wetting phase surface and associated area
 				An += geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
@@ -561,6 +562,7 @@ void TwoPhase::ComponentAverages()
 				KGwns = KNwns = 0.0;
 				Jwn = Kwn = efawns = 0.0;
 				trawn=trJwn=0.0;
+
 				//...........................................................................
 				//...........................................................................
 				// Compute volume averages
@@ -1144,6 +1146,8 @@ void TwoPhase::Reduce()
 
 	if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 	if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
+
+	euler_global /= (2*PI);
 
 	//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 	sat_w = 1.0 - nwp_volume_global/(nwp_volume_global+wp_volume_global);

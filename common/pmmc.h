@@ -2152,6 +2152,7 @@ inline double geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, 
 	// Compute the Interfacial Area
 	double s1,s2,s3,s;
 	Point pA,pB,pC;
+	area = 0.0;
 	for (int r=0;r<n_nw_tris;r++){
 		pA = nw_pts(nw_tris(0,r));
 		pB = nw_pts(nw_tris(1,r));
