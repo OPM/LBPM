@@ -110,6 +110,10 @@ int main(int argc, char **argv)
     CZ=Nz*nprocz*0.5;
     R1 = Nx*nprocx*0.3; // middle radius
     R2 = Nx*nprocx*0.1; // donut thickness
+    //
+    CY1=Nx*nprocx*0.5+R1;
+    CY2=Ny*nprocy*0.5-R1;
+
     double x,y,z;
 	if (rank==0) printf("Initializing the system \n");
 	for ( k=1;k<Nz-1;k++){
@@ -124,8 +128,16 @@ int main(int argc, char **argv)
 
 				// Shrink the sphere sizes by two voxels to make sure they don't touch
 				Averages.SDs(i,j,k) = 100.0;
-
+				//..............................................................................
+				// Single torus
 				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+				// Double torus
+				y = Dm.jproc*Ny+j - CY1;
+				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+				y = Dm.jproc*Ny+j - CY2;
+				Averages.Phase(i,j,k) = min(Averages.Phase(i,j,k),
+						sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2);
+				//..............................................................................
 
 				if (Averages.Phase(i,j,k) > 0.0){
 					Dm.id[n] = 2;
