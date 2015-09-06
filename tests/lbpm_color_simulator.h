@@ -205,6 +205,8 @@ void run_analysis( int timestep, int restart_interval,
         CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
         CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
         CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
+        CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+
     }
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
     if ( (type&CreateRestart) != 0 ) {
