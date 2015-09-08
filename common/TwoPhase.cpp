@@ -1193,7 +1193,7 @@ void TwoPhase::PrintAll(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
-		fprintf(TIMELOG,"%.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
 }
