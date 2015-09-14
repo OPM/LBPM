@@ -363,6 +363,10 @@ public:
     int getNumThreads() const { return d_N_threads; }
 
 
+    //! Function to return the number of items in the queue (including processing items)
+    int getQueueSize() const { return d_queue_size+d_num_active; }
+
+
     /*!
      * \brief   Function to set the number of threads in the thread pool
      * \details  This function will change the number of worker threads in the ThreadPool
