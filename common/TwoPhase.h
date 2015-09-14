@@ -82,8 +82,8 @@ public:
 	double awn_global,ans_global,aws_global;
 	double lwns_global;
 	double efawns,efawns_global;				// averaged contact angle
-	double euler,Jn,An;
-	double euler_global,Jn_global,An_global;
+	double euler,Kn,Jn,An;
+	double euler_global,Kn_global,Jn_global,An_global;
 
 	double Jwn,Jwn_global;						// average mean curavture - wn interface
 	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface

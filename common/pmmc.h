@@ -1,7 +1,6 @@
 #ifndef pmmc_INC
 #define pmmc_INC
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -1836,7 +1835,7 @@ inline void TRIM(DTMutableList<Point> &local_sol_pts, int &n_local_sol_pts, doub
 		}
 	}
 }
-inline void geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, int &k,
+inline double geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, int &k,
 				DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris,
 				int &n_nw_tris)
 {
@@ -2149,6 +2148,22 @@ inline void geomavg_MarchingCubes( DoubleArray &A, double &v, int &i, int &j, in
     		n_nw_tris++;
     	}
     }
+	// Compute the Interfacial Area
+	double s1,s2,s3,s;
+	Point pA,pB,pC;
+	double area = 0.0;
+	for (int r=0;r<n_nw_tris;r++){
+		pA = nw_pts(nw_tris(0,r));
+		pB = nw_pts(nw_tris(1,r));
+		pC = nw_pts(nw_tris(2,r));
+		// Compute length of sides (assume dx=dy=dz)
+		s1 = sqrt((pA.x-pB.x)*(pA.x-pB.x)+(pA.y-pB.y)*(pA.y-pB.y)+(pA.z-pB.z)*(pA.z-pB.z));
+		s2 = sqrt((pA.x-pC.x)*(pA.x-pC.x)+(pA.y-pC.y)*(pA.y-pC.y)+(pA.z-pC.z)*(pA.z-pC.z));
+		s3 = sqrt((pB.x-pC.x)*(pB.x-pC.x)+(pB.y-pC.y)*(pB.y-pC.y)+(pB.z-pC.z)*(pB.z-pC.z));
+		s = 0.5*(s1+s2+s3);
+		area+=sqrt(s*(s-s1)*(s-s2)*(s-s3));
+	}
+    return area;
 }
 //-------------------------------------------------------------------------------
 inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k,

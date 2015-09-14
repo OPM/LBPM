@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	//for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
+	for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
 	//Averages->SetupCubes(Dm);

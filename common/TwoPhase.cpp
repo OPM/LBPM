@@ -12,7 +12,7 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
-#define BLOB_AVG_COUNT 34
+#define BLOB_AVG_COUNT 35
 
 // Array access for averages defined by the following
 #define VOL 0
@@ -49,7 +49,7 @@
 #define CMY 31
 #define CMZ 32
 #define EULER 33
-
+#define INTCURV 34
 
 #define PI 3.14159265359
 
@@ -147,14 +147,14 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn Jn An Euler\n");								// trimmed curvature for wn surface
+			fprintf(TIMELOG,"trawn trJwn trRwn Euler Kn Jn An\n");					// trimmed curvature & minkowski measures
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		}
 
 		NWPLOG = fopen("components.NWP.tcat","a+");
 		fprintf(NWPLOG,"time label vol pn awn ans Jwn Kwn lwns cwns ");
 		fprintf(NWPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
-		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn Euler\n");
+		fprintf(NWPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn Kn Euler\n");
 
 		WPLOG = fopen("components.WP.tcat","a+");
 		fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
@@ -254,7 +254,7 @@ void TwoPhase::Initialize()
 	KGwns = KNwns = 0.0;
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
-	euler = Jn = An = 0.0;
+	euler = Jn = An = Kn = 0.0;
 }
 
 
@@ -367,14 +367,6 @@ void TwoPhase::ComputeLocal()
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
 
-	// Map solid to erode the fluid so that interfaces can be calculated accurately
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) += 1.0;
-			}
-		}
-	}
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -471,25 +463,23 @@ void TwoPhase::ComputeLocal()
 				}
 				//...........................................................................
 				// Compute the integral curvature of the non-wetting phase
+
 				n_nw_pts=n_nw_tris=0;
-				geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
+				// Compute the non-wetting phase surface and associated area
+				An += geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
+				// Compute the integral of mean curvature
+				Jn += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,
+										i,j,k,n_nw_pts,n_nw_tris);
 				// Compute Euler characteristic from integral of gaussian curvature
-				euler += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
+				Kn += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
 						i,j,k,n_nw_pts,n_nw_tris);
 
+				euler += geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 
 			}
 		}
 	}
 	
-	// Map solid back
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) -= 1.0;
-			}
-		}
-	}
 }
 
 
@@ -573,6 +563,7 @@ void TwoPhase::ComponentAverages()
 				KGwns = KNwns = 0.0;
 				Jwn = Kwn = efawns = 0.0;
 				trawn=trJwn=0.0;
+
 				//...........................................................................
 				//...........................................................................
 				// Compute volume averages
@@ -745,9 +736,12 @@ void TwoPhase::ComponentAverages()
 					// Compute Euler characteristic from integral of gaussian curvature
 					euler = pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
 							i,j,k,n_nw_pts,n_nw_tris);
-					//euler =  geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
+					ComponentAverages_NWP(INTCURV,LabelNWP) += euler;
 
+					// Compute the Euler characteristic from vertices - faces + edges
+					euler = geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 					ComponentAverages_NWP(EULER,LabelNWP) += euler;
+
 				}
 			}
 		}
@@ -1112,6 +1106,7 @@ void TwoPhase::Reduce()
 	MPI_Allreduce(&euler,&euler_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&An,&An_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&Jn,&Jn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&Kn,&Kn_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 
 	MPI_Barrier(Dm.Comm);
 
@@ -1157,6 +1152,8 @@ void TwoPhase::Reduce()
 	if (ans_global > 0.0)	for (i=0; i<6; i++)		Gns_global(i) /= ans_global;
 	if (aws_global > 0.0)	for (i=0; i<6; i++)		Gws_global(i) /= aws_global;
 
+	euler_global /= (2*PI);
+
 	//sat_w = 1.0 - nwp_volume_global*iVol_global/porosity;
 	sat_w = 1.0 - nwp_volume_global/(nwp_volume_global+wp_volume_global);
 	// Compute the specific interfacial areas and common line length (dimensionless per unit volume)
@@ -1196,7 +1193,7 @@ void TwoPhase::PrintAll(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
-		fprintf(TIMELOG,"%.5g %.5g %.5g\n",euler_global, Jn_global, An_global);						// minkowski measures
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
 }
@@ -1245,6 +1242,7 @@ void TwoPhase::PrintComponents(int timestep)
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(CMZ,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRAWN,b));
 				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(TRJWN,b));
+				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(INTCURV,b));
 				fprintf(NWPLOG,"%.5g\n",ComponentAverages_NWP(EULER,b));
 //				fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NVERT,b));
 	//			fprintf(NWPLOG,"%.5g ",ComponentAverages_NWP(NSIDE,b));
