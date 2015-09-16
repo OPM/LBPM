@@ -102,14 +102,13 @@ int main(int argc, char **argv)
 {
   // Initialize MPI
   int provided_thread_support = -1;
-  int required_thread_support = MPI_THREAD_MULTIPLE;  // MPI_THREAD_SINGLE, MPI_THREAD_MULTIPLE
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&required_thread_support);
-  if ( provided_thread_support < required_thread_support )
-    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
   MPI_Comm comm;
   MPI_Comm_dup(MPI_COMM_WORLD,&comm);
   int rank = comm_rank(comm);
   int nprocs = comm_size(comm);
+  if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
+    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 	// parallel domain size (# of sub-domains)
@@ -673,8 +672,8 @@ int main(int argc, char **argv)
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
     // Create the thread pool
-    int N_threads = 0;
-    if ( provided_thread_support < required_thread_support )
+    int N_threads = 4;
+    if ( provided_thread_support < MPI_THREAD_MULTIPLE )
         N_threads = 0;
     if ( N_threads > 0 ) {
         // Set the affinity

@@ -59,6 +59,7 @@ public:
         double vS = 0.0;
         IntArray& ids = new_index->second;
         new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
+        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Identify blobs",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
@@ -190,7 +191,7 @@ void run_analysis( int timestep, int restart_interval,
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
     #ifdef USE_CUDA
-        if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%20==0 ) {
+        if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%50==0 ) {
             // Keep a few blob identifications queued up to keep the processors busy,
             // allowing us to track the blobs as fast as possible
             // Add more detailed estimates of the update frequency required to track blobs
