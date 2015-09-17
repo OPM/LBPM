@@ -531,15 +531,6 @@ void TwoPhase::ComponentAverages()
 	kmin=1; kmax=Nz-1;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
 	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
-
-	// Map solid to erode the fluid so that interfaces can be calculated accurately
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) += 1.0;
-			}
-		}
-	}
 	
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
@@ -743,15 +734,6 @@ void TwoPhase::ComponentAverages()
 					ComponentAverages_NWP(EULER,LabelNWP) += euler;
 
 				}
-			}
-		}
-	}
-	
-	// Map solid to erode the fluid so that interfaces can be calculated accurately
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				SDs(i,j,k) -= 1.0;
 			}
 		}
 	}
