@@ -56,7 +56,7 @@ public:
         MPI_Comm newcomm;
         MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         double vF = 0.0;
-        double vS = 0.0;
+        double vS = -1.0; // one voxel buffer region around solid
         IntArray& ids = new_index->second;
         new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
         MPI_Comm_free(&newcomm);
@@ -167,7 +167,6 @@ private:
     BlobIDList id_list;
     double beta;
 };
-
 
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 

@@ -145,7 +145,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     Array<bool> isPhase(Nx,Ny,Nz);
     memset(isPhase.get(),0,Nx*Ny*Nz*sizeof(bool));
     for (size_t i=0; i<N; i++) {
-        if ( SignDist(i) < 0.0) {
+        if ( SignDist(i) <= vS) {
             // Solid phase 
             LocalBlobID(i) = -2;
         } else {
