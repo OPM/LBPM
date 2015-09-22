@@ -1,8 +1,8 @@
 // Run the analysis, blob identification, and write restart files
 #include "common/Array.h"
 
-#define ANALYSIS_INTERVAL=1000
-#define BLOBID_INTERVAL=1000
+#define ANALYSIS_INTERVAL 1000
+#define BLOBID_INTERVAL 1000
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10 };
