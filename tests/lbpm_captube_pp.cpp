@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 					id[n] = 2;
 					sum++;
 				}
-				else if (Dm.kproc*Nz+k<BubbleTop && rank == 0 && pBC == 0){
+				else if (Dm.kproc*Nz+k<BubbleTop){
 					id[n] = 1;
 					sum++;
 				}
