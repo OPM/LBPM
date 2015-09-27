@@ -42,8 +42,8 @@ int main(int argc, char **argv)
 	int BubbleTop,BubbleBottom;
 	TubeRadius=strtod(argv[1],NULL);
 	BC=atoi(argv[2]);
-	BubbleTop = atoi(argv[3]);
-	BubbleBottom = atoi(argv[4]);
+	BubbleBottom = atoi(argv[3]);
+	BubbleTop = atoi(argv[4]);
 
 	if (rank == 0){
 		printf("********************************************************\n");
