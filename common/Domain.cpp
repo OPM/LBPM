@@ -118,7 +118,7 @@ Domain::~Domain()
     // Free id
     delete [] id;
     // Free the communicator
-    if ( Group!=MPI_COMM_NULL ) {
+    if ( Group!=MPI_GROUP_NULL ) {
         MPI_Group_free(&Group);
         MPI_Comm_free(&Comm);
     }
