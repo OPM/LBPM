@@ -669,7 +669,7 @@ inline void renumber( const std::vector<BlobIDType>& id1, const std::vector<Blob
         for (size_t i=0; i<id2.size(); i++) {
             id_max++;
             if ( (BlobIDType) new_ids.size() < id2[i]+1 )
-                new_ids.resize(id2[i],-1);
+                new_ids.resize(id2[i]+1,-1);
             new_ids[id2[i]] = id_max;
         }
     } else if ( id1.size()==1 && id2.size()==1 ) {
@@ -702,7 +702,7 @@ inline void renumber( const std::vector<BlobIDType>& id1, const std::vector<Blob
             int i = index%id1.size();
             int j = index/id1.size();
             if ( (BlobIDType) new_ids.size() < id2[j]+1 )
-                new_ids.resize(id2[j],-1);
+                new_ids.resize(id2[j]+1,-1);
             new_ids[id2[j]] = id1[i];
             for (size_t k=0; k<id2.size(); k++)
                 cost(i,k) = -1;
