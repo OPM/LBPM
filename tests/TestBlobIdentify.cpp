@@ -24,10 +24,21 @@ inline double rand2()
 
 // Test if all ranks agree on a value
 bool allAgree( int x, MPI_Comm comm ) {
-    int min, max;
-    MPI_Allreduce(&x,&min,1,MPI_INT,MPI_MIN,comm);
-    MPI_Allreduce(&x,&max,1,MPI_INT,MPI_MAX,comm);
-    return min==max;
+    int x2 = x;
+    MPI_Bcast(&x2,1,MPI_INT,0,comm);
+    int diff = x==x2 ? 0:1;
+    int diff2 = 0;
+    MPI_Allreduce(&diff,&diff2,1,MPI_INT,MPI_SUM,comm);
+    return diff2==0;
+}
+template<class T>
+bool allAgree( const std::vector<T>& x, MPI_Comm comm ) {
+    std::vector<T> x2 = x;
+    MPI_Bcast(&x2[0],x.size()*sizeof(T)/sizeof(int),MPI_INT,0,comm);
+    int diff = x==x2 ? 0:1;
+    int diff2 = 0;
+    MPI_Allreduce(&diff,&diff2,1,MPI_INT,MPI_SUM,comm);
+    return diff2==0;
 }
 
 
@@ -247,7 +258,7 @@ int main(int argc, char **argv)
             N_errors++;
         }
         // Identify the blob maps and renumber the ids
-        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2,comm);
+        ID_map_struct map = computeIDMap(nx,ny,nz,GlobalBlobID,GlobalBlobID2,comm);
         std::swap(GlobalBlobID,GlobalBlobID2);
         std::vector<BlobIDType> new_list;
         getNewIDs(map,id_max,new_list);
@@ -311,18 +322,28 @@ int main(int argc, char **argv)
         IntArray GlobalBlobID2;
         int nblobs2 = ComputeGlobalBlobIDs(nx,ny,nz,rank_info,Phase,SignDist,vF,vS,GlobalBlobID2,comm);
         // Identify the blob maps and renumber the ids
-        ID_map_struct map = computeIDMap(GlobalBlobID,GlobalBlobID2,comm);
+        ID_map_struct map = computeIDMap(nx,ny,nz,GlobalBlobID,GlobalBlobID2,comm);
         std::swap(GlobalBlobID,GlobalBlobID2);
         std::vector<BlobIDType> new_list;
         getNewIDs(map,id_max,new_list);
-        renumberIDs(new_list,GlobalBlobID);
-        writeIDMap(map,save_it,"lbpm_id_map.txt");
+        // Check id_max
         if ( !allAgree(id_max,comm) ) {
             if ( rank==0 )
                 printf("All ranks do not agree on id_max\n");
             N_errors++;
             break;
         }
+        // Check that the new id list matches on all ranks
+        if ( !allAgree(new_list,comm) ) {
+            if ( rank==0 )
+                printf("All ranks do not agree on new_list\n");
+            N_errors++;
+            break;
+        }
+        // Renumber the ids and write the map
+        renumberIDs(new_list,GlobalBlobID);
+        writeIDMap(map,save_it,"lbpm_id_map.txt");
+        // Check the number of blobs in the map
         int N1 = 0;
         int N2 = 0;
         if ( rank==0 ) {

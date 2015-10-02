@@ -39,8 +39,11 @@ int main(int argc, char **argv)
 
 	double TubeRadius =15.0;
 	int BC;
+	int BubbleTop,BubbleBottom;
 	TubeRadius=strtod(argv[1],NULL);
 	BC=atoi(argv[2]);
+	BubbleBottom = atoi(argv[3]);
+	BubbleTop = atoi(argv[4]);
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -145,10 +148,6 @@ int main(int argc, char **argv)
 	//if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double porosity, pore_vol;
 
-	// Initializes a constrained bubble test
-	double BubbleBot = 20.0;  // How big to make the NWP bubble
-	double BubbleTop = 60.0;  // How big to make the NWP bubble
-	//double TubeRadius = 15.5; // Radius of the capillary tube
 	sum=0;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -157,19 +156,19 @@ int main(int argc, char **argv)
 				// Cylindrical capillary tube aligned with the z direction
 				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
 									+ (j-Ny/2)*(j-Ny/2)));
-				// Initialize phase positions field
+
+				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
-	/*			else if (k<BubbleBot){
+				else if (Dm.kproc*Nz+k<BubbleBottom){
 					id[n] = 2;
 					sum++;
 				}
-				else if (k<BubbleTop && rank == 0 && pBC == 0){
+				else if (Dm.kproc*Nz+k<BubbleTop){
 					id[n] = 1;
 					sum++;
 				}
-*/
 				else{
 					id[n] = 2;
 					sum++;
