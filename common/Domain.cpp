@@ -27,7 +27,7 @@ Domain::Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     double lx, double ly, double lz, int BC):
     Nx(0), Ny(0), Nz(0), iproc(0), jproc(0), nprocx(0), nprocy(0), nprocz(0),
     Lx(0), Ly(0), Lz(0), Volume(0), rank(0), BoundaryCondition(0),
-    Group(MPI_COMM_NULL), Comm(MPI_COMM_NULL),
+    Group(MPI_GROUP_NULL), Comm(MPI_COMM_NULL),
     rank_x(0), rank_y(0), rank_z(0), rank_X(0), rank_Y(0), rank_Z(0),
     rank_xy(0), rank_XY(0), rank_xY(0), rank_Xy(0),
     rank_xz(0), rank_XZ(0), rank_xZ(0), rank_Xz(0),
