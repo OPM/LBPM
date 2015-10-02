@@ -96,7 +96,7 @@ public:
         if ( last_id!=NULL ) {
             // Compute the timestep-timestep map
             const IntArray& old_ids = last_id->second;
-            ID_map_struct map = computeIDMap(old_ids,ids,newcomm);
+            ID_map_struct map = computeIDMap(Nx,Ny,Nz,old_ids,ids,newcomm);
             // Renumber the current timestep's ids
             getNewIDs(map,max_id,*new_list);
             renumberIDs(*new_list,new_id->second);

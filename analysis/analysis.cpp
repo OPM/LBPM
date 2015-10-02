@@ -460,6 +460,7 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
 /******************************************************************
 * Compute the mapping of blob ids between timesteps               *
 ******************************************************************/
+typedef std::map<BlobIDType,std::map<BlobIDType,int64_t> > map_type;
 template<class TYPE> inline MPI_Datatype getMPIType();
 template<> inline MPI_Datatype getMPIType<int32_t>() { return MPI_INT; }
 template<> inline MPI_Datatype getMPIType<int64_t>() { 
@@ -485,66 +486,87 @@ void gatherSet( std::set<TYPE>& set, MPI_Comm comm )
     for (size_t i=0; i<recv_data.size(); i++)
         set.insert(recv_data[i]);
 }
-template<class TYPE>
-void gatherSrcIDMap( std::map<TYPE,std::set<TYPE> >& src_map, MPI_Comm comm )
+void gatherSrcIDMap( map_type& src_map, MPI_Comm comm )
 {
     int nprocs = comm_size(comm);
-    MPI_Datatype type = getMPIType<TYPE>();
-    std::vector<TYPE> send_data;
-    typename std::map<TYPE,std::set<TYPE> >::const_iterator it;
-    for (it=src_map.begin(); it!=src_map.end(); ++it) {
+    MPI_Datatype type = getMPIType<int64_t>();
+    std::vector<int64_t> send_data;
+    for (map_type::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
         int id = it->first;
-        const std::set<TYPE>& src_ids = it->second;
+        const std::map<BlobIDType,int64_t>& src_ids = it->second;
         send_data.push_back(id);
         send_data.push_back(src_ids.size());
-        typename std::set<TYPE>::const_iterator it2;
-        for (it2=src_ids.begin(); it2!=src_ids.end(); ++it2)
-            send_data.push_back(*it2);
+        typename std::map<BlobIDType,int64_t>::const_iterator it2;
+        for (it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
+            send_data.push_back(it2->first);
+            send_data.push_back(it2->second);
+        }
     }
     int send_count = send_data.size();
     std::vector<int> recv_count(nprocs,0), recv_disp(nprocs,0);
     MPI_Allgather(&send_count,1,MPI_INT,getPtr(recv_count),1,MPI_INT,comm);
     for (int i=1; i<nprocs; i++)
         recv_disp[i] = recv_disp[i-1] + recv_count[i-1];
-    std::vector<TYPE> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
+    std::vector<int64_t> recv_data(recv_disp[nprocs-1]+recv_count[nprocs-1]);
     MPI_Allgatherv(getPtr(send_data),send_count,type,
         getPtr(recv_data),getPtr(recv_count),getPtr(recv_disp),type,comm);
     size_t i=0;
+    src_map.clear();
     while ( i < recv_data.size() ) {
-        int id = recv_data[i];
-        int count = recv_data[i+1];
+        BlobIDType id = recv_data[i];
+        size_t count = recv_data[i+1];
         i += 2;
-        std::set<TYPE>& src_ids = src_map[id];
-        for (int j=0; j<count; j++,i++)
-            src_ids.insert(recv_data[i]);
+        std::map<BlobIDType,int64_t>& src_ids = src_map[id];
+        for (size_t j=0; j<count; j++,i+=2) {
+            std::map<BlobIDType,int64_t>::iterator it = src_ids.find(recv_data[i]);
+            if ( it == src_ids.end() )
+                src_ids.insert(std::pair<BlobIDType,int64_t>(recv_data[i],recv_data[i+1]));
+            else
+                it->second += recv_data[i+1];
+        }
     }
 }
-void addSrcDstIDs( BlobIDType src_id, std::map<BlobIDType,std::set<BlobIDType> >& src_map, 
-    std::map<BlobIDType,std::set<BlobIDType> >& dst_map, std::set<BlobIDType>& src, std::set<BlobIDType>& dst )
+void addSrcDstIDs( BlobIDType src_id, map_type& src_map, map_type& dst_map, 
+    std::set<BlobIDType>& src, std::set<BlobIDType>& dst )
 {
     src.insert(src_id);
-    const std::set<BlobIDType>& dst_ids = dst_map[src_id];
-    for (std::set<BlobIDType>::const_iterator it=dst_ids.begin(); it!=dst_ids.end(); ++it) {
-        if ( dst.find(*it)==dst.end() )
-            addSrcDstIDs(*it,dst_map,src_map,dst,src);
+    const std::map<BlobIDType,int64_t>& dst_ids = dst_map[src_id];
+    for (std::map<BlobIDType,int64_t>::const_iterator it=dst_ids.begin(); it!=dst_ids.end(); ++it) {
+        if ( dst.find(it->first)==dst.end() )
+            addSrcDstIDs(it->first,dst_map,src_map,dst,src);
     }
 }
-ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm )
+ID_map_struct computeIDMap( int nx, int ny, int nz, 
+    const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm )
 {
     ASSERT(ID1.size()==ID2.size());
     PROFILE_START("computeIDMap");
+    const int ngx = (ID1.size(0)-nx)/2;
+    const int ngy = (ID1.size(1)-ny)/2;
+    const int ngz = (ID1.size(2)-nz)/2;
 
     // Get a global list of all src/dst ids and the src map for each local blob
     std::set<BlobIDType> src_set, dst_set;
-    std::map<BlobIDType,std::set<BlobIDType> > src_map;   // Map of the src ids for each dst id
-    for (size_t i=0; i<ID1.length(); i++) {
-        if ( ID1(i)>=0 )
-            src_set.insert(ID1(i));
-        if ( ID2(i)>=0 )
-            dst_set.insert(ID2(i));
-        if ( ID2(i)>=0 && ID1(i)>=0 ) {
-            std::set<BlobIDType>& src_ids = src_map[ID2(i)];
-            src_ids.insert(ID1(i));
+    map_type src_map;   // Map of the src ids for each dst id
+    for (int k=ngz; k<ngz+nz; k++) {
+        for (int j=ngy; j<ngy+ny; j++) {
+            for (int i=ngx; i<ngx+nx; i++) {
+                int id1 = ID1(i,j,k);
+                int id2 = ID2(i,j,k);
+                if ( id1>=0 )
+                    src_set.insert(id1);
+                if ( id2>=0 )
+                    dst_set.insert(id2);
+                if ( id1>=0 && id2>=0 ) {
+                    std::map<BlobIDType,int64_t>& src_ids = src_map[id2];
+                    std::map<BlobIDType,int64_t>::iterator it = src_ids.find(id1);
+                    if ( it == src_ids.end() ) {
+                        src_ids.insert(std::pair<BlobIDType,int64_t>(id1,0));
+                        it = src_ids.find(id1);
+                    }
+                    it->second++;
+                }
+            }
         }
     }
     // Communicate the src/dst ids and src id map to all processors and reduce
@@ -552,13 +574,13 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_
     gatherSet( dst_set, comm );
     gatherSrcIDMap( src_map, comm );
     // Compute the dst id map
-    std::map<BlobIDType,std::set<BlobIDType> > dst_map;   // Map of the dst ids for each src id
-    for (std::map<BlobIDType,std::set<BlobIDType> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
+    map_type dst_map;   // Map of the dst ids for each src id
+    for (map_type::const_iterator it=src_map.begin(); it!=src_map.end(); ++it) {
         BlobIDType id = it->first;
-        const std::set<BlobIDType>& src_ids = it->second;
-        for (std::set<BlobIDType>::const_iterator it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
-            std::set<BlobIDType>& dst_ids = dst_map[*it2];
-            dst_ids.insert(id);
+        const std::map<BlobIDType,int64_t>& src_ids = it->second;
+        for (std::map<BlobIDType,int64_t>::const_iterator it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
+            std::map<BlobIDType,int64_t>& dst_ids = dst_map[it2->first];
+            dst_ids.insert(std::pair<BlobIDType,int64_t>(id,it2->second));
         }
     }
 
@@ -577,16 +599,16 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_
     // Find blobs with a 1-to-1 mapping
     std::vector<BlobIDType> dst_list;
     dst_list.reserve(src_map.size());
-    for (std::map<BlobIDType,std::set<BlobIDType> >::const_iterator it=src_map.begin(); it!=src_map.end(); ++it)
+    for (map_type::const_iterator it=src_map.begin(); it!=src_map.end(); ++it)
         dst_list.push_back(it->first);
     for (size_t i=0; i<dst_list.size(); i++) {
         int dst_id = dst_list[i];
-        const std::set<BlobIDType>& src_ids = src_map[dst_id];
+        const std::map<BlobIDType,int64_t>& src_ids = src_map[dst_id];
         if ( src_ids.size()==1 ) {
-            int src_id = *src_ids.begin();
-            const std::set<BlobIDType>& dst_ids = dst_map[src_id];
+            int src_id = src_ids.begin()->first;
+            const std::map<BlobIDType,int64_t>& dst_ids = dst_map[src_id];
             if ( dst_ids.size()==1 ) {
-                ASSERT(*dst_ids.begin()==dst_id);
+                ASSERT(dst_ids.begin()->first==dst_id);
                 src_map.erase(dst_id);
                 dst_map.erase(src_id);
                 id_map.src_dst.push_back(std::pair<BlobIDType,BlobIDType>(src_id,dst_id));
@@ -598,10 +620,6 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_
         // Get a lit of the src-dst ids
         std::set<BlobIDType> src, dst;
         addSrcDstIDs( dst_map.begin()->first, src_map, dst_map, src, dst );
-        for (std::set<BlobIDType>::const_iterator it=src.begin(); it!=src.end(); ++it)
-            dst_map.erase(*it);
-        for (std::set<BlobIDType>::const_iterator it=dst.begin(); it!=dst.end(); ++it)
-            src_map.erase(*it);
         if ( src.size()==1 ) {
             // Bubble split
             id_map.split.push_back( BlobIDSplitStruct(*src.begin(),std::vector<BlobIDType>(dst.begin(),dst.end())) );
@@ -613,6 +631,22 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_
             id_map.merge_split.push_back( BlobIDMergeSplitStruct(
                 std::vector<BlobIDType>(src.begin(),src.end()), std::vector<BlobIDType>(dst.begin(),dst.end() ) ) );
         }
+        // Add the overlaps
+        for (std::set<BlobIDType>::const_iterator it1=src.begin(); it1!=src.end(); ++it1) {
+            const std::map<BlobIDType,int64_t>& dst_ids = dst_map[*it1];
+            for (std::set<BlobIDType>::const_iterator it2=dst.begin(); it2!=dst.end(); ++it2) {
+                std::pair<BlobIDType,BlobIDType> id(*it1,*it2);
+                int64_t overlap = 0;
+                const std::map<BlobIDType,int64_t>::const_iterator it = dst_ids.find(*it2);
+                if ( it != dst_ids.end() ) { overlap = it->second; }
+                id_map.overlap.insert(std::pair<OverlapID,int64_t>(id,overlap));
+            }
+        }
+        // Clear the mapped entries
+        for (std::set<BlobIDType>::const_iterator it=src.begin(); it!=src.end(); ++it)
+            dst_map.erase(*it);
+        for (std::set<BlobIDType>::const_iterator it=dst.begin(); it!=dst.end(); ++it)
+            src_map.erase(*it);
     }
     ASSERT(src_map.empty());
 
@@ -624,63 +658,109 @@ ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_
 /******************************************************************
 * Renumber the ids                                                *
 ******************************************************************/
+typedef std::vector<BlobIDType> IDvec;
+inline void renumber( const std::vector<BlobIDType>& id1, const std::vector<BlobIDType>& id2,
+    const std::map<OverlapID,int64_t>& overlap, std::vector<BlobIDType>& new_ids, BlobIDType& id_max )
+{
+    if ( id2.empty() ) {
+        // No dst ids to set
+    } else if ( id1.empty() ) {
+        // No src ids
+        for (size_t i=0; i<id2.size(); i++) {
+            id_max++;
+            if ( (BlobIDType) new_ids.size() < id2[i]+1 )
+                new_ids.resize(id2[i],-1);
+            new_ids[id2[i]] = id_max;
+        }
+    } else if ( id1.size()==1 && id2.size()==1 ) {
+        // Direct src-dst mapping
+        if ( (BlobIDType) new_ids.size() < id2[0]+1 )
+            new_ids.resize(id2[0]+1,-1);
+        new_ids[id2[0]] = id1[0];
+    } else {
+        // General N to M mapping
+        // Get the overlap weights
+        Array<int64_t> cost(id1.size(),id2.size());
+        for (size_t j=0; j<id2.size(); j++) {
+            for (size_t i=0; i<id1.size(); i++) {
+                cost(i,j) = overlap.find(std::pair<BlobIDType,BlobIDType>(id1[i],id2[j]))->second;
+            }
+        }
+        // While we have not mapped all dst ids
+        while ( 1 ) {
+            size_t index = 1;
+            int64_t cost2 = -1;
+            for (size_t i=0; i<cost.length(); i++) {
+                if ( cost(i) > cost2 ) {
+                    cost2 = cost(i);
+                    index = i;
+                }
+            }
+            if ( cost2 <= 0 )
+                break;
+            // Use id1[i] for id2[j]
+            int i = index%id1.size();
+            int j = index/id1.size();
+            if ( (BlobIDType) new_ids.size() < id2[j]+1 )
+                new_ids.resize(id2[j],-1);
+            new_ids[id2[j]] = id1[i];
+            for (size_t k=0; k<id2.size(); k++)
+                cost(i,k) = -1;
+            for (size_t k=0; k<id1.size(); k++)
+                cost(k,j) = -1;
+        }
+        // No remaining src overlap with dst, create new ids for all remaining dst
+        for (size_t i=0; i<id2.size(); i++) {
+            if ( (BlobIDType) new_ids.size() < id2[i]+1 )
+                new_ids.resize(id2[i]+1,-1);
+            if ( new_ids[id2[i]] == -1 ) {
+                id_max++;
+                new_ids[id2[i]] = id_max;
+            }
+        }
+    }
+}
+inline void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDType& id )
+{
+    id = new_ids[id];
+}
+inline void renumberIDs( const std::vector<BlobIDType>& new_ids, std::vector<BlobIDType>& ids )
+{
+    for (size_t i=0; i<ids.size(); i++)
+        ids[i] = new_ids[ids[i]];
+}
 void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>& new_ids )
 {
     new_ids.resize(0);
-    // Renumber the ids that map directly
-    for (size_t i=0; i<map.src_dst.size(); i++) {
-        int id1 = map.src_dst[i].second;
-        int id2 = map.src_dst[i].first;
-        map.src_dst[i].second = id2;
-        if ( new_ids.size() < static_cast<size_t>(id1+1) )
-            new_ids.resize(id1+1,-1);
-        new_ids[id1] = id2;
+    // Get the new id numbers for each map type
+    for (size_t i=0; i<map.src_dst.size(); i++)
+        renumber(IDvec(1,map.src_dst[i].first),IDvec(1,map.src_dst[i].second),map.overlap,new_ids,id_max);
+    for (size_t i=0; i<map.created.size(); i++)
+        renumber(std::vector<BlobIDType>(),IDvec(1,map.created[i]),map.overlap,new_ids,id_max);
+    for (size_t i=0; i<map.destroyed.size(); i++)
+        renumber(IDvec(1,map.destroyed[i]),std::vector<BlobIDType>(),map.overlap,new_ids,id_max);
+    for (size_t i=0; i<map.split.size(); i++)
+        renumber(IDvec(1,map.split[i].first),map.split[i].second,map.overlap,new_ids,id_max);
+    for (size_t i=0; i<map.merge.size(); i++)
+        renumber(map.merge[i].first,IDvec(1,map.merge[i].second),map.overlap,new_ids,id_max);
+    for (size_t i=0; i<map.merge_split.size(); i++)
+        renumber(map.merge_split[i].first,map.merge_split[i].second,map.overlap,new_ids,id_max);
+    // Renumber the ids in the map
+    for (size_t i=0; i<map.src_dst.size(); i++)
+        renumberIDs( new_ids, map.src_dst[i].second );
+    renumberIDs( new_ids, map.created );
+    for (size_t i=0; i<map.split.size(); i++)
+        renumberIDs( new_ids, map.split[i].second );
+    for (size_t i=0; i<map.merge.size(); i++)
+        renumberIDs( new_ids, map.merge[i].second );
+    for (size_t i=0; i<map.merge_split.size(); i++)
+        renumberIDs( new_ids, map.merge_split[i].second );
+    std::map<OverlapID,int64_t> overlap2;
+    for (std::map<OverlapID,int64_t>::const_iterator it=map.overlap.begin(); it!=map.overlap.begin(); ++it) {
+        OverlapID id = it->first;
+        renumberIDs( new_ids, id.second );
+        overlap2.insert( std::pair<OverlapID,int64_t>(id,it->second) );
     }
-    // Renumber the created blobs to create new ids
-    for (size_t i=0; i<map.created.size(); i++) {
-        int id1 = map.created[i];
-        id_max++;
-        int id2 = id_max;
-        map.created[i] = id2;
-        if ( new_ids.size() < static_cast<size_t>(id1+1) )
-            new_ids.resize(id1+1,-1);
-        new_ids[id1] = id2;
-    }
-    // Renumber the blob splits to create new ids
-    for (size_t i=0; i<map.split.size(); i++) {
-        for (size_t j=0; j<map.split[i].second.size(); j++) {
-            int id1 = map.split[i].second[j];
-            id_max++;
-            int id2 = id_max;
-            map.split[i].second[j] = id2;
-            if ( new_ids.size() < static_cast<size_t>(id1+1) )
-                new_ids.resize(id1+1,-1);
-            new_ids[id1] = id2;
-        }
-    }
-    // Renumber the blob merges to create a new id
-    for (size_t i=0; i<map.merge.size(); i++) {
-        int id1 = map.merge[i].second;
-        id_max++;
-        int id2 = id_max;
-        map.merge[i].second = id2;
-        if ( new_ids.size() < static_cast<size_t>(id1+1) )
-            new_ids.resize(id1+1,-1);
-        new_ids[id1] = id2;
-    }
-    // Renumber the blob merge/splits to create new ids
-    for (size_t i=0; i<map.merge_split.size(); i++) {
-        for (size_t j=0; j<map.merge_split[i].second.size(); j++) {
-            int id1 = map.merge_split[i].second[j];
-            id_max++;
-            int id2 = id_max;
-            map.merge_split[i].second[j] = id2;
-            if ( new_ids.size() < static_cast<size_t>(id1+1) )
-                new_ids.resize(id1+1,-1);
-            new_ids[id1] = id2;
-        }
-    }
-
 }
 void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs )
 {

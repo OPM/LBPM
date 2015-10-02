@@ -93,13 +93,15 @@ void ReorderBlobIDs( BlobIDArray& ID, MPI_Comm comm );
 typedef std::pair<BlobIDType,std::vector<BlobIDType> > BlobIDSplitStruct;
 typedef std::pair<std::vector<BlobIDType>,BlobIDType> BlobIDMergeStruct;
 typedef std::pair<std::vector<BlobIDType>,std::vector<BlobIDType> > BlobIDMergeSplitStruct;
+typedef std::pair<BlobIDType,BlobIDType> OverlapID;
 struct ID_map_struct {
-    std::vector<BlobIDType> created;                   // list of new blobs that were created
-    std::vector<BlobIDType> destroyed;                 // list of blobs that disappeared
+    std::vector<BlobIDType> created;            // list of new blobs that were created
+    std::vector<BlobIDType> destroyed;          // list of blobs that disappeared
     std::vector<std::pair<BlobIDType,BlobIDType> > src_dst;   // one-one mapping of blobs (first,second timestep id)
     std::vector<BlobIDSplitStruct> split;       // list of blobs that split
     std::vector<BlobIDMergeStruct> merge;       // list of blobs that merged
     std::vector<BlobIDMergeSplitStruct> merge_split; // list of blobs that both merged and split
+    std::map<OverlapID,int64_t> overlap;         // for ids that are not a 1-1 mapping, this is a list of the overlaps <src,dst>
     //! Empty constructor
     ID_map_struct() {}
     //! Create initial map from N blobs (ordered 1:N-1)
@@ -118,7 +120,7 @@ struct ID_map_struct {
  * @param[in] ID1           The blob ids at the first timestep
  * @param[in] ID2           The blob ids at the second timestep
  */
-ID_map_struct computeIDMap( const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm );
+ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm );
 
 
 /*!
