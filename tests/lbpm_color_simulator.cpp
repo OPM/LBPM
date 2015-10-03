@@ -290,6 +290,7 @@ int main(int argc, char **argv)
 		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
 		if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
+		if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
 		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
 		if (InitialCondition==1) printf("Initial conditions assigned from restart file \n");
 		printf("********************************************************\n");
@@ -297,10 +298,12 @@ int main(int argc, char **argv)
 
 	// Initialized domain and averaging framework for Two-Phase Flow
 	bool pBC,velBC;
-	if (BoundaryCondition==1)	pBC=true;
+	if (BoundaryCondition==1 || BoundaryCondition==3)
+								pBC=true;
 	else						pBC=false;
 	if (BoundaryCondition==2)	velBC=true;
 	else						velBC=false;
+
 	bool Restart;
 	if (InitialCondition==1)    Restart=true;
 	else 						Restart=false;
@@ -624,6 +627,25 @@ int main(int argc, char **argv)
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 	}
 
+	// Set dynamic pressure boundary conditions
+	double dp, slope;
+	if (BoundaryCondition==3){
+		dp = din;
+		// set the initial value
+		din  = 1.0+0.5*dp;
+		dout = 1.0-0.5*dp;
+		slope = (dout-din)/timestepMax;
+		// set the initial boundary conditions
+		if (Dm.kproc == 0)	{
+			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
+		if (Dm.kproc == nprocz-1){
+			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
+	}
+
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
@@ -787,6 +809,23 @@ int main(int argc, char **argv)
 			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 		}
+
+		if (BoundaryCondition==3){
+			// Increase the pressure difference
+			dp += timestep*slope;
+			din  = 1.0+0.5*dp;
+			dout = 1.0-0.5*dp;
+			// set the initial boundary conditions
+			if (Dm.kproc == 0)	{
+				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+				ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			}
+			if (Dm.kproc == nprocz-1){
+				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			}
+		}
+
 		//...................................................................................
 
 		MPI_Barrier(comm);

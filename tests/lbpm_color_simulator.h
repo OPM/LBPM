@@ -2,7 +2,7 @@
 #include "common/Array.h"
 
 #define ANALYSIS_INTERVAL 1000
-#define BLOBID_INTERVAL 1000
+#define BLOBID_INTERVAL 250
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10 };
@@ -191,7 +191,7 @@ void run_analysis( int timestep, int restart_interval,
         // Identify blobs and update global ids in time
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
-/*    #ifdef USE_CUDA
+    #ifdef USE_CUDA
         if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%50==0 ) {
             // Keep a few blob identifications queued up to keep the processors busy,
             // allowing us to track the blobs as fast as possible
@@ -199,7 +199,7 @@ void run_analysis( int timestep, int restart_interval,
             type = static_cast<AnalysisType>( type | IdentifyBlobs );
         }
     #endif
- */
+
     if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
         type = static_cast<AnalysisType>( type | CopyAverages );
