@@ -630,11 +630,12 @@ int main(int argc, char **argv)
 	// Set dynamic pressure boundary conditions
 	double dp, slope;
 	if (BoundaryCondition==3){
+		slope = (dout-din)/timestepMax;
 		dp = din;
+		if (rank==0) printf("Change in pressure / time =%f \n",slope);
 		// set the initial value
 		din  = 1.0+0.5*dp;
 		dout = 1.0-0.5*dp;
-		slope = (dout-din)/timestepMax;
 		// set the initial boundary conditions
 		if (Dm.kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
@@ -812,7 +813,7 @@ int main(int argc, char **argv)
 
 		if (BoundaryCondition==3){
 			// Increase the pressure difference
-			dp += timestep*slope;
+			dp += slope;
 			din  = 1.0+0.5*dp;
 			dout = 1.0-0.5*dp;
 			// set the initial boundary conditions
@@ -833,7 +834,7 @@ int main(int argc, char **argv)
 
 		// Timestep completed!
 		timestep++;
-
+  
         // Run the analysis, blob identification, and write restart files
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
