@@ -126,8 +126,8 @@ private:
 class WriteVisWorkItem: public ThreadPool::WorkItem
 {
 public:
-	WriteVisWorkItem(AnalysisType type_, Domain &Dm_, TwoPhase& Averages_):
-	type(type_), Domain(Dm_), Averages(Averages_) { }
+	WriteVisWorkItem(AnalysisType type_, TwoPhase& Averages_):
+	type(type_), Averages(Averages_) { }
 
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
@@ -135,10 +135,13 @@ public:
         // Write  VisIT files
         PROFILE_START("Save Vis",1);
         // Create the MeshDataStruct
-        fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+        Nx=Averages.Dm.Nx;
+        Ny=Averages.Dm.Ny;
+        Nz=Averages.Dm.Nz;
+        fillHalo<double> fillData(Averages.Dm.Comm,Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
         std::vector<IO::MeshDataStruct> meshData(1);
         meshData[0].meshName = "domain";
-        meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+        meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
         std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
         std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
         std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
@@ -176,8 +179,8 @@ public:
 private:
     WriteRestartWorkItem();
     AnalysisType type;
-    Domain& Dm;
     TwoPhase& Averages;
+    int Nx,Ny,Nz;
 };
 
 
