@@ -29,44 +29,6 @@ public:
         WriteCheckpoint(filename,cDen.get(),cDistEven.get(),cDistOdd.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
 
-        // Write  VisIT files
-        PROFILE_START("Save Vis",1);
-        // Create the MeshDataStruct
-        fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-        std::vector<IO::MeshDataStruct> meshData(1);
-        meshData[0].meshName = "domain";
-        meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
-        std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-        PhaseVar->name = "phase";
-        PhaseVar->type = IO::VolumeVariable;
-        PhaseVar->dim = 1;
-        PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(PhaseVar);
-        PressVar->name = "Pressure";
-        PressVar->type = IO::VolumeVariable;
-        PressVar->dim = 1;
-        PressVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(PressVar);
-        SignDistVar->name = "SignDist";
-        SignDistVar->type = IO::VolumeVariable;
-        SignDistVar->dim = 1;
-        SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(SignDistVar);
-        BlobIDVar->name = "BlobID";
-        BlobIDVar->type = IO::VolumeVariable;
-        BlobIDVar->dim = 1;
-        BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(BlobIDVar);
-
-        fillData.copy(Averages->SDn,PhaseVar->data);
-        fillData.copy(Averages->SDs,SignDistVar->data);
-        fillData.copy(Averages->Label_NWP,BlobIDVar->data);
-        IO::writeData( 0, meshData, 2, comm );
-        PROFILE_STOP("Save Vis",1);
-
         PROFILE_SAVE("lbpm_color_simulator",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
@@ -159,6 +121,63 @@ private:
     const DoubleArray& dist;
     BlobIDstruct last_id, new_index, new_id;
     BlobIDList new_list;
+};
+
+class WriteVisWorkItem: public ThreadPool::WorkItem
+{
+public:
+	WriteVisWorkItem(AnalysisType type_, Domain &Dm_, TwoPhase& Averages_):
+	type(type_), Domain(Dm_), Averages(Averages_) { }
+
+    virtual void run() {
+        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
+
+        // Write  VisIT files
+        PROFILE_START("Save Vis",1);
+        // Create the MeshDataStruct
+        fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+        std::vector<IO::MeshDataStruct> meshData(1);
+        meshData[0].meshName = "domain";
+        meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+        std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+        std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
+        std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+        std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
+        PhaseVar->name = "phase";
+        PhaseVar->type = IO::VolumeVariable;
+        PhaseVar->dim = 1;
+        PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+        meshData[0].vars.push_back(PhaseVar);
+        PressVar->name = "Pressure";
+        PressVar->type = IO::VolumeVariable;
+        PressVar->dim = 1;
+        PressVar->data.resize(Nx-2,Ny-2,Nz-2);
+        meshData[0].vars.push_back(PressVar);
+        SignDistVar->name = "SignDist";
+        SignDistVar->type = IO::VolumeVariable;
+        SignDistVar->dim = 1;
+        SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+        meshData[0].vars.push_back(SignDistVar);
+        BlobIDVar->name = "BlobID";
+        BlobIDVar->type = IO::VolumeVariable;
+        BlobIDVar->dim = 1;
+        BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+        meshData[0].vars.push_back(BlobIDVar);
+
+        fillData.copy(Averages->SDn,PhaseVar->data);
+        fillData.copy(Averages->SDs,SignDistVar->data);
+        fillData.copy(Averages->Label_NWP,BlobIDVar->data);
+        IO::writeData( 0, meshData, 2, comm );
+        PROFILE_STOP("Save Vis",1);
+
+        PROFILE_SAVE("lbpm_color_simulator",1);
+        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
+    };
+private:
+    WriteRestartWorkItem();
+    AnalysisType type;
+    Domain& Dm;
+    TwoPhase& Averages;
 };
 
 
