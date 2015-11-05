@@ -138,6 +138,9 @@ public:
         Nx=Averages.Dm.Nx;
         Ny=Averages.Dm.Ny;
         Nz=Averages.Dm.Nz;
+        Lx=Averages.Dm.Lx;
+        Ly=Averages.Dm.Ly;
+        Lz=Averages.Dm.Lz;
         fillHalo<double> fillData(Averages.Dm.Comm,Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
         std::vector<IO::MeshDataStruct> meshData(1);
         meshData[0].meshName = "domain";
@@ -177,10 +180,11 @@ public:
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
 private:
-    WriteRestartWorkItem();
+    WriteVisWorkItem();
     AnalysisType type;
     TwoPhase& Averages;
     int Nx,Ny,Nz;
+    double Lx,Ly,Lz;
 };
 
 
