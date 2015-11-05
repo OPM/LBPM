@@ -170,10 +170,10 @@ public:
         BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
         meshData[0].vars.push_back(BlobIDVar);
 
-        fillData.copy(Averages->SDn,PhaseVar->data);
-        fillData.copy(Averages->SDs,SignDistVar->data);
-        fillData.copy(Averages->Label_NWP,BlobIDVar->data);
-        IO::writeData( 0, meshData, 2, comm );
+        fillData.copy(Averages.SDn,PhaseVar->data);
+        fillData.copy(Averages.SDs,SignDistVar->data);
+        fillData.copy(Averages.Label_NWP,BlobIDVar->data);
+        IO::writeData( 0, meshData, 2, newcomm );
 
         MPI_Comm_free(&newcomm);
         PROFILE_STOP("Save Vis",1);
@@ -187,6 +187,10 @@ private:
     TwoPhase& Averages;
     int Nx,Ny,Nz;
     double Lx,Ly,Lz;
+    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
 };
 
 
