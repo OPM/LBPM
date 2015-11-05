@@ -131,7 +131,8 @@ public:
 
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
-
+        MPI_Comm newcomm;
+        MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         // Write  VisIT files
         PROFILE_START("Save Vis",1);
         // Create the MeshDataStruct
@@ -141,7 +142,7 @@ public:
         Lx=Averages.Dm.Lx;
         Ly=Averages.Dm.Ly;
         Lz=Averages.Dm.Lz;
-//        fillHalo<double> fillData(Averages.Dm.Comm,Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+        fillHalo<double> fillData(newcomm,Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
         std::vector<IO::MeshDataStruct> meshData(1);
         meshData[0].meshName = "domain";
         meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
