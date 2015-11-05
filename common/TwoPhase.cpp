@@ -177,29 +177,31 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 {
 	double factor,temp,value;
 	factor=0.5/Beta;
-	for (int n=0; n<Nx*Ny*Nz; n++){
-	 	value = ColorData[n];
-		if (value > 0.999 ) DistData[n] = 4.0;
-		else if (value < -0.999 ) DistData[n] = -4.0;
-		else 	DistData[n] = factor*log((1.0+value)/(1.0-value));
-		if (DistData[n] > 1.0)  DistData[n] = 1.0;
-		if (DistData[n] < -1.0) DistData[n] = -1.0;
-	}
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				value = ColorData(i,j,k);
-				temp = factor*log((1.0+value)/(1.0-value));
-				if (temp > 1.0) DistData(i,j,k) = 1.0;
-				else if (temp < -1.0) DistData(i,j,k) = -1.0;
+			 	temp = factor*log((1.0+value)/(1.0-value));
+				if (value > 0.8) DistData(i,j,k) = 2.94*factor;
+				else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
 				else DistData(i,j,k) = temp;
+				// Basic threshold
+				//if (value > 0) DistData(i,j,k) = 1.0;
+				//else DistData(i,j,k) = -1.0;
 			}
 		}
 	}
 
-	SSO(DistData,Dm.id,Dm,10);
+	SSO(DistData,Dm.id,Dm,40);
 
+        for (int k=0; k<Nz; k++){
+	  for (int j=0; j<Ny; j++){
+	    for (int i=0; i<Nx; i++){
+	      DistData(i,j,k) += 1.0;
+	    }
+	  }
+	}	
 	/*	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -303,6 +305,8 @@ void TwoPhase::UpdateSolid()
 void TwoPhase::UpdateMeshValues()
 {
 	int i,j,k,n;
+	//...........................................................................
+	Dm.CommunicateMeshHalo(SDn);
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
