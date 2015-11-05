@@ -1,5 +1,6 @@
 // Run the analysis, blob identification, and write restart files
 #include "common/Array.h"
+#include "common/Communication.h"
 
 #define ANALYSIS_INTERVAL 1000
 #define BLOBID_INTERVAL 250
@@ -14,7 +15,6 @@ struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t analysis;
     ThreadPool::thread_id_t restart;
 };
-
 
 // Helper class to write the restart file from a seperate thread
 class WriteRestartWorkItem: public ThreadPool::WorkItem
@@ -38,7 +38,6 @@ private:
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
     const int N;
 };
-
 
 // Helper class to compute the blob ids
 static const std::string id_map_filename = "lbpm_id_map.txt";
@@ -175,6 +174,8 @@ public:
         fillData.copy(Averages->SDs,SignDistVar->data);
         fillData.copy(Averages->Label_NWP,BlobIDVar->data);
         IO::writeData( 0, meshData, 2, comm );
+
+        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Save Vis",1);
 
         PROFILE_SAVE("lbpm_color_simulator",1);

@@ -7,7 +7,6 @@
 #include <fstream>
 
 #include "common/ScaLBL.h"
-#include "common/Communication.h"
 #include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
