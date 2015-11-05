@@ -187,10 +187,6 @@ private:
     TwoPhase& Averages;
     int Nx,Ny,Nz;
     double Lx,Ly,Lz;
-    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
 };
 
 
