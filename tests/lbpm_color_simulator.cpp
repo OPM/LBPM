@@ -873,40 +873,6 @@ int main(int argc, char **argv)
 	DeviceBarrier();
 	CopyToHost(Averages->Phase.get(),Phi,N*sizeof(double));
 */
-    // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-    std::vector<IO::MeshDataStruct> meshData(1);
-    meshData[0].meshName = "domain";
-    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
-    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-    PhaseVar->name = "phase";
-    PhaseVar->type = IO::VolumeVariable;
-    PhaseVar->dim = 1;
-    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(PhaseVar);
-    PressVar->name = "Pressure";
-    PressVar->type = IO::VolumeVariable;
-    PressVar->dim = 1;
-    PressVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(PressVar);
-    SignDistVar->name = "SignDist";
-    SignDistVar->type = IO::VolumeVariable;
-    SignDistVar->dim = 1;
-    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(SignDistVar);
-    BlobIDVar->name = "BlobID";
-    BlobIDVar->type = IO::VolumeVariable;
-    BlobIDVar->dim = 1;
-    BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(BlobIDVar);
-    
-    fillData.copy(Averages->SDn,PhaseVar->data);
-    fillData.copy(Averages->SDs,SignDistVar->data);
-    fillData.copy(Averages->Label_NWP,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2, comm );
     
 /*	Averages->WriteSurfaces(0);
 
