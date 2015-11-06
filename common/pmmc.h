@@ -4347,7 +4347,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 		P.x = 0.33333333333333333*(A.x+B.x+C.x);
 		P.y = 0.33333333333333333*(A.y+B.y+C.y);
 		P.z = 0.33333333333333333*(A.z+B.z+C.z);
-		if (temp > 0.0){
+		if (area > 0.0){
 			x = Px.eval(P);
 			y = Py.eval(P);
 			z = Pz.eval(P);
@@ -4355,6 +4355,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 			if (norm==0.0) norm=1.0;
 			// Compute the interface speed from time derivative and gradient (Level Set Equation)
 			zeta = -Pt.eval(P) / norm;
+
 			//temp = sqrt(temp)/norm; <--- what was I thinking with this? (James)
 
 			// Compute the average
