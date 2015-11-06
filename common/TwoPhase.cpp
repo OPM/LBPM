@@ -67,7 +67,7 @@ TwoPhase::TwoPhase(Domain &dm):
     Jwn(0), Jwn_global(0), Kwn(0), Kwn_global(0), KNwns(0), KNwns_global(0),
     KGwns(0), KGwns_global(0), trawn(0), trawn_global(0), trJwn(0), trJwn_global(0),
     trRwn(0), trRwn_global(0), nwp_volume_global(0), wp_volume_global(0),
-    As_global(0), dEs(0), dAwn(0), dAns(0)
+    As_global(0), dEs(0), dAwn(0), dAns(0), wwndnw(0), wwndnw_global(0)
 {
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
@@ -147,8 +147,7 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn Euler Kn Jn An\n");					// trimmed curvature & minkowski measures
-			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"trawn trJwn trRwn wwndnw Euler Kn Jn An\n");					// trimmed curvature & minkowski measures
 		}
 
 		NWPLOG = fopen("components.NWP.tcat","a+");
@@ -258,6 +257,7 @@ void TwoPhase::Initialize()
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
 	euler = Jn = An = Kn = 0.0;
+	wwndnw = 0.0;
 }
 
 
@@ -442,6 +442,9 @@ void TwoPhase::ComputeLocal()
 					// Compute the normal speed of the interface
 					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+
+					for (int pt=0; pt <n_nw_tris; pt++) wwndnw += InterfaceSpeed(r);
+
 				}
 				// wns common curve averages
 				if (n_local_nws_pts > 0){
@@ -450,6 +453,7 @@ void TwoPhase::ComputeLocal()
 
 					pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
+
 
 					pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
 							SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
@@ -1075,6 +1079,7 @@ void TwoPhase::Reduce()
 	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&wwndnw,&wwndnw_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	// Phase averages
 	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
@@ -1120,6 +1125,7 @@ void TwoPhase::Reduce()
 	if (awn_global > 0.0){
 		Jwn_global /= awn_global;
 		Kwn_global /= awn_global;
+		wwndnw_global /= awn_global;
 		for (i=0; i<3; i++) vawn_global(i) /= awn_global;
 		for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
 	}
@@ -1179,7 +1185,7 @@ void TwoPhase::PrintAll(int timestep)
 				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global, wwndnw_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
