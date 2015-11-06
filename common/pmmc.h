@@ -4359,6 +4359,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 			AvgVel(0) += temp*zeta*x;
 			AvgVel(1) += temp*zeta*y;
 			AvgVel(2) += temp*zeta*z;
+			SurfaceValues(r) = zeta;
 		}
 	}
 	//.............................................................................
