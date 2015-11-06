@@ -443,7 +443,7 @@ void TwoPhase::ComputeLocal()
 					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
 
-					for (int pt=0; pt <n_nw_tris; pt++) wwndnw += InterfaceSpeed(r);
+					for (int p=0; p <n_nw_tris; p++) wwndnw += InterfaceSpeed(p);
 
 				}
 				// wns common curve averages
