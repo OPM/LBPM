@@ -221,11 +221,11 @@ int main(int argc, char **argv)
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (Averages.SDs(i,j,k) < 0.0){
+				if (SignDist(i,j,k) < 0.0){
 					// Solid phase 
 					Dm.id[n] = 0;
 				}
-				else if (Averages.Phase(i,j,k) < 0.0){
+				else if (Phase(i,j,k) < 0.0){
 					// wetting phase
 					Dm.id[n] = 2;
 				}
