@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 				}
 				
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
-				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,nx,ny,nz,iproc,jproc,kproc);
+				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
 				
 			}
 		}
