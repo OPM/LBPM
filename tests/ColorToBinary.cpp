@@ -201,7 +201,7 @@ int main(int argc, char **argv)
 							jglobal = jproc*(ny-2)+j;
 							kglobal = kproc*(nz-2)+k;
 							//........................................................................
-							SDs(iglobal,jglobal,kglobal) = Temp[n];
+							SignDist(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
 						}
 					}
