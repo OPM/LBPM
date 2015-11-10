@@ -27,7 +27,7 @@ void pack( const std::vector<TYPE>& rhs, char *buffer )
     size_t size = rhs.size();
     memcpy(buffer,&size,sizeof(size_t));
     size_t pos = sizeof(size_t);
-    for (int i=0; i<rhs.size(); i++) {
+    for (size_t i=0; i<rhs.size(); i++) {
         pack(rhs[i],&buffer[pos]);
         pos += packsize(rhs[i]);
     }
@@ -40,7 +40,7 @@ void unpack( std::vector<TYPE>& data, const char *buffer )
     data.clear();
     data.resize(size);
     size_t pos = sizeof(size_t);
-    for (int i=0; i<data.size(); i++) {
+    for (size_t i=0; i<data.size(); i++) {
         unpack(data[i],&buffer[pos]);
         pos += packsize(data[i]);
     }
