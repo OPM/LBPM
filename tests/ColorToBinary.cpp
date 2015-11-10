@@ -217,21 +217,23 @@ int main(int argc, char **argv)
 	delete Temp;
 	
 	// Initializing the blob ID
+	char *PhaseID;
+	PhaseID = new char (Nx*Ny*Nz);
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				if (SignDist(i,j,k) < 0.0){
 					// Solid phase 
-					Dm.id[n] = 0;
+					PhaseID[n] = 0;
 				}
 				else if (Phase(i,j,k) < 0.0){
 					// wetting phase
-					Dm.id[n] = 2;
+					PhaseID[n] = 2;
 				}
 				else {
 					// non-wetting phase
-					Dm.id[n] = 1;
+					PhaseID[n] = 1;
 				}
 			}
 		}
@@ -239,7 +241,17 @@ int main(int argc, char **argv)
 
 	FILE *OUTFILE;
 	OUTFILE = fopen("ID.dat","wb");
-	fwrite(&Dm.id,1,Nx*Ny*Nz,OUTFILE);
+	fwrite(Dm.id,1,Nx*Ny*Nz,OUTFILE);
+	fclose(OUTFILE);
+
+	FILE *OUTFILE;
+	OUTFILE = fopen("Phase.dat","wb");
+	fwrite(Phase,8,Nx*Ny*Nz,OUTFILE);
+	fclose(OUTFILE);
+
+	FILE *OUTFILE;
+	OUTFILE = fopen("SignDist.dat","wb");
+	fwrite(SignDist,8,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 
 	
