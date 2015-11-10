@@ -200,7 +200,6 @@ public:
             Averages.PrintComponents(timestep);
             PROFILE_STOP("Compute dist",1);
         }
-        PROFILE_SAVE("lbpm_color_simulator",false);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
 private:
@@ -290,16 +289,16 @@ void run_analysis( int timestep, int restart_interval,
     if ( (type&CopyAverages) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
         // Wait 
+        PROFILE_START("Copy-Pressure",1);
+        ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+        DeviceBarrier();
+        PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Wait",1);
         tpool.wait(wait.analysis);
         tpool.wait(wait.vis);   // Make sure we are done using analysis before modifying
         PROFILE_STOP("Copy-Wait",1);
-        PROFILE_START("Copy-Pressure",1);
-        ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
-        DeviceBarrier();
-        PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Averages",1);
+        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
         CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
         CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
         CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
