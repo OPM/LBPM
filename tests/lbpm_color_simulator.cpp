@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "common/ScaLBL.h"
+#include "common/Communication.h"
 #include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
@@ -706,6 +707,37 @@ int main(int argc, char **argv)
         ThreadPool::setProcessAffinity(procs);
     }
     ThreadPool tpool(N_threads);
+
+    // Create the MeshDataStruct
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    std::vector<IO::MeshDataStruct> meshData(1);
+    meshData[0].meshName = "domain";
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
+    PhaseVar->name = "phase";
+    PhaseVar->type = IO::VolumeVariable;
+    PhaseVar->dim = 1;
+    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseVar);
+    PressVar->name = "Pressure";
+    PressVar->type = IO::VolumeVariable;
+    PressVar->dim = 1;
+    PressVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PressVar);
+    SignDistVar->name = "SignDist";
+    SignDistVar->type = IO::VolumeVariable;
+    SignDistVar->dim = 1;
+    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(SignDistVar);
+    BlobIDVar->name = "BlobID";
+    BlobIDVar->type = IO::VolumeVariable;
+    BlobIDVar->dim = 1;
+    BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(BlobIDVar);
+
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
 	int timestep = -1;
@@ -714,6 +746,7 @@ int main(int argc, char **argv)
     writeIDMap(ID_map_struct(),0,id_map_filename);
     AnalysisWaitIdStruct work_ids;
 	while (timestep < timestepMax && err > tol ) {
+        if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
 
 		//*************************************************************************
@@ -837,8 +870,8 @@ int main(int argc, char **argv)
         // Run the analysis, blob identification, and write restart files
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
-            LocalRestartFile,tpool,work_ids);
-
+            LocalRestartFile,meshData,fillData,tpool,work_ids);
+        PROFILE_SAVE("lbpm_color_simulator",false);
 	}
     tpool.wait_pool_finished();
     PROFILE_STOP("Loop");

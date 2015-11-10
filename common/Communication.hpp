@@ -207,27 +207,27 @@ template<class TYPE1, class TYPE2>
 void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
 {
     PROFILE_START("fillHalo::copy",1);
-    ASSERT(src.size(0)==nx||src.size(0)==nx+2*ngx);
-    ASSERT(dst.size(0)==nx||dst.size(0)==nx+2*ngx);
-    bool src_halo = src.size(0)==nx+2*ngx;
-    bool dst_halo = dst.size(0)==nx+2*ngx;
+    ASSERT( (int)src.size(0)==nx || (int)src.size(0)==nx+2*ngx );
+    ASSERT( (int)dst.size(0)==nx || (int)dst.size(0)==nx+2*ngx );
+    bool src_halo = (int)src.size(0)==nx+2*ngx;
+    bool dst_halo = (int)dst.size(0)==nx+2*ngx;
     if ( src_halo ) {
-        ASSERT(src.size(0)==nx+2*ngx);
-        ASSERT(src.size(1)==ny+2*ngy);
-        ASSERT(src.size(2)==nz+2*ngz);
+        ASSERT((int)src.size(0)==nx+2*ngx);
+        ASSERT((int)src.size(1)==ny+2*ngy);
+        ASSERT((int)src.size(2)==nz+2*ngz);
     } else {
-        ASSERT(src.size(0)==nx);
-        ASSERT(src.size(1)==ny);
-        ASSERT(src.size(2)==nz);
+        ASSERT((int)src.size(0)==nx);
+        ASSERT((int)src.size(1)==ny);
+        ASSERT((int)src.size(2)==nz);
     }
     if ( dst_halo ) {
-        ASSERT(dst.size(0)==nx+2*ngx);
-        ASSERT(dst.size(1)==ny+2*ngy);
-        ASSERT(dst.size(2)==nz+2*ngz);
+        ASSERT((int)dst.size(0)==nx+2*ngx);
+        ASSERT((int)dst.size(1)==ny+2*ngy);
+        ASSERT((int)dst.size(2)==nz+2*ngz);
     } else {
-        ASSERT(dst.size(0)==nx);
-        ASSERT(dst.size(1)==ny);
-        ASSERT(dst.size(2)==nz);
+        ASSERT((int)dst.size(0)==nx);
+        ASSERT((int)dst.size(1)==ny);
+        ASSERT((int)dst.size(2)==nz);
     }
     if ( src_halo == dst_halo ) {
         // Src and dst halos match
@@ -235,18 +235,18 @@ void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
             dst(i) = src(i);
     } else if ( src_halo && !dst_halo ) {
         // Src has halos
-        for (size_t k=0; k<nz; k++) {
-            for (size_t j=0; j<ny; j++) {
-                for (size_t i=0; i<nx; i++) {
+        for (int k=0; k<nz; k++) {
+            for (int j=0; j<ny; j++) {
+                for (int i=0; i<nx; i++) {
                     dst(i,j,k) = src(i+ngx,j+ngy,k+ngz);
                 }
             }
         }
     } else if ( !src_halo && dst_halo ) {
         // Dst has halos
-        for (size_t k=0; k<nz; k++) {
-            for (size_t j=0; j<ny; j++) {
-                for (size_t i=0; i<nx; i++) {
+        for (int k=0; k<nz; k++) {
+            for (int j=0; j<ny; j++) {
+                for (int i=0; i<nx; i++) {
                     dst(i+ngx,j+ngy,k+ngz) = src(i,j,k);
                 }
             }

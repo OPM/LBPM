@@ -141,7 +141,7 @@ void Array<TYPE>::resize( const std::vector<size_t>& N )
     // Store the old data
     const size_t ndim_max = sizeof(d_N)/sizeof(size_t);
     std::vector<size_t> N1(ndim_max,1), N2(ndim_max,1);
-    for (size_t d=0; d<d_ndim; d++)
+    for (int d=0; d<d_ndim; d++)
         N1[d] = d_N[d];
     for (size_t d=0; d<N.size(); d++)
         N2[d] = N[d];

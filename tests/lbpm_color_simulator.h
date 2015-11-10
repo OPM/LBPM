@@ -1,20 +1,25 @@
 // Run the analysis, blob identification, and write restart files
 #include "common/Array.h"
 #include "common/Communication.h"
+#include "common/MPI_Helpers.h"
+#include "IO/MeshDatabase.h"
 
+//#define ANALYSIS_INTERVAL 6
 #define ANALYSIS_INTERVAL 1000
 #define BLOBID_INTERVAL 250
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
-    CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10 };
+    CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10, WriteVis=0x20 };
 
 
 // Structure used to store ids
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
     ThreadPool::thread_id_t analysis;
+    ThreadPool::thread_id_t vis;
     ThreadPool::thread_id_t restart;
 };
+
 
 // Helper class to write the restart file from a seperate thread
 class WriteRestartWorkItem: public ThreadPool::WorkItem
@@ -28,8 +33,6 @@ public:
         PROFILE_START("Save Checkpoint",1);
         WriteCheckpoint(filename,cDen.get(),cDistEven.get(),cDistOdd.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
-
-        PROFILE_SAVE("lbpm_color_simulator",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
 private:
@@ -38,6 +41,7 @@ private:
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
     const int N;
 };
+
 
 // Helper class to compute the blob ids
 static const std::string id_map_filename = "lbpm_id_map.txt";
@@ -122,71 +126,42 @@ private:
     BlobIDList new_list;
 };
 
+
+// Helper class to write the vis file from a thread
 class WriteVisWorkItem: public ThreadPool::WorkItem
 {
 public:
-	WriteVisWorkItem(AnalysisType type_, TwoPhase& Averages_):
-	type(type_), Averages(Averages_) { }
-
+    WriteVisWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
+        TwoPhase& Avgerages_, fillHalo<double>& fillData_ ):
+        timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_) {}
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
+        PROFILE_START("Save Vis",1);
+        ASSERT(visData[0].vars[0]->name=="phase");
+        ASSERT(visData[0].vars[1]->name=="Pressure");
+        ASSERT(visData[0].vars[2]->name=="SignDist");
+        ASSERT(visData[0].vars[3]->name=="BlobID");
+        Array<double>& PhaseData = visData[0].vars[0]->data;
+        Array<double>& PressData = visData[0].vars[1]->data;
+        Array<double>& SignData  = visData[0].vars[2]->data;
+        Array<double>& BlobData  = visData[0].vars[3]->data;
+        fillData.copy(Averages.SDn,PhaseData);
+        fillData.copy(Averages.Press,PressData);
+        fillData.copy(Averages.SDs,SignData);
+        fillData.copy(Averages.Label_NWP,BlobData);
         MPI_Comm newcomm;
         MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
-        // Write  VisIT files
-        PROFILE_START("Save Vis",1);
-        // Create the MeshDataStruct
-        Nx=Averages.Dm.Nx;
-        Ny=Averages.Dm.Ny;
-        Nz=Averages.Dm.Nz;
-        Lx=Averages.Dm.Lx;
-        Ly=Averages.Dm.Ly;
-        Lz=Averages.Dm.Lz;
-        fillHalo<double> fillData(newcomm,Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-        std::vector<IO::MeshDataStruct> meshData(1);
-        meshData[0].meshName = "domain";
-        meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Averages.Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
-        std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-        std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-        PhaseVar->name = "phase";
-        PhaseVar->type = IO::VolumeVariable;
-        PhaseVar->dim = 1;
-        PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(PhaseVar);
-        PressVar->name = "Pressure";
-        PressVar->type = IO::VolumeVariable;
-        PressVar->dim = 1;
-        PressVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(PressVar);
-        SignDistVar->name = "SignDist";
-        SignDistVar->type = IO::VolumeVariable;
-        SignDistVar->dim = 1;
-        SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(SignDistVar);
-        BlobIDVar->name = "BlobID";
-        BlobIDVar->type = IO::VolumeVariable;
-        BlobIDVar->dim = 1;
-        BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
-        meshData[0].vars.push_back(BlobIDVar);
-
-        fillData.copy(Averages.SDn,PhaseVar->data);
-        fillData.copy(Averages.SDs,SignDistVar->data);
-        fillData.copy(Averages.Label_NWP,BlobIDVar->data);
-        IO::writeData( 0, meshData, 2, newcomm );
-
+        IO::writeData( timestep, visData, 2, newcomm );
         MPI_Comm_free(&newcomm);
         PROFILE_STOP("Save Vis",1);
-
-        PROFILE_SAVE("lbpm_color_simulator",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
 private:
     WriteVisWorkItem();
-    AnalysisType type;
+    int timestep;
+    std::vector<IO::MeshDataStruct>& visData;
     TwoPhase& Averages;
-    int Nx,Ny,Nz;
-    double Lx,Ly,Lz;
+    fillHalo<double>& fillData;
 };
 
 
@@ -225,6 +200,7 @@ public:
             Averages.PrintComponents(timestep);
             PROFILE_STOP("Compute dist",1);
         }
+        PROFILE_SAVE("lbpm_color_simulator",false);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
 private:
@@ -237,6 +213,8 @@ private:
     double beta;
 };
 
+
+
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 
     const RankInfoStruct& rank_info, TwoPhase& Averages,
@@ -244,7 +222,8 @@ void run_analysis( int timestep, int restart_interval,
     int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, const double *Velocity, 
     const char *ID, const double *f_even, const double *f_odd, const double *Den, 
-    const char *LocalRestartFile, ThreadPool& tpool, AnalysisWaitIdStruct& wait )
+    const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
+    ThreadPool& tpool, AnalysisWaitIdStruct& wait )
 {
     int N = Nx*Ny*Nz;
 
@@ -266,7 +245,6 @@ void run_analysis( int timestep, int restart_interval,
             type = static_cast<AnalysisType>( type | IdentifyBlobs );
         }
     #endif
-
     if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
         type = static_cast<AnalysisType>( type | CopyAverages );
@@ -279,6 +257,12 @@ void run_analysis( int timestep, int restart_interval,
     if (timestep%restart_interval == 0) {
         // Write the restart file
         type = static_cast<AnalysisType>( type | CreateRestart );
+    }
+    if (timestep%restart_interval == 0) {
+        // Write the visualization data
+        type = static_cast<AnalysisType>( type | WriteVis );
+        type = static_cast<AnalysisType>( type | CopyAverages );
+        type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
     
     // Return if we are not doing anything
@@ -305,14 +289,22 @@ void run_analysis( int timestep, int restart_interval,
     }
     if ( (type&CopyAverages) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
+        // Wait 
+        PROFILE_START("Copy-Wait",1);
+        tpool.wait(wait.analysis);
+        tpool.wait(wait.vis);   // Make sure we are done using analysis before modifying
+        PROFILE_STOP("Copy-Wait",1);
+        PROFILE_START("Copy-Pressure",1);
         ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
         memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
         DeviceBarrier();
+        PROFILE_STOP("Copy-Pressure",1);
+        PROFILE_START("Copy-Averages",1);
         CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
         CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
         CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
         CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-
+        PROFILE_STOP("Copy-Averages",1);
     }
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
     if ( (type&CreateRestart) != 0 ) {
@@ -349,6 +341,7 @@ void run_analysis( int timestep, int restart_interval,
             type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
         work->add_dependency(wait.analysis);
+        work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
         wait.analysis = tpool.add_work(work);
     }
 
@@ -362,12 +355,27 @@ void run_analysis( int timestep, int restart_interval,
         } else {
             // Not clear yet
         }
+        // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
+        tpool.wait(wait.restart);
         // Write the restart file (using a seperate thread)
         WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cDistEven,cDistOdd,N);
         work->add_dependency(wait.restart);
         wait.restart = tpool.add_work(work);
     }
+
+    // Save the results for visualization
+    if ( (type&CreateRestart) != 0 ) {
+        // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
+        tpool.wait(wait.vis);
+        // Write the vis files
+        ThreadPool::WorkItem *work = new WriteVisWorkItem( timestep, visData, Averages, fillData );
+        work->add_dependency(wait.blobID);
+        work->add_dependency(wait.analysis);
+        work->add_dependency(wait.vis);
+        wait.vis = tpool.add_work(work);
+    }
     PROFILE_STOP("start_analysis");
 }
+
 
 
