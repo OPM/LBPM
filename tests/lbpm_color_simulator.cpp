@@ -290,6 +290,7 @@ int main(int argc, char **argv)
 		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
 		if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
+		if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
 		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
 		if (InitialCondition==1) printf("Initial conditions assigned from restart file \n");
 		printf("********************************************************\n");
@@ -297,10 +298,12 @@ int main(int argc, char **argv)
 
 	// Initialized domain and averaging framework for Two-Phase Flow
 	bool pBC,velBC;
-	if (BoundaryCondition==1)	pBC=true;
+	if (BoundaryCondition==1 || BoundaryCondition==3)
+								pBC=true;
 	else						pBC=false;
 	if (BoundaryCondition==2)	velBC=true;
 	else						velBC=false;
+
 	bool Restart;
 	if (InitialCondition==1)    Restart=true;
 	else 						Restart=false;
@@ -575,7 +578,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
+	// for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
 	//Averages->SetupCubes(Dm);
@@ -622,6 +625,26 @@ int main(int argc, char **argv)
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+	}
+
+	// Set dynamic pressure boundary conditions
+	double dp, slope;
+	if (BoundaryCondition==3){
+		slope = (dout-din)/timestepMax;
+		dp = din;
+		if (rank==0) printf("Change in pressure / time =%f \n",slope);
+		// set the initial value
+		din  = 1.0+0.5*dp;
+		dout = 1.0-0.5*dp;
+		// set the initial boundary conditions
+		if (Dm.kproc == 0)	{
+			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
+		if (Dm.kproc == nprocz-1){
+			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		}
 	}
 
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
@@ -684,6 +707,37 @@ int main(int argc, char **argv)
         ThreadPool::setProcessAffinity(procs);
     }
     ThreadPool tpool(N_threads);
+
+    // Create the MeshDataStruct
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    std::vector<IO::MeshDataStruct> meshData(1);
+    meshData[0].meshName = "domain";
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
+    PhaseVar->name = "phase";
+    PhaseVar->type = IO::VolumeVariable;
+    PhaseVar->dim = 1;
+    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PhaseVar);
+    PressVar->name = "Pressure";
+    PressVar->type = IO::VolumeVariable;
+    PressVar->dim = 1;
+    PressVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(PressVar);
+    SignDistVar->name = "SignDist";
+    SignDistVar->type = IO::VolumeVariable;
+    SignDistVar->dim = 1;
+    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(SignDistVar);
+    BlobIDVar->name = "BlobID";
+    BlobIDVar->type = IO::VolumeVariable;
+    BlobIDVar->dim = 1;
+    BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+    meshData[0].vars.push_back(BlobIDVar);
+
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
 	int timestep = -1;
@@ -692,6 +746,7 @@ int main(int argc, char **argv)
     writeIDMap(ID_map_struct(),0,id_map_filename);
     AnalysisWaitIdStruct work_ids;
 	while (timestep < timestepMax && err > tol ) {
+        if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
 
 		//*************************************************************************
@@ -787,6 +842,23 @@ int main(int argc, char **argv)
 			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 		}
+
+		if (BoundaryCondition==3){
+			// Increase the pressure difference
+			dp += slope;
+			din  = 1.0+0.5*dp;
+			dout = 1.0-0.5*dp;
+			// set the initial boundary conditions
+			if (Dm.kproc == 0)	{
+				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+				ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			}
+			if (Dm.kproc == nprocz-1){
+				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			}
+		}
+
 		//...................................................................................
 
 		MPI_Barrier(comm);
@@ -794,12 +866,15 @@ int main(int argc, char **argv)
 
 		// Timestep completed!
 		timestep++;
-
+  
         // Run the analysis, blob identification, and write restart files
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
-            LocalRestartFile,tpool,work_ids);
+            LocalRestartFile,meshData,fillData,tpool,work_ids);
 
+        // Save the timers
+        if ( timestep%50==0 )
+            PROFILE_SAVE("lbpm_color_simulator",1);
 	}
     tpool.wait_pool_finished();
     PROFILE_STOP("Loop");
@@ -833,40 +908,6 @@ int main(int argc, char **argv)
 	DeviceBarrier();
 	CopyToHost(Averages->Phase.get(),Phi,N*sizeof(double));
 */
-    // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-    std::vector<IO::MeshDataStruct> meshData(1);
-    meshData[0].meshName = "domain";
-    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
-    std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-    PhaseVar->name = "phase";
-    PhaseVar->type = IO::VolumeVariable;
-    PhaseVar->dim = 1;
-    PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(PhaseVar);
-    PressVar->name = "Pressure";
-    PressVar->type = IO::VolumeVariable;
-    PressVar->dim = 1;
-    PressVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(PressVar);
-    SignDistVar->name = "SignDist";
-    SignDistVar->type = IO::VolumeVariable;
-    SignDistVar->dim = 1;
-    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(SignDistVar);
-    BlobIDVar->name = "BlobID";
-    BlobIDVar->type = IO::VolumeVariable;
-    BlobIDVar->dim = 1;
-    BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
-    meshData[0].vars.push_back(BlobIDVar);
-    
-    fillData.copy(Averages->SDn,PhaseVar->data);
-    fillData.copy(Averages->SDs,SignDistVar->data);
-    fillData.copy(Averages->Label_NWP,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2, comm );
     
 /*	Averages->WriteSurfaces(0);
 

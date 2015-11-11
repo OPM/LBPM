@@ -67,7 +67,7 @@ TwoPhase::TwoPhase(Domain &dm):
     Jwn(0), Jwn_global(0), Kwn(0), Kwn_global(0), KNwns(0), KNwns_global(0),
     KGwns(0), KGwns_global(0), trawn(0), trawn_global(0), trJwn(0), trJwn_global(0),
     trRwn(0), trRwn_global(0), nwp_volume_global(0), wp_volume_global(0),
-    As_global(0), dEs(0), dAwn(0), dAns(0)
+    As_global(0), dEs(0), dAwn(0), dAns(0), wwndnw(0), wwndnw_global(0)
 {
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
@@ -147,8 +147,7 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
 			fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-			fprintf(TIMELOG,"trawn trJwn trRwn Euler Kn Jn An\n");					// trimmed curvature & minkowski measures
-			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"trawn trJwn trRwn wwndnw Euler Kn Jn An\n");					// trimmed curvature & minkowski measures
 		}
 
 		NWPLOG = fopen("components.NWP.tcat","a+");
@@ -175,38 +174,41 @@ TwoPhase::~TwoPhase()
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData)
 {
-/*	double factor,temp,value;
+	double factor,temp,value;
 	factor=0.5/Beta;
-	for (int n=0; n<Nx*Ny*Nz; n++){
-	 	value = ColorData[n];
-		if (value > 0.999 ) DistData[n] = 4.0;
-		else if (value < -0.999 ) DistData[n] = -4.0;
-		else 	DistData[n] = factor*log((1.0+value)/(1.0-value));
-		if (DistData[n] > 1.0)  DistData[n] = 1.0;
-		if (DistData[n] < -1.0) DistData[n] = -1.0;
-	}
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				value = ColorData(i,j,k);
-				temp = factor*log((1.0+value)/(1.0-value));
-				if (temp > 1.0) DistData(i,j,k) = 1.0;
-				else if (temp < -1.0) DistData(i,j,k) = -1.0;
+			 	temp = factor*log((1.0+value)/(1.0-value));
+				if (value > 0.8) DistData(i,j,k) = 2.94*factor;
+				else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
 				else DistData(i,j,k) = temp;
+				// Basic threshold
+				//if (value > 0) DistData(i,j,k) = 1.0;
+				//else DistData(i,j,k) = -1.0;
 			}
 		}
 	}
 
-	SSO(DistData,Dm.id,Dm,10);
-*/
-	for (int k=0; k<Nz; k++){
+	SSO(DistData,Dm.id,Dm,40);
+
+        for (int k=0; k<Nz; k++){
+	  for (int j=0; j<Ny; j++){
+	    for (int i=0; i<Nx; i++){
+	      DistData(i,j,k) += 1.0;
+	    }
+	  }
+	}	
+	/*	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				DistData(i,j,k) = ColorData(i,j,k);
 			}
 		}
 	}
+	*/
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
@@ -255,6 +257,7 @@ void TwoPhase::Initialize()
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
 	euler = Jn = An = Kn = 0.0;
+	wwndnw = 0.0;
 }
 
 
@@ -302,6 +305,8 @@ void TwoPhase::UpdateSolid()
 void TwoPhase::UpdateMeshValues()
 {
 	int i,j,k,n;
+	//...........................................................................
+	Dm.CommunicateMeshHalo(SDn);
 	//...........................................................................
 	// Compute the gradients of the phase indicator and signed distance fields
 	pmmc_MeshGradient(SDn,SDn_x,SDn_y,SDn_z,Nx,Ny,Nz);
@@ -437,6 +442,9 @@ void TwoPhase::ComputeLocal()
 					// Compute the normal speed of the interface
 					pmmc_InterfaceSpeed(dPdt, SDn_x, SDn_y, SDn_z, CubeValues, nw_pts, nw_tris,
 							NormalVector, InterfaceSpeed, vawn, i, j, k, n_nw_pts, n_nw_tris);
+
+					for (int p=0; p <n_nw_tris; p++) wwndnw += InterfaceSpeed(p);
+
 				}
 				// wns common curve averages
 				if (n_local_nws_pts > 0){
@@ -445,6 +453,7 @@ void TwoPhase::ComputeLocal()
 
 					pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
+
 
 					pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
 							SDs_z, KNwns_values, KGwns_values, KNwns, KGwns,
@@ -1070,6 +1079,7 @@ void TwoPhase::Reduce()
 	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&wwndnw,&wwndnw_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	// Phase averages
 	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
@@ -1115,6 +1125,7 @@ void TwoPhase::Reduce()
 	if (awn_global > 0.0){
 		Jwn_global /= awn_global;
 		Kwn_global /= awn_global;
+		wwndnw_global /= awn_global;
 		for (i=0; i<3; i++) vawn_global(i) /= awn_global;
 		for (i=0; i<6; i++)	Gwn_global(i) /= awn_global;
 	}
@@ -1174,7 +1185,7 @@ void TwoPhase::PrintAll(int timestep)
 				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5));	// orientation of ns interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
-		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);						// Trimmed curvature
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global, wwndnw_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}

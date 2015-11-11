@@ -4317,12 +4317,12 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
 //--------------------------------------------------------------------------------------------------------
 inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
 									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
-									  DoubleArray &SurfaceVector, DoubleArray &SurfaceValues, DoubleArray &AvgVel, 
+									  DoubleArray &SurfaceVector, DoubleArray &AvgSpeed, DoubleArray &AvgVel,
 									  int i, int j, int k, int npts, int ntris)
 {
 	Point A,B,C,P;
 	double x,y,z;
-	double s,s1,s2,s3,temp;
+	double s,s1,s2,s3,area;
 	double norm, zeta;
 
 	TriLinPoly Px,Py,Pz,Pt;
@@ -4342,23 +4342,27 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 		s2 = sqrt((A.x-C.x)*(A.x-C.x)+(A.y-C.y)*(A.y-C.y)+(A.z-C.z)*(A.z-C.z));
 		s3 = sqrt((B.x-C.x)*(B.x-C.x)+(B.y-C.y)*(B.y-C.y)+(B.z-C.z)*(B.z-C.z));
 		s = 0.5*(s1+s2+s3);
-		temp = s*(s-s1)*(s-s2)*(s-s3);
+		area = sqrt(s*(s-s1)*(s-s2)*(s-s3));
 		// Compute the centroid P
 		P.x = 0.33333333333333333*(A.x+B.x+C.x);
 		P.y = 0.33333333333333333*(A.y+B.y+C.y);
 		P.z = 0.33333333333333333*(A.z+B.z+C.z);
-		if (temp > 0.0){
+		if (area > 0.0){
 			x = Px.eval(P);
 			y = Py.eval(P);
 			z = Pz.eval(P);
 			norm = sqrt(x*x+y*y+z*z);
 			if (norm==0.0) norm=1.0;
+			// Compute the interface speed from time derivative and gradient (Level Set Equation)
 			zeta = -Pt.eval(P) / norm;
-			temp = sqrt(temp)/norm;
 
-			AvgVel(0) += temp*zeta*x;
-			AvgVel(1) += temp*zeta*y;
-			AvgVel(2) += temp*zeta*z;
+			//temp = sqrt(temp)/norm; <--- what was I thinking with this? (James)
+
+			// Compute the average
+			AvgVel(0) += area*zeta*x;
+			AvgVel(1) += area*zeta*y;
+			AvgVel(2) += area*zeta*z;
+			AvgSpeed(r) = zeta*area;
 		}
 	}
 	//.............................................................................
