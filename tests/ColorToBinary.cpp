@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 
 	FILE *OUTFILE;
 	OUTFILE = fopen("ID.dat","wb");
-	fwrite(Dm.id,1,Nx*Ny*Nz,OUTFILE);
+	fwrite(PhaseID,1,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 
 	OUTFILE = fopen("Phase.dat","wb");
