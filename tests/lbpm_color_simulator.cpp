@@ -871,7 +871,10 @@ int main(int argc, char **argv)
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,meshData,fillData,tpool,work_ids);
-        PROFILE_SAVE("lbpm_color_simulator",false);
+
+        // Save the timers
+        if ( timestep%50==0 )
+            PROFILE_SAVE("lbpm_color_simulator",1);
 	}
     tpool.wait_pool_finished();
     PROFILE_STOP("Loop");
