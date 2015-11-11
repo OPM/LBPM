@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 	
 	// Initializing the blob ID
 	char *PhaseID;
-	PhaseID = new char (Nx*Ny*Nz);
+	PhaseID = new char [Nx*Ny*Nz];
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
