@@ -427,7 +427,7 @@ void TwoPhase::ComputeLocal()
 						}
 					}
 				}
-				// Compute local contrubition to Euler characteristic based on 6 adjacency
+/*				// Compute local contrubition to Euler characteristic based on 6 adjacency
 				for (int p=0;p<8;p++){
 					// binary id for the wetting phase
 					double binid= PhaseID(i+cube[p][0],j+cube[p][1],k+cube[p][2];
@@ -453,7 +453,7 @@ void TwoPhase::ComputeLocal()
 				epc_nvert += CubeValues(1,0,1);
 				epc_nvert += CubeValues(0,1,1);
 				epc_nvert += CubeValues(1,1,1);
-
+*/
 				//...........................................................................
 				// Construct the interfaces and common curve
 				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
