@@ -72,6 +72,8 @@ TwoPhase::TwoPhase(Domain &dm):
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
 
+	TempID = new char[Nx*Ny*Nz];
+
 	// Global arrays
 	PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
 	Label_WP.resize(Nx,Ny,Nz);      Label_WP.fill(0);
@@ -166,6 +168,7 @@ TwoPhase::TwoPhase(Domain &dm):
 // Destructor
 TwoPhase::~TwoPhase()
 {
+	delete [] TempID;
     if ( TIMELOG!=NULL ) { fclose(TIMELOG); }
     if ( NWPLOG!=NULL ) { fclose(NWPLOG); }
     if ( WPLOG!=NULL ) { fclose(WPLOG); }
@@ -181,18 +184,26 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				value = ColorData(i,j,k);
+
+				// Set phase ID field for non-wetting phase
+				int n = k*Nx*Ny+j*Nx+i;
+				if (value > 0)	TempID[n] = 1;
+				else			TempID[n] = 0;
+
 			 	temp = factor*log((1.0+value)/(1.0-value));
 				if (value > 0.8) DistData(i,j,k) = 2.94*factor;
 				else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
 				else DistData(i,j,k) = temp;
+
 				// Basic threshold
 				//if (value > 0) DistData(i,j,k) = 1.0;
 				//else DistData(i,j,k) = -1.0;
+
 			}
 		}
 	}
 
-	SSO(DistData,Dm.id,Dm,40);
+	SSO(DistData,TempID,Dm,40);
 
         for (int k=0; k<Nz; k++){
 	  for (int j=0; j<Ny; j++){
@@ -416,6 +427,32 @@ void TwoPhase::ComputeLocal()
 						}
 					}
 				}
+				// Compute local contrubition to Euler characteristic based on 6 adjacency
+				for (int p=0;p<8;p++){
+					// binary id for the wetting phase
+					double binid= PhaseID(i+cube[p][0],j+cube[p][1],k+cube[p][2];
+					if (binid != 1) binid=0;  // non-wetting phase
+					CubeValues(cube[p][0],cube[p][1],cube[p][2])=binid;
+				}
+				// update faces edges and cubes for NWP
+				epc_ncubes += CubeValues(0,0,0)*CubeValues(1,0,0)*CubeValues(0,1,0)*CubeValues(0,0,1)*
+						CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(0,1,1)*CubeValues(1,1,1);
+				//  three faces (others shared by other cubes)
+				epc_nface += CubeValues(1,0,0)*CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(1,1,1);
+				epc_nface += CubeValues(0,1,0)*CubeValues(1,1,0)*CubeValues(0,1,1)*CubeValues(1,1,1);
+				epc_nface += CubeValues(0,0,1)*CubeValues(0,1,1)*CubeValues(1,0,1)*CubeValues(1,1,1);
+				// six of twelve edges (others shared by other cubes)
+				epc_nedge += CubeValues(1,1,1)*CubeValues(1,1,0);
+				epc_nedge += CubeValues(1,1,1)*CubeValues(1,0,1);
+				epc_nedge += CubeValues(1,1,1)*CubeValues(0,1,1);
+				epc_nedge += CubeValues(1,0,1)*CubeValues(1,0,0);
+				epc_nedge += CubeValues(1,0,1)*CubeValues(0,0,1);
+				epc_nedge += CubeValues(0,1,1)*CubeValues(0,0,1);
+				// four of eight vertices
+				epc_nvert += CubeValues(1,1,0);
+				epc_nvert += CubeValues(1,0,1);
+				epc_nvert += CubeValues(0,1,1);
+				epc_nvert += CubeValues(1,1,1);
 
 				//...........................................................................
 				// Construct the interfaces and common curve
@@ -489,6 +526,9 @@ void TwoPhase::ComputeLocal()
 		}
 	}
 	
+
+
+
 }
 
 

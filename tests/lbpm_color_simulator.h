@@ -186,7 +186,8 @@ public:
         }
         if ( (type&CalcDist) != 0 ) {
             PROFILE_START("Compute dist",1);
-            // Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_minus,Averages.Phase_minus);
             Averages.Initialize();
             Averages.ComputeDelPhi();
             Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);

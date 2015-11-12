@@ -55,6 +55,8 @@ class TwoPhase{
 
 	DoubleArray RecvBuffer;
 
+	char *TempID;
+
 	// CSV / text file where time history of averages is saved
 	FILE *TIMELOG;
 	FILE *NWPLOG;
