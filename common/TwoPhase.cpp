@@ -191,9 +191,9 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 				else			TempID[n] = 0;
 
 			 	temp = factor*log((1.0+value)/(1.0-value));
-				if (value > 0.8) DistData(i,j,k) = 2.94*factor;
-				else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
-				else DistData(i,j,k) = temp;
+			 	if (value > 0.8) DistData(i,j,k) = 2.94*factor;
+			 	else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
+			 	else DistData(i,j,k) = temp;
 
 				// Basic threshold
 				//if (value > 0) DistData(i,j,k) = 1.0;
@@ -205,7 +205,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 
 	SSO(DistData,TempID,Dm,40);
 
-        for (int k=0; k<Nz; k++){
+    for (int k=0; k<Nz; k++){
 	  for (int j=0; j<Ny; j++){
 	    for (int i=0; i<Nx; i++){
 	      DistData(i,j,k) += 1.0;

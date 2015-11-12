@@ -186,8 +186,6 @@ public:
         }
         if ( (type&CalcDist) != 0 ) {
             PROFILE_START("Compute dist",1);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
             Averages.Initialize();
             Averages.ComputeDelPhi();
             Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
@@ -283,10 +281,12 @@ void run_analysis( int timestep, int restart_interval,
         CopyToHost(phase->get(),Phi,N*sizeof(double));
     }
     if ( (type&CopyPhaseIndicator)!=0 ) {
-        memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
+        //memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
+        Averages.ColorToSignedDistance(beta,phase,Averages.Phase_tplus);
     }
     if ( (type&CalcDist)!=0 ) {
-        memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
+        //memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
+        Averages.ColorToSignedDistance(beta,phase,Averages.Phase_tminus);
     }
     if ( (type&CopyAverages) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
