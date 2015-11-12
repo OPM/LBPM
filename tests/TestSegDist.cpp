@@ -62,17 +62,23 @@ int main(int argc, char **argv)
 	id = new char [N];
 	double BubbleRadius = 25;
 	// Initialize the bubble
-	int x,y,z;
+	double x,y,z , Cx,Cy,Cz;
+
+	Cx = 1.0*nx;
+	Cy = 1.0*ny;
+	Cz = 1.0*nz;
+
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
 				x = (nx-2)*Dm.iproc+i-1;
 				y = (ny-2)*Dm.jproc+j-1;
 				z = (nz-2)*Dm.kproc+k-1;
+
 				n = k*nx*ny+j*nx+i;
 
 				// Initialize phase positions
-				if ((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1) < BubbleRadius*BubbleRadius){
+				if ( (x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz) < BubbleRadius*BubbleRadius){
 					id[n] = 0;
 				}
 				else{
@@ -99,7 +105,7 @@ int main(int argc, char **argv)
 				x = (nx-2)*Dm.iproc+i-1;
 				y = (ny-2)*Dm.jproc+j-1;
 				z = (nz-2)*Dm.kproc+k-1;
-				TrueDist(i,j,k) = sqrt(double((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1)));
+				TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
 			}
 		}
 	}
