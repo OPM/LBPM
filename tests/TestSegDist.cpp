@@ -66,9 +66,9 @@ int main(int argc, char **argv)
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
-				x = (nx-2)*Dm.iproc+i;
-				y = (ny-2)*Dm.jproc+j;
-				z = (nz-2)*Dm.kproc+k;
+				x = (nx-2)*Dm.iproc+i-1;
+				y = (ny-2)*Dm.jproc+j-1;
+				z = (nz-2)*Dm.kproc+k-1;
 				n = k*nx*ny+j*nx+i;
 
 				// Initialize phase positions
@@ -78,11 +78,15 @@ int main(int argc, char **argv)
 				else{
 					id[n]=1;
 				}
+
+
 			}
 		}
 	}
 	
 	DoubleArray Distance(nx,ny,nz);
+	DoubleArray TrueDist(nx,ny,nz);
+
 	// Initialize the signed distance function
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
@@ -90,6 +94,12 @@ int main(int argc, char **argv)
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
 				Distance(i,j,k) = 2.0*id[n]-1.0;
+
+				// True signed distance
+				x = (nx-2)*Dm.iproc+i-1;
+				y = (ny-2)*Dm.jproc+j-1;
+				z = (nz-2)*Dm.kproc+k-1;
+				TrueDist(i,j,k) = sqrt(double((x-nx+1)*(x-nx+1)+(y-ny+1)*(y-ny+1)+(z-nz+1)*(z-nz+1)));
 			}
 		}
 	}
@@ -101,14 +111,29 @@ int main(int argc, char **argv)
 	printf("Initialized! Converting to Signed Distance function \n");
 	SSO(Distance,id,Dm,10);
 
+	double Error=0.0;
+	int Count = 0;
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				if (fabs(TrueDist(i,j,k)) < 3.0){
+					Error += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
+					Count += 1;
+				}
+			}
+		}
+	}
+	Error = sqrt(Error)/(double (Count));
+	printf("Mean error %f \n", Error);
+
 	char LocalRankFilename[40];
     sprintf(LocalRankFilename,"Dist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
     fwrite(Distance.get(),8,Distance.length(),DIST);
     fclose(DIST);
 
-    MPI_Barrier(comm);
-	MPI_Finalize();
     return 0;
 
+    MPI_Barrier(comm);
+	MPI_Finalize();
 }
