@@ -68,6 +68,9 @@ int main(int argc, char **argv)
 	Cy = 1.0*ny;
 	Cz = 1.0*nz;
 
+	DoubleArray Distance(nx,ny,nz);
+	DoubleArray TrueDist(nx,ny,nz);
+
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
@@ -93,9 +96,6 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	DoubleArray Distance(nx,ny,nz);
-	DoubleArray TrueDist(nx,ny,nz);
-
 	// Initialize the signed distance function
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
