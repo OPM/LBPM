@@ -71,14 +71,17 @@ int main(int argc, char **argv)
 	for (k=1;k<nz-1;k++){
 		for (j=1;j<ny-1;j++){
 			for (i=1;i<nx-1;i++){
+
+				// True signed distance
 				x = (nx-2)*Dm.iproc+i-1;
 				y = (ny-2)*Dm.jproc+j-1;
 				z = (nz-2)*Dm.kproc+k-1;
+				TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
 
 				n = k*nx*ny+j*nx+i;
 
 				// Initialize phase positions
-				if ( (x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz) < BubbleRadius*BubbleRadius){
+				if (TrueDist(i,j,k) < 0.0){
 					id[n] = 0;
 				}
 				else{
@@ -100,12 +103,6 @@ int main(int argc, char **argv)
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
 				Distance(i,j,k) = 2.0*id[n]-1.0;
-
-				// True signed distance
-				x = (nx-2)*Dm.iproc+i-1;
-				y = (ny-2)*Dm.jproc+j-1;
-				z = (nz-2)*Dm.kproc+k-1;
-				TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
 			}
 		}
 	}
