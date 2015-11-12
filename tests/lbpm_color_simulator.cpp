@@ -746,7 +746,7 @@ int main(int argc, char **argv)
     writeIDMap(ID_map_struct(),0,id_map_filename);
     AnalysisWaitIdStruct work_ids;
 	while (timestep < timestepMax && err > tol ) {
-        if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
+        //if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
 
 		//*************************************************************************
