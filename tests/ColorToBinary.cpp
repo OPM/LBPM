@@ -244,11 +244,11 @@ int main(int argc, char **argv)
 	fwrite(PhaseID,1,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 
-/*	OUTFILE = fopen("Phase.dat","wb");
+	OUTFILE = fopen("Phase.dat","wb");
 	fwrite(Phase.get(),8,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 
-	OUTFILE = fopen("SignDist.dat","wb");
+	/*	OUTFILE = fopen("SignDist.dat","wb");
 	fwrite(SignDist.get(),8,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 	*/
