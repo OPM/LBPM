@@ -182,9 +182,9 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                 for (i=1;i<Dm.Nx-1;i++){
 
                 	int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
-//                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
-                	sign = -1;
-                	if (ID[n] == 0) sign = 1;
+                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
+		    //                	sign = -1;
+		    //	if (ID[n] == 0) sign = 1;
               /*
                     if (!(i+1<Nx))     nx=0.5*Distance(i,j,k);
                     else             nx=0.5*Distance(i+1,j,k);;
