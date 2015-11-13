@@ -203,7 +203,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		}
 	}
 
-	SSO(DistData,Dm.id,Dm,40);
+	SSO(DistData,TempID,Dm,40);
 
     for (int k=0; k<Nz; k++){
 	  for (int j=0; j<Ny; j++){

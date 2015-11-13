@@ -16,10 +16,7 @@
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
-
 using namespace std;
-
-
 
 struct Domain{
     // Default constructor
@@ -184,8 +181,10 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
             for (j=1;j<Dm.Ny-1;j++){
                 for (i=1;i<Dm.Nx-1;i++){
 
-                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
-
+                	int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
+//                    sign = Distance(i,j,k) / fabs(Distance(i,j,k));
+                	sign = -1;
+                	if (ID[n] == 0) sign = 1;
               /*
                     if (!(i+1<Nx))     nx=0.5*Distance(i,j,k);
                     else             nx=0.5*Distance(i+1,j,k);;
