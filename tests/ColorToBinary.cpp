@@ -11,8 +11,9 @@
 
 using namespace std;
 
-
-inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int nz, int iproc, int jproc, int kproc)
+inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x,
+							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz, int iproc, int
+							jproc, int kproc)
 {
 	int i,j,k,q,n,N;
 	int iglobal,jglobal,kglobal;
@@ -99,10 +100,10 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int
 				kglobal = kproc*(nz-2)+k;
 				//........................................................................				
 				Phase(iglobal,jglobal,kglobal) = (denA-denB)/(denA+denB);
-				//Pressure(iglobal,jglobal,kglobal) = value;
-				//Vel_x(iglobal,jglobal,kglobal) = vx;
-				//Vel_y(iglobal,jglobal,kglobal) = vy;
-				//Vel_z(iglobal,jglobal,kglobal) = vz;
+				Pressure(iglobal,jglobal,kglobal) = value;
+				Vel_x(iglobal,jglobal,kglobal) = vx;
+				Vel_y(iglobal,jglobal,kglobal) = vy;
+				Vel_z(iglobal,jglobal,kglobal) = vz;
 				//........................................................................
 			}
 		}
@@ -169,6 +170,10 @@ int main(int argc, char **argv)
 	printf("Full domain size: %i x %i x %i  \n", Nx,Ny,Nz);
 	
 	DoubleArray Phase(Nx,Ny,Nz);
+	DoubleArray Press(Nx,Ny,Nz);
+	DoubleArray Vel_x(Nx,Ny,Nz);
+	DoubleArray Vel_y(Nx,Ny,Nz);
+	DoubleArray Vel_z(Nx,Ny,Nz);
 	DoubleArray SignDist(Nx,Ny,Nz);
 	
 	// Filenames used
@@ -208,8 +213,8 @@ int main(int argc, char **argv)
 				}
 				
 				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
-				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
-				
+				ReadFromRank(LocalRankFilename,Phase,Press,Vel_x,Vel_y,Vel_z,
+						nx,ny,nz,iproc,jproc,kproc);
 			}
 		}
 	}
