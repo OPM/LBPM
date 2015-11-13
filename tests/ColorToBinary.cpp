@@ -95,9 +95,9 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 				//........................................................................
 				// save values in global arrays
 				//........................................................................
-				iglobal = iproc*(nx-2)+i;
-				jglobal = jproc*(ny-2)+j;
-				kglobal = kproc*(nz-2)+k;
+				iglobal = iproc*(nx-2)+i-1;
+				jglobal = jproc*(ny-2)+j-1;
+				kglobal = kproc*(nz-2)+k-1;
 				//........................................................................				
 				Phase(iglobal,jglobal,kglobal) = (denA-denB)/(denA+denB);
 				Pressure(iglobal,jglobal,kglobal) = value;
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 	Ny = (ny-2)*nprocy;
 	Nz = (nz-2)*nprocz;
 	Domain Dm(Nx,Ny,Nz,rank,1,1,1,Lx,Ly,Lz,BoundaryCondition);
-	Nx+=2; Ny+=2; Nz+=2;
+
 	printf("Full domain size: %i x %i x %i  \n", Nx,Ny,Nz);
 	
 	DoubleArray Phase(Nx,Ny,Nz);
@@ -203,9 +203,9 @@ int main(int argc, char **argv)
 							//........................................................................
 							n = k*nx*ny+j*nx+i;
 							//........................................................................
-							iglobal = iproc*(nx-2)+i;
-							jglobal = jproc*(ny-2)+j;
-							kglobal = kproc*(nz-2)+k;
+							iglobal = iproc*(nx-2)+i-1;
+							jglobal = jproc*(ny-2)+j-1;
+							kglobal = kproc*(nz-2)+k-1;
 							//........................................................................
 							SignDist(iglobal,jglobal,kglobal) = Temp[n];
 							//........................................................................
