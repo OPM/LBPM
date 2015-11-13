@@ -193,6 +193,7 @@ int main(int argc, char **argv)
 				
 				proc = kproc*nprocx*nprocy + jproc*nprocx + iproc;
 
+				sprintf(LocalRankString,"%05d",proc);
 				sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
 				for (k=1; k<nz-1; k++){
@@ -256,7 +257,6 @@ int main(int argc, char **argv)
 	OUTFILE = fopen("SignDist.dat","wb");
 	fwrite(SignDist.get(),8,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
-
 	
 	// ****************************************************
 	MPI_Barrier(comm);
