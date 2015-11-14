@@ -9,7 +9,7 @@
 #define BLOBID_INTERVAL 250
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
-    CopyAverages=0x04, CalcDist=0x08, CreateRestart=0x10, WriteVis=0x20 };
+    CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
 
 
 // Structure used to store ids
@@ -184,7 +184,7 @@ public:
         if ( (type&CopyPhaseIndicator) != 0 ) {
             // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
         }
-        if ( (type&CalcDist) != 0 ) {
+        if ( (type&ComputeAverages) != 0 ) {
             PROFILE_START("Compute dist",1);
             Averages.Initialize();
             Averages.ComputeDelPhi();
@@ -248,12 +248,12 @@ void run_analysis( int timestep, int restart_interval,
 
     if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
-        type = static_cast<AnalysisType>( type | CopyAverages );
+        type = static_cast<AnalysisType>( type | CopySimState );
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
     if ( timestep%ANALYSIS_INTERVAL == 5 ) {
         // Run the analysis
-        type = static_cast<AnalysisType>( type | CalcDist );
+        type = static_cast<AnalysisType>( type | ComputeAverages );
     }
     if (timestep%restart_interval == 0) {
         // Write the restart file
@@ -262,7 +262,7 @@ void run_analysis( int timestep, int restart_interval,
     if (timestep%restart_interval == 0) {
         // Write the visualization data
         type = static_cast<AnalysisType>( type | WriteVis );
-        type = static_cast<AnalysisType>( type | CopyAverages );
+        type = static_cast<AnalysisType>( type | CopySimState );
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
     
@@ -276,8 +276,8 @@ void run_analysis( int timestep, int restart_interval,
     DeviceBarrier();
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
-    if ( (type&CopyPhaseIndicator)!=0 || (type&CalcDist)!=0 ||
-         (type&CopyAverages)!=0 || (type&IdentifyBlobs)!=0 )
+    if ( (type&CopyPhaseIndicator)!=0 || (type&ComputeAverages)!=0 ||
+         (type&CopySimState)!=0 || (type&IdentifyBlobs)!=0 )
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
         CopyToHost(phase->get(),Phi,N*sizeof(double));
@@ -286,11 +286,11 @@ void run_analysis( int timestep, int restart_interval,
         memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
     }
-    if ( (type&CalcDist)!=0 ) {
+    if ( (type&ComputeAverages)!=0 ) {
         memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
     }
-    if ( (type&CopyAverages) != 0 ) {
+    if ( (type&CopySimState) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
         // Wait 
         PROFILE_START("Copy-Pressure",1);
@@ -301,13 +301,13 @@ void run_analysis( int timestep, int restart_interval,
         tpool.wait(wait.analysis);
         tpool.wait(wait.vis);   // Make sure we are done using analysis before modifying
         PROFILE_STOP("Copy-Wait",1);
-        PROFILE_START("Copy-Averages",1);
+        PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
         CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
         CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
         CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
         CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
-        PROFILE_STOP("Copy-Averages",1);
+        PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
     if ( (type&CreateRestart) != 0 ) {
@@ -339,7 +339,7 @@ void run_analysis( int timestep, int restart_interval,
     }
 
     // Spawn threads to do the analysis work
-    if ( (type&CalcDist) != 0 ) {
+    if ( (type&ComputeAverages) != 0 ) {
         ThreadPool::WorkItem *work = new AnalysisWorkItem(
             type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
