@@ -910,13 +910,13 @@ int main(int argc, char **argv)
 */
     
 /*	Averages->WriteSurfaces(0);
- */
+
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(Averages->SDn.get(),8,N,PHASE);
 	fclose(PHASE);
-	/**/
+	*/
 
 	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;

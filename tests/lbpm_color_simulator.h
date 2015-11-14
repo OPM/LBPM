@@ -164,7 +164,6 @@ private:
     fillHalo<double>& fillData;
 };
 
-
 // Helper class to run the analysis from within a thread
 // Note: Averages will be modified after the constructor is called
 class AnalysisWorkItem: public ThreadPool::WorkItem
