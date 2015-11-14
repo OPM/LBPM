@@ -16,8 +16,6 @@ enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02,
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
     ThreadPool::thread_id_t analysis;
-    ThreadPool::thread_id_t tminus;
-    ThreadPool::thread_id_t tplus;
     ThreadPool::thread_id_t vis;
     ThreadPool::thread_id_t restart;
 };
@@ -191,6 +189,8 @@ public:
             Averages.Initialize();
             Averages.ComputeDelPhi();
             Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
             Averages.UpdateMeshValues();
             Averages.ComputeLocal();
             Averages.Reduce();
@@ -343,8 +343,6 @@ void run_analysis( int timestep, int restart_interval,
         ThreadPool::WorkItem *work = new AnalysisWorkItem(
             type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
-        work->add_dependency(wait.tminus);
-        work->add_dependency(wait.tplus);
         work->add_dependency(wait.analysis);
         work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
         wait.analysis = tpool.add_work(work);
