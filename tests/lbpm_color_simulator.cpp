@@ -309,8 +309,14 @@ int main(int argc, char **argv)
 	else 						Restart=false;
     NULL_USE(pBC);  NULL_USE(velBC);
 
+	// Full domain
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Mask.id[i] = 1;
+	Dm.CommInit(comm);
 	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+
+	// Mask that excludes the solid phase
+	Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
@@ -415,8 +421,8 @@ int main(int argc, char **argv)
 	int kstart,kfinish;
 	kstart = 1;
 	kfinish = Nz-1;
-	if (BoundaryCondition >  0 && Dm.kproc==0)		kstart = 4;
-	if (BoundaryCondition >  0 && Dm.kproc==nprocz-1)	kfinish = Nz-4;
+	if (BoundaryCondition >  0 && Mask.kproc==0)		kstart = 4;
+	if (BoundaryCondition >  0 && Mask.kproc==nprocz-1)	kfinish = Nz-4;
 
 	// Compute the pore volume
 	sum_local = 0.0;
@@ -436,7 +442,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0  && Dm.kproc == 0){
+	if (BoundaryCondition >  0  && Mask.kproc == 0){
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -447,7 +453,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+	if (BoundaryCondition >  0  && Mask.kproc == nprocz-1){
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -465,13 +471,13 @@ int main(int argc, char **argv)
 	//.........................................................
 
 	// Initialize communication structures in averaging domain
-	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-	Dm.CommInit(comm);
+	for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
+	Mask.CommInit(comm);
 
 	//...........................................................................
 	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 	// Create a communicator for the device
-	ScaLBL_Communicator ScaLBL_Comm(Dm);
+	ScaLBL_Communicator ScaLBL_Comm(Mask);
 
 	// set reservoirs
 	if (BoundaryCondition > 0){
@@ -479,11 +485,11 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (Dm.kproc==0 && k==0)			id[n]=1;
-					if (Dm.kproc==0 && k==1)			id[n]=1;
-					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
-					Dm.id[n] = id[n];
+					if (Mask.kproc==0 && k==0)			id[n]=1;
+					if (Mask.kproc==0 && k==1)			id[n]=1;
+					if (Mask.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
+					if (Mask.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					Mask.id[n] = id[n];
 				}
 			}
 		}
@@ -581,7 +587,7 @@ int main(int argc, char **argv)
 	//for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
 	//.......................................................................
 	// Finalize setup for averaging domain
-	//Averages->SetupCubes(Dm);
+	//Averages->SetupCubes(Mask);
 	Averages->UpdateSolid();
 	//.......................................................................
 	
@@ -601,12 +607,12 @@ int main(int argc, char **argv)
 		printf("Setting inlet pressure = %f \n", din);
 		printf("Setting outlet pressure = %f \n", dout);
 	}
-	if (BoundaryCondition==1 && Dm.kproc == 0)	{
+	if (BoundaryCondition==1 && Mask.kproc == 0)	{
 		PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 		
-	if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
+	if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
 		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
@@ -615,13 +621,13 @@ int main(int argc, char **argv)
 		printf("Setting inlet velocity = %f \n", din);
 		printf("Setting outlet velocity = %f \n", dout);
 	}
-	if (BoundaryCondition==2 && Dm.kproc == 0)	{
+	if (BoundaryCondition==2 && Mask.kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 	}
 
-	if (BoundaryCondition==2 && Dm.kproc == nprocz-1){
+	if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
@@ -637,11 +643,11 @@ int main(int argc, char **argv)
 		din  = 1.0+0.5*dp;
 		dout = 1.0-0.5*dp;
 		// set the initial boundary conditions
-		if (Dm.kproc == 0)	{
+		if (Mask.kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
-		if (Dm.kproc == nprocz-1){
+		if (Mask.kproc == nprocz-1){
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
@@ -650,15 +656,15 @@ int main(int argc, char **argv)
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
-	/*	if (BoundaryCondition==1 && Dm.kproc == 0){
+	/*	if (BoundaryCondition==1 && Mask.kproc == 0){
 	  for (n=Nx*Ny; n<2*Nx*Ny; n++){
-	    if (Dm.id[n]>0 && 3.0*Pressure[n] != din) printf("Inlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	    if (Mask.id[n]>0 && 3.0*Pressure[n] != din) printf("Inlet pBC error: %f != %f \n",3.0*Pressure[n],din);
 	  }
 	}
 
-	if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
+	if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
 	  for (n=Nx*Ny*(Nz-2); n<Nx*Ny*(Nz-1); n++){
-	    if (Dm.id[n]>0 && 3.0*Pressure[n] != dout) printf("Outlet pBC error: %f != %f \n",3.0*Pressure[n],din);
+	    if (Mask.id[n]>0 && 3.0*Pressure[n] != dout) printf("Outlet pBC error: %f != %f \n",3.0*Pressure[n],din);
 	  }
 	}
 	*/
@@ -709,10 +715,10 @@ int main(int argc, char **argv)
     ThreadPool tpool(N_threads);
 
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    fillHalo<double> fillData(Mask.Comm,Mask.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
-    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Mask.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
     std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
@@ -822,22 +828,22 @@ int main(int argc, char **argv)
 		DeviceBarrier();
 		
 		// Pressure boundary conditions
-		if (BoundaryCondition==1 && Dm.kproc == 0)	{
+		if (BoundaryCondition==1 && Mask.kproc == 0)	{
 			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
-		if (BoundaryCondition==1 && Dm.kproc == nprocz-1){
+		if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
 			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 
 		// Velocity boundary conditions
-		if (BoundaryCondition==2 && Dm.kproc == 0)	{
+		if (BoundaryCondition==2 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 			//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
-		if (BoundaryCondition==2 && Dm.kproc == nprocz-1){
+		if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
@@ -849,11 +855,11 @@ int main(int argc, char **argv)
 			din  = 1.0+0.5*dp;
 			dout = 1.0-0.5*dp;
 			// set the initial boundary conditions
-			if (Dm.kproc == 0)	{
+			if (Mask.kproc == 0)	{
 				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
 				ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
-			if (Dm.kproc == nprocz-1){
+			if (Mask.kproc == nprocz-1){
 				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 				ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
@@ -903,7 +909,7 @@ int main(int argc, char **argv)
 	Averages->PrintComponents(timestep);
 	// ************************************************************************
 
-	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,Averages->PhaseID,1,Averages->Label_NWP);
+	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Mask.Nx-2,Mask.Ny-2,Mask.Nz-2,Mask.rank_info,Averages->PhaseID,1,Averages->Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
 	CopyToHost(Averages->Phase.get(),Phi,N*sizeof(double));
