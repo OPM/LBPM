@@ -116,12 +116,12 @@ int main(int argc, char **argv)
 	int iproc,jproc,kproc;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
-	//**********************************
+/*	//**********************************
 	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
 	int rank_xy,rank_XY,rank_xY,rank_Xy;
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//**********************************
+*/	//**********************************
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
@@ -309,20 +309,21 @@ int main(int argc, char **argv)
 	else 						Restart=false;
     NULL_USE(pBC);  NULL_USE(velBC);
 
-	// Full domain
+	// Full domain used for averaging (do not use mask for analysis)
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Mask.id[i] = 1;
+	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 	Dm.CommInit(comm);
 	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
 	// Mask that excludes the solid phase
 	Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 
-	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
+/*	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
-	 
+	*/
+
 	MPI_Barrier(comm);
 
 	Nz += 2;
