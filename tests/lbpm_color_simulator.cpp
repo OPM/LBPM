@@ -305,8 +305,8 @@ int main(int argc, char **argv)
 	// Full domain used for averaging (do not use mask for analysis)
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-	Dm.CommInit(comm);
 	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+	Dm.CommInit(comm);
 
 	// Mask that excludes the solid phase
 	Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
@@ -703,10 +703,10 @@ int main(int argc, char **argv)
     ThreadPool tpool(N_threads);
 
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Mask.Comm,Mask.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
-    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Mask.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
     std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
