@@ -16,6 +16,8 @@ enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02,
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
     ThreadPool::thread_id_t analysis;
+    ThreadPool::thread_id_t tminus;
+    ThreadPool::thread_id_t tplus;
     ThreadPool::thread_id_t vis;
     ThreadPool::thread_id_t restart;
 };
@@ -281,12 +283,12 @@ void run_analysis( int timestep, int restart_interval,
         CopyToHost(phase->get(),Phi,N*sizeof(double));
     }
     if ( (type&CopyPhaseIndicator)!=0 ) {
-        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
-        Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+        memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
+        //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
     }
     if ( (type&CalcDist)!=0 ) {
-        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
-        Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
+        memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
+        //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
     }
     if ( (type&CopyAverages) != 0 ) {
         // Copy the members of Averages to the cpu (phase was copied above)
@@ -341,6 +343,8 @@ void run_analysis( int timestep, int restart_interval,
         ThreadPool::WorkItem *work = new AnalysisWorkItem(
             type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
+        work->add_dependency(wait.tminus);
+        work->add_dependency(wait.tplus);
         work->add_dependency(wait.analysis);
         work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
         wait.analysis = tpool.add_work(work);
