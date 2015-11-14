@@ -114,14 +114,7 @@ int main(int argc, char **argv)
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
-	//*****************************************
-	// MPI ranks for all 18 neighbors
-/*	//**********************************
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-*/	//**********************************
+
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
@@ -317,12 +310,6 @@ int main(int argc, char **argv)
 
 	// Mask that excludes the solid phase
 	Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-
-/*	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
-			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
-			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
-	*/
 
 	MPI_Barrier(comm);
 
