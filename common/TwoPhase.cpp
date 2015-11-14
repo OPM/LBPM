@@ -210,7 +210,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
     for (int k=0; k<Nz; k++){
 	  for (int j=0; j<Ny; j++){
 	    for (int i=0; i<Nx; i++){
-	      DistData(i,j,k) += 1.5;
+	      DistData(i,j,k) += 2.0;
 	    }
 	  }
 	}	
