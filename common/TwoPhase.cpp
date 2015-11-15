@@ -179,7 +179,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 {
 	double factor,temp,value;
 	factor=0.5/Beta;
-	// Initialize to -1,1 (segmentation)
+/*	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -214,7 +214,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 	    }
 	  }
 	}	
-     /*
+     */
 	  for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -222,7 +222,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 			}
 		}
 	}
- */
+
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
@@ -483,7 +483,7 @@ void TwoPhase::ComputeLocal()
 
 					// Integrate the trimmed mean curvature (hard-coded to use a distance of 4 pixels)
 					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
-							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,trJwn);
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trJwn);
 
 					pmmc_CubeTrimSurfaceInterpInverseValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
 							i,j,k,n_nw_pts,n_nw_tris,trimdist,dummy,trRwn);
@@ -526,6 +526,11 @@ void TwoPhase::ComputeLocal()
 				// Compute the non-wetting phase surface and associated area
 				An += geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,nw_pts,n_nw_pts,nw_tris,n_nw_tris);
 				// Compute the integral of mean curvature
+				if (n_nw_pts>0){
+					pmmc_CubeTrimSurfaceInterpValues(CubeValues,MeanCurvature,SDs,nw_pts,nw_tris,Values,DistanceValues,
+							i,j,k,n_nw_pts,n_nw_tris,trimdist,trawn,dummy);
+				}
+
 				Jn += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,nw_pts,nw_tris,Values,
 										i,j,k,n_nw_pts,n_nw_tris);
 				// Compute Euler characteristic from integral of gaussian curvature
