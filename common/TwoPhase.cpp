@@ -5,7 +5,7 @@
 #include "Communication.h"
 #include "analysis/analysis.h"
 
-#include "shared_ptr.h"
+#include "shared_ptr.h"SS
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
@@ -179,7 +179,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 {
 	double factor,temp,value;
 	factor=0.5/Beta;
-/*	// Initialize to -1,1 (segmentation)
+	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -214,7 +214,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 	    }
 	  }
 	}	
-     */
+     /*
 	  for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -222,7 +222,7 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 			}
 		}
 	}
-
+ */
 //	for (int n=0; n<Nx*Ny*Nz; n++)	DistData[n] = ColorData[n];
 }
 
