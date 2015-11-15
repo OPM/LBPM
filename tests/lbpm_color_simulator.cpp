@@ -409,8 +409,8 @@ int main(int argc, char **argv)
 	int kstart,kfinish;
 	kstart = 1;
 	kfinish = Nz-1;
-	if (BoundaryCondition >  0 && Mask.kproc==0)		kstart = 4;
-	if (BoundaryCondition >  0 && Mask.kproc==nprocz-1)	kfinish = Nz-4;
+	if (BoundaryCondition >  0 && Dm.kproc==0)		kstart = 4;
+	if (BoundaryCondition >  0 && Dm.kproc==nprocz-1)	kfinish = Nz-4;
 
 	// Compute the pore volume
 	sum_local = 0.0;
@@ -430,7 +430,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0  && Mask.kproc == 0){
+	if (BoundaryCondition >  0  && Dm.kproc == 0){
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -441,7 +441,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	if (BoundaryCondition >  0  && Mask.kproc == nprocz-1){
+	if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -473,10 +473,10 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (Mask.kproc==0 && k==0)			id[n]=1;
-					if (Mask.kproc==0 && k==1)			id[n]=1;
-					if (Mask.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					if (Mask.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					if (Dm.kproc==0 && k==0)			id[n]=1;
+					if (Dm.kproc==0 && k==1)			id[n]=1;
+					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
+					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
 					Mask.id[n] = id[n];
 				}
 			}
