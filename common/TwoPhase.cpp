@@ -248,7 +248,7 @@ void TwoPhase::ComputeDelPhi()
 
 void TwoPhase::Initialize()
 {
-	trimdist=-1.0;
+	trimdist=1.0;
 	fluid_isovalue=solid_isovalue=0.0;
 	// Initialize the averaged quantities
 	awn = aws = ans = lwns = 0.0;
@@ -272,7 +272,6 @@ void TwoPhase::Initialize()
 	euler = Jn = An = Kn = 0.0;
 	wwndnw = 0.0;
 }
-
 
 /*
 void TwoPhase::SetupCubes(Domain &Dm)

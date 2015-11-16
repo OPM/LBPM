@@ -572,8 +572,9 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0); //
-	for (i=0; i<N; i++)	Dm.id[i] = Mask.id[i]; //
+	for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0);
+	// Make sure the id match for the two domains
+	for (i=0; i<N; i++)	Dm.id[i] = Mask.id[i];
 	//.......................................................................
 	// Finalize setup for averaging domain
 	//Averages->SetupCubes(Mask);
