@@ -437,33 +437,7 @@ void TwoPhase::ComputeLocal()
 						}
 					}
 				}
-/*				// Compute local contrubition to Euler characteristic based on 6 adjacency
-				for (int p=0;p<8;p++){
-					// binary id for the wetting phase
-					double binid= PhaseID(i+cube[p][0],j+cube[p][1],k+cube[p][2];
-					if (binid != 1) binid=0;  // non-wetting phase
-					CubeValues(cube[p][0],cube[p][1],cube[p][2])=binid;
-				}
-				// update faces edges and cubes for NWP
-				epc_ncubes += CubeValues(0,0,0)*CubeValues(1,0,0)*CubeValues(0,1,0)*CubeValues(0,0,1)*
-						CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(0,1,1)*CubeValues(1,1,1);
-				//  three faces (others shared by other cubes)
-				epc_nface += CubeValues(1,0,0)*CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(1,1,1);
-				epc_nface += CubeValues(0,1,0)*CubeValues(1,1,0)*CubeValues(0,1,1)*CubeValues(1,1,1);
-				epc_nface += CubeValues(0,0,1)*CubeValues(0,1,1)*CubeValues(1,0,1)*CubeValues(1,1,1);
-				// six of twelve edges (others shared by other cubes)
-				epc_nedge += CubeValues(1,1,1)*CubeValues(1,1,0);
-				epc_nedge += CubeValues(1,1,1)*CubeValues(1,0,1);
-				epc_nedge += CubeValues(1,1,1)*CubeValues(0,1,1);
-				epc_nedge += CubeValues(1,0,1)*CubeValues(1,0,0);
-				epc_nedge += CubeValues(1,0,1)*CubeValues(0,0,1);
-				epc_nedge += CubeValues(0,1,1)*CubeValues(0,0,1);
-				// four of eight vertices
-				epc_nvert += CubeValues(1,1,0);
-				epc_nvert += CubeValues(1,0,1);
-				epc_nvert += CubeValues(0,1,1);
-				epc_nvert += CubeValues(1,1,1);
-*/
+
 				//...........................................................................
 				// Construct the interfaces and common curve
 				pmmc_ConstructLocalCube(SDs, SDn, solid_isovalue, fluid_isovalue,
@@ -535,7 +509,10 @@ void TwoPhase::ComputeLocal()
 				Kn += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
 						i,j,k,n_nw_pts,n_nw_tris);
 
-				euler += geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
+				//euler += geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
+
+				// Compute the euler characteristic from phase count
+				euler += mink_phase_epc6(PhaseID,CubeValues,1,i,j,k);
 
 			}
 		}

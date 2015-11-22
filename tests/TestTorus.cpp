@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
     if ( rank==0 ) {
         printf("-----------------------------------------------------------\n");
-        printf("Labeling Blobs from Two-Phase Lattice Boltzmann Simulation \n");
+        printf("Unit test for torus (Euler-Poincarie characteristic) \n");
         printf("-----------------------------------------------------------\n");
     }
 

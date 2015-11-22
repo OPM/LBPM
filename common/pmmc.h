@@ -4427,6 +4427,52 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	return EulerChar;
 }
 
+inline double mink_phase_epc6(IntArray &PhaseID, DoubleArray &CubeValues, int PhaseLabel,
+							int &i, int &j, int &k){
+
+	/*
+	 *  Compute the Euler Poincare characteristic for a phase based on 6 adjacency
+	 *  compute the local contribution within the specified cube must sum to get total
+	 *  	PhaseID -- label of phases on a mesh
+	 *  	PhaseLabel -- label assigned to phase that we are computing
+	 *  	i,j,k -- identifies the local cube
+	 */
+
+	double epc_ncubes, epc_nface, epc_nedge, epc_nvert;
+	epc_ncubes=epc_nface=epc_nedge=epc_nvert = 0;
+
+	// Assign CubeValues to be phase indicator for
+	for (int kk=0; kk<2; kk++){
+		for (int jj=0; jj<2; jj++){
+			for (int ii=0; ii<2; ii++){
+				if ( PhaseID(i+ii,j+jj,k+kk) == PhaseLabel)	CubeValues(ii,jj,kk)=1;
+				else										CubeValues(ii,jj,kk)=0;
+			}
+		}
+	}
+	// update faces edges and cubes for NWP
+	epc_ncubes += CubeValues(0,0,0)*CubeValues(1,0,0)*CubeValues(0,1,0)*CubeValues(0,0,1)*
+			CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(0,1,1)*CubeValues(1,1,1);
+	//  three faces (others shared by other cubes)
+	epc_nface += CubeValues(1,0,0)*CubeValues(1,1,0)*CubeValues(1,0,1)*CubeValues(1,1,1);
+	epc_nface += CubeValues(0,1,0)*CubeValues(1,1,0)*CubeValues(0,1,1)*CubeValues(1,1,1);
+	epc_nface += CubeValues(0,0,1)*CubeValues(0,1,1)*CubeValues(1,0,1)*CubeValues(1,1,1);
+	// six of twelve edges (others shared by other cubes)
+	epc_nedge += CubeValues(1,1,1)*CubeValues(1,1,0);
+	epc_nedge += CubeValues(1,1,1)*CubeValues(1,0,1);
+	epc_nedge += CubeValues(1,1,1)*CubeValues(0,1,1);
+	epc_nedge += CubeValues(1,0,1)*CubeValues(1,0,0);
+	epc_nedge += CubeValues(1,0,1)*CubeValues(0,0,1);
+	epc_nedge += CubeValues(0,1,1)*CubeValues(0,0,1);
+	// four of eight vertices
+	epc_nvert += CubeValues(1,1,0);
+	epc_nvert += CubeValues(1,0,1);
+	epc_nvert += CubeValues(0,1,1);
+	epc_nvert += CubeValues(1,1,1);
+
+	double chi= epc_nvert - epc_nedge + epc_nface - epc_ncubes;
+	return chi;
+}
 
 inline double mink_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
 		DoubleArray &CubeValues, int &npts, int &ntris, int &i, int &j, int &k){
