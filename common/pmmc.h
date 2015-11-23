@@ -4437,17 +4437,16 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	}
 
 	// Number of faces is number of triangles
-	nface = 1.0*ntris;
+	nface = double(ntris);//1.0*ntris;
 	// Each vertex is shared by four cubes
-	nvert = 0.25*double(npts);
+	nvert = double(npts);
 	// Subtract shared sides to avoid double counting
 	//nside = 3.0*ntris - ShareSideInternal - 0.5*CountSideExternal;
 	nside = 2.0*double(npts)- 3.0 - 0.5*double(npts);
 	double nside_extern = double(npts);
 	double nside_intern = double(npts)-3.0;
 
-
-	EulerChar = (nvert - nside_intern - 0.5*nside_extern + nface);
+	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface);
 	return EulerChar;
 }
 
