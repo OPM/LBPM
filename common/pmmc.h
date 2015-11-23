@@ -4446,9 +4446,10 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	double nside_extern = double(npts);
 	double nside_intern = double(npts)-3.0;
 
-	printf("v=%f,int=%f,ext=%f,f=%f \n",nvert,nside_intern,nside_extern,nface);
+//	printf("v=%f,int=%f,ext=%f,f=%f \n",nvert,nside_intern,nside_extern,nface);
 
-	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface);
+	EulerChar=0.0;
+	if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface);
 	return EulerChar;
 }
 
