@@ -4436,12 +4436,6 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 		}
 	}
 
-	// All vertices shared between four cubes
-	double nvert=npts/4;
-//	int nside=2*npts-3;
-	double nside=3*ntris;
-	double nface=ntris;
-
 	// Each vertex is shared by four cubes
 	nvert = 0.25*npts;
 	// Subtract shared sides to avoid double counting
