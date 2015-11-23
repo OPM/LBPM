@@ -4373,57 +4373,83 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
 		int &npts, int &ntris, int &i, int &j, int &k){
 
+	/* REFERENCE
+	 *  Huang, Liu, Lee, Yang, Tsang
+	 *  On concise 3-D simple point comparisons: a marching cubes paradigm
+	 *  IEEE Transactions on Medical Imaging, Vol. 28, No. 1
+	 *  January 2009
+	 */
 	// Compute the Euler characteristic for triangles in a cube
-	// Exclude edges and vertices shared with between multiple cubes
-	double EulerChar;
-	int nvert=npts;
-	int nside=2*nvert-3;
-	int nface=nvert-2;
+	double EulerChar,nvert,nside,nface;
+	bool graph[3][3];
 
-	//if (ntris != nface){
-	//	nface = ntris;
-	//	nside =
-	//}
-	//...........................................................
-	// Check that this point is not on a previously computed face
-	// Note direction that the marching cubes algorithm marches
-	// In parallel, other sub-domains fill in the lower boundary
-	for (int p=0; p<npts; p++){
-		Point PT = Points(p);
-		if (PT.x - double(i) < 1e-12)		nvert-=1;
-		else if (PT.y - double(j) < 1e-12) 	nvert-=1;
-		else if (PT.z - double(k) < 1e-12) 	nvert-=1;
-	}
-	// Remove redundantly computed edges (shared by two cubes across a cube face)
+	double CountSideExternal=0;
+	double ShareSideInternal=0;
+
+	// Exclude edges and vertices shared with between multiple cubes
 	for (int p=0; p<ntris; p++){
 		Point A = Points(Triangles(0,p));
 		Point B = Points(Triangles(1,p));
 		Point C = Points(Triangles(2,p));
 
-		// Check side A-B
-		bool newside = true;
-		if (A.x - double(i) < 1e-12 && B.x - double(i) < 1e-12) newside=false;
-		if (A.y - double(j) < 1e-12 && B.y - double(j) < 1e-12) newside=false;
-		if (A.z - double(k) < 1e-12 && B.z - double(k) < 1e-12) newside=false;
-		if (!newside) nside-=1;
+		// Check to see if triangle sides are on the cube edge
+		if ( fabs(floor(A.x) - A.x) < 1e-14 && fabs(floor(B.x) - B.x) < 1e-14 )		CountSideExternal+=1.0;
+		if ( fabs(floor(A.x) - A.x) < 1e-14 && fabs(floor(C.x) - C.x) < 1e-14 )		CountSideExternal+=1.0;
+		if ( fabs(floor(B.x) - B.x) < 1e-14 && fabs(floor(C.x) - C.x) < 1e-14 )		CountSideExternal+=1.0;
 
-		// Check side A-C
-		newside = true;
-		if (A.x - double(i)< 1e-12 && C.x - double(i) < 1e-12) newside=false;
-		if (A.y - double(j)< 1e-12 && C.y - double(j) < 1e-12) newside=false;
-		if (A.z - double(k)< 1e-12 && C.z - double(k) < 1e-12) newside=false;
-		if (!newside) nside-=1;
+		// See if any edges were already counted
+		for (int r=0; r<p; r++){
+			Point D = Points(Triangles(0,r));
+			Point E = Points(Triangles(1,r));
+			Point F = Points(Triangles(2,r));
 
-		// Check side B-C
-		newside = true;
-		if (B.x - double(i) < 1e-12 && C.x - double(i) < 1e-12) newside=false;
-		if (B.y - double(j) < 1e-12 && C.y - double(j) < 1e-12) newside=false;
-		if (B.z - double(k) < 1e-12 && C.z - double(k) < 1e-12) newside=false;
-		if (!newside) nside-=1;
+			// Initialize the graph
+			for (int jj=0; jj<3; jj++){
+				for (int ii=0; ii<3; ii++){
+					graph[ii][jj] = false;
+				}
+			}
 
+			// Check to see if the triangles share vertices
+			if (Triangles(0,r) == Triangles(0,p))	graph[0][0]=true;
+			if (Triangles(0,r) == Triangles(1,p))	graph[0][1]=true;
+			if (Triangles(0,r) == Triangles(2,p))	graph[0][2]=true;
+
+			if (Triangles(1,r) == Triangles(0,p))	graph[1][0]=true;
+			if (Triangles(1,r) == Triangles(1,p))	graph[1][1]=true;
+			if (Triangles(1,r) == Triangles(2,p))	graph[1][2]=true;
+
+			if (Triangles(2,r) == Triangles(0,p))	graph[2][0]=true;
+			if (Triangles(2,r) == Triangles(1,p))	graph[2][1]=true;
+			if (Triangles(2,r) == Triangles(2,p))	graph[2][2]=true;
+
+			// Count the number of vertices that are shared
+			int count=0;
+			for (int jj=0; jj<3; jj++){
+				for (int ii=0; ii<3; ii++){
+					if (graph[ii][jj] == true) count++;
+				}
+			}
+			// 0,1,2 are valid possible numbers for shared vertices
+			// if 3 are obtained, then it is the same triangle :(
+			if (count == 2)  ShareSideInternal += 1.0;
+		}
 	}
 
-	EulerChar = 1.0*(nvert - nside + nface);
+	// All vertices shared between four cubes
+	double nvert=npts/4;
+//	int nside=2*npts-3;
+	double nside=3*ntris;
+	double nface=ntris;
+
+	// Each vertex is shared by four cubes
+	nvert = 0.25*npts;
+	// Subtract shared sides to avoid double counting
+	nside = 3.0*ntris - ShareSideInternal - 0.5*CountSideExternal;
+	// Number of faces is number of triangles
+	nface = 1.0*ntris;
+
+	EulerChar = (nvert - nside + nface);
 	return EulerChar;
 }
 

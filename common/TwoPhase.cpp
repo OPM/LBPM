@@ -509,18 +509,12 @@ void TwoPhase::ComputeLocal()
 				Kn += pmmc_CubeSurfaceInterpValue(CubeValues,GaussCurvature,nw_pts,nw_tris,Values,
 						i,j,k,n_nw_pts,n_nw_tris);
 
-				//euler += geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
-
-				// Compute the euler characteristic from phase count
-				euler += mink_phase_epc6(PhaseID,CubeValues,1,i,j,k);
+				euler += geomavg_EulerCharacteristic(nw_pts,nw_tris,n_nw_pts,n_nw_tris,i,j,k);
 
 			}
 		}
 	}
 	
-
-
-
 }
 
 
@@ -595,6 +589,7 @@ void TwoPhase::ComponentAverages()
 				KGwns = KNwns = 0.0;
 				Jwn = Kwn = efawns = 0.0;
 				trawn=trJwn=0.0;
+				euler=0.0;
 
 				//...........................................................................
 				//...........................................................................
