@@ -181,8 +181,9 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-/*	// Really need a better way to do this -- this is to flip convention for a particular data set
-       	for (k=0;k<nz;k++){
+	if (rank==0) printf("WARNING: assumed that INPUT: WP(1),NWP(2) OUTPUT will be NWP(1),WP(2) (lbpm_segmented_decomp) \n")
+	// Really need a better way to do this -- this is to flip convention for a particular data set
+    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 				n = k*nx*ny+j*nx+i;
@@ -194,7 +195,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-*/
+
        char LocalRankFilename[40];
 
     sprintf(LocalRankFilename,"ID.%05i",rank);
