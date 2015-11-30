@@ -387,10 +387,10 @@ extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd
 		}
 		else{
 			for(int q=0; q<9; q++){
-				f_even[q*N+n] = -1.0;
-				f_odd[q*N+n] = -1.0;
+				disteven[q*N+n] = -1.0;
+				distodd[q*N+n] = -1.0;
 			}
-			f_even[9*N+n] = -1.0;
+			disteven[9*N+n] = -1.0;
 		}
 	}
 }

@@ -262,6 +262,11 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 		   id = ID[n];
 		   if (id==0){
 		      vel[n] = 0.0; vel[N+n] = 0.0; vel[2*N+n]=0.0;
+			for(int q=0; q<9; q++){
+			   disteven[q*N+n] = -1.0;
+			   distodd[q*N+n] = -1.0;
+			 }
+			 disteven[9*N+n] = -1.0;					
 		   }
 		   else{
 			//........................................................................
@@ -296,14 +301,6 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 			vel[2*N+n] = vz;
 			//........................................................................
 			}
-			else{
-				for(int q=0; q<9; q++){
-				     	 f_even[q*N+n] = -1.0;
-					 f_odd[q*N+n] = -1.0;
-				}
-				f_even[9*N+n] = -1.0;					
-			}
-
 		}
 	}
 }
