@@ -8,7 +8,6 @@
 #include "analysis/analysis.h"
 #include "common/TwoPhase.h"
 
-
 using namespace std;
 
 inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int nz, int iproc, int
@@ -208,8 +207,27 @@ int main(int argc, char **argv)
 					}
 				}
 				
-				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
-				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
+				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
+				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
+				for (k=1; k<nz-1; k++){
+					for (j=1; j<ny-1; j++){
+						for (i=1; i<nz-1; i++){
+
+							//........................................................................
+							n = k*nx*ny+j*nx+i;
+							//........................................................................
+							iglobal = iproc*(nx-2)+i-1;
+							jglobal = jproc*(ny-2)+j-1;
+							kglobal = kproc*(nz-2)+k-1;
+							//........................................................................
+							Phase(iglobal,jglobal,kglobal) = Temp[n];
+							//........................................................................
+						}
+					}
+				}
+
+//				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
+//				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
 			}
 		}
 	}
@@ -217,23 +235,27 @@ int main(int argc, char **argv)
 	delete Temp;
 	
 	// Initializing the blob ID
-	char *PhaseID;
-	PhaseID = new char [Nx*Ny*Nz];
+	IntArray PhaseID(Nx,Ny,Nz);
+	char *ID;
+	ID = new char [Nx*Ny*Nz];
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
 				if (SignDist(i,j,k) < 0.0){
 					// Solid phase 
-					PhaseID[n] = 0;
+					ID[n] = 0;
+					PhaseID(i,j,k) = 0;
 				}
 				else if (Phase(i,j,k) < 0.0){
 					// wetting phase
-					PhaseID[n] = 2;
+					ID[n] = 2;
+					PhaseID(i,j,k) = 2;
 				}
 				else {
 					// non-wetting phase
-					PhaseID[n] = 1;
+					ID[n] = 1;
+					PhaseID(i,j,k) = 1;
 				}
 			}
 		}
@@ -241,7 +263,7 @@ int main(int argc, char **argv)
 
 	FILE *OUTFILE;
 	OUTFILE = fopen("ID.dat","wb");
-	fwrite(PhaseID,1,Nx*Ny*Nz,OUTFILE);
+	fwrite(ID,1,Nx*Ny*Nz,OUTFILE);
 	fclose(OUTFILE);
 
 	OUTFILE = fopen("Phase.dat","wb");
