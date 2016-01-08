@@ -153,36 +153,41 @@ int main(int argc, char **argv)
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
 		//.............................................................
-		ifstream input("Color.in");
-		// Line 1: Name of the phase indicator file (s=0,w=1,n=2)
-//		input >> FILENAME;
-		// Line 2: domain size (Nx, Ny, Nz)
-//		input >> Nz;				// number of nodes (x,y,z)
-//		input >> nBlocks;
-//		input >> nthreads;
+		//ifstream input("Color.in");
+
 		// Line 3: model parameters (tau, alpha, beta, das, dbs)
-		input >> tau;			// Viscosity parameter
-		input >> alpha;			// Surface Tension parameter
-		input >> beta;			// Width of the interface
-		input >> phi_s;			// value of phi at the solid surface
-//		input >> das;
-//		input >> dbs;
+		//input >> tau;			// Viscosity parameter
+		//input >> alpha;			// Surface Tension parameter
+		//input >> beta;			// Width of the interface
+		//input >> phi_s;			// value of phi at the solid surface
+
+		tau=1.0; alpha=1e-3; beta=0.95, phi_s=0.0;
+
 		// Line 4: wetting phase saturation to initialize
-		input >> wp_saturation;
+		//input >> wp_saturation;
 		// Line 5: External force components (Fx,Fy, Fz)
-		input >> Fx;
-		input >> Fy;
-		input >> Fz;
+		//input >> Fx;
+		//input >> Fy;
+		//input >> Fz;
+
+		wp_saturation=Fx=Fy=Fz=0;
+
 		// Line 6: Pressure Boundary conditions
-		input >> Restart;
-		input >> pBC;
-		input >> din;
-		input >> dout;
+		//input >> Restart;
+		//input >> pBC;
+		//input >> din;
+		//input >> dout;
+
+		Restart=0; pBC=0;
+		din=dout=1.0;
+
 		// Line 7: time-stepping criteria
-		input >> timestepMax;		// max no. of timesteps
-		input >> interval;			// error interval
-		input >> tol;				// error tolerance
-		//.............................................................
+		//input >> timestepMax;		// max no. of timesteps
+		//input >> interval;			// error interval
+		//input >> tol;				// error tolerance
+		timestepMax=100;
+		interval=100;
+		tol=1e-6;
 		das = 0.1; dbs = 0.9;	// hard coded for density initialization
 								// should be OK to remove these parameters
 								// they should have no impact with the 
@@ -190,18 +195,24 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
+		//ifstream domain("Domain.in");
+		//domain >> nprocx;
+		//domain >> nprocy;
+		//domain >> nprocz;
+		//domain >> Nx;
+		//domain >> Ny;
+		//domain >> Nz;
+		//domain >> nspheres;
+		//domain >> Lx;
+		//domain >> Ly;
+		//domain >> Lz;
 		//.......................................................................
+    	// Set the domain for single processor test
+    	nprocx=nprocy=nprocz=1;
+    	Nx=Ny=Nz=50;
+    	nspheres=1;
+    	Lx=Ly=Lz=1;
+
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
