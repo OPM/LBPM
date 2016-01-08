@@ -236,6 +236,8 @@ int main(int argc, char **argv)
     Dm.CommInit(comm); // Initialize communications for domains
 	//.......................................................................
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
+        //
+    nspheres=4;
 	if (rank==1) printf("nspheres =%i \n",nspheres);
 	//.......................................................................
 	double *cx = new double[nspheres];
@@ -243,8 +245,14 @@ int main(int argc, char **argv)
 	double *cz = new double[nspheres];
 	double *rad = new double[nspheres];
 	//.......................................................................
-	if (rank == 0)	printf("Reading the sphere packing \n");
-	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
+	//if (rank == 0)	printf("Reading the sphere packing \n");
+	//if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
+	// Hard coding the list of four spheres
+	cx[0]=0.25*Lx; cx[1]=0.5*Lx; cx[2]=0.5*Lx; cx[3]=0.75*Lx;
+	cy[0]=0.5*Ly; cx[1]=0.25*Ly; cx[2]=0.75*Ly; cx[3]=0.5*Ly;
+	cz[0]=0.25*Lz; cx[1]=0.75*Lz; cx[2]=0.25*Lz; cx[3]=0.25*Lz;
+	rad[0]=rad[1]=rad[2]=rad[3]=0.1*Lx;
+
 	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);

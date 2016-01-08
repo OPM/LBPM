@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	
+	{
 	int i,j,k,n,nn;
 	int iproc,jproc,kproc;
 	int nx,ny,nz;
@@ -111,7 +111,8 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
 	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
 
-	printf("Initialized! Converting to Signed Distance function \n");
+	MPI_Barrier(comm);
+	if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
 	SSO(Distance,id,Dm,10);
 
 	double Error=0.0;
@@ -127,16 +128,12 @@ int main(int argc, char **argv)
 		}
 	}
 	Error = sqrt(Error)/(double (Count));
-	printf("Mean error %f \n", Error);
+	if (rank==0) printf("Mean error %f \n", Error);
 
-	char LocalRankFilename[40];
-    sprintf(LocalRankFilename,"Dist.%05i",rank);
-    FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Distance.get(),8,Distance.length(),DIST);
-    fclose(DIST);
-
-    return 0;
 
     MPI_Barrier(comm);
-	MPI_Finalize();
+    }
+    MPI_Finalize();
+    return 0;
+
 }
