@@ -161,6 +161,8 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
+	int check;
+
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
@@ -432,7 +434,6 @@ int main(int argc, char **argv)
 		//*************************************************************************
 
 		//...........................................................................
-		int check;
 		CopyToHost(f_even_host,f_even,10*N*sizeof(double));
 		CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
 		check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
