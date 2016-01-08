@@ -149,16 +149,44 @@ int main(int argc, char **argv)
 
     if (rank==0){
     	ifstream domain("Domain.in");
-    	domain >> nprocx;
-    	domain >> nprocy;
-    	domain >> nprocz;
-    	domain >> nx;
-    	domain >> ny;
-    	domain >> nz;
-    	domain >> nspheres;
-    	domain >> Lx;
-    	domain >> Ly;
-    	domain >> Lz;
+    	if (domain.good()){
+    		domain >> nprocx;
+    		domain >> nprocy;
+    		domain >> nprocz;
+    		domain >> nx;
+    		domain >> ny;
+    		domain >> nz;
+    		domain >> nspheres;
+    		domain >> Lx;
+    		domain >> Ly;
+    		domain >> Lz;
+    	}
+    	else if (nprocs==1){
+    		nprocx=nprocy=nprocz=1;
+    		nx=ny=nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==2){
+    		nprocx=nprocy=1;
+    		nprocz=2;
+    		nx=ny=nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==4){
+    		nprocx=nprocy=2;
+    		nprocz=1;
+    		nx=ny=nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==8){
+    		nprocx=nprocy=nprocz=2;
+    		nx=ny=nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
     }
 	MPI_Barrier(comm);
 	// Computational domain

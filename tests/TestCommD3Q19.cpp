@@ -196,17 +196,45 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
+    	ifstream domain("Domain.in");
+    	if (domain.good()){
+    		domain >> nprocx;
+    		domain >> nprocy;
+    		domain >> nprocz;
+    		domain >> Nx;
+    		domain >> Ny;
+    		domain >> Nz;
+    		domain >> nspheres;
+    		domain >> Lx;
+    		domain >> Ly;
+    		domain >> Lz;
+    	}
+    	else if (nprocs==1){
+    		nprocx=nprocy=nprocz=1;
+    		Nx=Ny=Nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==2){
+    		nprocx=nprocy=1;
+    		nprocz=2;
+    		Nx=Ny=Nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==4){
+    		nprocx=nprocy=2;
+    		nprocz=1;
+    		Nx=Ny=Nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
+    	else if (nprocs==8){
+    		nprocx=nprocy=nprocz=2;
+    		Nx=Ny=Nz=50;
+    		nspheres=0;
+    		Lx=Ly=Lz=1;
+    	}
 		//.......................................................................
 	}
 	// **************************************************************
