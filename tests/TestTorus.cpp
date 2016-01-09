@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     int i,j,k,n;
 
     if (rank==0){
-    	ifstream domain("Domain.in");
+  /*  	ifstream domain("Domain.in");
     	domain >> nprocx;
     	domain >> nprocy;
     	domain >> nprocz;
@@ -51,6 +51,12 @@ int main(int argc, char **argv)
     	domain >> Lx;
     	domain >> Ly;
     	domain >> Lz;
+    	*/
+    	// Set the domain for single processor test
+    	nprocx=nprocy=nprocz=1;
+    	nx=ny=nz=100;
+    	nspheres=1;
+    	Lx=Ly=Lz=1;
     }
 	MPI_Barrier(comm);
 	// Computational domain

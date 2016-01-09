@@ -158,204 +158,235 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
-	int iproc,jproc,kproc;
-	//*****************************************
-	// MPI ranks for all 18 neighbors
-	//**********************************
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//**********************************
-	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
+	int check;
 
-	if (rank == 0){
-		printf("********************************************************\n");
-		printf("Running Unit Test for D3Q19 MPI Communication	\n");
-		printf("********************************************************\n");
-	}
+	{
+		// parallel domain size (# of sub-domains)
+		int nprocx,nprocy,nprocz;
+		int iproc,jproc,kproc;
+		//*****************************************
+		// MPI ranks for all 18 neighbors
+		//**********************************
+		int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
+		int rank_xy,rank_XY,rank_xY,rank_Xy;
+		int rank_xz,rank_XZ,rank_xZ,rank_Xz;
+		int rank_yz,rank_YZ,rank_yZ,rank_Yz;
+		//**********************************
+		MPI_Request req1[18],req2[18];
+		MPI_Status stat1[18],stat2[18];
 
-	// BGK Model parameters
-	string FILENAME;
-	unsigned int nBlocks, nthreads;
-	int timestepMax, interval;
-	double tau,Fx,Fy,Fz,tol;
-	// Domain variables
-	double Lx,Ly,Lz;
-	int nspheres;
-	int Nx,Ny,Nz;
-	int i,j,k,n;
+		if (rank == 0){
+			printf("********************************************************\n");
+			printf("Running Unit Test for D3Q19 MPI Communication	\n");
+			printf("********************************************************\n");
+		}
 
-	if (rank==0){
+		// BGK Model parameters
+		string FILENAME;
+		unsigned int nBlocks, nthreads;
+		int timestepMax, interval;
+		double tau,Fx,Fy,Fz,tol;
+		// Domain variables
+		double Lx,Ly,Lz;
+		int nspheres;
+		int Nx,Ny,Nz;
+		int i,j,k,n;
+
+		if (rank==0){
+			//.......................................................................
+			// Reading the domain information file
+			//.......................................................................
+			ifstream domain("Domain.in");
+			if (domain.good()){
+				domain >> nprocx;
+				domain >> nprocy;
+				domain >> nprocz;
+				domain >> Nx;
+				domain >> Ny;
+				domain >> Nz;
+				domain >> nspheres;
+				domain >> Lx;
+				domain >> Ly;
+				domain >> Lz;
+			}
+			else if (nprocs==1){
+				nprocx=nprocy=nprocz=1;
+				Nx=Ny=Nz=50;
+				nspheres=0;
+				Lx=Ly=Lz=1;
+			}
+			else if (nprocs==2){
+				nprocx=nprocy=1;
+				nprocz=2;
+				Nx=Ny=Nz=50;
+				nspheres=0;
+				Lx=Ly=Lz=1;
+			}
+			else if (nprocs==4){
+				nprocx=nprocy=2;
+				nprocz=1;
+				Nx=Ny=Nz=50;
+				nspheres=0;
+				Lx=Ly=Lz=1;
+			}
+			else if (nprocs==8){
+				nprocx=nprocy=nprocz=2;
+				Nx=Ny=Nz=50;
+				nspheres=0;
+				Lx=Ly=Lz=1;
+			}
+			//.......................................................................
+		}
+		// **************************************************************
+		// Broadcast simulation parameters from rank 0 to all other procs
+		MPI_Barrier(comm);
+		//.................................................
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
+		MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
+		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+		//.................................................
+		MPI_Barrier(comm);
+		// **************************************************************
+		// **************************************************************
+
+		if (nprocs != nprocx*nprocy*nprocz){
+			printf("nprocx =  %i \n",nprocx);
+			printf("nprocy =  %i \n",nprocy);
+			printf("nprocz =  %i \n",nprocz);
+			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
+		}
+
+		if (rank==0){
+			printf("********************************************************\n");
+			printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
+			printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
+			printf("********************************************************\n");
+		}
+
+		MPI_Barrier(comm);
+		kproc = rank/(nprocx*nprocy);
+		jproc = (rank-nprocx*nprocy*kproc)/nprocx;
+		iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
+
+		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
+		int BoundaryCondition=0;
+		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+
+		InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
+				rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
+				rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
+				rank_yz, rank_YZ, rank_yZ, rank_Yz );
+
+		Nx += 2;
+		Ny += 2;
+		Nz += 2;
+		int N = Nx*Ny*Nz;
+		int dist_mem_size = N*sizeof(double);
+
 		//.......................................................................
-		// Reading the domain information file
+		// Assign the phase ID field
 		//.......................................................................
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
-		//.......................................................................
-	}
-	// **************************************************************
-	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(comm);
-	//.................................................
-	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
-	MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
-	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+		char LocalRankString[8];
+		sprintf(LocalRankString,"%05d",rank);
+		char LocalRankFilename[40];
+		sprintf(LocalRankFilename,"ID.%05i",rank);
 
-	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-	MPI_Barrier(comm);
-	// **************************************************************
-	// **************************************************************
+		char *id;
+		id = new char[Nx*Ny*Nz];
 
-	if (nprocs != nprocx*nprocy*nprocz){
-		printf("nprocx =  %i \n",nprocx);
-		printf("nprocy =  %i \n",nprocy);
-		printf("nprocz =  %i \n",nprocz);
-		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-	}
-
-	if (rank==0){
-		printf("********************************************************\n");
-		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
-		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
-		printf("********************************************************\n");
-	}
-
-	MPI_Barrier(comm);
-	kproc = rank/(nprocx*nprocy);
-	jproc = (rank-nprocx*nprocy*kproc)/nprocx;
-	iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
-
-	double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-	int BoundaryCondition=0;
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-	
-	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
-			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
-			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
-
-	Nx += 2;
-	Ny += 2;
-	Nz += 2;
-	int N = Nx*Ny*Nz;
-	int dist_mem_size = N*sizeof(double);
-	
-	//.......................................................................
-	// Assign the phase ID field
-	//.......................................................................
-	char LocalRankString[8];
-	sprintf(LocalRankString,"%05d",rank);
-	char LocalRankFilename[40];
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	
-	char *id;
-	id = new char[Nx*Ny*Nz];
-
-/*
- * 	if (rank==0) printf("Assigning phase ID from file \n");
- * 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+		/*
+		 * 	if (rank==0) printf("Assigning phase ID from file \n");
+		 * 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	fread(id,1,N,IDFILE);
 	fclose(IDFILE);
-	*/
-	// Setup the domain
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				id[n] = 1;
-				Dm.id[n] = id[n];
-			}
-		}
-	}
-	Dm.CommInit(comm);
-
-	//.......................................................................
-	// Compute the media porosity
-	//.......................................................................
-	double sum;
-	double sum_local=0.0, porosity;
-	char component = 0; // solid phase
-	for (k=1;k<Nz-1;k++){
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				if (id[n] == component){
-					sum_local+=1.0;
+		 */
+		// Setup the domain
+		for (k=0;k<Nz;k++){
+			for (j=0;j<Ny;j++){
+				for (i=0;i<Nx;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					id[n] = 1;
+					Dm.id[n] = id[n];
 				}
 			}
 		}
-	}
-	MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
-	porosity = 1.0-sum*iVol_global;
-	if (rank==0) printf("Media porosity = %f \n",porosity);
-	//.......................................................................
+		Dm.CommInit(comm);
 
-	//...........................................................................
-	MPI_Barrier(comm);
-	if (rank == 0) cout << "Domain set." << endl;
-	//...........................................................................
+		//.......................................................................
+		// Compute the media porosity
+		//.......................................................................
+		double sum;
+		double sum_local=0.0, porosity;
+		char component = 0; // solid phase
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					n = k*Nx*Ny+j*Nx+i;
+					if (id[n] == component){
+						sum_local+=1.0;
+					}
+				}
+			}
+		}
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
+		porosity = 1.0-sum*iVol_global;
+		if (rank==0) printf("Media porosity = %f \n",porosity);
+		//.......................................................................
 
-	//...........................................................................
-	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-	// Create a communicator for the device
-	ScaLBL_Communicator ScaLBL_Comm(Dm);
-	
-	//...........device phase ID.................................................
-	if (rank==0)	printf ("Copying phase ID to device \n");
-	char *ID;
-	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-	// Copy to the device
-	CopyToDevice(ID, id, N);
-	//...........................................................................
+		//...........................................................................
+		MPI_Barrier(comm);
+		if (rank == 0) cout << "Domain set." << endl;
+		//...........................................................................
 
-	//...........................................................................
-	//				MAIN  VARIABLES ALLOCATED HERE
-	//...........................................................................
-	// LBM variables
-	if (rank==0)	printf ("Allocating distributions \n");
-	//......................device distributions.................................
-	double *f_even,*f_odd;
-	//...........................................................................
-	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	//...........................................................................
-	double *f_even_host,*f_odd_host;
-	f_even_host = new double [10*N];
-	f_odd_host = new double [9*N];
-	//...........................................................................
+		//...........................................................................
+		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+		// Create a communicator for the device
+		ScaLBL_Communicator ScaLBL_Comm(Dm);
 
-/*	// Write the communcation structure into a file for debugging
+		//...........device phase ID.................................................
+		if (rank==0)	printf ("Copying phase ID to device \n");
+		char *ID;
+		AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+		// Copy to the device
+		CopyToDevice(ID, id, N);
+		//...........................................................................
+
+		//...........................................................................
+		//				MAIN  VARIABLES ALLOCATED HERE
+		//...........................................................................
+		// LBM variables
+		if (rank==0)	printf ("Allocating distributions \n");
+		//......................device distributions.................................
+		double *f_even,*f_odd;
+		//...........................................................................
+		AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+		AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+		//...........................................................................
+		double *f_even_host,*f_odd_host;
+		f_even_host = new double [10*N];
+		f_odd_host = new double [9*N];
+		//...........................................................................
+
+		/*	// Write the communcation structure into a file for debugging
 	char LocalCommFile[40];
 	sprintf(LocalCommFile,"%s%s","Comm.",LocalRankString);
 	FILE *CommFile;
@@ -382,47 +413,14 @@ int main(int argc, char **argv)
 	fprintf(CommFile,"Yz=%d, ",rank_Yz);
 	fprintf(CommFile,"\n");
 	fclose(CommFile);
-*/
-	if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
-	//...........................................................................
-	GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-	CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-	CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
-	DeviceBarrier();
-	MPI_Barrier(comm);
-	//*************************************************************************
-	// Pack and send the D3Q19 distributions
-	ScaLBL_Comm.SendD3Q19(f_even, f_odd);
-	//*************************************************************************
-	// 		Swap the distributions for momentum transport
-	//*************************************************************************
-	SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-	//*************************************************************************
-	// Wait for communications to complete and unpack the distributions
-	ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
-	//*************************************************************************
-
-	//...........................................................................	
-	int check;
-	CopyToHost(f_even_host,f_even,10*N*sizeof(double));
-	CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
-	check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-	//...........................................................................
-
-	int timestep = 0;
-	if (rank==0) printf("********************************************************\n");
-	if (rank==0)	printf("No. of timesteps for timing: %i \n", 100);
-
-	//.......create and start timer............
-	double starttime,stoptime,cputime;
-	MPI_Barrier(comm);
-	starttime = MPI_Wtime();
-	//.........................................
-
-
-	//************ MAIN ITERATION LOOP (timing communications)***************************************/
-	while (timestep < 100){
-
+		 */
+		if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
+		//...........................................................................
+		GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
+		CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
+		DeviceBarrier();
+		MPI_Barrier(comm);
 		//*************************************************************************
 		// Pack and send the D3Q19 distributions
 		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
@@ -435,35 +433,67 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 		//*************************************************************************
 
-		DeviceBarrier();
+		//...........................................................................
+		CopyToHost(f_even_host,f_even,10*N*sizeof(double));
+		CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
+		check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		//...........................................................................
+
+		int timestep = 0;
+		if (rank==0) printf("********************************************************\n");
+		if (rank==0)	printf("No. of timesteps for timing: %i \n", 100);
+
+		//.......create and start timer............
+		double starttime,stoptime,cputime;
 		MPI_Barrier(comm);
-		// Iteration completed!
-		timestep++;
-		//...................................................................
+		starttime = MPI_Wtime();
+		//.........................................
+
+
+		//************ MAIN ITERATION LOOP (timing communications)***************************************/
+		while (timestep < 100){
+
+			//*************************************************************************
+			// Pack and send the D3Q19 distributions
+			ScaLBL_Comm.SendD3Q19(f_even, f_odd);
+			//*************************************************************************
+			// 		Swap the distributions for momentum transport
+			//*************************************************************************
+			SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+			//*************************************************************************
+			// Wait for communications to complete and unpack the distributions
+			ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
+			//*************************************************************************
+
+			DeviceBarrier();
+			MPI_Barrier(comm);
+			// Iteration completed!
+			timestep++;
+			//...................................................................
+		}
+		//************************************************************************/
+		stoptime = MPI_Wtime();
+		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
+		cputime = stoptime - starttime;
+		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
+		double MLUPS = double(Nx*Ny*Nz*timestep)/cputime/1000000;
+		if (rank==0) printf("********************************************************\n");
+		if (rank==0) printf("CPU time = %f \n", cputime);
+		if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
+		MLUPS *= nprocs;
+		if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
+		if (rank==0) printf("********************************************************\n");
+
+		// Number of memory references from the swap algorithm (per timestep)
+		// 18 reads and 18 writes for each lattice site
+		double MemoryRefs = (Nx-2)*(Ny-2)*(Nz-2)*36;
+		// number of memory references for the swap algorithm - GigaBytes / second
+		if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9);
+		// Report bandwidth in Gigabits per second
+		// communication bandwidth includes both send and recieve
+		if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
+		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 	}
-	//************************************************************************/
-	stoptime = MPI_Wtime();
-	//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
-	cputime = stoptime - starttime;
-	//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
-	double MLUPS = double(Nx*Ny*Nz*timestep)/cputime/1000000;
-	if (rank==0) printf("********************************************************\n");
-	if (rank==0) printf("CPU time = %f \n", cputime);
-	if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
-	MLUPS *= nprocs;
-	if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
-	if (rank==0) printf("********************************************************\n");
-
-	// Number of memory references from the swap algorithm (per timestep)
-	// 18 reads and 18 writes for each lattice site
-	double MemoryRefs = (Nx-2)*(Ny-2)*(Nz-2)*36;
-	// number of memory references for the swap algorithm - GigaBytes / second
-	if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9);
-	// Report bandwidth in Gigabits per second
-	// communication bandwidth includes both send and recieve
-	if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
-	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
-
 	// ****************************************************
 	MPI_Barrier(comm);
 	MPI_Finalize();

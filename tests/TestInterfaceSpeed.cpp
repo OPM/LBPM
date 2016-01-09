@@ -105,9 +105,9 @@ int main (int argc, char *argv[])
 	printf("-------------------------------- \n");
 	printf("NWP volume = %f \n", Averages.nwp_volume);
 	printf("Area wn = %f, Analytical = %f \n", Averages.awn,2*PI*RADIUS*RADIUS);
-	printf("Area ns = %f, Analytical = %f \n", Averages.ans, 2*PI*RADIUS*(N-2)-4*PI*RADIUS*HEIGHT);
+	printf("Area ns = %f, Analytical = %f \n", Averages.ans, 2*PI*RADIUS*(Nz-2)-4*PI*RADIUS*HEIGHT);
 	printf("Area ws = %f, Analytical = %f \n", Averages.aws, 4*PI*RADIUS*HEIGHT);
-	printf("Area s = %f, Analytical = %f \n", Averages.As, 2*PI*RADIUS*(N-2));
+	printf("Area s = %f, Analytical = %f \n", Averages.As, 2*PI*RADIUS*(Nz-2));
 	printf("Length wns = %f, Analytical = %f \n", Averages.lwns, 4*PI*RADIUS);
 	printf("Geodesic curvature (wns) = %f, Analytical = %f \n", Averages.KGwns_global, 0.0);
 	printf("Normal curvature (wns) = %f, Analytical = %f \n", Averages.KNwns_global, 1.0/RADIUS);
@@ -118,14 +118,33 @@ int main (int argc, char *argv[])
 	//.........................................................................	
 	
 	int toReturn = 0;
-
+	if (fabs(Averages.awn - 2*PI*RADIUS*RADIUS)/(2*PI*RADIUS*RADIUS) > 0.02){
+		toReturn = 1;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for wn area \n");
+	}
+	if (fabs(Averages.ans - (2*PI*RADIUS*(Nz-2)-4*PI*RADIUS*HEIGHT))/(2*PI*RADIUS*(Nz-2)-4*PI*RADIUS*HEIGHT)> 0.02 ){
+		toReturn = 2;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for ns area \n");
+	}
+	if (fabs(Averages.aws - 4*PI*RADIUS*HEIGHT)/(4*PI*RADIUS*HEIGHT) > 0.02 ){
+		toReturn = 3;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for ws area \n");
+	}
+	if (fabs(Averages.As - 2*PI*RADIUS*(Nz-2))/(2*PI*RADIUS*(Nz-2)) > 0.02 ){
+		toReturn = 4;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for solid area \n");
+	}
+	if (fabs(Averages.lwns - 4*PI*RADIUS)/(4*PI*RADIUS) > 0.02 ){
+		toReturn = 5;
+		printf("TestCylinderArea.cpp: error tolerance exceeded for common curve length \n");
+	}
 	if ( fabs(Averages.vawn_global(2)+0.2) > 0.01){
 		printf("TestInterfaceSpeed: Error too high for kinematic velocity of wn interface \n");
-		toReturn=1;
+		toReturn = 6;
 	}
 	if ( fabs(Averages.vawns_global(2)+0.2) > 0.01){
 		printf("TestInterfaceSpeed: Error too high for kinematic velocity of common curve \n");
-		toReturn=2;
+		toReturn = 7;
 	}
 
 	return toReturn;
