@@ -4381,6 +4381,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	 */
 	// Compute the Euler characteristic for triangles in a cube
 	double EulerChar,nvert,nside,nface;
+	/*
 	bool graph[3][3];
 
 	double CountSideExternal=0;
@@ -4435,19 +4436,16 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 			if (count == 2)  ShareSideInternal += 1.0;
 		}
 	}
+	*/
 
 	// Number of faces is number of triangles
-	nface = double(ntris);//1.0*ntris;
+	nface = double(ntris);
 	// Each vertex is shared by four cubes
 	nvert = double(npts);
 	// Subtract shared sides to avoid double counting
-	//nside = 3.0*ntris - ShareSideInternal - 0.5*CountSideExternal;
 	nside = 2.0*double(npts)- 3.0 - 0.5*double(npts);
 	double nside_extern = double(npts);
 	double nside_intern = double(npts)-3.0;
-
-//	printf("v=%f,int=%f,ext=%f,f=%f \n",nvert,nside_intern,nside_extern,nface);
-
 	EulerChar=0.0;
 	if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface);
 	return EulerChar;
