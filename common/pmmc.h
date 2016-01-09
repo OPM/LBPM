@@ -4443,7 +4443,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	// Each vertex is shared by four cubes
 	nvert = double(npts);
 	// Subtract shared sides to avoid double counting
-	nside = 2.0*double(npts)- 3.0 - 0.5*double(npts);
+//	nside = 2.0*double(npts)- 3.0 - 0.5*double(npts);
 	double nside_extern = double(npts);
 	double nside_intern = double(npts)-3.0;
 	EulerChar=0.0;
