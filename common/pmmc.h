@@ -4380,7 +4380,6 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 	 *  January 2009
 	 */
 	// Compute the Euler characteristic for triangles in a cube
-	double EulerChar,nvert,nside,nface;
 	/*
 	bool graph[3][3];
 
@@ -4437,6 +4436,7 @@ inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray
 		}
 	}
 	*/
+	double EulerChar,nvert,nface;
 
 	// Number of faces is number of triangles
 	nface = double(ntris);
