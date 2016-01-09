@@ -163,8 +163,8 @@ int main(int argc, char **argv)
 			input >> Fx;
 			input >> Fy;
 			input >> Fz;
-			input >> InitialCondition;
-			input >> BoundaryCondition;
+			input >> Restart;
+			input >> pBC;
 			input >> din;
 			input >> dout;
 			input >> timestepMax;		// max no. of timesteps
