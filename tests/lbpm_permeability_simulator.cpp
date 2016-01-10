@@ -107,7 +107,6 @@ int main(int argc, char **argv)
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
-	int sendtag,recvtag;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
 	//**********************************
@@ -138,13 +137,8 @@ int main(int argc, char **argv)
 	bool pBC,Restart;
 	int i,j,k,n;
 
-	// pmmc threshold values
-	double fluid_isovalue,solid_isovalue;
-	fluid_isovalue = 0.0;
-	solid_isovalue = 0.0;
-	
 	int RESTART_INTERVAL=20000;
-	
+
 	if (rank==0){
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
@@ -406,8 +400,6 @@ int main(int argc, char **argv)
 	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
 	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 	//...........................................................................
-	double *Vel;
-	Vel = new double [3*N];
 
 	// Copy signed distance for device initialization
 	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
@@ -470,7 +462,6 @@ int main(int argc, char **argv)
 	starttime = MPI_Wtime();
 	//.........................................
 	
-	sendtag = recvtag = 5;
 	double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
 	err = vel_prev = 1.0;
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
@@ -578,6 +569,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 
+	NULL_USE(RESTART_INTERVAL);
 	// ****************************************************
 	MPI_Barrier(comm);
 	MPI_Finalize();
