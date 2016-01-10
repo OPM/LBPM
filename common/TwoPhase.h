@@ -98,6 +98,8 @@ public:
 	double wp_volume_global;					// volume for the wetting phase
 	double As_global;
 	double wwndnw, wwndnw_global;
+	double wwnsdnwn, wwnsdnwn_global;
+	double Jwnwwndnw, Jwnwwndnw_global;
 	double dEs,dAwn,dAns;						// Global surface energy (calculated by rank=0)
 	DoubleArray van;
 	DoubleArray vaw;

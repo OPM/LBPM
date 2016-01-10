@@ -3969,7 +3969,7 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 	return area;
 }
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, DoubleArray &ReturnVector, 
+inline double pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, DoubleArray &ReturnVector,
 		DoubleArray &Fx, DoubleArray &Fy, DoubleArray &Fz,							
 		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,
 		DTMutableList<Point> &Points, int i, int j, int k, int npts)
@@ -3983,6 +3983,7 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 	double nwns_x, nwns_y, nwns_z;
 	Point P,A,B;
 	lwns = 0.0;
+	double ReturnValue = 0;
     NULL_USE(lwns);
 
 	TriLinPoly Px,Py,Pz,SDx,SDy,SDz,Pt;
@@ -4074,11 +4075,14 @@ inline void pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, Do
 			ReturnVector(0) += zeta*nwns_x*s;
 			ReturnVector(1) += zeta*nwns_y*s;
 			ReturnVector(2) += zeta*nwns_z*s;
+			ReturnValue += zeta*s;
 		}
 	}
     NULL_USE(tangent_x);
     NULL_USE(tangent_y);
     NULL_USE(tangent_z);
+
+    return ReturnValue;
 }
 inline void pmmc_CurveOrientation(DoubleArray &Orientation, DTMutableList<Point> &Points, int npts, int i, int j, int k){
 
@@ -4315,7 +4319,7 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
 
 
 //--------------------------------------------------------------------------------------------------------
-inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
+inline double pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray &P_y, DoubleArray &P_z,
 									DoubleArray &CubeValues, DTMutableList<Point> &Points, IntArray &Triangles,
 									  DoubleArray &SurfaceVector, DoubleArray &AvgSpeed, DoubleArray &AvgVel,
 									  int i, int j, int k, int npts, int ntris)
@@ -4324,6 +4328,7 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 	double x,y,z;
 	double s,s1,s2,s3,area;
 	double norm, zeta;
+	double ReturnValue=0.0;
 
 	TriLinPoly Px,Py,Pz,Pt;
 	Px.assign(P_x,i,j,k);
@@ -4365,8 +4370,10 @@ inline void pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArray
 			AvgVel(1) += area*zeta*y;
 			AvgVel(2) += area*zeta*z;
 			AvgSpeed(r) = zeta*area;
+			ReturnValue += zeta*area;
 		}
 	}
+	return ReturnValue;
 	//.............................................................................
 }
 //--------------------------------------------------------------------------------------------------------
