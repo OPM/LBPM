@@ -385,9 +385,12 @@ int main(int argc, char **argv)
 
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank);
+	size_t readID;
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	fread(id,1,N,IDFILE);
+	readID=fread(id,1,N,IDFILE);
+    if (readID != N) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
+
 	fclose(IDFILE);
 
 	/*	for ( k=0;k<Nz;k++){
@@ -625,6 +628,7 @@ int main(int argc, char **argv)
 
 	// Set dynamic pressure boundary conditions
 	double dp, slope;
+	dp = slope = 0.0;
 	if (BoundaryCondition==3){
 		slope = (dout-din)/timestepMax;
 		dp = din;

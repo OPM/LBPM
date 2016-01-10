@@ -104,9 +104,11 @@ int main(int argc, char **argv)
     int N = (nx+2)*(ny+2)*(nz+2);
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 	// Read the phase ID
+	size_t readID;
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"rb");
-    fread(Dm.id,1,N,ID);
+    readID=fread(Dm.id,1,N,ID);
+    if (readID != N) printf("lbpm_segmented_pp: Error reading ID \n");
     fclose(ID);
     // Initialize the domain and communication
     Dm.CommInit(comm);
@@ -243,8 +245,8 @@ int main(int argc, char **argv)
   //  fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
   //  fclose(PHASE);
 
-	double vF,vS;
-	vF = vS = 0.0;
+	double vS;
+	vS = 0.0;
 
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");

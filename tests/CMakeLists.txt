@@ -1,5 +1,4 @@
 # Copy files for the tests
-ADD_LBPM_EXECUTABLE( lb2_Color_wia_mpi )
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_sphere_pp )
@@ -11,7 +10,6 @@ ADD_LBPM_EXECUTABLE( lbpm_captube_pp )
 ADD_LBPM_EXECUTABLE( lbpm_squaretube_pp )
 ADD_LBPM_EXECUTABLE( lbpm_BlobAnalysis )
 ADD_LBPM_EXECUTABLE( TestBubble )
-ADD_LBPM_EXECUTABLE( BasicSimulator )
 ADD_LBPM_EXECUTABLE( ComponentLabel )
 ADD_LBPM_EXECUTABLE( ColorToBinary )
 ADD_LBPM_EXECUTABLE( BlobAnalysis )

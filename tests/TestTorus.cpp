@@ -110,15 +110,15 @@ int main(int argc, char **argv)
 	// Assign the phase ID field based and the signed distance
 	//.......................................................................
     double R1,R2;
-    double CX,CY,CZ,CY1,CY2;
+    double CX,CY,CZ'//CY1,CY2;
     CX=Nx*nprocx*0.5;
     CY=Ny*nprocy*0.5;
     CZ=Nz*nprocz*0.5;
     R1 = Nx*nprocx*0.2; // middle radius
     R2 = Nx*nprocx*0.1; // donut thickness
     //
-    CY1=Nx*nprocx*0.5+R1;
-    CY2=Ny*nprocy*0.5-R1;
+    //CY1=Nx*nprocx*0.5+R1;
+    //CY2=Ny*nprocy*0.5-R1;
 
     double x,y,z;
 	if (rank==0) printf("Initializing the system \n");
@@ -168,8 +168,8 @@ int main(int argc, char **argv)
 		}
 	}
 
-	double vF,vS;
-	vF = vS = 0.0;
+	double vS;
+	vS = 0.0;
 
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");

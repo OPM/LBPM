@@ -299,6 +299,8 @@ int main(int argc, char **argv)
     double Length=1.0;
     if (rank==0) WriteBlobStates(Averages,Length,porosity);
 
+    NULL_USE(Vn); NULL_USE(ans); NULL_USE(Jwn);
+
     //MPI_Barrier(comm);
     //printf("Exit, rank=%i \n",rank);
 	// ****************************************************

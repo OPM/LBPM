@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 	//if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
-	double porosity, pore_vol;
+	double pore_vol;
 
 	sum=0;
 	for (k=0;k<Nz;k++){
@@ -176,7 +176,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	porosity = double(sum)/double(1.0*N);
 	// Compute the pore volume
 	sum_local = 0.0;
 	for ( k=1;k<Nz-1;k++){

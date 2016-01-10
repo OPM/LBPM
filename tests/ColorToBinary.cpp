@@ -19,7 +19,6 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int
 	double denA,denB;
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double vx,vy,vz;
 	
 	N = nx*ny*nz;
 	
@@ -87,9 +86,9 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int
 				value = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17);
 				//........................................................................
 				//.................Compute the velocity...................................
-				vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-				vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-				vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+				//vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+				//vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+				//vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
 				//........................................................................
 				// save values in global arrays
 				//........................................................................

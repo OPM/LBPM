@@ -67,7 +67,7 @@ TwoPhase::TwoPhase(Domain &dm):
     Jwn(0), Jwn_global(0), Kwn(0), Kwn_global(0), KNwns(0), KNwns_global(0),
     KGwns(0), KGwns_global(0), trawn(0), trawn_global(0), trJwn(0), trJwn_global(0),
     trRwn(0), trRwn_global(0), nwp_volume_global(0), wp_volume_global(0),
-    As_global(0), dEs(0), dAwn(0), dAns(0), wwndnw(0), wwndnw_global(0)
+    As_global(0), wwndnw_global(0), wwnsdnwn_global(0), Jwnwwndnw_global(0), dEs(0), dAwn(0), dAns(0)
 {
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
@@ -179,9 +179,9 @@ TwoPhase::~TwoPhase()
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData)
 {
-	double factor,temp,value;
+/*	double factor,temp,value;
 	factor=0.5/Beta;
-/*	// Initialize to -1,1 (segmentation)
+	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){

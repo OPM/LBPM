@@ -100,7 +100,9 @@ int main(int argc, char **argv)
 	SegData = new char[Nx*Ny*Nz];
     	FILE *SEGDAT = fopen(Filename,"rb");
     	if (SEGDAT==NULL) ERROR("Error reading segmented data");
-    	fread(SegData,1,Nx*Ny*Nz,SEGDAT);
+    	size_t ReadSeg;
+    	ReadSeg=fread(SegData,1,Nx*Ny*Nz,SEGDAT);
+        if (readID != Nx*Ny*Nz) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
     	fclose(SEGDAT);
         printf("Read segmented data from %s \n",Filename);
     }
