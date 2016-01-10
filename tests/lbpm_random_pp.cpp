@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
 	ReadSignDist=fread(SignDist.get(),8,N,DIST);
-    if (ReadSignDist != N) printf("lbpm_random_pp: Error reading signed distance function (rank=%i)\n",rank);
+	if (ReadSignDist != size_t(N)) printf("lbpm_random_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
 	int count,countGlobal,totalGlobal;

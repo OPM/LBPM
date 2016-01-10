@@ -168,9 +168,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	double vS;
-	vS = 0.0;
-
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
 
