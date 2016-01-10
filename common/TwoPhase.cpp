@@ -272,7 +272,7 @@ void TwoPhase::Initialize()
 	Jwn = Kwn = efawns = 0.0;
 	trJwn = trawn = trRwn = 0.0;
 	euler = Jn = An = Kn = 0.0;
-	wwndnw = 0.0;
+	wwndnw = 0.0; wwnsdnwn = 0.0; Jwnwwndnw=0.0;
 }
 
 /*
