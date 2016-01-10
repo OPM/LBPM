@@ -108,7 +108,7 @@ int main(int argc, char **argv)
     sprintf(LocalRankFilename,"ID.%05i",rank);
     FILE *ID = fopen(LocalRankFilename,"rb");
     readID=fread(Dm.id,1,N,ID);
-    if (readID != N) printf("lbpm_segmented_pp: Error reading ID \n");
+    if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
     fclose(ID);
     // Initialize the domain and communication
     Dm.CommInit(comm);
@@ -244,9 +244,6 @@ int main(int argc, char **argv)
   //  FILE *PHASE = fopen(LocalRankFilename,"wb");
   //  fwrite(Averages.Phase.get(),8,Averages.Phase.length(),PHASE);
   //  fclose(PHASE);
-
-	double vS;
-	vS = 0.0;
 
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");

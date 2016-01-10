@@ -238,6 +238,7 @@ int main(int argc, char **argv)
       MPI_Barrier(comm);
       if (Averages.ComponentAverages_NWP(0,b) > 0.0){
 	double Vn,pn,awn,ans,Jwn,Kwn,lwns,cwns,trawn,trJwn;
+        NULL_USE(Vn); NULL_USE(ans); NULL_USE(Jwn);
 	Vn = Averages.ComponentAverages_NWP(1,b);
 	pn = Averages.ComponentAverages_NWP(2,b)/Averages.ComponentAverages_NWP(0,b);
 	awn = Averages.ComponentAverages_NWP(3,b);
@@ -298,8 +299,6 @@ int main(int argc, char **argv)
 
     double Length=1.0;
     if (rank==0) WriteBlobStates(Averages,Length,porosity);
-
-    NULL_USE(Vn); NULL_USE(ans); NULL_USE(Jwn);
 
     //MPI_Barrier(comm);
     //printf("Exit, rank=%i \n",rank);

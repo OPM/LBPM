@@ -294,9 +294,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	double vS;
-	vS = 0.0;
-
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
 
@@ -306,11 +303,6 @@ int main(int argc, char **argv)
 
     Averages.Initialize();
     Averages.UpdateMeshValues();
-
-//	if (rank==0) printf("computing blobs \n");
-//    int nblobs_global = ComputeGlobalBlobIDs(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.rank_info,
-//    		Averages.Phase,Averages.SDs,vF,vS,Averages.BlobLabel);
-//	if (Dm.rank==0) printf("Number of blobs is %i \n",nblobs_global);
 
 	if (rank==0) printf("computing local averages  \n");
 	Averages.AssignComponentLabels();

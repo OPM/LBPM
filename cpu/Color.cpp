@@ -4,16 +4,11 @@
 
 extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
-	int i,j,k,n,N;
+	int n,N;
 
 	N = Nx*Ny*Nz;
 
 	for (n=0; n<N; n++){
-
-		//.......Back out the 3-D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
 
 		if ( ID[n] == 1){
 			Den[n] = 1.0;
@@ -35,13 +30,12 @@ extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, dou
 extern "C" void InitDenColorDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
-	int i,j,k,n,N;
+  int i,j,k,n,N;
 	double d;
 
 	N = Nx*Ny*Nz;
 
 	for (n=0; n<N; n++){
-
 		//.......Back out the 3-D indices for node n..............
 		k = n/(Nx*Ny);
 		j = (n-Nx*Ny*k)/Nx;
@@ -79,17 +73,12 @@ extern "C" void InitDenColorDistancePacked(char *ID, double *Den, double *Phi, d
 extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
-	int i,j,k,n,N;
+	int n,N;
 	double d;
 
 	N = Nx*Ny*Nz;
 
 	for (n=0; n<N; n++){
-
-		//.......Back out the 3-D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
 
 		if ( ID[n] == 1){
 			Den[n] = 1.0;

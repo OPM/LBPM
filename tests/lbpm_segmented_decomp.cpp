@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     	if (SEGDAT==NULL) ERROR("Error reading segmented data");
     	size_t ReadSeg;
     	ReadSeg=fread(SegData,1,Nx*Ny*Nz,SEGDAT);
-        if (readID != Nx*Ny*Nz) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+        if (ReadSeg != size_t(Nx*Ny*Nz)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
     	fclose(SEGDAT);
         printf("Read segmented data from %s \n",Filename);
     }
