@@ -372,8 +372,8 @@ MACRO( SET_WARNINGS )
     SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} --diag_suppress 111,128,185")
   ELSEIF ( USING_CLANG )
     # Add default compiler options
-    SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} -Wall")
-    SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -Wall")
+    SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS} -Wall -Wno-char-subscripts -Wno-unused-private-field -Wno-unused-variable")
+    SET(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -Wall -Wno-char-subscripts -Wno-unused-private-field -Wno-unused-variable")
   ELSEIF ( USING_DEFAULT )
     # Add default compiler options
     SET(CMAKE_C_FLAGS     " ${CMAKE_C_FLAGS}")
