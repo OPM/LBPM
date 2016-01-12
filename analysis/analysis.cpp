@@ -496,7 +496,7 @@ void gatherSrcIDMap( map_type& src_map, MPI_Comm comm )
         const std::map<BlobIDType,int64_t>& src_ids = it->second;
         send_data.push_back(id);
         send_data.push_back(src_ids.size());
-        typename std::map<BlobIDType,int64_t>::const_iterator it2;
+        std::map<BlobIDType,int64_t>::const_iterator it2;
         for (it2=src_ids.begin(); it2!=src_ids.end(); ++it2) {
             send_data.push_back(it2->first);
             send_data.push_back(it2->second);
