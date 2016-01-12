@@ -97,7 +97,7 @@ public:
         static int max_id = -1;
         new_id->first = new_index->first;
         new_id->second = new_index->second;
-        if ( last_id!=NULL ) {
+        if ( last_id.get()!=NULL ) {
             // Compute the timestep-timestep map
             const IntArray& old_ids = last_id->second;
             ID_map_struct map = computeIDMap(Nx,Ny,Nz,old_ids,ids,newcomm);
