@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.SDs);
 
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	SSO(Averages.SDs,id,Dm,25);
+	SSO(Averages.SDs,id,Dm,100);
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 	MeanFilter(Averages.Phase);
 
 	if (rank==0) printf("Initialized non-wetting phase -- Converting to Signed Distance function \n");
-	SSO(Averages.Phase,id,Dm,25);
+	SSO(Averages.Phase,id,Dm,100);
 
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
@@ -217,17 +217,17 @@ int main(int argc, char **argv)
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
     std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-    std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SolidVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-    PhaseVar->name = "phase";
+    PhaseVar->name = "Fluid";
     PhaseVar->type = IO::VolumeVariable;
     PhaseVar->dim = 1;
     PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(PhaseVar);
-    SignDistVar->name = "SignDist";
-    SignDistVar->type = IO::VolumeVariable;
-    SignDistVar->dim = 1;
-    SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+    SolidVar->name = "Solid";
+    SolidVar->type = IO::VolumeVariable;
+    SolidVar->dim = 1;
+    SolidVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(SignDistVar);
     BlobIDVar->name = "BlobID";
     BlobIDVar->type = IO::VolumeVariable;
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     meshData[0].vars.push_back(BlobIDVar);
     
     fillData.copy(Averages.SDn,PhaseVar->data);
-    fillData.copy(Averages.SDs,SignDistVar->data);
+    fillData.copy(Averages.SDs,SolidVar->data);
     fillData.copy(Averages.Label_NWP,BlobIDVar->data);
     IO::writeData( 0, meshData, 2, comm );
     
