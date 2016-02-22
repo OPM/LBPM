@@ -35,6 +35,9 @@ ADD_LBPM_TEST_PARALLEL( TestMassConservationD3Q7 1 )
 ADD_LBPM_TEST_1_2_4( testCommunication )
 ADD_LBPM_TEST_1_2_4( testUtilities )
 ADD_LBPM_TEST( TestWriter )
+IF ( USE_NETCDF )
+    ADD_LBPM_PROVISIONAL_TEST( TestNetcdf )
+ENDIF()
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
 ADD_LBPM_TEST_1_2_4( hello_world )
