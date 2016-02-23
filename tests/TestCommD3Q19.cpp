@@ -247,8 +247,8 @@ int main(int argc, char **argv)
 		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
 		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
 		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
-		MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
+		MPI_Bcast(&nBlocks,1,MPI_UNSIGNED,0,comm);
+		MPI_Bcast(&nthreads,1,MPI_UNSIGNED,0,comm);
 		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
 
 		MPI_Bcast(&Nx,1,MPI_INT,0,comm);

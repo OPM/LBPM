@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         double time1 = Utilities::time() - t0;
         uint64_t *tmp = new uint64_t[0x100000];
         memset(tmp,0xAA,0x100000*sizeof(uint64_t));
-        NULL_USE(tmp);
+        Utilities::nullUse( tmp );
         t0 = Utilities::time();
         size_t n_bytes2 = Utilities::getMemoryUsage();
         double time2 = Utilities::time() - t0;

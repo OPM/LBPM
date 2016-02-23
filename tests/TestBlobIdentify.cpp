@@ -91,7 +91,7 @@ std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, 
         }
     }
     size_t N_bytes = N_bubbles*sizeof(bubble_struct);
-    MPI_Bcast(&bubbles[0],N_bytes,MPI_CHAR,0,comm);
+    MPI_Bcast((char*)&bubbles[0],N_bytes,MPI_CHAR,0,comm);
     return bubbles;
 }
 
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
             velocity[i].z = bubbles[i].radius*(2*rand2()-1);
         }
     }
-    MPI_Bcast(&velocity[0],bubbles.size()*sizeof(Point),MPI_CHAR,0,comm);
+    MPI_Bcast((char*)&velocity[0],bubbles.size()*sizeof(Point),MPI_CHAR,0,comm);
     fillBubbleData( bubbles, Phase, SignDist, Lx, Ly, Lz, rank_info );
     fillData.fill(Phase);
     fillData.fill(SignDist);

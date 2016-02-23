@@ -347,3 +347,11 @@ std::vector<int> Utilities::factor(size_t number)
     std::sort( factors.begin(), factors.end() );
     return factors;
 }
+
+
+// Dummy function to prevent compiler from optimizing away variable
+void Utilities::nullUse( void* data )
+{
+    NULL_USE(data);
+}
+
