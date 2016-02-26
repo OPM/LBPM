@@ -1,13 +1,17 @@
 # Clear all modules (except modules)
-for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
+#for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
+
 source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+module load cray-hdf5parallel
+module load cray-netcdf-hdf5parallel
 
 # Set the modules and enviornmental variables
-module load DefApps
-module load PrgEnv-intel
-module unload cray-libsci
-module load cray-mpich ugni xpmem udreg altd
-module load moab torque
+#module load DefApps
+#module load PrgEnv-intel
+#module unload cray-libsci
+#module load cray-mpich ugni xpmem udreg altd
+#module load moab torque
 module load mercurial git
 module load cmake
 
@@ -29,6 +33,8 @@ cmake                                        \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
+       -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
+       -D HDF5_DIRECTORY=$HDF5_DIR	     \
     -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \
     ~/LBPM-WIA
 #-D CUDA_HOST_COMPILER="/usr/bin/gcc"  \
