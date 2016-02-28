@@ -21,7 +21,14 @@ int main(int argc, char **argv)
     MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	
+
+
+        int SOLID=atoi(argv[1]);
+	int NWP=atoi(argv[2]);
+	if (rank==0){
+	  printf("Solid Label %f \n",SOLID);
+	  printf("NWP Label %f \n",NWP);
+	}
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
@@ -183,14 +190,18 @@ int main(int argc, char **argv)
 	int count = 0;
 	N=nx*ny*nz;
 
-	if (rank==0) printf("WARNING: assumed that INPUT: WP(1),NWP(2) OUTPUT will be NWP(1),WP(2) (lbpm_segmented_decomp) \n");
+	//if (rank==0) printf("WARNING: assumed that INPUT: WP(1),NWP(2) OUTPUT will be NWP(1),WP(2) (lbpm_segmented_decomp) \n");
 	// Really need a better way to do this -- this is to flip convention for a particular data set
     for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
-				n = k*nx*ny+j*nx+i;
-				if (Dm.id[n] == 1) Dm.id[n]=2;
-				else if (Dm.id[n] == 2) Dm.id[n]=1;
+			        n = k*nx*ny+j*nx+i;
+			        if (Dm.id[nlocal]==char(SOLID))     Dm.id[nlocal] = 0;
+			       	else if (Dm.id[nlocal]==char(NWP))  Dm.id[nlocal] = 1;
+				else                                Dm.id[nlocal] = 2;
+				
+//				if (Dm.id[n] == 1) Dm.id[n]=2;
+				//else if (Dm.id[n] == 2) Dm.id[n]=1;
 				// Initialize the solid phase
 //				if (Dm.id[n] == 0)	id[n] = 0;
 //				else				id[n] = 1;
