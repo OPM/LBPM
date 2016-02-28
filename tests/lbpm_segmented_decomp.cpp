@@ -26,8 +26,8 @@ int main(int argc, char **argv)
         int SOLID=atoi(argv[1]);
 	int NWP=atoi(argv[2]);
 	if (rank==0){
-	  printf("Solid Label %f \n",SOLID);
-	  printf("NWP Label %f \n",NWP);
+	  printf("Solid Label %i \n",SOLID);
+	  printf("NWP Label %i \n",NWP);
 	}
     //.......................................................................
     // Reading the domain information file
@@ -196,9 +196,9 @@ int main(int argc, char **argv)
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 			        n = k*nx*ny+j*nx+i;
-			        if (Dm.id[nlocal]==char(SOLID))     Dm.id[nlocal] = 0;
-			       	else if (Dm.id[nlocal]==char(NWP))  Dm.id[nlocal] = 1;
-				else                                Dm.id[nlocal] = 2;
+			        if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
+			       	else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
+				else                           Dm.id[n] = 2;
 				
 //				if (Dm.id[n] == 1) Dm.id[n]=2;
 				//else if (Dm.id[n] == 2) Dm.id[n]=1;
@@ -208,6 +208,27 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+    count = 0;
+    int total = 0;
+    int countGlobal = 0;
+    int totalGlobal = 0;
+    for (int k=1; k<Nz-1; k++){
+      for (int j=1; j<Ny-1; j++){
+	for (int i=1; i<Nx-1; i++){
+	  n=k*Nx*Ny+j*Nx+i;
+	  total++;
+	  if (Dm.id[n] == 0){
+	    count++;
+	  }
+	}
+      }
+    }
+    MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
+    MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+    float porosity = float(totalGlobal-countGlobal)/totalGlobal;
+    if (rank==0) printf("Porosity=%f\n",porosity);
+
 
    char LocalRankFilename[40];
 
