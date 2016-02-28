@@ -3,7 +3,7 @@
 
 source $MODULESHOME/init/bash
 module swap PrgEnv-intel PrgEnv-gnu
-module load cray-hdf5parallel
+module load cray-hdf5-parallel
 module load cray-netcdf-hdf5parallel
 
 # Set the modules and enviornmental variables
@@ -33,6 +33,7 @@ cmake                                        \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
+       -D USE_NETCDF=1	    		     \
        -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
        -D HDF5_DIRECTORY=$HDF5_DIR	     \
     -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \
