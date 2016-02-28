@@ -105,6 +105,7 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_MPI()     # MPI must be before other libraries
     CONFIGURE_CUDA()
     CONFIGURE_MIC()
+    CONFIGURE_NETCDF()
     CONFIGURE_LBPM()
     CONFIGURE_TIMER( 0 "${${PROJ}_INSTALL_DIR}/null_timer" )
     CONFIGURE_LINE_COVERAGE()
