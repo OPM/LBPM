@@ -151,7 +151,7 @@ TwoPhase::TwoPhase(Domain &dm):
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
 			fprintf(TIMELOG,"trawn trJwn trRwn ");			//trimmed curvature,
 			fprintf(TIMELOG,"wwndnw wwnsdnwn Jwnwwndnw "); 	//kinematic quantities,
-			fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures
+			fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures,
 		}
 
 		NWPLOG = fopen("components.NWP.tcat","a+");
@@ -1222,41 +1222,6 @@ void TwoPhase::PrintAll(int timestep)
 		fflush(TIMELOG);
 	}
 }
-
-void TwoPhase::PrintGeometry(int timestep)
-{
-	if (Dm.rank==0){
-		GEOMETRY = fopen("geometry.tcat","a+");
-
-		// If timelog is empty, write a short header to list the averages
-		//fprintf(GEOMETRY,"--------------------------------------------------------------------------------------\n");
-		fprintf(GEOMETRY,"time sw awn ans aws Jwn Kwn lwns cwns KNwns KGwns ");	// Scalar averages
-		fprintf(GEOMETRY,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");			// Orientation tensors
-		fprintf(GEOMETRY,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
-		fprintf(GEOMETRY,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
-		fprintf(GEOMETRY,"trawn trJwn trRwn ");			//trimmed curvature,
-		fprintf(GEOMETRY,"wwndnw wwnsdnwn Jwnwwndnw "); 	//kinematic quantities,
-		fprintf(GEOMETRY,"Euler Kn Jn An\n"); 			//miknowski measures
-
-		fprintf(GEOMETRY,"%i %.5g ",timestep, sat_w);								// time and saturation
-		fprintf(GEOMETRY,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);		// interfacial areas
-		fprintf(GEOMETRY,"%.5g %.5g ",Jwn_global, Kwn_global);						// curvature of wn interface
-		fprintf(GEOMETRY,"%.5g ",lwns_global);										// common curve length
-		fprintf(GEOMETRY,"%.5g ",efawns_global);										// average contact angle
-		fprintf(GEOMETRY,"%.5g %.5g ",KNwns_global, KGwns_global);					// curvature of wn interface
-		fprintf(GEOMETRY,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-				Gwn_global(0),Gwn_global(1),Gwn_global(2),Gwn_global(3),Gwn_global(4),Gwn_global(5)); // orientation of wn interface
-		fprintf(GEOMETRY,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-				Gns_global(0),Gns_global(1),Gns_global(2),Gns_global(3),Gns_global(4),Gns_global(5)); // orientation of ns interface
-		fprintf(GEOMETRY,"%.5g %.5g %.5g %.5g %.5g %.5g ",
-				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5)); // orientation of ws interface
-		fprintf(GEOMETRY,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);				// Trimmed curvature
-		fprintf(GEOMETRY,"%.5g %.5g %.5g ",wwndnw_global, wwnsdnwn_global, Jwnwwndnw_global);		// kinematic quantities
-		fprintf(GEOMETRY,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);		// minkowski measures
-		fflush(GEOMETRY);
-	}
-}
-
 
 void TwoPhase::PrintComponents(int timestep)
 {

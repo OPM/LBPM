@@ -246,27 +246,21 @@ int main(int argc, char **argv)
   //  fclose(PHASE);
 
     double beta = 0.95;
-	int timestep=5;
 	if (rank==0) printf("initializing the system \n");
-    Averages.Initialize();
     Averages.UpdateSolid();
     Averages.UpdateMeshValues();
     Dm.CommunicateMeshHalo(Averages.Phase);
     Dm.CommunicateMeshHalo(Averages.SDn);
     Dm.CommunicateMeshHalo(Averages.SDs);
 
-	if (rank==0) printf("Computing the averages \n");
-    Averages.ComputeLocal();
-    Averages.Reduce();
+	int timestep=5;
+	Averages.Initialize();
+	if (rank==0) printf("computing phase components \n");
+	Averages.ComponentAverages();
+	if (rank==0) printf("sorting phase components \n");
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
 
-    if (rank==0) printf("Printing geometric averages \n");
-    Averages.PrintGeometry(timestep);
-
-    /*    Averages.Initialize();
-    Averages.ComponentAverages();
-    Averages.SortBlobs();
-    Averages.PrintComponents(timestep);
-    */
     MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;

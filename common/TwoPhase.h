@@ -160,7 +160,6 @@ public:
 	void WriteSurfaces(int logcount);
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
-	void PrintGeometry(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
 	void PrintComponents(int timestep);
