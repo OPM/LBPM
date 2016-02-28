@@ -213,16 +213,16 @@ int main(int argc, char **argv)
     int total = 0;
     int countGlobal = 0;
     int totalGlobal = 0;
-    for (int k=1; k<Nz-1; k++){
-      for (int j=1; j<Ny-1; j++){
-	for (int i=1; i<Nx-1; i++){
-	  n=k*Nx*Ny+j*Nx+i;
-	  total++;
-	  if (Dm.id[n] == 0){
-	    count++;
-	  }
-	}
-      }
+    for (k=1;k<nz-1;k++){
+    	for (j=1;j<ny-1;j++){
+    		for (i=1;i<nx-1;i++){
+    			n=k*Nx*Ny+j*Nx+i;
+    			total++;
+    			if (Dm.id[n] == 0){
+    				count++;
+    			}
+    		}
+    	}
     }
     MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
     MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
