@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 	}
 
     // Create the MeshDataStruct
-	/*    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+	    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
