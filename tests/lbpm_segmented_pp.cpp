@@ -154,7 +154,7 @@ int main(int argc, char **argv)
     fwrite(Averages.SDs.get(),8,Averages.SDs.length(),DIST);
     fclose(DIST);
 
-	// Solve for the position of the non-wetting phase
+    /*	// Solve for the position of the non-wetting phase
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 	}
 
     // Create the MeshDataStruct
-    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
+	/*    fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
     meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("sorting phase components \n");
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
-
+	*/
     MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;

@@ -187,10 +187,10 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 
 	nx+=2; ny+=2; nz+=2;
-	int count = 0;
 	N=nx*ny*nz;
 
 	//if (rank==0) printf("WARNING: assumed that INPUT: WP(1),NWP(2) OUTPUT will be NWP(1),WP(2) (lbpm_segmented_decomp) \n");
+	if (rank==0) printf("All sub-domains recieved \n");
 	// Really need a better way to do this -- this is to flip convention for a particular data set
     for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
@@ -208,15 +208,16 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	if (rank==0) printf("Domain set \n");
 
-    count = 0;
+    int count = 0;
     int total = 0;
     int countGlobal = 0;
     int totalGlobal = 0;
     for (k=1;k<nz-1;k++){
     	for (j=1;j<ny-1;j++){
     		for (i=1;i<nx-1;i++){
-    			n=k*Nx*Ny+j*Nx+i;
+    			n=k*nx*ny+j*nx+i;
     			total++;
     			if (Dm.id[n] == 0){
     				count++;
@@ -261,9 +262,8 @@ int main(int argc, char **argv)
 //    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
     fwrite(symid,1,N,SYMID);
     fclose(SYMID);
-
-    MPI_Barrier(comm);
-	MPI_Finalize();
     return 0;
 
+    MPI_Barrier(comm);
+    MPI_Finalize();
 }

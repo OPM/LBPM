@@ -68,9 +68,9 @@ int main(int argc, char **argv)
 	if (rank==0){
 		printf("Initializing wetting phase saturation of %f \n",Saturation);
 		if (InitialWetting == 1)
-			printf("Begin from connected wetting phase \n");
+			printf("Initial connected phase labeled (1) \n");
 		else
-			printf("Begin from connected non-wetting phase \n");
+			printf("Initial connected phase labeled (2) \n");
 	}
 	//	}
 
@@ -168,6 +168,8 @@ int main(int argc, char **argv)
 	}
 	// total Global is the number of nodes in the pore-space
 	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+	float porosity=float(count)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
+	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
@@ -191,7 +193,7 @@ int main(int argc, char **argv)
 	Dist.close();
 
 	// Generate the residual NWP
-	if (rank==0) printf("Initializing with NWP saturation = %f \n",Saturation);
+	if (rank==0) printf("Initializing with saturation (phase 1) = %f \n",Saturation);
 	//	GenerateResidual(id,nx,ny,nz,Saturation);
 
 	int x,y,z;
