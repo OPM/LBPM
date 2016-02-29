@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	double Lx,Ly,Lz;	// Domain length
 	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
-	int timestepMax, interval;
+	int timestepMax;
 	double tau,Fx,Fy,Fz,tol,err;
 	double alpha, beta;
 	double das, dbs, phi_s;
@@ -156,6 +156,7 @@ int main(int argc, char **argv)
 	//solid_isovalue = 0.0;
 	
 	int RESTART_INTERVAL=20000;
+	int ANALYSIS_INTERVAL=1000;
 	
 	if (rank==0){
 		//.............................................................
@@ -188,7 +189,7 @@ int main(int argc, char **argv)
 		input >> dout;
 		// Line 7: time-stepping criteria
 		input >> timestepMax;		// max no. of timesteps
-		input >> interval;			// restart interval
+		input >> RESTART_INTERVAL;	// restart interval
 		input >> tol;				// error tolerance
 		//.............................................................
 
@@ -228,7 +229,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
-	MPI_Bcast(&interval,1,MPI_INT,0,comm);
+	MPI_Bcast(&RESTART_INTERVAL,1,MPI_INT,0,comm);
 	MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 	// Computational domain
 	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
@@ -248,7 +249,6 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(comm);
 	
-	RESTART_INTERVAL=interval;
 	// **************************************************************
 	// **************************************************************
 	double Ps = -(das-dbs)/(das+dbs);

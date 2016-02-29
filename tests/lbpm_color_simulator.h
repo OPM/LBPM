@@ -11,7 +11,6 @@
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
 
-
 // Structure used to store ids
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
@@ -169,22 +168,16 @@ private:
 class AnalysisWorkItem: public ThreadPool::WorkItem
 {
 public:
-    AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
-        BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
-        type(type_), timestep(timestep_), Averages(Averages_), 
-        blob_ids(ids), id_list(id_list_), beta(beta_) { }
+    AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, double beta_ ):
+        type(type_), timestep(timestep_), Averages(Averages_), beta(beta_) { }
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
-        Averages.NumberComponents_NWP = blob_ids->first;
-        Averages.Label_NWP = blob_ids->second;
-        Averages.Label_NWP_map = *id_list;
-        Averages.NumberComponents_WP = 1;
-        Averages.Label_WP.fill(0.0);
+
         if ( (type&CopyPhaseIndicator) != 0 ) {
             // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
         }
         if ( (type&ComputeAverages) != 0 ) {
-            PROFILE_START("Compute dist",1);
+            PROFILE_START("Macroscale averages",1);
             Averages.Initialize();
             Averages.ComputeDelPhi();
             Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
@@ -194,11 +187,8 @@ public:
             Averages.ComputeLocal();
             Averages.Reduce();
             Averages.PrintAll(timestep);
-            Averages.Initialize();
-            Averages.ComponentAverages();
-            Averages.SortBlobs();
-            Averages.PrintComponents(timestep);
-            PROFILE_STOP("Compute dist",1);
+
+            PROFILE_STOP("Macroscale averages",1);
         }
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
@@ -212,6 +202,50 @@ private:
     double beta;
 };
 
+// Helper class to run the analysis from within a thread
+// Note: Averages will be modified after the constructor is called
+class BlobAnalysisWorkItem: public ThreadPool::WorkItem
+{
+public:
+    BlobAnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_,
+        BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
+        type(type_), timestep(timestep_), Averages(Averages_),
+        blob_ids(ids), id_list(id_list_), beta(beta_) { }
+    virtual void run() {
+        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
+        Averages.NumberComponents_NWP = blob_ids->first;
+        Averages.Label_NWP = blob_ids->second;
+        Averages.Label_NWP_map = *id_list;
+        Averages.NumberComponents_WP = 1;
+        Averages.Label_WP.fill(0.0);
+        if ( (type&CopyPhaseIndicator) != 0 ) {
+            // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+        }
+        if ( (type&ComputeAverages) != 0 ) {
+            PROFILE_START("Analyze blobs",1);
+            Averages.Initialize();
+            Averages.ComputeDelPhi();
+            Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
+            Averages.UpdateMeshValues();
+
+            Averages.ComponentAverages();
+            Averages.SortBlobs();
+            Averages.PrintComponents(timestep);
+            PROFILE_STOP("Analyze blobs",1);
+        }
+        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
+    }
+private:
+    AnalysisWorkItem();
+    AnalysisType type;
+    int timestep;
+    TwoPhase& Averages;
+    BlobIDstruct blob_ids;
+    BlobIDList id_list;
+    double beta;
+};
 
 
 // Function to start the analysis
@@ -380,4 +414,135 @@ void run_analysis( int timestep, int restart_interval,
 }
 
 
+// Function to start the analysis
+void ComputeMacroscaleAverages( int timestep, int analysis_interval, int restart_interval,
+    const RankInfoStruct& rank_info, TwoPhase& Averages,
+    BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
+    int Nx, int Ny, int Nz, bool pBC, double beta, double err,
+    const double *Phi, double *Pressure, const double *Velocity,
+    const char *ID, const double *f_even, const double *f_odd, const double *Den,
+    const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
+    ThreadPool& tpool, AnalysisWaitIdStruct& wait )
+{
+    int N = Nx*Ny*Nz;
+
+    // Determine the analysis we want to perform
+    AnalysisType type = AnalyzeNone;
+    if ( timestep%analysis_interval + 5 == analysis_interval ) {
+        // Copy the phase indicator field for the earlier timestep
+        type = static_cast<AnalysisType>( type | CopyPhaseIndicator );
+    }
+
+    if ( timestep%analysis_interval == 0 ) {
+        // Copy the averages to the CPU (and identify blobs)
+        type = static_cast<AnalysisType>( type | CopySimState );
+    }
+    if ( timestep%analysis_interval == 5 ) {
+        // Run the analysis
+        type = static_cast<AnalysisType>( type | ComputeAverages );
+    }
+    if (timestep%restart_interval == 0) {
+        // Write the restart file
+        type = static_cast<AnalysisType>( type | CreateRestart );
+    }
+    if (timestep%restart_interval == 0) {
+        // Write the visualization data
+        type = static_cast<AnalysisType>( type | WriteVis );
+        type = static_cast<AnalysisType>( type | CopySimState );
+    }
+
+    // Return if we are not doing anything
+    if ( type == AnalyzeNone )
+        return;
+
+    PROFILE_START("start_analysis");
+
+    // Copy the appropriate variables to the host (so we can spawn new threads)
+    DeviceBarrier();
+    PROFILE_START("Copy data to host",1);
+    std::shared_ptr<DoubleArray> phase;
+    if ( (type&CopyPhaseIndicator)!=0 || (type&ComputeAverages)!=0 ||
+         (type&CopySimState)!=0  )
+    {
+        phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
+        CopyToHost(phase->get(),Phi,N*sizeof(double));
+    }
+    if ( (type&CopyPhaseIndicator)!=0 ) {
+        memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
+        //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+    }
+    if ( (type&ComputeAverages)!=0 ) {
+        memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
+        //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
+    }
+    if ( (type&CopySimState) != 0 ) {
+        // Copy the members of Averages to the cpu (phase was copied above)
+        // Wait
+        PROFILE_START("Copy-Pressure",1);
+        ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+        DeviceBarrier();
+        PROFILE_STOP("Copy-Pressure",1);
+        PROFILE_START("Copy-Wait",1);
+        tpool.wait(wait.analysis);
+        tpool.wait(wait.vis);   // Make sure we are done using analysis before modifying
+        PROFILE_STOP("Copy-Wait",1);
+        PROFILE_START("Copy-State",1);
+        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
+        CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
+        CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
+        CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
+        CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+        PROFILE_STOP("Copy-State",1);
+    }
+    std::shared_ptr<double> cDen, cDistEven, cDistOdd;
+    if ( (type&CreateRestart) != 0 ) {
+        // Copy restart data to the CPU
+        cDen = std::shared_ptr<double>(new double[2*N],DeleteArray<double>);
+        cDistEven = std::shared_ptr<double>(new double[10*N],DeleteArray<double>);
+        cDistOdd = std::shared_ptr<double>(new double[9*N],DeleteArray<double>);
+        CopyToHost(cDistEven.get(),f_even,10*N*sizeof(double));
+        CopyToHost(cDistOdd.get(),f_odd,9*N*sizeof(double));
+        CopyToHost(cDen.get(),Den,2*N*sizeof(double));
+    }
+    PROFILE_STOP("Copy data to host",1);
+
+    // Spawn threads to do the analysis work
+    if ( (type&ComputeAverages) != 0 ) {
+        ThreadPool::WorkItem *work = new AnalysisWorkItem(
+            type,timestep,Averages,last_index,last_id_map,beta);
+        work->add_dependency(wait.analysis);
+        work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
+        wait.analysis = tpool.add_work(work);
+    }
+
+    // Spawn a thread to write the restart file
+    if ( (type&CreateRestart) != 0 ) {
+        int rank = MPI_WORLD_RANK();
+        if (pBC) {
+            //err = fabs(sat_w - sat_w_previous);
+            //sat_w_previous = sat_w;
+            if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
+        } else {
+            // Not clear yet
+        }
+        // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
+        tpool.wait(wait.restart);
+        // Write the restart file (using a seperate thread)
+        WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cDistEven,cDistOdd,N);
+        work->add_dependency(wait.restart);
+        wait.restart = tpool.add_work(work);
+    }
+
+    // Save the results for visualization
+    if ( (type&CreateRestart) != 0 ) {
+        // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
+        tpool.wait(wait.vis);
+        // Write the vis files
+        ThreadPool::WorkItem *work = new WriteVisWorkItem( timestep, visData, Averages, fillData );
+        work->add_dependency(wait.analysis);
+        work->add_dependency(wait.vis);
+        wait.vis = tpool.add_work(work);
+    }
+    PROFILE_STOP("start_analysis");
+}
 
