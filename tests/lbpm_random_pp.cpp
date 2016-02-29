@@ -154,9 +154,9 @@ int main(int argc, char **argv)
 
 	int count,countGlobal,totalGlobal;
 	count = 0;
-	for (int k=0; k<nz; k++){
-		for (int j=0; j<ny; j++){
-			for (int i=0; i<nx; i++){
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
 				n = k*nx*ny+j*nx+i;
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 	}
 	// total Global is the number of nodes in the pore-space
 	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
-	float porosity=float(count)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
+	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
 	Dm.CommInit(comm);
@@ -402,20 +402,19 @@ int main(int argc, char **argv)
 	UnpackID(Dm.recvList_yZ, Dm.recvCount_yZ ,recvID_yZ, id);
 	UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
 	//......................................................................................
-
-	count = 0;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				n=k*Nx*Ny+j*Nx+i;
-				if (id[n] == 1){
-					count++;
+		count = 0;
+		for (int k=1; k<Nz-1; k++){
+			for (int j=1; j<Ny-1; j++){
+				for (int i=1; i<Nx-1; i++){
+					n=k*Nx*Ny+j*Nx+i;
+					if (id[n] == 1){
+						count++;
+					}
 				}
 			}
 		}
-	}
-	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-	sat = float(countGlobal)/totalGlobal;
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
+		sat = float(countGlobal)/totalGlobal;
 	if (rank==0) printf("Final saturation=%f\n",sat);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
