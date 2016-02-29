@@ -16,7 +16,7 @@
 
 #include "lbpm_color_simulator.h"
 
-//#define WRITE_SURFACES
+//#define WRE_SURFACES
 
 /*
  * Simulator for two-phase flow in porous media
@@ -156,8 +156,9 @@ int main(int argc, char **argv)
 	//solid_isovalue = 0.0;
 	
 	int RESTART_INTERVAL=20000;
-	int ANALYSIS_INTERVAL=1000;
-	
+	int ANALYSIS_INTERVAL=1000;	
+	bool ANALYZE_BLOB_STATES=false;
+
 	if (rank==0){
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
@@ -190,7 +191,7 @@ int main(int argc, char **argv)
 		// Line 7: time-stepping criteria
 		input >> timestepMax;		// max no. of timesteps
 		input >> RESTART_INTERVAL;	// restart interval
-		input >> tol;				// error tolerance
+		input >> tol;		      	// error tolerance
 		//.............................................................
 
 		//.......................................................................
@@ -868,10 +869,16 @@ int main(int argc, char **argv)
 		timestep++;
   
         // Run the analysis, blob identification, and write restart files
+		if (ANALYZE_BLOB_STATES == true){
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,meshData,fillData,tpool,work_ids);
-
+		}
+		else{
+		  ComputeMacroscaleAverages(timestep,ANALYSIS_INTERVAL,RESTART_INTERVAL,rank_info,*Averages,
+            Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
+				  LocalRestartFile,meshData,fillData,tpool,work_ids);
+		}
         // Save the timers
         if ( timestep%50==0 )
             PROFILE_SAVE("lbpm_color_simulator",1);

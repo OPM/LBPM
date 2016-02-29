@@ -5,7 +5,7 @@
 #include "IO/MeshDatabase.h"
 
 //#define ANALYSIS_INTERVAL 6
-#define ANALYSIS_INTERVAL 1000
+#define ANALYSIS_INTERVAL_DEFAULT 1000
 #define BLOBID_INTERVAL 250
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
@@ -229,7 +229,11 @@ public:
             Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
             Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
             Averages.UpdateMeshValues();
+            Averages.ComputeLocal();
+            Averages.Reduce();
+            Averages.PrintAll(timestep);
 
+            Averages.Initialize();
             Averages.ComponentAverages();
             Averages.SortBlobs();
             Averages.PrintComponents(timestep);
@@ -238,7 +242,7 @@ public:
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
 private:
-    AnalysisWorkItem();
+    BlobAnalysisWorkItem();
     AnalysisType type;
     int timestep;
     TwoPhase& Averages;
@@ -262,7 +266,7 @@ void run_analysis( int timestep, int restart_interval,
 
     // Determin the analysis we want to perform
     AnalysisType type = AnalyzeNone;
-    if ( timestep%ANALYSIS_INTERVAL + 5 == ANALYSIS_INTERVAL ) {
+    if ( timestep%ANALYSIS_INTERVAL_DEFAULT + 5 == ANALYSIS_INTERVAL_DEFAULT ) {
         // Copy the phase indicator field for the earlier timestep
         type = static_cast<AnalysisType>( type | CopyPhaseIndicator );
     }
@@ -279,12 +283,12 @@ void run_analysis( int timestep, int restart_interval,
         }
     #endif
 
-    if ( timestep%ANALYSIS_INTERVAL == 0 ) {
+    if ( timestep%ANALYSIS_INTERVAL_DEFAULT == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
         type = static_cast<AnalysisType>( type | CopySimState );
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
-    if ( timestep%ANALYSIS_INTERVAL == 5 ) {
+    if ( timestep%ANALYSIS_INTERVAL_DEFAULT == 5 ) {
         // Run the analysis
         type = static_cast<AnalysisType>( type | ComputeAverages );
     }
@@ -373,7 +377,7 @@ void run_analysis( int timestep, int restart_interval,
 
     // Spawn threads to do the analysis work
     if ( (type&ComputeAverages) != 0 ) {
-        ThreadPool::WorkItem *work = new AnalysisWorkItem(
+        ThreadPool::WorkItem *work = new BlobAnalysisWorkItem(
             type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
         work->add_dependency(wait.analysis);
@@ -417,7 +421,6 @@ void run_analysis( int timestep, int restart_interval,
 // Function to start the analysis
 void ComputeMacroscaleAverages( int timestep, int analysis_interval, int restart_interval,
     const RankInfoStruct& rank_info, TwoPhase& Averages,
-    BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
     int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, const double *Velocity,
     const char *ID, const double *f_even, const double *f_odd, const double *Den,
@@ -509,7 +512,7 @@ void ComputeMacroscaleAverages( int timestep, int analysis_interval, int restart
     // Spawn threads to do the analysis work
     if ( (type&ComputeAverages) != 0 ) {
         ThreadPool::WorkItem *work = new AnalysisWorkItem(
-            type,timestep,Averages,last_index,last_id_map,beta);
+            type,timestep,Averages,beta);
         work->add_dependency(wait.analysis);
         work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
         wait.analysis = tpool.add_work(work);
