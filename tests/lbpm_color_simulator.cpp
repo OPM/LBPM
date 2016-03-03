@@ -157,59 +157,79 @@ int main(int argc, char **argv)
 	
 	int RESTART_INTERVAL=20000;
 	int ANALYSIS_INTERVAL=1000;	
-	bool ANALYZE_BLOB_STATES=false;
+	int BLOB_ANALYSIS_INTERVAL=1000;
 
 	if (rank==0){
 		//.............................................................
 		//		READ SIMULATION PARMAETERS FROM INPUT FILE
 		//.............................................................
 		ifstream input("Color.in");
-		// Line 1: Name of the phase indicator file (s=0,w=1,n=2)
-//		input >> FILENAME;
-		// Line 2: domain size (Nx, Ny, Nz)
-//		input >> Nz;				// number of nodes (x,y,z)
-//		input >> nBlocks;
-//		input >> nthreads;
-		// Line 3: model parameters (tau, alpha, beta, das, dbs)
-		input >> tau;			// Viscosity parameter
-		input >> alpha;			// Surface Tension parameter
-		input >> beta;			// Width of the interface
-		input >> phi_s;			// value of phi at the solid surface
-//		input >> das;
-//		input >> dbs;
-		// Line 4: wetting phase saturation to initialize
-		input >> wp_saturation;
-		// Line 5: External force components (Fx,Fy, Fz)
-		input >> Fx;
-		input >> Fy;
-		input >> Fz;
-		// Line 6: Pressure Boundary conditions
-		input >> InitialCondition;
-		input >> BoundaryCondition;
-		input >> din;
-		input >> dout;
-		// Line 7: time-stepping criteria
-		input >> timestepMax;		// max no. of timesteps
-		input >> RESTART_INTERVAL;	// restart interval
-		input >> tol;		      	// error tolerance
-		//.............................................................
+		if (input.is_open()){
+			// Line 1: model parameters (tau, alpha, beta, das, dbs)
+			input >> tau;			// Viscosity parameter
+			input >> alpha;			// Surface Tension parameter
+			input >> beta;			// Width of the interface
+			input >> phi_s;			// value of phi at the solid surface
+			// Line 2: wetting phase saturation to initialize
+			input >> wp_saturation;
+			// Line 3: External force components (Fx,Fy, Fz)
+			input >> Fx;
+			input >> Fy;
+			input >> Fz;
+			// Line 4: Pressure Boundary conditions
+			input >> InitialCondition;
+			input >> BoundaryCondition;
+			input >> din;
+			input >> dout;
+			// Line 5: time-stepping criteria
+			input >> timestepMax;		// max no. of timesteps
+			input >> RESTART_INTERVAL;	// restart interval
+			input >> tol;		      	// error tolerance
+			// Line 6: Analysis options
+			input >> BLOB_ANALYSIS_INTERVAL; // interval to analyze blob states
+			//.............................................................
+		}
+		else{
+			// Set default values
+		    // Print warning
+			printf("WARNING: No input file provided (Color.in is missing)! Default parameters will be used. \n");
+			tau = 1.0;
+			alpha=0.005;
+			beta= 0.9;
+			Fx = Fy = Fz = 0.0;
+			InitialCondition=0;
+			BoundaryCondition=0;
+			din=dout=1.0;
+			timestepMax=0;
+		}
 
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
 		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
-		//.......................................................................
-		
+		if (input.is_open()){
+
+			domain >> nprocx;
+			domain >> nprocy;
+			domain >> nprocz;
+			domain >> Nx;
+			domain >> Ny;
+			domain >> Nz;
+			domain >> nspheres;
+			domain >> Lx;
+			domain >> Ly;
+			domain >> Lz;
+			//.......................................................................
+		}
+		else{
+			// Set default values
+		    // Print warning
+			printf("WARNING: No input file provided (Domain.in is missing)! Default parameters will be used. \n");
+			nprocx=nprocy=nprocz=1;
+			Nx=Ny=Nz=10;
+			nspheres=0;
+			Lx=Ly=Lz=1.0;
+		}
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
@@ -869,7 +889,7 @@ int main(int argc, char **argv)
 		timestep++;
   
         // Run the analysis, blob identification, and write restart files
-		if (ANALYZE_BLOB_STATES == true){
+		if (BLOB_ANALYSIS_INTERVAL > 0){
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,meshData,fillData,tpool,work_ids);
