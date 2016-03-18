@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-/*	//.................................................
+/*	//.................................................	
 	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
 	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
 	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
@@ -95,6 +95,8 @@ int main(int argc, char **argv)
 
 	PROFILE_START("ReadVolume");
 
+        Array<float> VOLUME;
+
 	// Read the input volume to rank 0 only, then distribute pieces to workers
 	if (rank==0){
 		// Open the netcdf file
@@ -116,12 +118,19 @@ int main(int argc, char **argv)
 		// Read the VOLUME data array
 		std::string varname("VOLUME");
 		printf("Reading %s\n",varname.c_str());
-		Array<float> VOLUME = netcdf::getVar<float>( fid, varname);
-		printf("VOLUME dims =  %zu x %zu x %zu \n",VOLUME.size(0),VOLUME.size(1),VOLUME.size(2));
+		VOLUME = netcdf::getVar<float>( fid, varname);
+		Nx = int(VOLUME.size(0));
+		Ny = int(VOLUME.size(1));
+		Nz = int(VOLUME.size(2));
+		printf("VOLUME dims =  %i x %i x %i \n",Nx,Ny,Nz);
 		printf("Sucess!! \n");
 		netcdf::close( fid );
 	}
 	PROFILE_SAVE("ReadVolume");
+
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
 
     MPI_Barrier(comm);
 
@@ -137,15 +146,22 @@ int main(int argc, char **argv)
 		}
 	}
 	Dm.CommInit(comm);
-/*
+
+	// Allocate local arrays for every MPI rank
+        Array<float> LOCVOL(nx+2,ny+2,nz+2);
+
 	// Set up the sub-domains
+	int xStart,yStart,zStart;
+	xStart=Nx/2;
+	yStart=Ny/2;
+	zStart=Nz/2;
 	if (rank==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
 		printf("Process grid: %i x %i x %i \n",Dm.nprocx,Dm.nprocy,Dm.nprocz);
 		printf("Subdomain size: %i \n",N);
-		printf("Size of transition region: %i \n", z_transition_size);
-		char *tmp;
-		tmp = new char[N];
+		//	printf("Size of transition region: %i \n", z_transition_size);
+		float *tmp;
+		tmp = new float[N];
 		for (int kp=0; kp<nprocz; kp++){
 			for (int jp=0; jp<nprocy; jp++){
 				for (int ip=0; ip<nprocx; ip++){
@@ -157,13 +173,10 @@ int main(int argc, char **argv)
 							for (i=0;i<nx+2;i++){
 								int x = xStart + ip*nx + i-1;
 								int y = yStart + jp*ny + j-1;
-						//		int z = zStart + kp*nz + k-1;
-								int z = zStart + kp*nz + k-1 - z_transition_size;
-								if (z<zStart) 	z=zStart;
-								if (!(z<Nz))	z=Nz-1;
+								int z = zStart + kp*nz + k-1;
+
 								int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-								int nglobal = z*Nx*Ny+y*Nx+x;
-								tmp[nlocal] = SegData[nglobal];
+								tmp[nlocal] = VOLUME(x,y,z);
 							}
 						}
 					}
@@ -172,14 +185,14 @@ int main(int argc, char **argv)
 							for (j=0;j<ny+2;j++){
 								for (i=0;i<nx+2;i++){
 									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									Dm.id[nlocal] = tmp[nlocal];
+									LOCVOL(i,j,k) = tmp[nlocal];
 								}
 							}
 						}
 					}
 					else{
 						printf("Sending data to process %i \n", rnk);
-						MPI_Send(tmp,N,MPI_CHAR,rnk,15,comm);
+						MPI_Send(tmp,N,MPI_FLOAT,rnk,15,comm);
 					}
 				}
 			}
@@ -188,7 +201,7 @@ int main(int argc, char **argv)
 	else{
 		// Recieve the subdomain from rank = 0
 		printf("Ready to recieve data %i at process %i \n", N,rank);
-		MPI_Recv(Dm.id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
+		MPI_Recv(LOCVOL.get(),N,MPI_FLOAT,0,15,comm,MPI_STATUS_IGNORE);
 	}
 	MPI_Barrier(comm);
 
@@ -196,7 +209,7 @@ int main(int argc, char **argv)
 	N=nx*ny*nz;
 
 	if (rank==0) printf("All sub-domains recieved \n");
-    for (k=0;k<nz;k++){
+	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 			        n = k*nx*ny+j*nx+i;
@@ -209,7 +222,16 @@ int main(int argc, char **argv)
 	}
 	if (rank==0) printf("Domain set \n");
 */
-
+	// Write the local volume files
+	char LocalRankString[8];
+	char LocalRankFilename[40];
+	sprintf(LocalRankString,"%05d",rank);
+	sprintf(LocalRankFilename,"Seg.%s",LocalRankString);
+	FILE * SEG;
+	SEG=fopen(LocalRankFilename,"wb");
+	fwrite(LOCVOL.get(),4,N,SEG);
+	fclose(SEG);
+    
     MPI_Barrier(comm);
     MPI_Finalize();
 	return 0;
