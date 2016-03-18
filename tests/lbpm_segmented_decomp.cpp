@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 	MPI_Comm_size(comm,&nprocs);
 
 
-        int SOLID=atoi(argv[1]);
+    int SOLID=atoi(argv[1]);
 	int NWP=atoi(argv[2]);
 	if (rank==0){
 	  printf("Solid Label %i \n",SOLID);
