@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 					}
 				}
 				
-				sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
+		/*		sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
@@ -224,9 +224,9 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-
-//				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
-//				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
+*/
+				sprintf(LocalRankFilename,"%s%s","Restart.",LocalRankString);
+				ReadFromRank(LocalRankFilename,Phase,nx,ny,nz,iproc,jproc,kproc);
 			}
 		}
 	}
