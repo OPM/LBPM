@@ -239,7 +239,8 @@ int main(int argc, char **argv)
 	if (kproc == 0){
 		for(j=0; j<Ny; j++){
 			for(i=0; i<Nx; i++){
-				n = nx*ny + j*nx+i;
+				n = j*nx+i;
+				//				n = nx*ny + j*nx+i;
 				if (id[n] == 0)	id[n]=1;
 			}
 		}
