@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 						for (kk=kmin; kk<kmax; kk++){
 							for (jj=jmin; jj<jmax; jj++){
 								for (ii=imin; ii<imax; ii++){
-									nn = kk*nx*ny+jj*nx+ii;
+									int nn = kk*nx*ny+jj*nx+ii;
 									if (id[nn] == 2){
 										LocalNumber++;
 										id[nn]=1;
