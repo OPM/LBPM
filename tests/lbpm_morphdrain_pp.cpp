@@ -137,6 +137,15 @@ int main(int argc, char **argv)
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	size_t readID;
+	FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	readID=fread(id,1,N,IDFILE);
+	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
+	fclose(IDFILE);
+
+
 	int count,countGlobal,totalGlobal;
 	count = 0;
 	for (int k=1; k<nz-1; k++){
@@ -146,7 +155,7 @@ int main(int argc, char **argv)
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{
 					// initially saturated with wetting phase
-					id[n] = 2;
+					//id[n] = 2;
 					count++;
 				}
 			}
@@ -239,6 +248,7 @@ int main(int argc, char **argv)
 	int imin,jmin,kmin,imax,jmax,kmax;
 	while (GlobalNumber != 0){
 
+	  if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
 		int LocalNumber=0;
 		for(k=1; k<Nz; k++){
 			for(j=0; j<Ny; j++){
@@ -246,12 +256,12 @@ int main(int argc, char **argv)
 					n = k*nx*ny + j*nx+i;
 					if (id[n] == 1 && SignDist(i,j,k) > Rcrit){
 						// loop over the window and update
-						imin=max(0,i-Window);
-						jmin=max(0,j-Window);
-						kmin=max(0,k-Window);
-						imax=min(Nx,i+Window);
-						jmax=min(Ny,j+Window);
-						kmax=min(Nz,k+Window);
+						imin=max(1,i-Window);
+						jmin=max(1,j-Window);
+						kmin=max(1,k-Window);
+						imax=min(Nx-1,i+Window);
+						jmax=min(Ny-1,j+Window);
+						kmax=min(Nz-1,k+Window);
 						for (kk=kmin; kk<kmax; kk++){
 							for (jj=jmin; jj<jmax; jj++){
 								for (ii=imin; ii<imax; ii++){
