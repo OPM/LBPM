@@ -137,7 +137,7 @@ static inline void fgetl( char * str, int num, FILE * stream )
 
 
 
-inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
+inline double SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     /*
      * This routine converts the data in the Distance array to a signed distance
      * by solving the equation df/dt = sign(1-|grad f|), where Distance provides
@@ -152,6 +152,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     int in,jn,kn;
     double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
     double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
+    double TotalVariation;
 
     const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
         {1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
@@ -176,6 +177,7 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
         // Communicate the halo of values
         fillData.fill(Distance);
 
+        TotalVariation=0.0;
         // Execute the next timestep
         for (k=1;k<Dm.Nz-1;k++){
             for (j=1;j<Dm.Ny-1;j++){
@@ -243,32 +245,35 @@ inline void SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
                             // Only include upwind derivatives
                             if (sign*(nx*Cqx + ny*Cqy + nz*Cqz) < 0.0 ){
 
-                                Dx += Dqx;
-                                Dy += Dqy;
-                                Dz += Dqz;
-                                W += weights[q];
+                            	Dx += Dqx;
+                            	Dy += Dqy;
+                            	Dz += Dqz;
+                            	W += weights[q];
                             }
                         }
                         // Normalize by the weight to get the approximation to the gradient
-                        Dx /= W;
-                        Dy /= W;
-                        Dz /= W;
-
+                        if (fabs(W) > 0.0){
+                        	Dx /= W;
+                        	Dy /= W;
+                        	Dz /= W;
+                        }
                         norm = sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
                     }
                     else{
                         norm = 0.0;
                     }
                     Distance(i,j,k) += dt*sign*(1.0 - norm);
-
+                    TotalVariation +=  dt*sign*(1.0 - norm);
                     // Disallow any change in phase
                    // if (Distance(i,j,k)*2.0*(ID[n]-1.0) < 0) Distance(i,j,k) = -Distance(i,j,k);
                 }
             }
         }
-
+        TotalVariation /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2);
         count++;
     }
+
+    return TotalVariation;
 }
 
 

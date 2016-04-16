@@ -26,6 +26,151 @@ inline void MeanFilter(DoubleArray &Mesh){
 	}
 }
 
+inline double minmod(double &a, double &b){
+
+	double value;
+
+	value = a;
+	if 	( if a*b < 0.0)	value=0.0;
+	else if (fabs(a) > fabs(b) value = b;
+
+	return value;
+}
+
+
+inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
+
+    /*
+     * This routine converts the data in the Distance array to a signed distance
+     * by solving the equation df/dt = sign(1-|grad f|), where Distance provides
+     * the values of f on the mesh associated with domain Dm
+     * It has been tested with segmented data initialized to values [-1,1]
+     * and will converge toward the signed distance to the surface bounding the associated phases
+     *
+     * Reference:
+     * Min C (2010) On reinitializing level set functions, Journal of Computational Physics	229
+     */
+
+    int i,j,k;
+    double dt=0.25;
+    double Dx,Dy,Dz;
+    double Dxp,Dxm,Dyp,Dym,Dzp,Dzm;
+    double Dxxp,Dxxm,Dyyp,Dyym,Dzzp,Dzzm;
+    double sign,norm;
+    double LocalVar,GlobalVar,LocalMax,GlobalMax;
+
+    int xdim,ydim,zdim;
+    xdim=Dm.Nx-2;
+    ydim=Dm.Ny-2;
+    zdim=Dm.Nz-2;
+    fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+
+    // Arrays to store the second derivatives
+    DoubleArray Dxx(Nx,Ny,Nz);
+    DoubleArray Dyy(Nx,Ny,Nz);
+    DoubleArray Dzz(Nx,Ny,Nz);
+
+    int count = 0;
+    while (count < timesteps){
+
+        // Communicate the halo of values
+        fillData.fill(Distance);
+
+        // Compute second order derivatives
+        for (k=1;k<Dm.Nz-1;k++){
+            for (j=1;j<Dm.Ny-1;j++){
+                for (i=1;i<Dm.Nx-1;i++){
+                	Dxx(i,j,k) = Distance(i+1,j,k) + Distance(i-1,j,k) - 2*Distance(i,j,k);
+                	Dyy(i,j,k) = Distance(i,j+1,k) + Distance(i,j-1,k) - 2*Distance(i,j,k);
+                	Dzz(i,j,k) = Distance(i,j,k+1) + Distance(i,j,k-1) - 2*Distance(i,j,k);
+                 }
+            }
+        }
+        fillData.fill(Dxx);
+        fillData.fill(Dyy);
+        fillData.fill(Dzz);
+
+        LocalMax=LocalVar=0.0;
+        // Execute the next timestep
+        for (k=1;k<Dm.Nz-1;k++){
+            for (j=1;j<Dm.Ny-1;j++){
+                for (i=1;i<Dm.Nx-1;i++){
+
+                	int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
+
+                	sign = -1;
+                	if (ID[n] == 1) sign = 1;
+
+                	// local second derivative terms
+                	Dxxp = minmod(Dxx(i,j,k),Dxx(i+1,j,k));
+                	Dyyp = minmod(Dyy(i,j,k),Dyy(i,j+1,k));
+                	Dzzp = minmod(Dzz(i,j,k),Dzz(i,j,k+1));
+                	Dxxm = minmod(Dxx(i,j,k),Dxx(i-1,j,k));
+                	Dyym = minmod(Dyy(i,j,k),Dyy(i,j-1,k));
+                	Dzzm = minmod(Dzz(i,j,k),Dzz(i,j,k-1));
+
+                    /* //............Compute upwind derivatives ...................
+                    Dxp = Distance(i+1,j,k) - Distance(i,j,k) + 0.5*Dxxp;
+                    Dyp = Distance(i,j+1,k) - Distance(i,j,k) + 0.5*Dyyp;
+                    Dzp = Distance(i,j,k+1) - Distance(i,j,k) + 0.5*Dzzp;
+
+                    Dxm = Distance(i,j,k) - Distance(i-1,j,k) + 0.5*Dxxm;
+                    Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
+                    Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
+                    */
+                    Dxp = Distance(i+1,j,k);
+                    Dyp = Distance(i,j+1,k);
+                    Dzp = Distance(i,j,k+1);
+
+                    Dxm = Distance(i-1,j,k);
+                    Dym = Distance(i,j-1,k);
+                    Dzm = Distance(i,j,k-1);
+
+                    // Compute upwind derivatives for Godunov Hamiltonian
+                    if (sign < 0.0){
+                    	if (Dxp > Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
+                    	else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
+
+                    	if (Dyp > Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
+                    	else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
+
+                    	if (Dzp > Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
+                    	else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
+                    }
+                    else{
+                    	if (Dxp < Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
+                    	else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
+
+                    	if (Dyp < Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
+                    	else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
+
+                    	if (Dzp < Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
+                    	else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
+                    }
+
+                	norm=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+
+                    Distance(i,j,k) += dt*sign*(1.0 - norm);
+                    LocalVar +=  dt*sign*(1.0 - norm);
+
+                    if (fabs(dt*sign*(1.0 - norm)) > LocalMax)
+                    	LocalMax = fabs(dt*sign*(1.0 - norm));
+                }
+            }
+        }
+
+    	MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.comm);
+    	GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
+        count++;
+
+    	if (count%50 == 0 && Dm.rank==0 )
+    		printf("Time=%i, Global variation=%f \n",count,GlobalVar);
+    }
+
+    return GlobalVar;
+}
+
+
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -146,8 +291,13 @@ int main(int argc, char **argv)
 	}
 	MeanFilter(Averages.SDs);
 
+	double LocalVar, TotalVar;
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	SSO(Averages.SDs,id,Dm,100);
+	LocalVar = Eikonal(Averages.SDs,id,Dm,100);
+
+	MPI_Allreduce(&LocalVar,&TotalVar,1,MPI_DOUBLE,MPI_SUM,comm);
+	TotalVar /= nprocs;
+	if (rank==0) printf("Final variation in signed distance function %f \n",TotalVar);
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
