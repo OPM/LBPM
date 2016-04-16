@@ -31,8 +31,8 @@ inline double minmod(double &a, double &b){
 	double value;
 
 	value = a;
-	if 	( if a*b < 0.0)	value=0.0;
-	else if (fabs(a) > fabs(b) value = b;
+	if 	( a*b < 0.0)	    value=0.0;
+	else if (fabs(a) > fabs(b)) value = b;
 
 	return value;
 }
@@ -66,9 +66,9 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
     fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
 
     // Arrays to store the second derivatives
-    DoubleArray Dxx(Nx,Ny,Nz);
-    DoubleArray Dyy(Nx,Ny,Nz);
-    DoubleArray Dzz(Nx,Ny,Nz);
+    DoubleArray Dxx(Dm.Nx,Dm.Ny,Dm.Nz);
+    DoubleArray Dyy(Dm.Nx,Dm.Ny,Dm.Nz);
+    DoubleArray Dzz(Dm.Nx,Dm.Ny,Dm.Nz);
 
     int count = 0;
     while (count < timesteps){
@@ -159,7 +159,7 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
             }
         }
 
-    	MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.comm);
+    	MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     	GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
         count++;
 
