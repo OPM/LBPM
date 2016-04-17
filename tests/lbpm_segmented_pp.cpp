@@ -52,7 +52,7 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
      */
 
     int i,j,k;
-    double dt=0.25;
+    double dt=0.1;
     double Dx,Dy,Dz;
     double Dxp,Dxm,Dyp,Dym,Dzp,Dzm;
     double Dxxp,Dxxm,Dyyp,Dyym,Dzzp,Dzzm;
@@ -148,8 +148,9 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
                     	else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
                     }
 
-                	norm=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
-
+                    norm=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+		    if (norm > 1.0) norm=1.0;
+		    
                     Distance(i,j,k) += dt*sign*(1.0 - norm);
                     LocalVar +=  dt*sign*(1.0 - norm);
 
@@ -160,13 +161,18 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
         }
 
     	MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    	MPI_Allreduce(&LocalMax,&GlobalMax,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
     	GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
         count++;
 
     	if (count%50 == 0 && Dm.rank==0 )
-    		printf("Time=%i, Global variation=%f \n",count,GlobalVar);
-    }
+	  printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
 
+	if (fabs(GlobalMax) < 1e-5){
+	  if (Dm.rank==0) printf("Exiting with max tolerance of 1e-5 \n");
+	  count=timesteps;
+	}
+    }
     return GlobalVar;
 }
 
@@ -293,7 +299,7 @@ int main(int argc, char **argv)
 
 	double LocalVar, TotalVar;
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	LocalVar = Eikonal(Averages.SDs,id,Dm,100);
+	LocalVar = Eikonal(Averages.SDs,id,Dm,10*Dm.Nx*Dm.nprocx);
 
 	MPI_Allreduce(&LocalVar,&TotalVar,1,MPI_DOUBLE,MPI_SUM,comm);
 	TotalVar /= nprocs;
