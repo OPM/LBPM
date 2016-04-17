@@ -152,7 +152,7 @@ inline double SSO(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
     int in,jn,kn;
     double Dqx,Dqy,Dqz,Dx,Dy,Dz,W;
     double nx,ny,nz,Cqx,Cqy,Cqz,sign,norm;
-    double TotalVariation;
+    double TotalVariation=0.0;
 
     const static int D3Q27[26][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
         {1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
