@@ -608,23 +608,58 @@ int main(int argc, char **argv)
 	fclose(SEG);
     */
 
-    std::vector<IO::MeshDataStruct>& visData;
-    ASSERT(visData[0].vars[0]->name=="Source Data");
-    ASSERT(visData[0].vars[1]->name=="Sparse Med3");
-    ASSERT(visData[0].vars[2]->name=="Sparse Segmentation");
-    ASSERT(visData[0].vars[3]->name=="Sparse Distance");
+    std::vector<IO::MeshDataStruct> meshData(2);
+    meshData[0].meshName = "Full domain";
+    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,nx-2,ny-2,nz-2,Lx,Ly,Lz) );
+    meshData[1].meshName = "Sparse domain";
+    meshData[1].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,nsx-2,nsy-2,nsz-2,Lx,Ly,Lz) );
 
-    Array<float>& INPUT = visData[0].vars[0]->data;
-    Array<float>& spMEDIAN = visData[0].vars[1]->data;
-    Array<char>& spSEGMENTED  = visData[0].vars[2]->data;
-    Array<float>& spDISTANCE = visData[0].vars[3]->data;
+    std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> spMedianData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> spSegData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> spDistData( new IO::Variable() );
+
+    // Full resolution data
+    OrigData->name = "Source Data";
+    OrigData->type = IO::VolumeVariable;
+    OrigData->dim = 1;
+    OrigData->data.resize(nx-2,ny-2,nz-2);
+    meshData[0].vars.push_back(OrigData);
+    //..........................................
+
+    // ....... Sparse resolution data .......
+    spMedianData->name = "Sparse Median Filter";
+    spMedianData->type = IO::VolumeVariable;
+    spMedianData->dim = 1;
+    spMedianData->data.resize(nsx-2,nsy-2,nsz-2);
+    meshData[1].vars.push_back(spMedianData);
+
+    spSegData->name = "Sparse Segmentation";
+    spSegData->type = IO::VolumeVariable;
+    spSegData->dim = 1;
+    spSegData->data.resize(nsx-2,nsy-2,nsz-2);
+    meshData[1].vars.push_back(spSegData);
+
+    spDistData->name = "Sparse Distance";
+    spDistData->type = IO::VolumeVariable;
+    spDistData->dim = 1;
+    spDistData->data.resize(nsx-2,nsy-2,nsz-2);
+    meshData[1].vars.push_back(spDistData);
+    //..........................................
+
+
+    Array<float>& INPUT = meshData[0].vars[0]->data;
+
+    Array<float>& spMEDIAN = meshData[1].vars[0]->data;
+    Array<char>& spSEGMENTED  = meshData[1].vars[1]->data;
+    Array<float>& spDISTANCE = meshData[1].vars[2]->data;
 
     fillFloat.copy(LOCVOL,INPUT);
     fillFloat_sp.copy(spM,spMEDIAN);
     fillChar_sp.copy(spID,spSEGMENTED);
     fillFloat_sp.copy(spDist,spDISTANCE);
 
-    IO::writeData( 0, visData, 2, comm );
+    IO::writeData( 0, meshData, 2, comm );
     
     MPI_Barrier(comm);
     MPI_Finalize();
