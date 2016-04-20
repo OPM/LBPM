@@ -533,12 +533,21 @@ int main(int argc, char **argv)
 	nx+=2; ny+=2; nz+=2;
 	N=nx*ny*nz;
 
+
 	if (rank==0) printf("All sub-domains recieved \n");
 
 	// Filter the volume in distributed memory
 	// Create sparse structures to make an initial guess, then refine
+
 	int nsx,nsy,nsz;
 	nsx=nx/8; nsy=ny/8; nsz=nz/8;
+
+    fillHalo<float> fillFloat(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
+    fillHalo<char> fillChar(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
+    fillHalo<float> fillFloat_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
+    fillHalo<char>  fillChar_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
+
+
 	Array<float> spLOCVOL(nsx,nsy,nsz);	// this holds sparse original data
 	Array<float> spM(nsx,nsy,nsz); 		// this holds sparse median filter
 	Array<float> spDist(nsx,nsy,nsz);		// this holds sparse signed distance
@@ -568,7 +577,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-
 	// generate a sparse signed distance function
 	Eikonal3D(spDist,spID,Dm,nsx*nprocx);
 
@@ -586,7 +594,6 @@ int main(int argc, char **argv)
 		}
 	}
 	if (rank==0) printf("Domain set \n");
-*/
 	// Write the local volume files
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -596,6 +603,25 @@ int main(int argc, char **argv)
 	SEG=fopen(LocalRankFilename,"wb");
 	fwrite(LOCVOL.get(),4,N,SEG);
 	fclose(SEG);
+    */
+
+    std::vector<IO::MeshDataStruct>& visData;
+    ASSERT(visData[0].vars[0]->name=="Source Data");
+    ASSERT(visData[0].vars[1]->name=="Sparse Med3");
+    ASSERT(visData[0].vars[2]->name=="Sparse Segmentation");
+    ASSERT(visData[0].vars[3]->name=="Sparse Distance");
+
+    Array<float>& INPUT = visData[0].vars[0]->data;
+    Array<float>& spMEDIAN = visData[0].vars[1]->data;
+    Array<char>& spSEGMENTED  = visData[0].vars[2]->data;
+    Array<float>& spDISTANCE = visData[0].vars[3]->data;
+
+    fillFloat.copy(LOCVOL,INPUT);
+    fillFloat_sp.copy(spM,spMEDIAN);
+    fillChar_sp.copy(spID,spSEGMENTED);
+    fillFloat_sp.copy(spDist,spDISTANCE);
+
+    IO::writeData( 0, visData, 2, comm );
     
     MPI_Barrier(comm);
     MPI_Finalize();
