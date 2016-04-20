@@ -175,7 +175,6 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Performing morphological drainage with critical radius %f \n", Rcrit);
 	//	GenerateResidual(id,nx,ny,nz,Saturation);
 
-
 	// Communication buffers
 	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
 	char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
@@ -241,7 +240,7 @@ int main(int argc, char **argv)
 			for(i=0; i<Nx; i++){
 				n = j*nx+i;
 				//				n = nx*ny + j*nx+i;
-				if (id[n] == 0)	id[n]=1;
+			        id[n]=1;
 			}
 		}
 	}
@@ -251,7 +250,7 @@ int main(int argc, char **argv)
 
 	  if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
 		int LocalNumber=0;
-		for(k=1; k<Nz; k++){
+		for(k=0; k<Nz; k++){
 			for(j=0; j<Ny; j++){
 				for(i=0; i<Nx; i++){
 					n = k*nx*ny + j*nx+i;

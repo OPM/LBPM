@@ -253,7 +253,10 @@ int main(int argc, char **argv)
 	char LocalRankFilename[40];
 
     int N = (nx+2)*(ny+2)*(nz+2);
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+    Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+    for (n=0; n<N; n++) Dm.id[n]=1;
+    Dm.CommInit(comm);
+
 	// Read the phase ID
 	size_t readID;
     sprintf(LocalRankFilename,"ID.%05i",rank);
@@ -261,8 +264,30 @@ int main(int argc, char **argv)
     readID=fread(Dm.id,1,N,ID);
     if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
     fclose(ID);
+        // make sure communication 
+    	// Set up layers in x direction
+	for (k=0; k<nz; k++){
+	  for (j=0; j<ny; j++){
+	    Dm.id[k*nx*ny+j*nx]=1;
+	    Dm.id[k*nx*ny+j*nx+nx-1] = 1; 
+	  }
+	}
+
+	for (k=0; k<nz; k++){
+	  for (i=0; i<nx; i++){
+	    Dm.id[k*nx*ny+i]=1;
+	    Dm.id[k*nx*ny+(ny-1)*nx+i] = 1; 
+	  }
+	}
+
+	for (j=0; j<ny; j++){
+	  for (i=0; i<nx; i++){
+	    Dm.id[j*nx+i]=1;
+	    Dm.id[nx*ny*(nz-1)+j*nx+i] = 1; 
+	  }
+	}
+    
     // Initialize the domain and communication
-    Dm.CommInit(comm);
 
 	nx+=2; ny+=2; nz+=2;
 	int count = 0;
