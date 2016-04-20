@@ -11,6 +11,9 @@
 #include <sstream>
 #include "common/Array.h"
 #include "common/Domain.h"
+#include "common/Communication.h"
+#include "common/MPI_Helpers.h"
+#include "IO/MeshDatabase.h"
 #include "IO/netcdf.h"
 
 #include "ProfilerApp.h"
