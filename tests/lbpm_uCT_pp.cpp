@@ -275,6 +275,7 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Output,
 	// 		h is a free parameter for non-local means (i.e. 1/sigma^2)
 	float weight, sum;
 	int i,j,k,ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
 
 	int Nx = int(Input.size(0));
 	int Ny = int(Input.size(1));
@@ -558,7 +559,7 @@ int main(int argc, char **argv)
 	for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
-				if (sPM(i,j,k) > THRESHOLD) spID(i,j,k) = 0;
+				if (spM(i,j,k) > THRESHOLD) spID(i,j,k) = 0;
 				else 						spID(i,j,k) = 1;
 
 				// intialize distance based on segmentation
