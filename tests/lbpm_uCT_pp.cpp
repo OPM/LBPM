@@ -551,7 +551,6 @@ int main(int argc, char **argv)
     fillHalo<float> fillFloat_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
     fillHalo<char>  fillChar_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
 
-
 	Array<float> spLOCVOL(nsx,nsy,nsz);	// this holds sparse original data
 	Array<float> spM(nsx,nsy,nsz); 		// this holds sparse median filter
 	Array<float> spDist(nsx,nsy,nsz);		// this holds sparse signed distance
@@ -648,17 +647,43 @@ int main(int argc, char **argv)
     meshData[1].vars.push_back(spDistData);
     //..........................................
 
-
+    /*
+     * Only Array<double> works right now :(
+     *
     Array<float>& INPUT = meshData[0].vars[0]->data;
-
     Array<float>& spMEDIAN = meshData[1].vars[0]->data;
-    Array<char>& spSEGMENTED  = meshData[1].vars[1]->data;
+    Array<char>& spSEGMENTED = meshData[1].vars[1]->data;
     Array<float>& spDISTANCE = meshData[1].vars[2]->data;
 
     fillFloat.copy(LOCVOL,INPUT);
     fillFloat_sp.copy(spM,spMEDIAN);
     fillChar_sp.copy(spID,spSEGMENTED);
     fillFloat_sp.copy(spDist,spDISTANCE);
+     */
+
+    Array<double>& INPUT = meshData[0].vars[0]->data;
+    Array<double>& spMEDIAN = meshData[1].vars[0]->data;
+    Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
+    Array<double>& spDISTANCE = meshData[1].vars[2]->data;
+
+    // manually change to double and write
+    for (k=0;k<nz;k++){
+    	for (j=0;j<ny;j++){
+    		for (i=0;i<nx;i++){
+    			INPUT(i,j,k) = double( LOCVOL(i,j,k));
+    		}
+    	}
+    }
+
+    for (k=0;k<nsz;k++){
+    	for (j=0;j<nsy;j++){
+    		for (i=0;i<nsx;i++){
+    			spMEDIAN(i,j,k) = double( spM(i,j,k));
+    			spSEGMENTED(i,j,k) = double( spID(i,j,k));
+    			spDISTANCE(i,j,k) = double( spDist(i,j,k));
+    		}
+    	}
+    }
 
     IO::writeData( 0, meshData, 2, comm );
     
