@@ -15,6 +15,7 @@
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/netcdf.h"
+#include "IO/Writer.h"
 
 #include "ProfilerApp.h"
 
