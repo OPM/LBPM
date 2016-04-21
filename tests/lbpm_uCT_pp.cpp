@@ -443,7 +443,7 @@ int main(int argc, char **argv)
 
 	// Read the volume file and distribute to all processes
 	PROFILE_START("ReadVolume");
-	{
+	//{
 		Array<float> VOLUME;
 
 		// Read the input volume to rank 0 only, then distribute pieces to workers
@@ -533,10 +533,9 @@ int main(int argc, char **argv)
 			MPI_Recv(LOCVOL.get(),N,MPI_FLOAT,0,15,comm,MPI_STATUS_IGNORE);
 		}
 		MPI_Barrier(comm);
-	}
+	//}
 	nx+=2; ny+=2; nz+=2;
 	N=nx*ny*nz;
-
 
 	if (rank==0) printf("All sub-domains recieved \n");
 
