@@ -518,6 +518,7 @@ int main(int argc, char **argv)
 									}
 								}
 							}
+							printf("Copied local array at rank = 0 %i \n", rnk);
 						}
 						else{
 							printf("Sending data to process %i \n", rnk);
