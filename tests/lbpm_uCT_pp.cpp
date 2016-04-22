@@ -483,6 +483,8 @@ int main(int argc, char **argv)
 
 		MPI_Barrier(comm);
 
+		N=(nx+2)*(ny+2)*(nz+2);
+
 		// Set up the sub-domains
 		if (rank==0){
 			printf("Distributing subdomains across %i processors \n",nprocs);
@@ -535,8 +537,6 @@ int main(int argc, char **argv)
 		}
 		MPI_Barrier(comm);
 	//}
-	nx+=2; ny+=2; nz+=2;
-	N=nx*ny*nz;
 
 	if (rank==0) printf("All sub-domains recieved \n");
 
