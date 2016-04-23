@@ -20,7 +20,6 @@
 
 #include "ProfilerApp.h"
 
-
 inline void Med3D(Array<float> &Input, Array<float> &Output){
 	// Perform a 3D Median filter on Input array with specified width
 	int i,j,k,ii,jj,kk;
@@ -103,7 +102,7 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 
 				ii = int(floor(x));
 				jj = int(floor(y));
-			        kk = int(floor(z));
+				kk = int(floor(z));
 
 				// get the eight values in the cell
 				float v1 = Fine(ii,jj,kk);
@@ -118,6 +117,76 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 				Coarse(i,j,k)=0.125*(v1+v2+v3+v4+v5+v6+v7+v8);
 			       
 				  //Coarse(i,j,k) = Fine(ii,jj,kk);
+
+			}
+		}
+	}
+}
+
+inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine, ){
+
+	// Interpolate values from a Coarse mesh to a fine one
+	// This routine assumes that the mesh boundaries match
+    int i,j,k,ii,jj,kk;
+    float x,y,z;
+    Array<float> Corners(2,2,2);
+    float a,b,c,d,e,f,g,h;
+
+    // Fine mesh
+	int Nx = int(Fine.size(0));
+	int Ny = int(Fine.size(1));
+	int Nz = int(Fine.size(2));
+
+	// Coarse mesh
+	int nx = int(Coarse.size(0));
+	int ny = int(Coarse.size(1));
+	int nz = int(Coarse.size(2));
+
+	// compute the stride
+	float hx = float(Nx-1) / float (nx-1);
+	float hy = float(Ny-1) / float (ny-1);
+	float hz = float(Nz-1) / float (nz-1);
+
+	// Interpolate to the fine mesh
+	for (k=0; k<nz; k++){
+		for (j=0; j<ny; j++){
+			for (i=0; i<nx; i++){
+
+				// get the eight values in the cell
+				Corners(0,0,0) = Coarse(i,j,k);
+				Corners(1,0,0) = Coarse(i+1,j,k);
+				Corners(0,1,0) = Coarse(i,j+1,k);
+				Corners(1,1,0) = Coarse(i+1,j+1,k);
+				Corners(0,0,1) = Coarse(i,j,k+1);
+				Corners(1,0,1) = Coarse(i+1,j,k+1);
+				Corners(0,1,1) = Coarse(i,j+1,k+1);
+				Corners(1,1,1) = Coarse(i+1,j+1,k+1);
+
+				// coefficients of the tri-linear approximation
+				a = Corners(0,0,0);
+				b = Corners(1,0,0)-a;
+				c = Corners(0,1,0)-a;
+				d = Corners(0,0,1)-a;
+				e = Corners(1,1,0)-a-b-c;
+				f = Corners(1,0,1)-a-b-d;
+				g = Corners(0,1,1)-a-c-d;
+				h = Corners(1,1,1)-a-b-c-d-e-f-g;
+
+				// Interpolate to each point on the fine mesh
+				for (kk=int(ceil(k*hz)); kk<int(floor((k+1)*hz)); kk++){
+					for (jj=int(ceil(j*hy)); jj<int(floor((j+1)*hy)); jj++){
+						for (ii=int(ceil(i*hx)); ii<int(floor((i+1)*hx)); ii++){
+
+							// get the value within the unit cube
+							x = (ii-i*hx)/hx;
+							y = (jj-j*hy)/hy;
+							z = (kk-k*hz)/hz;
+
+							Fine(ii,jj,kk) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+
+						}
+					}
+				}
 
 			}
 		}
@@ -569,6 +638,9 @@ int main(int argc, char **argv)
 	// sparse phase ID (segmented values)
 	Array<char> spID(nsx,nsy,nsz);
 
+	Array<float> Dist(nx,ny,nz);
+
+
 	if (rank==0) printf("Data structures allocated \n");
 	if (rank==0) printf("Step 1. Sparsify space: \n");
 	if (rank==0) printf("   Original Mesh: %ix%ix%i \n",nx,ny,nz);
@@ -602,7 +674,8 @@ int main(int argc, char **argv)
 	// generate a sparse signed distance function
 	Eikonal3D(spDist,spID,spDm,nsx*nprocx);
 
-
+	if (rank==0) printf("Step 5. Interpolate distance function to fine mesh \n");
+	InterpMesh(spDist,Dist);
 
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
@@ -706,6 +779,8 @@ int main(int argc, char **argv)
     }
 
     IO::writeData( 0, meshData, 2, comm );
+	if (rank==0) printf("Finished. \n");
+
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -718,7 +793,7 @@ int main(int argc, char **argv)
 		}
 	}
 	if (rank==0) printf("Domain set \n");
-*/
+
 	// Write the local volume files
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -728,6 +803,7 @@ int main(int argc, char **argv)
 	SEG=fopen(LocalRankFilename,"wb");
 	fwrite(LOCVOL.get(),4,N,SEG);
 	fclose(SEG);
+    */
     
     MPI_Barrier(comm);
     MPI_Finalize();
