@@ -123,7 +123,7 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 	}
 }
 
-inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine, ){
+inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine){
 
 	// Interpolate values from a Coarse mesh to a fine one
 	// This routine assumes that the mesh boundaries match
@@ -148,9 +148,9 @@ inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine, ){
 	float hz = float(Nz-1) / float (nz-1);
 
 	// Interpolate to the fine mesh
-	for (k=0; k<nz; k++){
-		for (j=0; j<ny; j++){
-			for (i=0; i<nx; i++){
+	for (k=0; k<nz-1; k++){
+		for (j=0; j<ny-1; j++){
+			for (i=0; i<nx-1; i++){
 
 				// get the eight values in the cell
 				Corners(0,0,0) = Coarse(i,j,k);
@@ -638,6 +638,7 @@ int main(int argc, char **argv)
 	// sparse phase ID (segmented values)
 	Array<char> spID(nsx,nsy,nsz);
 
+	Array<char>  ID(nx,ny,nz);
 	Array<float> Dist(nx,ny,nz);
 
 
@@ -675,7 +676,7 @@ int main(int argc, char **argv)
 	Eikonal3D(spDist,spID,spDm,nsx*nprocx);
 
 	if (rank==0) printf("Step 5. Interpolate distance function to fine mesh \n");
-	InterpMesh(spDist,Dist);
+	InterpolateMesh(spDist,Dist);
 
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
@@ -711,6 +712,8 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::Variable> spMedianData( new IO::Variable() );
     std::shared_ptr<IO::Variable> spSegData( new IO::Variable() );
     std::shared_ptr<IO::Variable> spDistData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 
     // Full resolution data
     OrigData->name = "Source Data";
@@ -718,6 +721,18 @@ int main(int argc, char **argv)
     OrigData->dim = 1;
     OrigData->data.resize(nx-2,ny-2,nz-2);
     meshData[0].vars.push_back(OrigData);
+
+    DistData->name = "Signed Distance";
+    DistData->type = IO::VolumeVariable;
+    DistData->dim = 1;
+    DistData->data.resize(nx-2,ny-2,nz-2);
+    meshData[0].vars.push_back(DistData);
+
+    SegData->name = "Segmented Data";
+    SegData->type = IO::VolumeVariable;
+    SegData->dim = 1;
+    SegData->data.resize(nx-2,ny-2,nz-2);
+    meshData[0].vars.push_back(SegData);
     //..........................................
 
     // ....... Sparse resolution data .......
@@ -755,15 +770,21 @@ int main(int argc, char **argv)
      */
 
     Array<double>& INPUT = meshData[0].vars[0]->data;
+    Array<double>& SEGMENTED = meshData[0].vars[1]->data;
+    Array<double>& DISTANCE = meshData[0].vars[2]->data;
+
     Array<double>& spMEDIAN = meshData[1].vars[0]->data;
     Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
     Array<double>& spDISTANCE = meshData[1].vars[2]->data;
+
 
     // manually change to double and write
     for (k=1;k<nz-1;k++){
     	for (j=1;j<ny-1;j++){
 	  for (i=1;i<nx-1;i++){
     			INPUT(i-1,j-1,k-1) = double( LOCVOL(i,j,k));
+    			SEGMENTED(i-1,j-1,k-1) = double( ID(i,j,k));
+    			DISTANCE(i-1,j-1,k-1) = double( Dist(i,j,k));
     		}
     	}
     }
@@ -779,7 +800,7 @@ int main(int argc, char **argv)
     }
 
     IO::writeData( 0, meshData, 2, comm );
-	if (rank==0) printf("Finished. \n");
+    if (rank==0) printf("Finished. \n");
 
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
