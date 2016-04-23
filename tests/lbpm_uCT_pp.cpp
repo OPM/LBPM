@@ -105,7 +105,6 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 				jj = int(floor(y));
 			        kk = int(floor(z));
 
-				/*
 				// get the eight values in the cell
 				float v1 = Fine(ii,jj,kk);
 				float v2 = Fine(ii+1,jj,kk);
@@ -117,8 +116,8 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 				float v8 = Fine(ii+1,jj+1,kk+1);
 
 				Coarse(i,j,k)=0.125*(v1+v2+v3+v4+v5+v6+v7+v8);
-				*/
-				Coarse(i,j,k) = Fine(ii,jj,kk);
+			       
+				  //Coarse(i,j,k) = Fine(ii,jj,kk);
 
 			}
 		}
