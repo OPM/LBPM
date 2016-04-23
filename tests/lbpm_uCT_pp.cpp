@@ -403,7 +403,7 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distanc
 			for (i=1; i<Nx-1; i++){
 
 
-				if (fabs(Dist(i,j,k)) < THRESHOLD_DIST){
+				if (fabs(Distance(i,j,k)) < THRESHOLD_DIST){
 					// compute the expensive non-local means
 					sum = 0; weight=0;
 
@@ -698,7 +698,7 @@ int main(int argc, char **argv)
 	InterpolateMesh(spDist,Dist);
 
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
-	int depth = 4;
+	int depth = 1;
 	float sigsq=1.0;
 	NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
 
