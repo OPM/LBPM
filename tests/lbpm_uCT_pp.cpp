@@ -352,7 +352,7 @@ inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int 
 }
 
 
-inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance, Array<float> &Output,
+inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance, Array<float> &Output,
 					const int d, const float h){
 	// Implemenation of 3D non-local means filter
 	// 		d determines the width of the search volume
@@ -364,6 +364,7 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distanc
 	float weight, sum;
 	int i,j,k,ii,jj,kk;
 	int imin,jmin,kmin,imax,jmax,kmax;
+	int returnCount=0;
 
 	int Nx = int(Input.size(0));
 	int Ny = int(Input.size(1));
@@ -404,7 +405,7 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distanc
 
 
 				if (fabs(Distance(i,j,k)) < THRESHOLD_DIST){
-					// compute the expensive non-local means
+				  /*	// compute the expensive non-local means
 					sum = 0; weight=0;
 
 					imin = max(0,i-d);
@@ -423,8 +424,11 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distanc
 							}
 						}
 					}
-					Output(i,j,k) = sum / weight;
-				}
+				  */
+					returnCount++;
+					Output(i,j,k) = Mean(i,j,k);
+					//Output(i,j,k) = sum / weight;
+     				}
 				else{
 					// Just return the mean
 					Output(i,j,k) = Mean(i,j,k);
@@ -432,6 +436,8 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distanc
 			}
 		}
 	}
+	// Return the number of sites where NLM was applied
+	return returnCount;
 }
 
 int main(int argc, char **argv)
@@ -700,8 +706,9 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
 	int depth = 1;
 	float sigsq=1.0;
-	NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
+	//int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
 
+	//printf("Non-local means count fraction = %f \n",float(nlm_count)/float(nx*ny*nz));
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
