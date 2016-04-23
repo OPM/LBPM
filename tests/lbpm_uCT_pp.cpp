@@ -27,23 +27,23 @@ inline void Med3D(Array<float> &Input, Array<float> &Output){
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	float *List;
-	List=new float[9];
+	List=new float[27];
 
 	int Nx = int(Input.size(0));
 	int Ny = int(Input.size(1));
 	int Nz = int(Input.size(2));
 
 	for (k=1; k<Nz-1; k++){
-		for (j=1; Ny-1; j++){
-			for (i=1; Nz-1; i++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 
 				// Just use a 3x3x3 window (hit recursively if needed)
 				imin = i-1;
 				jmin = j-1;
 				kmin = k-1;
-				imax = i+1;
-				jmax = j+1;
-				kmax = k+1;
+				imax = i+2;
+				jmax = j+2;
+				kmax = k+2;
 
 				// Populate the list with values in the window
 				int Number=0;
@@ -55,8 +55,8 @@ inline void Med3D(Array<float> &Input, Array<float> &Output){
 					}
 				}
 				// Sort the first 5 entries and return the median
-				for (ii=0; ii<5; ii++){
-					for (jj=ii+1; jj<9; jj++){
+				for (ii=0; ii<14; ii++){
+					for (jj=ii+1; jj<27; jj++){
 						if (List[jj] < List[ii]){
 							float tmp = List[ii];
 							List[ii] = List[jj];
@@ -65,7 +65,7 @@ inline void Med3D(Array<float> &Input, Array<float> &Output){
 					}
 				}
 				// Return the median
-				Output(i,j,k) = List[4];
+				Output(i,j,k) = List[13];
 			}
 		}
 	}
@@ -95,16 +95,17 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 	// Fill in the coarse mesh
 	for (k=0; k<nz; k++){
 		for (j=0; j<ny; j++){
-			for (i=0; nz; i++){
+			for (i=0; i<nx; i++){
 
 				x = i*hx;
 				y = j*hy;
 				z = k*hz;
 
-				ii = floor(x);
-				jj = floor(y);
-				kk = floor(z);
+				ii = int(floor(x));
+				jj = int(floor(y));
+			        kk = int(floor(z));
 
+				/*
 				// get the eight values in the cell
 				float v1 = Fine(ii,jj,kk);
 				float v2 = Fine(ii+1,jj,kk);
@@ -116,6 +117,8 @@ inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 				float v8 = Fine(ii+1,jj+1,kk+1);
 
 				Coarse(i,j,k)=0.125*(v1+v2+v3+v4+v5+v6+v7+v8);
+				*/
+				Coarse(i,j,k) = Fine(ii,jj,kk);
 
 			}
 		}
@@ -289,8 +292,8 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Output,
 
 	// Compute the local means
 	for (k=1; k<Nz-1; k++){
-		for (j=1; Ny-1; j++){
-			for (i=1; Nz-1; i++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 
 				imin = max(0,i-d);
 				jmin = max(0,j-d);
@@ -317,8 +320,8 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Output,
 
 	// Compute the non-local means
 	for (k=1; k<Nz-1; k++){
-		for (j=1; Ny-1; j++){
-			for (i=1; Nz-1; i++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
 
 				imin = max(0,i-d);
 				jmin = max(0,j-d);
@@ -540,13 +543,25 @@ int main(int argc, char **argv)
 
 	if (rank==0) printf("All sub-domains recieved \n");
 
+	// Initialize sparse domein
 	int nsx,nsy,nsz;
 	nsx=nx/8; nsy=ny/8; nsz=nz/8;
 
+	Domain spDm(nsx-2,nsy-2,nsz-2,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	for (k=0;k<nsz+2;k++){
+		for (j=0;j<nsy+2;j++){
+			for (i=0;i<nsx+2;i++){
+				n = k*(nsx+2)*(nsy+2)+j*(nsx+2)+i;
+				spDm.id[n] = 1;
+			}
+		}
+	}
+	spDm.CommInit(comm);
+
     fillHalo<float> fillFloat(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
     fillHalo<char> fillChar(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
-    fillHalo<float> fillFloat_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
-    fillHalo<char>  fillChar_sp(Dm.Comm, Dm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
+    fillHalo<float> fillFloat_sp(spDm.Comm, spDm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
+    fillHalo<char>  fillChar_sp(spDm.Comm, spDm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
 
 	Array<float> spLOCVOL(nsx,nsy,nsz);	// this holds sparse original data
 	Array<float> spM(nsx,nsy,nsz); 		// this holds sparse median filter
@@ -555,19 +570,26 @@ int main(int argc, char **argv)
 	// sparse phase ID (segmented values)
 	Array<char> spID(nsx,nsy,nsz);
 
+	if (rank==0) printf("Data structures allocated \n");
+	if (rank==0) printf("Step 1. Sparsify space: \n");
+	if (rank==0) printf("   Original Mesh: %ix%ix%i \n",nx,ny,nz);
+	if (rank==0) printf("   Sparse Mesh: %ix%ix%i \n",nsx,nsy,nsz);
+
 	// Sparsify the the mesh using a stride of 8
 	Sparsify(LOCVOL,spLOCVOL);
 
+	if (rank==0) printf("Step 2. Sparse median filter \n");
 	// Compute the median filter on the sparse array
 	Med3D(spLOCVOL,spM);
 
 	// quick & dirty sparse segmentation
 	// this should be replaced
 	//    (should use automated mixture model to approximate histograms)
+	if (rank==0) printf("Step 3. Threshold for segmentation \n");
 	float THRESHOLD=50;
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
+	for (k=0;k<nsz;k++){
+		for (j=0;j<nsy;j++){
+			for (i=0;i<nsx;i++){
 				if (spM(i,j,k) > THRESHOLD) spID(i,j,k) = 0;
 				else 						spID(i,j,k) = 1;
 
@@ -577,8 +599,9 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (rank==0) printf("Step 4. Generate sparse distance function \n");
 	// generate a sparse signed distance function
-	Eikonal3D(spDist,spID,Dm,nsx*nprocx);
+	Eikonal3D(spDist,spID,spDm,nsx*nprocx);
 
 
 
@@ -604,6 +627,7 @@ int main(int argc, char **argv)
 	fwrite(LOCVOL.get(),4,N,SEG);
 	fclose(SEG);
     */
+	if (rank==0) printf("Writing output \n");
 
     std::vector<IO::MeshDataStruct> meshData(2);
     meshData[0].meshName = "Full domain";
@@ -664,20 +688,20 @@ int main(int argc, char **argv)
     Array<double>& spDISTANCE = meshData[1].vars[2]->data;
 
     // manually change to double and write
-    for (k=0;k<nz;k++){
-    	for (j=0;j<ny;j++){
-    		for (i=0;i<nx;i++){
-    			INPUT(i,j,k) = double( LOCVOL(i,j,k));
+    for (k=1;k<nz-1;k++){
+    	for (j=1;j<ny-1;j++){
+	  for (i=1;i<nx-1;i++){
+    			INPUT(i-1,j-1,k-1) = double( LOCVOL(i,j,k));
     		}
     	}
     }
 
-    for (k=0;k<nsz;k++){
-    	for (j=0;j<nsy;j++){
-    		for (i=0;i<nsx;i++){
-    			spMEDIAN(i,j,k) = double( spM(i,j,k));
-    			spSEGMENTED(i,j,k) = double( spID(i,j,k));
-    			spDISTANCE(i,j,k) = double( spDist(i,j,k));
+    for (k=1;k<nsz-1;k++){
+    	for (j=1;j<nsy-1;j++){
+    		for (i=1;i<nsx-1;i++){
+    			spMEDIAN(i-1,j-1,k-1) = double( spM(i,j,k));
+    			spSEGMENTED(i-1,j-1,k-1) = double( spID(i,j,k));
+    			spDISTANCE(i-1,j-1,k-1) = double( spDist(i,j,k));
     		}
     	}
     }
