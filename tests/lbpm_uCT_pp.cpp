@@ -147,20 +147,27 @@ inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine){
 	float hy = float(Ny-1) / float (ny-1);
 	float hz = float(Nz-1) / float (nz-1);
 
+	// value to map distance between meshes (since distance is in voxels)
+	//  usually hx=hy=hz (or something very close)
+	//  the mapping is not exact
+	//  however, it's assumed the coarse solution will be refined
+	//  a good guess is the goal here!
+	float mapvalue = sqrt(hx*hx+hy*hy+hz*hz);
+
 	// Interpolate to the fine mesh
 	for (k=0; k<nz-1; k++){
 		for (j=0; j<ny-1; j++){
 			for (i=0; i<nx-1; i++){
 
 				// get the eight values in the cell
-				Corners(0,0,0) = Coarse(i,j,k);
-				Corners(1,0,0) = Coarse(i+1,j,k);
-				Corners(0,1,0) = Coarse(i,j+1,k);
-				Corners(1,1,0) = Coarse(i+1,j+1,k);
-				Corners(0,0,1) = Coarse(i,j,k+1);
-				Corners(1,0,1) = Coarse(i+1,j,k+1);
-				Corners(0,1,1) = Coarse(i,j+1,k+1);
-				Corners(1,1,1) = Coarse(i+1,j+1,k+1);
+				Corners(0,0,0) = mapvalue*Coarse(i,j,k);
+				Corners(1,0,0) = mapvalue*Coarse(i+1,j,k);
+				Corners(0,1,0) = mapvalue*Coarse(i,j+1,k);
+				Corners(1,1,0) = mapvalue*Coarse(i+1,j+1,k);
+				Corners(0,0,1) = mapvalue*Coarse(i,j,k+1);
+				Corners(1,0,1) = mapvalue*Coarse(i+1,j,k+1);
+				Corners(0,1,1) = mapvalue*Coarse(i,j+1,k+1);
+				Corners(1,1,1) = mapvalue*Coarse(i+1,j+1,k+1);
 
 				// coefficients of the tri-linear approximation
 				a = Corners(0,0,0);
@@ -345,11 +352,15 @@ inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int 
 }
 
 
-inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Output,
+inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance, Array<float> &Output,
 					const int d, const float h){
 	// Implemenation of 3D non-local means filter
 	// 		d determines the width of the search volume
 	// 		h is a free parameter for non-local means (i.e. 1/sigma^2)
+	// 		Distance is the signed distance function
+	// 		If Distance(i,j,k) < THRESHOLD_DIST then don't compute NLM
+
+	float THRESHOLD_DIST = float(d);
 	float weight, sum;
 	int i,j,k,ii,jj,kk;
 	int imin,jmin,kmin,imax,jmax,kmax;
@@ -391,29 +402,36 @@ inline void NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Output,
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 
-				imin = max(0,i-d);
-				jmin = max(0,j-d);
-				kmin = max(0,k-d);
-				imax = max(Nx-1,i+d);
-				jmax = max(Ny-1,j+d);
-				kmax = max(Nz-1,k+d);
 
-				// compute the expensive non-local means
-				sum = 0; weight=0;
-				for (kk=kmin; kk<kmax; kk++){
-					for (jj=jmin; jj<jmax; jj++){
-						for (ii=imin; ii<imax; ii++){
-							float tmp = Mean(i,j,k) - Mean(ii,jj,kk);
-							sum += exp(-tmp*tmp*h)*Input(ii,jj,kk);
-							weight += exp(-tmp*tmp*h);
+				if (fabs(Dist(i,j,k)) < THRESHOLD_DIST){
+					// compute the expensive non-local means
+					sum = 0; weight=0;
+
+					imin = max(0,i-d);
+					jmin = max(0,j-d);
+					kmin = max(0,k-d);
+					imax = max(Nx-1,i+d);
+					jmax = max(Ny-1,j+d);
+					kmax = max(Nz-1,k+d);
+
+					for (kk=kmin; kk<kmax; kk++){
+						for (jj=jmin; jj<jmax; jj++){
+							for (ii=imin; ii<imax; ii++){
+								float tmp = Mean(i,j,k) - Mean(ii,jj,kk);
+								sum += exp(-tmp*tmp*h)*Input(ii,jj,kk);
+								weight += exp(-tmp*tmp*h);
+							}
 						}
 					}
+					Output(i,j,k) = sum / weight;
 				}
-				Output(i,j,k) = sum / weight;
+				else{
+					// Just return the mean
+					Output(i,j,k) = Mean(i,j,k);
+				}
 			}
 		}
 	}
-
 }
 
 int main(int argc, char **argv)
@@ -640,7 +658,8 @@ int main(int argc, char **argv)
 
 	Array<char>  ID(nx,ny,nz);
 	Array<float> Dist(nx,ny,nz);
-
+	Array<float> Mean(nx,ny,nz);
+	Array<float> NonLocalMean(nx,ny,nz);
 
 	if (rank==0) printf("Data structures allocated \n");
 	if (rank==0) printf("Step 1. Sparsify space: \n");
@@ -678,6 +697,11 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Step 5. Interpolate distance function to fine mesh \n");
 	InterpolateMesh(spDist,Dist);
 
+	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
+	int depth = 4;
+	float sigsq=1.0;
+	NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
+
 	/*    for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
@@ -713,6 +737,7 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::Variable> spSegData( new IO::Variable() );
     std::shared_ptr<IO::Variable> spDistData( new IO::Variable() );
     std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+    std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
     std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 
     // Full resolution data
@@ -727,6 +752,12 @@ int main(int argc, char **argv)
     DistData->dim = 1;
     DistData->data.resize(nx-2,ny-2,nz-2);
     meshData[0].vars.push_back(DistData);
+
+    NonLocMean->name = "Non-Local Mean";
+    NonLocMean->type = IO::VolumeVariable;
+    NonLocMean->dim = 1;
+    NonLocMean->data.resize(nx-2,ny-2,nz-2);
+    meshData[0].vars.push_back(NonLocMean);
 
     SegData->name = "Segmented Data";
     SegData->type = IO::VolumeVariable;
@@ -772,6 +803,7 @@ int main(int argc, char **argv)
     Array<double>& INPUT = meshData[0].vars[0]->data;
     Array<double>& SEGMENTED = meshData[0].vars[1]->data;
     Array<double>& DISTANCE = meshData[0].vars[2]->data;
+    Array<double>& NONLOCALMEAN = meshData[0].vars[3]->data;
 
     Array<double>& spMEDIAN = meshData[1].vars[0]->data;
     Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
@@ -785,6 +817,7 @@ int main(int argc, char **argv)
     			INPUT(i-1,j-1,k-1) = double( LOCVOL(i,j,k));
     			SEGMENTED(i-1,j-1,k-1) = double( ID(i,j,k));
     			DISTANCE(i-1,j-1,k-1) = double( Dist(i,j,k));
+    			NONLOCALMEAN(i-1,j-1,k-1) = double( NonLocalMean(i,j,k));
     		}
     	}
     }
