@@ -405,7 +405,7 @@ inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance
 
 
 				if (fabs(Distance(i,j,k)) < THRESHOLD_DIST){
-				  /*	// compute the expensive non-local means
+				  	// compute the expensive non-local means
 					sum = 0; weight=0;
 
 				imin = max(0,i-d);
@@ -424,10 +424,10 @@ inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance
 							}
 						}
 					}
-				  */
+				  
 					returnCount++;
-					Output(i,j,k) = Mean(i,j,k);
-					//Output(i,j,k) = sum / weight;
+					//Output(i,j,k) = Mean(i,j,k);
+					Output(i,j,k) = sum / weight;
      				}
 				else{
 					// Just return the mean
@@ -452,6 +452,7 @@ int main(int argc, char **argv)
 
 	//std::vector<std::string> filenames;
 	std::string filename;
+	if (rank==0){
 	if ( argc==0 ) {
 		printf("At least one filename must be specified\n");
 		return 1;
@@ -460,7 +461,7 @@ int main(int argc, char **argv)
 		filename=std::string(argv[1]);
 		printf("Input data file: %s\n",filename.c_str());
 	}
-
+	}
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
@@ -616,7 +617,7 @@ int main(int argc, char **argv)
 						}
 					}
 					else{
-						printf("Sending data to process %i \n", rnk);
+					  //printf("Sending data to process %i \n", rnk);
 						MPI_Send(tmp,N,MPI_FLOAT,rnk,15,comm);
 					}
 				}
@@ -625,7 +626,7 @@ int main(int argc, char **argv)
 	}
 	else{
 		// Recieve the subdomain from rank = 0
-		printf("Ready to recieve data %i at process %i \n", N,rank);
+		//printf("Ready to recieve data %i at process %i \n", N,rank);
 		MPI_Recv(LOCVOL.get(),N,MPI_FLOAT,0,15,comm,MPI_STATUS_IGNORE);
 	}
 	MPI_Barrier(comm);
@@ -667,7 +668,7 @@ int main(int argc, char **argv)
 	Array<float> Mean(nx,ny,nz);
 	Array<float> NonLocalMean(nx,ny,nz);
 
-	if (rank==0) printf("Data structures allocated \n");
+	if (rank==0) printf("Running segmentation workflow \n");
 	if (rank==0) printf("Step 1. Sparsify space: \n");
 	if (rank==0) printf("   Original Mesh: %ix%ix%i \n",nx,ny,nz);
 	if (rank==0) printf("   Sparse Mesh: %ix%ix%i \n",nsx,nsy,nsz);
@@ -704,9 +705,9 @@ int main(int argc, char **argv)
 	InterpolateMesh(spDist,Dist);
 
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
-	int depth = 1;
+	int depth = 2;
 	float sigsq=1.0;
-	//int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
+	int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
 
 	//printf("Non-local means count fraction = %f \n",float(nlm_count)/float(nx*ny*nz));
 	/*    for (k=0;k<nz;k++){
