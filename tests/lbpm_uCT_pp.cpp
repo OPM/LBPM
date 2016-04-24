@@ -378,9 +378,9 @@ inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance
 				imin = max(0,i-d);
 				jmin = max(0,j-d);
 				kmin = max(0,k-d);
-				imax = max(Nx-1,i+d);
-				jmax = max(Ny-1,j+d);
-				kmax = max(Nz-1,k+d);
+				imax = min(Nx-1,i+d);
+				jmax = min(Ny-1,j+d);
+				kmax = min(Nz-1,k+d);
 
 				// Populate the list with values in the window
 				sum = 0; weight=0;
@@ -408,12 +408,12 @@ inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance
 				  /*	// compute the expensive non-local means
 					sum = 0; weight=0;
 
-					imin = max(0,i-d);
-					jmin = max(0,j-d);
-					kmin = max(0,k-d);
-					imax = max(Nx-1,i+d);
-					jmax = max(Ny-1,j+d);
-					kmax = max(Nz-1,k+d);
+				imin = max(0,i-d);
+				jmin = max(0,j-d);
+				kmin = max(0,k-d);
+				imax = min(Nx-1,i+d);
+				jmax = min(Ny-1,j+d);
+				kmax = min(Nz-1,k+d);
 
 					for (kk=kmin; kk<kmax; kk++){
 						for (jj=jmin; jj<jmax; jj++){
