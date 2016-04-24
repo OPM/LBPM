@@ -673,19 +673,26 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Step 2. Sparse median filter \n");
 	// Compute the median filter on the sparse array
 	Med3D(spLOCVOL,spM);
+	fillFloat_sp.fill(spM);
 
 	// quick & dirty sparse segmentation
 	// this should be replaced
 	//    (should use automated mixture model to approximate histograms)
-	if (rank==0) printf("Step 3. Threshold for segmentation \n");
+	if (rank==0) printf("Step 3. Threshold for sparse segmentation \n");
 	float THRESHOLD=50;
 	for (k=0;k<nsz;k++){
 		for (j=0;j<nsy;j++){
 			for (i=0;i<nsx;i++){
 				if (spM(i,j,k) > THRESHOLD) spID(i,j,k) = 0;
 				else 						spID(i,j,k) = 1;
+			}
+		}
+	}
 
-				// intialize distance based on segmentation
+	// intialize distance based on segmentation
+	for (k=0;k<nsz;k++){
+		for (j=0;j<nsy;j++){
+			for (i=0;i<nsx;i++){
 				spDist(i,j,k) = 2.0*spID(i,j,k)-1.0;
 			}
 		}
@@ -702,6 +709,24 @@ int main(int argc, char **argv)
 	int depth = 2;
 	float sigsq=1.0;
 	int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
+
+	if (rank==0) printf("Step 7. Threshold for segmentation \n");
+	THRESHOLD=50;
+	for (k=0;k<nz;k++){
+		for (j=0;j<ny;j++){
+			for (i=0;i<nx;i++){
+				if (NonLocalMean(i,j,k) > THRESHOLD) ID(i,j,k) = 0;
+				else 								 ID(i,j,k) = 1;
+
+				// intialize distance based on segmentation
+				Dist(i,j,k) = 2.0*ID(i,j,k)-1.0;
+			}
+		}
+	}
+
+	if (rank==0) printf("Step 8. Generate final distance function \n");
+	// generate a sparse signed distance function
+	Eikonal3D(Dist,ID,Dm,nx*nprocx);
 
 	//printf("Non-local means count fraction = %f \n",float(nlm_count)/float(nx*ny*nz));
 	/*    for (k=0;k<nz;k++){
