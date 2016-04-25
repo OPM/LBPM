@@ -697,32 +697,64 @@ int main(int argc, char **argv)
 	//..........................................
 	// Compute the means for each region
 	float mean_plus,mean_minus;
-	float count_plus,count_minus;
+	int count_plus,count_minus;
 	float mean_plus_global,mean_minus_global;
-	float count_plus_global,count_minus_global;
+	int count_plus_global,count_minus_global;
+	float *TmpMed;
+	TmpMed = new float[nsx*nsy*nsz];
+
+	// Compute median for regions of distance function
 	count_plus=count_minus=0;
 	mean_plus=mean_minus=0;
 	for (k=1;k<nsz-1;k++){
 		for (j=1;j<nsy-1;j++){
 			for (i=1;i<nsx-1;i++){
-				if (spDist(i,j,k) > 0.0){
-					mean_plus += spM(i,j,k);
-					count_plus += 1.0;
-				}
-				else{
-					mean_minus += spM(i,j,k);
-					count_minus += 1.0;				}
+
+				if (spDist(i,j,k) > 0.0)
+					TmpMed[count_plus++]= spM(i,j,k);
+
 			}
 		}
 	}
+	for (int ii=0; ii<count_plus/2+1; ii++){
+		for (int jj=ii+1; jj<count_plus; jj++){
+			if (TmpMed[jj] < TmpMed[ii]){
+				float tmp = TmpMed[ii];
+				TmpMed[ii] = TmpMed[jj];
+				TmpMed[jj] = tmp;
+			}
+		}
+	}
+	mean_plus = TmpMed[count_plus/2];
+
+	for (k=1;k<nsz-1;k++){
+		for (j=1;j<nsy-1;j++){
+			for (i=1;i<nsx-1;i++){
+
+				if (spDist(i,j,k) < 0.0)
+					TmpMed[count_minus++]= spM(i,j,k);
+
+			}
+		}
+	}
+	for (int ii=0; ii<count_minus/2+1; ii++){
+		for (int jj=ii+1; jj<count_minus; jj++){
+			if (TmpMed[jj] < TmpMed[ii]){
+				float tmp = TmpMed[ii];
+				TmpMed[ii] = TmpMed[jj];
+				TmpMed[jj] = tmp;
+			}
+		}
+	}
+	mean_minus = TmpMed[count_minus/2];
 
 	MPI_Allreduce(&mean_plus,&mean_plus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
-	MPI_Allreduce(&count_plus,&count_plus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
 	MPI_Allreduce(&mean_minus,&mean_minus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
-	MPI_Allreduce(&count_minus,&count_minus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
-	mean_plus_global /= count_plus_global;
-	mean_minus_global /= count_minus_global;
+
+	mean_plus_global /= nprocs;
+	mean_minus_global /= nprocs;
 	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus_global, mean_minus_global);
+	delete[] TmpMed;
 	//..........................................
 
 	// intialize distance based on segmentation
