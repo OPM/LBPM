@@ -741,11 +741,13 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Step 5. Interpolate to fine mesh \n");
 	InterpolateMesh(spDist,Dist);
 
+	float lambda = 0.5;
 	for (k=0;k<nsz;k++){
 		for (j=0;j<nsy;j++){
 			for (i=0;i<nsx;i++){
 				float dst = spDist(i,j,k);
-				float temp = exp(-0.5*(dst*dst));
+				// use exponential weight based on the distance
+				float temp = 1.0-exp(-lambda*fabs(dst)));
 				float value;
 				if (dst > 0){
 					value = temp*mean_plus;
