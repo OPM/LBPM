@@ -180,16 +180,17 @@ inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine){
 				h = Corners(1,1,1)-a-b-c-d-e-f-g;
 
 				// Interpolate to each point on the fine mesh
-				for (kk=int(ceil(k*hz)); kk<int(floor((k+1)*hz)); kk++){
-					for (jj=int(ceil(j*hy)); jj<int(floor((j+1)*hy)); jj++){
-						for (ii=int(ceil(i*hx)); ii<int(floor((i+1)*hx)); ii++){
+				for (kk=int(ceil(k*hz)); kk<int(ceil((k+1)*hz)); kk++){
+					for (jj=int(ceil(j*hy)); jj<int(ceil((j+1)*hy)); jj++){
+						for (ii=int(ceil(i*hx)); ii<int(ceil((i+1)*hx)); ii++){
 
 							// get the value within the unit cube
 							x = (ii-i*hx)/hx;
 							y = (jj-j*hy)/hy;
 							z = (kk-k*hz)/hz;
 
-							Fine(ii,jj,kk) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
+							if (ii<Nx && jj<Ny && kk<Nz)
+								Fine(ii,jj,kk) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
 
 						}
 					}
@@ -672,6 +673,7 @@ int main(int argc, char **argv)
 
 	// Sparsify the the mesh using a stride of 8
 	Sparsify(LOCVOL,spLOCVOL);
+	fillFloat_sp.fill(spLOCVOL);
 
 	if (rank==0) printf("Step 2. Sparse median filter \n");
 	// Compute the median filter on the sparse array
@@ -696,6 +698,8 @@ int main(int argc, char **argv)
 	// Compute the means for each region
 	float mean_plus,mean_minus;
 	float count_plus,count_minus;
+	float mean_plus_global,mean_minus_global;
+	float count_plus_global,count_minus_global;
 	count_plus=count_minus=0;
 	mean_plus=mean_minus=0;
 	for (k=1;k<nsz-1;k++){
@@ -711,8 +715,14 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	mean_plus /= count_plus;
-	mean_minus /= count_minus;
+
+	MPI_Allreduce(&mean_plus,&mean_plus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&count_plus,&count_plus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&mean_minus,&mean_minus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&count_minus,&count_minus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
+	mean_plus_global /= count_plus_global;
+	mean_minus_global /= count_minus_global;
+	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus_global, mean_minus_global);
 	//..........................................
 
 	// intialize distance based on segmentation
