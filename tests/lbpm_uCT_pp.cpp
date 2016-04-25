@@ -711,7 +711,8 @@ int main(int argc, char **argv)
 				}
 				else{
 					mean_minus += spM(i,j,k);
-					count_minus += 1.0;				}
+					count_minus += 1.0;
+				}
 			}
 		}
 	}
@@ -747,7 +748,7 @@ int main(int argc, char **argv)
 			for (i=0;i<nsx;i++){
 				float dst = spDist(i,j,k);
 				// use exponential weight based on the distance
-				float temp = 1.0-exp(-lambda*fabs(dst)));
+				float temp = 1.0-exp(-lambda*fabs(dst));
 				float value;
 				if (dst > 0){
 					value = temp*mean_plus;
