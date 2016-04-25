@@ -735,7 +735,7 @@ int main(int argc, char **argv)
 				float dst = spDist(i,j,k);
 				float temp = exp(-dst*dst);
 				float value;
-				if (dst(i,j,k) > 0){
+				if (dst > 0){
 					value = temp*mean_plus;
 				}
 				else{
@@ -807,6 +807,7 @@ int main(int argc, char **argv)
 	std::shared_ptr<IO::Variable> spSegData( new IO::Variable() );
 	std::shared_ptr<IO::Variable> spDistData( new IO::Variable() );
 	std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+	std::shared_ptr<IO::Variable> MultiMean( new IO::Variable() );
 	std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
 	std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 
@@ -816,6 +817,12 @@ int main(int argc, char **argv)
 	OrigData->dim = 1;
 	OrigData->data.resize(nx-2,ny-2,nz-2);
 	meshData[0].vars.push_back(OrigData);
+
+	MultiMean->name = "Multiscale Mean";
+	MultiMean->type = IO::VolumeVariable;
+	MultiMean->dim = 1;
+	MultiMean->data.resize(nx-2,ny-2,nz-2);
+	meshData[0].vars.push_back(MultiMean);
 
 	NonLocMean->name = "Non-Local Mean";
 	NonLocMean->type = IO::VolumeVariable;
@@ -870,10 +877,11 @@ int main(int argc, char **argv)
     fillFloat_sp.copy(spDist,spDISTANCE);
 	 */
 
-	Array<double>& INPUT = meshData[0].vars[0]->data;
-	Array<double>& NONLOCALMEAN = meshData[0].vars[1]->data;
-	Array<double>& SEGMENTED = meshData[0].vars[2]->data;
-	Array<double>& DISTANCE = meshData[0].vars[3]->data;
+	Array<double>& INPUT = meshData[0].vars[0]->data;	
+	Array<double>& MULTIMEAN = meshData[0].vars[1]->data;
+	Array<double>& NONLOCALMEAN = meshData[0].vars[2]->data;
+	Array<double>& SEGMENTED = meshData[0].vars[3]->data;
+	Array<double>& DISTANCE = meshData[0].vars[4]->data;
 
 	Array<double>& spMEDIAN = meshData[1].vars[0]->data;
 	Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
@@ -887,6 +895,7 @@ int main(int argc, char **argv)
 				INPUT(i-1,j-1,k-1) = double( LOCVOL(i,j,k));
 				SEGMENTED(i-1,j-1,k-1) = double( ID(i,j,k));
 				DISTANCE(i-1,j-1,k-1) = double( Dist(i,j,k));
+				MULTIMEAN(i-1,j-1,k-1) = double( MultiScaleSmooth(i,j,k));
 				NONLOCALMEAN(i-1,j-1,k-1) = double( NonLocalMean(i,j,k));
 			}
 		}
