@@ -652,6 +652,8 @@ int main(int argc, char **argv)
 
 	Array<float> spLOCVOL(nsx,nsy,nsz);	// this holds sparse original data
 	Array<float> spM(nsx,nsy,nsz); 		// this holds sparse median filter
+	Array<float> spSmooth(nsx,nsy,nsz); // this holds smoothed data
+
 	Array<float> spDist(nsx,nsy,nsz);		// this holds sparse signed distance
 
 	// sparse phase ID (segmented values)
@@ -733,7 +735,7 @@ int main(int argc, char **argv)
 		for (j=0;j<nsy;j++){
 			for (i=0;i<nsx;i++){
 				float dst = spDist(i,j,k);
-				float temp = exp(-dst*dst);
+				float temp = exp(-0.5*(dst*dst));
 				float value;
 				if (dst > 0){
 					value = temp*mean_plus;
@@ -742,11 +744,11 @@ int main(int argc, char **argv)
 					value = temp*mean_minus;
 				}
 				value += (1-temp)*spM(i,j,k);
-				spM(i,j,k) = value;
+				spSmooth(i,j,k) = value;
 			}
 		}
 	}
-	InterpolateMesh(spM,MultiScaleSmooth);
+	InterpolateMesh(spSmooth,MultiScaleSmooth);
 
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
 	int depth = 5;
