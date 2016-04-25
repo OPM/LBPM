@@ -341,10 +341,10 @@ inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int 
 		count++;
 
 		if (count%50 == 0 && Dm.rank==0 )
-			printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
+			printf("	Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
 
 		if (fabs(GlobalMax) < 1e-5){
-			if (Dm.rank==0) printf("Exiting with max tolerance of 1e-5 \n");
+			if (Dm.rank==0) printf("	Exiting with max tolerance of 1e-5 \n");
 			count=timesteps;
 		}
 	}
@@ -659,6 +659,7 @@ int main(int argc, char **argv)
 
 	Array<char>  ID(nx,ny,nz);
 	Array<float> Dist(nx,ny,nz);
+	Array<float> MultiScaleSmooth(nx,ny,nz);
 	Array<float> Mean(nx,ny,nz);
 	Array<float> NonLocalMean(nx,ny,nz);
 
@@ -689,6 +690,29 @@ int main(int argc, char **argv)
 		}
 	}
 
+	//..........................................
+	// Compute the means for each region
+	float mean_plus,mean_minus;
+	float count_plus,count_minus;
+	count_plus=count_minus=0;
+	mean_plus=mean_minus=0;
+	for (k=1;k<nsz-1;k++){
+		for (j=1;j<nsy-1;j++){
+			for (i=1;i<nsx-1;i++){
+				if (spDist(i,j,k) > 0.0){
+					mean_plus += spM(i,j,k);
+					count_plus += 1.0;
+				}
+				else{
+					mean_minus += spM(i,j,k);
+					count_minus += 1.0;				}
+			}
+		}
+	}
+	mean_plus /= count_plus;
+	mean_minus /= count_minus;
+	//..........................................
+
 	// intialize distance based on segmentation
 	for (k=0;k<nsz;k++){
 		for (j=0;j<nsy;j++){
@@ -702,13 +726,32 @@ int main(int argc, char **argv)
 	// generate a sparse signed distance function
 	Eikonal3D(spDist,spID,spDm,nsx*nprocx);
 
-	if (rank==0) printf("Step 5. Interpolate distance function to fine mesh \n");
+	if (rank==0) printf("Step 5. Interpolate to fine mesh \n");
 	InterpolateMesh(spDist,Dist);
+
+	for (k=0;k<nsz;k++){
+		for (j=0;j<nsy;j++){
+			for (i=0;i<nsx;i++){
+				float dst = spDist(i,j,k);
+				float temp = exp(-dst*dst);
+				float value;
+				if (dst(i,j,k) > 0){
+					value = temp*mean_plus;
+				}
+				else{
+					value = temp*mean_minus;
+				}
+				value += (1-temp)*spM(i,j,k);
+				spM(i,j,k) = value;
+			}
+		}
+	}
+	InterpolateMesh(spM,MultiScaleSmooth);
 
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
 	int depth = 5;
 	float sigsq=0.1;
-	int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
+	int nlm_count=NLM3D(MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
 
 	if (rank==0) printf("Step 7. Threshold for segmentation \n");
 	THRESHOLD=50;
