@@ -706,8 +706,8 @@ int main(int argc, char **argv)
 	InterpolateMesh(spDist,Dist);
 
 	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
-	int depth = 2;
-	float sigsq=1.0;
+	int depth = 5;
+	float sigsq=0.1;
 	int nlm_count=NLM3D(LOCVOL, Mean, Dist, NonLocalMean, depth, sigsq);
 
 	if (rank==0) printf("Step 7. Threshold for segmentation \n");
@@ -828,9 +828,9 @@ int main(int argc, char **argv)
 	 */
 
 	Array<double>& INPUT = meshData[0].vars[0]->data;
-	Array<double>& SEGMENTED = meshData[0].vars[1]->data;
-	Array<double>& DISTANCE = meshData[0].vars[2]->data;
-	Array<double>& NONLOCALMEAN = meshData[0].vars[3]->data;
+	Array<double>& NONLOCALMEAN = meshData[0].vars[1]->data;
+	Array<double>& SEGMENTED = meshData[0].vars[2]->data;
+	Array<double>& DISTANCE = meshData[0].vars[3]->data;
 
 	Array<double>& spMEDIAN = meshData[1].vars[0]->data;
 	Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
