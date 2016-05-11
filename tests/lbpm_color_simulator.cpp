@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	//solid_isovalue = 0.0;
 	
 	int RESTART_INTERVAL=20000;
-	int ANALYSIS_INTERVAL=1000;	
+	//int ANALYSIS_INTERVAL=1000;	
 	int BLOB_ANALYSIS_INTERVAL=1000;
 
 	if (rank==0){
@@ -889,16 +889,17 @@ int main(int argc, char **argv)
 		timestep++;
   
         // Run the analysis, blob identification, and write restart files
-		if (BLOB_ANALYSIS_INTERVAL > 0){
+	//	if (BLOB_ANALYSIS_INTERVAL > 0){
         run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,meshData,fillData,tpool,work_ids);
-		}
+	/*		}
 		else{
 		  ComputeMacroscaleAverages(timestep,ANALYSIS_INTERVAL,RESTART_INTERVAL,rank_info,*Averages,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
 				  LocalRestartFile,meshData,fillData,tpool,work_ids);
 		}
+	*/
         // Save the timers
         if ( timestep%50==0 )
             PROFILE_SAVE("lbpm_color_simulator",1);
