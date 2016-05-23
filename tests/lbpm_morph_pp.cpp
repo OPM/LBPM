@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{
 					// initially saturated with wetting phase
-					//id[n] = 2;
+					id[n] = 2;
 					count++;
 				}
 			}
