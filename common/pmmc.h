@@ -6,9 +6,9 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
-#include "Array.h"
+#include "common/Array.h"
 #include "PointList.h"
-#include "Utilities.h"
+#include "common/Utilities.h"
 
 using namespace std;
 
