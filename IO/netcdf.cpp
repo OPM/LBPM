@@ -32,6 +32,44 @@ inline std::vector<TYPE> reverse( const std::vector<TYPE>& x )
         y[i] = x[x.size()-i-1];
     return y;
 }
+// Function to reverse an array
+template<class TYPE1, class TYPE2>
+inline std::vector<TYPE2> convert( const std::vector<TYPE1>& x )
+{
+    std::vector<TYPE2> y(x.size());
+    for (size_t i=0; i<x.size(); i++)
+        y[i] = static_cast<TYPE2>(x[i]);
+    return y;
+}
+
+
+/****************************************************
+* Convert the VariableType to a string              *
+****************************************************/
+std::string VariableTypeName( VariableType type )
+{
+    if ( type == BYTE )
+        return "BYTE";
+    else if ( type == SHORT )
+        return "SHORT";
+    else if ( type == USHORT )
+        return "USHORT";
+    else if ( type == INT )
+        return "INT";
+    else if ( type == UINT )
+        return "UINT";
+    else if ( type == INT64 )
+        return "INT64";
+    else if ( type == UINT64 )
+        return "UINT64";
+    else if ( type == FLOAT )
+        return "FLOAT";
+    else if ( type == DOUBLE )
+        return "DOUBLE";
+    else if ( type == STRING )
+        return "STRING";
+    return "Unknown";
+}
 
 
 /****************************************************
@@ -170,70 +208,70 @@ Array<unsigned short> getVar<unsigned short>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<unsigned short>");
     Array<unsigned short> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_ushort( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_ushort( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<unsigned short>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<short> getVar<short>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<short>");
     Array<short> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_short( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_short( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<short>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<unsigned int> getVar<unsigned int>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<unsigned int>");
     Array<unsigned int> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_uint( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_uint( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<unsigned int>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<int> getVar<int>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<int>");
     Array<int> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_int( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_int( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<int>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<float> getVar<float>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<float>");
     Array<float> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_float( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_float( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<float>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<double> getVar<double>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<double>");
     Array<double> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_double( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_double( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<double>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<char> getVar<char>( int fid, const std::string& var )
 { 
     PROFILE_START("getVar<char>");
     Array<char> x( reverse(getVarDim(fid,var)) );
-    int err = nc_get_var_text( fid, getVarID(fid,var), x.get() );
+    int err = nc_get_var_text( fid, getVarID(fid,var), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getVar<char>");
-    return x;
+    return x.reverseDim();
 }
 template<>
 Array<std::string> getVar<std::string>( int fid, const std::string& var )
@@ -251,6 +289,31 @@ Array<std::string> getVar<std::string>( int fid, const std::string& var )
     PROFILE_STOP("getVar<std::string>");
     return text;
 }
+static inline void get_stride_args( const std::vector<int>& start,
+    const std::vector<int>& count, const std::vector<int>& stride,
+    size_t *startp, size_t *countp, ptrdiff_t *stridep )
+{
+    for (size_t i=0; i<start.size(); i++)
+        startp[i] = start[i];
+    for (size_t i=0; i<count.size(); i++)
+        countp[i] = count[i];
+    for (size_t i=0; i<stride.size(); i++)
+        stridep[i] = stride[i];
+}
+template<>
+Array<short> getVar<short>( int fid, const std::string& var, const std::vector<int>& start,
+    const std::vector<int>& count, const std::vector<int>& stride )
+{
+    PROFILE_START("getVar<short> (strided)");
+    Array<short> x( reverse(convert<int,size_t>(count)) );
+    size_t startp[10], countp[10];
+    ptrdiff_t stridep[10];
+    get_stride_args( start, count, stride, startp, countp, stridep );
+    int err = nc_get_vars_short( fid, getVarID(fid,var), startp, countp, stridep, x.data() );
+    CHECK_NC_ERR( err );
+    PROFILE_STOP("getVar<short> (strided)");
+    return x.reverseDim();
+}
 
 
 /****************************************************
@@ -261,7 +324,7 @@ Array<double> getAtt<double>( int fid, const std::string& att )
 {
     PROFILE_START("getAtt<double>");
     Array<double> x( getAttDim(fid,att) );
-    int err = nc_get_att_double( fid, NC_GLOBAL, att.c_str(), x.get() );
+    int err = nc_get_att_double( fid, NC_GLOBAL, att.c_str(), x.data() );
     CHECK_NC_ERR( err );
     PROFILE_STOP("getAtt<double>");
     return x;

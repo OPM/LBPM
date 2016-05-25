@@ -176,7 +176,7 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     var->name = variable;
     var->data.resize(N);
     if ( precision=="double" ) {
-        memcpy(var->data.get(),data,bytes);
+        memcpy(var->data.data(),data,bytes);
     } else {
         ERROR("Format not implimented");
     }

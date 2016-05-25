@@ -120,7 +120,7 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
         int dim = mesh.vars[i]->dim;
         int type = static_cast<int>(mesh.vars[i]->type);
         size_t N = mesh.vars[i]->data.length();
-        const double* data = N==0 ? NULL:mesh.vars[i]->data.get();
+        const double* data = N==0 ? NULL:mesh.vars[i]->data.data();
         if ( type == static_cast<int>(IO::NullVariable) ) {
             ERROR("Variable type not set");
         }

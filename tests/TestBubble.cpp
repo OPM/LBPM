@@ -1198,8 +1198,8 @@ int main(int argc, char **argv)
 		//...........................................................................
 		InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
 		//......................................................................
-	//	InitDenColorDistance(ID, Copy, Phi, SDs.get(), das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
-		InitDenColorDistance(ID, Den, Phi, SDs.get(), das, dbs, beta, xIntPos, Nx, Ny, Nz);
+	//	InitDenColorDistance(ID, Copy, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+		InitDenColorDistance(ID, Den, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz);
 		InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 		InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 		//......................................................................
@@ -1212,7 +1212,7 @@ int main(int argc, char **argv)
 		sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 		WriteLocalSolidID(LocalRankFilename, id, N);
 		sprintf(LocalRankFilename,"%s%s","SDs.",LocalRankString);
-		WriteLocalSolidDistance(LocalRankFilename, SDs.get(), N);
+		WriteLocalSolidDistance(LocalRankFilename, SDs.data(), N);
 		//.......................................................................
 		if (Restart == true){
 			if (rank==0) printf("Reading restart file! \n");
@@ -1345,7 +1345,7 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
 		DeviceBarrier();
-		CopyToHost(Phase_tplus.get(),Phi,N*sizeof(double));
+		CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
 		//...........................................................................
 		//...........................................................................
 		// Copy the data for for the analysis timestep
@@ -1354,8 +1354,8 @@ int main(int argc, char **argv)
 		//...........................................................................
 		DeviceBarrier();
 		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-		CopyToHost(Phase.get(),Phi,N*sizeof(double));
-		CopyToHost(Press.get(),Pressure,N*sizeof(double));
+		CopyToHost(Phase.data(),Phi,N*sizeof(double));
+		CopyToHost(Press.data(),Pressure,N*sizeof(double));
 		MPI_Barrier(comm);
 		//...........................................................................
 		
@@ -1774,14 +1774,14 @@ int main(int argc, char **argv)
 		// Copy the phase indicator field for the later timestep
 		DeviceBarrier();
 		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-		CopyToHost(Phase_tminus.get(),Phi,N*sizeof(double));
-		CopyToHost(Phase_tplus.get(),Phi,N*sizeof(double));
-		CopyToHost(Phase.get(),Phi,N*sizeof(double));
-		CopyToHost(Press.get(),Pressure,N*sizeof(double));
+		CopyToHost(Phase_tminus.data(),Phi,N*sizeof(double));
+		CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
+		CopyToHost(Phase.data(),Phi,N*sizeof(double));
+		CopyToHost(Press.data(),Pressure,N*sizeof(double));
 
 		double temp=0.5/beta;
 		for (n=0; n<N; n++){
-		  double value = Phase.get()[n];
+		  double value = Phase.data()[n];
 			SDn(n) = temp*log((1.0+value)/(1.0-value));
 		}
 
@@ -2218,12 +2218,12 @@ int main(int argc, char **argv)
 	//************************************************************************/
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
-//	CopyToHost(Phase.get(),Phi,N*sizeof(double));
+//	CopyToHost(Phase.data(),Phi,N*sizeof(double));
 
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Press.get(),8,N,PHASE);
-//	fwrite(MeanCurvature.get(),8,N,PHASE);
+	fwrite(Press.data(),8,N,PHASE);
+//	fwrite(MeanCurvature.data(),8,N,PHASE);
 	fclose(PHASE);
 	
 /*	double *DensityValues;

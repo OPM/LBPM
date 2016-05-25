@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
 	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	
@@ -402,7 +402,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, Averages.SDs.get(), dist_mem_size);
+	CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
 	//...........................................................................
 
 	int logcount = 0; // number of surface write-outs
@@ -509,10 +509,10 @@ int main(int argc, char **argv)
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 			ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
-			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+			CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 
 			// Way more work than necessary -- this is just to get the solid interfacial area!!
 			Averages.Initialize();

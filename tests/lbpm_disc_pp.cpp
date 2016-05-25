@@ -294,7 +294,7 @@ int main(int argc, char **argv)
 
 	if (nprocx > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocx > 1? \n");
 	//.......................................................................
-	SignedDistanceDiscPack(SignDist.get(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//.......................................................................
 	// Assign walls in the signed distance functions (x,y boundaries)
@@ -375,7 +375,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.get(), N);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
 
 	// ****************************************************

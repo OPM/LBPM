@@ -52,8 +52,8 @@ int ComputeBlob( const Array<bool>& isPhase, BlobIDArray& LocalBlobID, bool peri
     int last = start_id-1;
     std::vector<int> neighbor_ids;
     neighbor_ids.reserve(N_neighbors);
-    const bool *isPhasePtr = isPhase.get();
-    BlobIDType *LocalBlobIDPtr = LocalBlobID.get();
+    const bool *isPhasePtr = isPhase.data();
+    BlobIDType *LocalBlobIDPtr = LocalBlobID.data();
     for (int z=0; z<Nz; z++) {
         for (int y=0; y<Ny; y++) {
             for (int x=0; x<Nx; x++) {
@@ -143,7 +143,7 @@ int ComputeLocalBlobIDs( const DoubleArray& Phase, const DoubleArray& SignDist,
     // Compute the local blob ids
     size_t N = Nx*Ny*Nz;
     Array<bool> isPhase(Nx,Ny,Nz);
-    memset(isPhase.get(),0,Nx*Ny*Nz*sizeof(bool));
+    memset(isPhase.data(),0,Nx*Ny*Nz*sizeof(bool));
     for (size_t i=0; i<N; i++) {
         if ( SignDist(i) <= vS) {
             // Solid phase 
@@ -765,7 +765,7 @@ void getNewIDs( ID_map_struct& map, BlobIDType& id_max, std::vector<BlobIDType>&
 void renumberIDs( const std::vector<BlobIDType>& new_ids, BlobIDArray& IDs )
 {
     size_t N = IDs.length();
-    BlobIDType* ids = IDs.get();
+    BlobIDType* ids = IDs.data();
     for (size_t i=0; i<N; i++) {
         BlobIDType id = ids[i];
         if ( id>=0 )

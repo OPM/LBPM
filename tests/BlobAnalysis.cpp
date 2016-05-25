@@ -436,7 +436,7 @@ int main(int argc, char **argv)
 */
     
     FILE *PHASE = fopen("Phase.dat","wb");
-    fwrite(Phase.get(),8,Nx*Ny*Nz,PHASE);
+    fwrite(Phase.data(),8,Nx*Ny*Nz,PHASE);
     fclose(PHASE);
     
     // Compute the porosity
@@ -998,12 +998,12 @@ int main(int argc, char **argv)
 
     FILE *BLOBS;
     BLOBS = fopen("Blobs.dat","wb");
-    fwrite(LocalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
+    fwrite(LocalBlobID.data(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);
     
     FILE *DISTANCE;
     DISTANCE = fopen("SignDist.dat","wb");
-    fwrite(SignDist.get(),8,Nx*Ny*Nz,DISTANCE);
+    fwrite(SignDist.data(),8,Nx*Ny*Nz,DISTANCE);
     fclose(DISTANCE);
     
 }

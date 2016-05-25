@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&D,1,MPI_DOUBLE,0,comm);
 
 	//.......................................................................
-	SignedDistance(SignDist.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(SignDist.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	WriteLocalSolidDistance(LocalRankFilename, SignDist.get(), N);
+	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
 
 	// ****************************************************

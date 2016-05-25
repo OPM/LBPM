@@ -986,7 +986,7 @@ Array<TYPE> Array<TYPE>::coarsen( const Array<TYPE>& filter ) const
                 for (size_t k2=0; k2<Nh[2]; k2++) {
                     for (size_t j2=0; j2<Nh[1]; j2++) {
                         for (size_t i2=0; i2<Nh[0]; i2++) {
-                            tmp += this->operator()(i1*Nh[0]+i2,j1*Nh[1]+j2,k1*Nh[2]+k2);
+                            tmp += filter(i2,j2,k2) * this->operator()(i1*Nh[0]+i2,j1*Nh[1]+j2,k1*Nh[2]+k2);
                         }
                     }
                 }
