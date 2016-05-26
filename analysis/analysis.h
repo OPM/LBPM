@@ -1,5 +1,5 @@
-#ifndef COMMON_H_INC
-#define COMMON_H_INC
+#ifndef Analysis_H_INC
+#define Analysis_H_INC
 
 #include "common/Array.h"
 #include "common/Communication.h"
