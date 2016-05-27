@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 
 	if (rank==0){
 		FILE *PHASE = fopen("Phase.00000","wb");
-		fwrite(Averages.MeanCurvature.get(),8,Nx*Ny*Nz,PHASE);
+		fwrite(Averages.MeanCurvature.data(),8,Nx*Ny*Nz,PHASE);
 		fclose(PHASE);
 	}
 	// ****************************************************

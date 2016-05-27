@@ -9,18 +9,45 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <functional>
+
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
+#include "common/imfilter.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
 #include "IO/netcdf.h"
+#include "analysis/analysis.h"
 
 #include "ProfilerApp.h"
 
-inline void Med3D(Array<float> &Input, Array<float> &Output){
+
+float sumReduce( MPI_Comm comm, float x )
+{
+    float y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_FLOAT,MPI_SUM,comm);
+    return y;
+}
+int sumReduce( MPI_Comm comm, int x )
+{
+    int y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_INT,MPI_SUM,comm);
+    return y;
+}
+float maxReduce( MPI_Comm comm, float x )
+{
+    float y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_FLOAT,MPI_MAX,comm);
+    return y;
+}
+
+
+inline void Med3D( const Array<float> &Input, Array<float> &Output )
+{
+	PROFILE_START("Med3D");
 	// Perform a 3D Median filter on Input array with specified width
 	int i,j,k,ii,jj,kk;
 	int imin,jmin,kmin,imax,jmax,kmax;
@@ -68,84 +95,46 @@ inline void Med3D(Array<float> &Input, Array<float> &Output){
 			}
 		}
 	}
+	PROFILE_STOP("Med3D");
 }
 
-inline void Sparsify(Array<float> &Fine, Array<float> &Coarse){
 
-	// Create sparse version of Fine mesh to reduce filtering costs
-	int i,j,k,ii,jj,kk;
-	float x,y,z;
-
-	// Fine mesh
-	int Nx = int(Fine.size(0));
-	int Ny = int(Fine.size(1));
-	int Nz = int(Fine.size(2));
-
-	// Coarse mesh
-	int nx = int(Coarse.size(0));
-	int ny = int(Coarse.size(1));
-	int nz = int(Coarse.size(2));
-
-	// compute the stride
-	float hx = float(Nx-1) / float (nx-1);
-	float hy = float(Ny-1) / float (ny-1);
-	float hz = float(Nz-1) / float (nz-1);
-
-	// Fill in the coarse mesh
-	for (k=0; k<nz; k++){
-		for (j=0; j<ny; j++){
-			for (i=0; i<nx; i++){
-
-				x = i*hx;
-				y = j*hy;
-				z = k*hz;
-
-				ii = int(floor(x));
-				jj = int(floor(y));
-				kk = int(floor(z));
-
-				// get the eight values in the cell
-				float v1 = Fine(ii,jj,kk);
-				float v2 = Fine(ii+1,jj,kk);
-				float v3 = Fine(ii,jj+1,kk);
-				float v4 = Fine(ii+1,jj+1,kk);
-				float v5 = Fine(ii,jj,kk+1);
-				float v6 = Fine(ii+1,jj,kk+1);
-				float v7 = Fine(ii,jj+1,kk+1);
-				float v8 = Fine(ii+1,jj+1,kk+1);
-
-				Coarse(i,j,k)=0.125*(v1+v2+v3+v4+v5+v6+v7+v8);
-
-				//Coarse(i,j,k) = Fine(ii,jj,kk);
-
-			}
-		}
-	}
+inline float trilinear( float dx, float dy, float dz, float f1, float f2,
+    float f3, float f4, float f5, float f6, float f7, float f8 )
+{
+    double f, dx2, dy2, dz2, h0, h1;
+    dx2 = 1.0 - dx;
+    dy2 = 1.0 - dy;
+    dz2 = 1.0 - dz;
+    h0  = ( dx * f2 + dx2 * f1 ) * dy2 + ( dx * f4 + dx2 * f3 ) * dy;
+    h1  = ( dx * f6 + dx2 * f5 ) * dy2 + ( dx * f8 + dx2 * f7 ) * dy;
+    f   = h0 * dz2 + h1 * dz;
+    return ( f );
 }
-
-inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine){
+inline void InterpolateMesh( const Array<float> &Coarse, Array<float> &Fine )
+{
+	PROFILE_START("InterpolateMesh");
 
 	// Interpolate values from a Coarse mesh to a fine one
-	// This routine assumes that the mesh boundaries match
-	int i,j,k,ii,jj,kk;
-	float x,y,z;
-	Array<float> Corners(2,2,2);
-	float a,b,c,d,e,f,g,h;
+	// This routine assumes cell-centered meshes with 1 ghost cell
 
 	// Fine mesh
-	int Nx = int(Fine.size(0));
-	int Ny = int(Fine.size(1));
-	int Nz = int(Fine.size(2));
+	int Nx = int(Fine.size(0))-2;
+	int Ny = int(Fine.size(1))-2;
+	int Nz = int(Fine.size(2))-2;
 
 	// Coarse mesh
-	int nx = int(Coarse.size(0));
-	int ny = int(Coarse.size(1));
-	int nz = int(Coarse.size(2));
+	int nx = int(Coarse.size(0))-2;
+	int ny = int(Coarse.size(1))-2;
+	int nz = int(Coarse.size(2))-2;
 
 	// compute the stride
-	float hx = float(Nx-1) / float (nx-1);
-	float hy = float(Ny-1) / float (ny-1);
-	float hz = float(Nz-1) / float (nz-1);
+	int hx = Nx/nx;
+	int hy = Ny/ny;
+	int hz = Nz/nz;
+    ASSERT(nx*hx==Nx);
+    ASSERT(ny*hy==Ny);
+    ASSERT(nz*hz==Nz);
 
 	// value to map distance between meshes (since distance is in voxels)
 	//  usually hx=hy=hz (or something very close)
@@ -155,51 +144,32 @@ inline void InterpolateMesh(Array<float> &Coarse, Array<float> &Fine){
 	float mapvalue = sqrt(hx*hx+hy*hy+hz*hz);
 
 	// Interpolate to the fine mesh
-	for (k=0; k<nz-1; k++){
-		for (j=0; j<ny-1; j++){
-			for (i=0; i<nx-1; i++){
-
-				// get the eight values in the cell
-				Corners(0,0,0) = mapvalue*Coarse(i,j,k);
-				Corners(1,0,0) = mapvalue*Coarse(i+1,j,k);
-				Corners(0,1,0) = mapvalue*Coarse(i,j+1,k);
-				Corners(1,1,0) = mapvalue*Coarse(i+1,j+1,k);
-				Corners(0,0,1) = mapvalue*Coarse(i,j,k+1);
-				Corners(1,0,1) = mapvalue*Coarse(i+1,j,k+1);
-				Corners(0,1,1) = mapvalue*Coarse(i,j+1,k+1);
-				Corners(1,1,1) = mapvalue*Coarse(i+1,j+1,k+1);
-
-				// coefficients of the tri-linear approximation
-				a = Corners(0,0,0);
-				b = Corners(1,0,0)-a;
-				c = Corners(0,1,0)-a;
-				d = Corners(0,0,1)-a;
-				e = Corners(1,1,0)-a-b-c;
-				f = Corners(1,0,1)-a-b-d;
-				g = Corners(0,1,1)-a-c-d;
-				h = Corners(1,1,1)-a-b-c-d-e-f-g;
-
-				// Interpolate to each point on the fine mesh
-				for (kk=int(ceil(k*hz)); kk<int(ceil((k+1)*hz)); kk++){
-					for (jj=int(ceil(j*hy)); jj<int(ceil((j+1)*hy)); jj++){
-						for (ii=int(ceil(i*hx)); ii<int(ceil((i+1)*hx)); ii++){
-
-							// get the value within the unit cube
-							x = (ii-i*hx)/hx;
-							y = (jj-j*hy)/hy;
-							z = (kk-k*hz)/hz;
-
-							if (ii<Nx && jj<Ny && kk<Nz)
-								Fine(ii,jj,kk) = a + b*x + c*y+d*z + e*x*y + f*x*z + g*y*z + h*x*y*z;
-
-						}
-					}
-				}
-
+	for (int k=-1; k<Nz+1; k++){
+        int k0 = floor((k-0.5*hz)/hz);
+        int k1 = k0+1;
+        int k2 = k0+2;
+        float dz = ( (k+0.5) - (k0+0.5)*hz ) / hz;
+        ASSERT(k0>=-1&&k0<nz+1&&dz>=0&&dz<=1);
+		for (int j=-1; j<Ny+1; j++){
+            int j0 = floor((j-0.5*hy)/hy);
+            int j1 = j0+1;
+            int j2 = j0+2;
+            float dy = ( (j+0.5) - (j0+0.5)*hy ) / hy;
+            ASSERT(j0>=-1&&j0<ny+1&&dy>=0&&dy<=1);
+			for (int i=-1; i<Nx+1; i++){
+                int i0 = floor((i-0.5*hx)/hx);
+                int i1 = i0+1;
+                int i2 = i0+2;
+                float dx = ( (i+0.5) - (i0+0.5)*hx ) / hx;
+                ASSERT(i0>=-1&&i0<nx+1&&dx>=0&&dx<=1);
+                float val = trilinear( dx, dy, dz,
+                    Coarse(i1,j1,k1), Coarse(i2,j1,k1), Coarse(i1,j2,k1), Coarse(i2,j2,k1),
+                    Coarse(i1,j1,k2), Coarse(i2,j1,k2), Coarse(i1,j2,k2), Coarse(i2,j2,k2) );
+                Fine(i+1,j+1,k+1) = mapvalue*val;
 			}
 		}
 	}
-
+	PROFILE_STOP("InterpolateMesh");
 }
 
 inline float minmod(float &a, float &b){
@@ -214,11 +184,13 @@ inline float minmod(float &a, float &b){
 }
 
 
-inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int timesteps){
+inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps)
+{
+	PROFILE_START("Eikonal3D");
 
 	/*
 	 * This routine converts the data in the Distance array to a signed distance
-	 * by solving the equation df/dt = sign(1-|grad f|), where Distance provides
+	 * by solving the equation df/dt = sign*(1-|grad f|), where Distance provides
 	 * the values of f on the mesh associated with domain Dm
 	 * It has been tested with segmented data initialized to values [-1,1]
 	 * and will converge toward the signed distance to the surface bounding the associated phases
@@ -268,6 +240,7 @@ inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int 
 
 		LocalMax=LocalVar=0.0;
 		// Execute the next timestep
+        //  f(n+1) = f(n) + dt*sign(1-|grad f|)
 		for (k=1;k<Dm.Nz-1;k++){
 			for (j=1;j<Dm.Ny-1;j++){
 				for (i=1;i<Dm.Nx-1;i++){
@@ -349,17 +322,20 @@ inline float Eikonal3D(Array<float> &Distance, Array<char> &ID, Domain &Dm, int 
 			count=timesteps;
 		}
 	}
+	PROFILE_STOP("Eikonal3D");
 	return GlobalVar;
 }
 
 
-inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance, Array<float> &Output,
-		const int d, const float h){
+inline int NLM3D( const Array<float> &Input, Array<float> &Mean, 
+    const Array<float> &Distance, Array<float> &Output, const int d, const float h)
+{
+	PROFILE_START("NLM3D");
 	// Implemenation of 3D non-local means filter
 	// 		d determines the width of the search volume
 	// 		h is a free parameter for non-local means (i.e. 1/sigma^2)
 	// 		Distance is the signed distance function
-	// 		If Distance(i,j,k) < THRESHOLD_DIST then don't compute NLM
+	// 		If Distance(i,j,k) > THRESHOLD_DIST then don't compute NLM
 
 	float THRESHOLD_DIST = float(d);
 	float weight, sum;
@@ -438,40 +414,16 @@ inline int NLM3D(Array<float> &Input, Array<float> &Mean, Array<float> &Distance
 		}
 	}
 	// Return the number of sites where NLM was applied
+	PROFILE_STOP("NLM3D");
 	return returnCount;
 }
 
-int main(int argc, char **argv)
+
+// Reading the domain information file
+void read_domain( int rank, int nprocs, MPI_Comm comm, 
+    int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
+    int& nspheres, double& Lx, double& Ly, double& Lz )
 {
-
-	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
-
-	//std::vector<std::string> filenames;
-	std::string filename;
-	if (rank==0){
-		if ( argc==0 ) {
-			printf("At least one filename must be specified\n");
-			return 1;
-		}
-		else {
-			filename=std::string(argv[1]);
-			printf("Input data file: %s\n",filename.c_str());
-		}
-	}
-	//.......................................................................
-	// Reading the domain information file
-	//.......................................................................
-	int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-	double Lx, Ly, Lz;
-	int Nx,Ny,Nz;
-	int i,j,k,n;
-	int BC=0;
-
 	if (rank==0){
 		ifstream domain("Domain.in");
 		domain >> nprocx;
@@ -499,9 +451,165 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-
 	MPI_Barrier(comm);
+}
+
+
+
+// Smooth the data using the distance
+void smooth( const Array<float>& VOL, const Array<float>& Dist, float sigma, Array<float>& MultiScaleSmooth, fillHalo<float>& fillFloat )
+{
+    for (size_t i=0; i<VOL.length(); i++) {
+		// use exponential weight based on the distance
+		float dst = Dist(i);
+		float tmp = exp(-(dst*dst)/(sigma*sigma));
+		float value = dst>0 ? -1:1;
+		MultiScaleSmooth(i) = tmp*VOL(i) + (1-tmp)*value;
+	}
+	fillFloat.fill(MultiScaleSmooth);
+}
+
+
+// Segment the data
+void segment( const Array<float>& data, Array<char>& ID, float tol )
+{
+    ASSERT(data.size()==ID.size());
+    for (size_t i=0; i<data.length(); i++) {
+        if ( data(i) > tol )
+            ID(i) = 0;
+        else
+            ID(i) = 1;
+    }
+}
+
+
+// Remove disconnected phases
+void removeDisconnected( Array<char>& ID, const Domain& Dm )
+{
+    // Run blob identification to remove disconnected volumes
+    BlobIDArray GlobalBlobID;
+    DoubleArray SignDist(ID.size());
+    DoubleArray Phase(ID.size());
+    for (size_t i=0; i<ID.length(); i++) {
+        SignDist(i) = (2*ID(i)-1);
+        Phase(i) = 1;
+    }
+    ComputeGlobalBlobIDs( ID.size(0)-2, ID.size(1)-2, ID.size(2)-2,
+        Dm.rank_info, Phase, SignDist, 0, 0, GlobalBlobID, Dm.Comm );
+    for (size_t i=0; i<ID.length(); i++) {
+        if ( GlobalBlobID(i) > 0 )
+            ID(i) = 0;
+        ID(i) = GlobalBlobID(i);
+    }
+}
+
+
+// Solve a level (without any coarse level information)
+void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
+    Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx )
+{
+    // Compute the median filter on the sparse array
+    Med3D( VOL, Mean );
+    fillFloat.fill( Mean );
+    segment( Mean, ID, 0.01 );
+    // Compute the distance using the segmented volume
+	Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+	fillFloat.fill(Dist);
+    smooth( VOL, Dist, 2.0, MultiScaleSmooth, fillFloat );
+    // Compute non-local mean
+	int depth = 5;
+	float sigsq=0.1;
+	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
+	fillFloat.fill(NonLocalMean);
+}
+
+
+// Refine a solution from a coarse grid to a fine grid
+void refine( const Array<float>& Dist_coarse, 
+    const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
+    Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, bool solve_eikonal=true )
+{
+    int ratio[3] = { int(Dist.size(0)/Dist_coarse.size(0)),
+                     int(Dist.size(1)/Dist_coarse.size(1)),
+                     int(Dist.size(2)/Dist_coarse.size(2)) };
+    // Interpolate the distance from the coarse to fine grid
+	InterpolateMesh( Dist_coarse, Dist );
+    // Compute the median filter on the array and segment
+    Med3D( VOL, Mean );
+    fillFloat.fill( Mean );
+    segment( Mean, ID, 0.01 );
+    // If the ID has the wrong distance, set the distance to 0 and run a simple filter to set neighbors to 0
+    for (size_t i=0; i<ID.length(); i++) {
+        char id = Dist(i)>0 ? 1:0;
+        if ( id != ID(i) )
+            Dist(i) = 0;
+    }
+    fillFloat.fill( Dist );
+    std::function<float(int,const float*)> filter_1D = []( int N, const float* data )
+    {
+        bool zero = data[0]==0 || data[2]==0;
+        return zero ? data[1]*1e-12 : data[1];
+    };
+    std::vector<imfilter::BC> BC(3,imfilter::BC::replicate);
+    std::vector<std::function<float(int,const float*)>> filter_set(3,filter_1D);
+    Dist = imfilter::imfilter_separable<float>( Dist, {1,1,1}, filter_set, BC );
+    fillFloat.fill( Dist );
+    // Smooth the volume data
+    float lambda = 2*sqrt(double(ratio[0]*ratio[0]+ratio[1]*ratio[1]+ratio[2]*ratio[2]));
+    smooth( VOL, Dist, lambda, MultiScaleSmooth, fillFloat );
+    // Compute non-local mean
+	int depth = 3;
+	float sigsq = 0.1;
+	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
+	fillFloat.fill(NonLocalMean);
+    segment( NonLocalMean, ID, 0.001 );
+    for (size_t i=0; i<ID.length(); i++) {
+        char id = Dist(i)>0 ? 1:0;
+        if ( id!=ID(i) || fabs(Dist(i))<1 )
+    	    Dist(i) = 2.0*ID(i)-1.0;
+    }
+    // Remove disconnected domains
+    //removeDisconnected( ID, Dm );
+    // Compute the distance using the segmented volume
+    if ( solve_eikonal ) {
+    	Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+	    fillFloat.fill(Dist);
+    }
+}
+
+
+
+int main(int argc, char **argv)
+{
+
+	// Initialize MPI
+	int rank, nprocs;
+	MPI_Init(&argc,&argv);
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
+	PROFILE_START("Main");
+
+	//std::vector<std::string> filenames;
+	if ( argc<2 ) {
+        if ( rank == 0 )
+    		printf("At least one filename must be specified\n");
+		return 1;
+	}
+	std::string filename = std::string(argv[1]);
+    if ( rank == 0 )
+		printf("Input data file: %s\n",filename.c_str());
+
+	//.......................................................................
+	// Reading the domain information file
+	//.......................................................................
+	int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
+	double Lx, Ly, Lz;
+    read_domain( rank, nprocs, comm, nprocx, nprocy, nprocz, nx, ny, nz, nspheres, Lx, Ly, Lz );
+	int BC=0;
+
 
 	// Check that the number of processors >= the number of ranks
 	if ( rank==0 ) {
@@ -513,454 +621,254 @@ int main(int argc, char **argv)
 		ERROR("Insufficient number of processors");
 	}
 
-	// Allocate local arrays for every MPI rank
-	Array<float> LOCVOL(nx+2,ny+2,nz+2);
+    // Determine the maximum number of levels for the desired coarsen ratio
+    int ratio[3] = {4,4,4};
+    std::vector<int> Nx(1,nx), Ny(1,ny), Nz(1,nz);
+    while ( Nx.back()%ratio[0]==0 && Nx.back()>8 &&
+            Ny.back()%ratio[1]==0 && Ny.back()>8 &&
+            Nz.back()%ratio[2]==0 && Nz.back()>8 )
+    {
+        Nx.push_back( Nx.back()/ratio[0] );
+        Ny.push_back( Ny.back()/ratio[1] );
+        Nz.push_back( Nz.back()/ratio[2] );
+    }
+    int N_levels = Nx.size();
 
-	// Get the rank info
-	int N = (nx+2)*(ny+2)*(nz+2);
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	for (k=0;k<nz+2;k++){
-		for (j=0;j<ny+2;j++){
-			for (i=0;i<nx+2;i++){
-				n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
-				Dm.id[n] = 1;
-			}
-		}
+	// Initialize the domain
+	std::vector<std::shared_ptr<Domain>> Dm(N_levels);
+    for (int i=0; i<N_levels; i++) {
+        Dm[i].reset( new Domain(Nx[i],Ny[i],Nz[i],rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC) );
+        int N = (Nx[i]+2)*(Ny[i]+2)*(Nz[i]+2);
+    	for (int n=0; n<N; n++)
+			Dm[i]->id[n] = 1;
+    	Dm[i]->CommInit(comm);
 	}
-	Dm.CommInit(comm);
 
+    // Create the level data
+    std::vector<Array<char>>  ID(N_levels);
+    std::vector<Array<float>> LOCVOL(N_levels);
+    std::vector<Array<float>> Dist(N_levels);
+    std::vector<Array<float>> MultiScaleSmooth(N_levels);
+    std::vector<Array<float>> Mean(N_levels);
+    std::vector<Array<float>> NonLocalMean(N_levels);
+	std::vector<std::shared_ptr<fillHalo<double>>> fillDouble(N_levels);
+	std::vector<std::shared_ptr<fillHalo<float>>>  fillFloat(N_levels);
+	std::vector<std::shared_ptr<fillHalo<char>>>   fillChar(N_levels);
+    for (int i=0; i<N_levels; i++) {
+        ID[i] = Array<char>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        LOCVOL[i] = Array<float>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        Dist[i] = Array<float>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        MultiScaleSmooth[i] = Array<float>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        Mean[i] = Array<float>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        NonLocalMean[i] = Array<float>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+        ID[i].fill(0);
+        LOCVOL[i].fill(0);
+        Dist[i].fill(0);
+        MultiScaleSmooth[i].fill(0);
+        Mean[i].fill(0);
+        NonLocalMean[i].fill(0);
+	    fillDouble[i].reset(new fillHalo<double>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
+	    fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
+	    fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
+	}
+
+
+    // Read the subvolume of interest on each processor
 	PROFILE_START("ReadVolume");
-	{
-		Array<float> VOLUME;
-
-		// Read the input volume to rank 0 only, then distribute pieces to workers
-		if (rank==0){
-			// Open the netcdf file
-			int fid = netcdf::open(filename);
-
-			// Read all of the attributes
-			std::vector<std::string> attr = netcdf::getAttNames( fid );
-			for (size_t i=0; i<attr.size(); i++) {
-				printf("Reading attribute %s\n",attr[i].c_str());
-				netcdf::VariableType type = netcdf::getAttType( fid, attr[i] );
-				if ( type == netcdf::STRING ){
-					Array<std::string> tmp = netcdf::getAtt<std::string>( fid, attr[i] );
-				}
-				else{
-					//Array<double> tmp = netcdf::getAtt<double>( fid, attr[i] );
-				}
-			}
-
-			// Read the VOLUME data array
-			std::string varname("VOLUME");
-			printf("Reading %s\n",varname.c_str());
-			VOLUME = netcdf::getVar<float>( fid, varname);
-			Nx = int(VOLUME.size(0));
-			Ny = int(VOLUME.size(1));
-			Nz = int(VOLUME.size(2));
-			printf("VOLUME dims =  %i x %i x %i \n",Nx,Ny,Nz);
-			printf("Sucess!! \n");
-			netcdf::close( fid );
-		}
-		PROFILE_SAVE("ReadVolume");
-
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-
-		MPI_Barrier(comm);
-
-		// Set up the sub-domains
-		int xStart,yStart,zStart;
-		xStart=Nx/2;
-		yStart=Ny/2;
-		zStart=Nz/2;
-		if (rank==0){
-			printf("Distributing subdomains across %i processors \n",nprocs);
-			printf("Process grid: %i x %i x %i \n",Dm.nprocx,Dm.nprocy,Dm.nprocz);
-			printf("Subdomain size: %i \n",N);
-			//	printf("Size of transition region: %i \n", z_transition_size);
-			float *tmp;
-			tmp = new float[N];
-			for (int kp=0; kp<nprocz; kp++){
-				for (int jp=0; jp<nprocy; jp++){
-					for (int ip=0; ip<nprocx; ip++){
-						// rank of the process that gets this subdomain
-						int rnk = kp*Dm.nprocx*Dm.nprocy + jp*Dm.nprocx + ip;
-						// Pack and send the subdomain for rnk
-						for (k=0;k<nz+2;k++){
-							for (j=0;j<ny+2;j++){
-								for (i=0;i<nx+2;i++){
-									int x = xStart + ip*nx + i-1;
-									int y = yStart + jp*ny + j-1;
-									int z = zStart + kp*nz + k-1;
-
-									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									tmp[nlocal] = VOLUME(x,y,z);
-								}
-							}
-						}
-						if (rnk==0){
-							for (k=0;k<nz+2;k++){
-								for (j=0;j<ny+2;j++){
-									for (i=0;i<nx+2;i++){
-										int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-										LOCVOL(i,j,k) = tmp[nlocal];
-									}
-								}
-							}
-						}
-						else{
-							//printf("Sending data to process %i \n", rnk);
-							MPI_Send(tmp,N,MPI_FLOAT,rnk,15,comm);
-						}
-					}
-				}
-			}
-		}
-		else{
-			// Recieve the subdomain from rank = 0
-			//printf("Ready to recieve data %i at process %i \n", N,rank);
-			MPI_Recv(LOCVOL.get(),N,MPI_FLOAT,0,15,comm,MPI_STATUS_IGNORE);
-		}
-	}
+    int fid = netcdf::open(filename);
+    std::string varname("VOLUME");
+    netcdf::VariableType type = netcdf::getVarType( fid, varname );
+    std::vector<size_t> dim = netcdf::getVarDim( fid, varname );
+    if ( rank == 0 ) {
+    	printf("Reading %s (%s)\n",varname.c_str(),netcdf::VariableTypeName(type).c_str());
+	    printf("   dims =  %i x %i x %i \n",int(dim[0]),int(dim[1]),int(dim[2]));
+    }
+    {
+        RankInfoStruct info( rank, nprocx, nprocy, nprocz );
+	    int x = dim[0]/2 + info.ix*nx;
+	    int y = dim[1]/2 + info.jy*ny;
+	    int z = dim[2]/2 + info.kz*nz;
+        // Read the local data
+		Array<short> VOLUME = netcdf::getVar<short>( fid, varname, {x,y,z}, {nx,ny,nz}, {1,1,1} );
+        // Copy the data and fill the halos
+        LOCVOL[0].fill(0);
+        fillFloat[0]->copy( VOLUME, LOCVOL[0] );
+        fillFloat[0]->fill( LOCVOL[0] );
+    }
+    netcdf::close( fid );
 	MPI_Barrier(comm);
+	PROFILE_STOP("ReadVolume");
+	if (rank==0) printf("Read complete\n");
 
-	nx+=2; ny+=2; nz+=2;
-	N=nx*ny*nz;
 
-	if (rank==0) printf("All sub-domains recieved \n");
-
-	// Initialize sparse domein
-	int nsx,nsy,nsz;
-	nsx=nx/8; nsy=ny/8; nsz=nz/8;
-
-	Domain spDm(nsx-2,nsy-2,nsz-2,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	for (k=0;k<nsz+2;k++){
-		for (j=0;j<nsy+2;j++){
-			for (i=0;i<nsx+2;i++){
-				n = k*(nsx+2)*(nsy+2)+j*(nsx+2)+i;
-				spDm.id[n] = 1;
-			}
-		}
+    // Filter the original data
+	PROFILE_START("Filter source data");
+    {
+        // Perform a hot-spot filter on the data
+        std::vector<imfilter::BC> BC = { imfilter::BC::replicate, imfilter::BC::replicate, imfilter::BC::replicate };
+        std::function<float(const Array<float>&)> filter_3D = []( const Array<float>& data )
+        {
+            float min1 = std::min(data(0,1,1),data(2,1,1));
+            float min2 = std::min(data(1,0,1),data(1,2,1));
+            float min3 = std::min(data(1,1,0),data(1,1,2));
+            float max1 = std::max(data(0,1,1),data(2,1,1));
+            float max2 = std::max(data(1,0,1),data(1,2,1));
+            float max3 = std::max(data(1,1,0),data(1,1,2));
+            float min = std::min(min1,std::min(min2,min3));
+            float max = std::max(max1,std::max(max2,max3));
+            return std::max(std::min(data(1,1,1),max),min);
+        };
+        std::function<float(const Array<float>&)> filter_1D = []( const Array<float>& data )
+        {
+            float min = std::min(data(0),data(2));
+            float max = std::max(data(0),data(2));
+            return std::max(std::min(data(1),max),min);
+        };
+        //LOCVOL[0] = imfilter::imfilter<float>( LOCVOL[0], {1,1,1}, filter_3D, BC );
+        std::vector<std::function<float(const Array<float>&)>> filter_set(3,filter_1D);
+        LOCVOL[0] = imfilter::imfilter_separable<float>( LOCVOL[0], {1,1,1}, filter_set, BC );
+        fillFloat[0]->fill( LOCVOL[0] );
+        // Perform a gaussian filter on the data
+        int Nh[3] = { 2, 2, 2 };
+        float sigma[3] = { 1.0, 1.0, 1.0 };
+        std::vector<Array<float>> H(3);
+        H[0] = imfilter::create_filter<float>( { Nh[0] }, "gaussian", &sigma[0] );
+        H[1] = imfilter::create_filter<float>( { Nh[1] }, "gaussian", &sigma[1] );
+        H[2] = imfilter::create_filter<float>( { Nh[2] }, "gaussian", &sigma[2] );
+        LOCVOL[0] = imfilter::imfilter_separable( LOCVOL[0], H, BC );
+        fillFloat[0]->fill( LOCVOL[0] );
 	}
-	spDm.CommInit(comm);
+	PROFILE_STOP("Filter source data");
 
-	fillHalo<float> fillFloat(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
-	fillHalo<char> fillChar(Dm.Comm, Dm.rank_info,nx-2,ny-2,nz-2,1,1,1,0,1);
-	fillHalo<float> fillFloat_sp(spDm.Comm, spDm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
-	fillHalo<char>  fillChar_sp(spDm.Comm, spDm.rank_info,nsx-2,nsy-2,nsz-2,1,1,1,0,1);
 
-	Array<float> spLOCVOL(nsx,nsy,nsz);	// this holds sparse original data
-	Array<float> spM(nsx,nsy,nsz); 		// this holds sparse median filter
-	Array<float> spSmooth(nsx,nsy,nsz); // this holds smoothed data
-
-	Array<float> spDist(nsx,nsy,nsz);		// this holds sparse signed distance
-
-	// sparse phase ID (segmented values)
-	Array<char> spID(nsx,nsy,nsz);
-
-	Array<char>  ID(nx,ny,nz);
-	Array<float> Dist(nx,ny,nz);
-	Array<float> MultiScaleSmooth(nx,ny,nz);
-	Array<float> Mean(nx,ny,nz);
-	Array<float> NonLocalMean(nx,ny,nz);
-
-	if (rank==0) printf("Running segmentation workflow \n");
-	if (rank==0) printf("Step 1. Sparsify space: \n");
-	if (rank==0) printf("   Original Mesh: %ix%ix%i \n",nx,ny,nz);
-	if (rank==0) printf("   Sparse Mesh: %ix%ix%i \n",nsx,nsy,nsz);
-
-	// Sparsify the the mesh using a stride of 8
-	Sparsify(LOCVOL,spLOCVOL);
-	fillFloat_sp.fill(spLOCVOL);
-
-	if (rank==0) printf("Step 2. Sparse median filter \n");
-	// Compute the median filter on the sparse array
-	Med3D(spLOCVOL,spM);
-	fillFloat_sp.fill(spM);
-
-	// quick & dirty sparse segmentation
-	// this should be replaced
-	//    (should use automated mixture model to approximate histograms)
-	if (rank==0) printf("Step 3. Threshold for sparse segmentation \n");
-	float THRESHOLD=50;
-	for (k=0;k<nsz;k++){
-		for (j=0;j<nsy;j++){
-			for (i=0;i<nsx;i++){
-				if (spM(i,j,k) > THRESHOLD) spID(i,j,k) = 0;
-				else 						spID(i,j,k) = 1;
-			}
-		}
+	// Compute the means for the high/low regions
+	// (should use automated mixture model to approximate histograms)
+	float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
+	float mean_plus=0;
+    float mean_minus=0;
+	int count_plus=0;
+	int count_minus=0;
+	for (int k=1;k<Nz[0]+1;k++) {
+		for (int j=1;j<Ny[0]+1;j++) {
+			for (int i=1;i<Nx[0]+1;i++) {
+                auto tmp = LOCVOL[0](i,j,k);
+                if ( tmp > THRESHOLD ) {
+                    mean_plus += tmp;
+                    count_plus++;
+                } else if ( tmp < -THRESHOLD ) {
+                    mean_minus += tmp;
+                    count_minus++;
+		        }
+            }
+        }
 	}
+    mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / sumReduce( Dm[0]->Comm, count_plus );
+    mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / sumReduce( Dm[0]->Comm, count_minus );
+	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
-	//..........................................
-	// Compute the means for each region
-	float mean_plus,mean_minus;
-	int count_plus,count_minus;
-	float mean_plus_global,mean_minus_global;
-	int count_plus_global,count_minus_global;
-	float *TmpMed;
-	TmpMed = new float[nsx*nsy*nsz];
 
-	// Compute median for regions of distance function
-	count_plus=count_minus=0;
-	mean_plus=mean_minus=0;
-	for (k=1;k<nsz-1;k++){
-		for (j=1;j<nsy-1;j++){
-			for (i=1;i<nsx-1;i++){
+    // Scale the source data to +-1.0
+    for (size_t i=0; i<LOCVOL[0].length(); i++) {
+        if ( LOCVOL[0](i) >= 0 ) {
+            LOCVOL[0](i) /= mean_plus;
+            LOCVOL[0](i) = std::min( LOCVOL[0](i), 1.0f );
+        } else {
+            LOCVOL[0](i) /= -mean_minus;
+            LOCVOL[0](i) = std::max( LOCVOL[0](i), -1.0f );
+        }
+    }
 
-				if (spDist(i,j,k) > 0.0)
-					TmpMed[count_plus++]= spM(i,j,k);
 
-			}
-		}
-	}
-	for (int ii=0; ii<count_plus/2+1; ii++){
-		for (int jj=ii+1; jj<count_plus; jj++){
-			if (TmpMed[jj] < TmpMed[ii]){
-				float tmp = TmpMed[ii];
-				TmpMed[ii] = TmpMed[jj];
-				TmpMed[jj] = tmp;
-			}
-		}
-	}
-	mean_plus = TmpMed[count_plus/2];
+	// Fill the source data for the coarse meshes
+    PROFILE_START("CoarsenMesh");
+    for (int i=1; i<N_levels; i++) {
+        Array<float> filter(ratio[0],ratio[1],ratio[2]);
+        filter.fill(1.0f/filter.length());
+        Array<float> tmp(Nx[i-1],Ny[i-1],Nz[i-1]);
+        fillFloat[i-1]->copy( LOCVOL[i-1], tmp );
+        Array<float> coarse = tmp.coarsen( filter );
+        fillFloat[i]->copy( coarse, LOCVOL[i] );
+        fillFloat[i]->fill( LOCVOL[i] );
+    }
+    PROFILE_STOP("CoarsenMesh");
 
-	for (k=1;k<nsz-1;k++){
-		for (j=1;j<nsy-1;j++){
-			for (i=1;i<nsx-1;i++){
 
-				if (spDist(i,j,k) < 0.0)
-					TmpMed[count_minus++]= spM(i,j,k);
+    // Initialize the coarse level
+    PROFILE_START("Solve coarse mesh");
+    if (rank==0)
+        printf("Initialize coarse mesh\n");
+    solve( LOCVOL.back(), Mean.back(), ID.back(), Dist.back(), MultiScaleSmooth.back(),
+        NonLocalMean.back(), *fillFloat.back(), *Dm.back(), nprocx );
+    PROFILE_STOP("Solve coarse mesh");
 
-			}
-		}
-	}
-	for (int ii=0; ii<count_minus/2+1; ii++){
-		for (int jj=ii+1; jj<count_minus; jj++){
-			if (TmpMed[jj] < TmpMed[ii]){
-				float tmp = TmpMed[ii];
-				TmpMed[ii] = TmpMed[jj];
-				TmpMed[jj] = tmp;
-			}
-		}
-	}
-	mean_minus = TmpMed[count_minus/2];
+    // Refine the solution
+    PROFILE_START("Refine distance");
+    if (rank==0)
+        printf("Refine mesh\n");
+    for (int i=int(Nx.size())-2; i>=0; i--) {
+        printf("   Refining to level %i\n",int(i));
+        refine( Dist[i+1], LOCVOL[i], Mean[i], ID[i], Dist[i], MultiScaleSmooth[i],
+            NonLocalMean[i], *fillFloat[i], *Dm[i], nprocx, i>0 );
+    }
+    PROFILE_STOP("Refine distance");
+removeDisconnected( ID[0], *Dm[0] );
 
-	MPI_Allreduce(&mean_plus,&mean_plus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
-	MPI_Allreduce(&mean_minus,&mean_minus_global,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
 
-	mean_plus_global /= nprocs;
-	mean_minus_global /= nprocs;
-	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus_global, mean_minus_global);
-	delete[] TmpMed;
-	//..........................................
 
-	// intialize distance based on segmentation
-	for (k=0;k<nsz;k++){
-		for (j=0;j<nsy;j++){
-			for (i=0;i<nsx;i++){
-				spDist(i,j,k) = 2.0*spID(i,j,k)-1.0;
-			}
-		}
-	}
-
-	if (rank==0) printf("Step 4. Generate sparse distance function \n");
-	// generate a sparse signed distance function
-	Eikonal3D(spDist,spID,spDm,nsx*nprocx);
-
-	if (rank==0) printf("Step 5. Interpolate to fine mesh \n");
-	InterpolateMesh(spDist,Dist);
-
-	float lambda = 0.5;
-	for (k=0;k<nsz;k++){
-		for (j=0;j<nsy;j++){
-			for (i=0;i<nsx;i++){
-				float dst = spDist(i,j,k);
-				// use exponential weight based on the distance
-				float temp = 1.0-exp(-lambda*fabs(dst));
-				float value;
-				if (dst > 0){
-					value = temp*mean_plus;
-				}
-				else{
-					value = temp*mean_minus;
-				}
-				value += (1-temp)*spM(i,j,k);
-				spSmooth(i,j,k) = value;
-			}
-		}
-	}
-	InterpolateMesh(spSmooth,MultiScaleSmooth);
-
-	if (rank==0) printf("Step 6. Compute distance thresholded non-local mean \n");
-	int depth = 5;
-	float sigsq=0.1;
-	int nlm_count=NLM3D(MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
-
-	if (rank==0) printf("Step 7. Threshold for segmentation \n");
-	THRESHOLD=50;
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				if (NonLocalMean(i,j,k) > THRESHOLD) ID(i,j,k) = 0;
-				else 								 ID(i,j,k) = 1;
-
-				// intialize distance based on segmentation
-				Dist(i,j,k) = 2.0*ID(i,j,k)-1.0;
-			}
-		}
-	}
-
-	if (rank==0) printf("Step 8. Generate final distance function \n");
-	// generate a sparse signed distance function
-	Eikonal3D(Dist,ID,Dm,nx*nprocx);
-
-	//printf("Non-local means count fraction = %f \n",float(nlm_count)/float(nx*ny*nz));
-	/*    for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-			        n = k*nx*ny+j*nx+i;
-			        if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
-			       	else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
-			       	else                           Dm.id[n] = 2;
-
-			}
-		}
-	}
-	if (rank==0) printf("Domain set \n");
-	// Write the local volume files
-	char LocalRankString[8];
-	char LocalRankFilename[40];
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"Seg.%s",LocalRankString);
-	FILE * SEG;
-	SEG=fopen(LocalRankFilename,"wb");
-	fwrite(LOCVOL.get(),4,N,SEG);
-	fclose(SEG);
-	 */
+    // Write the results to visit
 	if (rank==0) printf("Writing output \n");
+	std::vector<IO::MeshDataStruct> meshData(N_levels);
+    for (size_t i=0; i<Nx.size(); i++) {
+        // Mesh
+    	meshData[i].meshName = "Level " + std::to_string(i+1);
+    	meshData[i].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],Lx,Ly,Lz) );
+        // Source data
+        std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
+	    OrigData->name = "Source Data";
+	    OrigData->type = IO::VolumeVariable;
+	    OrigData->dim = 1;
+	    OrigData->data.resize(Nx[i],Ny[i],Nz[i]);
+	    meshData[i].vars.push_back(OrigData);
+        fillDouble[i]->copy( LOCVOL[i], OrigData->data );
+        // Non-Local Mean
+        std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
+	    NonLocMean->name = "Non-Local Mean";
+	    NonLocMean->type = IO::VolumeVariable;
+	    NonLocMean->dim = 1;
+	    NonLocMean->data.resize(Nx[i],Ny[i],Nz[i]);
+	    meshData[i].vars.push_back(NonLocMean);
+        fillDouble[i]->copy( NonLocalMean[i], NonLocMean->data );
+        // Segmented Data
+        std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
+	    SegData->name = "Segmented Data";
+	    SegData->type = IO::VolumeVariable;
+	    SegData->dim = 1;
+	    SegData->data.resize(Nx[i],Ny[i],Nz[i]);
+	    meshData[i].vars.push_back(SegData);
+        fillDouble[i]->copy( ID[i], SegData->data );
+        // Signed Distance
+        std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+	    DistData->name = "Signed Distance";
+	    DistData->type = IO::VolumeVariable;
+	    DistData->dim = 1;
+	    DistData->data.resize(Nx[i],Ny[i],Nz[i]);
+	    meshData[i].vars.push_back(DistData);
+        fillDouble[i]->copy( Dist[i], DistData->data );
+        // Smoothed Data
+        std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
+	    SmoothData->name = "Smoothed Data";
+	    SmoothData->type = IO::VolumeVariable;
+	    SmoothData->dim = 1;
+	    SmoothData->data.resize(Nx[i],Ny[i],Nz[i]);
+	    meshData[i].vars.push_back(SmoothData);
+        fillDouble[i]->copy( MultiScaleSmooth[i], SmoothData->data );
+    }
 
-	std::vector<IO::MeshDataStruct> meshData(2);
-	meshData[0].meshName = "Full domain";
-	meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,nx-2,ny-2,nz-2,Lx,Ly,Lz) );
-	meshData[1].meshName = "Sparse domain";
-	meshData[1].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,nsx-2,nsy-2,nsz-2,Lx,Ly,Lz) );
-
-	std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
-	std::shared_ptr<IO::Variable> spMedianData( new IO::Variable() );
-	std::shared_ptr<IO::Variable> spSegData( new IO::Variable() );
-	std::shared_ptr<IO::Variable> spDistData( new IO::Variable() );
-	std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
-	std::shared_ptr<IO::Variable> MultiMean( new IO::Variable() );
-	std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
-	std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
-
-	// Full resolution data
-	OrigData->name = "Source Data";
-	OrigData->type = IO::VolumeVariable;
-	OrigData->dim = 1;
-	OrigData->data.resize(nx-2,ny-2,nz-2);
-	meshData[0].vars.push_back(OrigData);
-
-	MultiMean->name = "Multiscale Mean";
-	MultiMean->type = IO::VolumeVariable;
-	MultiMean->dim = 1;
-	MultiMean->data.resize(nx-2,ny-2,nz-2);
-	meshData[0].vars.push_back(MultiMean);
-
-	NonLocMean->name = "Non-Local Mean";
-	NonLocMean->type = IO::VolumeVariable;
-	NonLocMean->dim = 1;
-	NonLocMean->data.resize(nx-2,ny-2,nz-2);
-	meshData[0].vars.push_back(NonLocMean);
-
-	SegData->name = "Segmented Data";
-	SegData->type = IO::VolumeVariable;
-	SegData->dim = 1;
-	SegData->data.resize(nx-2,ny-2,nz-2);
-	meshData[0].vars.push_back(SegData);
-
-	DistData->name = "Signed Distance";
-	DistData->type = IO::VolumeVariable;
-	DistData->dim = 1;
-	DistData->data.resize(nx-2,ny-2,nz-2);
-	meshData[0].vars.push_back(DistData);
-	//..........................................
-
-	// ....... Sparse resolution data .......
-	spMedianData->name = "Sparse Median Filter";
-	spMedianData->type = IO::VolumeVariable;
-	spMedianData->dim = 1;
-	spMedianData->data.resize(nsx-2,nsy-2,nsz-2);
-	meshData[1].vars.push_back(spMedianData);
-
-	spSegData->name = "Sparse Segmentation";
-	spSegData->type = IO::VolumeVariable;
-	spSegData->dim = 1;
-	spSegData->data.resize(nsx-2,nsy-2,nsz-2);
-	meshData[1].vars.push_back(spSegData);
-
-	spDistData->name = "Sparse Distance";
-	spDistData->type = IO::VolumeVariable;
-	spDistData->dim = 1;
-	spDistData->data.resize(nsx-2,nsy-2,nsz-2);
-	meshData[1].vars.push_back(spDistData);
-	//..........................................
-
-	/*
-	 * Only Array<double> works right now :(
-	 *
-    Array<float>& INPUT = meshData[0].vars[0]->data;
-    Array<float>& spMEDIAN = meshData[1].vars[0]->data;
-    Array<char>& spSEGMENTED = meshData[1].vars[1]->data;
-    Array<float>& spDISTANCE = meshData[1].vars[2]->data;
-
-    fillFloat.copy(LOCVOL,INPUT);
-    fillFloat_sp.copy(spM,spMEDIAN);
-    fillChar_sp.copy(spID,spSEGMENTED);
-    fillFloat_sp.copy(spDist,spDISTANCE);
-	 */
-
-	Array<double>& INPUT = meshData[0].vars[0]->data;	
-	Array<double>& MULTIMEAN = meshData[0].vars[1]->data;
-	Array<double>& NONLOCALMEAN = meshData[0].vars[2]->data;
-	Array<double>& SEGMENTED = meshData[0].vars[3]->data;
-	Array<double>& DISTANCE = meshData[0].vars[4]->data;
-
-	Array<double>& spMEDIAN = meshData[1].vars[0]->data;
-	Array<double>& spSEGMENTED = meshData[1].vars[1]->data;
-	Array<double>& spDISTANCE = meshData[1].vars[2]->data;
-
-
-	// manually change to double and write
-	for (k=1;k<nz-1;k++){
-		for (j=1;j<ny-1;j++){
-			for (i=1;i<nx-1;i++){
-				INPUT(i-1,j-1,k-1) = double( LOCVOL(i,j,k));
-				SEGMENTED(i-1,j-1,k-1) = double( ID(i,j,k));
-				DISTANCE(i-1,j-1,k-1) = double( Dist(i,j,k));
-				MULTIMEAN(i-1,j-1,k-1) = double( MultiScaleSmooth(i,j,k));
-				NONLOCALMEAN(i-1,j-1,k-1) = double( NonLocalMean(i,j,k));
-			}
-		}
-	}
-
-	for (k=1;k<nsz-1;k++){
-		for (j=1;j<nsy-1;j++){
-			for (i=1;i<nsx-1;i++){
-				spMEDIAN(i-1,j-1,k-1) = double( spM(i,j,k));
-				spSEGMENTED(i-1,j-1,k-1) = double( spID(i,j,k));
-				spDISTANCE(i-1,j-1,k-1) = double( spDist(i,j,k));
-			}
-		}
-	}
-
+	// Write visulization data
 	IO::writeData( 0, meshData, 2, comm );
 	if (rank==0) printf("Finished. \n");
 
-	/*    for (k=0;k<nz;k++){
+	/* for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 			        n = k*nx*ny+j*nx+i;
@@ -984,6 +892,8 @@ int main(int argc, char **argv)
 	fclose(SEG);
 	 */
 
+	PROFILE_STOP("Main");
+    PROFILE_SAVE("lbpm_uCT_pp",true);
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;

@@ -13,6 +13,9 @@ namespace netcdf {
 //! Enum to hold variable type
 enum VariableType { BYTE, SHORT, USHORT, INT, UINT, INT64, UINT64, FLOAT, DOUBLE, STRING };
 
+//! Convert the VariableType to a string
+std::string VariableTypeName( VariableType type );
+
 
 /*!
  * @brief  Open netcdf file
@@ -82,6 +85,20 @@ std::vector<size_t> getVarDim( int fid, const std::string& var );
 */
 template<class TYPE>
 Array<TYPE> getVar( int fid, const std::string& var );
+
+
+/*!
+ * @brief  Read a strided variable
+ * @detailed  This function reads a strided variable with the given name from the file
+ * @param fid           Handle to the open file
+ * @param var           Variable to read
+ * @param start         Starting corner for the read
+ * @param count         Number of elements to read
+ * @param stride        Stride size for the read
+*/
+template<class TYPE>
+Array<TYPE> getVar( int fid, const std::string& var, const std::vector<int>& start,
+    const std::vector<int>& count, const std::vector<int>& stride );
 
 
 /*!

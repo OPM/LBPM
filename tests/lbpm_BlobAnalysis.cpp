@@ -121,16 +121,16 @@ int main(int argc, char **argv)
 	if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
 	//.......................................................................
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages.SDs.get(), N);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
 	MPI_Barrier(comm);
 
 	//	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
-	//ReadBinaryFile(LocalRankFilename, Averages.Press.get(), N);
+	//ReadBinaryFile(LocalRankFilename, Averages.Press.data(), N);
 	//MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
     //.......................................................................
     sprintf(LocalRankFilename,"%s%s","Label_NWP.",LocalRankString);
-    ReadBlobFile(LocalRankFilename, Averages.Label_NWP.get(), N);
+    ReadBlobFile(LocalRankFilename, Averages.Label_NWP.data(), N);
     MPI_Barrier(comm);
     if (rank == 0) cout << "Label_NWP set." << endl;
 
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
     }
     //      BlobContainer Blobs;
     DoubleArray RecvBuffer(dimx);
-    //    MPI_Allreduce(&Averages.ComponentAverages_NWP.get(),&Blobs.get(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+    //    MPI_Allreduce(&Averages.ComponentAverages_NWP.data(),&Blobs.data(),1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Barrier(comm);
     if (rank==0) printf("All ranks passed gate \n");
 

@@ -3,6 +3,7 @@
 
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
+#include "common/Utilities.h"
 #include "ProfilerApp.h"
 
 

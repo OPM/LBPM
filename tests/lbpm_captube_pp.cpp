@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.SDs.get(),8,Averages.SDs.length(),DIST);
+    fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
     fclose(DIST);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);

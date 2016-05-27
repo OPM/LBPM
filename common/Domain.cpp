@@ -547,7 +547,7 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 {
     int sendtag, recvtag;
     sendtag = recvtag = 7;
-    double *MeshData = Mesh.get();
+    double *MeshData = Mesh.data();
     PackMeshData(sendList_x, sendCount_x ,sendData_x, MeshData);
     PackMeshData(sendList_X, sendCount_X ,sendData_X, MeshData);
     PackMeshData(sendList_y, sendCount_y ,sendData_y, MeshData);
@@ -631,7 +631,7 @@ void Domain::BlobComm(MPI_Comm Communicator)
     int sendtag, recvtag;
     sendtag = recvtag = 51;
     //......................................................................................
-    int *BlobLabelData = BlobLabel.get();
+    int *BlobLabelData = BlobLabel.data();
     PackBlobData(sendList_x, sendCount_x ,sendBuf_x, BlobLabelData);
     PackBlobData(sendList_X, sendCount_X ,sendBuf_X, BlobLabelData);
     PackBlobData(sendList_y, sendCount_y ,sendBuf_y, BlobLabelData);

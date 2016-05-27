@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"SignDist.%05i",rank);
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
-	ReadSignDist=fread(SignDist.get(),8,N,DIST);
+	ReadSignDist=fread(SignDist.data(),8,N,DIST);
 	if (ReadSignDist != size_t(N)) printf("lbpm_random_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 

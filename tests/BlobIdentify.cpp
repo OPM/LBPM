@@ -141,8 +141,8 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
     char file1[40], file2[40];
     sprintf(file1,"SignDist.%05d",proc);
     sprintf(file2,"Phase.%05d",proc);
-    ReadBinaryFile(file1, Phase.get(), nx*ny*nz);
-    ReadBinaryFile(file2, SignDist.get(), nx*ny*nz);
+    ReadBinaryFile(file1, Phase.data(), nx*ny*nz);
+    ReadBinaryFile(file2, SignDist.data(), nx*ny*nz);
 }
 
 
@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 
 
     FILE *BLOBS = fopen("Blobs.dat","wb");
-    fwrite(GlobalBlobID.get(),4,Nx*Ny*Nz,BLOBS);
+    fwrite(GlobalBlobID.data(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);
 	MPI_Finalize();
     return 0;

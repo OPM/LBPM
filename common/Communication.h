@@ -2,7 +2,8 @@
 #define COMMUNICATION_H_INC
 
 #include "common/MPI_Helpers.h"
-#include "Array.h"
+#include "common/Utilities.h"
+#include "common/Array.h"
 
 // ********** COMMUNICTION **************************************
 /*
@@ -287,7 +288,7 @@ inline void CommunicateMeshHalo(DoubleArray &Mesh, MPI_Comm Communicator,
 {
 	int sendtag, recvtag;
 	sendtag = recvtag = 7;
-    double *MeshData = Mesh.get();
+    double *MeshData = Mesh.data();
 	PackMeshData(sendList_x, sendCount_x ,sendbuf_x, MeshData);
 	PackMeshData(sendList_X, sendCount_X ,sendbuf_X, MeshData);
 	PackMeshData(sendList_y, sendCount_y ,sendbuf_y, MeshData);

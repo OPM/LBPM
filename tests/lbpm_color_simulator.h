@@ -12,6 +12,13 @@ enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02,
     CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
 
 
+template<class TYPE>
+void DeleteArray( const TYPE *p )
+{
+    delete [] p;
+}
+
+
 // Structure used to store ids
 struct AnalysisWaitIdStruct {
     ThreadPool::thread_id_t blobID;
@@ -279,14 +286,14 @@ void run_analysis( int timestep, int restart_interval,
          (type&CopySimState)!=0 || (type&IdentifyBlobs)!=0 )
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
-        CopyToHost(phase->get(),Phi,N*sizeof(double));
+        CopyToHost(phase->data(),Phi,N*sizeof(double));
     }
     if ( (type&CopyPhaseIndicator)!=0 ) {
-        memcpy(Averages.Phase_tplus.get(),phase->get(),N*sizeof(double));
+        memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
     }
     if ( (type&ComputeAverages)!=0 ) {
-        memcpy(Averages.Phase_tminus.get(),phase->get(),N*sizeof(double));
+        memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
     }
     if ( (type&CopySimState) != 0 ) {
@@ -301,11 +308,11 @@ void run_analysis( int timestep, int restart_interval,
         tpool.wait(wait.vis);   // Make sure we are done using analysis before modifying
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
-        memcpy(Averages.Phase.get(),phase->get(),N*sizeof(double));
-        CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
-        CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
-        CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
-        CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+        memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+        CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+        CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+        CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;

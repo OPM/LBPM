@@ -20,8 +20,8 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
     char file1[40], file2[40];
     sprintf(file1,"SignDist.%05d",proc);
     sprintf(file2,"Phase.%05d",proc);
-    ReadBinaryFile(file1, Phase.get(), nx*ny*nz);
-    ReadBinaryFile(file2, SignDist.get(), nx*ny*nz);
+    ReadBinaryFile(file1, Phase.data(), nx*ny*nz);
+    ReadBinaryFile(file2, SignDist.data(), nx*ny*nz);
 }
 inline void WriteBlobs(TwoPhase Averages){
 	printf("Writing the blob list \n");
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	MPI_Barrier(comm);
 	//.......................................................................
-	SignedDistance(Averages.Phase.get(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+	SignedDistance(Averages.Phase.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   Dm.iproc,Dm.jproc,Dm.kproc,Dm.nprocx,Dm.nprocy,Dm.nprocz);
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance

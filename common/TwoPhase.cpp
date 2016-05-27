@@ -790,8 +790,8 @@ void TwoPhase::ComponentAverages()
 	}
 	*/
 	MPI_Barrier(Dm.Comm);
-	MPI_Allreduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT*NumberComponents_NWP,					MPI_DOUBLE,MPI_SUM,Dm.Comm);
-	//	MPI_Reduce(ComponentAverages_NWP.get(),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+	MPI_Allreduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT*NumberComponents_NWP,					MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	//	MPI_Reduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
 	if (Dm.rank==0){
 		printf("rescaling... \n");
@@ -888,8 +888,8 @@ void TwoPhase::ComponentAverages()
 	// reduce the wetting phase averages
 	for (int b=0; b<NumberComponents_WP; b++){
 		MPI_Barrier(Dm.Comm);
-//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.get(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
+//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
