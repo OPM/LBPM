@@ -20,7 +20,7 @@ ENDIF()
 # Set the project name
 PROJECT( LBPM-WIA )
 IF ( NOT CXX_STD )
-    SET( CXX_STD 98 )
+    SET( CXX_STD 11 )
 ENDIF()
 
 
