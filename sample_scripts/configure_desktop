@@ -4,14 +4,18 @@ rm -rf CMake*
 cmake                                    \
     -D CMAKE_C_COMPILER:PATH=mpicc          \
     -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
-    -D CMAKE_C_FLAGS="-g"            \
-    -D CMAKE_CXX_FLAGS="-g"          \
+    -D CMAKE_C_FLAGS="-g "         \
+    -D CMAKE_CXX_FLAGS="-g "      \
+    -D CXX_STD=11 	   \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Debug     \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_NETCDF=1 			 \
+    -D HDF5_DIRECTORY="/apps/hdf5/"	 \
+    -D NETCDF_DIRECTORY="/apps/netcdf/"	 \
     -D USE_CUDA=0                        \
     -D USE_TIMER=0			 \
     ${HOME}/Programs/LBPM-WIA
