@@ -104,6 +104,7 @@ int main(int argc, char **argv)
     MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
+	{
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -123,7 +124,7 @@ int main(int argc, char **argv)
 		printf("Running Single Phase Permeability Calculation \n");
 		printf("********************************************************\n");
 	}
-
+	
 	// Variables that specify the computational domain  
 	string FILENAME;
 	int Nx,Ny,Nz;		// local sub-domain size
@@ -183,8 +184,8 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.................................................
 	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
-	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
+	//MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+	//	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
 	MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
@@ -212,7 +213,8 @@ int main(int argc, char **argv)
 	// **************************************************************
 	double rlxA = 1.f/tau;
 	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
-	
+
+
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
@@ -570,6 +572,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 
 	NULL_USE(RESTART_INTERVAL);
+	}
 	// ****************************************************
 	MPI_Barrier(comm);
 	MPI_Finalize();
