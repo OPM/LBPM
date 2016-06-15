@@ -148,18 +148,6 @@ void Array<TYPE>::clear()
 
 
 /********************************************************
-*  Return the size of the array                         *
-********************************************************/
-template <class TYPE>
-std::vector<size_t> Array<TYPE>::size() const
-{
-    if ( d_ndim==0 )
-        return std::vector<size_t>();
-    return std::vector<size_t>( d_N, d_N + d_ndim );
-}
-
-
-/********************************************************
 *  Check if the size of the array matches rhs           *
 ********************************************************/
 template <class TYPE>
@@ -416,6 +404,34 @@ void Array<TYPE>::copySubset( const std::vector<size_t> &index, const Array<TYPE
         }
     }
 }
+
+template <class TYPE>
+void Array<TYPE>::addSubset( const std::vector<size_t> &index, const Array<TYPE> &subset )
+{
+    // Get the subset indices
+    checkSubsetIndex( index );
+    std::array<size_t,5> first, last, N1;
+    getSubsetArrays( index, first, last, N1 );
+    std::array<size_t,5> N2 = getDimArray();
+    // add the sub-array
+    #if ARRAY_NDIM_MAX > 5
+        #error Function programmed for more than 5 dimensions
+    #endif
+    for (size_t i4=first[4]; i4<=last[4]; i4++) {
+        for (size_t i3=first[3]; i3<=last[3]; i3++) {
+            for (size_t i2=first[2]; i2<=last[2]; i2++) {
+                for (size_t i1=first[1]; i1<=last[1]; i1++) {
+                    for (size_t i0=first[0]; i0<=last[0]; i0++) {
+                        size_t k1 = GET_ARRAY_INDEX5D( N1, i0-first[0], 
+                            i1-first[1], i2-first[2], i3-first[3], i4-first[4] );
+                        size_t k2  = GET_ARRAY_INDEX5D( N2, i0, i1, i2, i3, i4 );
+                        d_data[k2] += subset.d_data[k1];
+                    }
+                }
+            }
+        }
+    }
+}
 // clang-format on
 
 
@@ -613,7 +629,17 @@ void Array<TYPE>::scale( const TYPE &value )
     for ( size_t i = 0; i < d_length; i++ )
         d_data[i] *= value;
 }
+template <class TYPE>
+    void Array<TYPE>::pow(const Array<TYPE> &baseArray, const TYPE &exp )
+{
+    // not insisting on the shapes being the same
+    // but insisting on the total size being the same
+    AMP_ASSERT(d_length==baseArray.length());
 
+    const auto base_data = baseArray.data();
+    for ( size_t i = 0; i < d_length; i++ )
+        d_data[i]  = std::pow(base_data[i], exp);
+}
 
 /********************************************************
 *  Simple math operations                               *
@@ -991,6 +1017,35 @@ Array<TYPE> Array<TYPE>::coarsen( const Array<TYPE>& filter ) const
                     }
                 }
                 y(i1,j1,k1) = tmp;
+            }
+        }
+    }
+    return y;
+}
+template <class TYPE>
+Array<TYPE> Array<TYPE>::coarsen( const std::vector<size_t>& ratio, std::function<TYPE(const Array<TYPE>&)> filter ) const
+{
+    ASSERT((int)ratio.size()==d_ndim);
+    auto S2 = size();
+    for (size_t i=0; i<S2.size(); i++) {
+        S2[i] /= ratio[i];
+        INSIST(S2[i]*ratio[i]==size(i),"Array must be multiple of filter size");
+    }
+    Array<TYPE> tmp(ratio);
+    TYPE* tmp2 = tmp.data();
+    Array<TYPE> y( S2 );
+    INSIST(d_ndim<=3,"Function programmed for more than 3 dimensions");
+    for (size_t k1=0; k1<y.d_N[2]; k1++) {
+        for (size_t j1=0; j1<y.d_N[1]; j1++) {
+            for (size_t i1=0; i1<y.d_N[0]; i1++) {
+                for (size_t k2=0; k2<ratio[2]; k2++) {
+                    for (size_t j2=0; j2<ratio[1]; j2++) {
+                        for (size_t i2=0; i2<ratio[0]; i2++) {
+                            tmp2[GET_ARRAY_INDEX3D(tmp.d_N,i2,j2,k2)] = this->operator()(i1*ratio[0]+i2,j1*ratio[1]+j2,k1*ratio[2]+k2);
+                        }
+                    }
+                }
+                y(i1,j1,k1) = filter(tmp);
             }
         }
     }

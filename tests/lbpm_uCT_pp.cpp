@@ -21,27 +21,17 @@
 #include "IO/Writer.h"
 #include "IO/netcdf.h"
 #include "analysis/analysis.h"
+#include "analysis/eikonal.h"
 
 #include "ProfilerApp.h"
 
 
-float sumReduce( MPI_Comm comm, float x )
+template<class T>
+inline int sign( T x )
 {
-    float y = 0;
-	MPI_Allreduce(&x,&y,1,MPI_FLOAT,MPI_SUM,comm);
-    return y;
-}
-int sumReduce( MPI_Comm comm, int x )
-{
-    int y = 0;
-	MPI_Allreduce(&x,&y,1,MPI_INT,MPI_SUM,comm);
-    return y;
-}
-float maxReduce( MPI_Comm comm, float x )
-{
-    float y = 0;
-	MPI_Allreduce(&x,&y,1,MPI_FLOAT,MPI_MAX,comm);
-    return y;
+    if ( x==0 )
+        return 0;
+    return x>0 ? 1:-1;
 }
 
 
@@ -170,160 +160,6 @@ inline void InterpolateMesh( const Array<float> &Coarse, Array<float> &Fine )
 		}
 	}
 	PROFILE_STOP("InterpolateMesh");
-}
-
-inline float minmod(float &a, float &b){
-
-	float value;
-
-	value = a;
-	if 	( a*b < 0.0)	    value=0.0;
-	else if (fabs(a) > fabs(b)) value = b;
-
-	return value;
-}
-
-
-inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps)
-{
-	PROFILE_START("Eikonal3D");
-
-	/*
-	 * This routine converts the data in the Distance array to a signed distance
-	 * by solving the equation df/dt = sign*(1-|grad f|), where Distance provides
-	 * the values of f on the mesh associated with domain Dm
-	 * It has been tested with segmented data initialized to values [-1,1]
-	 * and will converge toward the signed distance to the surface bounding the associated phases
-	 *
-	 * Reference:
-	 * Min C (2010) On reinitializing level set functions, Journal of Computational Physics	229
-	 */
-
-	int i,j,k;
-	float dt=0.1;
-	float Dx,Dy,Dz;
-	float Dxp,Dxm,Dyp,Dym,Dzp,Dzm;
-	float Dxxp,Dxxm,Dyyp,Dyym,Dzzp,Dzzm;
-	float sign,norm;
-	float LocalVar,GlobalVar,LocalMax,GlobalMax;
-
-	int xdim,ydim,zdim;
-	xdim=Dm.Nx-2;
-	ydim=Dm.Ny-2;
-	zdim=Dm.Nz-2;
-	fillHalo<float> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
-
-	// Arrays to store the second derivatives
-	Array<float> Dxx(Dm.Nx,Dm.Ny,Dm.Nz);
-	Array<float> Dyy(Dm.Nx,Dm.Ny,Dm.Nz);
-	Array<float> Dzz(Dm.Nx,Dm.Ny,Dm.Nz);
-
-	int count = 0;
-	while (count < timesteps){
-
-		// Communicate the halo of values
-		fillData.fill(Distance);
-
-		// Compute second order derivatives
-		for (k=1;k<Dm.Nz-1;k++){
-			for (j=1;j<Dm.Ny-1;j++){
-				for (i=1;i<Dm.Nx-1;i++){
-					Dxx(i,j,k) = Distance(i+1,j,k) + Distance(i-1,j,k) - 2*Distance(i,j,k);
-					Dyy(i,j,k) = Distance(i,j+1,k) + Distance(i,j-1,k) - 2*Distance(i,j,k);
-					Dzz(i,j,k) = Distance(i,j,k+1) + Distance(i,j,k-1) - 2*Distance(i,j,k);
-				}
-			}
-		}
-		fillData.fill(Dxx);
-		fillData.fill(Dyy);
-		fillData.fill(Dzz);
-
-		LocalMax=LocalVar=0.0;
-		// Execute the next timestep
-        //  f(n+1) = f(n) + dt*sign(1-|grad f|)
-		for (k=1;k<Dm.Nz-1;k++){
-			for (j=1;j<Dm.Ny-1;j++){
-				for (i=1;i<Dm.Nx-1;i++){
-
-					int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
-
-					sign = -1;
-					if (ID(i,j,k) == 1) sign = 1;
-
-					// local second derivative terms
-					Dxxp = minmod(Dxx(i,j,k),Dxx(i+1,j,k));
-					Dyyp = minmod(Dyy(i,j,k),Dyy(i,j+1,k));
-					Dzzp = minmod(Dzz(i,j,k),Dzz(i,j,k+1));
-					Dxxm = minmod(Dxx(i,j,k),Dxx(i-1,j,k));
-					Dyym = minmod(Dyy(i,j,k),Dyy(i,j-1,k));
-					Dzzm = minmod(Dzz(i,j,k),Dzz(i,j,k-1));
-
-					/* //............Compute upwind derivatives ...................
-                    Dxp = Distance(i+1,j,k) - Distance(i,j,k) + 0.5*Dxxp;
-                    Dyp = Distance(i,j+1,k) - Distance(i,j,k) + 0.5*Dyyp;
-                    Dzp = Distance(i,j,k+1) - Distance(i,j,k) + 0.5*Dzzp;
-
-                    Dxm = Distance(i,j,k) - Distance(i-1,j,k) + 0.5*Dxxm;
-                    Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
-                    Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
-					 */
-					Dxp = Distance(i+1,j,k);
-					Dyp = Distance(i,j+1,k);
-					Dzp = Distance(i,j,k+1);
-
-					Dxm = Distance(i-1,j,k);
-					Dym = Distance(i,j-1,k);
-					Dzm = Distance(i,j,k-1);
-
-					// Compute upwind derivatives for Godunov Hamiltonian
-					if (sign < 0.0){
-						if (Dxp > Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
-						else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
-
-						if (Dyp > Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
-						else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
-
-						if (Dzp > Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
-						else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
-					}
-					else{
-						if (Dxp < Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
-						else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
-
-						if (Dyp < Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
-						else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
-
-						if (Dzp < Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
-						else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
-					}
-
-					norm=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
-					if (norm > 1.0) norm=1.0;
-
-					Distance(i,j,k) += dt*sign*(1.0 - norm);
-					LocalVar +=  dt*sign*(1.0 - norm);
-
-					if (fabs(dt*sign*(1.0 - norm)) > LocalMax)
-						LocalMax = fabs(dt*sign*(1.0 - norm));
-				}
-			}
-		}
-
-		MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_FLOAT,MPI_SUM,Dm.Comm);
-		MPI_Allreduce(&LocalMax,&GlobalMax,1,MPI_FLOAT,MPI_MAX,Dm.Comm);
-		GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
-		count++;
-
-		if (count%50 == 0 && Dm.rank==0 )
-			printf("	Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
-
-		if (fabs(GlobalMax) < 1e-5){
-			if (Dm.rank==0) printf("	Exiting with max tolerance of 1e-5 \n");
-			count=timesteps;
-		}
-	}
-	PROFILE_STOP("Eikonal3D");
-	return GlobalVar;
 }
 
 
@@ -509,6 +345,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
     fillHalo<float>& fillFloat, const Domain& Dm, int nprocx )
 {
+    PROFILE_SCOPED(timer,"solve");
     // Compute the median filter on the sparse array
     Med3D( VOL, Mean );
     fillFloat.fill( Mean );
@@ -529,8 +366,9 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 void refine( const Array<float>& Dist_coarse, 
     const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, bool solve_eikonal=true )
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level )
 {
+    PROFILE_SCOPED(timer,"refine");
     int ratio[3] = { int(Dist.size(0)/Dist_coarse.size(0)),
                      int(Dist.size(1)/Dist_coarse.size(1)),
                      int(Dist.size(2)/Dist_coarse.size(2)) };
@@ -573,12 +411,143 @@ void refine( const Array<float>& Dist_coarse,
     // Remove disconnected domains
     //removeDisconnected( ID, Dm );
     // Compute the distance using the segmented volume
-    if ( solve_eikonal ) {
-    	Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+    if ( level > 0 ) {
+    	//Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+        //CalcDist3D( Dist, ID, Dm );
+        CalcDistMultiLevel( Dist, ID, Dm );
 	    fillFloat.fill(Dist);
     }
 }
 
+
+// Remove regions that are likely noise by shrinking the volumes by dx,
+// removing all values that are more than dx+delta from the surface, and then
+// growing by dx+delta and intersecting with the original data
+void filter_final( Array<char>& ID, Array<float>& Dist,
+    fillHalo<float>& fillFloat, const Domain& Dm,
+    Array<float>& Mean, Array<float>& Dist1, Array<float>& Dist2 )
+{
+    PROFILE_SCOPED(timer,"filter_final");
+	int rank;
+	MPI_Comm_rank(Dm.Comm,&rank);
+    int Nx = Dm.Nx-2;
+    int Ny = Dm.Ny-2;
+    int Nz = Dm.Nz-2;
+    // Calculate the distance
+    CalcDistMultiLevel( Dist, ID, Dm );
+    fillFloat.fill(Dist);
+    // Compute the range to shrink the volume based on the L2 norm of the distance
+    Array<float> Dist0(Nx,Ny,Nz);
+    fillFloat.copy(Dist,Dist0);
+    float tmp = 0;
+    for (size_t i=0; i<Dist0.length(); i++)
+        tmp += Dist0(i)*Dist0(i);
+    tmp = sqrt( sumReduce(Dm.Comm,tmp) / sumReduce(Dm.Comm,(float)Dist0.length()) );
+    const float dx1 = 0.3*tmp;
+    const float dx2 = 1.05*dx1;
+    if (rank==0)
+        printf("   %0.1f %0.1f %0.1f\n",tmp,dx1,dx2);
+    // Update the IDs/Distance removing regions that are < dx of the range
+    Dist1 = Dist;
+    Dist2 = Dist;
+    Array<char> ID1 = ID;
+    Array<char> ID2 = ID;
+    for (size_t i=0; i<ID.length(); i++) {
+        ID1(i) = Dist(i)<-dx1 ? 1:0;
+        ID2(i) = Dist(i)> dx1 ? 1:0;
+    }
+    //Array<float> Dist1 = Dist;
+    //Array<float> Dist2 = Dist;
+    CalcDistMultiLevel( Dist1, ID1, Dm );
+    CalcDistMultiLevel( Dist2, ID2, Dm );
+    fillFloat.fill(Dist1);
+    fillFloat.fill(Dist2);
+    // Keep those regions that are within dx2 of the new volumes
+    Mean = Dist;
+    for (size_t i=0; i<ID.length(); i++) {
+        if ( Dist1(i)+dx2>0 && ID(i)<=0 ) {
+            Mean(i) = -1;
+        } else if ( Dist2(i)+dx2>0 && ID(i)>0 ) {
+            Mean(i) = 1;
+        } else {
+            Mean(i) = Dist(i)>0 ? 0.5:-0.5;
+        }
+    }
+    // Find regions of uncertainty that are entirely contained within another region
+    fillHalo<double> fillDouble(Dm.Comm,Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+    fillHalo<BlobIDType> fillInt(Dm.Comm,Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+    BlobIDArray GlobalBlobID;
+    DoubleArray SignDist(ID.size());
+    for (size_t i=0; i<ID.length(); i++)
+        SignDist(i) = fabs(Mean(i))==1 ? -1:1;
+    fillDouble.fill(SignDist);
+    DoubleArray Phase(ID.size());
+    Phase.fill(1);
+    ComputeGlobalBlobIDs( Nx, Ny, Nz, Dm.rank_info, Phase, SignDist, 0, 0, GlobalBlobID, Dm.Comm );
+    fillInt.fill(GlobalBlobID);
+    int N_blobs = maxReduce(Dm.Comm,GlobalBlobID.max()+1);
+    std::vector<float> mean(N_blobs,0);
+    std::vector<int> count(N_blobs,0);
+    for (int k=1; k<=Nz; k++) {
+        for (int j=1; j<=Ny; j++) {
+            for (int i=1; i<=Nx; i++) {
+                int id = GlobalBlobID(i,j,k);
+                if ( id >= 0 ) {
+                    if ( GlobalBlobID(i-1,j,k)<0 ) {
+                        mean[id] += Mean(i-1,j,k);
+                        count[id]++;
+                    }
+                    if ( GlobalBlobID(i+1,j,k)<0 ) {
+                        mean[id] += Mean(i+1,j,k);
+                        count[id]++;
+                    }
+                    if ( GlobalBlobID(i,j-1,k)<0 ) {
+                        mean[id] += Mean(i,j-1,k);
+                        count[id]++;
+                    }
+                    if ( GlobalBlobID(i,j+1,k)<0 ) {
+                        mean[id] += Mean(i,j+1,k);
+                        count[id]++;
+                    }
+                    if ( GlobalBlobID(i,j,k-1)<0 ) {
+                        mean[id] += Mean(i,j,k-1);
+                        count[id]++;
+                    }
+                    if ( GlobalBlobID(i,j,k+1)<0 ) {
+                        mean[id] += Mean(i,j,k+1);
+                        count[id]++;
+                    }
+                }
+            }
+        }
+    }
+    mean = sumReduce(Dm.Comm,mean);
+    count = sumReduce(Dm.Comm,count);
+    for (size_t i=0; i<mean.size(); i++)
+        mean[i] /= count[i];
+    /*if (rank==0) {
+        for (size_t i=0; i<mean.size(); i++)
+            printf("%i %0.4f\n",i,mean[i]);
+    }*/
+    for (size_t i=0; i<Mean.length(); i++) {
+        int id = GlobalBlobID(i);
+        if ( id >= 0 ) {
+            if ( fabs(mean[id]) > 0.95 ) {
+                // Isolated domain surrounded by one domain
+                GlobalBlobID(i) = -2;
+                Mean(i) = sign(mean[id]);
+            } else {
+                // Boarder volume, set to liquid
+                Mean(i) = 1;
+            }
+        }
+    }
+    // Perform the final segmentation and update the distance
+    fillFloat.fill(Mean);
+    segment( Mean, ID, 0.01 );
+    CalcDistMultiLevel( Dist, ID, Dm );
+    fillFloat.fill(Dist);
+}
 
 
 int main(int argc, char **argv)
@@ -590,6 +559,7 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
+    Utilities::setErrorHandlers();
 	PROFILE_START("Main");
 
 	//std::vector<std::string> filenames;
@@ -806,14 +776,22 @@ int main(int argc, char **argv)
     if (rank==0)
         printf("Refine mesh\n");
     for (int i=int(Nx.size())-2; i>=0; i--) {
-        printf("   Refining to level %i\n",int(i));
+        if (rank==0)
+            printf("   Refining to level %i\n",int(i));
         refine( Dist[i+1], LOCVOL[i], Mean[i], ID[i], Dist[i], MultiScaleSmooth[i],
-            NonLocalMean[i], *fillFloat[i], *Dm[i], nprocx, i>0 );
+            NonLocalMean[i], *fillFloat[i], *Dm[i], nprocx, i );
     }
     PROFILE_STOP("Refine distance");
-removeDisconnected( ID[0], *Dm[0] );
 
+    // Perform a final filter
+    PROFILE_START("Filtering final domains");
+    if (rank==0)
+        printf("Filtering final domains\n");
+    Array<float> filter_Mean, filter_Dist1, filter_Dist2;
+    filter_final( ID[0], Dist[0], *fillFloat[0], *Dm[0], filter_Mean, filter_Dist1, filter_Dist2 );
+    PROFILE_STOP("Filtering final domains");
 
+//removeDisconnected( ID[0], *Dm[0] );
 
     // Write the results to visit
 	if (rank==0) printf("Writing output \n");
@@ -863,6 +841,29 @@ removeDisconnected( ID[0], *Dm[0] );
 	    meshData[i].vars.push_back(SmoothData);
         fillDouble[i]->copy( MultiScaleSmooth[i], SmoothData->data );
     }
+    #if 0
+        std::shared_ptr<IO::Variable> filter_Mean_var( new IO::Variable() );
+	    filter_Mean_var->name = "Mean";
+	    filter_Mean_var->type = IO::VolumeVariable;
+	    filter_Mean_var->dim = 1;
+	    filter_Mean_var->data.resize(Nx[0],Ny[0],Nz[0]);
+	    meshData[0].vars.push_back(filter_Mean_var);
+        fillDouble[0]->copy( filter_Mean, filter_Mean_var->data );
+        std::shared_ptr<IO::Variable> filter_Dist1_var( new IO::Variable() );
+	    filter_Dist1_var->name = "Dist1";
+	    filter_Dist1_var->type = IO::VolumeVariable;
+	    filter_Dist1_var->dim = 1;
+	    filter_Dist1_var->data.resize(Nx[0],Ny[0],Nz[0]);
+	    meshData[0].vars.push_back(filter_Dist1_var);
+        fillDouble[0]->copy( filter_Dist1, filter_Dist1_var->data );
+        std::shared_ptr<IO::Variable> filter_Dist2_var( new IO::Variable() );
+	    filter_Dist2_var->name = "Dist2";
+	    filter_Dist2_var->type = IO::VolumeVariable;
+	    filter_Dist2_var->dim = 1;
+	    filter_Dist2_var->data.resize(Nx[0],Ny[0],Nz[0]);
+	    meshData[0].vars.push_back(filter_Dist2_var);
+        fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
+    #endif
 
 	// Write visulization data
 	IO::writeData( 0, meshData, 2, comm );

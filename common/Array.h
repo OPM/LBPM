@@ -269,6 +269,12 @@ public:
      */
     void scale( const TYPE &scale );
 
+    /*!
+     * Set the values of this array to pow(base, exp)
+     * @param base        Base array
+     * @param exp         Exponent value
+     */
+    void pow( const Array<TYPE> &baseArray, const TYPE &exp );
 
     //! Destructor
     ~Array();
@@ -283,7 +289,7 @@ public:
 
 
     //! Return the size of the Array
-    std::vector<size_t> size() const;
+    inline std::vector<size_t> size() const { return std::vector<size_t>( d_N, d_N + d_ndim ); }
 
 
     //! Return the size of the Array
@@ -355,6 +361,13 @@ public:
      */
     template <class TYPE2>
     void copySubset( const std::vector<size_t> &index, const Array<TYPE2> &subset );
+
+    /*!
+     * Add data from an array into a subset of this array
+     * @param index         Index of the subset (imin,imax,jmin,jmax,kmin,kmax,...)
+     * @param subset        The subset array to add from
+     */
+    void addSubset( const std::vector<size_t> &index, const Array<TYPE> &subset );
 
 
     /*!
@@ -525,6 +538,9 @@ public:
 
     //! Coarsen an array using the given filter
     Array<TYPE> coarsen( const Array<TYPE>& filter ) const;
+
+    //! Coarsen an array using the given filter
+    Array<TYPE> coarsen( const std::vector<size_t>& ratio, std::function<TYPE(const Array<TYPE>&)> filter ) const;
 
 private:
     int d_ndim;                  // Number of dimensions in array
