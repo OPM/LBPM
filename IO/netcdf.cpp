@@ -1,5 +1,6 @@
 #include "IO/netcdf.h"
 #include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
 
 #include "ProfilerApp.h"
 
@@ -155,7 +156,7 @@ std::vector<std::string> getAttNames( int fid )
 }
 static inline VariableType convertType( nc_type type )
 {
-    VariableType type2;
+    VariableType type2 = UNKNOWN;
     if ( type == NC_BYTE )
         type2 = BYTE;
     else if ( type == NC_CHAR )
@@ -185,14 +186,14 @@ VariableType getVarType( int fid, const std::string& var )
     int varid = -1;
     int err = nc_inq_varid( fid, var.c_str(), &varid );
     CHECK_NC_ERR( err );
-    nc_type type;
+    nc_type type=0;
     err = nc_inq_vartype( fid, varid, &type );
     CHECK_NC_ERR( err );
     return convertType(type);
 }
 VariableType getAttType( int fid, const std::string& att )
 {
-    nc_type type;
+    nc_type type=0;
     int err = nc_inq_atttype( fid,  NC_GLOBAL, att.c_str(), &type );
     CHECK_NC_ERR( err );
     return convertType(type);
@@ -305,6 +306,17 @@ Array<short> getVar<short>( int fid, const std::string& var, const std::vector<i
     const std::vector<int>& count, const std::vector<int>& stride )
 {
     PROFILE_START("getVar<short> (strided)");
+    std::vector<size_t> var_size = getVarDim( fid, var );
+    for (int d=0; d<(int)var_size.size(); d++) {
+        if ( start[d]<0 || start[d]+stride[d]*(count[d]-1)>(int)var_size[d] ) {
+            int rank = comm_rank(MPI_COMM_WORLD);
+            char tmp[1000];
+            sprintf(tmp,"%i: Range exceeded array dimension:\n"
+                "   start[%i]=%i, count[%i]=%i, stride[%i]=%i, var_size[%i]=%i",
+                rank,d,start[d],d,count[d],d,stride[d],d,(int)var_size[d]);
+            ERROR(tmp);
+        }
+    }
     Array<short> x( reverse(convert<int,size_t>(count)) );
     size_t startp[10], countp[10];
     ptrdiff_t stridep[10];

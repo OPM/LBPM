@@ -655,9 +655,9 @@ int main(int argc, char **argv)
     }
     {
         RankInfoStruct info( rank, nprocx, nprocy, nprocz );
-	    int x = dim[0]/2 + info.ix*nx;
-	    int y = dim[1]/2 + info.jy*ny;
-	    int z = dim[2]/2 + info.kz*nz;
+	    int x = info.ix*nx;
+	    int y = info.jy*ny;
+	    int z = info.kz*nz;
         // Read the local data
 		Array<short> VOLUME = netcdf::getVar<short>( fid, varname, {x,y,z}, {nx,ny,nz}, {1,1,1} );
         // Copy the data and fill the halos

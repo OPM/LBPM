@@ -11,7 +11,7 @@ namespace netcdf {
 
 
 //! Enum to hold variable type
-enum VariableType { BYTE, SHORT, USHORT, INT, UINT, INT64, UINT64, FLOAT, DOUBLE, STRING };
+enum VariableType { BYTE, SHORT, USHORT, INT, UINT, INT64, UINT64, FLOAT, DOUBLE, STRING, UNKNOWN };
 
 //! Convert the VariableType to a string
 std::string VariableTypeName( VariableType type );
