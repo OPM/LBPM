@@ -736,6 +736,7 @@ int main(int argc, char **argv)
     mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / sumReduce( Dm[0]->Comm, count_minus );
 	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
+
     // Scale the source data to +-1.0
     for (size_t i=0; i<LOCVOL[0].length(); i++) {
         if ( LOCVOL[0](i) >= 0 ) {
@@ -746,27 +747,7 @@ int main(int argc, char **argv)
             LOCVOL[0](i) = std::max( LOCVOL[0](i), -1.0f );
         }
     }
-    
-    // Crop sample outside cylinder
-    int CylRadius=500;
-	for (int k=0;k<Nz[0]+1;k++) {
-		for (int j=0;j<Ny[0]+1;j++) {
-			for (int i=0;i<Nx[0]+1;i++) {
-				int x = nx*(Dm[0]->iproc)+i;
-				int y = ny*(Dm[0]->jproc)+j;
-				int z = nz*(Dm[0]->kproc)+k;
-				
-				int cx = nx*nprocx/2;
-				int cy = ny*nprocy/2;
-				int cz = nz*nprocz/2;
-				
-//				if ((x-cx)*(x-cx) + (y-cy)*(y-cy) + (z-cz)*(z-cz)
-				if ( (y-cy)*(y-cy) + (z-cz)*(z-cz) > CylRadius*CylRadius){
-					LOCVOL[0](i,j,k) = -1.0f;
-				}
-			}
-		}
-	}
+
 
 	// Fill the source data for the coarse meshes
     PROFILE_START("CoarsenMesh");
