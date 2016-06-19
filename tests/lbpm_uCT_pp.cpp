@@ -614,6 +614,9 @@ int main(int argc, char **argv)
     	Dm[i]->CommInit(comm);
 	}
 
+    // array containing a distance mask
+    Array<float> MASK(Nx[i]+2,Ny[i]+2,Nz[i]+2);
+    
     // Create the level data
     std::vector<Array<char>>  ID(N_levels);
     std::vector<Array<float>> LOCVOL(N_levels);
