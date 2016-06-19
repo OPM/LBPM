@@ -718,7 +718,7 @@ int main(int argc, char **argv)
 	float CylRad=900;
 	for (int k=0;k<Nz[0]+2;k++) {
 		for (int j=0;j<Ny[0]+2;j++) {
-			for (int i=0;i<Nx[0]+1;2++) {
+			for (int i=0;i<Nx[0]+2;i++) {
 				
 				int iproc = Dm[0]->iproc;
 				int jproc = Dm[0]->jproc;
