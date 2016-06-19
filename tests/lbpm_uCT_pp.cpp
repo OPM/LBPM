@@ -713,27 +713,54 @@ int main(int argc, char **argv)
 	}
 	PROFILE_STOP("Filter source data");
 
+	
+	// Set up the mask to be distance to cylinder (crop outside cylinder)
+	float CylRad=900;
+	for (int k=0;k<Nz[0]+2;k++) {
+		for (int j=0;j<Ny[0]+2;j++) {
+			for (int i=0;i<Nx[0]+1;2++) {
+				
+				int iproc = Dm[0]->iproc;
+				int jproc = Dm[0]->jproc;
+				int kproc = Dm[0]->kproc;
+				
+				int x=iproc*Nx[0]+i-1;
+				int y=jproc*Ny[0]+j-1;
+				int z=kproc*Nz[0]+k-1;
+				
+				int cx = 0.5*nprocx*Nx[0];
+				int cy = 0.5*nprocy*Ny[0];
+				int cz = 0.5*nprocz*Nz[0];
+
+				// distance from the center line 
+				MASK(i,j,k) = CylRad - sqrt(float((z-cz)*(z-cz) + (y-cy)*(y-cy)) );
+				
+			}
+		}
+	}
 
 	// Compute the means for the high/low regions
 	// (should use automated mixture model to approximate histograms)
 	float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
 	float mean_plus=0;
-    float mean_minus=0;
+	float mean_minus=0;
 	int count_plus=0;
 	int count_minus=0;
 	for (int k=1;k<Nz[0]+1;k++) {
 		for (int j=1;j<Ny[0]+1;j++) {
 			for (int i=1;i<Nx[0]+1;i++) {
-                auto tmp = LOCVOL[0](i,j,k);
-                if ( tmp > THRESHOLD ) {
-                    mean_plus += tmp;
-                    count_plus++;
-                } else if ( tmp < -THRESHOLD ) {
-                    mean_minus += tmp;
-                    count_minus++;
-		        }
-            }
-        }
+				if (MASK(i,j,k) > 0.f ){
+					auto tmp = LOCVOL[0](i,j,k);
+					if ( tmp > THRESHOLD ) {
+						mean_plus += tmp;
+						count_plus++;
+					} else if ( tmp < -THRESHOLD ) {
+						mean_minus += tmp;
+						count_minus++;
+					}
+				}
+			}
+		}
 	}
     mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / sumReduce( Dm[0]->Comm, count_plus );
     mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / sumReduce( Dm[0]->Comm, count_minus );
@@ -742,7 +769,10 @@ int main(int argc, char **argv)
 
     // Scale the source data to +-1.0
     for (size_t i=0; i<LOCVOL[0].length(); i++) {
-        if ( LOCVOL[0](i) >= 0 ) {
+    	if (MASK(i) < 0.f){
+    		LOCVOL[0](i) = 1.0;
+    	}
+    	else if ( LOCVOL[0](i) >= 0 ) {
             LOCVOL[0](i) /= mean_plus;
             LOCVOL[0](i) = std::min( LOCVOL[0](i), 1.0f );
         } else {
