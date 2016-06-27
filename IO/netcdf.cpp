@@ -9,6 +9,7 @@
 
 
 #include <netcdf.h>
+#include <netcdf_par.h>
 
 
 #define CHECK_NC_ERR( ERR )             \
@@ -22,6 +23,45 @@
 
 
 namespace netcdf {
+
+
+// Convert nc_type to VariableType
+static inline VariableType convertType( nc_type type )
+{
+    VariableType type2 = UNKNOWN;
+    if ( type == NC_BYTE )
+        type2 = BYTE;
+    else if ( type == NC_CHAR )
+        type2 = STRING;
+    else if ( type == NC_SHORT )
+        type2 = SHORT;
+    else if ( type == NC_USHORT )
+        type2 = USHORT;
+    else if ( type == NC_INT )
+        type2 = INT;
+    else if ( type == NC_UINT )
+        type2 = UINT;
+    else if ( type == NC_INT64 )
+        type2 = INT64;
+    else if ( type == NC_UINT64 )
+        type2 = UINT64;
+    else if ( type == NC_FLOAT )
+        type2 = FLOAT;
+    else if ( type == NC_DOUBLE )
+        type2 = DOUBLE;
+    else
+        ERROR("Unknown type");
+    return type2;
+}
+
+
+// Get nc_type from the template
+template<class T> inline nc_type getType();
+template<> inline nc_type getType<char>()   { return NC_CHAR; }
+template<> inline nc_type getType<short>()  { return NC_SHORT; }
+template<> inline nc_type getType<int>()    { return NC_INT; }
+template<> inline nc_type getType<float>()  { return NC_FLOAT; }
+template<> inline nc_type getType<double>() { return NC_DOUBLE; }
 
 
 // Function to reverse an array
@@ -76,11 +116,36 @@ std::string VariableTypeName( VariableType type )
 /****************************************************
 * Open/close a file                                 *
 ****************************************************/
-int open( const std::string& filename )
+int open( const std::string& filename, FileMode mode, MPI_Comm comm )
 {
     int fid = 0;
-    int err = nc_open( filename.c_str(), NC_NOWRITE, &fid );
-    CHECK_NC_ERR( err );
+    if ( comm == MPI_COMM_NULL ) {
+        if ( mode == READ ) {
+            int err = nc_open( filename.c_str(), NC_NOWRITE, &fid );
+            CHECK_NC_ERR( err );
+        } else if ( mode == WRITE ) {
+            int err = nc_open( filename.c_str(), NC_WRITE, &fid );
+            CHECK_NC_ERR( err );
+        } else if ( mode == CREATE ) {
+            int err = nc_create( filename.c_str(), NC_SHARE|NC_64BIT_OFFSET, &fid );
+            CHECK_NC_ERR( err );
+        } else {
+            ERROR("Unknown file mode");
+        }
+    } else {
+        if ( mode == READ ) {
+            int err = nc_open_par( filename.c_str(), NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            CHECK_NC_ERR( err );
+        } else if ( mode == WRITE ) {
+            int err = nc_open_par( filename.c_str(), NC_WRITE|NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            CHECK_NC_ERR( err );
+        } else if ( mode == CREATE ) {
+            int err = nc_create_par( filename.c_str(), NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            CHECK_NC_ERR( err );
+        } else {
+            ERROR("Unknown file mode");
+        }
+    }
     return fid;
 }
 void close( int fid )
@@ -153,33 +218,6 @@ std::vector<std::string> getAttNames( int fid )
         att[i] = name;
     }
     return att;
-}
-static inline VariableType convertType( nc_type type )
-{
-    VariableType type2 = UNKNOWN;
-    if ( type == NC_BYTE )
-        type2 = BYTE;
-    else if ( type == NC_CHAR )
-        type2 = STRING;
-    else if ( type == NC_SHORT )
-        type2 = SHORT;
-    else if ( type == NC_USHORT )
-        type2 = USHORT;
-    else if ( type == NC_INT )
-        type2 = INT;
-    else if ( type == NC_UINT )
-        type2 = UINT;
-    else if ( type == NC_INT64 )
-        type2 = INT64;
-    else if ( type == NC_UINT64 )
-        type2 = UINT64;
-    else if ( type == NC_FLOAT )
-        type2 = FLOAT;
-    else if ( type == NC_DOUBLE )
-        type2 = DOUBLE;
-    else
-        ERROR("Unknown type");
-    return type2;
 }
 VariableType getVarType( int fid, const std::string& var )
 {
@@ -352,6 +390,74 @@ Array<std::string> getAtt<std::string>( int fid, const std::string& att )
     PROFILE_STOP("getAtt<std::string>");
     return x;
 }
+
+
+/****************************************************
+* Write an array to a file                          *
+****************************************************/
+std::vector<int> defDim( int fid, const std::vector<std::string>& names, const std::vector<int>& dims )
+{
+    std::vector<int> dimid(names.size(),0);
+    for (size_t i=0; i<names.size(); i++) {
+        int err = nc_def_dim( fid, names[i].c_str(), dims[i], &dimid[i]);
+        CHECK_NC_ERR( err );
+    }
+    return dimid;
+}
+template<class TYPE>
+int nc_put_vars_TYPE( int, int, const size_t*, const size_t*, const ptrdiff_t*, const TYPE* );
+template<>
+int nc_put_vars_TYPE<short>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const short* data )
+{
+    return nc_put_vars_short( fid, varid, start, count, stride, data );
+}
+template<>
+int nc_put_vars_TYPE<int>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const int* data )
+{
+    return nc_put_vars_int( fid, varid, start, count, stride, data );
+}
+template<>
+int nc_put_vars_TYPE<float>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const float* data )
+{
+    return nc_put_vars_float( fid, varid, start, count, stride, data );
+}
+template<>
+int nc_put_vars_TYPE<double>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const double* data )
+{
+    return nc_put_vars_double( fid, varid, start, count, stride, data );
+}
+template<class TYPE>
+void write( int fid, const std::string& var, const std::vector<int>& dimids,
+    const Array<TYPE>& data, const std::vector<size_t>& start,
+    const std::vector<size_t>& count, const std::vector<size_t>& stride )
+{
+    // Define the variable
+    int varid = 0;
+    int err = nc_def_var( fid, var.c_str(), getType<TYPE>(), data.ndim(), dimids.data(), &varid );
+    CHECK_NC_ERR( err );
+    // exit define mode 
+    err = nc_enddef( fid );
+    CHECK_NC_ERR( err );
+    // set the access method to use MPI/PnetCDF collective I/O 
+    err = nc_var_par_access( fid, varid, NC_COLLECTIVE );
+    CHECK_NC_ERR( err );
+    // parallel write: each process writes its subarray to the file
+    auto x = data.reverseDim();
+    nc_put_vars_TYPE<TYPE>( fid, varid, start.data(), count.data(), (const ptrdiff_t*) stride.data(), x.data() );
+}
+template void write<short>( int fid, const std::string& var, const std::vector<int>& dimids,
+    const Array<short>& data, const std::vector<size_t>& start,
+    const std::vector<size_t>& count, const std::vector<size_t>& stride );
+template void write<int>( int fid, const std::string& var, const std::vector<int>& dimids,
+    const Array<int>& data, const std::vector<size_t>& start,
+    const std::vector<size_t>& count, const std::vector<size_t>& stride );
+template void write<float>( int fid, const std::string& var, const std::vector<int>& dimids,
+    const Array<float>& data, const std::vector<size_t>& start,
+    const std::vector<size_t>& count, const std::vector<size_t>& stride );
+template void write<double>( int fid, const std::string& var, const std::vector<int>& dimids,
+    const Array<double>& data, const std::vector<size_t>& start,
+    const std::vector<size_t>& count, const std::vector<size_t>& stride );
+
 
 
 }; // netcdf namespace

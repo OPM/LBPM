@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "common/Array.h"
+#include "common/MPI_Helpers.h"
+
 
 
 namespace netcdf {
@@ -12,6 +14,10 @@ namespace netcdf {
 
 //! Enum to hold variable type
 enum VariableType { BYTE, SHORT, USHORT, INT, UINT, INT64, UINT64, FLOAT, DOUBLE, STRING, UNKNOWN };
+
+//! Enum to hold variable type
+enum FileMode { READ, WRITE, CREATE };
+
 
 //! Convert the VariableType to a string
 std::string VariableTypeName( VariableType type );
@@ -22,8 +28,10 @@ std::string VariableTypeName( VariableType type );
  * @detailed  This function opens a netcdf file
  * @return This function returns a handle to the file
  * @param filename      File to open
+ * @param mode          Open the file for reading or writing
+ * @param comm          MPI communicator to use (MPI_COMM_WORLD: don't use parallel netcdf)
 */
-int open( const std::string& filename );
+int open( const std::string& filename, FileMode mode, MPI_Comm comm=MPI_COMM_NULL );
 
 
 /*!
@@ -109,6 +117,24 @@ Array<TYPE> getVar( int fid, const std::string& var, const std::vector<int>& sta
 */
 template<class TYPE>
 Array<TYPE> getAtt( int fid, const std::string& att );
+
+
+/*!
+ * @brief  Write the dimensions
+ * @detailed  This function writes the grid dimensions to netcdf. 
+ * @param fid           Handle to the open file
+*/
+std::vector<int> defDim( int fid, const std::vector<std::string>& names, const std::vector<int>& dims );
+
+
+/*!
+ * @brief  Write a variable
+ * @detailed  This function writes a variable to netcdf. 
+ * @param fid           Handle to the open file
+*/
+template<class TYPE>
+void write( int fid, const std::string& var, const std::vector<int>& dimids, const Array<TYPE>& data,
+    const std::vector<size_t>& start, const std::vector<size_t>& count, const std::vector<size_t>& stride );
 
 
 }; // netcdf namespace
