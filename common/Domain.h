@@ -18,6 +18,14 @@
 
 using namespace std;
 
+
+//! Read the domain information file
+void read_domain( int rank, int nprocs, MPI_Comm comm, 
+    int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
+    int& nspheres, double& Lx, double& Ly, double& Lz );
+
+
+//! Class to hold domain info
 struct Domain{
     // Default constructor
 	Domain(int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 

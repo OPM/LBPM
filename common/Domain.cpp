@@ -20,6 +20,43 @@ static int MAX_BLOB_COUNT=50;
 using namespace std;
 
 
+
+// Reading the domain information file
+void read_domain( int rank, int nprocs, MPI_Comm comm, 
+    int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
+    int& nspheres, double& Lx, double& Ly, double& Lz )
+{
+	if (rank==0){
+		ifstream domain("Domain.in");
+		domain >> nprocx;
+		domain >> nprocy;
+		domain >> nprocz;
+		domain >> nx;
+		domain >> ny;
+		domain >> nz;
+		domain >> nspheres;
+		domain >> Lx;
+		domain >> Ly;
+		domain >> Lz;
+
+	}
+	MPI_Barrier(comm);
+	// Computational domain
+	//.................................................
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+	MPI_Barrier(comm);
+}
+
+
 /********************************************************
 * Constructor/Destructor                                *
 ********************************************************/

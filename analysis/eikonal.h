@@ -21,7 +21,7 @@
  * @param[in] timesteps     Maximum number of timesteps to process
  * @return  Returns the global variation
  */
-inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps);
+float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps);
 
 
 /*!
@@ -34,7 +34,7 @@ inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Dom
  * @param[in] DM            Domain information
  * @return  Returns the global variation
  */
-inline void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm );
+void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm );
 
 
 /*!
@@ -47,7 +47,7 @@ inline void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Dom
  * @param[in] DM            Domain information
  * @return  Returns the global variation
  */
-inline void CalcDistMultiLevel( Array<float> &Distance, const Array<char> &ID, const Domain &Dm );
+void CalcDistMultiLevel( Array<float> &Distance, const Array<char> &ID, const Domain &Dm );
 
 
 
