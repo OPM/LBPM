@@ -645,7 +645,7 @@ int main(int argc, char **argv)
 
     // Read the subvolume of interest on each processor
 	PROFILE_START("ReadVolume");
-    int fid = netcdf::open(filename);
+    int fid = netcdf::open(filename,netcdf::READ);
     std::string varname("VOLUME");
     netcdf::VariableType type = netcdf::getVarType( fid, varname );
     std::vector<size_t> dim = netcdf::getVarDim( fid, varname );

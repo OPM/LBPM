@@ -38,7 +38,7 @@ ADD_LBPM_TEST_1_2_4( testCommunication )
 ADD_LBPM_TEST_1_2_4( testUtilities )
 ADD_LBPM_TEST( TestWriter )
 IF ( USE_NETCDF )
-    ADD_LBPM_PROVISIONAL_TEST( TestNetcdf )
+    ADD_LBPM_TEST_PARALLEL( TestNetcdf 8 )
     ADD_LBPM_EXECUTABLE( lbpm_uCT_pp )
 ENDIF()
 
