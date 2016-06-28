@@ -271,13 +271,12 @@ int main(int argc, char **argv)
     const char* netcdf_filename = "Distance.nc";
     {
         RankInfoStruct info( rank, nprocx, nprocy, nprocz );
-	    size_t x = info.ix*nx;
-	    size_t y = info.jy*ny;
-	    size_t z = info.kz*nz;
         std::vector<int> dim = { Nx[0]*nprocx, Ny[0]*nprocy, Nz[0]*nprocz };
         int fid = netcdf::open( netcdf_filename, netcdf::CREATE, MPI_COMM_WORLD );
         auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
-        netcdf::write( fid, "Distance", dims, Dist[0], {x,y,z}, Dist[0].size(), {1,1,1} );
+        Array<float> data(Nx[0],Ny[0],Nz[0]);
+        fillFloat[0]->copy( Dist[0], data );
+        netcdf::write( fid, "Distance", dims, data, info );
         netcdf::close( fid );
     }
 

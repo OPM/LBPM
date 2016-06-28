@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 	    printf("   dims =  %i x %i x %i \n",int(dim[0]),int(dim[1]),int(dim[2]));
     }
     {
-              RankInfoStruct info( rank, nprocx, nprocy, nprocz );
+        RankInfoStruct info( rank, nprocx, nprocy, nprocz );
 	    size_t x = info.ix*nx;
 	    size_t y = info.jy*ny;
 	    size_t z = info.kz*nz;
@@ -301,13 +301,10 @@ int main(int argc, char **argv)
     const char* netcdf_filename = "Distance.nc";
     {
         RankInfoStruct info( rank, nprocx, nprocy, nprocz );
-	    size_t x = info.ix*nx;
-	    size_t y = info.jy*ny;
-	    size_t z = info.kz*nz;
         std::vector<int> dim = { Nx[0]*nprocx, Ny[0]*nprocy, Nz[0]*nprocz };
         int fid = netcdf::open( netcdf_filename, netcdf::CREATE, MPI_COMM_WORLD );
         auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
-        netcdf::write( fid, "Distance", dims, Dist[0], {x,y,z}, Dist[0].size(), {1,1,1} );
+        netcdf::write( fid, "Distance", dims, Dist[0], info );
         netcdf::close( fid );
     }
 

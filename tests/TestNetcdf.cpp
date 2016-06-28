@@ -21,15 +21,15 @@ void test_NETCDF( UnitTest& ut )
     RankInfoStruct info( rank, nprocx, nprocy, nprocz );
     Array<float> data( 4, 5, 6 );
     for (size_t i=0; i<data.length(); i++)
-        data(i) = i;
+        data(i) = 120*rank + i;
     size_t x = info.ix*data.size(0);
     size_t y = info.jy*data.size(1);
     size_t z = info.kz*data.size(2);
     const char* filename = "test.nc";
-    std::vector<int> dim = { 4*nprocx, 5*nprocy, 6*nprocz };
+    std::vector<int> dim = { data.size(0)*nprocx, data.size(1)*nprocy, data.size(2)*nprocz };
     int fid = netcdf::open( filename, netcdf::CREATE, MPI_COMM_WORLD );
     auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
-    netcdf::write( fid, "tmp", dims, data, {x,y,z}, data.size(), {1,1,1} );
+    netcdf::write( fid, "tmp", dims, data, info );
     netcdf::close( fid );
     MPI_Barrier( MPI_COMM_WORLD );
     // Read the contents of the file we created

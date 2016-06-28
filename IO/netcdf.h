@@ -6,6 +6,7 @@
 
 #include "common/Array.h"
 #include "common/MPI_Helpers.h"
+#include "common/Communication.h"
 
 
 
@@ -133,8 +134,7 @@ std::vector<int> defDim( int fid, const std::vector<std::string>& names, const s
  * @param fid           Handle to the open file
 */
 template<class TYPE>
-void write( int fid, const std::string& var, const std::vector<int>& dimids, const Array<TYPE>& data,
-    const std::vector<size_t>& start, const std::vector<size_t>& count, const std::vector<size_t>& stride );
+void write( int fid, const std::string& var, const std::vector<int>& dimids, const Array<TYPE>& data, const RankInfoStruct& rank_info );
 
 
 }; // netcdf namespace
