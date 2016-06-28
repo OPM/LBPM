@@ -339,11 +339,38 @@ static inline void get_stride_args( const std::vector<int>& start,
     for (size_t i=0; i<stride.size(); i++)
         stridep[i] = stride[i];
 }
+template<class TYPE>
+int nc_get_vars_TYPE( int fid, int varid, const size_t start[],
+    const size_t count[], const ptrdiff_t stride[], TYPE *ptr );
 template<>
-Array<short> getVar<short>( int fid, const std::string& var, const std::vector<int>& start,
+int nc_get_vars_TYPE<short>( int fid, int varid, const size_t start[],
+    const size_t count[], const ptrdiff_t stride[], short *ptr )
+{
+    return nc_get_vars_short( fid, varid, start, count, stride, ptr );
+}
+template<>
+int nc_get_vars_TYPE<int>( int fid, int varid, const size_t start[],
+    const size_t count[], const ptrdiff_t stride[], int *ptr )
+{
+    return nc_get_vars_int( fid, varid, start, count, stride, ptr );
+}
+template<>
+int nc_get_vars_TYPE<float>( int fid, int varid, const size_t start[],
+    const size_t count[], const ptrdiff_t stride[], float *ptr )
+{
+    return nc_get_vars_float( fid, varid, start, count, stride, ptr );
+}
+template<>
+int nc_get_vars_TYPE<double>( int fid, int varid, const size_t start[],
+    const size_t count[], const ptrdiff_t stride[], double *ptr )
+{
+    return nc_get_vars_double( fid, varid, start, count, stride, ptr );
+}
+template<class TYPE>
+Array<TYPE> getVar( int fid, const std::string& var, const std::vector<int>& start,
     const std::vector<int>& count, const std::vector<int>& stride )
 {
-    PROFILE_START("getVar<short> (strided)");
+    PROFILE_START("getVar<> (strided)");
     std::vector<size_t> var_size = getVarDim( fid, var );
     for (int d=0; d<(int)var_size.size(); d++) {
         if ( start[d]<0 || start[d]+stride[d]*(count[d]-1)>(int)var_size[d] ) {
@@ -355,15 +382,19 @@ Array<short> getVar<short>( int fid, const std::string& var, const std::vector<i
             ERROR(tmp);
         }
     }
-    Array<short> x( reverse(convert<int,size_t>(count)) );
+    Array<TYPE> x( reverse(convert<int,size_t>(count)) );
     size_t startp[10], countp[10];
     ptrdiff_t stridep[10];
     get_stride_args( start, count, stride, startp, countp, stridep );
-    int err = nc_get_vars_short( fid, getVarID(fid,var), startp, countp, stridep, x.data() );
+    int err = nc_get_vars_TYPE<TYPE>( fid, getVarID(fid,var), startp, countp, stridep, x.data() );
     CHECK_NC_ERR( err );
-    PROFILE_STOP("getVar<short> (strided)");
+    PROFILE_STOP("getVar<> (strided)");
     return x.reverseDim();
 }
+template Array<short>  getVar<short>(  int, const std::string&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>& );
+template Array<int>    getVar<int>(    int, const std::string&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>& );
+template Array<float>  getVar<float>(  int, const std::string&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>& );
+template Array<double> getVar<double>( int, const std::string&, const std::vector<int>&, const std::vector<int>&, const std::vector<int>& );
 
 
 /****************************************************
