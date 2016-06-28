@@ -124,11 +124,41 @@ int main(int argc, char **argv)
 
 
     // Read the subvolume of interest on each processor
+	PROFILE_START("ReadDistance");
+    int distid = netcdf::open("Distance.nc",netcdf::READ);
+    std::string distvarname("Distance");
+    netcdf::VariableType type = netcdf::getVarType( distid, "Distance" );
+    std::vector<size_t> dim = netcdf::getVarDim( distid, "Distance" );
+    if ( rank == 0 ) {
+    	printf("Reading %s (%s)\n","Distance.nc",netcdf::VariableTypeName(type).c_str());
+	    printf("   dims =  %i x %i x %i \n",int(dim[0]),int(dim[1]),int(dim[2]));
+    }
+    {
+              RankInfoStruct info( rank, nprocx, nprocy, nprocz );
+	    size_t x = info.ix*nx;
+	    size_t y = info.jy*ny;
+	    size_t z = info.kz*nz;
+
+	    // Read the local data
+	    Array<float> MASKVALUES = netcdf::getVar<float>( distid, distvarname, {x,y,z}, {nx,ny,nz}, {1,1,1});
+        // Copy the data and fill the halos
+	    MASK.fill(0);
+	    fillFloat[0]->copy( MASKVALUES, MASK );
+	    fillFloat[0]->fill( MASK );
+      
+    }
+    netcdf::close( distid );
+	MPI_Barrier(comm);
+	PROFILE_STOP("ReadDistance");
+	if (rank==0) printf("Finished reading distance =\n");
+
+
+    // Read the subvolume of interest on each processor
 	PROFILE_START("ReadVolume");
     int fid = netcdf::open(filename,netcdf::READ);
     std::string varname("VOLUME");
-    netcdf::VariableType type = netcdf::getVarType( fid, varname );
-    std::vector<size_t> dim = netcdf::getVarDim( fid, varname );
+    type = netcdf::getVarType( fid, varname );
+    dim = netcdf::getVarDim( fid, varname );
     if ( rank == 0 ) {
     	printf("Reading %s (%s)\n",varname.c_str(),netcdf::VariableTypeName(type).c_str());
 	    printf("   dims =  %i x %i x %i \n",int(dim[0]),int(dim[1]),int(dim[2]));
@@ -155,7 +185,7 @@ int main(int argc, char **argv)
     filter_src( *Dm[0], LOCVOL[0] );
 
 	
-	// Set up the mask to be distance to cylinder (crop outside cylinder)
+    /*	// Set up the mask to be distance to cylinder (crop outside cylinder)
 	float CylRad=900;
 	for (int k=0;k<Nz[0]+2;k++) {
 		for (int j=0;j<Ny[0]+2;j++) {
@@ -178,7 +208,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+    */
 	// Compute the means for the high/low regions
 	// (should use automated mixture model to approximate histograms)
 	float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
