@@ -140,7 +140,7 @@ int open( const std::string& filename, FileMode mode, MPI_Comm comm )
             int err = nc_open_par( filename.c_str(), NC_WRITE|NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
             CHECK_NC_ERR( err );
         } else if ( mode == CREATE ) {
-            int err = nc_create_par( filename.c_str(), NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            int err = nc_create_par( filename.c_str(), NC_NETCDF4|NC_MPIIO, comm, MPI_INFO_NULL, &fid );
             CHECK_NC_ERR( err );
         } else {
             ERROR("Unknown file mode");
@@ -436,31 +436,8 @@ std::vector<int> defDim( int fid, const std::vector<std::string>& names, const s
     return dimid;
 }
 template<class TYPE>
-int nc_put_vars_TYPE( int, int, const size_t*, const size_t*, const ptrdiff_t*, const TYPE* );
-template<>
-int nc_put_vars_TYPE<short>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const short* data )
-{
-    return nc_put_vars_short( fid, varid, start, count, stride, data );
-}
-template<>
-int nc_put_vars_TYPE<int>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const int* data )
-{
-    return nc_put_vars_int( fid, varid, start, count, stride, data );
-}
-template<>
-int nc_put_vars_TYPE<float>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const float* data )
-{
-    return nc_put_vars_float( fid, varid, start, count, stride, data );
-}
-template<>
-int nc_put_vars_TYPE<double>( int fid, int varid, const size_t* start, const size_t* count, const ptrdiff_t* stride, const double* data )
-{
-    return nc_put_vars_double( fid, varid, start, count, stride, data );
-}
-template<class TYPE>
 void write( int fid, const std::string& var, const std::vector<int>& dimids,
-    const Array<TYPE>& data, const std::vector<size_t>& start,
-    const std::vector<size_t>& count, const std::vector<size_t>& stride )
+    const Array<TYPE>& data, const RankInfoStruct& info )
 {
     // Define the variable
     int varid = 0;
@@ -470,24 +447,18 @@ void write( int fid, const std::string& var, const std::vector<int>& dimids,
     err = nc_enddef( fid );
     CHECK_NC_ERR( err );
     // set the access method to use MPI/PnetCDF collective I/O 
-    err = nc_var_par_access( fid, varid, NC_COLLECTIVE );
+    err = nc_var_par_access( fid, varid, NC_INDEPENDENT );
     CHECK_NC_ERR( err );
     // parallel write: each process writes its subarray to the file
     auto x = data.reverseDim();
-    nc_put_vars_TYPE<TYPE>( fid, varid, start.data(), count.data(), (const ptrdiff_t*) stride.data(), x.data() );
+    std::vector<size_t> count = data.size();
+    std::vector<size_t> start = { info.ix*data.size(0), info.jy*data.size(1), info.kz*data.size(2) };
+    nc_put_vara( fid, varid, start.data(), count.data(), x.data() );
 }
-template void write<short>( int fid, const std::string& var, const std::vector<int>& dimids,
-    const Array<short>& data, const std::vector<size_t>& start,
-    const std::vector<size_t>& count, const std::vector<size_t>& stride );
-template void write<int>( int fid, const std::string& var, const std::vector<int>& dimids,
-    const Array<int>& data, const std::vector<size_t>& start,
-    const std::vector<size_t>& count, const std::vector<size_t>& stride );
-template void write<float>( int fid, const std::string& var, const std::vector<int>& dimids,
-    const Array<float>& data, const std::vector<size_t>& start,
-    const std::vector<size_t>& count, const std::vector<size_t>& stride );
-template void write<double>( int fid, const std::string& var, const std::vector<int>& dimids,
-    const Array<double>& data, const std::vector<size_t>& start,
-    const std::vector<size_t>& count, const std::vector<size_t>& stride );
+template void write<short>(  int fid, const std::string& var, const std::vector<int>& dimids, const Array<short>& data,  const RankInfoStruct& info );
+template void write<int>(    int fid, const std::string& var, const std::vector<int>& dimids, const Array<int>& data,    const RankInfoStruct& info );
+template void write<float>(  int fid, const std::string& var, const std::vector<int>& dimids, const Array<float>& data,  const RankInfoStruct& info );
+template void write<double>( int fid, const std::string& var, const std::vector<int>& dimids, const Array<double>& data, const RankInfoStruct& info );
 
 
 
