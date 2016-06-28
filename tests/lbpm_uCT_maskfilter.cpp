@@ -304,7 +304,9 @@ int main(int argc, char **argv)
         std::vector<int> dim = { Nx[0]*nprocx, Ny[0]*nprocy, Nz[0]*nprocz };
         int fid = netcdf::open( netcdf_filename, netcdf::CREATE, MPI_COMM_WORLD );
         auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
-        netcdf::write( fid, "Distance", dims, Dist[0], info );
+        Array<float> data(Nx[0],Ny[0],Nz[0]);
+        fillFloat[0]->copy( Dist[0], data );
+        netcdf::write( fid, "Distance", dims, data, info );
         netcdf::close( fid );
     }
 
