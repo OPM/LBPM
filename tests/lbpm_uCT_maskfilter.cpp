@@ -23,6 +23,7 @@
 #include "analysis/eikonal.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
+#include "common/TwoPhase.h"
 
 #include "ProfilerApp.h"
 
@@ -103,6 +104,7 @@ int main(int argc, char **argv)
     std::vector<Array<float>> NonLocalMean(N_levels);
 	std::vector<std::shared_ptr<fillHalo<double>>> fillDouble(N_levels);
 	std::vector<std::shared_ptr<fillHalo<float>>>  fillFloat(N_levels);
+
 	std::vector<std::shared_ptr<fillHalo<char>>>   fillChar(N_levels);
     for (int i=0; i<N_levels; i++) {
         ID[i] = Array<char>(Nx[i]+2,Ny[i]+2,Nz[i]+2);
@@ -125,22 +127,23 @@ int main(int argc, char **argv)
 
     // Read the subvolume of interest on each processor
 	PROFILE_START("ReadDistance");
-    int distid = netcdf::open("Distance.nc",netcdf::READ);
+    int distid = netcdf::open("Distance-NWP.nc",netcdf::READ);
     std::string distvarname("Distance");
-    netcdf::VariableType type = netcdf::getVarType( distid, "Distance" );
-    std::vector<size_t> dim = netcdf::getVarDim( distid, "Distance" );
+    netcdf::VariableType type = netcdf::getVarType( distid,distvarname);
+    std::vector<size_t> dim = netcdf::getVarDim( distid,distvarname);
     if ( rank == 0 ) {
     	printf("Reading %s (%s)\n","Distance.nc",netcdf::VariableTypeName(type).c_str());
 	    printf("   dims =  %i x %i x %i \n",int(dim[0]),int(dim[1]),int(dim[2]));
     }
     {
               RankInfoStruct info( rank, nprocx, nprocy, nprocz );
-	    size_t x = info.ix*nx;
-	    size_t y = info.jy*ny;
-	    size_t z = info.kz*nz;
+	    int x = info.ix*nx;
+	    int y = info.jy*ny;
+	    int z = info.kz*nz;
 
 	    // Read the local data
-	    Array<float> MASKVALUES = netcdf::getVar<float>( distid, distvarname, {x,y,z}, {nx,ny,nz}, {1,1,1});
+	     Array<float> MASKVALUES = netcdf::getVar<float>( distid, distvarname, {x,y,z}, {nx,ny,nz}, {1,1,1});
+	    //Array<float> MASKVALUES = distid.getVar(distvarname, {x,y,z}, {nx,ny,nz}, {1,1,1});
         // Copy the data and fill the halos
 	    MASK.fill(0);
 	    fillFloat[0]->copy( MASKVALUES, MASK );
@@ -168,8 +171,13 @@ int main(int argc, char **argv)
 	    int x = info.ix*nx;
 	    int y = info.jy*ny;
 	    int z = info.kz*nz;
+	    //std::vector<size_t> start={x,y,z};
+	    //std::vector<size_t> localsize={nx,ny,nz};
+	    //std::vector<ptrdiff_t> stride={1,1,1};
+
         // Read the local data
-		Array<short> VOLUME = netcdf::getVar<short>( fid, varname, {x,y,z}, {nx,ny,nz}, {1,1,1} );
+       	Array<short> VOLUME = netcdf::getVar<short>( fid, varname, {x,y,z}, {nx,ny,nz}, {1,1,1} );
+	    //    Array<short> VOLUME = netcdf::getVar<short>( fid, varname, start,localsize,stride );
         // Copy the data and fill the halos
         LOCVOL[0].fill(0);
         fillFloat[0]->copy( VOLUME, LOCVOL[0] );
@@ -388,19 +396,45 @@ int main(int argc, char **argv)
 	IO::writeData( 0, meshData, 2, comm );
 	if (rank==0) printf("Finished. \n");
 
-	/* for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-			        n = k*nx*ny+j*nx+i;
-			        if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
-			       	else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
-			       	else                           Dm.id[n] = 2;
+	
+
+	Domain dm(Nx[0],Ny[0],Nz[0],rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	TwoPhase Averages(dm);
+	
+	// Set distance functions within the analysis framework 
+	for (int k=0;k<dm.Nz;k++){
+		for (int j=0;j<dm.Ny;j++){
+			for (int i=0;i<dm.Nx;i++){
+			        int n = k*nx*ny+j*nx+i;
+				Averages.SDs(i,j,k) = MASK(i,j,k);
+				Averages.SDn(i,j,k) = Dist[0](i,j,k);
+				Averages.Phase(i,j,k)=Averages.SDn(i,j,k);
+				Averages.Phase_tplus(i,j,k)=Averages.Phase(i,j,k);
+				Averages.Phase_tminus(i,j,k)=Averages.Phase(i,j,k);
+				Averages.Press(i,j,k)=0.0;
+				Averages.Vel_x(i,j,k)=0.0;
+				Averages.Vel_y(i,j,k)=0.0;
+				Averages.Vel_z(i,j,k)=0.0;
+			        if (Averages.SDs(i,j,k) < 0.0)        dm.id[n] = 0;
+			       	else if ( Averages.SDn(i,j,k) < 0.0)  dm.id[n] = 1;
+			       	else                                  dm.id[n] = 2;
 
 			}
 		}
 	}
 	if (rank==0) printf("Domain set \n");
 
+	int count=0;
+	Averages.UpdateSolid(); // unless the solid is deformable!
+	//....................................................................
+	// The following need to be called each time new averages are computed
+	Averages.Initialize();
+	Averages.UpdateMeshValues();
+	Averages.ComputeLocal();
+	Averages.Reduce();
+	Averages.PrintAll(count);
+
+	/*
 	// Write the local volume files
 	char LocalRankString[8];
 	char LocalRankFilename[40];
@@ -413,7 +447,7 @@ int main(int argc, char **argv)
 	 */
 
 	PROFILE_STOP("Main");
-    PROFILE_SAVE("lbpm_uCT_pp",true);
+	PROFILE_SAVE("lbpm_uCT_maskfilter",true);
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;
