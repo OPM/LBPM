@@ -156,8 +156,9 @@ int main(int argc, char **argv)
 	//solid_isovalue = 0.0;
 	
 	int RESTART_INTERVAL=20000;
-	//int ANALYSIS_INTERVAL=1000;	
+	//int ANALYSIS_)INTERVAL=1000;	
 	int BLOB_ANALYSIS_INTERVAL=1000;
+	int timestep = -1;
 
 	if (rank==0){
 		//.............................................................
@@ -572,7 +573,21 @@ int main(int argc, char **argv)
 	//......................................................................
 
 	if (Restart == true){
-		if (rank==0) printf("Reading restart file! \n");
+
+	  
+	  if (rank==0){
+	    printf("Reading restart file! \n");
+	    ifstream restart("Restart.txt");
+	    if (restart.is_open()){
+	      restart  >> timestep;
+	      printf("Restarting from timestep =%i \n",timestep);
+	    }
+	    else{
+	      printf("WARNING:No Restart.txt file, setting timestep=0 \n");
+	      timestep=0;
+	    }
+	  }
+	  
 		// Read in the restart file to CPU buffers
 	    double *cDen = new double[2*N];
 	    double *cDistEven = new double[10*N];
@@ -652,7 +667,7 @@ int main(int argc, char **argv)
 	dp = slope = 0.0;
 	if (BoundaryCondition==3){
 		slope = (dout-din)/timestepMax;
-		dp = din;
+		dp = din + timestep*slope;
 		if (rank==0) printf("Change in pressure / time =%f \n",slope);
 		// set the initial value
 		din  = 1.0+0.5*dp;
@@ -761,7 +776,6 @@ int main(int argc, char **argv)
 
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
-	int timestep = -1;
     BlobIDstruct last_ids, last_index;
     BlobIDList last_id_map;
     writeIDMap(ID_map_struct(),0,id_map_filename);
@@ -890,7 +904,8 @@ int main(int argc, char **argv)
   
         // Run the analysis, blob identification, and write restart files
 	//	if (BLOB_ANALYSIS_INTERVAL > 0){
-        run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
+	//if (timestep > 5)
+	  run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
             Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
             LocalRestartFile,meshData,fillData,tpool,work_ids);
 	/*		}
