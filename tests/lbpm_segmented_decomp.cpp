@@ -239,6 +239,8 @@ int main(int argc, char **argv)
 //    fwrite(Distance.get(),8,Distance.length(),ID);
     fclose(ID);
 
+    if (rank==0) printf("Writing symmetric domain reflection\n");
+    MPI_Barrier(comm);
     int symrank,sympz;
     sympz = 2*nprocz - Dm.kproc -1;
     symrank = sympz*nprocx*nprocy + Dm.jproc*nprocx + Dm.iproc;
