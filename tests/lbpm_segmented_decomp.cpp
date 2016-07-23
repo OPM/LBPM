@@ -264,8 +264,7 @@ int main(int argc, char **argv)
 //    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
     fwrite(symid,1,N,SYMID);
     fclose(SYMID);
-    return 0;
-
+    
     MPI_Barrier(comm);
     MPI_Finalize();
 }
