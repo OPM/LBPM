@@ -32,7 +32,7 @@ __global__ void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int
 		// Get the 3-D indices
 		k = n/(Nx*Ny);
 		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nz*j;
+		i = n-Nx*Ny*k-Nx*j;
 		// Streaming for the non-local distribution
 		i += Cqx;
 		j += Cqy;
