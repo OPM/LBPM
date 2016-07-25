@@ -335,8 +335,8 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(comm);
 
-	Nz += 2;
-	Nx = Ny = Nz;	// Cubic domain
+	Nx+=2; Ny+=2; Nz += 2;
+	//Nx = Ny = Nz;	// Cubic domain
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
