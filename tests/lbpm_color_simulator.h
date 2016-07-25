@@ -6,7 +6,7 @@
 
 //#define ANALYSIS_INTERVAL 6
 #define ANALYSIS_INTERVAL 1000
-#define BLOBID_INTERVAL 250
+#define BLOBID_INTERVAL 1000
 
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };

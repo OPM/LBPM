@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 		printf("Force(x) = %f \n", Fx);
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
-		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
+		printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
@@ -587,7 +587,8 @@ int main(int argc, char **argv)
 	      timestep=0;
 	    }
 	  }
-	  
+	  MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+
 		// Read in the restart file to CPU buffers
 	    double *cDen = new double[2*N];
 	    double *cDistEven = new double[10*N];
