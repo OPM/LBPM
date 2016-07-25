@@ -106,7 +106,7 @@ extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, i
 		//.......Back out the 3-D indices for node n..............
 		k = n/(Nx*Ny);
 		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nz*j;
+		i = n-Nx*Ny*k-Nx*j;
 		
 		if (ID[n] > 0){
 			//........................................................................

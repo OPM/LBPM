@@ -123,7 +123,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 			//.......Back out the 3-D indices for node n..............
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;
-			i = n-Nx*Ny*k-Nz*j;
+			i = n-Nx*Ny*k-Nx*j;
 			//........................................................................
 			// Retrieve even distributions from the local node (swap convention)
 			//		f0 = disteven[n];  // Does not particupate in streaming
