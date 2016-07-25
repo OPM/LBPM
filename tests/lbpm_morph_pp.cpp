@@ -137,15 +137,6 @@ int main(int argc, char **argv)
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	size_t readID;
-	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	readID=fread(id,1,N,IDFILE);
-	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
-	fclose(IDFILE);
-
-
 	int count,countGlobal,totalGlobal;
 	count = 0;
 	for (int k=1; k<nz-1; k++){
@@ -253,7 +244,8 @@ int main(int argc, char **argv)
 						for (jj=jmin; jj<jmax; jj++){
 							for (ii=imin; ii<imax; ii++){
 								int nn = kk*nx*ny+jj*nx+ii;
-								if (id[nn] == 2 && (ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k) < Rcrit*Rcrit){
+								double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
+								if (id[nn] == 2 && dsq <= Rcrit*Rcrit){
 									LocalNumber++;
 									id[nn]=1;
 								}
