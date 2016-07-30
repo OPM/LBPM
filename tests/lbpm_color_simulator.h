@@ -357,15 +357,21 @@ void run_analysis( int timestep, int restart_interval,
     // Spawn a thread to write the restart file
     if ( (type&CreateRestart) != 0 ) {
         int rank = MPI_WORLD_RANK();
-        if (pBC) {
+        //if (pBC) {
             //err = fabs(sat_w - sat_w_previous);
             //sat_w_previous = sat_w;
-            if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
-        } else {
-            // Not clear yet
-        }
+	  //if (rank==0){
+	  // printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
+	  // }
+	  // }
         // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
         tpool.wait(wait.restart);
+	// Retain the timestep associated with the restart files
+	if (rank==0){
+	  FILE *Rst = fopen("Restart.txt","w");
+	  fprintf("%i\n",timestep);
+	  fclose(Rst);
+	}
         // Write the restart file (using a seperate thread)
         WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cDistEven,cDistOdd,N);
         work->add_dependency(wait.restart);
