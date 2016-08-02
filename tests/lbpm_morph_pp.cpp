@@ -139,6 +139,8 @@ int main(int argc, char **argv)
 
 	int count,countGlobal,totalGlobal;
 	count = 0;
+	double maxdist=0;
+	double maxdistGlobal;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
 			for (int i=1; i<nx-1; i++){
@@ -148,14 +150,18 @@ int main(int argc, char **argv)
 					// initially saturated with wetting phase
 					id[n] = 2;
 					count++;
+					// extract maximum distance for critical radius
+					if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 				}
 			}
 		}
 	}
 	// total Global is the number of nodes in the pore-space
 	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
 	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
+	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
