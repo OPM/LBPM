@@ -369,7 +369,7 @@ void run_analysis( int timestep, int restart_interval,
 	// Retain the timestep associated with the restart files
 	if (rank==0){
 	  FILE *Rst = fopen("Restart.txt","w");
-	  fprintf("%i\n",timestep);
+	  fprintf(Rst,"%i\n",timestep);
 	  fclose(Rst);
 	}
         // Write the restart file (using a seperate thread)
