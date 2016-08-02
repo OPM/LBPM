@@ -161,7 +161,37 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
 	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
-	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
+	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
+
+	// Get all local pore sizes (local maxima)
+	sprintf(LocalRankFilename,"PoreSize.%05i",rank);
+	FILE *PORESIZE=fopen(LocalRankFilename,"r");
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				n = k*nx*ny+j*nx+i;
+				if (SignDist(i,j,k) > 0.0){
+					// Generate a list of all local maxima (each processor -- aggregate these later)
+					if ( SignDist(i,j,k) > SignDist(i+1,j,k) && SignDist(i,j,k) > SignDist(i-1,j,k) &&
+							SignDist(i,j,k) > SignDist(i,j+1,k) && SignDist(i,j,k) > SignDist(i,j-1,k) &&
+							SignDist(i,j,k) > SignDist(i,j,k+1) && SignDist(i,j,k) > SignDist(i,j,k-1) &&
+							SignDist(i,j,k) > SignDist(i+1,j+1,k) && SignDist(i,j,k) > SignDist(i-1,j+1,k) &&
+							SignDist(i,j,k) > SignDist(i+1,j-1,k) && SignDist(i,j,k) > SignDist(i-1,j-1,k) &&
+							SignDist(i,j,k) > SignDist(i+1,j,k+1) && SignDist(i,j,k) > SignDist(i-1,j,k+1) &&
+							SignDist(i,j,k) > SignDist(i+1,j,k-1) && SignDist(i,j,k) > SignDist(i-1,j,k-1) &&
+							SignDist(i,j,k) > SignDist(i,j+1,k+1) && SignDist(i,j,k) > SignDist(i,j-1,k+1) &&
+							SignDist(i,j,k) > SignDist(i,j+1,k-1) && SignDist(i,j,k) > SignDist(i,j-1,k-1) &&
+							SignDist(i,j,k) > SignDist(i+1,j+1,k+1) && SignDist(i,j,k) > SignDist(i-1,j-1,k-1) &&
+							SignDist(i,j,k) > SignDist(i+1,j-1,k+1) && SignDist(i,j,k) > SignDist(i-1,j+1,k-1) &&
+							SignDist(i,j,k) > SignDist(i-1,j+1,k+1) && SignDist(i,j,k) > SignDist(i+1,j-1,k-1) &&
+							SignDist(i,j,k) > SignDist(i+1,j+1,k-1) && SignDist(i,j,k) > SignDist(i-1,j-1,k+1)){
+						fprintf(PORESIZE,"%f ", SignDist(i,j,k));
+					}
+				}
+			}
+		}
+	}
+	fclose(PORESIZE);
 
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
