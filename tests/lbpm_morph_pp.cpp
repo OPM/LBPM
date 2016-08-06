@@ -172,7 +172,8 @@ int main(int argc, char **argv)
 	BinCounts = new int [NumBins];
 	int *GlobalHistogram;
 	GlobalHistogram = new int [NumBins];
-	double BinWidth;
+	double GlobalValue;
+	double BinWidth,MinPoreSize,MaxPoreSize;
 	std::vector<double> PoreSize;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
@@ -194,15 +195,15 @@ int main(int argc, char **argv)
 							SignDist(i,j,k) > SignDist(i-1,j+1,k+1) && SignDist(i,j,k) > SignDist(i+1,j-1,k-1) &&
 							SignDist(i,j,k) > SignDist(i+1,j+1,k-1) && SignDist(i,j,k) > SignDist(i-1,j-1,k+1)){
 						// save the size of each pore
-						PoreSize.push_back[SignDist(i,j,k)];
+					  PoreSize.push_back(SignDist(i,j,k));
 					}
 				}
 			}
 		}
 	}
 	// Compute min and max poresize
-	double GlobalValue;
-	double MinPoreSize=MaxPoreSize=PoreSize[0];
+	if (rank==0) printf("    computing local minimum and maximum... \n");
+	MinPoreSize=MaxPoreSize=PoreSize[0];
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		if (PoreSize[idx] < MinPoreSize) MinPoreSize=PoreSize[idx];
 		if (PoreSize[idx] > MaxPoreSize) MaxPoreSize=PoreSize[idx];
@@ -212,22 +213,54 @@ int main(int argc, char **argv)
 	MinPoreSize=GlobalValue;
 	MPI_Allreduce(&MaxPoreSize,&GlobalValue,1,MPI_DOUBLE,MPI_MAX,comm);
 	MaxPoreSize=GlobalValue;
+	//if (rank==0) printf("    MaxPoreSize %f\n", MaxPoreSize);
+	//if (rank==0) printf("    MinPoreSize %f\n", MinPoreSize);
 	// Generate histogram counts
-	BinWidth=(MaxPoreSize-MinPoreSize)/NumBins;
+	if (rank==0) printf("    generating local bin counts... \n");
+	BinWidth=(MaxPoreSize-MinPoreSize)/double(NumBins);
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
-		int myBin = int((value-MinPoreSize)/BinWidth)
-		BinCounts[myBin]++;
+		int myBin = 0;
+		while (MinPoreSize+myBin*BinWidth < value) myBin++;
+		  //int((value-MinPoreSize)/double(BinWidth));
+		BinCounts[myBin]+=1;
 	}
+	if (rank==0) printf("    summing global bin counts... \n");
 	// Reduce the counts to generate the fhistogram at rank=0
-	MPI_Reduce(&BinCounts,&GlobalHistogram,NumBins,MPI_INT,MPI_SUM,0,comm);
+	MPI_Reduce(BinCounts,GlobalHistogram,NumBins,MPI_INT,MPI_SUM,0,comm);
 
+	FILE *PORESIZE;
 	if (rank==0){
-		FILE *PORESIZE=fopen("PoreSize.hist","w");
+		PORESIZE=fopen("PoreSize.hist","w");
+		printf("    writing PoreSize.hist \n");
+		int PoreCount=0;
+		int Count;
 		for (int idx=0; idx<NumBins; idx++){
-			fprintf(PORESIZE,"%i %f\n",GlobalHistogram[idx],MinPoreSize+idx*BinWidth);
+		  double BinCenter=MinPoreSize+idx*BinWidth;
+		  Count=GlobalHistogram[idx];
+		  PoreCount+=Count;
+			fprintf(PORESIZE,"%i %f\n",Count,BinCenter);
 		}
 		fclose(PORESIZE);
+		// Compute quartiles
+		double Q1,Q2,Q3,Q4;
+		int Qval=PoreCount/4;
+		Q1=Q2=Q3=MinPoreSize;
+		Q4=MaxPoreSize;
+		Count=0;
+		for (int idx=0; idx<NumBins; idx++){
+		  double BinCenter=MinPoreSize+idx*BinWidth;
+		  Count+=GlobalHistogram[idx];
+		  if (Count<Qval) Q1+=BinWidth;
+		  if (Count<2*Qval) Q2+=BinWidth;
+		  if (Count<3*Qval) Q3+=BinWidth;
+		}
+
+		      printf("Quartiles for pore size distribution \n");
+		      printf("Q1 %f\n",Q1);
+		      printf("Q2 %f\n",Q2);
+		      printf("Q3 %f\n",Q3);
+		      printf("Q4 %f\n",Q4);
 	}
 	MPI_Barrier(comm);
 	
