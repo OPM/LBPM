@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
 	// Get all local pore sizes (local maxima)
 	sprintf(LocalRankFilename,"PoreSize.%05i",rank);
-	FILE *PORESIZE=fopen(LocalRankFilename,"r");
+	FILE *PORESIZE=fopen(LocalRankFilename,"w");
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
 			for (int i=1; i<nx-1; i++){
