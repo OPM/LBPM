@@ -172,7 +172,8 @@ int main(int argc, char **argv)
 	BinCounts = new int [NumBins];
 	int *GlobalHistogram;
 	GlobalHistogram = new int [NumBins];
-	double BinWidth;
+	double GlobalValue;
+	double BinWidth,MinPoreSize,MaxPoreSize;
 	std::vector<double> PoreSize;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
@@ -194,15 +195,14 @@ int main(int argc, char **argv)
 							SignDist(i,j,k) > SignDist(i-1,j+1,k+1) && SignDist(i,j,k) > SignDist(i+1,j-1,k-1) &&
 							SignDist(i,j,k) > SignDist(i+1,j+1,k-1) && SignDist(i,j,k) > SignDist(i-1,j-1,k+1)){
 						// save the size of each pore
-						PoreSize.push_back[SignDist(i,j,k)];
+					  PoreSize.push_back(SignDist(i,j,k));
 					}
 				}
 			}
 		}
 	}
 	// Compute min and max poresize
-	double GlobalValue;
-	double MinPoreSize=MaxPoreSize=PoreSize[0];
+	MinPoreSize=MaxPoreSize=PoreSize[0];
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		if (PoreSize[idx] < MinPoreSize) MinPoreSize=PoreSize[idx];
 		if (PoreSize[idx] > MaxPoreSize) MaxPoreSize=PoreSize[idx];
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 	BinWidth=(MaxPoreSize-MinPoreSize)/NumBins;
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
-		int myBin = int((value-MinPoreSize)/BinWidth)
+		int myBin = int((value-MinPoreSize)/BinWidth);
 		BinCounts[myBin]++;
 	}
 	// Reduce the counts to generate the fhistogram at rank=0
