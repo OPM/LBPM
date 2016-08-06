@@ -28,7 +28,7 @@ interval=50000
 tolerance=1e-5
 
 viscosity=(tau-0.5)/3
-ift=5.7896*alpha
+ift=5.796*alpha
 
 radius=[]
 sw=[]
