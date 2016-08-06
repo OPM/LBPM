@@ -44,6 +44,7 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 //***************************************************************************************
 
 
+
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -163,9 +164,16 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
 
+	// Generate a histogram of pore size distribution
 	// Get all local pore sizes (local maxima)
-	sprintf(LocalRankFilename,"PoreSize.%05i",rank);
-	FILE *PORESIZE=fopen(LocalRankFilename,"w");
+	if (rank==0) printf("Generating a histogram of pore sizes \n");
+	int NumBins=100;
+	int *BinCounts;
+	BinCounts = new int [NumBins];
+	int *GlobalHistogram;
+	GlobalHistogram = new int [NumBins];
+	double BinWidth;
+	std::vector<double> PoreSize;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
 			for (int i=1; i<nx-1; i++){
@@ -185,14 +193,44 @@ int main(int argc, char **argv)
 							SignDist(i,j,k) > SignDist(i+1,j-1,k+1) && SignDist(i,j,k) > SignDist(i-1,j+1,k-1) &&
 							SignDist(i,j,k) > SignDist(i-1,j+1,k+1) && SignDist(i,j,k) > SignDist(i+1,j-1,k-1) &&
 							SignDist(i,j,k) > SignDist(i+1,j+1,k-1) && SignDist(i,j,k) > SignDist(i-1,j-1,k+1)){
-						fprintf(PORESIZE,"%f ", SignDist(i,j,k));
+						// save the size of each pore
+						PoreSize.push_back[SignDist(i,j,k)];
 					}
 				}
 			}
 		}
 	}
-	fclose(PORESIZE);
+	// Compute min and max poresize
+	double GlobalValue;
+	double MinPoreSize=MaxPoreSize=PoreSize[0];
+	for (int idx=0; idx<PoreSize.size(); idx++){
+		if (PoreSize[idx] < MinPoreSize) MinPoreSize=PoreSize[idx];
+		if (PoreSize[idx] > MaxPoreSize) MaxPoreSize=PoreSize[idx];
+	}
+	// reduce to get global minimum and maximum
+	MPI_Allreduce(&MinPoreSize,&GlobalValue,1,MPI_DOUBLE,MPI_MIN,comm);
+	MinPoreSize=GlobalValue;
+	MPI_Allreduce(&MaxPoreSize,&GlobalValue,1,MPI_DOUBLE,MPI_MAX,comm);
+	MaxPoreSize=GlobalValue;
+	// Generate histogram counts
+	BinWidth=(MaxPoreSize-MinPoreSize)/NumBins;
+	for (int idx=0; idx<PoreSize.size(); idx++){
+		double value = PoreSize[idx];
+		int myBin = int((value-MinPoreSize)/BinWidth)
+		BinCounts[myBin]++;
+	}
+	// Reduce the counts to generate the fhistogram at rank=0
+	MPI_Reduce(&BinCounts,&GlobalHistogram,NumBins,MPI_INT,MPI_SUM,0,comm);
 
+	if (rank==0){
+		FILE *PORESIZE=fopen("PoreSize.hist","w");
+		for (int idx=0; idx<NumBins; idx++){
+			fprintf(PORESIZE,"%i %f\n",GlobalHistogram[idx],MinPoreSize+idx*BinWidth);
+		}
+		fclose(PORESIZE);
+	}
+	MPI_Barrier(comm);
+	
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
 	int jproc = Dm.jproc;
