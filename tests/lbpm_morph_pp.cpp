@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	// Generate a histogram of pore size distribution
 	// Get all local pore sizes (local maxima)
 	if (rank==0) printf("Generating a histogram of pore sizes \n");
-	int NumBins=100;
+	int NumBins=30;
 	int *BinCounts;
 	BinCounts = new int [NumBins];
 	int *GlobalHistogram;
@@ -202,6 +202,7 @@ int main(int argc, char **argv)
 		}
 	}
 	// Compute min and max poresize
+	if (rank==0) printf("    computing local minimum and maximum... \n");
 	MinPoreSize=MaxPoreSize=PoreSize[0];
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		if (PoreSize[idx] < MinPoreSize) MinPoreSize=PoreSize[idx];
@@ -213,19 +214,25 @@ int main(int argc, char **argv)
 	MPI_Allreduce(&MaxPoreSize,&GlobalValue,1,MPI_DOUBLE,MPI_MAX,comm);
 	MaxPoreSize=GlobalValue;
 	// Generate histogram counts
+	if (rank==0) printf("    generating local bin counts... \n");
 	BinWidth=(MaxPoreSize-MinPoreSize)/NumBins;
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
 		int myBin = int((value-MinPoreSize)/BinWidth);
 		BinCounts[myBin]++;
 	}
+	if (rank==0) printf("    summing global bin counts... \n");
 	// Reduce the counts to generate the fhistogram at rank=0
-	MPI_Reduce(&BinCounts,&GlobalHistogram,NumBins,MPI_INT,MPI_SUM,0,comm);
+	MPI_Reduce(BinCounts,GlobalHistogram,NumBins,MPI_INT,MPI_SUM,0,comm);
 
+	FILE *PORESIZE;
 	if (rank==0){
-		FILE *PORESIZE=fopen("PoreSize.hist","w");
+		PORESIZE=fopen("PoreSize.hist","w");
+		printf("    writing PoreSize.hist \n");
 		for (int idx=0; idx<NumBins; idx++){
-			fprintf(PORESIZE,"%i %f\n",GlobalHistogram[idx],MinPoreSize+idx*BinWidth);
+		  double BinCenter=MinPoreSize+idx*BinWidth;
+		  int Count=GlobalHistogram[idx];
+			fprintf(PORESIZE,"%i %f\n",Count,BinCenter);
 		}
 		fclose(PORESIZE);
 	}
