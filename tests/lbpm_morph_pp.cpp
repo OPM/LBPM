@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	// Generate a histogram of pore size distribution
 	// Get all local pore sizes (local maxima)
 	if (rank==0) printf("Generating a histogram of pore sizes \n");
-	int NumBins=30;
+	int NumBins=25;
 	int *BinCounts;
 	BinCounts = new int [NumBins];
 	int *GlobalHistogram;
@@ -215,10 +215,10 @@ int main(int argc, char **argv)
 	MaxPoreSize=GlobalValue;
 	// Generate histogram counts
 	if (rank==0) printf("    generating local bin counts... \n");
-	BinWidth=(MaxPoreSize-MinPoreSize)/NumBins;
+	BinWidth=(MaxPoreSize-MinPoreSize)/double(NumBins);
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
-		int myBin = int((value-MinPoreSize)/BinWidth);
+		int myBin = int((value-MinPoreSize)/double(BinWidth));
 		BinCounts[myBin]++;
 	}
 	if (rank==0) printf("    summing global bin counts... \n");
