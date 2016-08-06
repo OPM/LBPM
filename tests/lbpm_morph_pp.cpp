@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	// Generate a histogram of pore size distribution
 	// Get all local pore sizes (local maxima)
 	if (rank==0) printf("Generating a histogram of pore sizes \n");
-	int NumBins=25;
+	int NumBins=100;
 	int *BinCounts;
 	BinCounts = new int [NumBins];
 	int *GlobalHistogram;
@@ -213,13 +213,17 @@ int main(int argc, char **argv)
 	MinPoreSize=GlobalValue;
 	MPI_Allreduce(&MaxPoreSize,&GlobalValue,1,MPI_DOUBLE,MPI_MAX,comm);
 	MaxPoreSize=GlobalValue;
+	//if (rank==0) printf("    MaxPoreSize %f\n", MaxPoreSize);
+	//if (rank==0) printf("    MinPoreSize %f\n", MinPoreSize);
 	// Generate histogram counts
 	if (rank==0) printf("    generating local bin counts... \n");
 	BinWidth=(MaxPoreSize-MinPoreSize)/double(NumBins);
 	for (int idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
-		int myBin = int((value-MinPoreSize)/double(BinWidth));
-		BinCounts[myBin]++;
+		int myBin = 0;
+		while (MinPoreSize+myBin*BinWidth < value) myBin++;
+		  //int((value-MinPoreSize)/double(BinWidth));
+		BinCounts[myBin]+=1;
 	}
 	if (rank==0) printf("    summing global bin counts... \n");
 	// Reduce the counts to generate the fhistogram at rank=0
@@ -229,12 +233,34 @@ int main(int argc, char **argv)
 	if (rank==0){
 		PORESIZE=fopen("PoreSize.hist","w");
 		printf("    writing PoreSize.hist \n");
+		int PoreCount=0;
+		int Count;
 		for (int idx=0; idx<NumBins; idx++){
 		  double BinCenter=MinPoreSize+idx*BinWidth;
-		  int Count=GlobalHistogram[idx];
+		  Count=GlobalHistogram[idx];
+		  PoreCount+=Count;
 			fprintf(PORESIZE,"%i %f\n",Count,BinCenter);
 		}
 		fclose(PORESIZE);
+		// Compute quartiles
+		double Q1,Q2,Q3,Q4;
+		int Qval=PoreCount/4;
+		Q1=Q2=Q3=MinPoreSize;
+		Q4=MaxPoreSize;
+		Count=0;
+		for (int idx=0; idx<NumBins; idx++){
+		  double BinCenter=MinPoreSize+idx*BinWidth;
+		  Count+=GlobalHistogram[idx];
+		  if (Count<Qval) Q1+=BinWidth;
+		  if (Count<2*Qval) Q2+=BinWidth;
+		  if (Count<3*Qval) Q3+=BinWidth;
+		}
+
+		      printf("Quartiles for pore size distribution \n");
+		      printf("Q1 %f\n",Q1);
+		      printf("Q2 %f\n",Q2);
+		      printf("Q3 %f\n",Q3);
+		      printf("Q4 %f\n",Q4);
 	}
 	MPI_Barrier(comm);
 	
