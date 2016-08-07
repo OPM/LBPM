@@ -3,7 +3,7 @@ import sys
 import csv
 
 name=sys.argv[1]
-numpts=int(sys.argv[2])
+#numpts=int(sys.argv[2])
 process="drain"
 cwd=os.getcwd()
 
@@ -44,10 +44,11 @@ print("Number of cases "+str(numpts))
 
 for pt in range(0,numpts):
     #compute the pressure difference
+    tag=pt+1
     dp=2*ift/radius[pt]
     din=1.0+0.5*dp
     dout=1.0-0.5*dp
-    dirname=str(name)+"_"+str(process)+"_"+str(pt)
+    dirname=str(name)+"_"+str(process)+"_"+str(tag)
     print("Creating " + dirname)
     if not os.path.exists(dirname):
         os.mkdir(dirname)
