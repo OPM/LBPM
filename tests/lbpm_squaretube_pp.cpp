@@ -149,13 +149,14 @@ int main(int argc, char **argv)
 	double pore_vol;
 
 	sum=0;
+        //double wall_width = (Nx - TubeWidth)/2;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// square capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeWidth - fabs(i-0.5*Nx);
-				Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth-fabs(j-0.5*Ny));
+				Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
+				Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
 
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
