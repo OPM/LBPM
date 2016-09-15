@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
+	int ORIENTATION;
 	double TubeWidth =15.0;
 	int BC;
 	int BubbleTop,BubbleBottom;
@@ -45,6 +46,8 @@ int main(int argc, char **argv)
 	BC=atoi(argv[2]);
 	BubbleBottom = atoi(argv[3]);
 	BubbleTop = atoi(argv[4]);
+	ORIENTATION = atoi(argv[5]);
+
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -155,10 +158,22 @@ int main(int argc, char **argv)
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
-				// square capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
-				Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
 
+				if (ORIENTATION==0){
+					// square capillary tube aligned with the x direction
+					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Ny);
+					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Nz));
+				}
+				else if (ORIENTATION==1){
+					// square capillary tube aligned with the y direction
+					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
+					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Nz));
+				}
+				else {
+					// square capillary tube aligned with the z direction
+					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
+					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
+				}
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
