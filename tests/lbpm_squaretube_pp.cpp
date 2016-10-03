@@ -38,7 +38,9 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
-	int ORIENTATION;
+	int ORIENTATION=2; //default: the tube is aligned with Z axis
+	                   //ORIENTATION = 0: tube is aligned with X axis
+	                   //ORIENTATION = 1: tube is aligned with Y axis
 	double TubeWidth =15.0;
 	int BC;
 	int BubbleTop,BubbleBottom;
@@ -161,34 +163,66 @@ int main(int argc, char **argv)
 
 				if (ORIENTATION==0){
 					// square capillary tube aligned with the x direction
-					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Ny);
-					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Nz));
+					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(j-0.5*Ny);
+					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
+					// Initialize phase positions
+					if (Averages.SDs(i,j,k) < 0.0){
+						id[n] = 0;
+					}
+					else if (Dm.iproc*Nx+k<BubbleBottom){
+						id[n] = 2;
+						sum++;
+					}
+					else if (Dm.iproc*Nx+k<BubbleTop){
+						id[n] = 1;
+						sum++;
+					}
+					else{
+						id[n] = 2;
+						sum++;
+					}
 				}
 				else if (ORIENTATION==1){
 					// square capillary tube aligned with the y direction
 					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
-					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Nz));
+					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
+					// Initialize phase positions
+					if (Averages.SDs(i,j,k) < 0.0){
+						id[n] = 0;
+					}
+					else if (Dm.jproc*Ny+k<BubbleBottom){
+						id[n] = 2;
+						sum++;
+					}
+					else if (Dm.jproc*Ny+k<BubbleTop){
+						id[n] = 1;
+						sum++;
+					}
+					else{
+						id[n] = 2;
+						sum++;
+					}
 				}
-				else {
+				else { //
 					// square capillary tube aligned with the z direction
 					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
 					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
-				}
-				// Initialize phase positions
-				if (Averages.SDs(i,j,k) < 0.0){
-					id[n] = 0;
-				}
-				else if (Dm.kproc*Nz+k<BubbleBottom){
-					id[n] = 2;
-					sum++;
-				}
-				else if (Dm.kproc*Nz+k<BubbleTop){
-					id[n] = 1;
-					sum++;
-				}
-				else{
-					id[n] = 2;
-					sum++;
+					// Initialize phase positions
+					if (Averages.SDs(i,j,k) < 0.0){
+						id[n] = 0;
+					}
+					else if (Dm.kproc*Nz+k<BubbleBottom){
+						id[n] = 2;
+						sum++;
+					}
+					else if (Dm.kproc*Nz+k<BubbleTop){
+						id[n] = 1;
+						sum++;
+					}
+					else{
+						id[n] = 2;
+						sum++;
+					}
 				}
 			}
 		}
