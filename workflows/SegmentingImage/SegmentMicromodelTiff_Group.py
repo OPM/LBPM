@@ -5,13 +5,17 @@ import matplotlib.pylab as plt
 from glob import glob
 from PIL import Image # import Python Imaging Library (PIL)
 import os
+import sys
+
+basename=sys.argv[1]
 plt.rcParams["savefig.directory"] = os.getcwd() # change the default pylab 'savefig' path (i.e. ~/) to cwd
 from SegmentMicromodelTiff_utils import convert_image_to_array,read_input_parameters
 
 # Load a group of *.in files 
 # e.g. 'parameters_1.in' etc.
-file_input_group = glob('parameters_*.in')
+file_input_group = glob('Micromodel.in')
 #output_result = np.empty((0,),dtype=float)
+
 
 if not file_input_group:
     print 'Error: Input files cannot be found ! '
@@ -21,7 +25,7 @@ else:
         Para = read_input_parameters(file_input_single)
         # set your output file names
         input_file_idx = file_input_single[file_input_single.find('parameters_')+len('parameters_'):file_input_single.find('.in')]
-        output_file_name = 'Segmented_image_test_'+input_file_idx+'.dat'
+        output_file_name = 'Segmented_image_test_'+input_file_idx+'.raw'
 
         imin = Para['imin']
         imax = Para['imax']
