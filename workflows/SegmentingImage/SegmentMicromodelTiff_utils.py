@@ -21,7 +21,7 @@ def convert_image_to_array(file_name,imin,imax):
 def read_input_parameters(input_file_name):
     # input_file_name is a string
     # The *.in file has the following lines
-    # line 0: the name of the image file e.g. *.tiff
+    # line 0: the base name of the experimental images
     # line 1: imin imax
     # line 2: imin_b imax_b
     # line 3: top_layer bottom_layer DEPTH
@@ -30,7 +30,7 @@ def read_input_parameters(input_file_name):
     #        'threshold_s'  means: solid:    RGB values < threshold_s
     f = open(input_file_name,'r') # read-only
     lines = f.readlines()
-    output_file = {'image_file_name':lines[0].splitlines()[0]}
+    output_file = {'base_name':lines[0].splitlines()[0]}
     line1_array = np.fromstring(lines[1].splitlines()[0],dtype=np.int32,sep=' ')
     line2_array = np.fromstring(lines[2].splitlines()[0],dtype=np.int32,sep=' ')
     line3_array = np.fromstring(lines[3].splitlines()[0],dtype=np.int32,sep=' ')
