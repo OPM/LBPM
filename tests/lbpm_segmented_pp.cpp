@@ -185,7 +185,7 @@ int main(int argc, char **argv)
     MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	
+	{	
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
@@ -442,6 +442,7 @@ int main(int argc, char **argv)
 	Averages.SortBlobs();
 	Averages.PrintComponents(timestep);
 	*/
+	}
     MPI_Barrier(comm);
 	MPI_Finalize();
     return 0;

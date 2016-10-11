@@ -22,13 +22,14 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
-
+	
     int SOLID=atoi(argv[1]);
 	int NWP=atoi(argv[2]);
 	if (rank==0){
 	  printf("Solid Label %i \n",SOLID);
 	  printf("NWP Label %i \n",NWP);
 	}
+	{
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
@@ -264,7 +265,7 @@ int main(int argc, char **argv)
 //    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
     fwrite(symid,1,N,SYMID);
     fclose(SYMID);
-    
+	}    
     MPI_Barrier(comm);
     MPI_Finalize();
 }
