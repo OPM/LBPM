@@ -325,7 +325,8 @@ int main(int argc, char **argv)
 	// Full domain used for averaging (do not use mask for analysis)
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+	//	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+        TwoPhase Averages(Dm);
 	Dm.CommInit(comm);
 
 	// Mask that excludes the solid phase
@@ -864,7 +865,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus.get(),Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase_tplus,Phi,N*sizeof(double));
 	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
 			//...........................................................................
 		}
@@ -876,18 +877,18 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase.get(),Phi,N*sizeof(double));
-			CopyToHost(Averages.Press.get(),Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x.get(),&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y.get(),&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z.get(),&Velocity[2*N],N*sizeof(double));
+			CopyToHost(Averages.Phase,Phi,N*sizeof(double));
+			CopyToHost(Averages.Press,Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x,&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y,&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z,&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus.get(),Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase_tminus,Phi,N*sizeof(double));
 //			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
 			//....................................................................
             Averages.Initialize();
@@ -924,7 +925,6 @@ int main(int argc, char **argv)
         if ( timestep%50==0 )
             PROFILE_SAVE("lbpm_color_simulator",1);
 	}
-    tpool.wait_pool_finished();
     PROFILE_STOP("Loop");
 	//************************************************************************
 	DeviceBarrier();
