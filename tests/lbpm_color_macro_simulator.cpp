@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
+	ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
 	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	
@@ -393,11 +393,11 @@ int main(int argc, char **argv)
 		for ( j=0;j<Ny;j++){
 			for ( i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
-				if (Averages->SDs(n) > 0.0){
+				if (Averages.SDs(n) > 0.0){
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (Averages->SDs(n) > 0.0){
+				if (Averages.SDs(n) > 0.0){
 					sum++;	
 				}
 			}
@@ -444,7 +444,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 1;
-					Averages->SDs(n) = max(Averages->SDs(n),1.0*(2.5-k));
+					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
 				}					
 			}
 		}
@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 2;
-					Averages->SDs(n) = max(Averages->SDs(n),1.0*(k-Nz+2.5));
+					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -537,7 +537,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, Averages->SDs.data(), dist_mem_size);
+	CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
 	//...........................................................................
 
 	int logcount = 0; // number of surface write-outs
@@ -595,13 +595,13 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages->SDs(i) -= (1.0);
+	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0);
 	// Make sure the id match for the two domains
 	for (i=0; i<N; i++)	Dm.id[i] = Mask.id[i];
 	//.......................................................................
 	// Finalize setup for averaging domain
-	//Averages->SetupCubes(Mask);
-	Averages->UpdateSolid();
+	//Averages.SetupCubes(Mask);
+	Averages.UpdateSolid();
 	//.......................................................................
 	
 	//*************************************************************************
@@ -673,7 +673,7 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	DeviceBarrier();
-	CopyToHost(Averages->Phase_tplus.data(),Phi,N*sizeof(double));
+	CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
@@ -682,11 +682,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	DeviceBarrier();
 	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
-	CopyToHost(Averages->Press.data(),Pressure,N*sizeof(double));
-	CopyToHost(Averages->Vel_x.data(),&Velocity[0],N*sizeof(double));
-	CopyToHost(Averages->Vel_y.data(),&Velocity[N],N*sizeof(double));
-	CopyToHost(Averages->Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+	CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+	CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+	CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+	CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 	//...........................................................................
 	
 	if (rank==0) printf("********************************************************\n");
@@ -865,7 +865,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus,Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
 	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
 			//...........................................................................
 		}
@@ -877,18 +877,18 @@ int main(int argc, char **argv)
 			//...........................................................................
 			DeviceBarrier();
 			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase,Phi,N*sizeof(double));
-			CopyToHost(Averages.Press,Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x,&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y,&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z,&Velocity[2*N],N*sizeof(double));
+			CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+			CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+			CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+			CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+			CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
 			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus,Phi,N*sizeof(double));
+			CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
 //			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
 			//....................................................................
             Averages.Initialize();
@@ -900,7 +900,7 @@ int main(int argc, char **argv)
             Averages.ComputeLocal();
             Averages.Reduce();
             Averages.PrintAll(timestep);
-*/			//....................................................................
+			//....................................................................
 		}
 
 		if (timestep%RESTART_INTERVAL == 0){
@@ -913,11 +913,20 @@ int main(int argc, char **argv)
 				// Not clear yet
 			}
 			// Copy the data to the CPU
+	    double *cDen = new double[2*N];
+	    double *cDistEven = new double[10*N];
+	    double *cDistOdd = new double[9*N];
+
 			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
 			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
 			CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
+
+	    delete [] cDen;
+	    delete [] cDistEven;
+	    delete [] cDistOdd;
+
 		}
 
 
@@ -945,34 +954,34 @@ int main(int argc, char **argv)
 	
 	// ************************************************************************
 /*	// Perform component averaging and write tcat averages
-	Averages->Initialize();
-	Averages->ComponentAverages();
-	Averages->SortBlobs();
-	Averages->PrintComponents(timestep);
+	Averages.Initialize();
+	Averages.ComponentAverages();
+	Averages.SortBlobs();
+	Averages.PrintComponents(timestep);
 	// ************************************************************************
 
-	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Mask.Nx-2,Mask.Ny-2,Mask.Nz-2,Mask.rank_info,Averages->PhaseID,1,Averages->Label_NWP);
+	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Mask.Nx-2,Mask.Ny-2,Mask.Nz-2,Mask.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
 	DeviceBarrier();
-	CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
+	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
 */
     
-/*	Averages->WriteSurfaces(0);
+/*	Averages.WriteSurfaces(0);
 
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Averages->SDn.data(),8,N,PHASE);
+	fwrite(Averages.SDn.data(),8,N,PHASE);
 	fclose(PHASE);
 	*/
 
 	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
 	FILE *PRESS;
 	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Averages->Press.data(),8,N,PRESS);
+	fwrite(Averages.Press.data(),8,N,PRESS);
 	fclose(PRESS);
 
-	CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
+	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
 	double * Grad;
 	Grad = new double [3*N];
 	CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
