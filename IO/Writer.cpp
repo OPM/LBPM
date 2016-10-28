@@ -71,7 +71,8 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
             ERROR("Unknown mesh");
         }
         fclose(fid);
-        std::unique(mesh_entry.variables.begin(),mesh_entry.variables.end());
+        std::sort( mesh_entry.variables.begin(), mesh_entry.variables.end() );
+        mesh_entry.variables.erase( std::unique( mesh_entry.variables.begin(), mesh_entry.variables.end() ), mesh_entry.variables.end() );
         meshes_written.push_back(mesh_entry);
     }
     return meshes_written;
