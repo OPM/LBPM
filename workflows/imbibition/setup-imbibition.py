@@ -4,7 +4,7 @@ import csv
 import glob
 
 name=sys.argv[1]
-numpts=int(sys.argv[2])
+#numpts=int(sys.argv[2])
 process="drain"
 cwd=os.getcwd()
 
@@ -13,7 +13,7 @@ print("Drainage should initialize imbibition!")
 print("Base name is "+name)
 
 # Parameters for color LBM
-tau=0.7
+tau=0.8
 alpha=0.005
 beta=0.95
 phisol=-1.0
@@ -25,7 +25,7 @@ Restart=1
 pBC=3
 din=1.001
 dout=0.999
-maxtime=100005
+maxtime=2000005
 interval=50000
 tolerance=1e-5
 
