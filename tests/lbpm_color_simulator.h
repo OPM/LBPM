@@ -165,7 +165,6 @@ public:
         fillData.copy(Averages.SDs,SignData);
         fillData.copy(Averages.Label_NWP,BlobData);
         IO::writeData( timestep, visData, 2, newcomm );
-        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Save Vis",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
