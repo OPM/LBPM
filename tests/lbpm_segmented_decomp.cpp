@@ -18,16 +18,20 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
+	
+	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-
-
-    int SOLID=atoi(argv[1]);
+	{
+	
+	int SOLID=atoi(argv[1]);
 	int NWP=atoi(argv[2]);
+	//char NWP,SOLID;
+	//SOLID=argv[1][0];
+	//NWP=argv[2][0];
 	if (rank==0){
-	  printf("Solid Label %i \n",SOLID);
-	  printf("NWP Label %i \n",NWP);
+	  printf("Solid Label: %i \n",SOLID);
+	  printf("NWP Label: %i \n",NWP);
 	}
     //.......................................................................
     // Reading the domain information file
@@ -189,22 +193,15 @@ int main(int argc, char **argv)
 	nx+=2; ny+=2; nz+=2;
 	N=nx*ny*nz;
 
-	//if (rank==0) printf("WARNING: assumed that INPUT: WP(1),NWP(2) OUTPUT will be NWP(1),WP(2) (lbpm_segmented_decomp) \n");
 	if (rank==0) printf("All sub-domains recieved \n");
-	// Really need a better way to do this -- this is to flip convention for a particular data set
     for (k=0;k<nz;k++){
 		for (j=0;j<ny;j++){
 			for (i=0;i<nx;i++){
 			        n = k*nx*ny+j*nx+i;
 			        if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
-			       	else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
-				else                           Dm.id[n] = 2;
+				else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
+				else                     Dm.id[n] = 2;
 				
-//				if (Dm.id[n] == 1) Dm.id[n]=2;
-				//else if (Dm.id[n] == 2) Dm.id[n]=1;
-				// Initialize the solid phase
-//				if (Dm.id[n] == 0)	id[n] = 0;
-//				else				id[n] = 1;
 			}
 		}
 	}
@@ -229,6 +226,24 @@ int main(int argc, char **argv)
     MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
     float porosity = float(totalGlobal-countGlobal)/totalGlobal;
     if (rank==0) printf("Porosity=%f\n",porosity);
+
+    count = 0;
+    total = 0;
+    countGlobal = 0;
+    totalGlobal = 0;
+    for (k=1;k<nz-1;k++){
+    	for (j=1;j<ny-1;j++){
+    		for (i=1;i<nx-1;i++){
+    			n=k*nx*ny+j*nx+i;
+    			if (Dm.id[n] != 0)      total++;
+    			if (Dm.id[n] == 2)	count++;
+    		}
+    	}
+    }
+    MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
+    MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+    float saturation = float(countGlobal)/totalGlobal;
+    if (rank==0) printf("wetting phase saturation=%f\n",saturation);
 
 
    char LocalRankFilename[40];
@@ -264,7 +279,7 @@ int main(int argc, char **argv)
 //    fwrite(SymDist.get(),8,SymDist.length(),SYMDIST);
     fwrite(symid,1,N,SYMID);
     fclose(SYMID);
-    
+    }
     MPI_Barrier(comm);
     MPI_Finalize();
 }

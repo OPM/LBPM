@@ -243,7 +243,7 @@ void run_analysis( int timestep, int restart_interval,
         // Identify blobs and update global ids in time
         type = static_cast<AnalysisType>( type | IdentifyBlobs );
     }
-    #ifdef USE_CUDA
+    /*    #ifdef USE_CUDA
         if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%50==0 ) {
             // Keep a few blob identifications queued up to keep the processors busy,
             // allowing us to track the blobs as fast as possible
@@ -251,7 +251,7 @@ void run_analysis( int timestep, int restart_interval,
             type = static_cast<AnalysisType>( type | IdentifyBlobs );
         }
     #endif
-    
+    */
     if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
         type = static_cast<AnalysisType>( type | CopySimState );
@@ -369,7 +369,7 @@ void run_analysis( int timestep, int restart_interval,
 	// Retain the timestep associated with the restart files
 	if (rank==0){
 	  FILE *Rst = fopen("Restart.txt","w");
-	  fprintf(Rst,"%i\n",timestep);
+	  fprintf(Rst,"%i\n",timestep+5);
 	  fclose(Rst);
 	}
         // Write the restart file (using a seperate thread)
