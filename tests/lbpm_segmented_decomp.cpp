@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	  printf("Solid Label: %i \n",SOLID);
 	  printf("NWP Label: %i \n",NWP);
 	}
-	{
+	
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
