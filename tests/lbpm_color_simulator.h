@@ -61,18 +61,19 @@ public:
         std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
         BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_ ):
         timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
-        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_) { }
+        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_)
+        {
+            MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+        }
+    ~BlobIdentificationWorkItem1() { MPI_Comm_free(&newcomm); }
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs",1);
-        MPI_Comm newcomm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         double vF = 0.0;
         double vS = -1.0; // one voxel buffer region around solid
         IntArray& ids = new_index->second;
         new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
-        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Identify blobs",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
@@ -85,6 +86,7 @@ private:
     const DoubleArray& dist;
     BlobIDstruct last_id, new_index, new_id;
     BlobIDList new_list;
+    MPI_Comm newcomm;
 };
 class BlobIdentificationWorkItem2: public ThreadPool::WorkItem
 {
@@ -93,13 +95,15 @@ public:
         std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
         BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_ ):
         timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
-        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_) { }
+        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_)
+        {
+            MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+        }
+    ~BlobIdentificationWorkItem2() { MPI_Comm_free(&newcomm); }
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs maps",1);
-        MPI_Comm newcomm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         const IntArray& ids = new_index->second;
         static int max_id = -1;
         new_id->first = new_index->first;
@@ -118,7 +122,6 @@ public:
             getNewIDs(map,max_id,*new_list);
             writeIDMap(map,timestep,id_map_filename);
         }
-        MPI_Comm_free(&newcomm);
         PROFILE_STOP("Identify blobs maps",1);
         ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
@@ -131,6 +134,7 @@ private:
     const DoubleArray& dist;
     BlobIDstruct last_id, new_index, new_id;
     BlobIDList new_list;
+    MPI_Comm newcomm;
 };
 
 
@@ -140,7 +144,11 @@ class WriteVisWorkItem: public ThreadPool::WorkItem
 public:
     WriteVisWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
         TwoPhase& Avgerages_, fillHalo<double>& fillData_ ):
-        timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_) {}
+        timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_)
+        {
+            MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+        }
+    ~WriteVisWorkItem() { MPI_Comm_free(&newcomm); }
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         PROFILE_START("Save Vis",1);
@@ -156,8 +164,6 @@ public:
         fillData.copy(Averages.Press,PressData);
         fillData.copy(Averages.SDs,SignData);
         fillData.copy(Averages.Label_NWP,BlobData);
-        MPI_Comm newcomm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
         IO::writeData( timestep, visData, 2, newcomm );
         MPI_Comm_free(&newcomm);
         PROFILE_STOP("Save Vis",1);
@@ -169,7 +175,9 @@ private:
     std::vector<IO::MeshDataStruct>& visData;
     TwoPhase& Averages;
     fillHalo<double>& fillData;
+    MPI_Comm newcomm;
 };
+
 
 // Helper class to run the analysis from within a thread
 // Note: Averages will be modified after the constructor is called
@@ -180,6 +188,7 @@ public:
         BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
         type(type_), timestep(timestep_), Averages(Averages_), 
         blob_ids(ids), id_list(id_list_), beta(beta_) { }
+    ~AnalysisWorkItem() { }
     virtual void run() {
         ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         Averages.NumberComponents_NWP = blob_ids->first;
