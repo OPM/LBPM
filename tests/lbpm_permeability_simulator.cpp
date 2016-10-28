@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 		printf("Force(y) = %f \n", Fy);
 		printf("Force(z) = %f \n", Fz);
 		printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
+		printf("Process grid = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		printf("********************************************************\n");
 	}
 
@@ -247,7 +247,6 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 
 	Nx += 2;	Ny += 2;	Nz += 2;
-	//Nx = Ny = Nz;	// Cubic domain
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
