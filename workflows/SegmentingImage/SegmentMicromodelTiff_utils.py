@@ -48,21 +48,44 @@ def read_input_parameters(input_file_name):
     return output_file
 #end def
 
-#def get_segmented_array(image_array,parameters,NX,NY,NZ):
-#    # 'image_array' is a numpy array of RGB values, with the same size as micromodel 
-#    # 'parameters' is a dictionary of input parameters
-#    
-#    # Initialize the segmented image 'ID'
-#    # NOTE: 'ID' has the dimension (DEPTH, height, width)
-#    ID = np.zeros((NX,NZ,NY),dtype=np.uint8)
-#    # Map the picels to the 3D geometry
-#    # 1. Identify the non-wetting phase
-#    ID[top_layer:top_layer+DEPTH,im_array>threshold_nw] = 1
-#    # 2. Identify the wetting phase
-#    ID[top_layer:top_layer+DEPTH,\
-#    np.logical_and(im_array>=threshold_s,im_array<=threshold_nw)] = 2
-#    # 3. Post boundary retreatment along y-axis
-#    ID[top_layer:top_layer+DEPTH,:,:imin_b-imin]=0
-#    ID[top_layer:top_layer+DEPTH,:,ID.shape[2]-(imax-imax_b):]=0
-#    return ID
-##end def
+def get_initial_config(image_array,Para,NX,NY,NZ):
+    # This function will give the same fluid configuration shown in the *.Tiff image
+    # Function input:
+    # 'image_array' is a numpy array of RGB values, with the same size as micromodel 
+    # 'Para'        is a dictionary of input parameters
+
+    # Initialize the segmented image 'ID'
+    # NOTE: 'ID' has the dimension (height, width, DEPTH) or (NZ,NY,NX)
+    ID = np.zeros((NZ,NY,NX),dtype=np.uint8)
+    # Map the pixels to the 3D geometry
+    # Rules: NW phase: RGB values > threshold_nw
+    #        Solid:    RGB values < threshold_s
+    # 1. Identify the non-wetting phase
+    ID[image_array>Para['threshold_nw'],Para['top_layer']:Para['top_layer']+Para['DEPTH']] = 1
+    # 2. Identify the wetting phase
+    ID[np.logical_and(image_array>=Para['threshold_s'],image_array<=Para['threshold_nw']),\
+       Para['top_layer']:Para['top_layer']+Para['DEPTH']] = 2
+    # 3. Post boundary retreatment along y-axis. Note z-axis is always the flow direction
+    ID[:,:Para['imin_b']-Para['imin'],Para['top_layer']:Para['top_layer']+Para['DEPTH']]=0
+    ID[:,ID.shape[1]-(Para['imax']-Para['imax_b']):,Para['top_layer']:Para['top_layer']+Para['DEPTH']]=0
+    return ID
+#end def    
+
+def get_porous_medium(image_array,Para,NX,NY,NZ):
+    # This function only gives the domain (0->solid,1->fluid) of the *.Tiff image
+    # Function input:
+    # 'image_array' is a numpy array of RGB values, with the same size as micromodel 
+    # 'Para'        is a dictionary of input parameters
+
+    domain = np.zeros((NZ,NY,NX),dtype=np.uint8)
+    # Map the pixels to the 3D geometry
+    # Rules: NW phase: RGB values > threshold_nw
+    #        Solid:    RGB values < threshold_s
+    # 1. Identify fluid phase
+    domain[image_array>=Para['threshold_s'],Para['top_layer']:Para['top_layer']+Para['DEPTH']]=1
+    # 2. Post boundary retreatment along y-axis. Note z-axis is always the flow direction
+    domain[:,:Para['imin_b']-Para['imin'],Para['top_layer']:Para['top_layer']+Para['DEPTH']]=0
+    domain[:,domain.shape[1]-(Para['imax']-Para['imax_b']):,Para['top_layer']:Para['top_layer']+Para['DEPTH']]=0
+    return domain
+#end def
+
