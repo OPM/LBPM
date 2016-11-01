@@ -324,7 +324,8 @@ int main(int argc, char **argv)
 
 	double LocalVar, TotalVar;
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	LocalVar = Eikonal(Averages.SDs,id,Dm,10*Dm.Nx*Dm.nprocx);
+	int Maxtime=10*max(max(Dm.Nx*Dm.nprocx,Dm.Ny*Dm.nprocy),Dm.Nz*Dm.nprocz);
+	LocalVar = Eikonal(Averages.SDs,id,Dm,Maxtime);
 
 	MPI_Allreduce(&LocalVar,&TotalVar,1,MPI_DOUBLE,MPI_SUM,comm);
 	TotalVar /= nprocs;
