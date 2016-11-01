@@ -126,6 +126,26 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	/*// Exclude the maximum / minimum z rows
+	if (rank/(nprocx*nprocy)==0){
+		int k=0;
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
+				n = k*nx*ny+j*nx+i;
+				Dm.id[n] = 0;
+			}
+		}
+	}
+	if (rank/(nprocx*nprocy)==nprocz-1){
+		int k=nz-1;
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
+				n = k*nx*ny+j*nx+i;
+				Dm.id[n] = 0;
+			}
+		}
+	}
+	*/
 	Dm.CommInit(comm);
 
 	DoubleArray SignDist(nx,ny,nz);
@@ -280,6 +300,7 @@ int main(int argc, char **argv)
 			}
 		}
 
+
 		// Pack and send the updated ID values
 		PackID(Dm.sendList_x, Dm.sendCount_x ,sendID_x, id);
 		PackID(Dm.sendList_X, Dm.sendCount_X ,sendID_X, id);
@@ -336,28 +357,50 @@ int main(int argc, char **argv)
 				recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
 				recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
-		//......................................................................................
-		UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
-		UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
-		UnpackID(Dm.recvList_y, Dm.recvCount_y ,recvID_y, id);
-		UnpackID(Dm.recvList_Y, Dm.recvCount_Y ,recvID_Y, id);
-		UnpackID(Dm.recvList_z, Dm.recvCount_z ,recvID_z, id);
-		UnpackID(Dm.recvList_Z, Dm.recvCount_Z ,recvID_Z, id);
-		UnpackID(Dm.recvList_xy, Dm.recvCount_xy ,recvID_xy, id);
-		UnpackID(Dm.recvList_Xy, Dm.recvCount_Xy ,recvID_Xy, id);
-		UnpackID(Dm.recvList_xY, Dm.recvCount_xY ,recvID_xY, id);
-		UnpackID(Dm.recvList_XY, Dm.recvCount_XY ,recvID_XY, id);
-		UnpackID(Dm.recvList_xz, Dm.recvCount_xz ,recvID_xz, id);
-		UnpackID(Dm.recvList_Xz, Dm.recvCount_Xz ,recvID_Xz, id);
-		UnpackID(Dm.recvList_xZ, Dm.recvCount_xZ ,recvID_xZ, id);
-		UnpackID(Dm.recvList_XZ, Dm.recvCount_XZ ,recvID_XZ, id);
-		UnpackID(Dm.recvList_yz, Dm.recvCount_yz ,recvID_yz, id);
-		UnpackID(Dm.recvList_Yz, Dm.recvCount_Yz ,recvID_Yz, id);
-		UnpackID(Dm.recvList_yZ, Dm.recvCount_yZ ,recvID_yZ, id);
-		UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
+
+			UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
+			UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
+			UnpackID(Dm.recvList_y, Dm.recvCount_y ,recvID_y, id);
+			UnpackID(Dm.recvList_Y, Dm.recvCount_Y ,recvID_Y, id);
+			UnpackID(Dm.recvList_z, Dm.recvCount_z ,recvID_z, id);
+			UnpackID(Dm.recvList_Z, Dm.recvCount_Z ,recvID_Z, id);
+			UnpackID(Dm.recvList_xy, Dm.recvCount_xy ,recvID_xy, id);
+			UnpackID(Dm.recvList_Xy, Dm.recvCount_Xy ,recvID_Xy, id);
+			UnpackID(Dm.recvList_xY, Dm.recvCount_xY ,recvID_xY, id);
+			UnpackID(Dm.recvList_XY, Dm.recvCount_XY ,recvID_XY, id);
+			UnpackID(Dm.recvList_xz, Dm.recvCount_xz ,recvID_xz, id);
+			UnpackID(Dm.recvList_Xz, Dm.recvCount_Xz ,recvID_Xz, id);
+			UnpackID(Dm.recvList_xZ, Dm.recvCount_xZ ,recvID_xZ, id);
+			UnpackID(Dm.recvList_XZ, Dm.recvCount_XZ ,recvID_XZ, id);
+			UnpackID(Dm.recvList_yz, Dm.recvCount_yz ,recvID_yz, id);
+			UnpackID(Dm.recvList_Yz, Dm.recvCount_Yz ,recvID_Yz, id);
+			UnpackID(Dm.recvList_yZ, Dm.recvCount_yZ ,recvID_yZ, id);
+			UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
 		//......................................................................................
 
 		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_INT,MPI_SUM,comm);
+
+		// Layer the inlet with NWP
+		if (kproc == 0){
+			for(j=0; j<Ny; j++){
+				for(i=0; i<Nx; i++){
+					n = j*nx+i;
+					//				n = nx*ny + j*nx+i;
+				        id[n]=1;
+				}
+			}
+		}
+
+		// Layer the outlet with WP
+		if (kproc == nprocz-1){
+			for(j=0; j<Ny; j++){
+				for(i=0; i<Nx; i++){
+					n = (nz-1)*nx*ny+j*nx+i;
+					//				n = nx*ny + j*nx+i;
+				        id[n]=2;
+				}
+			}
+		}
 
 	}
 
