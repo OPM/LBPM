@@ -339,9 +339,8 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     neighbors.push_back( rank_info.rank[1][2][1] );
     neighbors.push_back( rank_info.rank[1][1][0] );
     neighbors.push_back( rank_info.rank[1][1][2] );
-    std::unique(neighbors.begin(),neighbors.end());
-    if ( std::find(neighbors.begin(),neighbors.end(),rank) != neighbors.end() )
-        neighbors.erase(std::find(neighbors.begin(),neighbors.end(),rank));
+    std::sort( neighbors.begin(), neighbors.end() );
+    neighbors.erase( std::unique( neighbors.begin(), neighbors.end() ), neighbors.end() );
     // Create a map of all local ids to the neighbor ids
     std::map<int64_t,global_id_info_struct> map;
     std::set<int64_t> local;
