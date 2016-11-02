@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				n=k*Nx*Ny+j*Nx+i;
-				if (id[n] == 1){
+				if (id[n] == 2){
 					count++;
 				}
 			}
