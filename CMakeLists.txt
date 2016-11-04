@@ -144,6 +144,7 @@ IF ( NOT ONLY_BUILD_DOCS )
     ADD_SUBDIRECTORY( tests )
     ADD_SUBDIRECTORY( threadpool/test )
     ADD_SUBDIRECTORY( example )
+    ADD_SUBDIRECTORY( workflows )
 ENDIF()
 
 
