@@ -53,10 +53,11 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
- 	double Rcrit;
-	Rcrit=strtod(argv[1],NULL);
+ 	//double Rcrit;
+	double SW=strtod(argv[1],NULL);
 	if (rank==0){
-		printf("Critical radius %f (voxels)\n",Rcrit);
+		//printf("Critical radius %f (voxels)\n",Rcrit);
+		printf("Target saturation %f \n",SW);
 	}
 	//	}
 
@@ -192,7 +193,8 @@ int main(int argc, char **argv)
 	int kproc = Dm.kproc;
 
 	// Generate the NWP configuration
-	if (rank==0) printf("Performing morphological drainage with critical radius %f \n", Rcrit);
+	//if (rank==0) printf("Performing morphological drainage with critical radius %f \n", Rcrit);
+	if (rank==0) printf("Performing morphological drainage with target saturation %f \n", SW);
 	//	GenerateResidual(id,nx,ny,nz,Saturation);
 
 	// Communication buffers
@@ -250,10 +252,11 @@ int main(int argc, char **argv)
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
-	float sat = 0.f;
+	double sw=1.f;
 	int GlobalNumber = 1;
-	int Window=int(Rcrit);
 
+	double radius,Rcrit;
+	radius = 0.0;
 	// Layer the inlet with NWP
 	if (kproc == 0){
 		for(j=0; j<Ny; j++){
@@ -261,102 +264,120 @@ int main(int argc, char **argv)
 				n = j*nx+i;
 				//				n = nx*ny + j*nx+i;
 			        id[n]=1;
+			        if (SignDist(i,j,k) > radius){
+			        	radius=SignDist(i,j,k);
+			        }
 			}
 		}
 	}
 
-	int imin,jmin,kmin,imax,jmax,kmax;
-	while (GlobalNumber != 0){
+	MPI_Allreduce(&radius,&Rcrit,1,MPI_DOUBLE,MPI_MAX,comm);
+	int Window=int(Rcrit);
 
-	  if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
-		int LocalNumber=0;
-		for(k=0; k<Nz; k++){
-			for(j=0; j<Ny; j++){
-				for(i=0; i<Nx; i++){
-					n = k*nx*ny + j*nx+i;
-					if (id[n] == 1 && SignDist(i,j,k) > Rcrit){
-						// loop over the window and update
-						imin=max(1,i-Window);
-						jmin=max(1,j-Window);
-						kmin=max(1,k-Window);
-						imax=min(Nx-1,i+Window);
-						jmax=min(Ny-1,j+Window);
-						kmax=min(Nz-1,k+Window);
-						for (kk=kmin; kk<kmax; kk++){
-							for (jj=jmin; jj<jmax; jj++){
-								for (ii=imin; ii<imax; ii++){
-									int nn = kk*nx*ny+jj*nx+ii;
-									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= Rcrit*Rcrit){
-										LocalNumber++;
-										id[nn]=1;
+	if (rank==0) printf("Starting morhpological drainage with critical radius = %f \n",Rcrit);
+
+	int imin,jmin,kmin,imax,jmax,kmax;
+
+	// Decrease the critical radius until the target saturation is met
+	double deltaR=0.05; // amount to change the radius in voxel units
+	while (sw > SW){
+
+		// decrease critical radius
+		Rcrit -= deltaR;
+		Window=int(Rcrit);
+		GlobalNumber = 1;
+
+		while (GlobalNumber != 0){
+
+			if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
+			int LocalNumber=0;
+			for(k=0; k<Nz; k++){
+				for(j=0; j<Ny; j++){
+					for(i=0; i<Nx; i++){
+						n = k*nx*ny + j*nx+i;
+						if (id[n] == 1 && SignDist(i,j,k) > Rcrit){
+							// loop over the window and update
+							imin=max(1,i-Window);
+							jmin=max(1,j-Window);
+							kmin=max(1,k-Window);
+							imax=min(Nx-1,i+Window);
+							jmax=min(Ny-1,j+Window);
+							kmax=min(Nz-1,k+Window);
+							for (kk=kmin; kk<kmax; kk++){
+								for (jj=jmin; jj<jmax; jj++){
+									for (ii=imin; ii<imax; ii++){
+										int nn = kk*nx*ny+jj*nx+ii;
+										double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
+										if (id[nn] == 2 && dsq <= Rcrit*Rcrit){
+											LocalNumber++;
+											id[nn]=1;
+										}
 									}
 								}
 							}
 						}
+						// move on
 					}
-					// move on
 				}
 			}
-		}
 
 
-		// Pack and send the updated ID values
-		PackID(Dm.sendList_x, Dm.sendCount_x ,sendID_x, id);
-		PackID(Dm.sendList_X, Dm.sendCount_X ,sendID_X, id);
-		PackID(Dm.sendList_y, Dm.sendCount_y ,sendID_y, id);
-		PackID(Dm.sendList_Y, Dm.sendCount_Y ,sendID_Y, id);
-		PackID(Dm.sendList_z, Dm.sendCount_z ,sendID_z, id);
-		PackID(Dm.sendList_Z, Dm.sendCount_Z ,sendID_Z, id);
-		PackID(Dm.sendList_xy, Dm.sendCount_xy ,sendID_xy, id);
-		PackID(Dm.sendList_Xy, Dm.sendCount_Xy ,sendID_Xy, id);
-		PackID(Dm.sendList_xY, Dm.sendCount_xY ,sendID_xY, id);
-		PackID(Dm.sendList_XY, Dm.sendCount_XY ,sendID_XY, id);
-		PackID(Dm.sendList_xz, Dm.sendCount_xz ,sendID_xz, id);
-		PackID(Dm.sendList_Xz, Dm.sendCount_Xz ,sendID_Xz, id);
-		PackID(Dm.sendList_xZ, Dm.sendCount_xZ ,sendID_xZ, id);
-		PackID(Dm.sendList_XZ, Dm.sendCount_XZ ,sendID_XZ, id);
-		PackID(Dm.sendList_yz, Dm.sendCount_yz ,sendID_yz, id);
-		PackID(Dm.sendList_Yz, Dm.sendCount_Yz ,sendID_Yz, id);
-		PackID(Dm.sendList_yZ, Dm.sendCount_yZ ,sendID_yZ, id);
-		PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
-		//......................................................................................
-		MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x,sendtag,
-				recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X,sendtag,
-				recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y,sendtag,
-				recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y,sendtag,
-				recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z,sendtag,
-				recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z,sendtag,
-				recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy,sendtag,
-				recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY,sendtag,
-				recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy,sendtag,
-				recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY,sendtag,
-				recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz,sendtag,
-				recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ,sendtag,
-				recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz,sendtag,
-				recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ,sendtag,
-				recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz,sendtag,
-				recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ,sendtag,
-				recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz,sendtag,
-				recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
-		MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
-				recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
+			// Pack and send the updated ID values
+			PackID(Dm.sendList_x, Dm.sendCount_x ,sendID_x, id);
+			PackID(Dm.sendList_X, Dm.sendCount_X ,sendID_X, id);
+			PackID(Dm.sendList_y, Dm.sendCount_y ,sendID_y, id);
+			PackID(Dm.sendList_Y, Dm.sendCount_Y ,sendID_Y, id);
+			PackID(Dm.sendList_z, Dm.sendCount_z ,sendID_z, id);
+			PackID(Dm.sendList_Z, Dm.sendCount_Z ,sendID_Z, id);
+			PackID(Dm.sendList_xy, Dm.sendCount_xy ,sendID_xy, id);
+			PackID(Dm.sendList_Xy, Dm.sendCount_Xy ,sendID_Xy, id);
+			PackID(Dm.sendList_xY, Dm.sendCount_xY ,sendID_xY, id);
+			PackID(Dm.sendList_XY, Dm.sendCount_XY ,sendID_XY, id);
+			PackID(Dm.sendList_xz, Dm.sendCount_xz ,sendID_xz, id);
+			PackID(Dm.sendList_Xz, Dm.sendCount_Xz ,sendID_Xz, id);
+			PackID(Dm.sendList_xZ, Dm.sendCount_xZ ,sendID_xZ, id);
+			PackID(Dm.sendList_XZ, Dm.sendCount_XZ ,sendID_XZ, id);
+			PackID(Dm.sendList_yz, Dm.sendCount_yz ,sendID_yz, id);
+			PackID(Dm.sendList_Yz, Dm.sendCount_Yz ,sendID_Yz, id);
+			PackID(Dm.sendList_yZ, Dm.sendCount_yZ ,sendID_yZ, id);
+			PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
+			//......................................................................................
+			MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x,sendtag,
+					recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X,sendtag,
+					recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y,sendtag,
+					recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y,sendtag,
+					recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z,sendtag,
+					recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z,sendtag,
+					recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy,sendtag,
+					recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY,sendtag,
+					recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy,sendtag,
+					recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY,sendtag,
+					recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz,sendtag,
+					recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ,sendtag,
+					recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz,sendtag,
+					recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ,sendtag,
+					recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz,sendtag,
+					recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ,sendtag,
+					recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz,sendtag,
+					recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
+					recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
 
 			UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
 			UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
@@ -376,48 +397,49 @@ int main(int argc, char **argv)
 			UnpackID(Dm.recvList_Yz, Dm.recvCount_Yz ,recvID_Yz, id);
 			UnpackID(Dm.recvList_yZ, Dm.recvCount_yZ ,recvID_yZ, id);
 			UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
-		//......................................................................................
+			//......................................................................................
 
-		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_INT,MPI_SUM,comm);
+			MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_INT,MPI_SUM,comm);
 
-		// Layer the inlet with NWP
-		if (kproc == 0){
-			for(j=0; j<Ny; j++){
-				for(i=0; i<Nx; i++){
-					n = j*nx+i;
-					//				n = nx*ny + j*nx+i;
-				        id[n]=1;
+			// Layer the inlet with NWP
+			if (kproc == 0){
+				for(j=0; j<Ny; j++){
+					for(i=0; i<Nx; i++){
+						n = j*nx+i;
+						//				n = nx*ny + j*nx+i;
+						id[n]=1;
+					}
+				}
+			}
+
+			// Layer the outlet with WP
+			if (kproc == nprocz-1){
+				for(j=0; j<Ny; j++){
+					for(i=0; i<Nx; i++){
+						n = (nz-1)*nx*ny+j*nx+i;
+						//				n = nx*ny + j*nx+i;
+						id[n]=2;
+					}
+				}
+			}
+
+		}
+
+		count = 0;
+		for (int k=1; k<Nz-1; k++){
+			for (int j=1; j<Ny-1; j++){
+				for (int i=1; i<Nx-1; i++){
+					n=k*Nx*Ny+j*Nx+i;
+					if (id[n] == 2){
+						count++;
+					}
 				}
 			}
 		}
-
-		// Layer the outlet with WP
-		if (kproc == nprocz-1){
-			for(j=0; j<Ny; j++){
-				for(i=0; i<Nx; i++){
-					n = (nz-1)*nx*ny+j*nx+i;
-					//				n = nx*ny + j*nx+i;
-				        id[n]=2;
-				}
-			}
-		}
-
+		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
+		sw= double(countGlobal)/totalGlobal;
+		if (rank==0) printf("Final saturation=%f\n",sw);
 	}
-
-	count = 0;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				n=k*Nx*Ny+j*Nx+i;
-				if (id[n] == 2){
-					count++;
-				}
-			}
-		}
-	}
-	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-	sat = float(countGlobal)/totalGlobal;
-	if (rank==0) printf("Final saturation=%f\n",sat);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *ID = fopen(LocalRankFilename,"wb");
