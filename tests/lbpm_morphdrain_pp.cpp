@@ -452,7 +452,12 @@ int main(int argc, char **argv)
 		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
 		sw= double(countGlobal)/totalGlobal;
-		if (rank==0) printf("Final saturation=%f\n",sw);
+		if (rank==0)
+        {
+            printf("Final saturation=%f\n",sw);
+            printf("Final critical radius=%f\n",Rcrit);
+
+        }
 	}
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
