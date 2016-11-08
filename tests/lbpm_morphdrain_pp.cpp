@@ -187,13 +187,11 @@ int main(int argc, char **argv)
 	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
-
-
 	count = 0;
-	for (int k=1; k<Nz-1; k++){
-	  for (int j=1; j<Ny-1; j++){
-	    for (int i=1; i<Nx-1; i++){
-	      n=k*Nx*Ny+j*Nx+i;
+	for (int k=1; k<nz-1; k++){
+	  for (int j=1; j<ny-1; j++){
+	    for (int i=1; i<nx-1; i++){
+	      n=k*nx*ny+j*nx+i;
 	      if (id[n] == 2){
 		count++;
 	      }
@@ -201,8 +199,8 @@ int main(int argc, char **argv)
 	  }
 	}
 	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-	sw= double(countGlobal)/totalGlobal;
-	if (rank==0) printf("Initial saturation (from ID.xxxxx files)=%f\n",sw)
+	double sw= double(countGlobal)/totalGlobal;
+	if (rank==0) printf("Initial saturation (from ID.xxxxx files)=%f\n",sw);
 
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
@@ -269,7 +267,6 @@ int main(int argc, char **argv)
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
-	double sw=1.f;
 	int GlobalNumber = 1;
 
 	double radius,Rcrit;
