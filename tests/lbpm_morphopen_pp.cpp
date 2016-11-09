@@ -481,13 +481,14 @@ int main(int argc, char **argv)
         }
         MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
         sw = float(countGlobal)/totalGlobal;
-		if (rank==0)
-        {
+    }
+
+        if (rank==0){
             printf("Final saturation=%f\n",sw);
             printf("Final critical radius=%f\n",Rcrit);
 
         }
-    }
+
     // Restore the solid phase
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
