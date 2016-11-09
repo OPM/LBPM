@@ -167,41 +167,6 @@ int main(int argc, char **argv)
 	fclose(IDFILE);
 
 
-	int count,countGlobal,totalGlobal;
-	count = 0;
-	for (int k=1; k<nz-1; k++){
-		for (int j=1; j<ny-1; j++){
-			for (int i=1; i<nx-1; i++){
-				n = k*nx*ny+j*nx+i;
-				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
-				else{
-					// initially saturated with wetting phase
-					//id[n] = 2;
-					count++;
-				}
-			}
-		}
-	}
-	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
-	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
-	if (rank==0) printf("Media Porosity: %f \n",porosity);
-
-	count = 0;
-	for (int k=1; k<nz-1; k++){
-	  for (int j=1; j<ny-1; j++){
-	    for (int i=1; i<nx-1; i++){
-	      n=k*nx*ny+j*nx+i;
-	      if (id[n] == 2){
-		count++;
-	      }
-	    }
-	  }
-	}
-	MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-	double sw= double(countGlobal)/totalGlobal;
-	if (rank==0) printf("Initial saturation (from ID.xxxxx files)=%f\n",sw);
-
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
 	int jproc = Dm.jproc;
@@ -268,6 +233,27 @@ int main(int argc, char **argv)
 	int Ny = ny;
 	int Nz = nz;
 	int GlobalNumber = 1;
+
+	int count,countGlobal,totalGlobal;
+	count = 0;
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				n = k*nx*ny+j*nx+i;
+				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
+				else{
+					// initially saturated with wetting phase
+					id[n] = 2;
+					count++;
+				}
+			}
+		}
+	}
+	// total Global is the number of nodes in the pore-space
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
+	if (rank==0) printf("Media Porosity: %f \n",porosity);
+
 
 	double radius,Rcrit;
 	radius = 0.0;
@@ -452,13 +438,14 @@ int main(int argc, char **argv)
 		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
 		sw= double(countGlobal)/totalGlobal;
-		if (rank==0)
-        {
+	}
+
+
+        if (rank==0){
             printf("Final saturation=%f\n",sw);
             printf("Final critical radius=%f\n",Rcrit);
 
         }
-	}
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *ID = fopen(LocalRankFilename,"wb");
