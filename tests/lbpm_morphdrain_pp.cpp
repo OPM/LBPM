@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 	}
 
 	MPI_Allreduce(&radius,&Rcrit,1,MPI_DOUBLE,MPI_MAX,comm);
-	int Window=int(Rcrit);
+	int Window=round(Rcrit);
 
 	if (rank==0) printf("Starting morhpological drainage with critical radius = %f \n",Rcrit);
 
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 
 		// decrease critical radius
 		Rcrit -= deltaR;
-		Window=int(Rcrit);
+		Window=round(Rcrit);
 		GlobalNumber = 1;
 
 		while (GlobalNumber != 0){
