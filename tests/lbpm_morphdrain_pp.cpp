@@ -279,6 +279,7 @@ int main(int argc, char **argv)
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	// Decrease the critical radius until the target saturation is met
+	double sw=1.0; // initial WP saturation set to one
 	double deltaR=0.05; // amount to change the radius in voxel units
 	while (sw > SW){
 
