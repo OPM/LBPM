@@ -54,7 +54,8 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
- 	double Rcrit=0.f;
+ 	//double Rcrit_new=1.f; // Hard-coded 'Rcrit' to avoid any calculations under resolutions.
+ 	double Rcrit_new=0.f; 
 	double SW=strtod(argv[1],NULL);
 	if (rank==0){
 		//printf("Critical radius %f (voxels)\n",Rcrit);
@@ -330,18 +331,25 @@ int main(int argc, char **argv)
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
-	double sw = 0.f;
-	int GlobalNumber = 1;
+	
+	double sw_old=0.0;
+	double sw_new=0.0; 
+    double sw_diff_old = 1.0;
+    double sw_diff_new = 1.0;
 
+	// Increase the critical radius until the target saturation is met
+	double deltaR=0.01; // amount to change the radius in voxel units
+    double Rcrit_old;
+
+	int GlobalNumber = 1;
 	int imin,jmin,kmin,imax,jmax,kmax;
     
-	// Increase the critical radius until the target saturation is met
-	double deltaR=0.05; // amount to change the radius in voxel units
-    while (sw<SW)
+    while (sw_new<SW)
     {
 
-		Rcrit += deltaR;
-	    int Window=round(Rcrit);
+        Rcrit_old = Rcrit_new;
+		Rcrit_new += deltaR;
+	    int Window=round(Rcrit_new);
         if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
                                      // and sw<Sw will be immediately broken
         int LocalNumber=0;
@@ -362,7 +370,7 @@ int main(int argc, char **argv)
             for(j=0; j<Ny; j++){
                 for(i=0; i<Nx; i++){
                     n = k*nx*ny + j*nx+i;
-                    if (SignDist(i,j,k) > Rcrit){
+                    if (SignDist(i,j,k) > Rcrit_new){
                         // loop over the window and update
                         imin=max(1,i-Window);
                         jmin=max(1,j-Window);
@@ -375,7 +383,7 @@ int main(int argc, char **argv)
                                 for (ii=imin; ii<imax; ii++){
                                     int nn = kk*nx*ny+jj*nx+ii;
                                     double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-                                    if (id[nn] == 2 && dsq <= Rcrit*Rcrit){
+                                    if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
                                         LocalNumber++;
                                         id[nn]=1;
                                     }
@@ -480,24 +488,34 @@ int main(int argc, char **argv)
             }
         }
         MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-        sw = float(countGlobal)/totalGlobal;
-    }
-
+        sw_new = float(countGlobal)/totalGlobal;
+        sw_diff_new = abs(sw_new-SW);
+        // for test only
         if (rank==0){
-            printf("Final saturation=%f\n",sw);
-            printf("Final critical radius=%f\n",Rcrit);
+            printf("Final saturation=%f\n",sw_new);
+            printf("Final critical radius=%f\n",Rcrit_new);
 
         }
+    }
 
-    // Restore the solid phase
-	for (int k=1; k<nz-1; k++){
-		for (int j=1; j<ny-1; j++){
-			for (int i=1; i<nx-1; i++){
-				n = k*nx*ny+j*nx+i;
-				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
-			}
-		}
-	}
+    if (sw_diff_new<sw_diff_old){
+        if (rank==0){
+            printf("Final saturation=%f\n",sw_new);
+            printf("Final critical radius=%f\n",Rcrit_new);
+
+        }
+    }
+    else{
+        if (rank==0){
+            printf("Final saturation=%f\n",sw_old);
+            printf("Final critical radius=%f\n",Rcrit_old);
+
+        }
+    }
+
+
+
+
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *ID = fopen(LocalRankFilename,"wb");
 	fwrite(id,1,N,ID);
