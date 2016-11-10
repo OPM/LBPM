@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
 
-	double radius,Rcrit;
+	double radius,Rcrit_new;
 	radius = 0.0;
 	// Layer the inlet with NWP
 	if (kproc == 0){
@@ -264,28 +264,35 @@ int main(int argc, char **argv)
 				n = j*nx+i;
 				//				n = nx*ny + j*nx+i;
 			        id[n]=1;
-			        if (SignDist(i,j,k) > radius){
-			        	radius=SignDist(i,j,k);
+			        if (SignDist(i,j,0) > radius){
+			        	radius=SignDist(i,j,0);
 			        }
 			}
 		}
 	}
 
-	MPI_Allreduce(&radius,&Rcrit,1,MPI_DOUBLE,MPI_MAX,comm);
-	int Window=round(Rcrit);
+	MPI_Allreduce(&radius,&Rcrit_new,1,MPI_DOUBLE,MPI_MAX,comm);
 
-	if (rank==0) printf("Starting morhpological drainage with critical radius = %f \n",Rcrit);
+	if (rank==0) printf("Starting morhpological drainage with critical radius = %f \n",Rcrit_new);
 
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	// Decrease the critical radius until the target saturation is met
-	double sw=1.0; // initial WP saturation set to one
-	double deltaR=0.05; // amount to change the radius in voxel units
-	while (sw > SW){
+	double deltaR=0.01; // amount to change the radius in voxel units
+    double Rcrit_old;
+	double sw_old=1.0; // initial WP saturation set to one
+	double sw_new=1.0; // initial WP saturation set to one
+    double sw_diff_old = 1.0;
+    double sw_diff_new = 1.0;
+   
+	while (sw_new > SW){
+        
+        Rcrit_old = Rcrit_new;
+		Rcrit_new -= deltaR;// decrease critical radius
+        sw_old = sw_new;
+        sw_diff_old = sw_diff_new;
 
-		// decrease critical radius
-		Rcrit -= deltaR;
-		Window=round(Rcrit);
+        int Window=round(Rcrit_new);
 		GlobalNumber = 1;
 
 		while (GlobalNumber != 0){
@@ -296,7 +303,7 @@ int main(int argc, char **argv)
 				for(j=0; j<Ny; j++){
 					for(i=0; i<Nx; i++){
 						n = k*nx*ny + j*nx+i;
-						if (id[n] == 1 && SignDist(i,j,k) > Rcrit){
+						if (id[n] == 1 && SignDist(i,j,k) > Rcrit_new){
 							// loop over the window and update
 							imin=max(1,i-Window);
 							jmin=max(1,j-Window);
@@ -309,7 +316,7 @@ int main(int argc, char **argv)
 									for (ii=imin; ii<imax; ii++){
 										int nn = kk*nx*ny+jj*nx+ii;
 										double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-										if (id[nn] == 2 && dsq <= Rcrit*Rcrit){
+										if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
 											LocalNumber++;
 											id[nn]=1;
 										}
@@ -438,15 +445,35 @@ int main(int argc, char **argv)
 			}
 		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		sw= double(countGlobal)/totalGlobal;
-	}
-
-
+		sw_new= double(countGlobal)/totalGlobal;
         if (rank==0){
-            printf("Final saturation=%f\n",sw);
-            printf("Final critical radius=%f\n",Rcrit);
+            printf("Final saturation=%f\n",sw_new);
+            printf("Final critical radius=%f\n",Rcrit_new);
 
         }
+        sw_diff_new = abs(sw_new-SW);
+	}
+
+    if (sw_diff_new<sw_diff_old){
+        if (rank==0){
+            printf("Final saturation=%f\n",sw_new);
+            printf("Final critical radius=%f\n",Rcrit_new);
+
+        }
+    }
+    else{
+        if (rank==0){
+            printf("Final saturation=%f\n",sw_old);
+            printf("Final critical radius=%f\n",Rcrit_old);
+
+        }
+    }
+
+//        if (rank==0){
+//            printf("Final saturation=%f\n",sw);
+//            printf("Final critical radius=%f\n",Rcrit);
+//
+//        }
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *ID = fopen(LocalRankFilename,"wb");
