@@ -491,11 +491,11 @@ int main(int argc, char **argv)
         sw_new = float(countGlobal)/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
         // for test only
-        if (rank==0){
-            printf("Final saturation=%f\n",sw_new);
-            printf("Final critical radius=%f\n",Rcrit_new);
-
-        }
+//        if (rank==0){
+//            printf("Final saturation=%f\n",sw_new);
+//            printf("Final critical radius=%f\n",Rcrit_new);
+//
+//        }
     }
 
     if (sw_diff_new<sw_diff_old){
