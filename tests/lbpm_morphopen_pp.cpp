@@ -338,7 +338,7 @@ int main(int argc, char **argv)
     double sw_diff_new = 1.0;
 
 	// Increase the critical radius until the target saturation is met
-	double deltaR=0.01; // amount to change the radius in voxel units
+	double deltaR=0.05; // amount to change the radius in voxel units
     double Rcrit_old;
 
 	int GlobalNumber = 1;
@@ -347,26 +347,14 @@ int main(int argc, char **argv)
 	Rcrit_new = maxdistGlobal;
     while (sw_new > SW)
     {
-
+        sw_diff_old = sw_diff_new;
+        sw_old = sw_new;
         Rcrit_old = Rcrit_new;
 		Rcrit_new -= deltaR;
-	    int Window=ceil(Rcrit_new);
-       // if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
+	    int Window=round(Rcrit_new);
+        if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
                                      // and sw<Sw will be immediately broken
         int LocalNumber=0;
-        // Initialization: saturate medium with wetting phase - need this for each iteraction before SW is met
-        for (int k=1; k<nz-1; k++){
-            for (int j=1; j<ny-1; j++){
-                for (int i=1; i<nx-1; i++){
-                    n = k*nx*ny+j*nx+i;
-                    if (SignDist(i,j,k) < 0.0)  id[n] = 0;
-                    else{
-                        // initially saturated with wetting phase
-                        id[n] = 2;
-                    }
-                }
-            }
-        }
         for(k=0; k<Nz; k++){
             for(j=0; j<Ny; j++){
                 for(i=0; i<Nx; i++){
