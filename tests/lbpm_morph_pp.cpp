@@ -233,30 +233,36 @@ int main(int argc, char **argv)
 	if (rank==0){
 		PORESIZE=fopen("PoreSize.hist","w");
 		printf("    writing PoreSize.hist \n");
-		int PoreCount=0;
-		int Count;
+		uint64_t PoreCount=0;
+		uint64_t Count;
+		double PoreVol=0.f;
 		for (int idx=0; idx<NumBins; idx++){
 		  double BinCenter=MinPoreSize+idx*BinWidth;
 		  Count=GlobalHistogram[idx];
 		  PoreCount+=Count;
-			fprintf(PORESIZE,"%i %f\n",Count,BinCenter);
+		  PoreVol+=Count*BinCenter*BinCenter*BinCenter;
+			fprintf(PORESIZE,"%lu %f\n",Count,BinCenter);
 		}
 		fclose(PORESIZE);
 		// Compute quartiles
+		//printf("Total pores: %lu\n",PoreCount);
 		double Q1,Q2,Q3,Q4;
-		int Qval=PoreCount/4;
+		//uint64_t Qval=PoreCount/4;
+		double Qval=PoreVol*0.25;
 		Q1=Q2=Q3=MinPoreSize;
 		Q4=MaxPoreSize;
-		Count=0;
+		//printf("Volume per quartile %f\n",Qval);
+		PoreVol=0.f;
 		for (int idx=0; idx<NumBins; idx++){
 		  double BinCenter=MinPoreSize+idx*BinWidth;
-		  Count+=GlobalHistogram[idx];
-		  if (Count<Qval) Q1+=BinWidth;
-		  if (Count<2*Qval) Q2+=BinWidth;
-		  if (Count<3*Qval) Q3+=BinWidth;
+		  Count=GlobalHistogram[idx];
+		  PoreVol+=Count*BinCenter*BinCenter*BinCenter;
+		  if (PoreVol<Qval) Q1+=BinWidth;
+		  if (PoreVol<2*Qval) Q2+=BinWidth;
+		  if (PoreVol<3*Qval) Q3+=BinWidth;
 		}
 
-		      printf("Quartiles for pore size distribution \n");
+		      printf("Quartiles (volumetric) for pore size distribution \n");
 		      printf("Q1 %f\n",Q1);
 		      printf("Q2 %f\n",Q2);
 		      printf("Q3 %f\n",Q3);

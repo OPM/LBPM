@@ -332,8 +332,8 @@ int main(int argc, char **argv)
 	int Ny = ny;
 	int Nz = nz;
 	
-	double sw_old=0.0;
-	double sw_new=0.0; 
+	double sw_old=1.0;
+	double sw_new=1.0; 
     double sw_diff_old = 1.0;
     double sw_diff_new = 1.0;
 
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
-    while (sw_new<SW)
+    while (sw_new > SW)
     {
 
         Rcrit_old = Rcrit_new;
