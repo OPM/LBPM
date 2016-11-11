@@ -344,13 +344,14 @@ int main(int argc, char **argv)
 	int GlobalNumber = 1;
 	int imin,jmin,kmin,imax,jmax,kmax;
     
+	Rcrit_new = maxdistGlobal;
     while (sw_new<SW)
     {
 
         Rcrit_old = Rcrit_new;
-		Rcrit_new += deltaR;
-	    int Window=round(Rcrit_new);
-        if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
+		Rcrit_new -= deltaR;
+	    int Window=ceil(Rcrit_new);
+       // if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
                                      // and sw<Sw will be immediately broken
         int LocalNumber=0;
         // Initialization: saturate medium with wetting phase - need this for each iteraction before SW is met
@@ -390,6 +391,7 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
+
                     }
                     // move on
                 }
