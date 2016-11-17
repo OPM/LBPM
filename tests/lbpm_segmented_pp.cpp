@@ -119,37 +119,42 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
                     Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
                     Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
 					 */
-					Dxp = Distance(i+1,j,k);
-					Dyp = Distance(i,j+1,k);
-					Dzp = Distance(i,j,k+1);
+					Dxp = Distance(i+1,j,k)- Distance(i,j,k) - 0.5*Dxxp;
+					Dyp = Distance(i,j+1,k)- Distance(i,j,k) - 0.5*Dyyp;
+					Dzp = Distance(i,j,k+1)- Distance(i,j,k) - 0.5*Dzzp;
 
-					Dxm = Distance(i-1,j,k);
-					Dym = Distance(i,j-1,k);
-					Dzm = Distance(i,j,k-1);
+					Dxm = Distance(i,j,k) - Distance(i-1,j,k) + 0.5*Dxxm;
+					Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
+					Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
 
 					// Compute upwind derivatives for Godunov Hamiltonian
 					if (sign < 0.0){
-						if (Dxp > Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
-						else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
+						if (Dxp + Dxm > 0.f)  	Dx = Dxp*Dxp;
+						else					Dx = Dxm*Dxm;
 
-						if (Dyp > Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
-						else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
+						if (Dyp + Dym > 0.f)  	Dy = Dyp*Dyp;
+						else					Dy = Dym*Dym;
 
-						if (Dzp > Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
-						else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
+						if (Dzp + Dzm > 0.f)  	Dz = Dzp*Dzp;
+						else					Dz = Dzm*Dzm;
 					}
 					else{
-						if (Dxp < Dxm)  Dx = Dxp - Distance(i,j,k) + 0.5*Dxxp;
-						else			Dx = Distance(i,j,k) - Dxm + 0.5*Dxxm;
 
-						if (Dyp < Dym)  Dy = Dyp - Distance(i,j,k) + 0.5*Dyyp;
-						else			Dy = Distance(i,j,k) - Dym + 0.5*Dyym;
+						if (Dxp + Dxm < 0.f)  	Dx = Dxp*Dxp;
+						else					Dx = Dxm*Dxm;
 
-						if (Dzp < Dzm)  Dz = Dzp - Distance(i,j,k) + 0.5*Dzzp;
-						else			Dz = Distance(i,j,k) - Dzm + 0.5*Dzzm;
+						if (Dyp + Dym < 0.f)  	Dy = Dyp*Dyp;
+						else					Dy = Dym*Dym;
+
+						if (Dzp + Dzm < 0.f)  	Dz = Dzp*Dzp;
+						else					Dz = Dzm*Dzm;
 					}
 
-					norm=sqrt(Dx*Dx+Dy*Dy+Dz*Dz);
+					//Dx = max(Dxp*Dxp,Dxm*Dxm);
+					//Dy = max(Dyp*Dyp,Dym*Dym);
+					//Dz = max(Dzp*Dzp,Dzm*Dzm);
+
+					norm=sqrt(Dx + Dy + Dz);
 					if (norm > 1.0) norm=1.0;
 
 					Distance(i,j,k) += dt*sign*(1.0 - norm);
@@ -195,8 +200,6 @@ int main(int argc, char **argv)
 		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int BC=0;
-		char Filename[40];
-		int xStart,yStart,zStart;
 		//  char fluidValue,solidValue;
 
 		std::vector<char> solidValues;
@@ -215,15 +218,6 @@ int main(int argc, char **argv)
 			domain >> Lx;
 			domain >> Ly;
 			domain >> Lz;
-
-			ifstream image("Segmented.in");
-			image >> Filename; 	// Name of data file containing segmented data
-			image >> Nx;   		// size of the binary file
-			image >> Ny;
-			image >> Nz;
-			image >> xStart;	// offset for the starting voxel
-			image >> yStart;
-			image >> zStart;
 
 		}
 		MPI_Barrier(comm);
@@ -265,34 +259,9 @@ int main(int argc, char **argv)
 		readID=fread(Dm.id,1,N,ID);
 		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
 		fclose(ID);
-		// make sure communication
-		// Set up layers in x direction
-		for (k=0; k<nz; k++){
-			for (j=0; j<ny; j++){
-				Dm.id[k*nx*ny+j*nx]=1;
-				Dm.id[k*nx*ny+j*nx+nx-1] = 1;
-			}
-		}
-
-		for (k=0; k<nz; k++){
-			for (i=0; i<nx; i++){
-				Dm.id[k*nx*ny+i]=1;
-				Dm.id[k*nx*ny+(ny-1)*nx+i] = 1;
-			}
-		}
-
-		for (j=0; j<ny; j++){
-			for (i=0; i<nx; i++){
-				Dm.id[j*nx+i]=1;
-				Dm.id[nx*ny*(nz-1)+j*nx+i] = 1;
-			}
-		}
 
 		// Initialize the domain and communication
-
 		nx+=2; ny+=2; nz+=2;
-		int count = 0;
-		N=nx*ny*nz;
 
 		char *id;
 		id = new char [N];
@@ -300,6 +269,7 @@ int main(int argc, char **argv)
 		//	DoubleArray Distance(nx,ny,nz);
 		//	DoubleArray Phase(nx,ny,nz);
 
+		int count = 0;
 		// Solve for the position of the solid phase
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){
@@ -317,7 +287,7 @@ int main(int argc, char **argv)
 				for (i=0;i<nx;i++){
 					n=k*nx*ny+j*nx+i;
 					// Initialize distance to +/- 1
-					Averages.SDs(i,j,k) = 2.0*id[n]-1.0;
+					Averages.SDs(i,j,k) = 2.0*double(id[n])-1.0;
 				}
 			}
 		}
@@ -334,7 +304,7 @@ int main(int argc, char **argv)
 
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
 		FILE *DIST = fopen(LocalRankFilename,"wb");
-		fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
+		fwrite(Averages.SDs.data(),8,N,DIST);
 		fclose(DIST);
 
 	}
