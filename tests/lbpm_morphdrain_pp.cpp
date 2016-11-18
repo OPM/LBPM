@@ -446,12 +446,12 @@ int main(int argc, char **argv)
 		}
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
 		sw_new= double(countGlobal)/totalGlobal;
-        if (rank==0){
-            printf("Final saturation=%f\n",sw_new);
-            printf("Final critical radius=%f\n",Rcrit_new);
-
-        }
         sw_diff_new = abs(sw_new-SW);
+//        if (rank==0){
+//            printf("Final saturation=%f\n",sw_new);
+//            printf("Final critical radius=%f\n",Rcrit_new);
+//
+//        }
 	}
 
     if (sw_diff_new<sw_diff_old){
