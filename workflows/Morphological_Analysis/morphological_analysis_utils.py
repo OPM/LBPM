@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-
+# TODO: double check the issue of the "view of the array" for all the following functions
+#       make sure it is the copy of the array, not the view of the array is used for any
+#       subprocesses.
 import numpy as np
 import scipy.stats as stats
 import scipy.ndimage.morphology as morphology
