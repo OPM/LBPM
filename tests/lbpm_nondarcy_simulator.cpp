@@ -393,8 +393,7 @@ int main(int argc, char **argv)
 		starttime = MPI_Wtime();
 		//.........................................
 
-		double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
-
+		double D32,vawx,vawy,vawz,Fo,Re,velocity,err1D,mag_force,vel_prev;
 		FILE * NONDARCY;
 		if (rank == 0){
 			NONDARCY = fopen("nondarcy.csv","a");
@@ -470,9 +469,9 @@ int main(int argc, char **argv)
 					Averages.ComputeLocal();
 					Averages.Reduce();
 
-					double vawx = -Averages.vaw_global(0);
-					double vawy = -Averages.vaw_global(1);
-					double vawz = -Averages.vaw_global(2);
+				        vawx = -Averages.vaw_global(0);
+					vawy = -Averages.vaw_global(1);
+					vawz = -Averages.vaw_global(2);
 
 					// Compute local measures
 					err = Re; // previous Reynolds number
@@ -509,7 +508,7 @@ int main(int argc, char **argv)
 
 			// Write steady state variables to csv file
 			if (rank==0){
-				fprintf(NONDARCY,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",D32,Fx,Fy,Fz,vx,vy,vz,Re,Fo);
+				fprintf(NONDARCY,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",D32,Fx,Fy,Fz,vawx,vawy,vawz,Re,Fo);
 				fflush(NONDARCY);
 			}
 		}
