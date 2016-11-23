@@ -654,43 +654,43 @@ int main(int argc, char **argv)
 	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
-	AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
-	AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocatevoid * memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
-	AllocateDeviceMemory((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
-	AllocateDeviceMemory((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
 	int *dvcSendList_x, *dvcSendList_y, *dvcSendList_z, *dvcSendList_X, *dvcSendList_Y, *dvcSendList_Z;
 	int *dvcSendList_xy, *dvcSendList_yz, *dvcSendList_xz, *dvcSendList_Xy, *dvcSendList_Yz, *dvcSendList_xZ;
@@ -700,83 +700,83 @@ int main(int argc, char **argv)
 	int *dvcRecvList_xy, *dvcRecvList_yz, *dvcRecvList_xz, *dvcRecvList_Xy, *dvcRecvList_Yz, *dvcRecvList_xZ;
 	int *dvcRecvList_xY, *dvcRecvList_yZ, *dvcRecvList_Xz, *dvcRecvList_XY, *dvcRecvList_YZ, *dvcRecvList_XZ;
 	//......................................................................................
-	AllocateDeviceMemory((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
-	AllocateDeviceMemory((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
-	AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
 	MPI_Barrier(comm);
 	if (rank==0)	printf ("Prepare to copy send/recv Lists to device \n");
-	CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
-	CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
-	CopyToDevice(dvcSendList_y,sendList_y,sendCount_y*sizeof(int));
-	CopyToDevice(dvcSendList_Y,sendList_Y,sendCount_Y*sizeof(int));
-	CopyToDevice(dvcSendList_z,sendList_z,sendCount_z*sizeof(int));
-	CopyToDevice(dvcSendList_Z,sendList_Z,sendCount_Z*sizeof(int));
-	CopyToDevice(dvcSendList_xy,sendList_xy,sendCount_xy*sizeof(int));
-	CopyToDevice(dvcSendList_XY,sendList_XY,sendCount_XY*sizeof(int));
-	CopyToDevice(dvcSendList_xY,sendList_xY,sendCount_xY*sizeof(int));
-	CopyToDevice(dvcSendList_Xy,sendList_Xy,sendCount_Xy*sizeof(int));
-	CopyToDevice(dvcSendList_xz,sendList_xz,sendCount_xz*sizeof(int));
-	CopyToDevice(dvcSendList_XZ,sendList_XZ,sendCount_XZ*sizeof(int));
-	CopyToDevice(dvcSendList_xZ,sendList_xZ,sendCount_xZ*sizeof(int));
-	CopyToDevice(dvcSendList_Xz,sendList_Xz,sendCount_Xz*sizeof(int));
-	CopyToDevice(dvcSendList_yz,sendList_yz,sendCount_yz*sizeof(int));
-	CopyToDevice(dvcSendList_YZ,sendList_YZ,sendCount_YZ*sizeof(int));
-	CopyToDevice(dvcSendList_yZ,sendList_yZ,sendCount_yZ*sizeof(int));
-	CopyToDevice(dvcSendList_Yz,sendList_Yz,sendCount_Yz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_y,sendList_y,sendCount_y*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_Y,sendList_Y,sendCount_Y*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_z,sendList_z,sendCount_z*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_Z,sendList_Z,sendCount_Z*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_xy,sendList_xy,sendCount_xy*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_XY,sendList_XY,sendCount_XY*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_xY,sendList_xY,sendCount_xY*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_Xy,sendList_Xy,sendCount_Xy*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_xz,sendList_xz,sendCount_xz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_XZ,sendList_XZ,sendCount_XZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_xZ,sendList_xZ,sendCount_xZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_Xz,sendList_Xz,sendCount_Xz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_yz,sendList_yz,sendCount_yz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_YZ,sendList_YZ,sendCount_YZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_yZ,sendList_yZ,sendCount_yZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcSendList_Yz,sendList_Yz,sendCount_Yz*sizeof(int));
 	//......................................................................................
-	CopyToDevice(dvcRecvList_x,recvList_x,recvCount_x*sizeof(int));
-	CopyToDevice(dvcRecvList_X,recvList_X,recvCount_X*sizeof(int));
-	CopyToDevice(dvcRecvList_y,recvList_y,recvCount_y*sizeof(int));
-	CopyToDevice(dvcRecvList_Y,recvList_Y,recvCount_Y*sizeof(int));
-	CopyToDevice(dvcRecvList_z,recvList_z,recvCount_z*sizeof(int));
-	CopyToDevice(dvcRecvList_Z,recvList_Z,recvCount_Z*sizeof(int));
-	CopyToDevice(dvcRecvList_xy,recvList_xy,recvCount_xy*sizeof(int));
-	CopyToDevice(dvcRecvList_XY,recvList_XY,recvCount_XY*sizeof(int));
-	CopyToDevice(dvcRecvList_xY,recvList_xY,recvCount_xY*sizeof(int));
-	CopyToDevice(dvcRecvList_Xy,recvList_Xy,recvCount_Xy*sizeof(int));
-	CopyToDevice(dvcRecvList_xz,recvList_xz,recvCount_xz*sizeof(int));
-	CopyToDevice(dvcRecvList_XZ,recvList_XZ,recvCount_XZ*sizeof(int));
-	CopyToDevice(dvcRecvList_xZ,recvList_xZ,recvCount_xZ*sizeof(int));
-	CopyToDevice(dvcRecvList_Xz,recvList_Xz,recvCount_Xz*sizeof(int));
-	CopyToDevice(dvcRecvList_yz,recvList_yz,recvCount_yz*sizeof(int));
-	CopyToDevice(dvcRecvList_YZ,recvList_YZ,recvCount_YZ*sizeof(int));
-	CopyToDevice(dvcRecvList_yZ,recvList_yZ,recvCount_yZ*sizeof(int));
-	CopyToDevice(dvcRecvList_Yz,recvList_Yz,recvCount_Yz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_x,recvList_x,recvCount_x*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_X,recvList_X,recvCount_X*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_y,recvList_y,recvCount_y*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_Y,recvList_Y,recvCount_Y*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_z,recvList_z,recvCount_z*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_Z,recvList_Z,recvCount_Z*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_xy,recvList_xy,recvCount_xy*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_XY,recvList_XY,recvCount_XY*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_xY,recvList_xY,recvCount_xY*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_Xy,recvList_Xy,recvCount_Xy*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_xz,recvList_xz,recvCount_xz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_XZ,recvList_XZ,recvCount_XZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_xZ,recvList_xZ,recvCount_xZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_Xz,recvList_Xz,recvCount_Xz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_yz,recvList_yz,recvCount_yz*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_YZ,recvList_YZ,recvCount_YZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_yZ,recvList_yZ,recvCount_yZ*sizeof(int));
+	ScaLBL_CopyToDevice(dvcRecvList_Yz,recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
 	// Fill in the phase ID from neighboring processors
 	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
@@ -953,9 +953,9 @@ int main(int argc, char **argv)
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
-	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 	// Copy to the device
-	CopyToDevice(ID, id, N);
+	ScaLBL_CopyToDevice(ID, id, N);
 	//...........................................................................
 
 	//...........................................................................
@@ -969,23 +969,23 @@ int main(int argc, char **argv)
 	double *f_even,*f_odd;
 	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 	double *Phi,*Den;
 //	double *Copy;
 	double *ColorGrad, *Velocity, *Pressure;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
-	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-//	AllocateDeviceMemory((void **) &Copy, 2*dist_mem_size);
-	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
+//	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Copy, 2*dist_mem_size);
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
+	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
 	//...........................................................................
 	// Phase indicator (in array form as needed by PMMC algorithm)
@@ -1192,16 +1192,16 @@ int main(int argc, char **argv)
 			}
 		}
 		// Copy the bubble to the device and initialize
-		CopyToDevice(ID, id, N);
+		ScaLBL_CopyToDevice(ID, id, N);
 
 		//...........................................................................
 		//...........................................................................
-		InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+		ScaLBL_D3Q19_Init(ID, f_even, f_odd, Nx, Ny, Nz);
 		//......................................................................
-	//	InitDenColorDistance(ID, Copy, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
-		InitDenColorDistance(ID, Den, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz);
-		InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-		InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+	//	ScaLBL_Color_InitDistance(ID, Copy, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz, S);
+		ScaLBL_Color_InitDistance(ID, Den, Phi, SDs.data(), das, dbs, beta, xIntPos, Nx, Ny, Nz);
+		ScaLBL_D3Q7_Init(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Init(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 		//......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
 		//......................................................................
@@ -1219,40 +1219,40 @@ int main(int argc, char **argv)
 			// Read in the restart file to CPU buffers
 			ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 			// Copy the restart data to the GPU
-			CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
-			CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
-			CopyToDevice(Den,cDen,2*N*sizeof(double));
-			DeviceBarrier();
+			ScaLBL_CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
+			ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
+			ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
+			ScaLBL_DeviceBarrier();
 			MPI_Barrier(comm);
 		}
 
 		//*************************************************************************
 		// 		Compute the phase indicator field and reset Copy, Den
 		//*************************************************************************
-	//	ComputePhi(ID, Phi, Copy, Den, N);
-		ComputePhi(ID, Phi, Den, N);
+	//	ScaLBL_ComputePhaseField(ID, Phi, Copy, Den, N);
+		ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 		//*************************************************************************
 		//...................................................................................
-		PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-		PackValues(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-		PackValues(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-		PackValues(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-		PackValues(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-		PackValues(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-		PackValues(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-		PackValues(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-		PackValues(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-		PackValues(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-		PackValues(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-		PackValues(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-		PackValues(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-		PackValues(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-		PackValues(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-		PackValues(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-		PackValues(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-		PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
+		ScaLBL_Scalar_Pack(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 		
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		//...................................................................................
 		// Send / Recv all the phase indcator field values
 		//...................................................................................
@@ -1298,34 +1298,34 @@ int main(int argc, char **argv)
 		//...................................................................................
 		MPI_Waitall(18,req1,stat1);
 		MPI_Waitall(18,req2,stat2);
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		//...................................................................................
 		//...................................................................................
-	/*		UnpackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-		UnpackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+	/*		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
 	*/		
-		UnpackValues(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
-		UnpackValues(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
-		UnpackValues(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
-		UnpackValues(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
-		UnpackValues(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-		UnpackValues(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-		UnpackValues(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-		UnpackValues(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-		UnpackValues(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-		UnpackValues(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-		UnpackValues(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-		UnpackValues(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-		UnpackValues(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-		UnpackValues(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-		UnpackValues(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-		UnpackValues(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-		UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-		UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
+		ScaLBL_Scalar_Unpack(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 		//...................................................................................
 
 		if (rank==0 && pBC){
@@ -1333,29 +1333,29 @@ int main(int argc, char **argv)
 			printf("Setting outlet pressure = %f \n", dout);
 		}
 		if (pBC && kproc == 0)	{
-			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);			
-			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);			
+			ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 			
 		if (pBC && kproc == nprocz-1){
-			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
-		DeviceBarrier();
-		CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
+		ScaLBL_DeviceBarrier();
+		ScaLBL_CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
 		//...........................................................................
 		//...........................................................................
 		// Copy the data for for the analysis timestep
 		//...........................................................................
 		// Copy the phase from the GPU -> CPU
 		//...........................................................................
-		DeviceBarrier();
-		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-		CopyToHost(Phase.data(),Phi,N*sizeof(double));
-		CopyToHost(Press.data(),Pressure,N*sizeof(double));
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+		ScaLBL_CopyToHost(Phase.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Press.data(),Pressure,N*sizeof(double));
 		MPI_Barrier(comm);
 		//...........................................................................
 		
@@ -1370,71 +1370,71 @@ int main(int argc, char **argv)
 			//*************************************************************************
 			// Fused Color Gradient and Collision 
 			//*************************************************************************
-			ColorCollideOpt( ID,f_even,f_odd,Phi,ColorGrad,
+			ScaLBL_D3Q19_ColorCollide( ID,f_even,f_odd,Phi,ColorGrad,
 								 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
 			//*************************************************************************
 
 			//...................................................................................
-			PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
-			PackDist(4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-			PackDist(5,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-			PackDist(6,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
-			PackDist(7,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_x,0,sendCount_x,sendbuf_x,f_even,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,f_even,N);
 			//...Packing for X face(1,7,9,11,13)................................
-			PackDist(0,dvcSendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
-			PackDist(3,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-			PackDist(4,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-			PackDist(5,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
-			PackDist(6,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+			ScaLBL_D3Q19_Pack(0,dvcSendList_X,0,sendCount_X,sendbuf_X,f_odd,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,f_odd,N);
 			//...Packing for y face(4,8,9,16,18).................................
-			PackDist(2,dvcSendList_y,0,sendCount_y,sendbuf_y,f_even,N);
-			PackDist(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-			PackDist(4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
-			PackDist(8,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
-			PackDist(9,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_y,0,sendCount_y,sendbuf_y,f_even,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,f_odd,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
+			ScaLBL_D3Q19_Pack(9,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,f_even,N);
 			//...Packing for Y face(3,7,10,15,17).................................
-			PackDist(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
-			PackDist(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-			PackDist(5,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
-			PackDist(7,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
-			PackDist(8,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,f_odd,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,f_even,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,f_odd,N);
 			//...Packing for z face(6,12,13,16,17)................................
-			PackDist(3,dvcSendList_z,0,sendCount_z,sendbuf_z,f_even,N);
-			PackDist(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-			PackDist(6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
-			PackDist(8,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
-			PackDist(8,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_z,0,sendCount_z,sendbuf_z,f_even,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,f_even,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,f_odd,N);
 			//...Packing for Z face(5,11,14,15,18)................................
-			PackDist(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
-			PackDist(5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-			PackDist(7,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
-			PackDist(7,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
-			PackDist(9,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,f_odd,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,f_odd,N);
+			ScaLBL_D3Q19_Pack(9,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,f_even,N);
 			//...Pack the xy edge (8)................................
-			PackDist(4,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,f_even,N);
 			//...Pack the Xy edge (9)................................
-			PackDist(4,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
+			ScaLBL_D3Q19_Pack(4,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,f_odd,N);
 			//...Pack the xY edge (10)................................
-			PackDist(5,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,f_even,N);
 			//...Pack the XY edge (7)................................
-			PackDist(3,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,f_odd,N);
 			//...Pack the xz edge (12)................................
-			PackDist(6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,f_even,N);
 			//...Pack the xZ edge (14)................................
-			PackDist(7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,f_even,N);
 			//...Pack the Xz edge (13)................................
-			PackDist(6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
+			ScaLBL_D3Q19_Pack(6,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,f_odd,N);
 			//...Pack the XZ edge (11)................................
-			PackDist(5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
+			ScaLBL_D3Q19_Pack(5,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,f_odd,N);
 			//...Pack the xz edge (12)................................
 			//...Pack the yz edge (16)................................
-			PackDist(8,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,f_even,N);
 			//...Pack the yZ edge (18)................................
-			PackDist(9,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
+			ScaLBL_D3Q19_Pack(9,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,f_even,N);
 			//...Pack the Yz edge (17)................................
-			PackDist(8,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
+			ScaLBL_D3Q19_Pack(8,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,f_odd,N);
 			//...Pack the YZ edge (15)................................
-			PackDist(7,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
+			ScaLBL_D3Q19_Pack(7,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,f_odd,N);
 			//...................................................................................
 
 			//...................................................................................
@@ -1482,14 +1482,14 @@ int main(int argc, char **argv)
 			//*************************************************************************
 	//		DensityStreamD3Q7(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC);
 			//*************************************************************************
-			MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi, 
+			ScaLBL_D3Q7_ColorCollideMass(ID, A_even, A_odd, B_even, B_odd, Den, Phi, 
 									ColorGrad, Velocity, beta, N, pBC);
 				
 
 			//*************************************************************************
 			// 		Swap the distributions for momentum transport
 			//*************************************************************************
-			SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+			ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 			//*************************************************************************
 
 			//...................................................................................
@@ -1501,90 +1501,90 @@ int main(int argc, char **argv)
 			// Unpack the distributions on the device
 			//...................................................................................
 			//...Map recieve list for the X face: q=2,8,10,12,13 .................................
-			UnpackDist(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-			UnpackDist(3,-1,-1,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-			UnpackDist(4,-1,1,0,dvcRecvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-			UnpackDist(5,-1,0,-1,dvcRecvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
-			UnpackDist(6,-1,0,1,dvcRecvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,-1,-1,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,-1,1,0,dvcRecvList_X,2*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,-1,0,-1,dvcRecvList_X,3*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,-1,0,1,dvcRecvList_X,4*recvCount_X,recvCount_X,recvbuf_X,f_odd,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the x face: q=1,7,9,11,13..................................
-			UnpackDist(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-			UnpackDist(4,1,1,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-			UnpackDist(5,1,-1,0,dvcRecvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-			UnpackDist(6,1,0,1,dvcRecvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
-			UnpackDist(7,1,0,-1,dvcRecvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,1,1,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,1,-1,0,dvcRecvList_x,2*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,1,0,1,dvcRecvList_x,3*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,1,0,-1,dvcRecvList_x,4*recvCount_x,recvCount_x,recvbuf_x,f_even,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-			UnpackDist(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-			UnpackDist(3,-1,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-			UnpackDist(5,1,-1,0,dvcRecvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
-			UnpackDist(7,0,-1,-1,dvcRecvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
-			UnpackDist(8,0,-1,1,dvcRecvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,-1,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,1,-1,0,dvcRecvList_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,0,-1,-1,dvcRecvList_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,-1,1,dvcRecvList_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,f_odd,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-			UnpackDist(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-			UnpackDist(4,1,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-			UnpackDist(4,-1,1,0,dvcRecvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
-			UnpackDist(8,0,1,1,dvcRecvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
-			UnpackDist(9,0,1,-1,dvcRecvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,1,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,-1,1,0,dvcRecvList_y,2*recvCount_y,recvCount_y,recvbuf_y,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,1,1,dvcRecvList_y,3*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(9,0,1,-1,dvcRecvList_y,4*recvCount_y,recvCount_y,recvbuf_y,f_even,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
-			UnpackDist(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-			UnpackDist(5,-1,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-			UnpackDist(7,1,0,-1,dvcRecvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
-			UnpackDist(7,0,-1,-1,dvcRecvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
-			UnpackDist(9,0,1,-1,dvcRecvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,-1,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,1,0,-1,dvcRecvList_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,0,-1,-1,dvcRecvList_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(9,0,1,-1,dvcRecvList_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
-			UnpackDist(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-			UnpackDist(6,1,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-			UnpackDist(6,-1,0,1,dvcRecvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
-			UnpackDist(8,0,1,1,dvcRecvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
-			UnpackDist(8,0,-1,1,dvcRecvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,1,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,-1,0,1,dvcRecvList_z,2*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,1,1,dvcRecvList_z,3*recvCount_z,recvCount_z,recvbuf_z,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,-1,1,dvcRecvList_z,4*recvCount_z,recvCount_z,recvbuf_z,f_odd,Nx,Ny,Nz);
 			//..................................................................................
 			//...Map recieve list for the xy edge <<<8)................................
-			UnpackDist(3,-1,-1,0,dvcRecvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,-1,-1,0,dvcRecvList_XY,0,recvCount_XY,recvbuf_XY,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the Xy edge <<<9)................................
-			UnpackDist(5,1,-1,0,dvcRecvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,1,-1,0,dvcRecvList_xY,0,recvCount_xY,recvbuf_xY,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the xY edge <<<10)................................
-			UnpackDist(4,-1,1,0,dvcRecvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,-1,1,0,dvcRecvList_Xy,0,recvCount_Xy,recvbuf_Xy,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the XY edge <<<7)................................
-			UnpackDist(4,1,1,0,dvcRecvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(4,1,1,0,dvcRecvList_xy,0,recvCount_xy,recvbuf_xy,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the xz edge <<<12)................................
-			UnpackDist(5,-1,0,-1,dvcRecvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(5,-1,0,-1,dvcRecvList_XZ,0,recvCount_XZ,recvbuf_XZ,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the xZ edge <<<14)................................
-			UnpackDist(6,-1,0,1,dvcRecvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,-1,0,1,dvcRecvList_Xz,0,recvCount_Xz,recvbuf_Xz,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the Xz edge <<<13)................................
-			UnpackDist(7,1,0,-1,dvcRecvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,1,0,-1,dvcRecvList_xZ,0,recvCount_xZ,recvbuf_xZ,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the XZ edge <<<11)................................
-			UnpackDist(6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(6,1,0,1,dvcRecvList_xz,0,recvCount_xz,recvbuf_xz,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the yz edge <<<16)................................
-			UnpackDist(7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(7,0,-1,-1,dvcRecvList_YZ,0,recvCount_YZ,recvbuf_YZ,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the yZ edge <<<18)................................
-			UnpackDist(8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,-1,1,dvcRecvList_Yz,0,recvCount_Yz,recvbuf_Yz,f_odd,Nx,Ny,Nz);
 			//...Map recieve list for the Yz edge <<<17)................................
-			UnpackDist(9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(9,0,1,-1,dvcRecvList_yZ,0,recvCount_yZ,recvbuf_yZ,f_even,Nx,Ny,Nz);
 			//...Map recieve list for the YZ edge <<<15)................................
-			UnpackDist(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(8,0,1,1,dvcRecvList_yz,0,recvCount_yz,recvbuf_yz,f_even,Nx,Ny,Nz);
 			//...................................................................................
 
 			//...................................................................................
-			PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,A_even,N);
-			PackDist(1,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,B_even,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_x,0,sendCount_x,sendbuf_x,A_even,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,B_even,N);
 			//...Packing for X face(1,7,9,11,13)................................
-			PackDist(0,dvcSendList_X,0,sendCount_X,sendbuf_X,A_odd,N);
-			PackDist(0,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,B_odd,N);
+			ScaLBL_D3Q19_Pack(0,dvcSendList_X,0,sendCount_X,sendbuf_X,A_odd,N);
+			ScaLBL_D3Q19_Pack(0,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,B_odd,N);
 			//...Packing for y face(4,8,9,16,18).................................
-			PackDist(2,dvcSendList_y,0,sendCount_y,sendbuf_y,A_even,N);
-			PackDist(2,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,B_even,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_y,0,sendCount_y,sendbuf_y,A_even,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,B_even,N);
 			//...Packing for Y face(3,7,10,15,17).................................
-			PackDist(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,A_odd,N);
-			PackDist(1,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,B_odd,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,A_odd,N);
+			ScaLBL_D3Q19_Pack(1,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,B_odd,N);
 			//...Packing for z face(6,12,13,16,17)................................
-			PackDist(3,dvcSendList_z,0,sendCount_z,sendbuf_z,A_even,N);
-			PackDist(3,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,B_even,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_z,0,sendCount_z,sendbuf_z,A_even,N);
+			ScaLBL_D3Q19_Pack(3,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,B_even,N);
 			//...Packing for Z face(5,11,14,15,18)................................
-			PackDist(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,A_odd,N);
-			PackDist(2,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,B_odd,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,A_odd,N);
+			ScaLBL_D3Q19_Pack(2,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,B_odd,N);
 			//...................................................................................
 
 			//...................................................................................
@@ -1603,8 +1603,8 @@ int main(int argc, char **argv)
 			MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
 			//...................................................................................
 			
-			SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
-			SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
+			ScaLBL_D3Q7_Swap(ID, A_even, A_odd, Nx, Ny, Nz);
+			ScaLBL_D3Q7_Swap(ID, B_even, B_odd, Nx, Ny, Nz);
 			
 			//...................................................................................
 			// Wait for completion of D3Q19 communication
@@ -1614,59 +1614,59 @@ int main(int argc, char **argv)
 			// Unpack the distributions on the device
 			//...................................................................................
 			//...Map recieve list for the X face: q=2,8,10,12,13 .................................
-			UnpackDist(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,A_odd,Nx,Ny,Nz);
-			UnpackDist(0,-1,0,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,A_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(0,-1,0,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the x face: q=1,7,9,11,13..................................
-			UnpackDist(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,A_even,Nx,Ny,Nz);
-			UnpackDist(1,1,0,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,B_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,A_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,1,0,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,B_even,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-			UnpackDist(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,A_odd,Nx,Ny,Nz);
-			UnpackDist(1,0,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,A_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(1,0,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-			UnpackDist(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,A_even,Nx,Ny,Nz);
-			UnpackDist(2,0,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,B_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,A_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,B_even,Nx,Ny,Nz);
 			//...................................................................................
 			//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
-			UnpackDist(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,A_odd,Nx,Ny,Nz);
-			UnpackDist(2,0,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,A_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(2,0,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,Nx,Ny,Nz);
 			//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
-			UnpackDist(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,A_even,Nx,Ny,Nz);
-			UnpackDist(3,0,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,B_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,A_even,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Unpack(3,0,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,B_even,Nx,Ny,Nz);
 			//..................................................................................
 
 			//..................................................................................
-			ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-			ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+			ScaLBL_D3Q7_Density(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+			ScaLBL_D3Q7_Density(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 			
 			//*************************************************************************
 			// 		Compute the phase indicator field 
 			//*************************************************************************
-	//		ComputePhi(ID, Phi, Copy, Den, N);
-			ComputePhi(ID, Phi, Den, N);
+	//		ScaLBL_ComputePhaseField(ID, Phi, Copy, Den, N);
+			ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 			//*************************************************************************
 
 			//...................................................................................
-			PackValues(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-			PackValues(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-			PackValues(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-			PackValues(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-			PackValues(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-			PackValues(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
-			PackValues(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
-			PackValues(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
-			PackValues(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
-			PackValues(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
-			PackValues(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
-			PackValues(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
-			PackValues(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
-			PackValues(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
-			PackValues(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
-			PackValues(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
-			PackValues(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
-			PackValues(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_xy, sendCount_xy,sendbuf_xy, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_xY, sendCount_xY,sendbuf_xY, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_Xy, sendCount_Xy,sendbuf_Xy, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_XY, sendCount_XY,sendbuf_XY, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_xz, sendCount_xz,sendbuf_xz, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_xZ, sendCount_xZ,sendbuf_xZ, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_Xz, sendCount_Xz,sendbuf_Xz, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_XZ, sendCount_XZ,sendbuf_XZ, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_yz, sendCount_yz,sendbuf_yz, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_yZ, sendCount_yZ,sendbuf_yZ, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_Yz, sendCount_Yz,sendbuf_Yz, Phi, N);
+			ScaLBL_Scalar_Pack(dvcSendList_YZ, sendCount_YZ,sendbuf_YZ, Phi, N);
 			//...................................................................................
 			// Send / Recv all the phase indcator field values
 			//...................................................................................
@@ -1712,44 +1712,44 @@ int main(int argc, char **argv)
 			//...................................................................................
 			MPI_Waitall(18,req1,stat1);
 			MPI_Waitall(18,req2,stat2);
-			DeviceBarrier();
+			ScaLBL_DeviceBarrier();
 			//...................................................................................
 			//...................................................................................
-	/*		UnpackValues(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
-			UnpackValues(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
-			UnpackValues(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
-			UnpackValues(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
-			UnpackValues(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
-			UnpackValues(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
+	/*		ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_x, sendCount_x,sendbuf_x, Phi, N);
+			ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_y, sendCount_y,sendbuf_y, Phi, N);
+			ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_z, sendCount_z,sendbuf_z, Phi, N);
+			ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_X, sendCount_X,sendbuf_X, Phi, N);
+			ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_Y, sendCount_Y,sendbuf_Y, Phi, N);
+			ScaLBL_Scalar_Unpack(faceGrid, packThreads, dvcSendList_Z, sendCount_Z,sendbuf_Z, Phi, N);
 	*/		
-			UnpackValues(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
-			UnpackValues(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
-			UnpackValues(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
-			UnpackValues(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
-			UnpackValues(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
-			UnpackValues(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
-			UnpackValues(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
-			UnpackValues(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
-			UnpackValues(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
-			UnpackValues(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
-			UnpackValues(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
-			UnpackValues(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
-			UnpackValues(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
-			UnpackValues(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
-			UnpackValues(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
-			UnpackValues(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
-			UnpackValues(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
-			UnpackValues(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_x, recvCount_x,recvbuf_x, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_y, recvCount_y,recvbuf_y, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_z, recvCount_z,recvbuf_z, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_X, recvCount_X,recvbuf_X, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_Y, recvCount_Y,recvbuf_Y, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_Z, recvCount_Z,recvbuf_Z, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_xy, recvCount_xy,recvbuf_xy, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_xY, recvCount_xY,recvbuf_xY, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_Xy, recvCount_Xy,recvbuf_Xy, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_XY, recvCount_XY,recvbuf_XY, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_xz, recvCount_xz,recvbuf_xz, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_xZ, recvCount_xZ,recvbuf_xZ, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_Xz, recvCount_Xz,recvbuf_Xz, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_XZ, recvCount_XZ,recvbuf_XZ, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_yz, recvCount_yz,recvbuf_yz, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_Yz, recvCount_Yz,recvbuf_Yz, Phi, N);
+			ScaLBL_Scalar_Unpack(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, Phi, N);
 			//...................................................................................
 
 			if (pBC && kproc == 0)	{
-				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);			
-				ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);			
+				ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 				
 			if (pBC && kproc == nprocz-1){
-				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-				ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 			
 			//...................................................................................
@@ -1761,9 +1761,9 @@ int main(int argc, char **argv)
 
 			if (timestep%RESTART_INTERVAL == 0){
 				// Copy the data to the CPU
-				CopyToHost(cDistEven,f_even,10*N*sizeof(double));
-				CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-				CopyToHost(cDen,Den,2*N*sizeof(double));
+				ScaLBL_CopyToHost(cDistEven,f_even,10*N*sizeof(double));
+				ScaLBL_CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
+				ScaLBL_CopyToHost(cDen,Den,2*N*sizeof(double));
 				// Read in the restart file to CPU buffers
 				WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 			}
@@ -1772,12 +1772,12 @@ int main(int argc, char **argv)
 		// End the bubble loop
 		//...........................................................................
 		// Copy the phase indicator field for the later timestep
-		DeviceBarrier();
-		ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-		CopyToHost(Phase_tminus.data(),Phi,N*sizeof(double));
-		CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
-		CopyToHost(Phase.data(),Phi,N*sizeof(double));
-		CopyToHost(Press.data(),Pressure,N*sizeof(double));
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+		ScaLBL_CopyToHost(Phase_tminus.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Phase_tplus.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Phase.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Press.data(),Pressure,N*sizeof(double));
 
 		double temp=0.5/beta;
 		for (n=0; n<N; n++){
@@ -2197,7 +2197,7 @@ int main(int argc, char **argv)
     NULL_USE(sat_w);
 
 	//************************************************************************/
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
@@ -2218,7 +2218,7 @@ int main(int argc, char **argv)
 	//************************************************************************/
 	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
 	//	printf("Local File Name =  %s \n",LocalRankFilename);
-//	CopyToHost(Phase.data(),Phi,N*sizeof(double));
+//	ScaLBL_CopyToHost(Phase.data(),Phi,N*sizeof(double));
 
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
@@ -2228,7 +2228,7 @@ int main(int argc, char **argv)
 	
 /*	double *DensityValues;
 	DensityValues = new double [2*N];
-	CopyToHost(DensityValues,Copy,2*N*sizeof(double));
+	ScaLBL_CopyToHost(DensityValues,Copy,2*N*sizeof(double));
 	FILE *PHASE;
 	PHASE = fopen(LocalRankFilename,"wb");
 	fwrite(DensityValues,8,2*N,PHASE);

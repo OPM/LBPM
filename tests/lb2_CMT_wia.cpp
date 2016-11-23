@@ -33,7 +33,7 @@ inline double NormProb(short int value, short int *mu, short int *sigma, int k)
 	return exp(-(value-m)*(value-m)/(2.0*s*s)) / sum;
 }
 
-extern "C" void CMT_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
+extern "C" void CMT_ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double beta, int N)
 {
 	char id;
@@ -171,16 +171,16 @@ int main(int argc, char **argv)
 	double *f_even,*f_odd;
 	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 */	
 	printf("Set up ID \n");
 	char *ID;
-	AllocateDeviceMemory((void **) &ID, N);
+	ScaLBL_AllocateDeviceMemory((void **) &ID, N);
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -201,13 +201,13 @@ int main(int argc, char **argv)
 	printf("Allocate memory \n");
 
 	double *Phi,*Den, *ColorGrad;
-	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	AllocateDeviceMemory((void **) &Den, NC*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Den, NC*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, dist_mem_size);
 	
 	double *packed_even,*packed_odd;
-	AllocateDeviceMemory((void **) &packed_even, 4*dist_mem_size*NC);	// Allocate device memory
-	AllocateDeviceMemory((void **) &packed_odd, 3*dist_mem_size*NC);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &packed_even, 4*dist_mem_size*NC);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &packed_odd, 3*dist_mem_size*NC);	// Allocate device memory
 	
 	//..............................................
 	// Read the input file
@@ -255,9 +255,9 @@ int main(int argc, char **argv)
 	}
 	//..............................................
 	printf("Initialize distribution \n");
-	InitD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
-	InitD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
-	ComputePhi(ID, Phi, Den, N);
+	ScaLBL_D3Q7_Init(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
+	ScaLBL_D3Q7_Init(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
+	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 
 	int timestep=0;
 	int timestepMax=10;
@@ -265,29 +265,29 @@ int main(int argc, char **argv)
 
 	while (timestep < timestepMax){
 		
-		ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
+		ScaLBL_D3Q19_ColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
 
-		CMT_MassColorCollideD3Q7(ID, &packed_even[0], &packed_odd[0], &packed_even[4*N], &packed_odd[3*N], Den, Phi,
+		CMT_ScaLBL_D3Q7_ColorCollideMass(ID, &packed_even[0], &packed_odd[0], &packed_even[4*N], &packed_odd[3*N], Den, Phi,
 								ColorGrad, beta, N);
 		
 /*		//...................................................................................
-		PackDist(1,dvcSendList_x,0,sendCount_x,sendbuf_x,A_even,N);
-		PackDist(1,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,B_even,N);
+		ScaLBL_D3Q19_Pack(1,dvcSendList_x,0,sendCount_x,sendbuf_x,A_even,N);
+		ScaLBL_D3Q19_Pack(1,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,B_even,N);
 		//...Packing for X face(1,7,9,11,13)................................
-		PackDist(0,dvcSendList_X,0,sendCount_X,sendbuf_X,A_odd,N);
-		PackDist(0,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,B_odd,N);
+		ScaLBL_D3Q19_Pack(0,dvcSendList_X,0,sendCount_X,sendbuf_X,A_odd,N);
+		ScaLBL_D3Q19_Pack(0,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,B_odd,N);
 		//...Packing for y face(4,8,9,16,18).................................
-		PackDist(2,dvcSendList_y,0,sendCount_y,sendbuf_y,A_even,N);
-		PackDist(2,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,B_even,N);
+		ScaLBL_D3Q19_Pack(2,dvcSendList_y,0,sendCount_y,sendbuf_y,A_even,N);
+		ScaLBL_D3Q19_Pack(2,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,B_even,N);
 		//...Packing for Y face(3,7,10,15,17).................................
-		PackDist(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,A_odd,N);
-		PackDist(1,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,B_odd,N);
+		ScaLBL_D3Q19_Pack(1,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,A_odd,N);
+		ScaLBL_D3Q19_Pack(1,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,B_odd,N);
 		//...Packing for z face(6,12,13,16,17)................................
-		PackDist(3,dvcSendList_z,0,sendCount_z,sendbuf_z,A_even,N);
-		PackDist(3,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,B_even,N);
+		ScaLBL_D3Q19_Pack(3,dvcSendList_z,0,sendCount_z,sendbuf_z,A_even,N);
+		ScaLBL_D3Q19_Pack(3,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,B_even,N);
 		//...Packing for Z face(5,11,14,15,18)................................
-		PackDist(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,A_odd,N);
-		PackDist(2,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,B_odd,N);
+		ScaLBL_D3Q19_Pack(2,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,A_odd,N);
+		ScaLBL_D3Q19_Pack(2,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,B_odd,N);
 		//...................................................................................
 
 		//...................................................................................
@@ -306,8 +306,8 @@ int main(int argc, char **argv)
 		MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
 */		//...................................................................................
 		
-		SwapD3Q7(ID, &packed_even[0], &packed_odd[0], Nx, Ny, Nz);
-		SwapD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Swap(ID, &packed_even[0], &packed_odd[0], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Swap(ID, &packed_even[4*N], &packed_odd[3*N], Nx, Ny, Nz);
 		
 /*		//...................................................................................
 		// Wait for completion of D3Q19 communication
@@ -317,37 +317,37 @@ int main(int argc, char **argv)
 		// Unpack the distributions on the device
 		//...................................................................................
 		//...Map recieve list for the X face: q=2,8,10,12,13 .................................
-		UnpackDist(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,A_odd,Nx,Ny,Nz);
-		UnpackDist(0,-1,0,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(0,-1,0,0,dvcRecvList_X,0,recvCount_X,recvbuf_X,A_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(0,-1,0,0,dvcRecvList_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the x face: q=1,7,9,11,13..................................
-		UnpackDist(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,A_even,Nx,Ny,Nz);
-		UnpackDist(1,1,0,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,B_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(1,1,0,0,dvcRecvList_x,0,recvCount_x,recvbuf_x,A_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(1,1,0,0,dvcRecvList_x,recvCount_x,recvCount_x,recvbuf_x,B_even,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-		UnpackDist(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,A_odd,Nx,Ny,Nz);
-		UnpackDist(1,0,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(1,0,-1,0,dvcRecvList_Y,0,recvCount_Y,recvbuf_Y,A_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(1,0,-1,0,dvcRecvList_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-		UnpackDist(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,A_even,Nx,Ny,Nz);
-		UnpackDist(2,0,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,B_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(2,0,1,0,dvcRecvList_y,0,recvCount_y,recvbuf_y,A_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(2,0,1,0,dvcRecvList_y,recvCount_y,recvCount_y,recvbuf_y,B_even,Nx,Ny,Nz);
 		//...................................................................................
 		//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
-		UnpackDist(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,A_odd,Nx,Ny,Nz);
-		UnpackDist(2,0,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(2,0,0,-1,dvcRecvList_Z,0,recvCount_Z,recvbuf_Z,A_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(2,0,0,-1,dvcRecvList_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,Nx,Ny,Nz);
 		//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
-		UnpackDist(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,A_even,Nx,Ny,Nz);
-		UnpackDist(3,0,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,B_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(3,0,0,1,dvcRecvList_z,0,recvCount_z,recvbuf_z,A_even,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Unpack(3,0,0,1,dvcRecvList_z,recvCount_z,recvCount_z,recvbuf_z,B_even,Nx,Ny,Nz);
 		//..................................................................................
 */		
 		//..................................................................................
-		ComputeDensityD3Q7(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
-		ComputeDensityD3Q7(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Density(ID, &packed_even[0], &packed_odd[0], &Den[0], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Density(ID, &packed_even[4*N], &packed_odd[3*N], &Den[N], Nx, Ny, Nz);
 		
 		//*************************************************************************
 		// 		Compute the phase indicator field 
 		//*************************************************************************
-		ComputePhi(ID, Phi, Den, N);
+		ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 		//*************************************************************************
 		timestep++;
 	}
