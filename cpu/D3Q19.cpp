@@ -1,4 +1,4 @@
-extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -10,7 +10,7 @@ extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf
 	}
 }
 
-extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	//....................................................................................
 	// Unack distribution from the recv buffer
@@ -54,7 +54,7 @@ extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int sta
 	}
 }
 
-extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -93,7 +93,7 @@ extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int N
 }
 
 //*************************************************************************
-extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
@@ -340,7 +340,7 @@ extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, do
 	}
 }
 
-extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q19_Velocity(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions
@@ -395,7 +395,7 @@ extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd
 	}
 }
 
-extern "C" void ComputePressureD3Q19(const char *ID, const double *disteven, const double *distodd,
+extern "C" void ScaLBL_D3Q19_Pressure(const char *ID, const double *disteven, const double *distodd,
     double *Pressure, int Nx, int Ny, int Nz)
 {
 	int n,N;

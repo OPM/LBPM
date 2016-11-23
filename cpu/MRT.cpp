@@ -88,7 +88,7 @@ extern "C" void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 
 
 //*************************************************************************
-extern "C" void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
+extern "C" void ScaLBL_D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 

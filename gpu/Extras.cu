@@ -2,7 +2,7 @@
 #include <cuda.h>
 #include <stdio.h>
 
-extern "C" void AllocateDeviceMemory(void** address, size_t size){
+extern "C" void ScaLBL_ScaLBL_ScaLBL_AllocateDeviceMemory(void** address, size_t size){
        	cudaMalloc(address,size);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -10,7 +10,7 @@ extern "C" void AllocateDeviceMemory(void** address, size_t size){
 	}	
 }
 
-extern "C" void CopyToDevice(void* dest, const void* source, size_t size){
+extern "C" void ScaLBL_ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){
 	cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -19,7 +19,7 @@ extern "C" void CopyToDevice(void* dest, const void* source, size_t size){
 }
 
 
-extern "C" void CopyToHost(void* dest, const void* source, size_t size){
+extern "C" void ScaLBL_CopyToHost(void* dest, const void* source, size_t size){
 	cudaMemcpy(dest,source,size,cudaMemcpyDeviceToHost);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -27,6 +27,6 @@ extern "C" void CopyToHost(void* dest, const void* source, size_t size){
 	}
 }
 
-extern "C" void DeviceBarrier(){
+extern "C" void ScaLBL_DeviceBarrier(){
 	cudaDeviceSynchronize();
 }

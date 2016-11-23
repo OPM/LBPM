@@ -1,5 +1,5 @@
 //*************************************************************************
-// CUDA kernels for single-phase MRT code
+// CUDA kernels for single-phase ScaLBL_D3Q19_MRT code
 // James McClure
 //*************************************************************************
 #include <cuda.h>
@@ -106,7 +106,7 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 }
 
 //*************************************************************************
-__global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
+__global__ void D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 
@@ -300,9 +300,9 @@ __global__ void MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny,
 	}
 }
 
-extern "C" void MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q19_MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB, double Fx, double Fy, double Fz,int Nx, int Ny, int Nz)
 {
-	MRT <<< NBLOCKS,NTHREADS>>>  (ID, f_even, f_odd, Nx, Ny, Nz, rlxA, rlxB, Fx, Fy, Fz);
+	D3Q19_MRT <<< NBLOCKS,NTHREADS>>>  (ID, f_even, f_odd, Nx, Ny, Nz, rlxA, rlxB, Fx, Fy, Fz);
 }
 
 

@@ -2,7 +2,7 @@
 #define NBLOCKS 32
 #define NTHREADS 128
 
-__global__  void dvc_PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+__global__  void dvc_ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -15,7 +15,7 @@ __global__  void dvc_PackDist(int q, int *list, int start, int count, double *se
 	}
 }
 
-__global__ void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+__global__ void dvc_ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	//....................................................................................
 	// Unack distribution from the recv buffer
@@ -59,7 +59,7 @@ __global__ void dvc_UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int
 	}
 }
 
-__global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
+__global__ void dvc_ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -103,7 +103,7 @@ __global__ void dvc_InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, i
 }
 
 //*************************************************************************
-__global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
@@ -244,7 +244,7 @@ __global__  void dvc_SwapD3Q19(char *ID, double *disteven, double *distodd, int 
 }
 
 
-__global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_D3Q19_Velocity(char *ID, double *disteven, double *distodd, double *vel, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	// distributions
@@ -305,7 +305,7 @@ __global__  void dvc_ComputeVelocityD3Q19(char *ID, double *disteven, double *di
 	}
 }
 
-__global__  void dvc_ComputePressureD3Q19(const char *ID, const double *disteven, const double *distodd,
+__global__  void dvc_ScaLBL_D3Q19_Pressure(const char *ID, const double *disteven, const double *distodd,
     double *Pressure, int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -466,39 +466,39 @@ __global__ void dvc_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, doubl
 	}
 }
 
-extern "C" void PackDist(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
-	dvc_PackDist <<<GRID,512 >>>(q, list, start, count, sendbuf, dist, N);
+	dvc_ScaLBL_D3Q19_Pack <<<GRID,512 >>>(q, list, start, count, sendbuf, dist, N);
 }
-extern "C" void UnpackDist(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 			double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	int GRID = count / 512 + 1;
-	dvc_UnpackDist <<<GRID,512 >>>(q, Cqx, Cqy, Cqz, list, start, count, recvbuf, dist, Nx, Ny, Nz);
+	dvc_ScaLBL_D3Q19_Unpack <<<GRID,512 >>>(q, Cqx, Cqy, Cqz, list, start, count, recvbuf, dist, Nx, Ny, Nz);
 }
 //*************************************************************************
-extern "C" void InitD3Q19(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz){
-	dvc_InitD3Q19<<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Nx, Ny, Nz);
+extern "C" void ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_D3Q19_Init<<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Nx, Ny, Nz);
         cudaError_t err = cudaGetLastError();
         if (cudaSuccess != err){
-           printf("CUDA error in InitD3Q19: %s \n",cudaGetErrorString(err));
+           printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",cudaGetErrorString(err));
         }
 
 }
-extern "C" void SwapD3Q19(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
-	dvc_SwapD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
+extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_D3Q19_Swap<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
         cudaError_t err = cudaGetLastError();
         if (cudaSuccess != err){
-           printf("CUDA error in SwapD3Q19: %s \n",cudaGetErrorString(err));
+           printf("CUDA error in ScaLBL_D3Q19_Swap: %s \n",cudaGetErrorString(err));
         }
 }
-extern "C" void ComputeVelocityD3Q19(char *ID, double *disteven, double *distodd, double *vel, int Nx, int \
+extern "C" void ScaLBL_D3Q19_Velocity(char *ID, double *disteven, double *distodd, double *vel, int Nx, int \
 Ny, int Nz){
 
-        dvc_ComputeVelocityD3Q19<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, vel, Nx, Ny, Nz);
+        dvc_ScaLBL_D3Q19_Velocity<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, vel, Nx, Ny, Nz);
 }
-extern "C" void ComputePressureD3Q19(char *ID, double *disteven, double *distodd, double *Pressure,
+extern "C" void ScaLBL_D3Q19_Pressure(char *ID, double *disteven, double *distodd, double *Pressure,
                                                                         int Nx, int Ny, int Nz){
-        dvc_ComputePressureD3Q19<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
+        dvc_ScaLBL_D3Q19_Pressure<<< NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Pressure, Nx, Ny, Nz);
 }
 
 extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,int Nx, int Ny, int Nz){
