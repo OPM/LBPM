@@ -1,6 +1,6 @@
 // CPU Functions for D3Q7 Lattice Boltzmann Methods
 
-extern "C" void ScaLBL_D3Q19_Unpack(int *list, int count, double *sendbuf, double *Data, int N){
+extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout

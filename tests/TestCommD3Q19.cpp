@@ -365,7 +365,7 @@ int main(int argc, char **argv)
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
-		ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
 		ScaLBL_CopyToDevice(ID, id, N);
 		//...........................................................................
@@ -378,8 +378,8 @@ int main(int argc, char **argv)
 		//......................device distributions.................................
 		double *f_even,*f_odd;
 		//...........................................................................
-		ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-		ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
 		//...........................................................................
 		double *f_even_host,*f_odd_host;
 		f_even_host = new double [10*N];

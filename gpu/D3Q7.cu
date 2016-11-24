@@ -3,7 +3,7 @@
 #define NBLOCKS 32
 #define NTHREADS 128
 
-__global__  void dvc_ScaLBL_D3Q19_Unpack(int *list, int count, double *sendbuf, double *Data, int N){
+__global__  void dvc_ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout

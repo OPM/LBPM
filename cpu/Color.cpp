@@ -1414,7 +1414,7 @@ extern "C" void ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int
 	//...................................................................
 }
 
-extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
+extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
 	int n;
 	for (n=Slice*Nx*Ny; n<(Slice+1)*Nx*Ny; n++){
 		Phi[n] = value;

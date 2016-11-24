@@ -2,7 +2,7 @@
 #include <cuda.h>
 #include <stdio.h>
 
-extern "C" void ScaLBL_ScaLBL_ScaLBL_AllocateDeviceMemory(void** address, size_t size){
+extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
        	cudaMalloc(address,size);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -10,7 +10,7 @@ extern "C" void ScaLBL_ScaLBL_ScaLBL_AllocateDeviceMemory(void** address, size_t
 	}	
 }
 
-extern "C" void ScaLBL_ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){
+extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){
 	cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){

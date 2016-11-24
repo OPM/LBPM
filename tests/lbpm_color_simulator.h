@@ -287,14 +287,14 @@ void run_analysis( int timestep, int restart_interval,
     PROFILE_START("start_analysis");
 
     // Copy the appropriate variables to the host (so we can spawn new threads)
-    DeviceBarrier();
+    ScaLBL_DeviceBarrier();
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
     if ( (type&CopyPhaseIndicator)!=0 || (type&ComputeAverages)!=0 ||
          (type&CopySimState)!=0 || (type&IdentifyBlobs)!=0 )
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
-        CopyToHost(phase->data(),Phi,N*sizeof(double));
+        ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
     }
     if ( (type&CopyPhaseIndicator)!=0 ) {
         memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
@@ -308,8 +308,8 @@ void run_analysis( int timestep, int restart_interval,
         // Copy the members of Averages to the cpu (phase was copied above)
         // Wait 
         PROFILE_START("Copy-Pressure",1);
-        ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-        DeviceBarrier();
+        ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+        ScaLBL_DeviceBarrier();
         PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Wait",1);
         tpool.wait(wait.analysis);
@@ -317,10 +317,10 @@ void run_analysis( int timestep, int restart_interval,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-        CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-        CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-        CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-        CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+        ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+        ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+        ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+        ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cDistEven, cDistOdd;
@@ -329,9 +329,9 @@ void run_analysis( int timestep, int restart_interval,
         cDen = std::shared_ptr<double>(new double[2*N],DeleteArray<double>);
         cDistEven = std::shared_ptr<double>(new double[10*N],DeleteArray<double>);
         cDistOdd = std::shared_ptr<double>(new double[9*N],DeleteArray<double>);
-        CopyToHost(cDistEven.get(),f_even,10*N*sizeof(double));
-        CopyToHost(cDistOdd.get(),f_odd,9*N*sizeof(double));
-        CopyToHost(cDen.get(),Den,2*N*sizeof(double));
+        ScaLBL_CopyToHost(cDistEven.get(),f_even,10*N*sizeof(double));
+        ScaLBL_CopyToHost(cDistOdd.get(),f_odd,9*N*sizeof(double));
+        ScaLBL_CopyToHost(cDen.get(),Den,2*N*sizeof(double));
     }
     PROFILE_STOP("Copy data to host",1);
 

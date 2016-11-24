@@ -90,22 +90,22 @@ int main(int argc, char **argv)
 	//......................device distributions.................................
 	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 	double *Phi,*Den;
 	double *ColorGrad, *Velocity;
 	//...........................................................................
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
-	ScaLBL_ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 	// Copy to the device
 	ScaLBL_CopyToDevice(ID, id, N);
 	ScaLBL_CopyToDevice(Velocity, Vel, 3*N*sizeof(double));

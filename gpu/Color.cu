@@ -1388,7 +1388,7 @@ __global__  void dvc_ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den
 	//...................................................................
 }
 
-__global__  void dvc_SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice)
+__global__  void dvc_ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice)
 {
 	int n = Slice*Nx*Ny +  blockIdx.x*blockDim.x + threadIdx.x;
 	if (n < (Slice+1)*Nx*Ny){
