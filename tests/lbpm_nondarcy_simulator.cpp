@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 		printf("Pore-scale lattice Boltzmann simulator for non-Darcy flow in porous media \n \n");
 		printf("Simulate non-Darcy flow in porous media \n");
 		printf("    MPI-based lattice Boltzmann simulator \n");
-		printf("    Multi-relaxation time (MRT) D3Q19 \n \n");
+		printf("    Multi-relaxation time (ScaLBL_D3Q19_MRT) D3Q19 \n \n");
 		printf("    Launch with MPI (e.g.) \n \n");
 		printf(" mpirun -np $NUMPROCS $LBPM_WIA_DIR/lbpm_nondarcy_simulator \n \n");
 		printf("**********CITATION********** \n");
@@ -360,9 +360,9 @@ int main(int argc, char **argv)
 			//...........device phase ID.................................................
 			if (rank==0)	printf ("Copying phase ID to device \n");
 			char *ID;
-			AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+			ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 			// Copy to the device
-			CopyToDevice(ID, id, N);
+			ScaLBL_CopyToDevice(ID, id, N);
 			//...........................................................................
 
 			//...........................................................................
@@ -373,18 +373,18 @@ int main(int argc, char **argv)
 			//......................device distributions.................................
 			double *f_even,*f_odd;
 			//...........................................................................
-			AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-			AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+			ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+			ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
 			//...........................................................................
 			double *Velocity, *Pressure, *dvcSignDist;
 			//...........................................................................
-			AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
-			AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
-			AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
+			ScaLBL_AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
+			ScaLBL_AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
+			ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
 			//...........................................................................
 
 			// Copy signed distance for device initialization
-			CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
+			ScaLBL_CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
 			//...........................................................................
 
 			int logcount = 0; // number of surface write-outs
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 			//...........................................................................
 			if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 			//...........................................................................
-			InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+			ScaLBL_D3Q19_Init(ID, f_even, f_odd, Nx, Ny, Nz);
 			//......................................................................
 
 			//.......................................................................
@@ -427,11 +427,11 @@ int main(int argc, char **argv)
 				printf("Setting outlet pressure = %f \n", dout);
 			}
 			if (pBC && kproc == 0)	{
-				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 			}
 
 			if (pBC && kproc == nprocz-1){
-				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			}
 
 			int timestep = 0;
@@ -465,7 +465,7 @@ int main(int argc, char **argv)
 					//*************************************************************************
 					// Fused Color Gradient and Collision
 					//*************************************************************************
-					MRT( ID,f_even,f_odd,rlxA,rlxB,Fx,Fy,Fz,Nx,Ny,Nz);
+					ScaLBL_D3Q19_MRT( ID,f_even,f_odd,rlxA,rlxB,Fx,Fy,Fz,Nx,Ny,Nz);
 					//*************************************************************************
 
 					//*************************************************************************
@@ -474,21 +474,21 @@ int main(int argc, char **argv)
 					//*************************************************************************
 					// 		Swap the distributions for momentum transport
 					//*************************************************************************
-					SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+					ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 					//*************************************************************************
 					// Wait for communications to complete and unpack the distributions
 					ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 					//*************************************************************************
 
 					if (pBC && kproc == 0)	{
-						PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
+						ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 					}
 
 					if (pBC && kproc == nprocz-1){
-						PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+						ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 					}
 					//...................................................................................
-					DeviceBarrier();
+					ScaLBL_DeviceBarrier();
 					MPI_Barrier(comm);
 
 					// Timestep completed!
@@ -506,13 +506,13 @@ int main(int argc, char **argv)
 						//...........................................................................
 						// Copy the phase from the GPU -> CPU
 						//...........................................................................
-						DeviceBarrier();
-						ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-						ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
-						CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-						CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-						CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-						CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+						ScaLBL_DeviceBarrier();
+						ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+						ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+						ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+						ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+						ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+						ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 
 						// Way more work than necessary -- this is just to get the solid interfacial area!!
 						Averages.Initialize();
@@ -565,7 +565,7 @@ int main(int argc, char **argv)
 			}
 			//************************************************************************/
 			fclose(NONDARCY);
-			DeviceBarrier();
+			ScaLBL_DeviceBarrier();
 			MPI_Barrier(comm);
 			stoptime = MPI_Wtime();
 			if (rank==0) printf("-------------------------------------------------------------------\n");
