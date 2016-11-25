@@ -584,7 +584,7 @@ int main(int argc, char **argv)
 	    }
 	    else{
 	      printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-	      timestep=0;
+	      timestep=5;
 	    }
 	  }
 	  MPI_Bcast(&timestep,1,MPI_INT,0,comm);

@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 			/*
 			 * Set simulation parameters internally
 			 */
-			tau=1.f;
+			tau=0.7;
 			Fx = 0.f;
 			Fy = 0.f;
 			Fz = 1.0e-7;
@@ -401,6 +401,9 @@ int main(int argc, char **argv)
 		}
 
 		Re = 0.f;
+
+	        if (rank==0)  printf("D32 Fx Fy Fz vx vy vz err1d Fo Re K err\n");
+
 		// Generate a bunch of points until sufficiently high Re is obtained
 		while (Re < REYNOLDS_NUMBER){
 			// Increase the external force and simulate to steady state
@@ -444,13 +447,8 @@ int main(int argc, char **argv)
 				timestep++;
 
 
-				if (rank==0){
-					// write out csv file
-					printf("D32 Fx Fy Fz vx vy vz err1d Fo Re K err\n");
-				}
+				if (timestep%500 == 0){				  
 
-				if (timestep%500 == 0){
-					//...........................................................................
 					// Copy the data for for the analysis timestep
 					//...........................................................................
 					// Copy the phase from the GPU -> CPU
