@@ -3,7 +3,7 @@
 #define NBLOCKS 32
 #define NTHREADS 128
 
-__global__  void dvc_PackValues(int *list, int count, double *sendbuf, double *Data, int N){
+__global__  void dvc_ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -15,7 +15,7 @@ __global__  void dvc_PackValues(int *list, int count, double *sendbuf, double *D
 		sendbuf[idx] = Data[n];
 	}
 }
-__global__  void dvc_UnpackValues(int *list, int count, double *recvbuf, double *Data, int N){
+__global__  void dvc_ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -28,7 +28,7 @@ __global__  void dvc_UnpackValues(int *list, int count, double *recvbuf, double 
 	}
 }
 
-__global__  void dvc_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
+__global__  void dvc_ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
 	//....................................................................................
 	// Pack distribution into the send buffer for the listed lattice sites
 	//....................................................................................
@@ -44,7 +44,7 @@ __global__  void dvc_PackDenD3Q7(int *list, int count, double *sendbuf, int numb
 }
 
 
-__global__ void dvc_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
+__global__ void dvc_ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
 	//....................................................................................
 	// Unack distribution from the recv buffer
 	// Sum to the existing density value
@@ -59,7 +59,7 @@ __global__ void dvc_UnpackDenD3Q7(int *list, int count, double *recvbuf, int num
 	}
 }
 
-__global__ void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
+__global__ void dvc_ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -93,7 +93,7 @@ __global__ void dvc_InitD3Q7(char *ID, double *f_even, double *f_odd, double *De
 }
 
 //*************************************************************************
-__global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_D3Q7_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
@@ -157,7 +157,7 @@ __global__  void dvc_SwapD3Q7(char *ID, double *disteven, double *distodd, int N
 }
 
 //*************************************************************************
-__global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den,
+__global__  void dvc_ScaLBL_D3Q7_Density(char *ID, double *disteven, double *distodd, double *Den,
 		int Nx, int Ny, int Nz)
 {
 	char id;
@@ -187,35 +187,35 @@ __global__  void dvc_ComputeDensityD3Q7(char *ID, double *disteven, double *dist
 	}
 }
 
-extern "C" void PackValues(int *list, int count, double *sendbuf, double *Data, int N){
+extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	int GRID = count / 512 + 1;
-	dvc_PackValues <<<GRID,512 >>>(list, count, sendbuf, Data, N);
+	dvc_ScaLBL_Scalar_Pack <<<GRID,512 >>>(list, count, sendbuf, Data, N);
 }
 
-extern "C" void UnpackValues(int *list, int count, double *recvbuf, double *Data, int N){
+extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N){
 	int GRID = count / 512 + 1;
-	dvc_UnpackValues <<<GRID,512 >>>(list, count, recvbuf, Data, N);
+	dvc_ScaLBL_Scalar_Unpack <<<GRID,512 >>>(list, count, recvbuf, Data, N);
 }
-extern "C" void PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
+extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
 	int GRID = count / 512 + 1;
-	dvc_PackDenD3Q7 <<<GRID,512 >>>(list, count, sendbuf, number, Data, N);
+	dvc_ScaLBL_PackDenD3Q7 <<<GRID,512 >>>(list, count, sendbuf, number, Data, N);
 }
 
-extern "C" void UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
+extern "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
 	int GRID = count / 512 + 1;
-	dvc_UnpackDenD3Q7 <<<GRID,512 >>>(list, count, recvbuf, number, Data, N);
+	dvc_ScaLBL_UnpackDenD3Q7 <<<GRID,512 >>>(list, count, recvbuf, number, Data, N);
 }
 
-extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz){
-	dvc_InitD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Den, Nx, Ny, Nz);
+extern "C" void ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_D3Q7_Init <<<NBLOCKS,NTHREADS >>>(ID, f_even, f_odd, Den, Nx, Ny, Nz);
 }
 
-extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
-	dvc_SwapD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
+extern "C" void ScaLBL_D3Q7_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_D3Q7_Swap <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
 }
 
-extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den,
+extern "C" void ScaLBL_D3Q7_Density(char *ID, double *disteven, double *distodd, double *Den,
 										int Nx, int Ny, int Nz){
-	dvc_ComputeDensityD3Q7 <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Den, Nx, Ny,  Nz);
+	dvc_ScaLBL_D3Q7_Density <<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Den, Nx, Ny,  Nz);
 }
 

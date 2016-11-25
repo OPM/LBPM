@@ -11,7 +11,7 @@
 using namespace std;
 
 
-extern void GlobalFlipInitD3Q19(double *dist_even, double *dist_odd, int Nx, int Ny, int Nz, 
+extern void GlobalFlipScaLBL_D3Q19_Init(double *dist_even, double *dist_odd, int Nx, int Ny, int Nz, 
 								int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz)
 {
 	// Set of Discrete velocities for the D3Q19 Model
@@ -365,9 +365,9 @@ int main(int argc, char **argv)
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
-		AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		CopyToDevice(ID, id, N);
+		ScaLBL_CopyToDevice(ID, id, N);
 		//...........................................................................
 
 		//...........................................................................
@@ -378,8 +378,8 @@ int main(int argc, char **argv)
 		//......................device distributions.................................
 		double *f_even,*f_odd;
 		//...........................................................................
-		AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-		AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
 		//...........................................................................
 		double *f_even_host,*f_odd_host;
 		f_even_host = new double [10*N];
@@ -416,10 +416,10 @@ int main(int argc, char **argv)
 		 */
 		if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
 		//...........................................................................
-		GlobalFlipInitD3Q19(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-		CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-		CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
-		DeviceBarrier();
+		GlobalFlipScaLBL_D3Q19_Init(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		ScaLBL_CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
+		ScaLBL_CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
+		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		//*************************************************************************
 		// Pack and send the D3Q19 distributions
@@ -427,15 +427,15 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
-		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 		//*************************************************************************
 
 		//...........................................................................
-		CopyToHost(f_even_host,f_even,10*N*sizeof(double));
-		CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
+		ScaLBL_CopyToHost(f_even_host,f_even,10*N*sizeof(double));
+		ScaLBL_CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
 		check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		//...........................................................................
 
@@ -459,13 +459,13 @@ int main(int argc, char **argv)
 			//*************************************************************************
 			// 		Swap the distributions for momentum transport
 			//*************************************************************************
-			SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+			ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 			//*************************************************************************
 			// Wait for communications to complete and unpack the distributions
 			ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 			//*************************************************************************
 
-			DeviceBarrier();
+			ScaLBL_DeviceBarrier();
 			MPI_Barrier(comm);
 			// Iteration completed!
 			timestep++;

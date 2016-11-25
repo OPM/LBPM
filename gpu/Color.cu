@@ -3,7 +3,7 @@
 #define NBLOCKS 32
 #define NTHREADS 128
 
-__global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_Color_Init(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz)
 {
 	//int i,j,k;
 	int n,N;
@@ -40,7 +40,7 @@ __global__  void dvc_InitDenColor(char *ID, double *Den, double *Phi, double das
 		}
 	}
 }
-__global__  void dvc_InitDenColorDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
+__global__  void dvc_ScaLBL_Color_InitDistancePacked(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
@@ -88,7 +88,7 @@ __global__  void dvc_InitDenColorDistancePacked(char *ID, double *Den, double *P
 	}
 }
 
-__global__  void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
+__global__  void dvc_ScaLBL_Color_InitDistance(char *ID, double *Den, double *Phi, double *Distance,
 		double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -122,7 +122,7 @@ __global__  void dvc_InitDenColorDistance(char *ID, double *Den, double *Phi, do
 	}
 }
 //*************************************************************************
-__global__  void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
+__global__  void dvc_ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int ij,k,n,N;
@@ -161,7 +161,7 @@ __global__  void dvc_ColorBC_inlet(double *Phi, double *Den, double *A_even, dou
 	}
 }
 //*************************************************************************
-__global__  void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
+__global__  void dvc_ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int ij,k,n,N;
@@ -199,7 +199,7 @@ __global__  void dvc_ColorBC_outlet(double *Phi, double *Den, double *A_even, do
 	}
 }
 //*************************************************************************
-__global__  void dvc_PressureBC_inlet(double *disteven, double *distodd, double din,
+__global__  void dvc_ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
 								  int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -269,7 +269,7 @@ __global__  void dvc_PressureBC_inlet(double *disteven, double *distodd, double 
 		}
 	}
 
-__global__  void dvc_PressureBC_outlet(double *disteven, double *distodd, double dout,
+__global__  void dvc_ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
 								   int Nx, int Ny, int Nz, int outlet)
 {
 	int n,N;
@@ -337,7 +337,7 @@ __global__  void dvc_PressureBC_outlet(double *disteven, double *distodd, double
 	}
 }
 //*************************************************************************
-__global__  void dvc_ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_D3Q19_ColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz)
 {
 	int n,N,i,j,k,nn;
 	// distributions
@@ -683,7 +683,7 @@ __global__  void dvc_ColorCollide( char *ID, double *disteven, double *distodd, 
 	} // loop over n
 }
 
-__global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
+__global__  void dvc_ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz, double rlx_setA, double rlx_setB, 
 								double alpha, double beta, double Fx, double Fy, double Fz)
 {
@@ -1089,7 +1089,7 @@ __global__  void dvc_ColorCollideOpt( char *ID, double *disteven, double *distod
 	} // loop over n
 }
 
-__global__  void dvc_MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
+__global__  void dvc_ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
 	int n;
@@ -1364,7 +1364,7 @@ __global__  void dvc_DensityStreamD3Q7(char *ID, double *Den, double *Copy, doub
 	}
 }
 
-__global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
+__global__  void dvc_ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int N)
 {
 	int n;
 	double Na,Nb;
@@ -1388,7 +1388,7 @@ __global__  void dvc_ComputePhi(char *ID, double *Phi, double *Den, int N)
 	//...................................................................
 }
 
-__global__  void dvc_SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice)
+__global__  void dvc_ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice)
 {
 	int n = Slice*Nx*Ny +  blockIdx.x*blockDim.x + threadIdx.x;
 	if (n < (Slice+1)*Nx*Ny){
@@ -1396,23 +1396,23 @@ __global__  void dvc_SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, in
 	}
 }
 
-extern "C" void SetPhiSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
+extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_SetPhiSlice_z<<<GRID,512>>>(Phi,value,Nx,Ny,Nz,Slice);
+	dvc_ScaLBL_SetSlice_z<<<GRID,512>>>(Phi,value,Nx,Ny,Nz,Slice);
 }
 
-extern "C" void InitDenColor(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz){
-	dvc_InitDenColor<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+extern "C" void ScaLBL_Color_Init(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_Color_Init<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
 }
 
-extern "C" void InitDenColorDistance(char *ID, double *Den, double *Phi, double *Distance,
+extern "C" void ScaLBL_Color_InitDistance(char *ID, double *Den, double *Phi, double *Distance,
 								double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz){
 
-	dvc_InitDenColorDistance<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, Distance, das, dbs, beta, xp, Nx, Ny, Nz);
+	dvc_ScaLBL_Color_InitDistance<<<NBLOCKS,NTHREADS >>>(ID, Den, Phi, Distance, das, dbs, beta, xp, Nx, Ny, Nz);
 }
 
-extern "C" void ComputeColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz){
-	dvc_ComputeColorGradient<<<NBLOCKS,NTHREADS >>>(ID, phi, ColorGrad, Nx, Ny, Nz);
+extern "C" void ScaLBL_D3Q19_ColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz){
+	dvc_ScaLBL_D3Q19_ColorGradient<<<NBLOCKS,NTHREADS >>>(ID, phi, ColorGrad, Nx, Ny, Nz);
 }
 
 extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, double *ColorGrad,
@@ -1423,10 +1423,10 @@ extern "C" void ColorCollide( char *ID, double *disteven, double *distodd, doubl
 
 }
 
-extern "C" void ColorCollideOpt( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
+extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
 								double *Velocity, int Nx, int Ny, int Nz,double rlx_setA, double rlx_setB,
 								double alpha, double beta, double Fx, double Fy, double Fz){
-	dvc_ColorCollideOpt<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, phi, ColorGrad, Velocity, Nx, Ny, Nz, rlx_setA, rlx_setB,
+	dvc_ScaLBL_D3Q19_ColorCollide<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, phi, ColorGrad, Velocity, Nx, Ny, Nz, rlx_setA, rlx_setB,
 									alpha, beta, Fx, Fy, Fz);
 
 }
@@ -1437,32 +1437,32 @@ extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 	dvc_DensityStreamD3Q7<<<NBLOCKS,NTHREADS >>>(ID, Den, Copy, Phi, ColorGrad, Velocity, beta, Nx, Ny, Nz, pBC);
 }
 
-extern "C" void ComputePhi(char *ID, double *Phi, double *Den, int N){
-	dvc_ComputePhi<<<NBLOCKS,NTHREADS >>>(ID, Phi, Den, N);
+extern "C" void ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int N){
+	dvc_ScaLBL_ComputePhaseField<<<NBLOCKS,NTHREADS >>>(ID, Phi, Den, N);
 }
-extern "C" void MassColorCollideD3Q7(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd,
+extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd,
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC){
-	 dvc_MassColorCollideD3Q7<<<NBLOCKS,NTHREADS >>>(ID, A_even, A_odd, B_even, B_odd, Den, Phi, ColorGrad, Velocity, beta, N, pBC);
+	 dvc_ScaLBL_D3Q7_ColorCollideMass<<<NBLOCKS,NTHREADS >>>(ID, A_even, A_odd, B_even, B_odd, Den, Phi, ColorGrad, Velocity, beta, N, pBC);
 }
 // Pressure Boundary Conditions Functions
-extern "C" void ColorBC_inlet(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_ColorBC_inlet<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
+	dvc_ScaLBL_Color_BC_z<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
 }
-extern "C" void ColorBC_outlet(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz){
 
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_ColorBC_outlet<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
+	dvc_ScaLBL_Color_BC_Z<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
 }
-extern "C" void PressureBC_inlet(double *disteven, double *distodd, double din, int Nx, int Ny, int Nz){
+extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din, int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_PressureBC_inlet<<<GRID,512>>>(disteven, distodd, din, Nx, Ny, Nz);
+	dvc_ScaLBL_D3Q19_Pressure_BC_z<<<GRID,512>>>(disteven, distodd, din, Nx, Ny, Nz);
 }
-extern "C" void PressureBC_outlet(double *disteven, double *distodd, double dout,
+extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
 								   int Nx, int Ny, int Nz, int outlet){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_PressureBC_outlet<<<GRID,512>>>(disteven, distodd, dout, Nx, Ny, Nz, outlet);
+	dvc_ScaLBL_D3Q19_Pressure_BC_Z<<<GRID,512>>>(disteven, distodd, dout, Nx, Ny, Nz, outlet);
 }
 

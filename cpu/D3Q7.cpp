@@ -1,6 +1,6 @@
 // CPU Functions for D3Q7 Lattice Boltzmann Methods
 
-extern "C" void PackValues(int *list, int count, double *sendbuf, double *Data, int N){
+extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -11,7 +11,7 @@ extern "C" void PackValues(int *list, int count, double *sendbuf, double *Data, 
 		sendbuf[idx] = Data[n];
 	}
 }
-extern "C" void UnpackValues(int *list, int count, double *recvbuf, double *Data, int N){
+extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -23,7 +23,7 @@ extern "C" void UnpackValues(int *list, int count, double *recvbuf, double *Data
 	}
 }
 
-extern "C" void PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
+extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
 	//....................................................................................
 	// Pack distribution into the send buffer for the listed lattice sites
 	//....................................................................................
@@ -38,7 +38,7 @@ extern "C" void PackDenD3Q7(int *list, int count, double *sendbuf, int number, d
 }
 
 
-extern  "C" void UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
+extern  "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N){
 	//....................................................................................
 	// Unack distribution from the recv buffer
 	// Sum to the existing density value
@@ -52,7 +52,7 @@ extern  "C" void UnpackDenD3Q7(int *list, int count, double *recvbuf, int number
 	}
 }
 
-extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
 {
 	int n,N;
 	N = Nx*Ny*Nz;
@@ -81,7 +81,7 @@ extern "C" void InitD3Q7(char *ID, double *f_even, double *f_odd, double *Den, i
 }
 
 //*************************************************************************
-extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
+extern "C" void ScaLBL_D3Q7_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,nn,N;
 	// distributions
@@ -141,7 +141,7 @@ extern "C" void SwapD3Q7(char *ID, double *disteven, double *distodd, int Nx, in
 }
 
 //*************************************************************************
-extern "C" void ComputeDensityD3Q7(char *ID, double *disteven, double *distodd, double *Den, 
+extern "C" void ScaLBL_D3Q7_Density(char *ID, double *disteven, double *distodd, double *Den, 
 										int Nx, int Ny, int Nz)
 {
 	char id;

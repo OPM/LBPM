@@ -90,56 +90,56 @@ int main(int argc, char **argv)
 	//......................device distributions.................................
 	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 	double *Phi,*Den;
 	double *ColorGrad, *Velocity;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
 	char *ID;
-	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 	// Copy to the device
-	CopyToDevice(ID, id, N);
-	CopyToDevice(Velocity, Vel, 3*N*sizeof(double));
+	ScaLBL_CopyToDevice(ID, id, N);
+	ScaLBL_CopyToDevice(Velocity, Vel, 3*N*sizeof(double));
 	//...........................................................................
 	
-	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-	CopyToHost(DenOriginal,Den,2*N*sizeof(double));
+	ScaLBL_Color_Init(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+	ScaLBL_CopyToHost(DenOriginal,Den,2*N*sizeof(double));
 
 	//......................................................................
-	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	ComputePhi(ID, Phi, Den, N);
-	ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
+	ScaLBL_D3Q7_Init(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+	ScaLBL_D3Q7_Init(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
+	ScaLBL_D3Q19_ColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
 	//..................................................................................
 
 	//*************************************************************************
 	// 		Carry out the density streaming step for mass transport
 	//*************************************************************************
-	MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
+	ScaLBL_D3Q7_ColorCollideMass(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
 							ColorGrad, Velocity, beta, N, pBC);
 	//*************************************************************************
 	
 	//..................................................................................
-	ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+	ScaLBL_D3Q7_Density(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+	ScaLBL_D3Q7_Density(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 	//..................................................................................
-	ComputePhi(ID, Phi, Den, N);
-	ComputeColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
+	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
+	ScaLBL_D3Q19_ColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
 	//..................................................................................
 
 	// Compare and make sure mass is conserved at every lattice site
 	bool CleanCheck = true;
 	double original,final;
-	CopyToHost(DenFinal,Den,2*N*sizeof(double));
+	ScaLBL_CopyToHost(DenFinal,Den,2*N*sizeof(double));
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -172,10 +172,10 @@ int main(int argc, char **argv)
 	Aodd = new double[3*N];
 	Beven = new double[4*N];
 	Bodd = new double[3*N];
-	CopyToHost(Aeven,A_even,4*dist_mem_size);
-	CopyToHost(Aodd,A_odd,3*dist_mem_size);
-	CopyToHost(Beven,B_even,4*dist_mem_size);
-	CopyToHost(Bodd,B_odd,3*dist_mem_size);
+	ScaLBL_CopyToHost(Aeven,A_even,4*dist_mem_size);
+	ScaLBL_CopyToHost(Aodd,A_odd,3*dist_mem_size);
+	ScaLBL_CopyToHost(Beven,B_even,4*dist_mem_size);
+	ScaLBL_CopyToHost(Bodd,B_odd,3*dist_mem_size);
 	double rho,ux,uy,uz;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){

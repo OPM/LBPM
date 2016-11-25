@@ -494,7 +494,7 @@ int main(int argc, char **argv)
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copy phase ID to device \n");
 	char *ID;
-	AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 	// Don't compute in the halo
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -505,8 +505,8 @@ int main(int argc, char **argv)
 		}
 	}
 	// Copy to the device
-	CopyToDevice(ID, id, N);
-	DeviceBarrier();
+	ScaLBL_CopyToDevice(ID, id, N);
+	ScaLBL_DeviceBarrier();
 	//...........................................................................
 
 	//...........................................................................
@@ -518,26 +518,26 @@ int main(int argc, char **argv)
 	double *f_even,*f_odd;
 	double *A_even,*A_odd,*B_even,*B_odd;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
 	//...........................................................................
 	double *Phi,*Den;
 	double *ColorGrad, *Velocity, *Pressure, *dvcSignDist;
 	//...........................................................................
-	AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
-	AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
-	AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-	AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Pressure, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &dvcSignDist, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
 	//...........................................................................
 
 	// Copy signed distance for device initialization
-	CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
+	ScaLBL_CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
 	//...........................................................................
 
 	int logcount = 0; // number of surface write-outs
@@ -549,10 +549,10 @@ int main(int argc, char **argv)
 	//...........................................................................
 	if (rank==0)	printf("Setting the distributions, size = %i\n", N);
 	//...........................................................................
-	DeviceBarrier();
-	InitD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
-	InitDenColor(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
+	ScaLBL_D3Q19_Init(ID, f_even, f_odd, Nx, Ny, Nz);
+	ScaLBL_Color_Init(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
+	ScaLBL_DeviceBarrier();
 	//......................................................................
 
 	if (Restart == true){
@@ -578,10 +578,10 @@ int main(int argc, char **argv)
 	    double *cDistOdd = new double[9*N];
 		ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 		// Copy the restart data to the GPU
-		CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
-		CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
-		CopyToDevice(Den,cDen,2*N*sizeof(double));
-		DeviceBarrier();
+		ScaLBL_CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
+		ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
+		ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
+		ScaLBL_DeviceBarrier();
 	    delete [] cDen;
 	    delete [] cDistEven;
 	    delete [] cDistOdd;
@@ -589,9 +589,9 @@ int main(int argc, char **argv)
 	}
 
 	//......................................................................
-	InitD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	InitD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	DeviceBarrier();
+	ScaLBL_D3Q7_Init(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+	ScaLBL_D3Q7_Init(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -607,12 +607,12 @@ int main(int argc, char **argv)
 	//*************************************************************************
 	// 		Compute the phase indicator field and reset Copy, Den
 	//*************************************************************************
-	ComputePhi(ID, Phi, Den, N);
+	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 	//*************************************************************************
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
 	ScaLBL_Comm.SendHalo(Phi);
 	ScaLBL_Comm.RecvHalo(Phi);
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	//*************************************************************************
 
@@ -621,13 +621,13 @@ int main(int argc, char **argv)
 		printf("Setting outlet pressure = %f \n", dout);
 	}
 	if (BoundaryCondition==1 && Mask.kproc == 0)	{
-		PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-		ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+		ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 		
 	if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
-		PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-		ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+		ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 	}
 
 	if (rank==0 && BoundaryCondition==2){
@@ -636,13 +636,13 @@ int main(int argc, char **argv)
 	}
 	if (BoundaryCondition==2 && Mask.kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-		//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 	}
 
 	if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-		//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 	}
 
@@ -658,35 +658,35 @@ int main(int argc, char **argv)
 		dout = 1.0-0.5*dp;
 		// set the initial boundary conditions
 		if (Mask.kproc == 0)	{
-			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+			ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 		if (Mask.kproc == nprocz-1){
-			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 	}
 
-	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	ComputeVelocityD3Q19(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
-	DeviceBarrier();
-	CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
+	ScaLBL_DeviceBarrier();
+	ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
 	//...........................................................................
 	// Copy the phase from the GPU -> CPU
 	//...........................................................................
-	DeviceBarrier();
-	ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-	CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-	CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-	CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-	CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+	ScaLBL_DeviceBarrier();
+	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 	//...........................................................................
 	
 	if (rank==0) printf("********************************************************\n");
@@ -694,7 +694,7 @@ int main(int argc, char **argv)
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
@@ -743,11 +743,11 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
-		ColorCollideOpt( ID,f_even,f_odd,Phi,ColorGrad,
+		ScaLBL_D3Q19_ColorCollide( ID,f_even,f_odd,Phi,ColorGrad,
 							 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		//*************************************************************************
 		// Pack and send the D3Q19 distributions
 		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
@@ -756,36 +756,36 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Carry out the density streaming step for mass transport
 		//*************************************************************************
-		MassColorCollideD3Q7(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
+		ScaLBL_D3Q7_ColorCollideMass(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
 								ColorGrad, Velocity, beta, N, pBC);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
-		SwapD3Q19(ID, f_even, f_odd, Nx, Ny, Nz);
+		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		//*************************************************************************
 		// Wait for communications to complete and unpack the distributions
 		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		//*************************************************************************
 		// Pack and send the D3Q7 distributions
 		ScaLBL_Comm.BiSendD3Q7(A_even, A_odd, B_even, B_odd);
 		//*************************************************************************
 
-		DeviceBarrier();
-		SwapD3Q7(ID, A_even, A_odd, Nx, Ny, Nz);
-		SwapD3Q7(ID, B_even, B_odd, Nx, Ny, Nz);
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q7_Swap(ID, A_even, A_odd, Nx, Ny, Nz);
+		ScaLBL_D3Q7_Swap(ID, B_even, B_odd, Nx, Ny, Nz);
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
 		//*************************************************************************
@@ -793,44 +793,44 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.BiRecvD3Q7(A_even, A_odd, B_even, B_odd);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		//..................................................................................
-		ComputeDensityD3Q7(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-		ComputeDensityD3Q7(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Density(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
+		ScaLBL_D3Q7_Density(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 		//*************************************************************************
 		// 		Compute the phase indicator field 
 		//*************************************************************************
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
-		ComputePhi(ID, Phi, Den, N);
+		ScaLBL_ComputePhaseField(ID, Phi, Den, N);
 		//*************************************************************************
 		ScaLBL_Comm.SendHalo(Phi);
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		ScaLBL_Comm.RecvHalo(Phi);
 		//*************************************************************************
 
-		DeviceBarrier();
+		ScaLBL_DeviceBarrier();
 		
 		// Pressure boundary conditions
 		if (BoundaryCondition==1 && Mask.kproc == 0)	{
-			PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-			ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+			ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 		if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
-			PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		}
 
 		// Velocity boundary conditions
 		if (BoundaryCondition==2 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-			//ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			//ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 		}
 
@@ -841,12 +841,12 @@ int main(int argc, char **argv)
 			dout = 1.0-0.5*dp;
 			// set the initial boundary conditions
 			if (Mask.kproc == 0)	{
-				PressureBC_inlet(f_even,f_odd,din,Nx,Ny,Nz);
-				ColorBC_inlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+				ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 			if (Mask.kproc == nprocz-1){
-				PressureBC_outlet(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-				ColorBC_outlet(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 		}
 
@@ -864,8 +864,8 @@ int main(int argc, char **argv)
 		if (timestep%1000 == 995){
 			//...........................................................................
 			// Copy the phase indicator field for the earlier timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
+			ScaLBL_DeviceBarrier();
+			ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
 	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
 			//...........................................................................
 		}
@@ -875,20 +875,20 @@ int main(int argc, char **argv)
 			//...........................................................................
 			// Copy the phase from the GPU -> CPU
 			//...........................................................................
-			DeviceBarrier();
-			ComputePressureD3Q19(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-			CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-			CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-			CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-			CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+			ScaLBL_DeviceBarrier();
+			ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+			ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+			ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
+			ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
+			ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
+			ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
 			// Copy the phase indicator field for the later timestep
-			DeviceBarrier();
-			CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
+			ScaLBL_DeviceBarrier();
+			ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
 //			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
 			//....................................................................
             Averages.Initialize();
@@ -917,9 +917,9 @@ int main(int argc, char **argv)
 	    double *cDistEven = new double[10*N];
 	    double *cDistOdd = new double[9*N];
 
-			CopyToHost(cDistEven,f_even,10*N*sizeof(double));
-			CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-			CopyToHost(cDen,Den,2*N*sizeof(double));
+			ScaLBL_CopyToHost(cDistEven,f_even,10*N*sizeof(double));
+			ScaLBL_CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
+			ScaLBL_CopyToHost(cDen,Den,2*N*sizeof(double));
 			// Read in the restart file to CPU buffers
 			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
 
@@ -936,7 +936,7 @@ int main(int argc, char **argv)
 	}
     PROFILE_STOP("Loop");
 	//************************************************************************
-	DeviceBarrier();
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
@@ -962,8 +962,8 @@ int main(int argc, char **argv)
 
 	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Mask.Nx-2,Mask.Ny-2,Mask.Nz-2,Mask.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
 	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
-	DeviceBarrier();
-	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+	ScaLBL_DeviceBarrier();
+	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
 */
     
 /*	Averages.WriteSurfaces(0);
@@ -981,10 +981,10 @@ int main(int argc, char **argv)
 	fwrite(Averages.Press.data(),8,N,PRESS);
 	fclose(PRESS);
 
-	CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
 	double * Grad;
 	Grad = new double [3*N];
-	CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
+	ScaLBL_CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
 	sprintf(LocalRankFilename,"%s%s","ColorGrad.",LocalRankString);
 	FILE *GRAD;
 	GRAD = fopen(LocalRankFilename,"wb");
