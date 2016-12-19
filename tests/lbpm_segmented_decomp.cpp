@@ -225,8 +225,30 @@ int main(int argc, char **argv)
     }
     MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
     MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+
+
     float porosity = float(totalGlobal-countGlobal)/totalGlobal;
     if (rank==0) printf("Porosity=%f\n",porosity);
+
+    if (rank==0){
+    	//totalGlobal=(Nx-xstart)*(Ny-ystart)*(Nz-zstart);
+    	countGlobal = 0;
+    	for (k=zstart; k<zstart+nprocz*(nz-2); k++){
+    		for (j=ystart; j<ystart+nprocy*(ny-2); j++){
+    			for (i=xstart; i<xstart+nprocx*(nx-2); i++){
+
+    				n=k*Nx*Ny+j*Nx+i;
+    				if (n < Nx*Ny*Nz){
+    					if (SegData[n] == 0){
+    						countGlobal++;
+    					}
+    				}
+    			}
+    		}
+    	}
+    	float porosity = float(totalGlobal-countGlobal)/totalGlobal;
+    	printf("Original Porosity=%f\n",porosity);
+    }
 
     count = 0;
     total = 0;
