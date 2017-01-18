@@ -231,6 +231,9 @@ int main(int argc, char **argv)
     if (rank==0) printf("Porosity=%f\n",porosity);
 
     if (rank==0){
+        int xstart = xStart;    // Is this correct?
+        int ystart = yStart;
+        int zstart = zStart;
     	//totalGlobal=(Nx-xstart)*(Ny-ystart)*(Nz-zstart);
     	countGlobal = 0;
     	for (k=zstart; k<zstart+nprocz*(nz-2); k++){
