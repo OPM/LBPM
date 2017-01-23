@@ -115,7 +115,7 @@ int main(int argc, char **argv)
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(LocalBlobID,LocalBlobIDVar->data);
     fillData.copy(GlobalBlobID,GlobalBlobIDVar->data);
-    IO::writeData( 0, meshData, 2 );
+    IO::writeData( 0, meshData );
 
 
     int N_errors = 0;

@@ -354,7 +354,7 @@ int main(int argc, char **argv)
     #endif
 
 	// Write visulization data
-	IO::writeData( 0, meshData, 2, comm );
+	IO::writeData( 0, meshData, comm );
 	if (rank==0) printf("Finished. \n");
 
 	/* for (k=0;k<nz;k++){

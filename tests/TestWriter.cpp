@@ -31,7 +31,181 @@ inline double distance( const Point& p )
 }
 
 
+// Test writing and reading the given format
+void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct>& meshData, UnitTest& ut )
+{
+    int rank, nprocs;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
+    MPI_Barrier(comm);
 
+    // Write the data
+    PROFILE_START(format+"-write");
+    IO::initialize( "test_"+format, format, false );
+    IO::writeData( 0, meshData, comm );
+    IO::writeData( 3, meshData, comm );
+    MPI_Barrier(comm);
+    PROFILE_STOP(format+"-write");
+
+    // Get the summary name for reading
+    std::string summary_name;
+    if ( format=="old" || format=="new" )
+        summary_name = "test_" + format + "/summary.LBM";
+    else if ( format == "silo" )
+        summary_name = "test_" + format + "/LBM.visit";
+    else
+        ERROR("Unknown format");
+
+    // Get direct access to the meshes used to test the reader
+    const auto pointmesh = dynamic_cast<IO::PointList*>(  meshData[0].mesh.get() );
+    const auto trimesh   = dynamic_cast<IO::TriMesh*>(    meshData[1].mesh.get() );
+    const auto trilist   = dynamic_cast<IO::TriList*>(    meshData[2].mesh.get() );
+    const auto domain    = dynamic_cast<IO::DomainMesh*>( meshData[3].mesh.get() );
+    const size_t N_tri = trimesh->A.size();
+
+    // Get a list of the timesteps 
+    PROFILE_START(format+"-read-timesteps");
+    std::vector<std::string> timesteps = IO::readTimesteps(summary_name);
+    PROFILE_STOP(format+"-read-timesteps");
+    if ( timesteps.size()==2 )
+        ut.passes("Corrent number of timesteps");
+    else
+        ut.failure("Incorrent number of timesteps");
+
+    // Check the mesh lists
+    for (size_t i=0; i<timesteps.size(); i++) {
+        // Load the list of meshes and check its size
+        PROFILE_START(format+"-read-getMeshList");
+        std::vector<IO::MeshDatabase> list = IO::getMeshList(".",timesteps[i]);
+        PROFILE_STOP(format+"-read-getMeshList");
+        if ( list.size()==meshData.size() )
+            ut.passes("Corrent number of meshes found");
+        else
+            ut.failure("Incorrent number of meshes found");
+        // Check the number of domains for each mesh
+        bool pass = true;
+        for (size_t j=0; j<list.size(); j++)
+            pass = pass && (int)list[j].domains.size()==nprocs;
+        if ( pass ) {
+            ut.passes("Corrent number of domains for mesh");
+        } else {
+            ut.failure("Incorrent number of domains for mesh");
+            continue;
+        }
+        // For each domain, load the mesh and check its data
+        for (size_t j=0; j<list.size(); j++) {
+            for (size_t k=0; k<list[j].domains.size(); k++) {
+                PROFILE_START(format+"-read-getMesh");
+                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
+                PROFILE_STOP(format+"-read-getMesh");
+                if ( mesh.get()==NULL ) {
+                    printf("Failed to load %s\n",list[j].name.c_str());
+                    pass = false;
+                    break;
+                }
+                if ( list[j].name=="pointmesh" ) {
+                    // Check the pointmesh
+                    std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
+                    if ( pmesh.get()==NULL ) {
+                        pass = false;
+                        break;
+                    }
+                    if ( pmesh->points.size() != pointmesh->points.size() ) {
+                        pass = false;
+                        break;
+                    }                    
+                }
+                if ( list[j].name=="trimesh" || list[j].name=="trilist" ) {
+                    // Check the trimesh/trilist
+                    std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
+                    std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
+                    if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
+                        pass = false;
+                        break;
+                    }
+                    if ( mesh1->A.size()!=N_tri || mesh1->B.size()!=N_tri || mesh1->C.size()!=N_tri || 
+                         mesh2->A.size()!=N_tri || mesh2->B.size()!=N_tri || mesh2->C.size()!=N_tri ) 
+                    {
+                        pass = false;
+                        break;
+                    }
+                    const std::vector<Point>& P1 = mesh1->vertices->points;
+                    const std::vector<int>& A1 = mesh1->A;
+                    const std::vector<int>& B1 = mesh1->B;
+                    const std::vector<int>& C1 = mesh1->C;
+                    const std::vector<Point>& A2 = mesh2->A;
+                    const std::vector<Point>& B2 = mesh2->B;
+                    const std::vector<Point>& C2 = mesh2->C;
+                    const std::vector<Point>& A = trilist->A;
+                    const std::vector<Point>& B = trilist->B;
+                    const std::vector<Point>& C = trilist->C;
+                    for (size_t i=0; i<N_tri; i++) {
+                        if ( !approx_equal(P1[A1[i]],A[i]) || !approx_equal(P1[B1[i]],B[i]) || !approx_equal(P1[C1[i]],C[i]) )
+                            pass = false;
+                        if ( !approx_equal(A2[i],A[i]) || !approx_equal(B2[i],B[i]) || !approx_equal(C2[i],C[i]) )
+                            pass = false;
+                    }
+                }
+                if ( list[j].name=="domain" && format!="old" ) {
+                    // Check the domain mesh
+                    const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
+                    if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
+                        pass = false;
+                    if ( mesh1.nx!=domain->nx || mesh1.ny!=domain->ny || mesh1.nz!=domain->nz )
+                        pass = false;
+                    if ( mesh1.Lx!=domain->Lx || mesh1.Ly!=domain->Ly || mesh1.Lz!=domain->Lz )
+                        pass = false;
+                }
+            }
+        }
+        if ( pass ) {
+            ut.passes("Meshes loaded correctly");
+        } else {
+            ut.failure("Meshes did not load correctly");
+            continue;
+        }
+        // For each domain, load the variables and check their data
+        if ( format=="old" )
+            continue;   // Old format does not support variables
+        for (size_t j=0; j<list.size(); j++) {
+            const IO::MeshDataStruct* mesh0 = NULL;
+            for (size_t k=0; k<meshData.size(); k++) {
+                if ( meshData[k].meshName == list[j].name ) {
+                    mesh0 = &meshData[k];
+                    break;
+                }
+            }
+            for (size_t v=0; v<list[j].variables.size(); v++) {
+                for (size_t k=0; k<list[j].domains.size(); k++) {
+                    PROFILE_START(format+"-read-getVariable");
+                    std::shared_ptr<const IO::Variable> variable = 
+                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
+                    PROFILE_STOP(format+"-read-getVariable");
+                    const IO::Variable& var1 = *mesh0->vars[v];
+                    const IO::Variable& var2 = *variable;
+                    pass = var1.name == var2.name;
+                    pass = pass && var1.dim == var2.dim;
+                    pass = pass && var1.type == var2.type;
+                    pass = pass && var1.data.length() == var2.data.length();
+                    if ( pass ) {
+                        for (size_t m=0; m<var1.data.length(); m++)
+                            pass = pass && approx_equal(var1.data(m),var2.data(m));
+                    }
+                    if ( pass ) {
+                        ut.passes("Variables match");
+                    } else {
+                        ut.failure("Variables did not match");
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// Main
 int main(int argc, char **argv)
 {
     int rank,nprocs;
@@ -128,147 +302,14 @@ int main(int argc, char **argv)
     meshData[3].mesh = domain;
     meshData[3].vars.push_back(domain_var);
 
-    // Write the data
-    std::vector<int> format(2,0);
-    format[0] = 2;
-    format[1] = 1;
-    IO::writeData( 0, meshData, format[0], comm );
-    IO::writeData( 3, meshData, format[1], comm );
-    MPI_Barrier(comm);
-
-    // Get a list of the timesteps 
-    std::vector<std::string> timesteps = IO::readTimesteps("summary.LBM");
-    if ( timesteps.size()==2 )
-        ut.passes("Corrent number of timesteps");
-    else
-        ut.failure("Incorrent number of timesteps");
-
-    // Check the mesh lists
-    for (size_t i=0; i<timesteps.size(); i++) {
-        // Load the list of meshes and check its size
-        std::vector<IO::MeshDatabase> list = IO::getMeshList(".",timesteps[i]);
-        if ( list.size()==meshData.size() )
-            ut.passes("Corrent number of meshes found");
-        else
-            ut.failure("Incorrent number of meshes found");
-        // Check the number of domains for each mesh
-        bool pass = true;
-        for (size_t j=0; j<list.size(); j++)
-            pass = pass && (int)list[j].domains.size()==nprocs;
-        if ( pass ) {
-            ut.passes("Corrent number of domains for mesh");
-        } else {
-            ut.failure("Incorrent number of domains for mesh");
-            continue;
-        }
-        // For each domain, load the mesh and check its data
-        for (size_t j=0; j<list.size(); j++) {
-            for (size_t k=0; k<list[j].domains.size(); k++) {
-                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
-                if ( mesh.get()==NULL ) {
-                    printf("Failed to load %s\n",list[j].name.c_str());
-                    pass = false;
-                    break;
-                }
-                if ( list[j].name=="pointmesh" ) {
-                    // Check the pointmesh
-                    std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
-                    if ( pmesh.get()==NULL ) {
-                        pass = false;
-                        break;
-                    }
-                    if ( pmesh->points.size()!=N_points ) {
-                        pass = false;
-                        break;
-                    }                    
-                }
-                if ( list[j].name=="trimesh" || list[j].name=="trilist" ) {
-                    // Check the trimesh/trilist
-                    std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
-                    std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
-                    if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
-                        pass = false;
-                        break;
-                    }
-                    if ( mesh1->A.size()!=N_tri || mesh1->B.size()!=N_tri || mesh1->C.size()!=N_tri || 
-                         mesh2->A.size()!=N_tri || mesh2->B.size()!=N_tri || mesh2->C.size()!=N_tri ) 
-                    {
-                        pass = false;
-                        break;
-                    }
-                    const std::vector<Point>& P1 = mesh1->vertices->points;
-                    const std::vector<int>& A1 = mesh1->A;
-                    const std::vector<int>& B1 = mesh1->B;
-                    const std::vector<int>& C1 = mesh1->C;
-                    const std::vector<Point>& A2 = mesh2->A;
-                    const std::vector<Point>& B2 = mesh2->B;
-                    const std::vector<Point>& C2 = mesh2->C;
-                    const std::vector<Point>& A = trilist->A;
-                    const std::vector<Point>& B = trilist->B;
-                    const std::vector<Point>& C = trilist->C;
-                    for (size_t i=0; i<N_tri; i++) {
-                        if ( !approx_equal(P1[A1[i]],A[i]) || !approx_equal(P1[B1[i]],B[i]) || !approx_equal(P1[C1[i]],C[i]) )
-                            pass = false;
-                        if ( !approx_equal(A2[i],A[i]) || !approx_equal(B2[i],B[i]) || !approx_equal(C2[i],C[i]) )
-                            pass = false;
-                    }
-                }
-                if ( list[j].name=="domain" && format[i]>2 ) {
-                    // Check the domain mesh
-                    const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
-                    if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
-                        pass = false;
-                    if ( mesh1.nx!=domain->nx || mesh1.ny!=domain->ny || mesh1.nz!=domain->nz )
-                        pass = false;
-                    if ( mesh1.Lx!=domain->Lx || mesh1.Ly!=domain->Ly || mesh1.Lz!=domain->Lz )
-                        pass = false;
-                }
-            }
-        }
-        if ( pass ) {
-            ut.passes("Meshes loaded correctly");
-        } else {
-            ut.failure("Meshes did not load correctly");
-            continue;
-        }
-        // For each domain, load the variables and check their data
-        if ( format[i]==1 )
-            continue;   // Format 1 does not support variables
-        for (size_t j=0; j<list.size(); j++) {
-            const IO::MeshDataStruct* mesh0 = NULL;
-            for (size_t k=0; k<meshData.size(); k++) {
-                if ( meshData[k].meshName == list[j].name ) {
-                    mesh0 = &meshData[k];
-                    break;
-                }
-            }
-            for (size_t v=0; v<list[j].variables.size(); v++) {
-                for (size_t k=0; k<list[j].domains.size(); k++) {
-                    std::shared_ptr<const IO::Variable> variable = 
-                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
-                    const IO::Variable& var1 = *mesh0->vars[v];
-                    const IO::Variable& var2 = *variable;
-                    pass = var1.name == var2.name;
-                    pass = pass && var1.dim == var2.dim;
-                    pass = pass && var1.type == var2.type;
-                    pass = pass && var1.data.length() == var2.data.length();
-                    if ( pass ) {
-                        for (size_t m=0; m<var1.data.length(); m++)
-                            pass = pass && approx_equal(var1.data(m),var2.data(m));
-                    }
-                    if ( pass ) {
-                        ut.passes("Variables match");
-                    } else {
-                        ut.failure("Variables did not match");
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    // Run the tests
+    testWriter( "old", meshData, ut );
+    testWriter( "new", meshData, ut );
+    //testWriter( "silo", meshData, ut );
 
     // Finished
     ut.report();
+    PROFILE_SAVE("TestWriter",true);
     int N_errors = ut.NumFailGlobal();
     MPI_Barrier(comm);
     MPI_Finalize();

@@ -20,6 +20,18 @@ static inline void fgetl( char * str, int num, FILE * stream )
 }
 
 
+// Get the path to a file
+std::string IO::getPath( const std::string& filename )
+{
+    std::string file(filename);
+    size_t k1 = file.rfind(47);
+    size_t k2 = file.rfind(92);
+    if ( k1==std::string::npos ) { k1=0; }
+    if ( k2==std::string::npos ) { k2=0; }
+    return file.substr(0,std::max(k1,k2));
+}
+
+
 // List the timesteps in the given directors (dumps.LBPM)
 std::vector<std::string> IO::readTimesteps( const std::string& filename )
 {
@@ -166,22 +178,49 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     size_t N = atol(values[2].c_str());
     size_t bytes = atol(values[3].c_str());
     std::string precision  = values[4];
-    char *data = new char[bytes];
-    size_t count = fread(data,1,bytes,fid);
-    fclose(fid);
-    ASSERT(count==bytes);
     std::shared_ptr<IO::Variable> var( new IO::Variable() );
     var->dim = dim;
     var->type = static_cast<IO::VariableType>(type);
     var->name = variable;
-    var->data.resize(N);
+    var->data.resize(N*dim);
     if ( precision=="double" ) {
-        memcpy(var->data.data(),data,bytes);
+        size_t count = fread(var->data.data(),sizeof(double),N*dim,fid);
+        ASSERT(count*sizeof(double)==bytes);
     } else {
         ERROR("Format not implimented");
     }
-    delete [] data;
+    fclose(fid);
     return var;
+}
+
+
+/****************************************************
+* Reformat the variable to match the mesh           *
+****************************************************/
+void IO::reformatVariable( const IO::Mesh& mesh, IO::Variable& var )
+{
+    if ( mesh.className() == "DomainMesh" ) {
+        const IO::DomainMesh& mesh2 = dynamic_cast<const IO::DomainMesh&>( mesh );
+        if ( var.type == NodeVariable ) {
+            ERROR("Not finished");
+        } else if ( var.type == EdgeVariable ) {
+            ERROR("Not finished");
+        } else if ( var.type == SurfaceVariable ) {
+            ERROR("Not finished");
+        } else if ( var.type == VolumeVariable ) {
+            size_t N2 = var.data.length() / (mesh2.nx*mesh2.ny*mesh2.nz);
+            ASSERT( mesh2.nx*mesh2.ny*mesh2.nz*N2 == var.data.length() );
+            var.data.reshape( { (size_t) mesh2.nx, (size_t) mesh2.ny, (size_t) mesh2.nz, N2 } );
+        } else {
+            ERROR("Invalid variable type");
+        }
+    } else if ( mesh.className() == "PointList" ) {
+        ERROR("Not finished");
+    } else if ( mesh.className() == "TriMesh" ) {
+        ERROR("Not finished");
+    } else {
+        ERROR("Unknown mesh type");
+    }
 }
 
 

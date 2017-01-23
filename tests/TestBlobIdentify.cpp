@@ -229,7 +229,7 @@ int main(int argc, char **argv)
     fillData.copy(Phase,PhaseVar->data);
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(GlobalBlobID,BlobIDVar->data);
-    IO::writeData( 0, meshData, 2, comm );
+    IO::writeData( 0, meshData, comm );
     writeIDMap(ID_map_struct(nblobs),0,"lbpm_id_map.txt");
     int save_it = 1;
 
@@ -281,7 +281,7 @@ int main(int argc, char **argv)
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);
         fillData.copy(GlobalBlobID,BlobIDVar->data);
-        IO::writeData( save_it, meshData, 2, comm );
+        IO::writeData( save_it, meshData, comm );
     }
     PROFILE_STOP("constant velocity test");
 
@@ -305,7 +305,7 @@ int main(int argc, char **argv)
     fillData.copy(Phase,PhaseVar->data);
     fillData.copy(SignDist,SignDistVar->data);
     fillData.copy(GlobalBlobID,BlobIDVar->data);
-    IO::writeData( save_it, meshData, 2, comm );
+    IO::writeData( save_it, meshData, comm );
     save_it++;
     id_max = nblobs-1;
     for (int i=0; i<25; i++, save_it++) {
@@ -404,7 +404,7 @@ int main(int argc, char **argv)
         fillData.copy(Phase,PhaseVar->data);
         fillData.copy(SignDist,SignDistVar->data);
         fillData.copy(GlobalBlobID,BlobIDVar->data);
-        IO::writeData( save_it, meshData, 2, comm );
+        IO::writeData( save_it, meshData, comm );
     }
     PROFILE_STOP("moving bubble test");
 

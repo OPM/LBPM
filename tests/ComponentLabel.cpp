@@ -476,7 +476,7 @@ int main(int argc, char **argv)
     fillData.copy(Averages.Label_WP,LabelWPVar->data);
     fillData.copy(Averages.Label_NWP,LabelNWPVar->data);
     fillData.copy(Averages.PhaseID,PhaseIDVar->data);
-    IO::writeData( 0, meshData, 2, comm );
+    IO::writeData( 0, meshData, comm );
 /*
 	FILE *NWP_FILE;
 	NWP_FILE = fopen("NWP.dat","wb");

@@ -1086,7 +1086,7 @@ void TwoPhase::WriteSurfaces(int logcount)
 	meshData[1].mesh = ws_mesh;
 	meshData[2].meshName = "ns-tris";
 	meshData[2].mesh = ns_mesh;
-	IO::writeData( logcount, meshData, 2, Dm.Comm );
+	IO::writeData( logcount, meshData, Dm.Comm );
 
 }
 

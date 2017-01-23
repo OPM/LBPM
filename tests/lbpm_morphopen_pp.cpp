@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	// Compute min and max poresize
 	if (rank==0) printf("    computing local minimum and maximum... \n");
 	MinPoreSize=MaxPoreSize=PoreSize[0];
-	for (int idx=0; idx<PoreSize.size(); idx++){
+	for (size_t idx=0; idx<PoreSize.size(); idx++){
 		if (PoreSize[idx] < MinPoreSize) MinPoreSize=PoreSize[idx];
 		if (PoreSize[idx] > MaxPoreSize) MaxPoreSize=PoreSize[idx];
 	}
@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 	// Generate histogram counts
 	if (rank==0) printf("    generating local bin counts... \n");
 	BinWidth=(MaxPoreSize-MinPoreSize)/double(NumBins);
-	for (int idx=0; idx<PoreSize.size(); idx++){
+	for (size_t idx=0; idx<PoreSize.size(); idx++){
 		double value = PoreSize[idx];
 		int myBin = 0;
 		while (MinPoreSize+myBin*BinWidth < value) myBin++;

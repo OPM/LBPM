@@ -2187,7 +2187,7 @@ int main(int argc, char **argv)
                 }
                 meshData[k].vars.push_back(dist);
             }
-            IO::writeData( bubbleCount, meshData, 2, comm );
+            IO::writeData( bubbleCount, meshData, comm );
         #else
 		    fclose(WN_TRIS);
         #endif

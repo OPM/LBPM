@@ -193,7 +193,7 @@ MACRO ( CONFIGURE_HDF5 )
             ${HDF5_HL_LIB}
             ${HDF5_LIB}
         )
-        ADD_DEFINITIONS ( "-D USE_HDF5" )  
+        ADD_DEFINITIONS ( -DUSE_HDF5 )  
         MESSAGE( "Using hdf5" )
         MESSAGE( "   ${HDF5_LIB}" )
     ENDIF()
@@ -227,10 +227,38 @@ MACRO( CONFIGURE_NETCDF )
             MESSAGE( FATAL_ERROR "Default search for netcdf is not yet supported.  Use -D NETCDF_DIRECTORY=" )
         ENDIF()
         SET( EXTERNAL_LIBS ${EXTERNAL_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} )
-        ADD_DEFINITIONS ( "-D USE_NETCDF" )
+        ADD_DEFINITIONS ( -DUSE_NETCDF )
         MESSAGE( "Using netcdf" )
         MESSAGE( "   ${NETCDF_LIBS}" )
     ENDIF()
+ENDMACRO()
+
+
+# Macro to find and configure the silo libraries
+MACRO ( CONFIGURE_SILO )
+    # Determine if we want to use silo
+    CHECK_ENABLE_FLAG( USE_EXT_SILO 0 )
+    IF ( USE_SILO )
+        SET( USE_HDF5 1 )
+        CONFIGURE_HDF5()
+        # Check if we specified the silo directory
+        IF ( SILO_DIRECTORY )
+            VERIFY_PATH ( ${SILO_DIRECTORY} )
+            INCLUDE_DIRECTORIES ( ${SILO_DIRECTORY}/include )
+            SET ( SILO_INCLUDE ${SILO_DIRECTORY}/include )
+            FIND_LIBRARY ( SILO_LIB  NAMES siloh5  PATHS ${SILO_DIRECTORY}/lib  NO_DEFAULT_PATH )
+        ELSE()
+            MESSAGE( "Default search for silo is not yet supported")
+            MESSAGE( "Use -D SILO_DIRECTORY=" FATAL_ERROR)
+        ENDIF()
+        SET ( SILO_LIBS
+            ${SILO_LIB}
+        )
+        SET( EXTERNAL_LIBS ${EXTERNAL_LIBS} ${SILO_LIBS} ${HDF5_LIBS} )
+        ADD_DEFINITIONS ( -DUSE_SILO )  
+        MESSAGE( "Using silo" )
+        MESSAGE( "   ${SILO_LIB}" )
+    ENDIF ()
 ENDMACRO()
 
 
