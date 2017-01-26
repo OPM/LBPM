@@ -134,7 +134,7 @@ Array<TYPE> imfilter::create_filter( const std::vector<int>& N0, const std::stri
         TYPE std[3] = { 0.5, 0.5, 0.5 };
         if ( args != NULL ) {
             const TYPE *args2 = reinterpret_cast<const TYPE*>( args );
-            for ( int d = 0; d < N0.size(); d++ )
+            for ( size_t d = 0; d < N0.size(); d++ )
                 std[d]  = args2[d];
         }
         auto N = N0;
@@ -310,8 +310,8 @@ Array<TYPE> imfilter::imfilter_separable( const Array<TYPE>& A,
     const std::vector<imfilter::BC>& boundary, const TYPE X )
 {
     PROFILE_START( "imfilter_separable" );
-    IMFILTER_ASSERT( A.ndim() == H.size() );
-    IMFILTER_ASSERT( A.ndim() == boundary.size() );
+    IMFILTER_ASSERT( A.ndim() == (int) H.size() );
+    IMFILTER_ASSERT( A.ndim() == (int) boundary.size() );
     std::vector<size_t> Nh( H.size() );
     for (int d=0; d<A.ndim(); d++) {
         IMFILTER_ASSERT(H[d].ndim()==1);
@@ -338,7 +338,7 @@ Array<TYPE> imfilter::imfilter_separable( const Array<TYPE>& A, const std::vecto
     const std::vector<imfilter::BC>& boundary, const TYPE X )
 {
     PROFILE_START( "imfilter_separable (lambda)" );
-    IMFILTER_ASSERT( A.ndim() == boundary.size() );
+    IMFILTER_ASSERT( A.ndim() == (int) boundary.size() );
     auto B = A;
     for ( int d = 0; d < A.ndim(); d++ ) {
         int N = A.size(d);
@@ -359,7 +359,7 @@ Array<TYPE> imfilter::imfilter_separable( const Array<TYPE>& A, const std::vecto
     const std::vector<imfilter::BC>& boundary, const TYPE X )
 {
     PROFILE_START( "imfilter_separable (function)" );
-    IMFILTER_ASSERT( A.ndim() == boundary.size() );
+    IMFILTER_ASSERT( A.ndim() == (int) boundary.size() );
     auto B = A;
     for ( int d = 0; d < A.ndim(); d++ ) {
         int N = A.size(d);

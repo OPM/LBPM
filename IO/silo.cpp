@@ -171,7 +171,7 @@ void writeMultiMesh( DBfile* fid, const std::string& meshname,
     std::string tree_name = meshname + "_tree";
     DBoptlist *optList    = DBMakeOptlist( 1 );
     DBAddOption( optList, DBOPT_MRGTREE_NAME, (char *) tree_name.c_str() );
-    DBPutMultimesh( fid, meshname.c_str(), meshNames.size(), meshnames.data(), meshTypes.data(), nullptr );
+    DBPutMultimesh( fid, meshname.c_str(), meshNames.size(), meshnames.data(), (int*) meshTypes.data(), nullptr );
     DBFreeOptlist( optList );
 }
 
