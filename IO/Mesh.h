@@ -64,6 +64,8 @@ public:
     virtual std::pair<size_t,void*> pack( int level ) const;
     //! Unpack the data
     virtual void unpack( const std::pair<size_t,void*>& data );
+    //! Access the points
+    const std::vector<Point>& getPoints() const { return points; }
 public:
     std::vector<Point>  points;  //!< List of points vertex
 };
@@ -171,7 +173,13 @@ public:
     std::string name;           //!< Variable name
     Array<double> data;         //!< Variable data
     //! Empty constructor
-    Variable(): type(NullVariable) {}
+    Variable(): dim(0), type(NullVariable) {}
+    //! Constructor
+    Variable( int dim_, IO::VariableType type_, const std::string& name_ ):
+        dim(dim_), type(type_), name(name_) {}
+    //! Constructor
+    Variable( int dim_, IO::VariableType type_, const std::string& name_, const Array<double>& data_ ):
+        dim(dim_), type(type_), name(name_), data(data_) {}
     //! Destructor
     virtual ~Variable() {}
 protected:
@@ -189,6 +197,8 @@ struct MeshDataStruct {
     std::string             meshName;
     std::shared_ptr<Mesh>   mesh;
     std::vector<std::shared_ptr<Variable> >  vars;
+    //! Check the data
+    bool check() const;
 };
 
 

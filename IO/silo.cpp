@@ -36,48 +36,34 @@ void close( DBfile* fid )
 
 
 /****************************************************
-* Write a uniform mesh to silo                      *
+* Write/read an arbitrary vector                    *
 ****************************************************/
-template<int NDIM>
-void writeUniformMesh( DBfile* fid, const std::string& meshname,
-    const std::array<double,2*NDIM>& range, const std::array<int,NDIM>& N )
+template<class TYPE> int getSiloType();
+template<> int getSiloType<int>() { return DB_INT; }
+template<> int getSiloType<float>() { return DB_FLOAT; }
+template<> int getSiloType<double>() { return DB_DOUBLE; }
+template<class TYPE>
+void write( DBfile* fid, const std::string& varname, const std::vector<TYPE>& data )
 {
-    PROFILE_START("writeUniformMesh",2);
-    int dims[NDIM];
-    for (size_t d=0; d<N.size(); d++)
-        dims[d] = N[d]+1;
-    float *x = nullptr;
-    if ( NDIM >= 1 ) {
-        x = new float[dims[0]];
-        for (int i=0; i<N[0]; i++)
-            x[i] = range[0] + i*(range[1]-range[0])/N[0];
-        x[N[0]] = range[1];
-    }
-    float *y = nullptr;
-    if ( NDIM >= 2 ) {
-        y = new float[dims[1]];
-        for (int i=0; i<N[1]; i++)
-            y[i] = range[2] + i*(range[3]-range[2])/N[1];
-        y[N[1]] = range[3];
-    }
-    float *z = nullptr;
-    if ( NDIM >= 3 ) {
-        z = new float[dims[2]];
-        for (int i=0; i<N[2]; i++)
-            z[i] = range[4] + i*(range[5]-range[4])/N[2];
-        z[N[2]] = range[5];
-    }
-    float *coords[] = { x, y, z };
-    int err = DBPutQuadmesh( fid, meshname.c_str(), nullptr, coords, dims, NDIM, DB_FLOAT, DB_COLLINEAR, nullptr );
+    int dims = data.size();
+    int err = DBWrite( fid, varname.c_str(), data.data(), &dims, 1, getSiloType<TYPE>() );
     ASSERT( err == 0 );
-    PROFILE_STOP("writeUniformMesh",2);
+}
+template<class TYPE>
+std::vector<TYPE> read( DBfile* fid, const std::string& varname )
+{
+    int N = DBGetVarLength( fid, varname.c_str() );
+    std::vector<TYPE> data(N);
+    int err = DBReadVar( fid, varname.c_str(), data.data() );
+    ASSERT( err == 0 );
+    return data;
 }
 
 
 /****************************************************
-* Write a vector/tensor quad variable               *
+* Helper function to get variable suffixes          *
 ****************************************************/
-std::vector<std::string> getVarSuffix( int ndim, int nvars )
+static std::vector<std::string> getVarSuffix( int ndim, int nvars )
 {
     std::vector<std::string> suffix(nvars);
     if ( nvars == 1 ) {
@@ -118,24 +104,93 @@ std::vector<std::string> getVarSuffix( int ndim, int nvars )
     }
     return suffix;
 }
+
+
+/****************************************************
+* Write/read a uniform mesh to silo                 *
+****************************************************/
+template<int NDIM>
+void writeUniformMesh( DBfile* fid, const std::string& meshname,
+    const std::array<double,2*NDIM>& range, const std::array<int,NDIM>& N )
+{
+    PROFILE_START("writeUniformMesh",2);
+    int dims[NDIM];
+    for (size_t d=0; d<N.size(); d++)
+        dims[d] = N[d]+1;
+    float *x = nullptr;
+    if ( NDIM >= 1 ) {
+        x = new float[dims[0]];
+        for (int i=0; i<N[0]; i++)
+            x[i] = range[0] + i*(range[1]-range[0])/N[0];
+        x[N[0]] = range[1];
+    }
+    float *y = nullptr;
+    if ( NDIM >= 2 ) {
+        y = new float[dims[1]];
+        for (int i=0; i<N[1]; i++)
+            y[i] = range[2] + i*(range[3]-range[2])/N[1];
+        y[N[1]] = range[3];
+    }
+    float *z = nullptr;
+    if ( NDIM >= 3 ) {
+        z = new float[dims[2]];
+        for (int i=0; i<N[2]; i++)
+            z[i] = range[4] + i*(range[5]-range[4])/N[2];
+        z[N[2]] = range[5];
+    }
+    float *coords[] = { x, y, z };
+    int err = DBPutQuadmesh( fid, meshname.c_str(), nullptr, coords, dims, NDIM, DB_FLOAT, DB_COLLINEAR, nullptr );
+    ASSERT( err == 0 );
+    PROFILE_STOP("writeUniformMesh",2);
+}
+void readUniformMesh( DBfile* fid, const std::string& meshname,
+    std::vector<double>& range, std::vector<int>& N )
+{
+    DBquadmesh* mesh = DBGetQuadmesh( fid, meshname.c_str() );
+    int ndim = mesh->ndims;
+    range.resize(2*ndim);
+    N.resize(ndim);
+    for (int d=0; d<ndim; d++) {
+        N[d] = mesh->dims[d];
+        range[2*d+0] = mesh->min_extents[d];
+        range[2*d+1] = mesh->max_extents[d];
+    }
+    delete mesh;
+}
+
+
+/****************************************************
+* Write a vector/tensor quad variable               *
+****************************************************/
 template<int NDIM>
 void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const std::array<int,NDIM>& N,
     const std::string& varname, const Array<double>& data, VariableType type )
 {
-    for (int d=0; d<NDIM; d++)
-        ASSERT(N[d]==(int)data.size(d));
     PROFILE_START("writeUniformMeshVariable",2);
     int nvars=1, dims[NDIM]={1};
     const double *vars[NDIM] = { nullptr };
+    int vartype = 0;
     if ( type == NodeVariable ) {
-        ERROR("Not finished");
+        ASSERT( data.ndim()==NDIM || data.ndim()==NDIM+1 );
+        for (int d=0; d<NDIM; d++)
+            ASSERT(N[d]+1==(int)data.size(d));
+        vartype = DB_NODECENT;
+        nvars = data.size(NDIM);
+        size_t N = data.length()/nvars;
+        for (int d=0; d<NDIM; d++)
+            dims[d] = data.size(d);
+        for (int i=0; i<nvars; i++)
+            vars[i] = &data(i*N);
     } else if ( type == EdgeVariable ) {
         ERROR("Not finished");
     } else if ( type == SurfaceVariable ) {
         ERROR("Not finished");
     } else if ( type == VolumeVariable ) {
         ASSERT( data.ndim()==NDIM || data.ndim()==NDIM+1 );
-        nvars = data.size(NDIM+1);
+        for (int d=0; d<NDIM; d++)
+            ASSERT(N[d]==(int)data.size(d));
+        vartype = DB_ZONECENT;
+        nvars = data.size(NDIM);
         size_t N = data.length()/nvars;
         for (int d=0; d<NDIM; d++)
             dims[d] = data.size(d);
@@ -152,9 +207,94 @@ void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const s
     for (int i=0; i<nvars; i++)
         varnames[i] = const_cast<char*>(var_names[i].c_str());
     int err = DBPutQuadvar( fid, varname.c_str(), meshname.c_str(), nvars,
-        varnames.data(), vars, dims, NDIM, nullptr, 0, DB_DOUBLE, DB_ZONECENT, nullptr );
+        varnames.data(), vars, dims, NDIM, nullptr, 0, DB_DOUBLE, vartype, nullptr );
     ASSERT( err == 0 );
     PROFILE_STOP("writeUniformMeshVariable",2);
+}
+
+
+/****************************************************
+* Write a point mesh/variable to silo               *
+****************************************************/
+void writePointMesh( DBfile* fid, const std::string& meshname,
+    int ndim, int N, const double *coords[] )
+{
+    int err = DBPutPointmesh( fid, meshname.c_str(), ndim, coords, N, DB_DOUBLE, nullptr );
+    ASSERT( err == 0 );
+}
+void writePointMeshVariable( DBfile* fid, const std::string& meshname,
+    const std::string& varname, const Array<double>& data )
+{
+    int N = data.size(0);
+    int nvars = data.size(1);
+    std::vector<const double*> vars(nvars);
+    for (int i=0; i<nvars; i++)
+        vars[i] = &data(0,i);
+    int err = DBPutPointvar( fid, varname.c_str(), meshname.c_str(), nvars, vars.data(), N, DB_DOUBLE, nullptr );
+    ASSERT( err == 0 );
+}
+
+
+/****************************************************
+* Write a triangle mesh                             *
+****************************************************/
+void writeTriMesh( DBfile* fid, const std::string& meshName,
+    int ndim, int ndim_tri, int N, const double *coords[], int N_tri, const int *tri[] )
+{
+    auto zoneName = meshName + "_zones";
+    std::vector<int> nodelist( (ndim_tri+1)*N_tri );
+    for (int i=0, j=0; i<N_tri; i++) {
+        for (int d=0; d<ndim_tri+1; d++, j++)
+            nodelist[j] = tri[d][i];
+    }
+    int shapetype = 0;
+    if ( ndim_tri==1 )
+        shapetype = DB_ZONETYPE_BEAM;
+    else if ( ndim_tri==2 )
+        shapetype = DB_ZONETYPE_TRIANGLE;
+    else if ( ndim_tri==3 )
+        shapetype = DB_ZONETYPE_PYRAMID;
+    else
+        ERROR("Unknown shapetype");
+    int shapesize = ndim_tri+1;
+    int shapecnt = N_tri;
+    DBPutZonelist2( fid, zoneName.c_str(), N_tri, ndim_tri, nodelist.data(),
+        nodelist.size(), 0, 0, 0, &shapetype, &shapesize, &shapecnt, 1, nullptr );
+    DBPutUcdmesh( fid, meshName.c_str(), ndim, nullptr, coords, N,
+        nodelist.size(), zoneName.c_str(), nullptr, DB_DOUBLE, nullptr );
+}
+void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
+    const std::string& varname, const Array<double>& data, VariableType type )
+{
+    int nvars = 0;
+    int vartype = 0;
+    const double *vars[10] = { nullptr };
+    if ( type == NodeVariable ) {
+        vartype = DB_NODECENT;
+        nvars = data.size(1);
+        for (int i=0; i<nvars; i++)
+            vars[i] = &data(0,i);
+    } else if ( type == EdgeVariable ) {
+        ERROR("Not finished");
+    } else if ( type == SurfaceVariable ) {
+        ERROR("Not finished");
+    } else if ( type == VolumeVariable ) {
+        vartype = DB_ZONECENT;
+        nvars = data.size(1);
+        for (int i=0; i<nvars; i++)
+            vars[i] = &data(0,i);
+    } else {
+        ERROR("Invalid variable type");
+    }
+    auto suffix = getVarSuffix( ndim, nvars );
+    std::vector<std::string> var_names(nvars);
+    for (int i=0; i<nvars; i++)
+        var_names[i] = varname + suffix[i];
+    std::vector<char*> varnames(nvars,nullptr);
+    for (int i=0; i<nvars; i++)
+        varnames[i] = const_cast<char*>(var_names[i].c_str());
+    DBPutUcdvar( fid, varname.c_str(), meshname.c_str(), nvars,
+        varnames.data(), vars, data.size(0), nullptr, 0, DB_DOUBLE, vartype, nullptr );
 }
 
 
@@ -181,20 +321,12 @@ void writeMultiMesh( DBfile* fid, const std::string& meshname,
 ****************************************************/
 void writeMultiVar( DBfile* fid, const std::string& varname,
     const std::vector<std::string>& varNames,
-    const std::vector<int>& varTypes, int ndim, int nvar )
+    const std::vector<int>& varTypes )
 {
-    ASSERT(varNames.size()==varTypes.size());
-    auto suffix = getVarSuffix( ndim, nvar );
-    for (int i=0; i<nvar; i++) {
-        auto varname2 = varname + suffix[i];
-        auto varNames2 = varNames;
-        for ( auto& tmp : varNames2 )
-            tmp += suffix[i];
-        std::vector<char*> varnames(varNames.size(),nullptr);
-        for (size_t j=0; j<varNames.size(); j++)
-            varnames[j] = const_cast<char*>(varNames2[j].c_str());
-        DBPutMultivar( fid, varname2.c_str(), varNames.size(), varnames.data(), (int*) varTypes.data(), nullptr );
-    }
+    std::vector<char*> varnames(varNames.size(),nullptr);
+    for (size_t j=0; j<varNames.size(); j++)
+        varnames[j] = const_cast<char*>(varNames[j].c_str());
+    DBPutMultivar( fid, varname.c_str(), varNames.size(), varnames.data(), (int*) varTypes.data(), nullptr );
 }
 
 
@@ -202,6 +334,12 @@ void writeMultiVar( DBfile* fid, const std::string& varname,
 
 
 // Explicit instantiations
+template void silo::write<int>(    DBfile*, const std::string&, const std::vector<int>&    );
+template void silo::write<float>(  DBfile*, const std::string&, const std::vector<float>&  );
+template void silo::write<double>( DBfile*, const std::string&, const std::vector<double>& );
+template std::vector<int>    silo::read<int>(    DBfile* fid, const std::string& varname );
+template std::vector<float>  silo::read<float>(  DBfile* fid, const std::string& varname );
+template std::vector<double> silo::read<double>( DBfile* fid, const std::string& varname );
 template void silo::writeUniformMesh<1>( DBfile*, const std::string&, const std::array<double,2>&, const std::array<int,1>& );
 template void silo::writeUniformMesh<2>( DBfile*, const std::string&, const std::array<double,4>&, const std::array<int,2>& );
 template void silo::writeUniformMesh<3>( DBfile*, const std::string&, const std::array<double,6>&, const std::array<int,3>& );

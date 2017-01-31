@@ -4,6 +4,11 @@
 #include "IO/IOHelpers.h"
 #include "common/Utilities.h"
 
+#ifdef USE_SILO
+#include "IO/silo.h"
+#endif
+
+
 #include <ProfilerApp.h>
 #include <iostream>
 #include <string.h>
@@ -44,6 +49,9 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
     while (fgets(buf,sizeof(buf),fid) != NULL) {
         std::string line(buf);
         line.resize(line.size()-1);
+        auto pos = line.find( "summary.silo" );
+        if ( pos != std::string::npos )
+            line.resize(pos);
         if ( line.empty() )
             continue;
         timesteps.push_back(line);
@@ -146,6 +154,36 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         }
         mesh->unpack( std::pair<size_t,void*>(bytes,data) );
         delete [] data;
+    } else if ( meshDatabase.format==4 ) {
+        // Reading a silo file
+#ifdef USE_SILO
+        const DatabaseEntry& database = meshDatabase.domains[domain];
+        std::string filename = path + "/" + timestep + "/" + database.file;
+        int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
+        auto fid = silo::open( filename, silo::READ );
+        if ( meshDatabase.meshClass=="PointList" ) {
+            mesh.reset( new IO::PointList() );
+            ERROR("Not finished");
+        } else if ( meshDatabase.meshClass=="TriMesh" ) {
+            mesh.reset( new IO::TriMesh() );
+            ERROR("Not finished");
+        } else if ( meshDatabase.meshClass=="TriList" ) {
+            mesh.reset( new IO::TriList() );
+            ERROR("Not finished");
+        } else if ( meshDatabase.meshClass=="DomainMesh" ) {
+            std::vector<double> range;
+            std::vector<int> N;
+            silo::readUniformMesh( fid, database.name, range, N );
+            auto rankinfo = silo::read<int>( fid, database.name+"_rankinfo" );
+            RankInfoStruct rank_data( rankinfo[0], rankinfo[1], rankinfo[2], rankinfo[3] );
+            mesh.reset( new IO::DomainMesh( rank_data, N[0], N[1], N[2], range[1]-range[0], range[3]-range[2], range[5]-range[4] ) );
+        } else {
+            ERROR("Unknown mesh class");
+        }
+        silo::close( fid );
+#else
+        ERROR("Build without silo support");
+#endif
     } else {
         ERROR("Unknown format");
     }
