@@ -135,11 +135,10 @@ TwoPhase::TwoPhase(Domain &dm):
 	Gns_global.resize(6);
 	Gws_global.resize(6);
 	//.........................................
-	if (Dm.rank==0)
-{
+	if (Dm.rank==0){
 		TIMELOG = fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR))
-{
+		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
@@ -163,6 +162,24 @@ TwoPhase::TwoPhase(Domain &dm):
 		fprintf(WPLOG,"time label vol pw awn ans Jwn Kwn lwns cwns ");
 		fprintf(WPLOG,"vx vy vz vwnx vwny vwnz vwnsx vwnsy vwnsz vsq ");
 		fprintf(WPLOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz Cx Cy Cz trawn trJwn\n");
+	}
+	else{
+		char LocalRankString[8];
+		sprintf(LocalRankString,"%05d",Dm.rank);
+		char LocalRankFilename[40];
+		sprintf(LocalRankFilename,"%s%s","timelog.tcat.",LocalRankString);
+		TIMELOG = fopen(LocalRankFilename,"a+");
+		//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+		fprintf(TIMELOG,"time ");								// Timestep, Change in Surface Energy
+		fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns cwns KNwns KGwns ");	// Scalar averages
+		fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
+		fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");
+		fprintf(TIMELOG,"Gwnxx Gwnyy Gwnzz Gwnxy Gwnxz Gwnyz ");				// Orientation tensors
+		fprintf(TIMELOG,"Gwsxx Gwsyy Gwszz Gwsxy Gwsxz Gwsyz ");
+		fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
+		fprintf(TIMELOG,"trawn trJwn trRwn ");			//trimmed curvature,
+		fprintf(TIMELOG,"wwndnw wwnsdnwn Jwnwwndnw "); 	//kinematic quantities,
+		fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures,
 	}
 }
 
@@ -1221,6 +1238,32 @@ void TwoPhase::PrintAll(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
+	else{
+		sat_w = 1.0 - nwp_volume/(nwp_volume+wp_volume);
+
+		fprintf(TIMELOG,"%i ",timestep-5);										// change in surface energy
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw,pan);					// saturation and pressure
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn,ans,aws);				// interfacial areas
+		fprintf(TIMELOG,"%.5g %.5g ",Jwn, Kwn);								// curvature of wn interface
+		fprintf(TIMELOG,"%.5g ",lwns);											// common curve length
+		fprintf(TIMELOG,"%.5g ",efawns);											// average contact angle
+		fprintf(TIMELOG,"%.5g %.5g ",KNwns, KGwns);								// curvature of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vaw(0),vaw(1),vaw(2));	// average velocity of w phase
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",van(0),van(1),van(2));	// average velocity of n phase
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vawn(0),vawn(1),vawn(2));	// velocity of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",vawns(0),vawns(1),vawns(2));	// velocity of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gwn(0),Gwn(1),Gwn(2),Gwn(3),Gwn(4),Gwn(5));	// orientation of wn interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gns(0),Gns(1),Gns(2),Gns(3),Gns(4),Gns(5));	// orientation of ns interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",
+				Gws(0),Gws(1),Gws(2),Gws(3),Gws(4),Gws(5));	// orientation of ws interface
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn, trJwn, trRwn);		// Trimmed curvature
+		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw, wwnsdnwn, Jwnwwndnw);		// kinematic quantities
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler, Kn, Jn, An);			// minkowski measures
+		fflush(TIMELOG);
+	}
+
 }
 
 void TwoPhase::PrintComponents(int timestep)
