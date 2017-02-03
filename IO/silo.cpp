@@ -151,11 +151,11 @@ void readUniformMesh( DBfile* fid, const std::string& meshname,
     range.resize(2*ndim);
     N.resize(ndim);
     for (int d=0; d<ndim; d++) {
-        N[d] = mesh->dims[d];
+        N[d] = mesh->dims[d]-1;
         range[2*d+0] = mesh->min_extents[d];
         range[2*d+1] = mesh->max_extents[d];
     }
-    delete mesh;
+    DBFreeQuadmesh( mesh );
 }
 
 
@@ -211,16 +211,49 @@ void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const s
     ASSERT( err == 0 );
     PROFILE_STOP("writeUniformMeshVariable",2);
 }
+Array<double> readUniformMeshVariable( DBfile* fid, const std::string& varname )
+{
+    auto var = DBGetQuadvar( fid, varname.c_str() );
+    ASSERT( var != nullptr );
+    Array<double> data( var->nels, var->nvals );
+    if ( var->datatype == DB_DOUBLE ) {
+        for (int i=0; i<var->nvals; i++)
+            memcpy( &data(0,i), var->vals[i], var->nels*sizeof(double) );
+    } else {
+        ERROR("Unsupported format");
+    }
+    DBFreeQuadvar( var );
+    std::vector<size_t> dims( var->ndims+1, var->nvals );
+    for (int d=0; d<var->ndims; d++)
+        dims[d] = var->dims[d];
+    data.reshape( dims );
+    return data;
+}
 
 
 /****************************************************
-* Write a point mesh/variable to silo               *
+* Read/write a point mesh/variable to silo          *
 ****************************************************/
 void writePointMesh( DBfile* fid, const std::string& meshname,
     int ndim, int N, const double *coords[] )
 {
     int err = DBPutPointmesh( fid, meshname.c_str(), ndim, coords, N, DB_DOUBLE, nullptr );
     ASSERT( err == 0 );
+}
+Array<double> readPointMesh( DBfile* fid, const std::string& meshname )
+{
+    auto mesh = DBGetPointmesh( fid, meshname.c_str() );
+    int N = mesh->nels;
+    int ndim = mesh->ndims;
+    Array<double> coords(N,ndim);
+    if ( mesh->datatype == DB_DOUBLE ) {
+        for (int d=0; d<ndim; d++)
+            memcpy(&coords(0,d),mesh->coords[d],N*sizeof(double));
+    } else {
+        ERROR("Unsupported format");
+    }
+    DBFreePointmesh( mesh );
+    return coords;
 }
 void writePointMeshVariable( DBfile* fid, const std::string& meshname,
     const std::string& varname, const Array<double>& data )
@@ -233,10 +266,24 @@ void writePointMeshVariable( DBfile* fid, const std::string& meshname,
     int err = DBPutPointvar( fid, varname.c_str(), meshname.c_str(), nvars, vars.data(), N, DB_DOUBLE, nullptr );
     ASSERT( err == 0 );
 }
+Array<double> readPointMeshVariable( DBfile* fid, const std::string& varname )
+{
+    auto var = DBGetPointvar( fid, varname.c_str() );
+    ASSERT( var != nullptr );
+    Array<double> data( var->nels, var->nvals );
+    if ( var->datatype == DB_DOUBLE ) {
+        for (int i=0; i<var->nvals; i++)
+            memcpy( &data(0,i), var->vals[i], var->nels*sizeof(double) );
+    } else {
+        ERROR("Unsupported format");
+    }
+    DBFreeMeshvar( var );
+    return data;
+}
 
 
 /****************************************************
-* Write a triangle mesh                             *
+* Read/write a triangle mesh                        *
 ****************************************************/
 void writeTriMesh( DBfile* fid, const std::string& meshName,
     int ndim, int ndim_tri, int N, const double *coords[], int N_tri, const int *tri[] )
@@ -262,6 +309,31 @@ void writeTriMesh( DBfile* fid, const std::string& meshName,
         nodelist.size(), 0, 0, 0, &shapetype, &shapesize, &shapecnt, 1, nullptr );
     DBPutUcdmesh( fid, meshName.c_str(), ndim, nullptr, coords, N,
         nodelist.size(), zoneName.c_str(), nullptr, DB_DOUBLE, nullptr );
+}
+void readTriMesh( DBfile* fid, const std::string& meshname, Array<double>& coords, Array<int>& tri )
+{
+    auto mesh = DBGetUcdmesh( fid, meshname.c_str() );
+    int ndim = mesh->ndims;
+    int N_nodes = mesh->nnodes;
+    coords.resize(N_nodes,ndim);
+    if ( mesh->datatype == DB_DOUBLE ) {
+        for (int d=0; d<ndim; d++)
+            memcpy(&coords(0,d),mesh->coords[d],N_nodes*sizeof(double));
+    } else {
+        ERROR("Unsupported format");
+    }
+    auto zones = mesh->zones;
+    int N_zones = zones->nzones;
+    int ndim_zones = zones->ndims;
+    ASSERT( zones->nshapes==1 );
+    int type = zones->shapetype[0];
+    int shapesize = zones->shapesize[0];
+    tri.resize(N_zones,shapesize);
+    for (int i=0; i<N_zones; i++) {
+        for (int j=0; j<shapesize; j++)
+            tri(i,j) = zones->nodelist[i*shapesize+j];
+    }
+    DBFreeUcdmesh( mesh );
 }
 void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
     const std::string& varname, const Array<double>& data, VariableType type )
@@ -295,6 +367,20 @@ void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
         varnames[i] = const_cast<char*>(var_names[i].c_str());
     DBPutUcdvar( fid, varname.c_str(), meshname.c_str(), nvars,
         varnames.data(), vars, data.size(0), nullptr, 0, DB_DOUBLE, vartype, nullptr );
+}
+Array<double> readTriMeshVariable( DBfile* fid, const std::string& varname )
+{
+    auto var = DBGetUcdvar( fid, varname.c_str() );
+    ASSERT( var != nullptr );
+    Array<double> data( var->nels, var->nvals );
+    if ( var->datatype == DB_DOUBLE ) {
+        for (int i=0; i<var->nvals; i++)
+            memcpy( &data(0,i), var->vals[i], var->nels*sizeof(double) );
+    } else {
+        ERROR("Unsupported format");
+    }
+    DBFreeUcdvar( var );
+    return data;
 }
 
 

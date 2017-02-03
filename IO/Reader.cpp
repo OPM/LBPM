@@ -44,6 +44,10 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
     FILE *fid= fopen(filename.c_str(),"rb");
     if ( fid==NULL )
         ERROR("Error opening file");
+    auto pos = std::min(filename.find_last_of(47),filename.find_last_of(90));
+    std::string path = getPath( filename );
+    if ( !path.empty() )
+        path += "/";
     std::vector<std::string> timesteps;
     char buf[1000];
     while (fgets(buf,sizeof(buf),fid) != NULL) {
@@ -54,7 +58,7 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
             line.resize(pos);
         if ( line.empty() )
             continue;
-        timesteps.push_back(line);
+        timesteps.push_back(path+line);
     }
     fclose(fid);
     PROFILE_STOP("readTimesteps");
@@ -162,14 +166,39 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
         auto fid = silo::open( filename, silo::READ );
         if ( meshDatabase.meshClass=="PointList" ) {
-            mesh.reset( new IO::PointList() );
-            ERROR("Not finished");
-        } else if ( meshDatabase.meshClass=="TriMesh" ) {
-            mesh.reset( new IO::TriMesh() );
-            ERROR("Not finished");
-        } else if ( meshDatabase.meshClass=="TriList" ) {
-            mesh.reset( new IO::TriList() );
-            ERROR("Not finished");
+            Array<double> coords = silo::readPointMesh( fid, database.name );
+            ASSERT(coords.size(1)==3);
+            std::shared_ptr<IO::PointList> mesh2( new IO::PointList( coords.size(0) ) );
+            for (size_t i=0; i<coords.size(1); i++) {
+                mesh2->points[i].x = coords(i,0);
+                mesh2->points[i].y = coords(i,1);
+                mesh2->points[i].z = coords(i,2);
+            }
+            mesh = mesh2;
+        } else if ( meshDatabase.meshClass=="TriMesh" || meshDatabase.meshClass=="TriList" ) {
+            Array<double> coords;
+            Array<int> tri;
+            silo::readTriMesh( fid, database.name, coords, tri );
+            ASSERT( tri.size(1)==3 && coords.size(1)==3 );
+            int N_tri = tri.size(0);
+            int N_point = coords.size(0);
+            std::shared_ptr<IO::TriMesh> mesh2( new IO::TriMesh( N_tri, N_point ) );
+            for (int i=0; i<N_point; i++) {
+                mesh2->vertices->points[i].x = coords(i,0);
+                mesh2->vertices->points[i].y = coords(i,1);
+                mesh2->vertices->points[i].z = coords(i,2);
+            }
+            for (int i=0; i<N_tri; i++) {
+                mesh2->A[i] = tri(i,0);
+                mesh2->B[i] = tri(i,1);
+                mesh2->C[i] = tri(i,2);
+            }
+            if ( meshDatabase.meshClass=="TriMesh" ) {
+                mesh = mesh2;
+            } else if ( meshDatabase.meshClass=="TriList" ) {
+                auto trilist = IO::getTriList( std::dynamic_pointer_cast<IO::Mesh>( mesh2 ) );
+                mesh = trilist;
+            }
         } else if ( meshDatabase.meshClass=="DomainMesh" ) {
             std::vector<double> range;
             std::vector<int> N;
@@ -201,33 +230,61 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
     it = meshDatabase.variable_data.find(key);
     if ( it==meshDatabase.variable_data.end() )
         return std::shared_ptr<IO::Variable>();
-    const DatabaseEntry& database = it->second;
-    std::string filename = path + "/" + timestep + "/" + database.file;
-    FILE *fid = fopen(filename.c_str(),"rb");
-    fseek(fid,database.offset,SEEK_SET);
-    char line[1000];
-    fgetl(line,1000,fid);
-    size_t i1 = find(line,':');
-    size_t i2 = find(&line[i1+1],':')+i1+1;
-    std::vector<std::string> values = splitList(&line[i2+1],',');
-    ASSERT(values.size()==5);
-    int dim = atoi(values[0].c_str());
-    int type = atoi(values[1].c_str());
-    size_t N = atol(values[2].c_str());
-    size_t bytes = atol(values[3].c_str());
-    std::string precision  = values[4];
-    std::shared_ptr<IO::Variable> var( new IO::Variable() );
-    var->dim = dim;
-    var->type = static_cast<IO::VariableType>(type);
-    var->name = variable;
-    var->data.resize(N*dim);
-    if ( precision=="double" ) {
-        size_t count = fread(var->data.data(),sizeof(double),N*dim,fid);
-        ASSERT(count*sizeof(double)==bytes);
+    std::shared_ptr<IO::Variable> var;
+    if ( meshDatabase.format == 2 ) {
+        const DatabaseEntry& database = it->second;
+        std::string filename = path + "/" + timestep + "/" + database.file;
+        FILE *fid = fopen(filename.c_str(),"rb");
+        fseek(fid,database.offset,SEEK_SET);
+        char line[1000];
+        fgetl(line,1000,fid);
+        size_t i1 = find(line,':');
+        size_t i2 = find(&line[i1+1],':')+i1+1;
+        std::vector<std::string> values = splitList(&line[i2+1],',');
+        ASSERT(values.size()==5);
+        int dim = atoi(values[0].c_str());
+        int type = atoi(values[1].c_str());
+        size_t N = atol(values[2].c_str());
+        size_t bytes = atol(values[3].c_str());
+        std::string precision  = values[4];
+        var = std::shared_ptr<IO::Variable>( new IO::Variable() );
+        var->dim = dim;
+        var->type = static_cast<IO::VariableType>(type);
+        var->name = variable;
+        var->data.resize(N*dim);
+        if ( precision=="double" ) {
+            size_t count = fread(var->data.data(),sizeof(double),N*dim,fid);
+            ASSERT(count*sizeof(double)==bytes);
+        } else {
+            ERROR("Format not implimented");
+        }
+        fclose(fid);
+    } else if ( meshDatabase.format == 4 ) {
+        // Reading a silo file
+#ifdef USE_SILO
+        const auto& database = meshDatabase.domains[domain];
+        auto variableDatabase = meshDatabase.getVariableDatabase( variable );
+        std::string filename = path + "/" + timestep + "/" + database.file;
+        int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
+        auto fid = silo::open( filename, silo::READ );
+        var.reset( new Variable( variableDatabase.dim, variableDatabase.type, variable ) );
+        if ( meshDatabase.meshClass=="PointList" ) {
+            var->data = silo::readPointMeshVariable( fid, variable );
+        } else if ( meshDatabase.meshClass=="TriMesh" || meshDatabase.meshClass=="TriList" ) {
+            var->data = silo::readTriMeshVariable( fid, variable );
+        } else if ( meshDatabase.meshClass=="DomainMesh" ) {
+            var->data = silo::readUniformMeshVariable( fid, variable );
+        } else {
+            ERROR("Unknown mesh class");
+        }
+        silo::close( fid );
+#else
+        ERROR("Build without silo support");
+#endif
+
     } else {
-        ERROR("Format not implimented");
+        ERROR("Unknown format");
     }
-    fclose(fid);
     return var;
 }
 
@@ -240,7 +297,9 @@ void IO::reformatVariable( const IO::Mesh& mesh, IO::Variable& var )
     if ( mesh.className() == "DomainMesh" ) {
         const IO::DomainMesh& mesh2 = dynamic_cast<const IO::DomainMesh&>( mesh );
         if ( var.type == NodeVariable ) {
-            ERROR("Not finished");
+            size_t N2 = var.data.length() / ((mesh2.nx+1)*(mesh2.ny+1)*(mesh2.nz+1));
+            ASSERT( (mesh2.nx+1)*(mesh2.ny+1)*(mesh2.nz+1)*N2 == var.data.length() );
+            var.data.reshape( { (size_t) mesh2.nx+1, (size_t) mesh2.ny+1, (size_t) mesh2.nz+1, N2 } );
         } else if ( var.type == EdgeVariable ) {
             ERROR("Not finished");
         } else if ( var.type == SurfaceVariable ) {
@@ -253,9 +312,31 @@ void IO::reformatVariable( const IO::Mesh& mesh, IO::Variable& var )
             ERROR("Invalid variable type");
         }
     } else if ( mesh.className() == "PointList" ) {
-        ERROR("Not finished");
-    } else if ( mesh.className() == "TriMesh" ) {
-        ERROR("Not finished");
+        const IO::PointList& mesh2 = dynamic_cast<const IO::PointList&>( mesh );
+        size_t N = mesh2.points.size();
+        size_t N_var = var.data.length()/N;
+        ASSERT( N*N_var == var.data.length() );
+        var.data.reshape( { N, N_var } );
+    } else if ( mesh.className()=="TriMesh" || mesh.className() == "TriList" ) {
+        std::shared_ptr<Mesh> mesh_ptr( const_cast<Mesh*>(&mesh), []( void* ) {} );
+        std::shared_ptr<TriMesh> mesh2 = getTriMesh( mesh_ptr );
+        if ( var.type == NodeVariable ) {
+            size_t N = mesh2->vertices->points.size();
+            size_t N_var = var.data.length()/N;
+            ASSERT( N*N_var == var.data.length() );
+            var.data.reshape( { N, N_var } );
+        } else if ( var.type == EdgeVariable ) {
+            ERROR("Not finished");
+        } else if ( var.type == SurfaceVariable ) {
+            ERROR("Not finished");
+        } else if ( var.type == VolumeVariable ) {
+            size_t N = mesh2->A.size();
+            size_t N_var = var.data.length()/N;
+            ASSERT( N*N_var == var.data.length() );
+            var.data.reshape( { N, N_var } );
+        } else {
+            ERROR("Invalid variable type");
+        }
     } else {
         ERROR("Unknown mesh type");
     }

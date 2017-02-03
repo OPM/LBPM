@@ -74,19 +74,19 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
         ut.failure("Incorrent number of timesteps");
 
     // Check the mesh lists
-    for (size_t i=0; i<timesteps.size(); i++) {
+    for ( const auto& timestep : timesteps ) {
         // Load the list of meshes and check its size
         PROFILE_START(format+"-read-getMeshList");
-        std::vector<IO::MeshDatabase> list = IO::getMeshList(".",timesteps[i]);
+        auto databaseList = IO::getMeshList(".",timestep);
         PROFILE_STOP(format+"-read-getMeshList");
-        if ( list.size()==meshData.size() )
+        if ( databaseList.size()==meshData.size() )
             ut.passes("Corrent number of meshes found");
         else
             ut.failure("Incorrent number of meshes found");
         // Check the number of domains for each mesh
         bool pass = true;
-        for (size_t j=0; j<list.size(); j++)
-            pass = pass && (int)list[j].domains.size()==nprocs;
+        for ( const auto& database : databaseList )
+            pass = pass && (int)database.domains.size()==nprocs;
         if ( pass ) {
             ut.passes("Corrent number of domains for mesh");
         } else {
@@ -94,17 +94,18 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
             continue;
         }
         // For each domain, load the mesh and check its data
-        for (size_t j=0; j<list.size(); j++) {
-            for (size_t k=0; k<list[j].domains.size(); k++) {
+        for ( const auto& database : databaseList ) {
+            pass = true;
+            for (size_t k=0; k<database.domains.size(); k++) {
                 PROFILE_START(format+"-read-getMesh");
-                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
+                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timestep,database,k);
                 PROFILE_STOP(format+"-read-getMesh");
                 if ( mesh.get()==NULL ) {
-                    printf("Failed to load %s\n",list[j].name.c_str());
+                    printf("Failed to load %s\n",database.name.c_str());
                     pass = false;
                     break;
                 }
-                if ( list[j].name=="pointmesh" ) {
+                if ( database.name=="pointmesh" ) {
                     // Check the pointmesh
                     std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
                     if ( pmesh.get()==NULL ) {
@@ -116,7 +117,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                         break;
                     }                    
                 }
-                if ( list[j].name=="trimesh" || list[j].name=="trilist" ) {
+                if ( database.name=="trimesh" || database.name=="trilist" ) {
                     // Check the trimesh/trilist
                     std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
                     std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
@@ -147,7 +148,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                             pass = false;
                     }
                 }
-                if ( list[j].name=="domain" && format!="old" ) {
+                if ( database.name=="domain" && format!="old" ) {
                     // Check the domain mesh
                     const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
                     if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
@@ -158,29 +159,30 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                         pass = false;
                 }
             }
-        }
-        if ( pass ) {
-            ut.passes("Meshes loaded correctly");
-        } else {
-            ut.failure("Meshes did not load correctly");
-            continue;
-        }
-        // For each domain, load the variables and check their data
-        if ( format=="old" )
-            continue;   // Old format does not support variables
-        for (size_t j=0; j<list.size(); j++) {
+            if ( pass ) {
+                ut.passes("Mesh \"" + database.name + "\" loaded correctly");
+            } else {
+                ut.failure("Mesh \"" + database.name + "\" did not load correctly");
+                continue;
+            }
+            // Load the variables and check their data
+            if ( format=="old" )
+                continue;   // Old format does not support variables
             const IO::MeshDataStruct* mesh0 = NULL;
             for (size_t k=0; k<meshData.size(); k++) {
-                if ( meshData[k].meshName == list[j].name ) {
+                if ( meshData[k].meshName == database.name ) {
                     mesh0 = &meshData[k];
                     break;
                 }
             }
-            for (size_t v=0; v<list[j].variables.size(); v++) {
-                for (size_t k=0; k<list[j].domains.size(); k++) {
+            for (size_t k=0; k<database.domains.size(); k++) {
+                auto mesh = IO::getMesh(".",timestep,database,k);
+                for (size_t v=0; v<mesh0->vars.size(); v++) {
                     PROFILE_START(format+"-read-getVariable");
-                    std::shared_ptr<const IO::Variable> variable = 
-                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
+                    std::shared_ptr<IO::Variable> variable = 
+                        IO::getVariable(".",timestep,database,k,mesh0->vars[v]->name);
+                    if ( format=="new" )
+                        IO::reformatVariable( *mesh, *variable );
                     PROFILE_STOP(format+"-read-getVariable");
                     const IO::Variable& var1 = *mesh0->vars[v];
                     const IO::Variable& var2 = *variable;
@@ -193,9 +195,9 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                             pass = pass && approx_equal(var1.data(m),var2.data(m));
                     }
                     if ( pass ) {
-                        ut.passes("Variables match");
+                        ut.passes("Variable \"" + variable->name + "\" matched");
                     } else {
-                        ut.failure("Variables did not match");
+                        ut.failure("Variable \"" + variable->name + "\" did not match");
                         break;
                     }
                 }

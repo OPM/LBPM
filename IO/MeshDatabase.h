@@ -60,6 +60,7 @@ struct MeshDatabase {
     std::vector<DatabaseEntry> domains; //!< List of the domains
     std::vector<VariableDatabase> variables; //!< List of the variables
     std::map<variable_id,DatabaseEntry> variable_data; //!< Data for the variables
+    VariableDatabase getVariableDatabase( const std::string& varname ) const;
 public:
     MeshDatabase();
     ~MeshDatabase();

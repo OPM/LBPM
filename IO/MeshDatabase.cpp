@@ -203,6 +203,14 @@ MeshDatabase& MeshDatabase::operator=(const MeshDatabase& rhs)
     this->variable_data = rhs.variable_data;
     return *this;
 }
+VariableDatabase MeshDatabase::getVariableDatabase( const std::string& varname ) const
+{
+    for (size_t i=0; i<variables.size(); i++) {
+        if ( variables[i].name == varname )
+            return variables[i];
+    }
+    return VariableDatabase();
+}
 
 
 /****************************************************

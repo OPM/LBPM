@@ -234,7 +234,6 @@ static void writeSiloTriMesh2( DBfile *fid, const IO::MeshDataStruct& meshData,
         const IO::Variable& var = *meshData.vars[i];
         auto type = static_cast<silo::VariableType>( var.type );
         silo::writeTriMeshVariable( fid, 3, meshname, var.name, var.data, type );
-printf("%s-%s: %i %i %i\n",meshname.c_str(),var.name.c_str(),points.size(),var.data.size(0),var.data.size(1));
     }
 }
 static void writeSiloTriMesh( DBfile *fid, const IO::MeshDataStruct& meshData, IO::MeshDatabase database )
@@ -428,7 +427,7 @@ void IO::writeData( const std::string& subdir, const std::vector<IO::MeshDataStr
         if ( global_IO_format == Format::OLD || global_IO_format == Format::NEW ) {
             auto filename = global_IO_path+"/summary.LBM";
             FILE *fid = fopen(filename.c_str(),"ab");
-            fprintf(fid,"%s/\n",path.c_str());
+            fprintf(fid,"%s/\n",subdir.c_str());
             fclose(fid);
         } else if ( global_IO_format == Format::SILO ) {
             auto filename = global_IO_path+"/LBM.visit";
