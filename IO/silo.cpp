@@ -46,7 +46,7 @@ template<class TYPE>
 void write( DBfile* fid, const std::string& varname, const std::vector<TYPE>& data )
 {
     int dims = data.size();
-    int err = DBWrite( fid, varname.c_str(), data.data(), &dims, 1, getSiloType<TYPE>() );
+    int err = DBWrite( fid, varname.c_str(), (void*) data.data(), &dims, 1, getSiloType<TYPE>() );
     ASSERT( err == 0 );
 }
 template<class TYPE>
