@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
 	int timestepMax;
-	double tau,Fx,Fy,Fz,tol,err;
+	double tau1, tau2, Fx,Fy,Fz,tol,err;
 	double alpha, beta;
 	double das, dbs, phi_s;
 	double din,dout;
@@ -165,7 +165,8 @@ int main(int argc, char **argv)
 		ifstream input("Color.in");
 		if (input.is_open()){
 			// Line 1: model parameters (tau, alpha, beta, das, dbs)
-			input >> tau;			// Viscosity parameter
+			input >> tau1;			// Viscosity parameter
+			input >> tau2;			// Viscosity parameter
 			input >> alpha;			// Surface Tension parameter
 			input >> beta;			// Width of the interface
 			input >> phi_s;			// value of phi at the solid surface
@@ -192,7 +193,7 @@ int main(int argc, char **argv)
 			// Set default values
 		    // Print warning
 			printf("WARNING: No input file provided (Color.in is missing)! Default parameters will be used. \n");
-			tau = 1.0;
+			tau1 = tau2 = 1.0;
 			alpha=0.005;
 			beta= 0.9;
 			Fx = Fy = Fz = 0.0;
@@ -234,7 +235,8 @@ int main(int argc, char **argv)
 	// Broadcast simulation parameters from rank 0 to all other procs
 	MPI_Barrier(comm);
 	//.................................................
-	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&tau1,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&tau2,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
@@ -272,8 +274,6 @@ int main(int argc, char **argv)
 	// **************************************************************
 	// **************************************************************
 	double Ps = -(das-dbs)/(das+dbs);
-	double rlxA = 1.f/tau;
-	double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
 	//double xIntPos = log((1.0+phi_s)/(1.0-phi_s))/(2.0*beta); 	
 	
 	// Set the density values inside the solid based on the input value phi_s
@@ -289,7 +289,8 @@ int main(int argc, char **argv)
 
 	if (rank==0){
 		printf("********************************************************\n");
-		printf("tau = %f \n", tau);
+		printf("tau (non-wetting) = %f \n", tau1);
+		printf("tau (wetting) = %f \n", tau2);
 		printf("alpha = %f \n", alpha);		
 		printf("beta = %f \n", beta);
 		printf("das = %f \n", das);
@@ -637,13 +638,13 @@ int main(int argc, char **argv)
 	if (BoundaryCondition==2 && Mask.kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-		SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 	}
 
 	if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-		SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 	}
 
 	// Set dynamic pressure boundary conditions
@@ -743,8 +744,8 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
-		ScaLBL_D3Q19_ColorCollide( ID,f_even,f_odd,Phi,ColorGrad,
-							 Velocity,Nx,Ny,Nz,rlxA,rlxB,alpha,beta,Fx,Fy,Fz);
+		ScaLBL_D3Q19_ColorCollide_gen( ID,f_even,f_odd,Phi,ColorGrad,
+							 Velocity,Nx,Ny,Nz,tau1,tau2,alpha,beta,Fx,Fy,Fz);
 		//*************************************************************************
 
 		ScaLBL_DeviceBarrier();
@@ -826,12 +827,12 @@ int main(int argc, char **argv)
 		if (BoundaryCondition==2 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 			//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			SetPhiSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			SetPhiSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 		}
 
 		if (BoundaryCondition==3){

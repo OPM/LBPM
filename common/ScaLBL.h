@@ -67,6 +67,10 @@ extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *d
 								double *Velocity, int Nx, int Ny, int Nz,double rlx_setA, double rlx_setB,
 								double alpha, double beta, double Fx, double Fy, double Fz);
 
+extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
+								double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
+								double alpha, double beta, double Fx, double Fy, double Fz);
+
 extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 					     double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC);
 

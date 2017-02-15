@@ -2,7 +2,7 @@
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_nondarcy_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
-#ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_sphere_pp )
 ADD_LBPM_EXECUTABLE( lbpm_random_pp )
 ADD_LBPM_EXECUTABLE( lbpm_morphdrain_pp )
