@@ -285,7 +285,7 @@ int main(int argc, char **argv)
     double sw_diff_old = 1.0;
     double sw_diff_new = 1.0;
    
-	while (sw_new > SW){
+	while (sw_new > SW && Rcrit_new > 0.99){
         
         Rcrit_old = Rcrit_new;
 		Rcrit_new -= deltaR;// decrease critical radius
@@ -298,7 +298,7 @@ int main(int argc, char **argv)
 		while (GlobalNumber != 0){
 
 			if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
-			int LocalNumber=0;
+			int LocalNumber=GlobalNumber=0;
 			for(k=0; k<Nz; k++){
 				for(j=0; j<Ny; j++){
 					for(i=0; i<Nx; i++){

@@ -74,19 +74,19 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
         ut.failure("Incorrent number of timesteps");
 
     // Check the mesh lists
-    for (size_t i=0; i<timesteps.size(); i++) {
+    for ( const auto& timestep : timesteps ) {
         // Load the list of meshes and check its size
         PROFILE_START(format+"-read-getMeshList");
-        std::vector<IO::MeshDatabase> list = IO::getMeshList(".",timesteps[i]);
+        auto databaseList = IO::getMeshList(".",timestep);
         PROFILE_STOP(format+"-read-getMeshList");
-        if ( list.size()==meshData.size() )
+        if ( databaseList.size()==meshData.size() )
             ut.passes("Corrent number of meshes found");
         else
             ut.failure("Incorrent number of meshes found");
         // Check the number of domains for each mesh
         bool pass = true;
-        for (size_t j=0; j<list.size(); j++)
-            pass = pass && (int)list[j].domains.size()==nprocs;
+        for ( const auto& database : databaseList )
+            pass = pass && (int)database.domains.size()==nprocs;
         if ( pass ) {
             ut.passes("Corrent number of domains for mesh");
         } else {
@@ -94,17 +94,18 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
             continue;
         }
         // For each domain, load the mesh and check its data
-        for (size_t j=0; j<list.size(); j++) {
-            for (size_t k=0; k<list[j].domains.size(); k++) {
+        for ( const auto& database : databaseList ) {
+            pass = true;
+            for (size_t k=0; k<database.domains.size(); k++) {
                 PROFILE_START(format+"-read-getMesh");
-                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timesteps[i],list[j],k);
+                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timestep,database,k);
                 PROFILE_STOP(format+"-read-getMesh");
                 if ( mesh.get()==NULL ) {
-                    printf("Failed to load %s\n",list[j].name.c_str());
+                    printf("Failed to load %s\n",database.name.c_str());
                     pass = false;
                     break;
                 }
-                if ( list[j].name=="pointmesh" ) {
+                if ( database.name=="pointmesh" ) {
                     // Check the pointmesh
                     std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
                     if ( pmesh.get()==NULL ) {
@@ -116,7 +117,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                         break;
                     }                    
                 }
-                if ( list[j].name=="trimesh" || list[j].name=="trilist" ) {
+                if ( database.name=="trimesh" || database.name=="trilist" ) {
                     // Check the trimesh/trilist
                     std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
                     std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
@@ -147,7 +148,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                             pass = false;
                     }
                 }
-                if ( list[j].name=="domain" && format!="old" ) {
+                if ( database.name=="domain" && format!="old" ) {
                     // Check the domain mesh
                     const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
                     if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
@@ -158,29 +159,30 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                         pass = false;
                 }
             }
-        }
-        if ( pass ) {
-            ut.passes("Meshes loaded correctly");
-        } else {
-            ut.failure("Meshes did not load correctly");
-            continue;
-        }
-        // For each domain, load the variables and check their data
-        if ( format=="old" )
-            continue;   // Old format does not support variables
-        for (size_t j=0; j<list.size(); j++) {
+            if ( pass ) {
+                ut.passes("Mesh \"" + database.name + "\" loaded correctly");
+            } else {
+                ut.failure("Mesh \"" + database.name + "\" did not load correctly");
+                continue;
+            }
+            // Load the variables and check their data
+            if ( format=="old" )
+                continue;   // Old format does not support variables
             const IO::MeshDataStruct* mesh0 = NULL;
             for (size_t k=0; k<meshData.size(); k++) {
-                if ( meshData[k].meshName == list[j].name ) {
+                if ( meshData[k].meshName == database.name ) {
                     mesh0 = &meshData[k];
                     break;
                 }
             }
-            for (size_t v=0; v<list[j].variables.size(); v++) {
-                for (size_t k=0; k<list[j].domains.size(); k++) {
+            for (size_t k=0; k<database.domains.size(); k++) {
+                auto mesh = IO::getMesh(".",timestep,database,k);
+                for (size_t v=0; v<mesh0->vars.size(); v++) {
                     PROFILE_START(format+"-read-getVariable");
-                    std::shared_ptr<const IO::Variable> variable = 
-                        IO::getVariable(".",timesteps[i],list[j],k,list[j].variables[v].name);
+                    std::shared_ptr<IO::Variable> variable = 
+                        IO::getVariable(".",timestep,database,k,mesh0->vars[v]->name);
+                    if ( format=="new" )
+                        IO::reformatVariable( *mesh, *variable );
                     PROFILE_STOP(format+"-read-getVariable");
                     const IO::Variable& var1 = *mesh0->vars[v];
                     const IO::Variable& var2 = *variable;
@@ -193,9 +195,9 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                             pass = pass && approx_equal(var1.data(m),var2.data(m));
                     }
                     if ( pass ) {
-                        ut.passes("Variables match");
+                        ut.passes("Variable \"" + variable->name + "\" matched");
                     } else {
-                        ut.failure("Variables did not match");
+                        ut.failure("Variable \"" + variable->name + "\" did not match");
                         break;
                     }
                 }
@@ -257,32 +259,77 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::DomainMesh> domain( new IO::DomainMesh(rank_data,6,7,8,1.0,1.0,1.0) );
 
     // Create the variables
-    std::shared_ptr<IO::Variable> dist_set1( new IO::Variable() );
-    std::shared_ptr<IO::Variable> dist_list( new IO::Variable() );
-    std::shared_ptr<IO::Variable> domain_var( new IO::Variable() );
-    dist_set1->dim = 1;
-    dist_list->dim = 1;
-    domain_var->dim = 1;
-    dist_set1->name = "Distance";
-    dist_list->name = "Distance";
-    domain_var->name = "Distance";
-    dist_set1->type = IO::NodeVariable;
-    dist_list->type = IO::NodeVariable;
-    domain_var->type = IO::VolumeVariable;
-    dist_set1->data.resize( N_points );
-    for (int i=0; i<N_points; i++)
-        dist_set1->data(i) = distance(set1->points[i]);
-    dist_list->data.resize( 3, N_tri );
-    for (int i=0; i<N_tri; i++) {
-        dist_list->data(0,i) = distance(trilist->A[i]);
-        dist_list->data(1,i) = distance(trilist->B[i]);
-        dist_list->data(2,i) = distance(trilist->C[i]);
+    std::shared_ptr<IO::Variable> set_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_set_mag") );
+    std::shared_ptr<IO::Variable> set_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_set_vec") );
+    std::shared_ptr<IO::Variable> list_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_list_mag") );
+    std::shared_ptr<IO::Variable> list_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_list_vec") );
+    std::shared_ptr<IO::Variable> point_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_point_mag") );
+    std::shared_ptr<IO::Variable> point_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_point_vec") );
+    std::shared_ptr<IO::Variable> domain_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_domain_mag") );
+    std::shared_ptr<IO::Variable> domain_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_domain_vec") );
+    std::shared_ptr<IO::Variable> set_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_set_mag") );
+    std::shared_ptr<IO::Variable> set_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_set_vec") );
+    std::shared_ptr<IO::Variable> list_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_list_mag") );
+    std::shared_ptr<IO::Variable> list_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_list_vec") );
+    std::shared_ptr<IO::Variable> domain_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_domain_mag") );
+    std::shared_ptr<IO::Variable> domain_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_domain_vec") );
+    point_node_mag->data.resize( N_points );
+    point_node_vec->data.resize( N_points, 3 );
+    for (int i=0; i<N_points; i++) {
+        point_node_mag->data(i) = distance(set1->points[i]);
+        point_node_vec->data(i,0) = set1->points[i].x;
+        point_node_vec->data(i,1) = set1->points[i].y;
+        point_node_vec->data(i,2) = set1->points[i].z;
     }
-    domain_var->data.resize(domain->nx,domain->ny,domain->nz);
+    set_node_mag->data = point_node_mag->data;
+    set_node_vec->data = point_node_vec->data;
+    list_node_mag->data.resize( 3*N_tri );
+    list_node_vec->data.resize( 3*N_tri, 3 );
+    for (int i=0; i<N_points; i++) {
+        list_node_mag->data(3*i+0) = distance(trilist->A[i]);
+        list_node_mag->data(3*i+1) = distance(trilist->B[i]);
+        list_node_mag->data(3*i+2) = distance(trilist->C[i]);
+        list_node_vec->data(3*i+0,0) = trilist->A[i].x;
+        list_node_vec->data(3*i+0,1) = trilist->A[i].y;
+        list_node_vec->data(3*i+0,2) = trilist->A[i].z;
+        list_node_vec->data(3*i+1,0) = trilist->B[i].x;
+        list_node_vec->data(3*i+1,1) = trilist->B[i].y;
+        list_node_vec->data(3*i+1,2) = trilist->B[i].z;
+        list_node_vec->data(3*i+2,0) = trilist->C[i].x;
+        list_node_vec->data(3*i+2,1) = trilist->C[i].y;
+        list_node_vec->data(3*i+2,2) = trilist->C[i].z;
+    }
+    domain_node_mag->data.resize(domain->nx+1,domain->ny+1,domain->nz+1);
+    domain_node_vec->data.resize({(size_t)domain->nx+1,(size_t)domain->ny+1,(size_t)domain->nz+1,3});
+    for (int i=0; i<domain->nx+1; i++) {
+        for (int j=0; j<domain->ny+1; j++) {
+            for (int k=0; k<domain->nz+1; k++) {
+                domain_node_mag->data(i,j,k) = distance(Point(i,j,k));
+                domain_node_vec->data(i,j,k,0) = Point(i,j,k).x;
+                domain_node_vec->data(i,j,k,1) = Point(i,j,k).y;
+                domain_node_vec->data(i,j,k,2) = Point(i,j,k).z;
+            }
+        }
+    }
+    set_cell_mag->data.resize( N_tri );
+    set_cell_vec->data.resize( N_tri, 3 );
+    for (int i=0; i<N_tri; i++) {
+        set_cell_mag->data(i) = i;
+        set_cell_vec->data(i,0) = 3*i+0;
+        set_cell_vec->data(i,1) = 3*i+1;
+        set_cell_vec->data(i,2) = 3*i+2;
+    }
+    list_cell_mag->data = set_cell_mag->data;
+    list_cell_vec->data = set_cell_vec->data;
+    domain_cell_mag->data.resize(domain->nx,domain->ny,domain->nz);
+    domain_cell_vec->data.resize({(size_t)domain->nx,(size_t)domain->ny,(size_t)domain->nz,3});
     for (int i=0; i<domain->nx; i++) {
         for (int j=0; j<domain->ny; j++) {
             for (int k=0; k<domain->nz; k++) {
-                domain_var->data(i,j,k) = distance(Point(i,j,k));
+                domain_cell_mag->data(i,j,k) = distance(Point(i,j,k));
+                domain_cell_vec->data(i,j,k,0) = Point(i,j,k).x;
+                domain_cell_vec->data(i,j,k,1) = Point(i,j,k).y;
+                domain_cell_vec->data(i,j,k,2) = Point(i,j,k).z;
             }
         }
     }
@@ -291,21 +338,31 @@ int main(int argc, char **argv)
     std::vector<IO::MeshDataStruct> meshData(4);
     meshData[0].meshName = "pointmesh";
     meshData[0].mesh = set1;
-    meshData[0].vars.push_back(dist_set1);
+    meshData[0].vars.push_back(point_node_mag);
+    meshData[0].vars.push_back(point_node_vec);
     meshData[1].meshName = "trimesh";
     meshData[1].mesh = trimesh;
-    meshData[1].vars.push_back(dist_set1);
+    meshData[1].vars.push_back(set_node_mag);
+    meshData[1].vars.push_back(set_node_vec);
+    meshData[1].vars.push_back(set_cell_mag);
+    meshData[1].vars.push_back(set_cell_vec);
     meshData[2].meshName = "trilist";
     meshData[2].mesh = trilist;
-    meshData[2].vars.push_back(dist_list);
+    meshData[2].vars.push_back(list_node_mag);
+    meshData[2].vars.push_back(list_node_vec);
+    meshData[2].vars.push_back(list_cell_mag);
+    meshData[2].vars.push_back(list_cell_vec);
     meshData[3].meshName = "domain";
     meshData[3].mesh = domain;
-    meshData[3].vars.push_back(domain_var);
+    meshData[3].vars.push_back(domain_node_mag);
+    meshData[3].vars.push_back(domain_node_vec);
+    meshData[3].vars.push_back(domain_cell_mag);
+    meshData[3].vars.push_back(domain_cell_vec);
 
     // Run the tests
     testWriter( "old", meshData, ut );
     testWriter( "new", meshData, ut );
-    //testWriter( "silo", meshData, ut );
+    testWriter( "silo", meshData, ut );
 
     // Finished
     ut.report();

@@ -30,6 +30,80 @@ Mesh::~Mesh( )
 
 
 /****************************************************
+* MeshDataStruct                                    *
+****************************************************/
+bool MeshDataStruct::check() const
+{
+    enum VariableType { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
+    bool pass = mesh != nullptr;
+    for ( const auto& var : vars ) {
+        pass = pass && static_cast<int>(var->type)>=1 && static_cast<int>(var->type)<=3;
+        pass = pass && !var->data.empty();
+    }
+    if ( !pass )
+        return false;
+    const std::string& meshClass = mesh->className();
+    if ( meshClass == "PointList" ) {
+        const auto mesh2 = dynamic_cast<IO::PointList*>( mesh.get() );
+        if ( mesh2 == nullptr )
+            return false;
+        for ( const auto& var : vars ) {
+            if ( var->type == IO::NodeVariable ) {
+                pass = pass && var->data.size(0)==mesh2->points.size() && var->data.size(1)==var->dim;
+            } else if ( var->type == IO::EdgeVariable ) {
+                ERROR("Invalid type for PointList");
+            } else if ( var->type == IO::SurfaceVariable ) {
+                ERROR("Invalid type for PointList");
+            } else if ( var->type == IO::VolumeVariable ) {
+                ERROR("Invalid type for PointList");
+            } else {
+                ERROR("Invalid variable type");
+            }
+        }
+    } else if ( meshClass == "TriMesh" || meshClass == "TriList" ) {
+        const auto mesh2 = getTriMesh( mesh );
+        if ( mesh2 == nullptr )
+            return false;
+        for ( const auto& var : vars ) {
+            if ( var->type == IO::NodeVariable ) {
+                pass = pass && var->data.size(0)==mesh2->vertices->points.size() && var->data.size(1)==var->dim;
+            } else if ( var->type == IO::EdgeVariable ) {
+                ERROR("Not finished");
+            } else if ( var->type == IO::SurfaceVariable ) {
+                ERROR("Not finished");
+            } else if ( var->type == IO::VolumeVariable ) {
+                pass = pass && var->data.size(0)==mesh2->A.size() && var->data.size(1)==var->dim;
+            } else {
+                ERROR("Invalid variable type");
+            }
+        }
+    } else if ( meshClass == "DomainMesh" ) {
+        const auto mesh2 = dynamic_cast<IO::DomainMesh*>( mesh.get() );
+        if ( mesh2 == nullptr )
+            return false;
+        for ( const auto& var : vars ) {
+            if ( var->type == IO::NodeVariable ) {
+                pass = pass && (int) var->data.size(0)==(mesh2->nx+1) && (int) var->data.size(1)==(mesh2->ny+1)
+                            && (int) var->data.size(2)==(mesh2->nz+1) &&       var->data.size(3)==var->dim;
+            } else if ( var->type == IO::EdgeVariable ) {
+                ERROR("Not finished");
+            } else if ( var->type == IO::SurfaceVariable ) {
+                ERROR("Not finished");
+            } else if ( var->type == IO::VolumeVariable ) {
+                pass = pass && (int) var->data.size(0)==mesh2->nx && (int) var->data.size(1)==mesh2->ny
+                            && (int) var->data.size(2)==mesh2->nz &&       var->data.size(3)==var->dim;
+            } else {
+                ERROR("Invalid variable type");
+            }
+        }
+    } else {
+        ERROR("Unknown mesh class: "+mesh->className());
+    }
+    return pass;
+}
+
+
+/****************************************************
 * PointList                                         *
 ****************************************************/
 PointList::PointList( )
