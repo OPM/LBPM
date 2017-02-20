@@ -45,9 +45,6 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
     if ( fid==NULL )
         ERROR("Error opening file");
     auto pos = std::min(filename.find_last_of(47),filename.find_last_of(90));
-    std::string path = getPath( filename );
-    if ( !path.empty() )
-        path += "/";
     std::vector<std::string> timesteps;
     char buf[1000];
     while (fgets(buf,sizeof(buf),fid) != NULL) {
@@ -58,7 +55,7 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
             line.resize(pos);
         if ( line.empty() )
             continue;
-        timesteps.push_back(path+line);
+        timesteps.push_back(line);
     }
     fclose(fid);
     PROFILE_STOP("readTimesteps");

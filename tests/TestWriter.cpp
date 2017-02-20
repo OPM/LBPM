@@ -49,11 +49,12 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
     PROFILE_STOP(format+"-write");
 
     // Get the summary name for reading
+    std::string path = "test_" + format;
     std::string summary_name;
     if ( format=="old" || format=="new" )
-        summary_name = "test_" + format + "/summary.LBM";
+        summary_name = "summary.LBM";
     else if ( format == "silo" )
-        summary_name = "test_" + format + "/LBM.visit";
+        summary_name = "LBM.visit";
     else
         ERROR("Unknown format");
 
@@ -66,7 +67,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
 
     // Get a list of the timesteps 
     PROFILE_START(format+"-read-timesteps");
-    std::vector<std::string> timesteps = IO::readTimesteps(summary_name);
+    std::vector<std::string> timesteps = IO::readTimesteps( path + "/" + summary_name );
     PROFILE_STOP(format+"-read-timesteps");
     if ( timesteps.size()==2 )
         ut.passes("Corrent number of timesteps");
@@ -77,7 +78,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
     for ( const auto& timestep : timesteps ) {
         // Load the list of meshes and check its size
         PROFILE_START(format+"-read-getMeshList");
-        auto databaseList = IO::getMeshList(".",timestep);
+        auto databaseList = IO::getMeshList(path,timestep);
         PROFILE_STOP(format+"-read-getMeshList");
         if ( databaseList.size()==meshData.size() )
             ut.passes("Corrent number of meshes found");
@@ -98,7 +99,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
             pass = true;
             for (size_t k=0; k<database.domains.size(); k++) {
                 PROFILE_START(format+"-read-getMesh");
-                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(".",timestep,database,k);
+                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(path,timestep,database,k);
                 PROFILE_STOP(format+"-read-getMesh");
                 if ( mesh.get()==NULL ) {
                     printf("Failed to load %s\n",database.name.c_str());
@@ -176,11 +177,11 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                 }
             }
             for (size_t k=0; k<database.domains.size(); k++) {
-                auto mesh = IO::getMesh(".",timestep,database,k);
+                auto mesh = IO::getMesh(path,timestep,database,k);
                 for (size_t v=0; v<mesh0->vars.size(); v++) {
                     PROFILE_START(format+"-read-getVariable");
                     std::shared_ptr<IO::Variable> variable = 
-                        IO::getVariable(".",timestep,database,k,mesh0->vars[v]->name);
+                        IO::getVariable(path,timestep,database,k,mesh0->vars[v]->name);
                     if ( format=="new" )
                         IO::reformatVariable( *mesh, *variable );
                     PROFILE_STOP(format+"-read-getVariable");
