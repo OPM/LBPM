@@ -1,5 +1,5 @@
-#ifndef NETCDF_READER
-#define NETCDF_READER
+#ifndef SILO_INTERFACE
+#define SILO_INTERFACE
 
 #include <string>
 #include <vector>
@@ -259,5 +259,9 @@ void writeMultiVar( DBfile* fid, const std::string& varname,
     const std::vector<std::string>& subVarNames,
     const std::vector<int>& subVarTypes );
 
+
 }; // silo namespace
 #endif
+
+#include "IO/silo.hpp"
+
