@@ -291,7 +291,7 @@ int main(int argc, char **argv)
         // Source data
         std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
 	    OrigData->name = "Source Data";
-	    OrigData->type = IO::VolumeVariable;
+	    OrigData->type = IO::VariableType::VolumeVariable;
 	    OrigData->dim = 1;
 	    OrigData->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(OrigData);
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
         // Non-Local Mean
         std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
 	    NonLocMean->name = "Non-Local Mean";
-	    NonLocMean->type = IO::VolumeVariable;
+	    NonLocMean->type = IO::VariableType::VolumeVariable;
 	    NonLocMean->dim = 1;
 	    NonLocMean->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(NonLocMean);
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
         // Segmented Data
         std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 	    SegData->name = "Segmented Data";
-	    SegData->type = IO::VolumeVariable;
+	    SegData->type = IO::VariableType::VolumeVariable;
 	    SegData->dim = 1;
 	    SegData->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(SegData);
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
         // Signed Distance
         std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
 	    DistData->name = "Signed Distance";
-	    DistData->type = IO::VolumeVariable;
+	    DistData->type = IO::VariableType::VolumeVariable;
 	    DistData->dim = 1;
 	    DistData->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(DistData);
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
         // Smoothed Data
         std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
 	    SmoothData->name = "Smoothed Data";
-	    SmoothData->type = IO::VolumeVariable;
+	    SmoothData->type = IO::VariableType::VolumeVariable;
 	    SmoothData->dim = 1;
 	    SmoothData->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(SmoothData);
@@ -332,21 +332,21 @@ int main(int argc, char **argv)
     #if 0
         std::shared_ptr<IO::Variable> filter_Mean_var( new IO::Variable() );
 	    filter_Mean_var->name = "Mean";
-	    filter_Mean_var->type = IO::VolumeVariable;
+	    filter_Mean_var->type = IO::VariableType::VolumeVariable;
 	    filter_Mean_var->dim = 1;
 	    filter_Mean_var->data.resize(Nx[0],Ny[0],Nz[0]);
 	    meshData[0].vars.push_back(filter_Mean_var);
         fillDouble[0]->copy( filter_Mean, filter_Mean_var->data );
         std::shared_ptr<IO::Variable> filter_Dist1_var( new IO::Variable() );
 	    filter_Dist1_var->name = "Dist1";
-	    filter_Dist1_var->type = IO::VolumeVariable;
+	    filter_Dist1_var->type = IO::VariableType::VolumeVariable;
 	    filter_Dist1_var->dim = 1;
 	    filter_Dist1_var->data.resize(Nx[0],Ny[0],Nz[0]);
 	    meshData[0].vars.push_back(filter_Dist1_var);
         fillDouble[0]->copy( filter_Dist1, filter_Dist1_var->data );
         std::shared_ptr<IO::Variable> filter_Dist2_var( new IO::Variable() );
 	    filter_Dist2_var->name = "Dist2";
-	    filter_Dist2_var->type = IO::VolumeVariable;
+	    filter_Dist2_var->type = IO::VariableType::VolumeVariable;
 	    filter_Dist2_var->dim = 1;
 	    filter_Dist2_var->data.resize(Nx[0],Ny[0],Nz[0]);
 	    meshData[0].vars.push_back(filter_Dist2_var);

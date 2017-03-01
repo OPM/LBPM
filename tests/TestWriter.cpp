@@ -16,12 +16,12 @@
 
 inline bool approx_equal( const Point& A, const Point& B )
 {
-    double tol = 1e-8*sqrt(A.x*A.x+A.y*A.y+A.z*A.z); 
+    double tol = 1e-7*sqrt(A.x*A.x+A.y*A.y+A.z*A.z); 
     return fabs(A.x-B.x)<=tol && fabs(A.y-B.y)<=tol && fabs(A.z-B.z)<=tol;
 }
 inline bool approx_equal( const double& A, const double& B )
 {
-    return fabs(A-B)<=1e-8*fabs(A+B);
+    return fabs(A-B)<=1e-7*fabs(A+B);
 }
 
 
@@ -32,7 +32,7 @@ inline double distance( const Point& p )
 
 
 // Test writing and reading the given format
-void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct>& meshData, UnitTest& ut )
+void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& meshData, UnitTest& ut )
 {
     int rank, nprocs;
     MPI_Comm comm = MPI_COMM_WORLD;
@@ -40,9 +40,27 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
     MPI_Comm_size(comm,&nprocs);
     MPI_Barrier(comm);
 
+    // Get the format
+    std::string format2 = format;
+    auto precision = IO::DataType::Double;
+    if ( format == "silo-double" ) {
+        format2 = "silo";
+        precision = IO::DataType::Double;
+    } else if ( format == "silo-float" ) {
+        format2 = "silo";
+        precision = IO::DataType::Float;
+    }
+
+    // Set the precision for the variables
+    for ( auto& data : meshData ) {
+        data.precision = precision;
+        for ( auto& var : data.vars )
+            var->precision = precision;
+    }
+
     // Write the data
     PROFILE_START(format+"-write");
-    IO::initialize( "test_"+format, format, false );
+    IO::initialize( "test_"+format, format2, false );
     IO::writeData( 0, meshData, comm );
     IO::writeData( 3, meshData, comm );
     MPI_Barrier(comm);
@@ -53,7 +71,7 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
     std::string summary_name;
     if ( format=="old" || format=="new" )
         summary_name = "summary.LBM";
-    else if ( format == "silo" )
+    else if ( format=="silo-float" || format=="silo-double" )
         summary_name = "LBM.visit";
     else
         ERROR("Unknown format");
@@ -70,9 +88,9 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
     std::vector<std::string> timesteps = IO::readTimesteps( path + "/" + summary_name );
     PROFILE_STOP(format+"-read-timesteps");
     if ( timesteps.size()==2 )
-        ut.passes("Corrent number of timesteps");
+        ut.passes(format+": Corrent number of timesteps");
     else
-        ut.failure("Incorrent number of timesteps");
+        ut.failure(format+": Incorrent number of timesteps");
 
     // Check the mesh lists
     for ( const auto& timestep : timesteps ) {
@@ -81,17 +99,17 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
         auto databaseList = IO::getMeshList(path,timestep);
         PROFILE_STOP(format+"-read-getMeshList");
         if ( databaseList.size()==meshData.size() )
-            ut.passes("Corrent number of meshes found");
+            ut.passes(format+": Corrent number of meshes found");
         else
-            ut.failure("Incorrent number of meshes found");
+            ut.failure(format+": Incorrent number of meshes found");
         // Check the number of domains for each mesh
         bool pass = true;
         for ( const auto& database : databaseList )
             pass = pass && (int)database.domains.size()==nprocs;
         if ( pass ) {
-            ut.passes("Corrent number of domains for mesh");
+            ut.passes(format+": Corrent number of domains for mesh");
         } else {
-            ut.failure("Incorrent number of domains for mesh");
+            ut.failure(format+": Incorrent number of domains for mesh");
             continue;
         }
         // For each domain, load the mesh and check its data
@@ -161,9 +179,9 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                 }
             }
             if ( pass ) {
-                ut.passes("Mesh \"" + database.name + "\" loaded correctly");
+                ut.passes(format+": Mesh \"" + database.name + "\" loaded correctly");
             } else {
-                ut.failure("Mesh \"" + database.name + "\" did not load correctly");
+                ut.failure(format+": Mesh \"" + database.name + "\" did not load correctly");
                 continue;
             }
             // Load the variables and check their data
@@ -196,9 +214,9 @@ void testWriter( const std::string& format, const std::vector<IO::MeshDataStruct
                             pass = pass && approx_equal(var1.data(m),var2.data(m));
                     }
                     if ( pass ) {
-                        ut.passes("Variable \"" + variable->name + "\" matched");
+                        ut.passes(format+": Variable \"" + variable->name + "\" matched");
                     } else {
-                        ut.failure("Variable \"" + variable->name + "\" did not match");
+                        ut.failure(format+": Variable \"" + variable->name + "\" did not match");
                         break;
                     }
                 }
@@ -260,20 +278,22 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::DomainMesh> domain( new IO::DomainMesh(rank_data,6,7,8,1.0,1.0,1.0) );
 
     // Create the variables
-    std::shared_ptr<IO::Variable> set_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_set_mag") );
-    std::shared_ptr<IO::Variable> set_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_set_vec") );
-    std::shared_ptr<IO::Variable> list_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_list_mag") );
-    std::shared_ptr<IO::Variable> list_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_list_vec") );
-    std::shared_ptr<IO::Variable> point_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_point_mag") );
-    std::shared_ptr<IO::Variable> point_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_point_vec") );
-    std::shared_ptr<IO::Variable> domain_node_mag( new IO::Variable(1,IO::NodeVariable,"Node_domain_mag") );
-    std::shared_ptr<IO::Variable> domain_node_vec( new IO::Variable(3,IO::NodeVariable,"Node_domain_vec") );
-    std::shared_ptr<IO::Variable> set_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_set_mag") );
-    std::shared_ptr<IO::Variable> set_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_set_vec") );
-    std::shared_ptr<IO::Variable> list_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_list_mag") );
-    std::shared_ptr<IO::Variable> list_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_list_vec") );
-    std::shared_ptr<IO::Variable> domain_cell_mag( new IO::Variable(1,IO::VolumeVariable,"Cell_domain_mag") );
-    std::shared_ptr<IO::Variable> domain_cell_vec( new IO::Variable(3,IO::VolumeVariable,"Cell_domain_vec") );
+    const auto NodeVar = IO::VariableType::NodeVariable;
+    const auto VolVar = IO::VariableType::VolumeVariable;
+    std::shared_ptr<IO::Variable> set_node_mag( new IO::Variable(1,NodeVar,"Node_set_mag") );
+    std::shared_ptr<IO::Variable> set_node_vec( new IO::Variable(3,NodeVar,"Node_set_vec") );
+    std::shared_ptr<IO::Variable> list_node_mag( new IO::Variable(1,NodeVar,"Node_list_mag") );
+    std::shared_ptr<IO::Variable> list_node_vec( new IO::Variable(3,NodeVar,"Node_list_vec") );
+    std::shared_ptr<IO::Variable> point_node_mag( new IO::Variable(1,NodeVar,"Node_point_mag") );
+    std::shared_ptr<IO::Variable> point_node_vec( new IO::Variable(3,NodeVar,"Node_point_vec") );
+    std::shared_ptr<IO::Variable> domain_node_mag( new IO::Variable(1,NodeVar,"Node_domain_mag") );
+    std::shared_ptr<IO::Variable> domain_node_vec( new IO::Variable(3,NodeVar,"Node_domain_vec") );
+    std::shared_ptr<IO::Variable> set_cell_mag( new IO::Variable(1,VolVar,"Cell_set_mag") );
+    std::shared_ptr<IO::Variable> set_cell_vec( new IO::Variable(3,VolVar,"Cell_set_vec") );
+    std::shared_ptr<IO::Variable> list_cell_mag( new IO::Variable(1,VolVar,"Cell_list_mag") );
+    std::shared_ptr<IO::Variable> list_cell_vec( new IO::Variable(3,VolVar,"Cell_list_vec") );
+    std::shared_ptr<IO::Variable> domain_cell_mag( new IO::Variable(1,VolVar,"Cell_domain_mag") );
+    std::shared_ptr<IO::Variable> domain_cell_vec( new IO::Variable(3,VolVar,"Cell_domain_vec") );
     point_node_mag->data.resize( N_points );
     point_node_vec->data.resize( N_points, 3 );
     for (int i=0; i<N_points; i++) {
@@ -363,7 +383,8 @@ int main(int argc, char **argv)
     // Run the tests
     testWriter( "old", meshData, ut );
     testWriter( "new", meshData, ut );
-    testWriter( "silo", meshData, ut );
+    testWriter( "silo-double", meshData, ut );
+    testWriter( "silo-float", meshData, ut );
 
     // Finished
     ut.report();

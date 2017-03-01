@@ -48,13 +48,13 @@ bool MeshDataStruct::check() const
         if ( mesh2 == nullptr )
             return false;
         for ( const auto& var : vars ) {
-            if ( var->type == IO::NodeVariable ) {
+            if ( var->type == IO::VariableType::NodeVariable ) {
                 pass = pass && var->data.size(0)==mesh2->points.size() && var->data.size(1)==var->dim;
-            } else if ( var->type == IO::EdgeVariable ) {
+            } else if ( var->type == IO::VariableType::EdgeVariable ) {
                 ERROR("Invalid type for PointList");
-            } else if ( var->type == IO::SurfaceVariable ) {
+            } else if ( var->type == IO::VariableType::SurfaceVariable ) {
                 ERROR("Invalid type for PointList");
-            } else if ( var->type == IO::VolumeVariable ) {
+            } else if ( var->type == IO::VariableType::VolumeVariable ) {
                 ERROR("Invalid type for PointList");
             } else {
                 ERROR("Invalid variable type");
@@ -65,13 +65,13 @@ bool MeshDataStruct::check() const
         if ( mesh2 == nullptr )
             return false;
         for ( const auto& var : vars ) {
-            if ( var->type == IO::NodeVariable ) {
+            if ( var->type == IO::VariableType::NodeVariable ) {
                 pass = pass && var->data.size(0)==mesh2->vertices->points.size() && var->data.size(1)==var->dim;
-            } else if ( var->type == IO::EdgeVariable ) {
+            } else if ( var->type == IO::VariableType::EdgeVariable ) {
                 ERROR("Not finished");
-            } else if ( var->type == IO::SurfaceVariable ) {
+            } else if ( var->type == IO::VariableType::SurfaceVariable ) {
                 ERROR("Not finished");
-            } else if ( var->type == IO::VolumeVariable ) {
+            } else if ( var->type == IO::VariableType::VolumeVariable ) {
                 pass = pass && var->data.size(0)==mesh2->A.size() && var->data.size(1)==var->dim;
             } else {
                 ERROR("Invalid variable type");
@@ -82,14 +82,14 @@ bool MeshDataStruct::check() const
         if ( mesh2 == nullptr )
             return false;
         for ( const auto& var : vars ) {
-            if ( var->type == IO::NodeVariable ) {
+            if ( var->type == IO::VariableType::NodeVariable ) {
                 pass = pass && (int) var->data.size(0)==(mesh2->nx+1) && (int) var->data.size(1)==(mesh2->ny+1)
                             && (int) var->data.size(2)==(mesh2->nz+1) &&       var->data.size(3)==var->dim;
-            } else if ( var->type == IO::EdgeVariable ) {
+            } else if ( var->type == IO::VariableType::EdgeVariable ) {
                 ERROR("Not finished");
-            } else if ( var->type == IO::SurfaceVariable ) {
+            } else if ( var->type == IO::VariableType::SurfaceVariable ) {
                 ERROR("Not finished");
-            } else if ( var->type == IO::VolumeVariable ) {
+            } else if ( var->type == IO::VariableType::VolumeVariable ) {
                 pass = pass && (int) var->data.size(0)==mesh2->nx && (int) var->data.size(1)==mesh2->ny
                             && (int) var->data.size(2)==mesh2->nz &&       var->data.size(3)==var->dim;
             } else {
@@ -120,7 +120,7 @@ PointList::~PointList( )
 size_t PointList::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type == NodeVariable )
+    if ( type == VariableType::NodeVariable )
         N = points.size();
     return N;
 }
@@ -196,9 +196,9 @@ TriList::~TriList( )
 size_t TriList::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type==NodeVariable )
+    if ( type==VariableType::NodeVariable )
         N = 3*A.size();
-    else if ( type==SurfaceVariable ||  type==VolumeVariable )
+    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
         N = A.size();
     return N;
 }
@@ -301,9 +301,9 @@ TriMesh::~TriMesh( )
 size_t TriMesh::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type==NodeVariable )
+    if ( type==VariableType::NodeVariable )
         N = vertices->points.size();
-    else if ( type==SurfaceVariable ||  type==VolumeVariable )
+    else if ( type==VariableType::SurfaceVariable ||  type==VariableType::VolumeVariable )
         N = A.size();
     return N;
 }
@@ -387,11 +387,11 @@ DomainMesh::~DomainMesh()
 size_t DomainMesh::numberPointsVar( VariableType type ) const
 {
     size_t N = 0;
-    if ( type==NodeVariable )
+    if ( type==VariableType::NodeVariable )
         N = (nx+1)*(ny+1)*(nz+1);
-    else if ( type==SurfaceVariable )
+    else if ( type==VariableType::SurfaceVariable )
         N = (nx+1)*ny*nz + nx*(ny+1)*nz + nx*ny*(nz+1);
-    else if ( type==VolumeVariable )
+    else if ( type==VariableType::VolumeVariable )
         N = nx*ny*nz;
     return N;
 }

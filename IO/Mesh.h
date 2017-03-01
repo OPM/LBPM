@@ -16,8 +16,8 @@ namespace IO {
 
 
 //! Possible variable types
-//enum class VariableType : unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, Null=0 };
-enum VariableType { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
+enum class VariableType: unsigned char { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
+enum class DataType: unsigned char { Double=1, Float=2, Int=2, Null=0 };
 
 
 /*! \class Mesh
@@ -168,18 +168,19 @@ struct Variable
 {
 public:
     // Internal variables
-    unsigned int dim;           //!< Number of points per grid point (1: scalar, 3: vector, ...)
+    unsigned char dim;          //!< Number of points per grid point (1: scalar, 3: vector, ...)
     VariableType type;          //!< Variable type
+    DataType precision;         //!< Variable precision to use for IO
     std::string name;           //!< Variable name
     Array<double> data;         //!< Variable data
     //! Empty constructor
-    Variable(): dim(0), type(NullVariable) {}
+    Variable(): dim(0), type(VariableType::NullVariable), precision(DataType::Double) {}
     //! Constructor
     Variable( int dim_, IO::VariableType type_, const std::string& name_ ):
-        dim(dim_), type(type_), name(name_) {}
+        dim(dim_), type(type_), precision(DataType::Double), name(name_) {}
     //! Constructor
     Variable( int dim_, IO::VariableType type_, const std::string& name_, const Array<double>& data_ ):
-        dim(dim_), type(type_), name(name_), data(data_) {}
+        dim(dim_), type(type_), precision(DataType::Double), name(name_), data(data_) {}
     //! Destructor
     virtual ~Variable() {}
 protected:
@@ -194,9 +195,12 @@ protected:
     \brief A class used to hold database info for saving a mesh
 */
 struct MeshDataStruct {
-    std::string             meshName;
-    std::shared_ptr<Mesh>   mesh;
+    DataType precision;         //!< Precision to use for IO (mesh)
+    std::string meshName;       //!< Mesh name
+    std::shared_ptr<Mesh> mesh; //!< Mesh data
     std::vector<std::shared_ptr<Variable> >  vars;
+    //! Empty constructor
+    MeshDataStruct(): precision(DataType::Double) {}
     //! Check the data
     bool check() const;
 };

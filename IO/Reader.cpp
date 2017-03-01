@@ -163,7 +163,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
         int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
         auto fid = silo::open( filename, silo::READ );
         if ( meshDatabase.meshClass=="PointList" ) {
-            Array<double> coords = silo::readPointMesh( fid, database.name );
+            Array<double> coords = silo::readPointMesh<double>( fid, database.name );
             ASSERT(coords.size(1)==3);
             std::shared_ptr<IO::PointList> mesh2( new IO::PointList( coords.size(0) ) );
             for (size_t i=0; i<coords.size(1); i++) {
@@ -266,11 +266,11 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
         auto fid = silo::open( filename, silo::READ );
         var.reset( new Variable( variableDatabase.dim, variableDatabase.type, variable ) );
         if ( meshDatabase.meshClass=="PointList" ) {
-            var->data = silo::readPointMeshVariable( fid, variable );
+            var->data = silo::readPointMeshVariable<double>( fid, variable );
         } else if ( meshDatabase.meshClass=="TriMesh" || meshDatabase.meshClass=="TriList" ) {
-            var->data = silo::readTriMeshVariable( fid, variable );
+            var->data = silo::readTriMeshVariable<double>( fid, variable );
         } else if ( meshDatabase.meshClass=="DomainMesh" ) {
-            var->data = silo::readUniformMeshVariable( fid, variable );
+            var->data = silo::readUniformMeshVariable<double>( fid, variable );
         } else {
             ERROR("Unknown mesh class");
         }
@@ -293,15 +293,15 @@ void IO::reformatVariable( const IO::Mesh& mesh, IO::Variable& var )
 {
     if ( mesh.className() == "DomainMesh" ) {
         const IO::DomainMesh& mesh2 = dynamic_cast<const IO::DomainMesh&>( mesh );
-        if ( var.type == NodeVariable ) {
+        if ( var.type == VariableType::NodeVariable ) {
             size_t N2 = var.data.length() / ((mesh2.nx+1)*(mesh2.ny+1)*(mesh2.nz+1));
             ASSERT( (mesh2.nx+1)*(mesh2.ny+1)*(mesh2.nz+1)*N2 == var.data.length() );
             var.data.reshape( { (size_t) mesh2.nx+1, (size_t) mesh2.ny+1, (size_t) mesh2.nz+1, N2 } );
-        } else if ( var.type == EdgeVariable ) {
+        } else if ( var.type == VariableType::EdgeVariable ) {
             ERROR("Not finished");
-        } else if ( var.type == SurfaceVariable ) {
+        } else if ( var.type == VariableType::SurfaceVariable ) {
             ERROR("Not finished");
-        } else if ( var.type == VolumeVariable ) {
+        } else if ( var.type == VariableType::VolumeVariable ) {
             size_t N2 = var.data.length() / (mesh2.nx*mesh2.ny*mesh2.nz);
             ASSERT( mesh2.nx*mesh2.ny*mesh2.nz*N2 == var.data.length() );
             var.data.reshape( { (size_t) mesh2.nx, (size_t) mesh2.ny, (size_t) mesh2.nz, N2 } );
@@ -317,16 +317,16 @@ void IO::reformatVariable( const IO::Mesh& mesh, IO::Variable& var )
     } else if ( mesh.className()=="TriMesh" || mesh.className() == "TriList" ) {
         std::shared_ptr<Mesh> mesh_ptr( const_cast<Mesh*>(&mesh), []( void* ) {} );
         std::shared_ptr<TriMesh> mesh2 = getTriMesh( mesh_ptr );
-        if ( var.type == NodeVariable ) {
+        if ( var.type == VariableType::NodeVariable ) {
             size_t N = mesh2->vertices->points.size();
             size_t N_var = var.data.length()/N;
             ASSERT( N*N_var == var.data.length() );
             var.data.reshape( { N, N_var } );
-        } else if ( var.type == EdgeVariable ) {
+        } else if ( var.type == VariableType::EdgeVariable ) {
             ERROR("Not finished");
-        } else if ( var.type == SurfaceVariable ) {
+        } else if ( var.type == VariableType::SurfaceVariable ) {
             ERROR("Not finished");
-        } else if ( var.type == VolumeVariable ) {
+        } else if ( var.type == VariableType::VolumeVariable ) {
             size_t N = mesh2->A.size();
             size_t N_var = var.data.length()/N;
             ASSERT( N*N_var == var.data.length() );

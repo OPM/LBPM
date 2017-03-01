@@ -442,31 +442,31 @@ int main(int argc, char **argv)
     std::shared_ptr<IO::Variable> PhaseIDVar( new IO::Variable() );
 
     PhaseVar->name = "phase";
-    PhaseVar->type = IO::VolumeVariable;
+    PhaseVar->type = IO::VariableType::VolumeVariable;
     PhaseVar->dim = 1;
     PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(PhaseVar);
 
     SignDistVar->name = "SignDist";
-    SignDistVar->type = IO::VolumeVariable;
+    SignDistVar->type = IO::VariableType::VolumeVariable;
     SignDistVar->dim = 1;
     SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(SignDistVar);
 
     LabelNWPVar->name = "LabelNWP";
-    LabelNWPVar->type = IO::VolumeVariable;
+    LabelNWPVar->type = IO::VariableType::VolumeVariable;
     LabelNWPVar->dim = 1;
     LabelNWPVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(LabelNWPVar);
 
     LabelWPVar->name = "LabelWP";
-    LabelWPVar->type = IO::VolumeVariable;
+    LabelWPVar->type = IO::VariableType::VolumeVariable;
     LabelWPVar->dim = 1;
     LabelWPVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(LabelWPVar);
 
     PhaseIDVar->name = "PhaseID";
-    PhaseIDVar->type = IO::VolumeVariable;
+    PhaseIDVar->type = IO::VariableType::VolumeVariable;
     PhaseIDVar->dim = 1;
     PhaseIDVar->data.resize(Nx-2,Ny-2,Nz-2);
     meshData[0].vars.push_back(PhaseIDVar);

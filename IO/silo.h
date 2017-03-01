@@ -23,7 +23,9 @@ namespace silo {
 
 enum FileMode { READ, WRITE, CREATE };
 
-enum VariableType { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
+enum class VariableType : int { NodeVariable=1, EdgeVariable=2, SurfaceVariable=2, VolumeVariable=3, NullVariable=0 };
+
+enum class VariableDataType { DOUBLE, FLOAT, INT, UNKNOWN };
 
 
 /*!
@@ -42,6 +44,15 @@ DBfile* open( const std::string& filename, FileMode mode );
  * @param[in] fid           Handle to the open file
 */
 void close( DBfile* fid );
+
+
+/*!
+ * @brief  Get the variable type
+ * @detailed  This function returns the type of variable data
+ * @param[in] fid           Handle to the open file
+ * @param[in] name          Name of variable
+*/
+VariableDataType varDataType( DBfile *dbfile, const std::string& name );
 
 
 /*!
@@ -101,9 +112,9 @@ void readUniformMesh( DBfile* fid, const std::string& meshname,
  * @param[in] data          Variable data
  * @param[in] type          Variable type
 */
-template<int NDIM>
+template< int NDIM, class TYPE >
 void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const std::array<int,NDIM>& N,
-    const std::string& varname, const Array<double>& data, VariableType type );
+    const std::string& varname, const Array<TYPE>& data, VariableType type );
 
 
 /*!
@@ -113,7 +124,8 @@ void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const s
  * @param[in] varname       Variable name
  * @return                  Variable data
 */
-Array<double> readUniformMeshVariable( DBfile* fid, const std::string& varname );
+template<class TYPE>
+Array<TYPE> readUniformMeshVariable( DBfile* fid, const std::string& varname );
 
 
 /*!
@@ -125,8 +137,9 @@ Array<double> readUniformMeshVariable( DBfile* fid, const std::string& varname )
  * @param[in] N             Number of points
  * @param[in] coords        Coordinates of the points
 */
+template<class TYPE>
 void writePointMesh( DBfile* fid, const std::string& meshname,
-    int ndim, int N, const double *coords[] );
+    int ndim, int N, const TYPE *coords[] );
 
 
 /*!
@@ -136,7 +149,8 @@ void writePointMesh( DBfile* fid, const std::string& meshname,
  * @param[in] meshname      Mesh name
  * @return                  Returns the coordinates as a N x ndim array 
 */
-Array<double> readPointMesh( DBfile* fid, const std::string& meshname );
+template<class TYPE>
+Array<TYPE> readPointMesh( DBfile* fid, const std::string& meshname );
 
 
 /*!
@@ -147,8 +161,9 @@ Array<double> readPointMesh( DBfile* fid, const std::string& meshname );
  * @param[in] varname       Variable name
  * @param[in] data          Variable data
 */
+template<class TYPE>
 void writePointMeshVariable( DBfile* fid, const std::string& meshname,
-    const std::string& varname, const Array<double>& data );
+    const std::string& varname, const Array<TYPE>& data );
 
 
 /*!
@@ -158,7 +173,8 @@ void writePointMeshVariable( DBfile* fid, const std::string& meshname,
  * @param[in] varname       Variable name
  * @return                  Variable data
 */
-Array<double> readPointMeshVariable( DBfile* fid, const std::string& varname );
+template<class TYPE>
+Array<TYPE> readPointMeshVariable( DBfile* fid, const std::string& varname );
 
 
 /*!
@@ -173,8 +189,9 @@ Array<double> readPointMeshVariable( DBfile* fid, const std::string& varname );
  * @param[in] N_tri         Number of triangles
  * @param[in] tri           Coordinates of the points
 */
+template<class TYPE>
 void writeTriMesh( DBfile* fid, const std::string& meshname,
-    int ndim, int ndim_tri, int N, const double *coords[], int N_tri, const int *tri[] );
+    int ndim, int ndim_tri, int N, const TYPE *coords[], int N_tri, const int *tri[] );
 
 
 /*!
@@ -185,7 +202,8 @@ void writeTriMesh( DBfile* fid, const std::string& meshname,
  * @param[in] coords        Coordinates of the points
  * @param[in] tri           Coordinates of the points
 */
-void readTriMesh( DBfile* fid, const std::string& meshname, Array<double>& coords, Array<int>& tri );
+template<class TYPE>
+void readTriMesh( DBfile* fid, const std::string& meshname, Array<TYPE>& coords, Array<int>& tri );
 
 
 /*!
@@ -195,9 +213,11 @@ void readTriMesh( DBfile* fid, const std::string& meshname, Array<double>& coord
  * @param[in] meshname      Mesh name
  * @param[in] varname       Variable name
  * @param[in] data          Variable data
+ * @param[in] type          Variable type
 */
+template<class TYPE>
 void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
-    const std::string& varname, const Array<double>& data, VariableType type );
+    const std::string& varname, const Array<TYPE>& data, VariableType type );
 
 
 /*!
@@ -207,7 +227,8 @@ void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
  * @param[in] varname       Variable name
  * @return                  Variable data
 */
-Array<double> readTriMeshVariable( DBfile* fid, const std::string& varname );
+template<class TYPE>
+Array<TYPE> readTriMeshVariable( DBfile* fid, const std::string& varname );
 
 
 /*!

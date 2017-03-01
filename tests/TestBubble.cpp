@@ -2175,7 +2175,7 @@ int main(int argc, char **argv)
                 shared_ptr<IO::Variable> dist( new IO::Variable() );
                 dist->name = "distance";
                 dist->dim = 1;
-                dist->type = IO::NodeVariable;
+                dist->type = IO::VariableType::NodeVariable;
                 dist->data.resize(3,mesh->A.size());
                 for (size_t i=0; i<mesh->A.size(); i++) {
                     const Point& a = mesh->A[i];
