@@ -242,7 +242,7 @@ int main(int argc, char **argv)
 
     				n=k*Nx*Ny+j*Nx+i;
     				if (n < Nx*Ny*Nz){
-    					if (SegData[n] == 0){
+    					if (SegData[n] == char(SOLID)){
     						countGlobal++;
     					}
     				}
