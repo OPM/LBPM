@@ -125,17 +125,21 @@ int main(int argc, char **argv)
 
 	int ri,rj,rk,rn; //refined mesh indices
 	count = 0;
-	for (int k=0; k<nz-1; k++){
-		for (int j=0; j<ny-1; j++){
-			for (int i=0; i<nx-1; i++){
-				n = k*nx*ny+j*nx+i;
-				ri=2*i; 
-				rj=2*j;
-				rk=2*k;
+	for (int rk=1; rk<rnz-1; rk++){
+		for (int rj=1; rj<rny-1; rj++){
+			for (int ri=1; ri<rnx-1; ri++){
+				n = rk*rnx*rny+rj*rnx+ri;
+				// starting node for each processor matches exactly
+				i = floor((ri-1)/2)+1;
+				j = floor((rj-1)/2)+1;
+				k = floor((rk-1)/2)+1;				
 				// Assign local tri-linear polynomial
-				LocalApprox.assign(SignDist,i,j,k); //
-				pt.x=1.0*i; pt.y=1.0*j; pt.z=1.0*k;
-			}}
+				LocalApprox.assign(SignDist,i,j,k); 
+				pt.x=0.5*(ri-1)+1.f; 
+				pt.y=0.5*(rj-1)+1.f; 
+				pt.z=0.5*(rk-1)+1.f;
+				RefinedSignDist(ri,rj,rk) = LocalApprox.eval(pt);
+			}
 		}
 	}
 
