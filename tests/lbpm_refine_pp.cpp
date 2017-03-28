@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 		}
 	}
 	Dm.CommInit(comm);
+	
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
 	ReadSignDist=fread(SignDist.data(),8,N,DIST);
-	if (ReadSignDist != size_t(N)) printf("lbpm_random_pp: Error reading signed distance function (rank=%i)\n",rank);
+	if (ReadSignDist != size_t(N)) printf("lbpm_refine_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
 	int rnx,rny,rnz;
@@ -124,7 +125,6 @@ int main(int argc, char **argv)
 	Point pt;
 
 	int ri,rj,rk,rn; //refined mesh indices
-	count = 0;
 	for (int rk=1; rk<rnz-1; rk++){
 		for (int rj=1; rj<rny-1; rj++){
 			for (int ri=1; ri<rnx-1; ri++){
@@ -143,10 +143,15 @@ int main(int argc, char **argv)
 		}
 	}
 
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	FILE *ID = fopen(LocalRankFilename,"wb");
-	fwrite(id,1,N,ID);
-	fclose(ID);
+	//	sprintf(LocalRankFilename,"ID.%05i",rank);
+	//FILE *ID = fopen(LocalRankFilename,"wb");
+	//fwrite(id,1,N,ID);
+	//fclose(ID);
+
+	sprintf(LocalRankFilename,"RefineDist.%05i",rank);
+	FILE *REFINEDIST = fopen(LocalRankFilename,"rb");
+	fwrite(RefinedSignDist.data(),8,rnx*rny*rnz,REFINEDIST);
+	fclose(REFINEDIST);
 
 	MPI_Barrier(comm);
 	MPI_Finalize();
