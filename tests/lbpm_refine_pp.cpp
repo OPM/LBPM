@@ -22,22 +22,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
-	int InitialWetting;
-	double Saturation;
-	//	if (argc == 3){
-	//sscanf(argv[1],"%lf",&Saturation);
-	//sscanf(argv[2],"%d",&InitialWetting);
-	Saturation=strtod(argv[1],NULL);
-	InitialWetting=atoi(argv[2]);
-	if (rank==0){
-		printf("Initializing wetting phase saturation of %f \n",Saturation);
-		if (InitialWetting == 1)
-			printf("Initial connected phase labeled (1) \n");
-		else
-			printf("Initial connected phase labeled (2) \n");
-	}
-
-	if (InitialWetting == 1)	Saturation=1.0-Saturation;
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
