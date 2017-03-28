@@ -1,7 +1,6 @@
 /*
- * Pre-processor to generate signed distance function from segmented data
- * segmented data should be stored in a raw binary file as 1-byte integer (type char)
- * will output distance functions for phases
+ * Pre-processor to refine signed distance mesh
+ * this is a good way to increase the resolution 
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include "common/Array.h"
+#include "common/Communication.h"
 #include "common/Domain.h"
 #include "common/pmmc.h"
 
@@ -22,6 +22,7 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
+	{
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
@@ -30,6 +31,9 @@ int main(int argc, char **argv)
 	int i,j,k,n;
 	int BC=0;
 
+	if ( rank==0 ) {
+		printf("lbpm_refine_pp: Refining signed distance mesh (x2) \n");
+	}
 	if (rank==0){
 		ifstream domain("Domain.in");
 		domain >> nprocx;
@@ -71,26 +75,39 @@ int main(int argc, char **argv)
 
 	char LocalRankFilename[40];
 
+	int rnx,rny,rnz;
+	rnx=2*(nx-1)+1;
+	rny=2*(ny-1)+1;
+	rnz=2*(nz-1)+1;
+	
+	rnx=2*nx;
+	rny=2*ny;
+	rnz=2*nz;
+	
+	if (rank==0) printf("Refining mesh to %i x %i x %i \n",rnx,rny,rnz);
+
 	int BoundaryCondition=0;
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	Domain Dm(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+
+	// Communication the halos
+	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	fillHalo<double> fillData(comm,rank_info,rnx,rny,rnz,1,1,1,0,1);
 
 	nx+=2; ny+=2; nz+=2;
+	rnx+=2; rny+=2; rnz+=2;
 	int N = nx*ny*nz;
-	char *id;
-	id = new char[N];
 
 	// Define communication sub-domain -- everywhere
-	for (int k=0; k<nz; k++){
-		for (int j=0; j<ny; j++){
-			for (int i=0; i<nx; i++){
-				n = k*nx*ny+j*nx+i;
+	for (int k=0; k<rnz; k++){
+		for (int j=0; j<rny; j++){
+			for (int i=0; i<rnx; i++){
+				n = k*rnx*rny+j*rnx+i;
 				Dm.id[n] = 1;
 			}
 		}
 	}
 	Dm.CommInit(comm);
 	
-
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
 	sprintf(LocalRankFilename,"SignDist.%05i",rank);
@@ -100,23 +117,24 @@ int main(int argc, char **argv)
 	if (ReadSignDist != size_t(N)) printf("lbpm_refine_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
-	int rnx,rny,rnz;
-	rnx=2*(nx-1)+1;
-	rny=2*(ny-1)+1;
-	rnz=2*(nz-1)+1;
+
+	if ( rank==0 )   printf("Set up Domain, read input distance \n");
+
 	DoubleArray RefinedSignDist(rnx,rny,rnz);	
 	TriLinPoly LocalApprox;
 	Point pt;
 
 	int ri,rj,rk,rn; //refined mesh indices
-	for (int rk=1; rk<rnz-1; rk++){
-		for (int rj=1; rj<rny-1; rj++){
-			for (int ri=1; ri<rnx-1; ri++){
+	for (rk=1; rk<rnz-2; rk++){
+	     for (rj=1; rj<rny-2; rj++){
+		  for (ri=1; ri<rnx-2; ri++){
 				n = rk*rnx*rny+rj*rnx+ri;
 				// starting node for each processor matches exactly
-				i = floor((ri-1)/2)+1;
-				j = floor((rj-1)/2)+1;
-				k = floor((rk-1)/2)+1;				
+				i = (ri-1)/2+1;
+				j = (rj-1)/2+1;
+				k = (rk-1)/2+1;
+
+				//printf("(%i,%i,%i -> %i,%i,%i) \n",ri,rj,rk,i,j,k);
 				// Assign local tri-linear polynomial
 				LocalApprox.assign(SignDist,i,j,k); 
 				pt.x=0.5*(ri-1)+1.f; 
@@ -126,17 +144,18 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	fillData.fill(RefinedSignDist);
 	//	sprintf(LocalRankFilename,"ID.%05i",rank);
 	//FILE *ID = fopen(LocalRankFilename,"wb");
 	//fwrite(id,1,N,ID);
 	//fclose(ID);
 
 	sprintf(LocalRankFilename,"RefineDist.%05i",rank);
-	FILE *REFINEDIST = fopen(LocalRankFilename,"rb");
+	FILE *REFINEDIST = fopen(LocalRankFilename,"wb");
 	fwrite(RefinedSignDist.data(),8,rnx*rny*rnz,REFINEDIST);
 	fclose(REFINEDIST);
 
+        }
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;
