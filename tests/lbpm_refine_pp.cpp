@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 		if ( rank==0 )   printf("Write output \n");
 
 		DoubleArray BlockDist(nx,ny,nz);
-		FILE *WRITEID;
+		FILE *WRITEID, *REFINEDIST;
 		char * id;
 		id = new char [N];
 		int writerank;
