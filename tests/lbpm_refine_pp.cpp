@@ -76,10 +76,6 @@ int main(int argc, char **argv)
 		char LocalRankFilename[40];
 
 		int rnx,rny,rnz;
-		rnx=2*(nx-1)+1;
-		rny=2*(ny-1)+1;
-		rnz=2*(nz-1)+1;
-
 		rnx=2*nx;
 		rny=2*ny;
 		rnz=2*nz;
@@ -160,7 +156,7 @@ int main(int argc, char **argv)
 
 		// Write output blocks with the same sub-domain size as origina
 		// refinement increases the size of the process grid
-		writerank = 8*kproc*nprocx*nprocy + 4*jproc*nprocx + 2*iproc;
+		writerank = 8*Dm.kproc*nprocx*nprocy + 4*Dm.jproc*nprocx + 2*Dm.iproc;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -173,11 +169,13 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = 8*kproc*nprocx*nprocy + 4*jproc*nprocx + 2*iproc+1;
+		if ( rank==0 )   printf("Write output \n");
+
+		writerank = 8*Dm.kproc*nprocx*nprocy + 4*Dm.jproc*nprocx + 2*Dm.iproc+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx,j,k);
+					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k);
 				}
 			}
 		}
@@ -186,11 +184,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc)*4*nprocx*nprocy + (2*jproc+1)*2*nprocx + 2*iproc+1;
+		writerank = (2*Dm.kproc)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx,j+ny,k);
+					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k);
 				}
 			}
 		}
@@ -199,11 +197,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc)*4*nprocx*nprocy + (2*jproc+1)*2*nprocx + 2*iproc;
+		writerank = (2*Dm.kproc)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j+ny,k);
+					BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k);
 				}
 			}
 		}
@@ -212,11 +210,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc+1)*4*nprocx*nprocy + (2*jproc)*2*nprocx + 2*iproc;
+		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc)*2*nprocx + 2*Dm.iproc;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j,k+nz);
+					BlockDist(i,j,k) = RefinedSignDist(i,j,k+nz-2);
 				}
 			}
 		}
@@ -225,11 +223,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc+1)*4*nprocx*nprocy + (2*jproc)*2*nprocx + 2*iproc+1;
+		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc)*2*nprocx + 2*Dm.iproc+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx,j,k+nz);
+					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k+nz-2);
 				}
 			}
 		}
@@ -238,11 +236,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc+1)*4*nprocx*nprocy + (2*jproc+1)*2*nprocx + 2*iproc;
+		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j+ny,k+nz);
+					BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k+nz-2);
 				}
 			}
 		}
@@ -251,11 +249,11 @@ int main(int argc, char **argv)
 		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
 		fclose(REFINEDIST);
 
-		writerank = (2*kproc+1)*4*nprocx*nprocy + (2*jproc+1)*2*nprocx + 2*iproc+1;
+		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx,j+ny,k+nz);
+					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k+nz-2);
 				}
 			}
 		}
