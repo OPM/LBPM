@@ -120,10 +120,19 @@ int main(int argc, char **argv)
 		TriLinPoly LocalApprox;
 		Point pt;
 
+		// double the distance value (since it is evaluated in pixels)
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					SignDist(i,j,k) =  2.f*SignDist(i,j,k);
+				}
+			}
+		}
+
 		int ri,rj,rk,rn; //refined mesh indices
-		for (rk=1; rk<rnz-2; rk++){
-			for (rj=1; rj<rny-2; rj++){
-				for (ri=1; ri<rnx-2; ri++){
+		for (rk=1; rk<rnz-1; rk++){
+			for (rj=1; rj<rny-1; rj++){
+				for (ri=1; ri<rnx-1; ri++){
 					n = rk*rnx*rny+rj*rnx+ri;
 					// starting node for each processor matches exactly
 					i = (ri-1)/2+1;
