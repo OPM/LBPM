@@ -26,17 +26,6 @@ inline void MeanFilter(DoubleArray &Mesh){
 	}
 }
 
-inline double minmod(double &a, double &b){
-
-	double value;
-
-	value = a;
-	if 	( a*b < 0.0)	    value=0.0;
-	else if (fabs(a) > fabs(b)) value = b;
-
-	return value;
-}
-
 
 int main(int argc, char **argv)
 {
