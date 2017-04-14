@@ -19,6 +19,16 @@ static int MAX_BLOB_COUNT=50;
 
 using namespace std;
 
+inline double minmod(double &a, double &b){
+
+	double value;
+
+	value = a;
+	if 	( a*b < 0.0)	    value=0.0;
+	else if (fabs(a) > fabs(b)) value = b;
+
+	return value;
+}
 
 inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 
