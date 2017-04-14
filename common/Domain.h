@@ -24,8 +24,6 @@ void read_domain( int rank, int nprocs, MPI_Comm comm,
     int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
     int& nspheres, double& Lx, double& Ly, double& Lz );
 
-inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps);
-
 //! Class to hold domain info
 struct Domain{
     // Default constructor
@@ -598,6 +596,7 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
     File.close();
 
 }
+inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps);
 
 
 #endif
