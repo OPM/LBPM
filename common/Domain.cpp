@@ -21,6 +21,7 @@ using namespace std;
 
 
 
+
 // Reading the domain information file
 void read_domain( int rank, int nprocs, MPI_Comm comm, 
     int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
