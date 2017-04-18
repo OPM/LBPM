@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
 
-	// Generate a histogram of pore size distribution
+	/*	// Generate a histogram of pore size distribution
 	// Get all local pore sizes (local maxima)
 	if (rank==0) printf("Generating a histogram of pore sizes \n");
 	int NumBins=100;
@@ -265,7 +265,8 @@ int main(int argc, char **argv)
 		      printf("Q4 %f\n",Q4);
 	}
 	MPI_Barrier(comm);
-	
+	*/
+
 	Dm.CommInit(comm);
 	int iproc = Dm.iproc;
 	int jproc = Dm.jproc;
