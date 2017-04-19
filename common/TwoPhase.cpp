@@ -196,7 +196,7 @@ TwoPhase::~TwoPhase()
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData)
 {
-/*	double factor,temp,value;
+	double factor,temp,value;
 	factor=0.5/Beta;
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
@@ -205,9 +205,11 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 				value = ColorData(i,j,k);
 
 				// Set phase ID field for non-wetting phase
+				// here NWP is tagged with 0
+				// all other phases tagged with 1
 				int n = k*Nx*Ny+j*Nx+i;
-				if (value > 0)	TempID[n] = 1;
-				else			TempID[n] = 0;
+				if (value > 0)	TempID[n] = 0;
+				else		TempID[n] = 1;
 
 			 	//temp = factor*log((1.0+value)/(1.0-value));
 			 	//if (value > 0.8) DistData(i,j,k) = 2.94*factor;
@@ -215,32 +217,36 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 			 	//else DistData(i,j,k) = temp;
 
 				// Basic threshold
-				//if (value > 0) DistData(i,j,k) = 1.0;
-				//else DistData(i,j,k) = -1.0;
+				// distance to the NWP
+				// negative inside NWP, positive outside
+				if (value > 0) DistData(i,j,k) = -0.5;
+				else DistData(i,j,k) = 0.5;
 				
 				// Initialize directly
-				DistData(i,j,k) = value;
+				// DistData(i,j,k) = value;
 			}
 		}
 	}
 
-	SSO(DistData,TempID,Dm,160);
+	Eikonal(DistData,TempID,Dm,30);
+
 
     for (int k=0; k<Nz; k++){
 	  for (int j=0; j<Ny; j++){
 	    for (int i=0; i<Nx; i++){
-	      DistData(i,j,k) += 2.0;
+	      DistData(i,j,k) += 1.5;
 	    }
 	  }
 	}	
-*/
-	  for (int k=0; k<Nz; k++){
+
+    /*	  for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				DistData(i,j,k) = ColorData(i,j,k);
 			}
 		}
 	}
+    */
 
 }
 
