@@ -205,20 +205,20 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 				value = ColorData(i,j,k);
 
 				// Set phase ID field for non-wetting phase
-				// here NWP is tagged with 0
-				// all other phases tagged with 1
+				// here NWP is tagged with 1
+				// all other phases tagged with 0
 				int n = k*Nx*Ny+j*Nx+i;
-				if (value > 0)	TempID[n] = 0;
-				else		    TempID[n] = 1;
+				if (value > 0)	TempID[n] = 1;
+				else		    TempID[n] = 0;
 
 				// Distance threshhold 
 				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
-				//  distance should be negative inside the NWP
-				//  distance should be positive outside of the NWP
+				//  distance should be negative outside the NWP
+				//  distance should be positive inside of the NWP
 				temp = factor*log((1.0+value)/(1.0-value));
-				if (value > 0.8) DistData(i,j,k) = -2.94*factor;
-				else if (value < -0.8) DistData(i,j,k) = 2.94*factor;
-				else DistData(i,j,k) = -temp;
+				if (value > 0.8) DistData(i,j,k) = 2.94*factor;
+				else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
+				else DistData(i,j,k) = temp;
 
 				// Basic threshold
 				// distance to the NWP
@@ -232,12 +232,12 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		}
 	}
 
-	Eikonal(DistData,TempID,Dm,30);
+	Eikonal(DistData,TempID,Dm,50);
 
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				DistData(i,j,k) += 0.0;
+				DistData(i,j,k) += 1.0;
 			}
 		}
 	}	
