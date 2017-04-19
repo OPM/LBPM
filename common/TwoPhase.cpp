@@ -232,12 +232,12 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 		}
 	}
 
-	Eikonal(DistData,TempID,Dm,100);
+	Eikonal(DistData,TempID,Dm,30);
 
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				DistData(i,j,k) += 1.0;
+				DistData(i,j,k) += 0.0;
 			}
 		}
 	}	
