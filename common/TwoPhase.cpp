@@ -209,19 +209,23 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 				// all other phases tagged with 1
 				int n = k*Nx*Ny+j*Nx+i;
 				if (value > 0)	TempID[n] = 0;
-				else		TempID[n] = 1;
+				else		    TempID[n] = 1;
 
-			 	//temp = factor*log((1.0+value)/(1.0-value));
-			 	//if (value > 0.8) DistData(i,j,k) = 2.94*factor;
-			 	//else if (value < -0.8) DistData(i,j,k) = -2.94*factor;
-			 	//else DistData(i,j,k) = temp;
+				// Distance threshhold 
+				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
+				//  distance should be negative inside the NWP
+				//  distance should be positive outside of the NWP
+				temp = factor*log((1.0+value)/(1.0-value));
+				if (value > 0.8) DistData(i,j,k) = -2.94*factor;
+				else if (value < -0.8) DistData(i,j,k) = 2.94*factor;
+				else DistData(i,j,k) = -temp;
 
 				// Basic threshold
 				// distance to the NWP
 				// negative inside NWP, positive outside
-				if (value > 0) DistData(i,j,k) = -0.5;
-				else DistData(i,j,k) = 0.5;
-				
+				//if (value > 0) DistData(i,j,k) = -0.5;
+				//else DistData(i,j,k) = 0.5;
+
 				// Initialize directly
 				// DistData(i,j,k) = value;
 			}
@@ -230,23 +234,22 @@ void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, Double
 
 	Eikonal(DistData,TempID,Dm,30);
 
-
-    for (int k=0; k<Nz; k++){
-	  for (int j=0; j<Ny; j++){
-	    for (int i=0; i<Nx; i++){
-	      DistData(i,j,k) += 1.5;
-	    }
-	  }
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				DistData(i,j,k) += 1.5;
+			}
+		}
 	}	
 
-    /*	  for (int k=0; k<Nz; k++){
+	/*	  for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				DistData(i,j,k) = ColorData(i,j,k);
 			}
 		}
 	}
-    */
+	 */
 
 }
 
