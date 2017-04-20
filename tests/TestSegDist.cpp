@@ -113,7 +113,15 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(comm);
 	if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
+
+	double starttime,stoptime,cputime;
+	starttime = MPI_Wtime();
 	Eikonal(Distance,id,Dm,10);
+	stoptime = MPI_Wtime();
+	cputime = (stoptime - starttime);
+
+	if (rank==0) printf("Total time: %f seconds \n",cputime);
+
 
 	double Error=0.0;
 	int Count = 0;
