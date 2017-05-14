@@ -5,6 +5,7 @@ module load cmake
 export MPICH_RDMA_ENABLED_CUDA=1
 #module swap cray-mpich2 cray-mpich2/5.6.3
 module swap PrgEnv-pgi PrgEnv-gnu
+module load cray-hdf5 silo
 
 # Remove CMake files from previous configures
 rm -rf CMake*
@@ -21,6 +22,9 @@ cmake                                    \
     -D CMAKE_BUILD_TYPE:STRING=Release     \
     -D CXX_STD=11			  \
     -D CUDA_FLAGS="-arch sm_35"          \
+    -D USE_SILO=0			 \
+    -D SILO_DIRECTORY=/sw/xk6/silo/4.8/sles11.1_gnu4.5.3 \
+    -D HDF5_DIRECTORY=/opt/cray/hdf5/1.8.16/GNU/4.9 \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_CUDA=1                        \
     -D USE_TIMER=0                        \
