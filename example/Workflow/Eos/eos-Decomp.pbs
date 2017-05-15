@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N Decomp
+#PBS -j oe
+#PBS -l walltime=02:30:00,nodes=9
+##PBS -l walltime=01:00:00,nodes=18
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+##PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#LBPM_WIA_INSTALL_DIR=/lustre/atlas/proj-shared/geo106/build-eos-LBPM-WIA
+
+LBPM_WIA_INSTALL_DIR=$PROJWORK/geo106/Eos-LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+  # directory structure should be set up 
+  #   directories must include PATTERN within the name (change as needed)
+  #   each directory must contain
+  #      - Domain.in -- file that specifies parallel domain
+  #      - Segmented.in -- file that specifies input file
+  #      - 8-bit binary file with the digital geometry
+  LIST=$(ls | grep PATTERN)
+
+  # integer labels for the solid phase and the non-wetting phase
+  SOLID=0
+  NWP=1
+
+  # loop over directories and generate input files for parallel simulation
+  # performs domain decomposition based on Domain.in
+  # number of processors must match simulation
+  NUMPROCS=144
+  for i in $LIST; do
+     echo $i
+     cd $i
+     aprun -n $NUMPROCS $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_decomp $SOLID $NWP
+
+     mkdir -p MEDIA
+     cp ID* MEDIA
+     cd ..
+  done
+
+
+exit;

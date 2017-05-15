@@ -1,0 +1,33 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N Dist
+#PBS -j oe
+#PBS -l walltime=02:30:00,nodes=18
+##PBS -l walltime=01:00:00,nodes=18
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+##PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#LBPM_WIA_INSTALL_DIR=/lustre/atlas/proj-shared/geo106/build-eos-LBPM-WIA
+
+LBPM_WIA_INSTALL_DIR=/ccs/proj/geo106/eos/LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+    # generate distance map from the binary image
+    # input files are ID.xxxxx
+    # output files are SignDist.xxxxx
+     NUMPROCS=288
+     aprun -n $NUMPROCS $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_pp
+
+
+exit;
