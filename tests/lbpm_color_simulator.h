@@ -36,12 +36,11 @@ public:
         std::shared_ptr<double> cDistEven_, std::shared_ptr<double>cDistOdd_, int N_ ):
         filename(filename_), cDen(cDen_), cDistEven(cDistEven_), cDistOdd(cDistOdd_), N(N_) {}
     virtual void run() {
-        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         PROFILE_START("Save Checkpoint",1);
         WriteCheckpoint(filename,cDen.get(),cDistEven.get(),cDistOdd.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
-        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
+    virtual bool has_result() const { return false; }
 private:
     WriteRestartWorkItem();
     const char* filename;
@@ -67,7 +66,6 @@ public:
         }
     ~BlobIdentificationWorkItem1() { MPI_Comm_free(&newcomm); }
     virtual void run() {
-        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs",1);
         double vF = 0.0;
@@ -75,8 +73,8 @@ public:
         IntArray& ids = new_index->second;
         new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
         PROFILE_STOP("Identify blobs",1);
-        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
+    virtual bool has_result() const { return false; }
 private:
     BlobIdentificationWorkItem1();
     int timestep;
@@ -101,7 +99,6 @@ public:
         }
     ~BlobIdentificationWorkItem2() { MPI_Comm_free(&newcomm); }
     virtual void run() {
-        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         // Compute the global blob id and compare to the previous version
         PROFILE_START("Identify blobs maps",1);
         const IntArray& ids = new_index->second;
@@ -123,8 +120,8 @@ public:
             writeIDMap(map,timestep,id_map_filename);
         }
         PROFILE_STOP("Identify blobs maps",1);
-        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
+    virtual bool has_result() const { return false; }
 private:
     BlobIdentificationWorkItem2();
     int timestep;
@@ -150,7 +147,6 @@ public:
         }
     ~WriteVisWorkItem() { MPI_Comm_free(&newcomm); }
     virtual void run() {
-        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         PROFILE_START("Save Vis",1);
         ASSERT(visData[0].vars[0]->name=="phase");
         ASSERT(visData[0].vars[1]->name=="Pressure");
@@ -166,8 +162,8 @@ public:
         fillData.copy(Averages.Label_NWP,BlobData);
         IO::writeData( timestep, visData, newcomm );
         PROFILE_STOP("Save Vis",1);
-        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     };
+    virtual bool has_result() const { return false; }
 private:
     WriteVisWorkItem();
     int timestep;
@@ -189,7 +185,6 @@ public:
         blob_ids(ids), id_list(id_list_), beta(beta_) { }
     ~AnalysisWorkItem() { }
     virtual void run() {
-        ThreadPool::WorkItem::d_state = 1;  // Change state to in progress
         Averages.NumberComponents_NWP = blob_ids->first;
         Averages.Label_NWP = blob_ids->second;
         Averages.Label_NWP_map = *id_list;
@@ -215,8 +210,8 @@ public:
             Averages.PrintComponents(timestep);
             PROFILE_STOP("Compute dist",1);
         }
-        ThreadPool::WorkItem::d_state = 2;  // Change state to finished
     }
+    virtual bool has_result() const { return false; }
 private:
     AnalysisWorkItem();
     AnalysisType type;
