@@ -108,13 +108,13 @@ int main(int argc, char **argv)
 			printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
 			printf("Subdomain size: %i \n",N);
 			printf("Size of transition region: %i \n", z_transition_size);
-			char *tmp;
-			tmp = new char[N];
+
 			for (int kp=0; kp<nprocz; kp++){
 				for (int jp=0; jp<nprocy; jp++){
 					for (int ip=0; ip<nprocx; ip++){
 						// rank of the process that gets this subdomain
 						int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
+						printf("extracting rank=%i \n",rnk);
 						// Pack and send the subdomain for rnk
 						for (k=0;k<nz+2;k++){
 							for (j=0;j<ny+2;j++){
@@ -144,6 +144,7 @@ int main(int argc, char **argv)
 							}
 						}
 						
+						printf("writing file \n");
 						// Write the data for this rank data 
 						sprintf(LocalRankFilename,"ID.%05i",rnk+rank_offset);
 						FILE *ID = fopen(LocalRankFilename,"wb");
