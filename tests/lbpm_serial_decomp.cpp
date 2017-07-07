@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
+		int nprocs, nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
 		double Lx, Ly, Lz;
 		int Nx,Ny,Nz;
 		int i,j,k,n;
@@ -75,6 +75,7 @@ int main(int argc, char **argv)
 			image >> zStart;
 
 		}
+		nprocs=nprocx*nprocy*nprocz;
 
 		char *SegData = NULL;
 		// Rank=0 reads the entire segmented data and distributes to worker processes
