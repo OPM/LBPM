@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 		if (rank==0){
 			printf("Distributing subdomains across %i processors \n",nprocs);
 			printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
-			printf("Subdomain size: %i \n",N);
+			printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
 			printf("Size of transition region: %i \n", z_transition_size);
 
 			for (int kp=0; kp<nprocz; kp++){
