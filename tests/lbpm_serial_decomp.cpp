@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 		//.......................................................................
 		int nprocs, nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
 		double Lx, Ly, Lz;
-		int Nx,Ny,Nz;
-		int i,j,k,n;
+		uint64_t Nx,Ny,Nz;
+		uint64_t i,j,k,n;
 		int BC=0;
 		char Filename[40];
-		int xStart,yStart,zStart;
+		uint64_t xStart,yStart,zStart;
 		//  char fluidValue,solidValue;
 
 		std::vector<char> solidValues;
@@ -81,21 +81,22 @@ int main(int argc, char **argv)
 		// Rank=0 reads the entire segmented data and distributes to worker processes
 		if (rank==0){
 			printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);
-			SegData = new char[Nx*Ny*Nz];
+			uint64_t SIZE = Nx*Ny*Nz;
+			SegData = new char[SIZE];
 			FILE *SEGDAT = fopen(Filename,"rb");
 			if (SEGDAT==NULL) ERROR("Error reading segmented data");
 			size_t ReadSeg;
-			ReadSeg=fread(SegData,1,Nx*Ny*Nz,SEGDAT);
-			if (ReadSeg != size_t(Nx*Ny*Nz)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
 			fclose(SEGDAT);
 			printf("Read segmented data from %s \n",Filename);
 		}
 
 		// Get the rank info
-		int N = (nx+2)*(ny+2)*(nz+2);
+		uint64_t N = (nx+2)*(ny+2)*(nz+2);
 
 		// number of sites to use for periodic boundary condition transition zone
-		int z_transition_size = (nprocz*nz - (Nz - zStart))/2;
+		uint64_t z_transition_size = (nprocz*nz - (Nz - zStart))/2;
 		if (z_transition_size < 0) z_transition_size=0;
 
 		char LocalRankFilename[40];
@@ -119,14 +120,14 @@ int main(int argc, char **argv)
 						for (k=0;k<nz+2;k++){
 							for (j=0;j<ny+2;j++){
 								for (i=0;i<nx+2;i++){
-									int x = xStart + ip*nx + i-1;
-									int y = yStart + jp*ny + j-1;
-									//		int z = zStart + kp*nz + k-1;
-									int z = zStart + kp*nz + k-1 - z_transition_size;
+									uint64_t x = xStart + ip*nx + i-1;
+									uint64_t y = yStart + jp*ny + j-1;
+									//		uint64_t z = zStart + kp*nz + k-1;
+									uint64_t z = zStart + kp*nz + k-1 - z_transition_size;
 									if (z<zStart) 	z=zStart;
 									if (!(z<Nz))	z=Nz-1;
-									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									int nglobal = z*Nx*Ny+y*Nx+x;
+									uint64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+									uint64_t nglobal = z*Nx*Ny+y*Nx+x;
 									loc_id[nlocal] = SegData[nglobal];
 								}
 							}
