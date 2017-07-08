@@ -140,9 +140,9 @@ int main(int argc, char **argv)
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
-	int count,countGlobal,totalGlobal;
-	count = 0;
-	double maxdist=0;
+	double count,countGlobal,totalGlobal;
+	count = 0.f;
+	double maxdist=0.f;
 	double maxdistGlobal;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 				else{
 					// initially saturated with wetting phase
 					id[n] = 2;
-					count++;
+					count+=1.0;
 					// extract maximum distance for critical radius
 					if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 				}
@@ -160,9 +160,10 @@ int main(int argc, char **argv)
 		}
 	}
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
-	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
+	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
+	double porosity=totalGlobal/volume;
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
 
@@ -342,7 +343,7 @@ int main(int argc, char **argv)
 	double deltaR=0.05; // amount to change the radius in voxel units
     double Rcrit_old;
 
-	int GlobalNumber = 1;
+	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
@@ -355,7 +356,7 @@ int main(int argc, char **argv)
 	    int Window=round(Rcrit_new);
         if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
                                      // and sw<Sw will be immediately broken
-        int LocalNumber=0;
+        double LocalNumber=0.f;
         for(k=0; k<Nz; k++){
             for(j=0; j<Ny; j++){
                 for(i=0; i<Nx; i++){
@@ -374,7 +375,7 @@ int main(int argc, char **argv)
                                     int nn = kk*nx*ny+jj*nx+ii;
                                     double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
                                     if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
-                                        LocalNumber++;
+				      LocalNumber+=1.0;
                                         id[nn]=1;
                                     }
                                 }
@@ -465,21 +466,21 @@ int main(int argc, char **argv)
         UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
         //......................................................................................
 
-        MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_INT,MPI_SUM,comm);
+        MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,comm);
 
-        count = 0;
+        count = 0.f;
         for (int k=1; k<Nz-1; k++){
             for (int j=1; j<Ny-1; j++){
                 for (int i=1; i<Nx-1; i++){
                     n=k*Nx*Ny+j*Nx+i;
                     if (id[n] == 2){
-                        count++;
+                        count+=1.0;
                     }
                 }
             }
         }
-        MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-        sw_new = float(countGlobal)/totalGlobal;
+        MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
+        sw_new = countGlobal/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
         // for test only
 //        if (rank==0){

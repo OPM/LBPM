@@ -232,7 +232,7 @@ int main(int argc, char **argv)
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
-	int GlobalNumber = 1;
+	double GlobalNumber = 1.f;
 
 	double count,countGlobal,totalGlobal;
 	count = 0.f;
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 	}
 	// total Global is the number of nodes in the pore-space
 	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
-	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
+	double porosity=totalGlobal/(double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
 
@@ -293,12 +293,12 @@ int main(int argc, char **argv)
         sw_diff_old = sw_diff_new;
 
         int Window=round(Rcrit_new);
-		GlobalNumber = 1;
+		GlobalNumber = 1.0;
 
-		while (GlobalNumber != 0){
+		while (GlobalNumber > 0){
 
 			if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
-			double LocalNumber=GlobalNumber=0;
+			double LocalNumber=GlobalNumber=0.f;
 			for(k=0; k<Nz; k++){
 				for(j=0; j<Ny; j++){
 					for(i=0; i<Nx; i++){
