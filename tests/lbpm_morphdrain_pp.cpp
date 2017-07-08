@@ -234,8 +234,8 @@ int main(int argc, char **argv)
 	int Nz = nz;
 	int GlobalNumber = 1;
 
-	int count,countGlobal,totalGlobal;
-	count = 0;
+	double count,countGlobal,totalGlobal;
+	count = 0.f;
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
 			for (int i=1; i<nx-1; i++){
@@ -244,13 +244,13 @@ int main(int argc, char **argv)
 				else{
 					// initially saturated with wetting phase
 					id[n] = 2;
-					count++;
+					count+=1.0;
 				}
 			}
 		}
 	}
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
@@ -297,8 +297,8 @@ int main(int argc, char **argv)
 
 		while (GlobalNumber != 0){
 
-			if (rank==0) printf("GlobalNumber=%i \n",GlobalNumber);
-			int LocalNumber=GlobalNumber=0;
+			if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
+			double LocalNumber=GlobalNumber=0;
 			for(k=0; k<Nz; k++){
 				for(j=0; j<Ny; j++){
 					for(i=0; i<Nx; i++){
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 										int nn = kk*nx*ny+jj*nx+ii;
 										double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
 										if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
-											LocalNumber++;
+											LocalNumber+=1.0;
 											id[nn]=1;
 										}
 									}
@@ -407,7 +407,7 @@ int main(int argc, char **argv)
 			UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
 			//......................................................................................
 
-			MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_INT,MPI_SUM,comm);
+			MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,comm);
 
 			// Layer the inlet with NWP
 			if (kproc == 0){
@@ -433,19 +433,19 @@ int main(int argc, char **argv)
 
 		}
 
-		count = 0;
+		count = 1.f;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					n=k*Nx*Ny+j*Nx+i;
 					if (id[n] == 2){
-						count++;
+						count+=1.0;
 					}
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		sw_new= double(countGlobal)/totalGlobal;
+		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
+		sw_new= countGlobal/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
 //        if (rank==0){
 //            printf("Final saturation=%f\n",sw_new);
