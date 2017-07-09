@@ -288,7 +288,7 @@ int main(int argc, char **argv)
 	while (sw_new > SW && Rcrit_new > 0.99){
         
         Rcrit_old = Rcrit_new;
-		Rcrit_new -= deltaR;// decrease critical radius
+		Rcrit_new -= deltaR*Rcrit_old;// decrease critical radius
         sw_old = sw_new;
         sw_diff_old = sw_diff_new;
 
