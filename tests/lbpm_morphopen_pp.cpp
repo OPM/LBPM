@@ -61,6 +61,8 @@ int main(int argc, char **argv)
 		//printf("Critical radius %f (voxels)\n",Rcrit);
 		printf("Target saturation %f \n",SW);
 	}
+
+
 	//	}
 
 	//.......................................................................
@@ -347,6 +349,10 @@ int main(int argc, char **argv)
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
+	if (argc>2){
+		Rcrit_new = strtod(argv[2],NULL);
+		printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
+	}
     while (sw_new > SW)
     {
         sw_diff_old = sw_diff_new;
