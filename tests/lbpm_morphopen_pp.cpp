@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 	Rcrit_new = maxdistGlobal;
 	if (argc>2){
 		Rcrit_new = strtod(argv[2],NULL);
-		printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
+		if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	}
     while (sw_new > SW)
     {
