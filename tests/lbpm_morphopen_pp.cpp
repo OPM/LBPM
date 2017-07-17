@@ -61,6 +61,8 @@ int main(int argc, char **argv)
 		//printf("Critical radius %f (voxels)\n",Rcrit);
 		printf("Target saturation %f \n",SW);
 	}
+
+
 	//	}
 
 	//.......................................................................
@@ -347,12 +349,16 @@ int main(int argc, char **argv)
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
+	if (argc>2){
+		Rcrit_new = strtod(argv[2],NULL);
+		if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
+	}
     while (sw_new > SW)
     {
         sw_diff_old = sw_diff_new;
         sw_old = sw_new;
         Rcrit_old = Rcrit_new;
-		Rcrit_new -= deltaR;
+		Rcrit_new -= deltaR*Rcrit_old;
 	    int Window=round(Rcrit_new);
         if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
                                      // and sw<Sw will be immediately broken
@@ -483,11 +489,10 @@ int main(int argc, char **argv)
         sw_new = countGlobal/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
         // for test only
-//        if (rank==0){
-//            printf("Final saturation=%f\n",sw_new);
-//            printf("Final critical radius=%f\n",Rcrit_new);
-//
-//        }
+        if (rank==0){
+            printf("Final saturation=%f\n",sw_new);
+            printf("Final critical radius=%f\n",Rcrit_new);
+        }
     }
 
     if (sw_diff_new<sw_diff_old){
