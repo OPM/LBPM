@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	MPI_Status stat1[18],stat2[18];
 
 	double TubeRadius =15.0;
-	double Width;
+	double WIDTH;
 	TubeRadius=strtod(argv[1],NULL);
 	WIDTH=strtod(argv[2],NULL);
 
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2));
+				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)));
 
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
