@@ -117,7 +117,7 @@ public:
 	DoubleArray Gws_global;
 	//...........................................................................
 	//...........................................................................
-	int Nx,Ny,Nz;
+        int Nx,Ny,Nz;
 	IntArray PhaseID;	// Phase ID array (solid=0, non-wetting=1, wetting=2)
 	BlobIDArray Label_WP;   // Wetting phase label
 	BlobIDArray Label_NWP;  // Non-wetting phase label index (0:nblobs-1)

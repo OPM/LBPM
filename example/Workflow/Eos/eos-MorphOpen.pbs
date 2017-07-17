@@ -1,0 +1,59 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N MorphOpen
+#PBS -j oe
+##PBS -l walltime=02:00:00,nodes=216
+#PBS -l walltime=08:00:00,nodes=18
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+##PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#LBPM_WIA_INSTALL_DIR=/lustre/atlas/proj-shared/geo106/build-eos-LBPM-WIA
+
+LBPM_WIA_INSTALL_DIR=/ccs/proj/geo106/eos/LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+module load python_anaconda
+
+#module swap cray-mpich2 cray-mpich2/5.6.3
+#module load cudatoolkit
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+cp ../MEDIA/ID* ./
+
+LABEL=$(basename $PWD)
+
+rm sw.log
+
+# List of saturations to generate using Morphological opening
+SW="0.85 0.80 0.75 0.70 0.65 0.60 0.55 0.5 0.45 0.4 0.35 0.3 0.25 0.2 0.15"
+
+echo "r sw" > morphopen.csv
+
+NUMPROCS=288
+
+for sw in $SW; do 
+      echo $sw >> sw.log
+      aprun -n $NUMPROCS $LBPM_WIA_INSTALL_DIR/bin/lbpm_morphopen_pp $sw > morphopen.log
+      radius=$(grep "Final critical radius"  morphopen.log | sed 's/Final critical radius=//g') 
+      saturation=$(grep "Final saturation"  morphopen.log | sed 's/Final saturation=//g')
+      echo "$radius $saturation" >> morphopen.csv
+      tag="sw_$sw"
+      DIR=$LABEL"_open_"$tag
+      mkdir -p $DIR
+      cp ID.* $DIR
+      cp SignDist.* $DIR
+      cp Domain.in $DIR
+      cp Color.in $DIR
+done
+
+exit;
+
