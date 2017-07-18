@@ -236,9 +236,9 @@ int main(int argc, char **argv)
 
 	double count,countGlobal,totalGlobal;
 	count = 0.f;
-	for (int k=1; k<nz-1; k++){
-		for (int j=1; j<ny-1; j++){
-			for (int i=1; i<nx-1; i++){
+	for (int k=0; k<nz; k++){
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
 				n = k*nx*ny+j*nx+i;
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{
