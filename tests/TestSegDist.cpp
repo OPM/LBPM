@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 			for (i=0;i<nx;i++){
 				n=k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
-				Distance(i,j,k) = 2.0*id[n]-1.0;
+				Distance(i,j,k) = 1.0*id[n]-0.5;
 			}
 		}
 	}
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(comm);
 	if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
-	SSO(Distance,id,Dm,10);
+	Eikonal(Distance,id,Dm,10);
 
 	double Error=0.0;
 	int Count = 0;

@@ -139,16 +139,16 @@ int main(int argc, char **argv)
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
 	ReadSignDist=fread(SignDist.data(),8,N,DIST);
-	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
+	if (ReadSignDist != size_t(N)) printf("lbpm_morphopen_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
 
 	double count,countGlobal,totalGlobal;
 	count = 0.f;
 	double maxdist=0.f;
 	double maxdistGlobal;
-	for (int k=1; k<nz-1; k++){
-		for (int j=1; j<ny-1; j++){
-			for (int i=1; i<nx-1; i++){
+	for (int k=0; k<nz; k++){
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
 				n = k*nx*ny+j*nx+i;
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{

@@ -667,8 +667,8 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
 
 					int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
 
-					sign = -1;
-					if (ID[n] == 1) sign = 1;
+					sign = 1;
+					if (ID[n] == 0) sign = -1;
 
 					// local second derivative terms
 					Dxxp = minmod(Dxx(i,j,k),Dxx(i+1,j,k));
@@ -739,6 +739,7 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
 		MPI_Allreduce(&LocalMax,&GlobalMax,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
 		GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
 		count++;
+
 
 		if (count%50 == 0 && Dm.rank==0 )
 			printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
