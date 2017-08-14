@@ -245,6 +245,11 @@ int main(int argc, char **argv)
 	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
 
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	FILE *ID = fopen(LocalRankFilename,"wb");
+	fwrite(id,1,N,ID);
+	fclose(ID);
+
 	// ****************************************************
 	MPI_Barrier(comm);
 	MPI_Finalize();
