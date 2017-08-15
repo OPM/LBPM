@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 		outlet_radius=atoi(argv[2]);
 	}
 	else{
-		INSIST(argc==3,"Did not provide correct input arguments!")
+		INSIST(argc==3,"Did not provide correct input arguments!");
 	}
 
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -307,8 +307,8 @@ int main(int argc, char **argv)
 	// Assign walls in the signed distance functions (x,y boundaries)
 	double dst;
 
-	int center_x=Nprocx*Nx/2;
-	int center_y=Nprocy*Ny/2;
+	int center_x = nprocx*Nx/2;
+	int center_y = nprocy*Ny/2;
 
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 				if (k<5) 						SignDist(i,j,k) = dst;
 				else if (Nz-k<5) 				SignDist(i,j,k) = dst;
 				else if (dst < SignDist(i,j,k)) SignDist(i,j,k) = dst;
-che			}
+   			}
 		}
 	}
 
