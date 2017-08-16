@@ -230,9 +230,7 @@ int main(int argc, char **argv)
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 
 	 MPI_Barrier(comm);
-
-	Nz += 2;
-	Nx = Ny = Nz;	// Cubic domain
+	Nx += 2;	Ny += 2;	Nz += 2;
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -397,6 +395,11 @@ int main(int argc, char **argv)
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
+
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	FILE *ID = fopen(LocalRankFilename,"wb");
+	fwrite(id,1,N,ID);
+	fclose(ID);
 
 	// ****************************************************
 	MPI_Barrier(comm);
