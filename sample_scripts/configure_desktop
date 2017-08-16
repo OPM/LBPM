@@ -13,7 +13,7 @@ cmake                                    \
     -D CMAKE_BUILD_TYPE:STRING=Debug     \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
-    -D USE_NETCDF=1 			 \
+    -D USE_NETCDF=0 			 \
     -D HDF5_DIRECTORY="/apps/hdf5/"	 \
     -D NETCDF_DIRECTORY="/apps/netcdf/"	 \
     -D USE_CUDA=0                        \

@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 		outlet_radius=atoi(argv[2]);
 	}
 	else{
-		INSIST(argc==3,"Did not provide correct input arguments!");
+	  INSIST(argc==3,"Did not provide correct input arguments!");
 	}
 
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 		printf("************ \n");
 	}
 
-	if (nprocx > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocx > 1? \n");
+	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
 	//.......................................................................
 	SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
@@ -307,8 +307,8 @@ int main(int argc, char **argv)
 	// Assign walls in the signed distance functions (x,y boundaries)
 	double dst;
 
-	int center_x = nprocx*Nx/2;
-	int center_y = nprocy*Ny/2;
+	int center_x=nprocx*Nx/2;
+	int center_y=nprocy*Ny/2;
 
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -332,10 +332,11 @@ int main(int argc, char **argv)
 					// distance map for the solid boundary at the outlet layer
 					dst = min(dist_to_top,dist_to_outlet);
 				}
+
 				if (k<5) 						SignDist(i,j,k) = dst;
 				else if (Nz-k<5) 				SignDist(i,j,k) = dst;
 				else if (dst < SignDist(i,j,k)) SignDist(i,j,k) = dst;
-   			}
+			}
 		}
 	}
 
