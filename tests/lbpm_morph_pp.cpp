@@ -265,7 +265,30 @@ int main(int argc, char **argv)
 
 	while (GlobalNumber > 0){
 
-		//if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
+		// Layer the inlet with NWP
+		if (kproc == 0){
+			for(j=0; j<Ny; j++){
+				for(i=0; i<Nx; i++){
+					n = j*nx+i;
+					//				n = nx*ny + j*nx+i;
+					if (id[n] > 0) id[n]=1;
+				}
+			}
+		}
+
+		// Layer the outlet with WP
+		if (kproc == nprocz-1){
+			for(j=0; j<Ny; j++){
+				for(i=0; i<Nx; i++){
+					n = (nz-1)*nx*ny+j*nx+i;
+					//				n = nx*ny + j*nx+i;
+					if (id[n] > 0) id[n]=2;
+				}
+			}
+		}
+
+
+		if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
 		double LocalNumber=GlobalNumber=0.f;
 		for(k=0; k<Nz; k++){
 			for(j=0; j<Ny; j++){
@@ -377,27 +400,6 @@ int main(int argc, char **argv)
 
 		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,comm);
 
-		// Layer the inlet with NWP
-		if (kproc == 0){
-			for(j=0; j<Ny; j++){
-				for(i=0; i<Nx; i++){
-					n = j*nx+i;
-					//				n = nx*ny + j*nx+i;
-					id[n]=1;
-				}
-			}
-		}
-
-		// Layer the outlet with WP
-		if (kproc == nprocz-1){
-			for(j=0; j<Ny; j++){
-				for(i=0; i<Nx; i++){
-					n = (nz-1)*nx*ny+j*nx+i;
-					//				n = nx*ny + j*nx+i;
-					id[n]=2;
-				}
-			}
-		}
 
 	}
 

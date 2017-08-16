@@ -105,9 +105,9 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		if (jmax<0)		kmax = 0;
 		if (jmax>Ny)	kmax = Ny;
 		// Loop over the domain for this sphere (may be null)
-		for (k=kmin;k<kmax;k++){
+		for (k=0;k<Nz;k++){
 			for (j=jmin;j<jmax;j++){
-				for (i=0;i<Nx;i++){
+				for (i=imin;i<imax;i++){
 					// x,y,z is distance in physical units
 					x = i*hx;
 					y = j*hy;
