@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 
 		while (GlobalNumber > 0){
 
-			if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
+		  //if (rank==0) printf("GlobalNumber=%f \n",GlobalNumber);
 			double LocalNumber=GlobalNumber=0.f;
 			for(k=0; k<Nz; k++){
 				for(j=0; j<Ny; j++){
