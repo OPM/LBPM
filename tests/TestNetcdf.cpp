@@ -26,7 +26,7 @@ void test_NETCDF( UnitTest& ut )
     size_t y = info.jy*data.size(1);
     size_t z = info.kz*data.size(2);
     const char* filename = "test.nc";
-    std::vector<int> dim = { data.size(0)*nprocx, data.size(1)*nprocy, data.size(2)*nprocz };
+    std::vector<int> dim = { (int) data.size(0)*nprocx, (int) data.size(1)*nprocy, (int) data.size(2)*nprocz };
     int fid = netcdf::open( filename, netcdf::CREATE, MPI_COMM_WORLD );
     auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
     netcdf::write( fid, "tmp", dims, data, info );
