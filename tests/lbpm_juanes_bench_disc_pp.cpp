@@ -390,16 +390,18 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 
+
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	FILE *ID = fopen(LocalRankFilename,"wb");
+	fwrite(id,1,N,ID);
+	fclose(ID);
+	
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
 
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	FILE *ID = fopen(LocalRankFilename,"wb");
-	fwrite(id,1,N,ID);
-	fclose(ID);
 
 	// ****************************************************
 	MPI_Barrier(comm);
