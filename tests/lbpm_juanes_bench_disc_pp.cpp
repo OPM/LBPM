@@ -287,7 +287,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,comm);
 	//...........................................................................
 	MPI_Barrier(comm);
-	if (rank == 0){
+	/*	if (rank == 0){
 		cout << "Domain set." << endl;
 		printf("************ \n");
 		printf("Discs are: \n");
@@ -296,17 +296,22 @@ int main(int argc, char **argv)
 		}
 		printf("************ \n");
 	}
-
+	*/
+	MPI_Barrier(comm);
 	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
+	if (rank ==0) printf("Compute the signed distance part I \n");
 	//.......................................................................
-	SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+		SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
+	
 	//.......................................................................
 	// Assign walls in the signed distance functions (x,y boundaries)
 	double dst;
 
 	int center_x=nprocx*Nx/2;
 	int center_y=nprocy*Ny/2;
+
+	if (rank ==0) printf("Compute the signed distance part II \n");
 
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -324,15 +329,19 @@ int main(int argc, char **argv)
 
 				if (k<Nz/2){
 					// distance map for the solid boundary at the inlet layer
-					dst = min(dist_to_bottom,dist_to_inlet);
+					if (dist_to_inlet > 0.f) 		dst = dist_to_inlet;
+					else if (dist_to_bottom > 0.f) 	dst = dist_to_bottom;
+					else 							dst = dist_to_inlet;
+				    
 				}
 				else{
 					// distance map for the solid boundary at the outlet layer
-					dst = min(dist_to_top,dist_to_outlet);
+					if (dist_to_outlet > 0.f)		dst = sqrt(dist_to_top*dist_to_top + dist_to_outlet*dist_to_outlet);
+					else 							dst = dist_to_outlet;
 				}
 
-				if (k<5) 						SignDist(i,j,k) = dst;
-				else if (Nz-k<5) 				SignDist(i,j,k) = dst;
+				if (k<4) 						SignDist(i,j,k) = dist_to_bottom;
+				else if (Nz-k<4) 				SignDist(i,j,k) = dist_to_top;
 				else if (dst < SignDist(i,j,k)) SignDist(i,j,k) = dst;
 			}
 		}
