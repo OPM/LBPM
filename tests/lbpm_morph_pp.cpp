@@ -234,8 +234,9 @@ int main(int argc, char **argv)
 	int Nz = nz;
 	double GlobalNumber = 1.f;
 
-	double count,countGlobal,totalGlobal;
+	double count,countGlobal,totalGlobal,count_wet_global;
 	count = 0.f;
+	double count_wet= 0.f;
 	for (int k=0; k<nz; k++){
 		for (int j=0; j<ny; j++){
 			for (int i=0; i<nx; i++){
@@ -243,18 +244,19 @@ int main(int argc, char **argv)
 				if (SignDist(i,j,k) < 0.0)  id[n] = 0;
 				else{
 					// initially saturated with wetting phase
-					id[n] = 2;
+					//id[n] = 2;
 					count+=1.0;
+					if (id[n] == 2) count_wet+=1.0;
 				}
 			}
 		}
 	}
 	// total Global is the number of nodes in the pore-space
 	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
+	MPI_Allreduce(&count_wet,&count_wet_global,1,MPI_DOUBLE,MPI_SUM,comm);
 	double porosity=totalGlobal/(double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
-
-
+	if (rank==0) printf("Initial saturation: %f \n",count_wet_global/totalGlobal);
 	if (rank==0) printf("Starting morhpological drainage with critical radius = %f \n",Rcrit);
 
 	int imin,jmin,kmin,imax,jmax,kmax;

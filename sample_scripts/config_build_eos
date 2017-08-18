@@ -2,7 +2,7 @@
 #for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
 
 source $MODULESHOME/init/bash
-module unload PrgEnv-intel 
+module unload PrgEnv-intel
 module load PrgEnv-gnu
 module unload gcc
 module load gcc/5.3.0
