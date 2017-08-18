@@ -80,7 +80,6 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		Distance[n]=100.0;
 	}
 	//............................................
-
 	//............................................
 	// .........Loop over the spheres.............
 	for (p=0;p<ndiscs;p++){
@@ -96,18 +95,18 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		jmax = int ((cy+2*r)/hy)+2;
 
 		// Obviously we have to do something at the edges
-		if (imin<0)		jmin = 0;
-		if (imin>Nx)	jmin = Nx;
+		if (imin<0)		imin = 0;
+		if (imin>Nx)	imin = Nx-1;
 		if (imax<0)		jmax = 0;
-		if (imax>Nx)	jmax = Nx;
-		if (jmin<0)		kmin = 0;
-		if (jmin>Ny)	kmin = Ny;
-		if (jmax<0)		kmax = 0;
-		if (jmax>Ny)	kmax = Ny;
+		if (imax>Nx)	jmax = Nx-1;
+		if (jmin<0)		jmin = 0;
+		if (jmin>Ny)	jmin = Ny-1;
+		if (jmax<0)		jmax = 0;
+		if (jmax>Ny)	jmax = Ny-1;
 		// Loop over the domain for this sphere (may be null)
-		for (k=kmin;k<kmax;k++){
+		for (k=0;k<Nz;k++){
 			for (j=jmin;j<jmax;j++){
-				for (i=0;i<Nx;i++){
+				for (i=imin;i<imax;i++){
 					// x,y,z is distance in physical units
 					x = i*hx;
 					y = j*hy;
@@ -209,9 +208,12 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 
 	// **************************************************************
+	double Rin,Rout;
 	if (argc == 3){
-		inlet_radius=atoi(argv[1]);
-		outlet_radius=atoi(argv[2]);
+		Rin=strtod(argv[1],NULL);
+		Rout=strtod(argv[2],NULL);		
+		//inlet_radius=atoi(argv[1]);
+		//outlet_radius=atoi(argv[2]);
 	}
 	else{
 	  INSIST(argc==3,"Did not provide correct input arguments!");
@@ -234,12 +236,14 @@ int main(int argc, char **argv)
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
-
+	depth = Nz-12;
+	
+	
 	if (rank==0){
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
 		printf("Sub-domain size = %ix%ix%i \n", Nx,Ny,Nz);
 		printf("Physical domain size = %fx%fx%f \n",Lx,Ly,Lz);
-		printf("Micromodel depth = %i voxels",depth);
+		printf("Micromodel depth = %i voxels \n",depth);
 	}
 
 
@@ -287,7 +291,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,comm);
 	//...........................................................................
 	MPI_Barrier(comm);
-	if (rank == 0){
+	/*	if (rank == 0){
 		cout << "Domain set." << endl;
 		printf("************ \n");
 		printf("Discs are: \n");
@@ -296,17 +300,28 @@ int main(int argc, char **argv)
 		}
 		printf("************ \n");
 	}
+	*/
 
+	MPI_Barrier(comm);
 	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
+	if (rank ==0) printf("Compute the signed distance part I \n");
 	//.......................................................................
-	SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
+		SignedDistanceDiscPack(SignDist.data(),ndiscs,cx,cy,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 					   iproc,jproc,kproc,nprocx,nprocy,nprocz);
+	
 	//.......................................................................
 	// Assign walls in the signed distance functions (x,y boundaries)
 	double dst;
 
 	int center_x=nprocx*Nx/2;
 	int center_y=nprocy*Ny/2;
+	
+	inlet_radius = int(nprocx*Nx*(Rin/Lx));
+	outlet_radius = int(nprocx*Nx*(Rout/Lx));
+
+	if (rank ==0) printf("Compute the signed distance part II \n");
+	if (rank ==0) printf("     Inlet radius = %i \n",inlet_radius);
+	if (rank ==0) printf("     Outlet radius = %i \n",outlet_radius);
 
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -317,22 +332,27 @@ int main(int argc, char **argv)
 				int gj = jproc*Ny + j;
 
 				// distance to the bottom layer
-				double dist_to_bottom = fabs(5.0 - double(k)) - 1.5;
-				double dist_to_top = fabs(5.0 - double(Nz - k)) - 1.5;
+				double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
+				double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
 				double dist_to_inlet = double(inlet_radius) - sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y)));
 				double dist_to_outlet = sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y))) - double(outlet_radius);
 
 				if (k<Nz/2){
 					// distance map for the solid boundary at the inlet layer
-					dst = min(dist_to_bottom,dist_to_inlet);
+					if (dist_to_inlet > 0.f) 		dst = dist_to_inlet;
+					else if (dist_to_bottom > 0.f) 	dst = dist_to_bottom;
+					else 							dst = dist_to_inlet;
+				    
 				}
 				else{
 					// distance map for the solid boundary at the outlet layer
-					dst = min(dist_to_top,dist_to_outlet);
+					if (dist_to_top > 0.f)			dst  = dist_to_top;
+					else if (dist_to_outlet > 0.f)		dst = sqrt(dist_to_top*dist_to_top + dist_to_outlet*dist_to_outlet);
+					else 							dst = dist_to_outlet;
 				}
 
-				if (k<5) 						SignDist(i,j,k) = dst;
-				else if (Nz-k<5) 				SignDist(i,j,k) = dst;
+				if (k<5) 						SignDist(i,j,k) = dist_to_bottom;
+				else if (k>Nz-6) 				SignDist(i,j,k) = dist_to_top;
 				else if (dst < SignDist(i,j,k)) SignDist(i,j,k) = dst;
 			}
 		}
@@ -390,16 +410,18 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 
+
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	FILE *ID = fopen(LocalRankFilename,"wb");
+	fwrite(id,1,N,ID);
+	fclose(ID);
+	
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
 
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	FILE *ID = fopen(LocalRankFilename,"wb");
-	fwrite(id,1,N,ID);
-	fclose(ID);
 
 	// ****************************************************
 	MPI_Barrier(comm);
