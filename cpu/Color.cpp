@@ -1230,7 +1230,7 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			// if phi[n] = -1, tau=tau1
 			// if phi[n] = 1, tau=tau2
 			f1=phi[n];
-			tau=tau1 + 0.5*(1.0+f1)*(tau2-tau1);
+			tau=tau1 + 0.5*(1.0-f1)*(tau2-tau1);
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
