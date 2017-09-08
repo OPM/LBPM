@@ -254,11 +254,11 @@ avtLBMFileFormat::PopulateDatabaseMetaData(avtDatabaseMetaData *md, int timestat
             IO::VariableDatabase variable = database[i].variables[j];
             std::string varname = variable.name + "/" + mmd->name;
             avtCentering center = AVT_UNKNOWN_CENT;
-            if ( variable.type==IO::NodeVariable ) {
+            if ( variable.type==IO::VariableType::NodeVariable ) {
                 center = AVT_NODECENT;
-            } else if ( variable.type==IO::SurfaceVariable ) {
+            } else if ( variable.type==IO::VariableType::SurfaceVariable ) {
                 center = AVT_ZONECENT;
-            } else if ( variable.type==IO::VolumeVariable ) {
+            } else if ( variable.type==IO::VariableType::VolumeVariable ) {
                 center = AVT_ZONECENT;
             }
             if ( variable.dim==1 ) {
