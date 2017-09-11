@@ -6,6 +6,7 @@ INSTALL_EXAMPLE( Sph1896 )
 INSTALL_EXAMPLE( drainage )
 INSTALL_EXAMPLE( imbibition )
 INSTALL_EXAMPLE( relperm )
+INSTALL_EXAMPLE( Poiseuille )
 
 
 # Create unit tests for each example
