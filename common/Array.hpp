@@ -638,7 +638,7 @@ template <class TYPE>
 
     const auto base_data = baseArray.data();
     for ( size_t i = 0; i < d_length; i++ )
-        d_data[i]  = std::pow(base_data[i], exp);
+        d_data[i]  = pow(base_data[i], exp);
 }
 
 /********************************************************
