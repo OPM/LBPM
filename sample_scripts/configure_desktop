@@ -16,6 +16,9 @@ cmake                                    \
     -D USE_NETCDF=0 			 \
     -D HDF5_DIRECTORY="/apps/hdf5/"	 \
     -D NETCDF_DIRECTORY="/apps/netcdf/"	 \
+    -D USE_SILO=1			 \
+    -D SILO_DIRECTORY="/apps/silo/"	 \
+    -D SILO_LIB="/apps/silo/lib/libsiloh5.a"	 \
     -D USE_CUDA=0                        \
     -D USE_TIMER=0			 \
     ${HOME}/Programs/LBPM-WIA
