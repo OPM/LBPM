@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 		//.......................................................................
 		int nprocs, nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
 		double Lx, Ly, Lz;
-		uint64_t Nx,Ny,Nz;
-		uint64_t i,j,k,n;
+		int64_t Nx,Ny,Nz;
+		int64_t i,j,k,n;
 		int BC=0;
 		char Filename[40];
-		uint64_t xStart,yStart,zStart;
+		int64_t xStart,yStart,zStart;
 		//  char fluidValue,solidValue;
 
 		std::vector<char> solidValues;
@@ -80,8 +80,8 @@ int main(int argc, char **argv)
 		char *SegData = NULL;
 		// Rank=0 reads the entire segmented data and distributes to worker processes
 		if (rank==0){
-			printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);
-			uint64_t SIZE = Nx*Ny*Nz;
+			printf("Dimensions of segmented image: %ld x %ld x %ld \n",Nx,Ny,Nz);
+			int64_t SIZE = Nx*Ny*Nz;
 			SegData = new char[SIZE];
 			FILE *SEGDAT = fopen(Filename,"rb");
 			if (SEGDAT==NULL) ERROR("Error reading segmented data");
@@ -93,10 +93,10 @@ int main(int argc, char **argv)
 		}
 
 		// Get the rank info
-		uint64_t N = (nx+2)*(ny+2)*(nz+2);
+		int64_t N = (nx+2)*(ny+2)*(nz+2);
 
 		// number of sites to use for periodic boundary condition transition zone
-		uint64_t z_transition_size = (nprocz*nz - (Nz - zStart))/2;
+		int64_t z_transition_size = (nprocz*nz - (Nz - zStart))/2;
 		if (z_transition_size < 0) z_transition_size=0;
 
 		char LocalRankFilename[40];
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 			printf("Distributing subdomains across %i processors \n",nprocs);
 			printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
 			printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
-			printf("Size of transition region: %i \n", z_transition_size);
+			printf("Size of transition region: %ld \n", z_transition_size);
 
 			for (int kp=0; kp<nprocz; kp++){
 				for (int jp=0; jp<nprocy; jp++){
@@ -119,14 +119,14 @@ int main(int argc, char **argv)
 						for (k=0;k<nz+2;k++){
 							for (j=0;j<ny+2;j++){
 								for (i=0;i<nx+2;i++){
-									uint64_t x = xStart + ip*nx + i-1;
-									uint64_t y = yStart + jp*ny + j-1;
-									//		uint64_t z = zStart + kp*nz + k-1;
-									uint64_t z = zStart + kp*nz + k-1 - z_transition_size;
+									int64_t x = xStart + ip*nx + i-1;
+									int64_t y = yStart + jp*ny + j-1;
+									// int64_t z = zStart + kp*nz + k-1;
+									int64_t z = zStart + kp*nz + k-1 - z_transition_size;
 									if (z<zStart) 	z=zStart;
 									if (!(z<Nz))	z=Nz-1;
-									uint64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									uint64_t nglobal = z*Nx*Ny+y*Nx+x;
+									int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+									int64_t nglobal = z*Nx*Ny+y*Nx+x;
 									loc_id[nlocal] = SegData[nglobal];
 								}
 							}

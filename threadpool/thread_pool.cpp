@@ -544,9 +544,8 @@ void ThreadPool::check_startup( size_t size0 )
     id2.reset( 3, d_id_assign, nullptr );
     if ( isValid( id ) || !isValid( id2 ) )
         pass = false;
-    if ( !pass ) {
+    if ( !pass )
         throw std::logic_error( "Thread pool failed to initialize" );
-    }
 }
 
 
@@ -584,8 +583,10 @@ void ThreadPool::initialize( const int N, const char *affinity, int N_procs, con
 ******************************************************************/
 ThreadPool::~ThreadPool()
 {
-    if ( !is_valid( this ) )
-        throw std::logic_error( "Thread pool is not valid" );
+    if ( !is_valid( this ) ) {
+        std::cerr << "Thread pool is not valid\n";
+        std::terminate();
+    }
     // Destroy the threads
     setNumThreads( 0 );
     // Delete all remaining data
@@ -593,8 +594,8 @@ ThreadPool::~ThreadPool()
     d_NULL_HEAD = 0;
     d_NULL_TAIL = 0;
     delete d_wait_last;
-// Print the performance metrics
 #if MONITOR_THREADPOOL_PERFORMANCE == 1
+    // Print the performance metrics
     printp( "ThreadPool Performance:\n" );
     printp( "add_work:  %lu us,  %lu us,  %lu us,  %lu us,  %lu us\n",
         total_add_work_time[0]/1000, total_add_work_time[1]/1000,
