@@ -30,11 +30,11 @@ inline void copyData( Array<TYPE>& data, int type, const void *src )
     if ( type == getType<TYPE>() )
         memcpy( data.data(), src, data.length()*sizeof(TYPE) );
     else if ( type == DB_DOUBLE )
-        data.copy<double>( static_cast<const double*>(src) );
+        data.copy( static_cast<const double*>(src) );
     else if ( type == DB_FLOAT )
-        data.copy<float>( static_cast<const float*>(src) );
+        data.copy( static_cast<const float*>(src) );
     else if ( type == DB_INT )
-        data.copy<int>( static_cast<const int*>(src) );
+        data.copy( static_cast<const int*>(src) );
     else
         ERROR("Unknown type");
 }
