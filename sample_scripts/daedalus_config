@@ -1,4 +1,4 @@
-# Configure
+#Configure
 
 rm -rf Cmake*
 
@@ -7,16 +7,20 @@ cmake                                    \
     -D CMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE \
     -D CMAKE_ECLIPSE_MAKE_ARGUMENTS=-j8 \
     -D CMAKE_C_COMPILER:PATH=/home/christopher/openmpi/install_dir/bin/mpicc \
-    -D CMAKE_CXX_COMPILER:PATH=/home/christopher/openmpi/install_dir/bin/mpicxx        \
+i    -D CMAKE_CXX_COMPILER:PATH=/home/christopher/openmpi/install_dir/bin/mpicxx        \
     -D USE_MPI=1 \
     -D USE_DOXYGEN=false \
-    -D CMAKE_C_FLAGS="-std=gnu++11 -w"    \
-    -D CMAKE_CXX_FLAGS="-std=gnu++11 -w"    \
+ #   -D CMAKE_C_FLAGS="-std=gnu++11 -w"    \
+ #   -D CMAKE_CXX_FLAGS="-std=gnu++11 -w"    \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=/home/christopher/openmpi/install_dir/bin/mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Release     \
     -D CXX_STD=11 \
+    -D HDF5_DIRECTORY="/usr/lib/x86_64-linux-gnu/hdf5/openmpi/" \
+    -D USE_SILO=1 \
+    -D SILO_DIRECTORY="/home/christopher/silo-4.10.2/"  \
+    -D SILO_LIB="/home/christopher/silo-4.10.2/lib/libsiloh5.a" \
     -D CUDA_FLAGS="-arch sm_60 -Xcompiler -fPIC -std=c++11"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc-4.9" \
     -D USE_CUDA=1                        \
@@ -26,4 +30,4 @@ cmake                                    \
     /home/christopher/repos/LBPM-WIA
 
 make -j8 install
-make visit
+#make visit

@@ -1,4 +1,5 @@
 # Copy the examples to the install folder
+INSTALL_EXAMPLE (NonNewtonianChannelFlow )
 INSTALL_EXAMPLE( Bubble )
 INSTALL_EXAMPLE( ConstrainedBubble )
 INSTALL_EXAMPLE( Piston )
