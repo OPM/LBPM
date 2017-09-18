@@ -265,6 +265,9 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
+	
+	double flux = 0.f;
+	if (BoundaryCondition==4) flux = din;
 
     // Get the rank info
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);

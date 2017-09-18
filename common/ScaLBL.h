@@ -91,6 +91,13 @@ extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, do
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
+
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux,
+					 int Nx, int Ny, int Nz);
+
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux,
+					 int Nx, int Ny, int Nz, int outlet);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................

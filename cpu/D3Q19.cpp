@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
@@ -10,7 +12,7 @@ extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+/*extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
 	//....................................................................................
 	// Unack distribution from the recv buffer
@@ -31,29 +33,64 @@ extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,
 		i += Cqx;
 		j += Cqy;
 		k += Cqz;
-/*		if (i < 0) i += Nx;
-		if (j < 0) j += Ny;
-		if (k < 0) k += Nz;
-		if (!(i<Nx)) i -= Nx;
-		if (!(j<Ny)) j -= Ny;
-		if (!(k<Nz)) k -= Nz;
-*/
+
 		nn = k*Nx*Ny+j*Nx+i;
+
 		// unpack the distribution to the proper location
-	//	if (recvbuf[start+idx] != dist[q*N+nn]){
-	//		printf("Stopping to check error \n");
-	//		printf("recvbuf[start+idx] = %f \n",recvbuf[start+idx]);
-	//		printf("dist[q*N+nn] = %f \n",dist[q*N+nn]);
-	//		printf("A bug! Again? \n");
-	//		idx = count;
-	//	}
-//		list[idx] = nn;
-		// Don't unpack distributions into the solid phase
-		//		if (dist[q*N+nn] > 0.0)	dist[q*N+nn] = recvbuf[start+idx];
 		dist[q*N+nn] = recvbuf[start+idx];
+	}
+}*/
+
+
+extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list,  int start, int count,
+					   double *recvbuf, double *dist, int N){
+	//....................................................................................
+	// Unack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n,idx;
+	for (idx=0; idx<count; idx++){
+		// Get the value from the list -- note that n is the index is from the send (non-local) process
+		n = list[start+idx];
+		// unpack the distribution to the proper location
+		if (!(n<0)) dist[q*N+n] = recvbuf[start+idx];
+		//dist[q*N+n] = recvbuf[start+idx];
+
 	}
 }
 
+/*
+extern "C" void ScaLBL_D3Q19_MapRecv(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+					   int *d3q19_recvlist, int Nx, int Ny, int Nz){
+	//....................................................................................
+	// Map the recieve distributions to
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+
+	int i,j,k,n,nn,idx;
+	int N = Nx*Ny*Nz;
+	for (idx=0; idx<count; idx++){
+		// Get the value from the list -- note that n is the index is from the send (non-local) process
+		n = list[idx];
+		// Get the 3-D indices
+		k = n/(Nx*Ny);
+		j = (n-Nx*Ny*k)/Nx;
+		i = n-Nx*Ny*k-Nx*j;
+		// Streaming for the non-local distribution
+		i += Cqx;
+		j += Cqy;
+		k += Cqz;
+		// compute 1D index for the neighbor and save
+		nn = k*Nx*Ny+j*Nx+i;
+		d3q19_recvlist[start+idx] = nn;
+	}
+}
+
+*/
 extern "C" void ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -224,6 +261,280 @@ extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, i
 			//........................................................................
 			
 		}
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, double *distodd, int Np)
+{
+	int q,n,nn;
+	double f1,f2;
+	for (q=0; q<9; q++){
+		for (n=0; n<Np; n++){
+			nn = neighborList[q*Np+n];
+			if (!(nn<0)){
+				f1 = distodd[q*Np+n];
+				f2 = disteven[(q+1)*Np+nn];
+				disteven[(q+1)*Np+nn] = f1;
+				distodd[q*Np+n] = f2;
+			}
+		}
+	}
+}
+
+
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux,
+								  int Nx, int Ny, int Nz){
+	// Note that this routine assumes the distributions are stored "opposite"
+	// odd distributions in disteven and even distributions in distodd.
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double din = 0.f;
+	N = Nx*Ny*Nz;
+
+	double A = 1.f*double(Nx*Ny);
+	double sum = 0.f;
+	for (n=Nx*Ny; n<2*Nx*Ny; n++){
+
+		//........................................................................
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+		//...................................................
+
+		// Determine the outlet flow velocity
+		//sum += 1.0 - (f0+f4+f3+f2+f1+f8+f7+f9+ f10 + 2*(f5+ f15+f18+f11+f14))/din;
+		//sum += (f0+f4+f3+f2+f1+f8+f7+f9+ f10 + 2*(f5+f15+f18+f11+f14));
+		sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
+	}
+	din = sum/(A*(1.0-flux));
+	return din;
+}
+
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux,
+		int Nx, int Ny, int Nz, int outlet){
+	// Note that this routine assumes the distributions are stored "opposite"
+	// odd distributions in disteven and even distributions in distodd.
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double dout = 0.f;
+
+	N = Nx*Ny*Nz;
+
+	// Loop over the boundary - threadblocks delineated by start...finish
+	double A = 1.f*double(Nx*Ny);
+	double sum = 0.f;
+	for (n=outlet; n<N-Nx*Ny; n++){
+
+		//........................................................................
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+
+		sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
+
+	}
+	dout = sum/(A*(1.0+flux));
+	return dout;
+}
+
+extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
+								  int Nx, int Ny, int Nz)
+{
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double ux,uy,uz;
+
+	N = Nx*Ny*Nz;
+
+	double Cxz,Cyz;
+
+	for (n=Nx*Ny; n<2*Nx*Ny; n++){
+
+		//........................................................................
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+		//...................................................
+		//........Determine the inlet flow velocity.........
+		//			uz = -1 + (f0+f3+f4+f1+f2+f7+f8+f10+f9
+		//					   + 2*(f5+f15+f18+f11+f14))/din;
+		//........Set the unknown distributions..............
+		//			f6 = f5 - 0.3333333333333333*din*uz;
+		//			f16 = f15 - 0.1666666666666667*din*uz;
+		//			f17 = f16 - f3 + f4-f15+f18-f7+f8-f10+f9;
+		//			f12= 0.5*(-din*uz+f5+f15+f18+f11+f14-f6-f16-
+		//					  f17+f1-f2-f14+f11+f7-f8-f10+f9);
+		//			f13= -din*uz+f5+f15+f18+f11+f14-f6-f16-f17-f12;
+		// Determine the inlet flow velocity
+		ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
+		uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
+		uz = din - (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
+
+		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
+		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
+
+		f5 = f6 + 0.33333333333333338*uz;
+		f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
+		f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
+		f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
+		f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
+		//........Store in "opposite" memory location..........
+		distodd[2*N+n] = f5;
+		distodd[5*N+n] = f11;
+		disteven[7*N+n] = f14;
+		distodd[7*N+n] = f15;
+		disteven[9*N+n] = f18;
+		/*
+		printf("Site=%i\n",n);
+		printf("ux=%f, uy=%f, uz=%f\n",ux,uy,uz);
+		printf("Cxz=%f, Cyz=%f\n",Cxz,Cyz);
+		n = N;
+		*/
+		//...................................................
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
+								   int Nx, int Ny, int Nz, int outlet)
+{
+	int n,N;
+	// distributions
+	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double ux,uy,uz;
+
+	double Cxz,Cyz;
+	N = Nx*Ny*Nz;
+
+	// Loop over the boundary - threadblocks delineated by start...finish
+	for (n=outlet; n<N-Nx*Ny; n++){
+
+		//........................................................................
+		// Read distributions from "opposite" memory convention
+		//........................................................................
+		f1 = distodd[n];
+		f3 = distodd[N+n];
+		f5 = distodd[2*N+n];
+		f7 = distodd[3*N+n];
+		f9 = distodd[4*N+n];
+		f11 = distodd[5*N+n];
+		f13 = distodd[6*N+n];
+		f15 = distodd[7*N+n];
+		f17 = distodd[8*N+n];
+		//........................................................................
+		f0 = disteven[n];
+		f2 = disteven[N+n];
+		f4 = disteven[2*N+n];
+		f6 = disteven[3*N+n];
+		f8 = disteven[4*N+n];
+		f10 = disteven[5*N+n];
+		f12 = disteven[6*N+n];
+		f14 = disteven[7*N+n];
+		f16 = disteven[8*N+n];
+		f18 = disteven[9*N+n];
+		//........Determine the outlet flow velocity.........
+		//			uz = 1 - (f0+f3+f4+f1+f2+f7+f8+f10+f9+
+		//					  2*(f6+f16+f17+f12+f13))/dout;
+		//...................................................
+		//........Set the Unknown Distributions..............
+		//			f5 = f6 + 0.33333333333333338*dout*uz;
+		//			f15 = f16 + 0.16666666666666678*dout*uz;
+		//			f18 = f15+f3-f4-f16+f17+f7-f8+f10-f9;
+		//			f11= 0.5*(dout*uz+f6+ f16+f17+f12+f13-f5
+		//				  -f15-f18-f1+f2-f13+f12-f7+f8+f10-f9);
+		//			f14= dout*uz+f6+ f16+f17+f12+f13-f5-f15-f18-f11;
+		// Determine the outlet flow velocity
+		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		//uz = -1.0 + (f0+f4+f3+f2+f1+f8+f7+f9+f10 + 2*(f6+f16+f17+f12+f13))/dout;
+
+		// Determine the inlet flow velocity
+		ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		uz = -dout + (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
+
+		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
+		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
+
+		f6 = f5 - 0.33333333333333338*uz;
+		f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
+		f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
+		f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
+		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
+
+		//........Store in "opposite" memory location..........
+		disteven[3*N+n] = f6;
+		disteven[6*N+n] = f12;
+		distodd[6*N+n] = f13;
+		disteven[8*N+n] = f16;
+		distodd[8*N+n] = f17;
+		//...................................................
+
 	}
 }
 
