@@ -668,6 +668,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (BoundaryCondition ==4){
+	if (pBC && Dm.kproc == 0){
+	  din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+	  printf("Computed inlet pressure: %f \n", din);
+	  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	}
+
+	if (pBC && Dm.kproc == nprocz-1){
+	  dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  printf("Computed outlet pressure: %f \n", dout);
+	  ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	}
+	}
+
 	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
@@ -850,6 +864,17 @@ int main(int argc, char **argv)
 				ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 		}
+	if (BoundaryCondition ==4){
+	if (pBC && Dm.kproc == 0){
+	  din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+	  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	}
+
+	if (pBC && Dm.kproc == nprocz-1){
+	  dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	}
+	}
 
 		//...................................................................................
 
