@@ -8,6 +8,7 @@ INSTALL_EXAMPLE( drainage )
 INSTALL_EXAMPLE( imbibition )
 INSTALL_EXAMPLE( relperm )
 INSTALL_EXAMPLE( Poiseuille )
+INSTALL_EXAMPLE( Juanes )
 
 
 # Create unit tests for each example
