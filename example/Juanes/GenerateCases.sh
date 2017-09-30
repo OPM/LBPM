@@ -15,11 +15,11 @@ ImbWet="0.92 0.47"
 for q in $Q; do 
   echo $q;
   flux=$(echo $q | sed 's/1.179757e-08/0.002/g')
-  flux=$(echo $q | sed 's/1.179757e-07/0.02/g')
-  flux=$(echo $q | sed 's/1.179757e-06/0.2/g')
+  flux=$(echo $flux | sed 's/1.179757e-07/0.02/g')
+  flux=$(echo $flux | sed 's/1.179757e-06/0.2/g')
 
    for i in $DrainWet; do
-       NAME="Juanes_drain_Q_"$flux"_wet_"$i
+       NAME="Juanes_drain_Q"$flux"_wet"$i
        echo $NAME
        mkdir $NAME
        echo "$tau1 $tau2" > $NAME/Color.in
@@ -32,7 +32,7 @@ for q in $Q; do
    done
 
    for i in $ImbWet; do
-       NAME="Juanes_imb_Q_"$flux"_wet_"$i
+       NAME="Juanes_imb_Q"$flux"_wet"$i
        echo $NAME
        mkdir $NAME
        echo "$tau1 $tau2" > $NAME/Color.in
