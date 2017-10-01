@@ -444,6 +444,13 @@ int main(int argc, char **argv)
 	//.........................................................
 	// If external boundary conditions are applied remove solid
 	if (BoundaryCondition >  0  && Dm.kproc == 0){
+	  // zero out the first layer so that no comms are performed on that boundary
+	  for (j=0; j<Ny; j++){
+	    for (i=0; i<Nx; i++){
+	      int n = j*Nx+i;
+	      id[n] = 0;
+	    }
+	  }
 		for (k=0; k<3; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -455,6 +462,13 @@ int main(int argc, char **argv)
 		}
 	}
 	if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+	  // zero out the last layer so that no comms are performed on that boundary
+	  for (j=0; j<Ny; j++){
+	    for (i=0; i<Nx; i++){
+	      int n = (Nz-1)*Nx*Ny+j*Nx+i;
+	      id[n] = 0;
+	    }
+	  }
 		for (k=Nz-3; k<Nz; k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -480,16 +494,26 @@ int main(int argc, char **argv)
 	// Create a communicator for the device
 	ScaLBL_Communicator ScaLBL_Comm(Mask);
 
+	// Don't compute in the halo
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
+			}
+		}
+	}
+
 	// set reservoirs
 	if (BoundaryCondition > 0){
 		for ( k=0;k<Nz;k++){
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (Dm.kproc==0 && k==0)			id[n]=1;
+					//if (Dm.kproc==0 && k==0)			id[n]=1;
 					if (Dm.kproc==0 && k==1)			id[n]=1;
 					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					//if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
 					Mask.id[n] = id[n];
 				}
 			}
@@ -500,15 +524,7 @@ int main(int argc, char **argv)
 	if (rank==0)	printf ("Copy phase ID to device \n");
 	char *ID;
 	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-	// Don't compute in the halo
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
-			}
-		}
-	}
+
 	// Copy to the device
 	ScaLBL_CopyToDevice(ID, id, N);
 	ScaLBL_DeviceBarrier();
@@ -675,13 +691,13 @@ int main(int argc, char **argv)
 	if (BoundaryCondition ==4){
 	if (pBC && Dm.kproc == 0){
 	  din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
-	  printf("Computed inlet pressure: %f \n", din);
+	  printf("Flux = %f, Computed inlet pressure: %f \n",flux,din);
 	  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 	}
 
 	if (pBC && Dm.kproc == nprocz-1){
 	  dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	  printf("Computed outlet pressure: %f \n", dout);
+	  printf("Flux = %f, Computed outlet pressure: %f \n",flux,dout);
 	  ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 	}
 	}
