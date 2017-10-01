@@ -308,6 +308,7 @@ int main(int argc, char **argv)
 		if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
 		if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
 		if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
+		if (BoundaryCondition==4) printf("Average flux boundary conditions will be applied \n");
 		if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
 		if (InitialCondition==1) printf("Initial conditions assigned from restart file \n");
 		printf("********************************************************\n");
@@ -315,7 +316,7 @@ int main(int argc, char **argv)
 
 	// Initialized domain and averaging framework for Two-Phase Flow
 	bool pBC,velBC;
-	if (BoundaryCondition==1 || BoundaryCondition==3)
+	if (BoundaryCondition==1 || BoundaryCondition==3 || BoundaryCondition == 4)
 								pBC=true;
 	else						pBC=false;
 	if (BoundaryCondition==2)	velBC=true;
