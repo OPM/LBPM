@@ -20,7 +20,7 @@ ADD_LBPM_EXECUTABLE( lbpm_inkbottle_pp )
 ADD_LBPM_EXECUTABLE( lbpm_plates_pp )
 ADD_LBPM_EXECUTABLE( lbpm_squaretube_pp )
 ADD_LBPM_EXECUTABLE( lbpm_BlobAnalysis )
-ADD_LBPM_EXECUTABLE( TestBubble )
+#ADD_LBPM_EXECUTABLE( TestBubble )
 ADD_LBPM_EXECUTABLE( ComponentLabel )
 ADD_LBPM_EXECUTABLE( ColorToBinary )
 ADD_LBPM_EXECUTABLE( BlobAnalysis )
@@ -33,7 +33,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_
 
 # Add the tests
 ADD_LBPM_TEST( pmmc_cylinder )
-ADD_LBPM_TEST( TestBubble )
+#ADD_LBPM_TEST( TestBubble )
 ADD_LBPM_TEST( TestTorus )
 ADD_LBPM_TEST( TestFluxBC )
 ADD_LBPM_TEST( TestInterfaceSpeed )

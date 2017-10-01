@@ -662,7 +662,6 @@ int main(int argc, char **argv)
 		//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 	}
-
 	// Set dynamic pressure boundary conditions
 	double dp, slope;
 	dp = slope = 0.0;
@@ -687,18 +686,6 @@ int main(int argc, char **argv)
 	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
 	ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 
-	/*	if (BoundaryCondition==1 && Mask.kproc == 0){
-	  for (n=Nx*Ny; n<2*Nx*Ny; n++){
-	    if (Mask.id[n]>0 && 3.0*Pressure[n] != din) printf("Inlet pBC error: %f != %f \n",3.0*Pressure[n],din);
-	  }
-	}
-
-	if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
-	  for (n=Nx*Ny*(Nz-2); n<Nx*Ny*(Nz-1); n++){
-	    if (Mask.id[n]>0 && 3.0*Pressure[n] != dout) printf("Outlet pBC error: %f != %f \n",3.0*Pressure[n],din);
-	  }
-	}
-	*/
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	ScaLBL_DeviceBarrier();
