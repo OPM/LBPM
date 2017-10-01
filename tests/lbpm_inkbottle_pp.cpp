@@ -41,12 +41,12 @@ int main(int argc, char **argv)
 	double TubeRadius =15.0;
 	int BC;
 	int BubbleTop,BubbleBottom;
-	int BulbRadius;
+	double BulbRadius;
 	TubeRadius=strtod(argv[1],NULL);
 	BC=atoi(argv[2]);
 	BubbleBottom = atoi(argv[3]);
 	BubbleTop = atoi(argv[4]);
-	BulbRadius = atoi(argv[5]);
+	BulbRadius=strtod(argv[5],NULL);
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -161,10 +161,9 @@ int main(int argc, char **argv)
 				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
 									+ (j-Ny/2)*(j-Ny/2)));
 
-				BulbDist = BulbRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
-													+ (j-Ny/2)*(j-Ny/2)) + (k-Nz/2)*(k-Nz/2));
+				BulbDist = BulbRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)+ (j-Ny/2)*(j-Ny/2) + (k-Nz/2)*(k-Nz/2)));
 
-				if (BulbDist < Averages.SDs(i,j,k)) Averages.SDs(i,j,k) = BulbDist;
+				if (BulbDist > Averages.SDs(i,j,k)) Averages.SDs(i,j,k) = BulbDist;
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
