@@ -688,18 +688,33 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (BoundaryCondition ==4){
-	if (pBC && Dm.kproc == 0){
-	  din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
-	  printf("Flux = %f, Computed inlet pressure: %f \n",flux,din);
-	  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-	}
+	if (BoundaryCondition==4){
+	  din=0.f;
+	  dout=0.f;
+	  if (pBC && Dm.kproc == 0){
+	     din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+	  }
+	  double tmpdin=din;
+	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 
-	if (pBC && Dm.kproc == nprocz-1){
-	  dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	  printf("Flux = %f, Computed outlet pressure: %f \n",flux,dout);
-	  ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	}
+	  if (pBC && Dm.kproc == nprocz-1){
+	    dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  }
+	  double tmpdout=dout;
+	  MPI_Allreduce(&tmpdout,&dout,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+
+	  din=din/(1.0*Dm.nprocx*Dm.nprocy);
+	  dout=dout/(1.0*Dm.nprocx*Dm.nprocy);
+
+	  if (pBC && Dm.kproc == 0){
+	    printf("Flux = %f, Computed inlet pressure: %f \n",flux,din);
+	    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	  }
+
+	  if (pBC && Dm.kproc == nprocz-1){
+	    printf("Flux = %f, Computed outlet pressure: %f \n",flux,dout);
+	    ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  }
 	}
 
 	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
@@ -884,16 +899,32 @@ int main(int argc, char **argv)
 				ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			}
 		}
-	if (BoundaryCondition ==4){
-	if (pBC && Dm.kproc == 0){
-	  din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
-	  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-	}
 
-	if (pBC && Dm.kproc == nprocz-1){
-	  dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	  ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	}
+	if (BoundaryCondition==4){
+	  din=0.f;
+	  dout=0.f;
+	  if (pBC && Dm.kproc == 0){
+	     din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+	  }
+	  double tmpdin=din;
+	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+
+	  if (pBC && Dm.kproc == nprocz-1){
+	    dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  }
+	  double tmpdout=dout;
+	  MPI_Allreduce(&tmpdout,&dout,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+
+	  din=din/(1.0*Dm.nprocx*Dm.nprocy);
+	  dout=dout/(1.0*Dm.nprocx*Dm.nprocy);
+
+	  if (pBC && Dm.kproc == 0){
+	    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	  }
+
+	  if (pBC && Dm.kproc == nprocz-1){
+	    ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	  }
 	}
 
 		//...................................................................................
