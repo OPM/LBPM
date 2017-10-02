@@ -481,8 +481,100 @@ ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 }
 
 ScaLBL_Communicator::~ScaLBL_Communicator(){
-	// destrutor does nothing (bad idea)
-	// -- note that there needs to be a way to free memory allocated on the device!!!
+    // Free communicator
+    MPI_Comm_free(&MPI_COMM_SCALBL);
+    MPI_Group_free(&Group);
+    // Free internal memory
+	ScaLBL_FreeDeviceMemory( sendbuf_x );
+	ScaLBL_FreeDeviceMemory( sendbuf_X );
+	ScaLBL_FreeDeviceMemory( sendbuf_y );
+	ScaLBL_FreeDeviceMemory( sendbuf_Y );
+	ScaLBL_FreeDeviceMemory( sendbuf_z );
+	ScaLBL_FreeDeviceMemory( sendbuf_Z );
+	ScaLBL_FreeDeviceMemory( sendbuf_xy );
+	ScaLBL_FreeDeviceMemory( sendbuf_xY );
+	ScaLBL_FreeDeviceMemory( sendbuf_Xy );
+	ScaLBL_FreeDeviceMemory( sendbuf_XY );
+	ScaLBL_FreeDeviceMemory( sendbuf_xz );
+	ScaLBL_FreeDeviceMemory( sendbuf_xZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_Xz );
+	ScaLBL_FreeDeviceMemory( sendbuf_XZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_yz );
+	ScaLBL_FreeDeviceMemory( sendbuf_yZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_Yz );
+	ScaLBL_FreeDeviceMemory( sendbuf_YZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_x );
+	ScaLBL_FreeDeviceMemory( recvbuf_X );
+	ScaLBL_FreeDeviceMemory( recvbuf_y );
+	ScaLBL_FreeDeviceMemory( recvbuf_Y );
+	ScaLBL_FreeDeviceMemory( recvbuf_z );
+	ScaLBL_FreeDeviceMemory( recvbuf_Z );
+	ScaLBL_FreeDeviceMemory( recvbuf_xy );
+	ScaLBL_FreeDeviceMemory( recvbuf_xY );
+	ScaLBL_FreeDeviceMemory( recvbuf_Xy );
+	ScaLBL_FreeDeviceMemory( recvbuf_XY );
+	ScaLBL_FreeDeviceMemory( recvbuf_xz );
+	ScaLBL_FreeDeviceMemory( recvbuf_xZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_Xz );
+	ScaLBL_FreeDeviceMemory( recvbuf_XZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_yz );
+	ScaLBL_FreeDeviceMemory( recvbuf_yZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_Yz );
+	ScaLBL_FreeDeviceMemory( recvbuf_YZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_x );
+	ScaLBL_FreeDeviceMemory( dvcSendList_X );
+	ScaLBL_FreeDeviceMemory( dvcSendList_y );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Y );
+	ScaLBL_FreeDeviceMemory( dvcSendList_z );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Z );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xy );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xY );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Xy );
+	ScaLBL_FreeDeviceMemory( dvcSendList_XY );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Xz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_XZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_yz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_yZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Yz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_YZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_x );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_X );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_y );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Y );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_z );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Z );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xY );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_XY );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_XZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_yZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_YZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_x );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_X );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_y );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Y );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_z );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Z );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xY );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_XY );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_XZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_yZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
 
 void ScaLBL_Communicator::D3Q19_MapRecv(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,

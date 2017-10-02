@@ -117,7 +117,7 @@ int main (int argc, char **argv)
 
 		printf("Copying velocity to host \n");
 		double * vel;
-		vel = new double [N];
+		vel = new double [3*N];
 		ScaLBL_CopyToHost(vel,dvc_vel,3*N*sizeof(double));
 
 		// Check the first layer

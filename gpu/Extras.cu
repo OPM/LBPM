@@ -10,6 +10,11 @@ extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
 	}	
 }
 
+extern "C" void ScaLBL_FreeDeviceMemory(void* address){
+	if ( address != NULL )
+        cudaFree( address );
+}
+
 extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){
 	cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
 	cudaError_t err = cudaGetLastError();

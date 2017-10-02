@@ -113,7 +113,6 @@ int main(int argc, char **argv)
 
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
-	int iproc,jproc,kproc;
 
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
@@ -268,7 +267,6 @@ int main(int argc, char **argv)
 
     // Get the rank info
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-
 	MPI_Barrier(comm);
 	
 	// **************************************************************
