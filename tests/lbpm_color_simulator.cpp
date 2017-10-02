@@ -654,13 +654,15 @@ int main(int argc, char **argv)
 	if (BoundaryCondition==2 && Mask.kproc == 0)	{
 		ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+		ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,0);
 	}
 
 	if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 		ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+		ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);	
+		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,Nz-1);
 	}
 	// Set dynamic pressure boundary conditions
 	double dp, slope;
@@ -857,13 +859,13 @@ int main(int argc, char **argv)
 		// Velocity boundary conditions
 		if (BoundaryCondition==2 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-			//ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			//ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,Nz-1);
 		}
 
 		if (BoundaryCondition==3){
