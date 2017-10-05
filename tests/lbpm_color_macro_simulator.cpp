@@ -10,11 +10,9 @@
 #include "common/Communication.h"
 #include "common/TwoPhase.h"
 #include "common/MPI_Helpers.h"
-
 #include "ProfilerApp.h"
-//#include "threadpool/thread_pool.h"
-
-//#include "lbpm_color_simulator.h"
+#include "threadpool/thread_pool.h"
+#include "lbpm_color_simulator.h"
 
 /*
  * Simulator for two-phase flow in porous media
@@ -330,8 +328,8 @@ int main(int argc, char **argv)
 	// Full domain used for averaging (do not use mask for analysis)
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-	//	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-        TwoPhase Averages(Dm);
+	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+    //   TwoPhase Averages(Dm);
 	Dm.CommInit(comm);
 
 	// Mask that excludes the solid phase
@@ -377,7 +375,8 @@ int main(int argc, char **argv)
 //	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 //	WriteLocalSolidID(LocalRankFilename, id, N);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
+//	ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
+	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
 	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	
@@ -398,11 +397,11 @@ int main(int argc, char **argv)
 		for ( j=0;j<Ny;j++){
 			for ( i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
-				if (Averages.SDs(n) > 0.0){
+				if (Averages->SDs(n) > 0.0){
 					id[n] = 2;	
 				}
 				// compute the porosity (actual interface location used)
-				if (Averages.SDs(n) > 0.0){
+				if (Averages->SDs(n) > 0.0){
 					sum++;	
 				}
 			}
@@ -456,7 +455,9 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 1;
-					Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
+					//Averages.SDs(n) = max(Averages.SDs(n),1.0*(2.5-k));
+					Averages->SDs(n) = max(Averages->SDs(n),1.0*(2.5-k));
+
 				}					
 			}
 		}
@@ -474,7 +475,8 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 2;
-					Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
+					//Averages.SDs(n) = max(Averages.SDs(n),1.0*(k-Nz+2.5));
+					Averages->SDs(n) = max(Averages->SDs(n),1.0*(k-Nz+2.5));
 				}					
 			}
 		}
@@ -558,7 +560,8 @@ int main(int argc, char **argv)
 	//...........................................................................
 
 	// Copy signed distance for device initialization
-	ScaLBL_CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
+	//ScaLBL_CopyToDevice(dvcSignDist, Averages.SDs.data(), dist_mem_size);
+	ScaLBL_CopyToDevice(dvcSignDist, Averages->SDs.data(), dist_mem_size);
 	//...........................................................................
 
 	int logcount = 0; // number of surface write-outs
@@ -616,13 +619,15 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	// Once phase has been initialized, map solid to account for 'smeared' interface
-	for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0);
+	//for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0);
 	// Make sure the id match for the two domains
 	for (i=0; i<N; i++)	Dm.id[i] = Mask.id[i];
 	//.......................................................................
 	// Finalize setup for averaging domain
 	//Averages.SetupCubes(Mask);
-	Averages.UpdateSolid();
+//	Averages.UpdateSolid();
+	Averages->UpdateSolid();
+
 	//.......................................................................
 	
 	//*************************************************************************
@@ -725,7 +730,9 @@ int main(int argc, char **argv)
 	//...........................................................................
 	// Copy the phase indicator field for the earlier timestep
 	ScaLBL_DeviceBarrier();
-	ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
+	//ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Phase_tplus.data(),Phi,N*sizeof(double));
+
 	//...........................................................................
 	//...........................................................................
 	// Copy the data for for the analysis timestep
@@ -734,11 +741,11 @@ int main(int argc, char **argv)
 	//...........................................................................
 	ScaLBL_DeviceBarrier();
 	ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-	ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-	ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-	ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-	ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Press.data(),Pressure,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Vel_x.data(),&Velocity[0],N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Vel_y.data(),&Velocity[N],N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Vel_z.data(),&Velocity[2*N],N*sizeof(double));
 	//...........................................................................
 	
 	if (rank==0) printf("********************************************************\n");
@@ -754,7 +761,20 @@ int main(int argc, char **argv)
 	err = 1.0; 	
 	double sat_w_previous = 1.01; // slightly impossible value!
 	if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
-
+    // Create the thread pool
+    int N_threads = 4;
+    if ( provided_thread_support < MPI_THREAD_MULTIPLE )
+        N_threads = 0;
+    if ( N_threads > 0 ) {
+        // Set the affinity
+        int N_procs = ThreadPool::getNumberOfProcessors();
+        std::vector<int> procs(N_procs);
+        for (int i=0; i<N_procs; i++)
+            procs[i] = i;
+        ThreadPool::setProcessAffinity(procs);
+    }
+    ThreadPool tpool(N_threads);
+    
     // Create the MeshDataStruct
     fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
     std::vector<IO::MeshDataStruct> meshData(1);
@@ -787,7 +807,10 @@ int main(int argc, char **argv)
 
 	//************ MAIN ITERATION LOOP ***************************************/
     PROFILE_START("Loop");
-
+    BlobIDstruct last_ids, last_index;
+    BlobIDList last_id_map;
+    writeIDMap(ID_map_struct(),0,id_map_filename);
+    AnalysisWaitIdStruct work_ids;
 	while (timestep < timestepMax && err > tol ) {
         //if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
@@ -940,81 +963,16 @@ int main(int argc, char **argv)
 		timestep++;
   
         // Run the analysis
-	//if (timestep > 5)
-		//...................................................................
-		if (timestep%1000 == 995){
-			//...........................................................................
-			// Copy the phase indicator field for the earlier timestep
-			ScaLBL_DeviceBarrier();
-			ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
-	//		Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
-			//...........................................................................
-		}
-		if (timestep%1000 == 0){
-			//...........................................................................
-			// Copy the data for for the analysis timestep
-			//...........................................................................
-			// Copy the phase from the GPU -> CPU
-			//...........................................................................
-			ScaLBL_DeviceBarrier();
-			ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
-			ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-			ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-			ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-			ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-			ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
-		if (timestep%1000 == 5){
-			//...........................................................................
-			// Copy the phase indicator field for the later timestep
-			ScaLBL_DeviceBarrier();
-			ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
-//			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
-			//....................................................................
-            Averages.Initialize();
-            Averages.ComputeDelPhi();
-            Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
-            Averages.UpdateMeshValues();
-            Averages.ComputeLocal();
-            Averages.Reduce();
-            Averages.PrintAll(timestep);
-			//....................................................................
-		}
-
-		if (timestep%RESTART_INTERVAL == 0){
-			if (pBC){
-				//err = fabs(sat_w - sat_w_previous);
-				//sat_w_previous = sat_w;
-				if (rank==0) printf("Timestep %i: change in saturation since last checkpoint is %f \n", timestep, err);
-			}
-			else{
-				// Not clear yet
-			}
-			// Copy the data to the CPU
-	    double *cDen = new double[2*N];
-	    double *cDistEven = new double[10*N];
-	    double *cDistOdd = new double[9*N];
-
-			ScaLBL_CopyToHost(cDistEven,f_even,10*N*sizeof(double));
-			ScaLBL_CopyToHost(cDistOdd,f_odd,9*N*sizeof(double));
-			ScaLBL_CopyToHost(cDen,Den,2*N*sizeof(double));
-			// Read in the restart file to CPU buffers
-			WriteCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
-
-	    delete [] cDen;
-	    delete [] cDistEven;
-	    delete [] cDistOdd;
-
-		}
+		  run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
+	            Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
+	            LocalRestartFile,meshData,fillData,tpool,work_ids);
 
 
         // Save the timers
         if ( timestep%50==0 )
             PROFILE_SAVE("lbpm_color_simulator",1);
 	}
+    tpool.wait_pool_finished();
     PROFILE_STOP("Loop");
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
@@ -1034,44 +992,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("********************************************************\n");
 	
 	// ************************************************************************
-/*	// Perform component averaging and write tcat averages
-	Averages.Initialize();
-	Averages.ComponentAverages();
-	Averages.SortBlobs();
-	Averages.PrintComponents(timestep);
-	// ************************************************************************
 
-	int NumberComponents_NWP = ComputeGlobalPhaseComponent(Mask.Nx-2,Mask.Ny-2,Mask.Nz-2,Mask.rank_info,Averages.PhaseID,1,Averages.Label_NWP);
-	printf("Number of non-wetting phase components: %i \n ",NumberComponents_NWP);
-	ScaLBL_DeviceBarrier();
-	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-*/
-    
-/*	Averages.WriteSurfaces(0);
-
-	sprintf(LocalRankFilename,"%s%s","Phase.",LocalRankString);
-	FILE *PHASE;
-	PHASE = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.SDn.data(),8,N,PHASE);
-	fclose(PHASE);
-	*/
-
-	/*	sprintf(LocalRankFilename,"%s%s","Pressure.",LocalRankString);
-	FILE *PRESS;
-	PRESS = fopen(LocalRankFilename,"wb");
-	fwrite(Averages.Press.data(),8,N,PRESS);
-	fclose(PRESS);
-
-	ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-	double * Grad;
-	Grad = new double [3*N];
-	ScaLBL_CopyToHost(Grad,ColorGrad,3*N*sizeof(double));
-	sprintf(LocalRankFilename,"%s%s","ColorGrad.",LocalRankString);
-	FILE *GRAD;
-	GRAD = fopen(LocalRankFilename,"wb");
-	fwrite(Grad,8,3*N,GRAD);
-	fclose(GRAD);
-	*/
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
