@@ -118,6 +118,7 @@ int main(int argc, char **argv)
 	char *id;
 	id = new char[N];
 
+
 	// Define communication sub-domain -- everywhere
 	for (int k=0; k<nz; k++){
 		for (int j=0; j<ny; j++){
@@ -149,6 +150,13 @@ int main(int argc, char **argv)
 	*/
 	Dm.CommInit(comm);
 
+
+	int xdim,ydim,zdim;
+	xdim=Dm.Nx-2;
+	ydim=Dm.Ny-2;
+	zdim=Dm.Nz-2;
+	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
 	sprintf(LocalRankFilename,"SignDist.%05i",rank);
@@ -157,6 +165,8 @@ int main(int argc, char **argv)
 	ReadSignDist=fread(SignDist.data(),8,N,DIST);
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
+
+	fillData.fill(SignDist);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	size_t readID;

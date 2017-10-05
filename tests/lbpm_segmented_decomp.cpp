@@ -38,10 +38,10 @@ int main(int argc, char **argv)
 			printf("NWP Label: %i \n",NWP);
 		}
 		if (argc > 3){
+			MULTINPUT=true;
 			rank_offset = atoi(argv[3]);
 		}
 		else{
-			MULTINPUT=true;
 			rank_offset=0;
 		}
 
