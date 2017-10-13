@@ -38,19 +38,23 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
-	double TubeRadius =15.0;
+	double UpperTubeRadius =15.0;
+	double LowerTubeRadius =15.0;
 	int BC;
 	int BubbleTop,BubbleBottom;
 	double BulbRadius;
-	TubeRadius=strtod(argv[1],NULL);
-	BC=atoi(argv[2]);
-	BubbleBottom = atoi(argv[3]);
-	BubbleTop = atoi(argv[4]);
-	BulbRadius=strtod(argv[5],NULL);
+	LowerTubeRadius=strtod(argv[1],NULL);
+	LowerTubeRadius=strtod(argv[2],NULL);
+	BulbRadius=strtod(argv[3],NULL);
+	BubbleBottom = atoi(argv[4]);
+	BubbleTop = atoi(argv[5]);
+
+	BC=0;
 
 	if (rank == 0){
 		printf("********************************************************\n");
-		printf("Generate ink bottle geometry with tube radius = %f voxels, bulb radius %f voxels \n",TubeRadius,BulbRadius);
+		printf("Generate ink bottle geometry");
+		printf(	" lower tube radius = %f, upper tube radius=%f, bulb radius %f voxels \n",LowerTubeRadius,UpperTubeRadius,BulbRadius);
 		printf("********************************************************\n");
 	}
 
@@ -158,12 +162,17 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
+				if (k<Nz/2)
+					Averages.SDs(i,j,k) = LowerTubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
+									+ (j-Ny/2)*(j-Ny/2)));
+				else
+					Averages.SDs(i,j,k) = UpperTubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
 									+ (j-Ny/2)*(j-Ny/2)));
 
 				BulbDist = BulbRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)+ (j-Ny/2)*(j-Ny/2) + (k-Nz/2)*(k-Nz/2)));
 
 				if (BulbDist > Averages.SDs(i,j,k)) Averages.SDs(i,j,k) = BulbDist;
+
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
