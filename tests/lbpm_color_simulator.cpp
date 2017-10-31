@@ -535,7 +535,9 @@ int main(int argc, char **argv)
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
-	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
+	ScaLBL_AllocateDeviceMvis60000/
+vis80000/
+emory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
@@ -666,9 +668,9 @@ int main(int argc, char **argv)
 	double dp, slope;
 	dp = slope = 0.0;
 	if (BoundaryCondition==3){
-		slope = (dout-din)/timestepMax;
-		dp = din + timestep*slope;
-		if (rank==0) printf("Change in pressure / time =%f \n",slope);
+		slope = abs(dout-din)/timestepMax;
+		dp = abs(timestep)*slope;
+		if (rank==0) printf("Change in pressure / time =%.3e \n",slope);
 		// set the initial value
 		din  = 1.0+0.5*dp;
 		dout = 1.0-0.5*dp;
