@@ -676,9 +676,9 @@ int main(int argc, char **argv)
 	double dp, slope;
 	dp = slope = 0.0;
 	if (BoundaryCondition==3){
-		slope = (dout-din)/timestepMax;
-		dp = din + timestep*slope;
-		if (rank==0) printf("Change in pressure / time =%f \n",slope);
+		slope = abs(dout-din)/timestepMax;
+		dp = abs(timestep)*slope;
+		if (rank==0) printf("Change in pressure / time =%.3e \n",slope);
 		// set the initial value
 		din  = 1.0+0.5*dp;
 		dout = 1.0-0.5*dp;
