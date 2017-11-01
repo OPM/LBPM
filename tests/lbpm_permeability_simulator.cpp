@@ -225,9 +225,9 @@ int main(int argc, char **argv)
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("tau = %f \n", tau);
-		printf("Force(x) = %f \n", Fx);
-		printf("Force(y) = %f \n", Fy);
-		printf("Force(z) = %f \n", Fz);
+		printf("Force(x) = %.5g \n", Fx);
+		printf("Force(y) = %.5g \n", Fy);
+		printf("Force(z) = %.5g \n", Fz);
 		printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
 		printf("Process grid = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		printf("********************************************************\n");
