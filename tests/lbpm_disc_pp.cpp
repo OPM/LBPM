@@ -224,8 +224,10 @@ int main(int argc, char **argv)
 	 
 	 MPI_Barrier(comm);
 
+	Nx += 2;
+	Ny += 2;
 	Nz += 2;
-	Nx = Ny = Nz;	// Cubic domain
+	//Nx = Ny = Nz;	// Cubic domain
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -371,6 +373,13 @@ int main(int argc, char **argv)
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
+
+
+        sprintf(LocalRankFilename,"ID.%05i",rank);
+        FILE *ID = fopen(LocalRankFilename,"wb");
+        fwrite(id,1,N,ID);
+        fclose(ID);
+
 
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
