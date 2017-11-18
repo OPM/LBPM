@@ -10,7 +10,7 @@ INSTALL_EXAMPLE( imbibition )
 INSTALL_EXAMPLE( relperm )
 INSTALL_EXAMPLE( Poiseuille )
 INSTALL_EXAMPLE( Juanes )
-INSTALL_EXAMPLE( Micromodel )
+INSTALL_EXAMPLE( MicroModel )
 
 
 # Create unit tests for each example
