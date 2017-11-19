@@ -932,7 +932,7 @@ int main(int argc, char **argv)
           din=0.f;
           //dout=0.f;
           if (pBC && Dm.kproc == 0){
-             din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+	    din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,Nx,Ny,Nz);
           }
           double tmpdin=din;
           MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);

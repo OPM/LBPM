@@ -99,7 +99,7 @@ int main (int argc, char **argv)
 
 		//printf("kproc=%i \n",Dm.kproc);
 		if (pBC && Dm.kproc == 0){
-			din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
+		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,Nx,Ny,Nz);
 			printf("Computed inlet pressure: %f \n", din);
 			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		}
