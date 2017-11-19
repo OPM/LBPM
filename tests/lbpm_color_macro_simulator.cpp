@@ -487,16 +487,6 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 
-	// Initialize communication structures in averaging domain
-	for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
-	Mask.CommInit(comm);
-
-	//...........................................................................
-	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-	// Create a communicator for the device
-	ScaLBL_Communicator ScaLBL_Comm(Mask);
-
-
 	// set reservoirs
 	if (BoundaryCondition > 0){
 		for ( k=0;k<Nz;k++){
@@ -513,11 +503,20 @@ int main(int argc, char **argv)
 		}
 	}
 
+
+	// Initialize communication structures in averaging domain
+	for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
+	Mask.CommInit(comm);
+
+	//...........................................................................
+	if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device
+	ScaLBL_Communicator ScaLBL_Comm(Mask);
+
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copy phase ID to device \n");
 	char *ID;
 	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-
 	// Don't compute in the halo
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -947,11 +946,6 @@ int main(int argc, char **argv)
 		  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 		  din=din/(1.0*Dm.nprocx*Dm.nprocy);
 
-		  if (rank==0){
-		    printf("Using flux boundary condition \n");
-		    printf("   flux = %f \n",flux);
-		    printf("   inlet pressure: %f \n",dout);
-		  }
 
 		  if (pBC && Dm.kproc == 0){
 		    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
