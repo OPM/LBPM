@@ -215,6 +215,7 @@ int main(int argc, char **argv)
 		//inlet_radius=atoi(argv[1]);
 		//outlet_radius=atoi(argv[2]);
 	}
+
 	else{
 	  INSIST(argc==3,"Did not provide correct input arguments!");
 	}
@@ -319,6 +320,8 @@ int main(int argc, char **argv)
 	inlet_radius = int(nprocx*Nx*(Rin/Lx));
 	outlet_radius = int(nprocx*Nx*(Rout/Lx));
 
+	//inlet_radius=int(Rin);
+	//outlet_radius=int(Rout);
 	if (rank ==0) printf("Compute the signed distance part II \n");
 	if (rank ==0) printf("     Inlet radius = %i \n",inlet_radius);
 	if (rank ==0) printf("     Outlet radius = %i \n",outlet_radius);
@@ -374,9 +377,26 @@ int main(int argc, char **argv)
 	for ( k=1;k<Nz-1;k++){
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
+
+				// global index
+				int gi = iproc*Nx + i;
+				int gj = jproc*Ny + j;
+
+				// distance to the bottom layer
+				double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
+				double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
+				double dist_to_inlet = double(inlet_radius) - sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y)));
+				double dist_to_outlet = sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y))) - double(outlet_radius);
+
+				//printf("%f \n",dist_to_inlet);
 				n = k*Nx*Ny+j*Nx+i;
+
 				if (SignDist(n) > 0.0){
-					id[n] = 2;
+					if (k<4) 						id[n]=1;
+					else if (k>Nz-6)    				id[n]=2;
+					else if (dist_to_inlet > 0.f) 	id[n]=1;
+					else if (dist_to_outlet > 0.f) 	id[n]=2;
+					else 							id[n]=2;
 				}
 				// compute the porosity (actual interface location used)
 				if (SignDist(n) > 0.0){
@@ -416,12 +436,24 @@ int main(int argc, char **argv)
 	fwrite(id,1,N,ID);
 	fclose(ID);
 	
+	if (rank==0) printf("Writing mirror domain\n");
+	char * mirror;
+	mirror = new char [N];
+	  for (n=0; n<N; n++){
+		int nm = N-1-n;
+		mirror[n] = id[nm];
+	  }
+	  
+	sprintf(LocalRankFilename,"mirrorID.%05i",rank);
+	FILE *MIR = fopen(LocalRankFilename,"wb");
+	fwrite(mirror,1,N,MIR);
+	fclose(MIR);
+
 	//.......................................................................
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	WriteLocalSolidDistance(LocalRankFilename, SignDist.data(), N);
 	//......................................................................
-
 
 	// ****************************************************
 	MPI_Barrier(comm);
