@@ -496,15 +496,6 @@ int main(int argc, char **argv)
 	// Create a communicator for the device
 	ScaLBL_Communicator ScaLBL_Comm(Mask);
 
-	// Don't compute in the halo
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
-			}
-		}
-	}
 
 	// set reservoirs
 	if (BoundaryCondition > 0){
@@ -512,10 +503,10 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					//if (Dm.kproc==0 && k==0)			id[n]=1;
+					if (Dm.kproc==0 && k==0)			id[n]=1;
 					if (Dm.kproc==0 && k==1)			id[n]=1;
 					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					//if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
 					Mask.id[n] = id[n];
 				}
 			}
@@ -527,6 +518,15 @@ int main(int argc, char **argv)
 	char *ID;
 	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 
+	// Don't compute in the halo
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
+			}
+		}
+	}
 	// Copy to the device
 	ScaLBL_CopyToDevice(ID, id, N);
 	ScaLBL_DeviceBarrier();
@@ -843,7 +843,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
-  //		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
+  		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
 
 		ScaLBL_DeviceBarrier();
