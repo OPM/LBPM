@@ -649,6 +649,7 @@ int main(int argc, char **argv)
 	if (BoundaryCondition==1 && Mask.kproc == 0)	{
 		ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,0);
 	}
 		
 	if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
@@ -696,6 +697,16 @@ int main(int argc, char **argv)
 	// Set flux boundary condition
 	if (BoundaryCondition==4){
 	  din=0.f;
+	  double Area=double(Dm.nprocx*Dm.nprocy*(Dm.Nx-2)*(Dm.Ny-2));
+	  if (rank==0){
+	    printf("Using flux boundary condition \n");
+	    printf("   flux = %f \n",flux);
+	    printf("   area = %f \n",Area);
+	    printf("   Q = %f \n",flux*Area);
+	    printf("   dsw /dt  = %f (expected)\n",flux/(porosity*double(Dm.nprocz*(Dm.Nz-2))));
+	    printf("   outlet pressure: %f \n",dout);
+
+	  }
 	  if (pBC && Dm.kproc == 0){
 	     din = ScaLBL_D3Q19_Flux_BC_z(f_even,f_odd,flux,Nx,Ny,Nz);
 	  }
@@ -832,7 +843,7 @@ int main(int argc, char **argv)
 		//*************************************************************************
 		// 		Swap the distributions for momentum transport
 		//*************************************************************************
-		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
+  //		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
 		//*************************************************************************
 
 		ScaLBL_DeviceBarrier();
