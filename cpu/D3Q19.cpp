@@ -309,19 +309,19 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			f8 = distodd[3*N+n];
 			f10 = distodd[4*N+n];
 			f12 = distodd[5*N+n];
-			f14 = distodd[6*N+n];
+			//f14 = distodd[6*N+n];
 			f16 = distodd[7*N+n];
-			f18 = distodd[8*N+n];
+			//f18 = distodd[8*N+n];
 			//........................................................................
 			f0 = disteven[n];
 			f1 = disteven[N+n];
 			f3 = disteven[2*N+n];
-			f5 = disteven[3*N+n];
+			//f5 = disteven[3*N+n];
 			f7 = disteven[4*N+n];
 			f9 = disteven[5*N+n];
-			f11 = disteven[6*N+n];
+			//f11 = disteven[6*N+n];
 			f13 = disteven[7*N+n];
-			f15 = disteven[8*N+n];
+			//f15 = disteven[8*N+n];
 			f17 = disteven[9*N+n];
 			//...................................................
 
@@ -335,7 +335,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 	return din;
 }
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux,
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux,
 		int Nx, int Ny, int Nz, int outlet){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -344,40 +344,41 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double dout = 0.f;
-
 	N = Nx*Ny*Nz;
 
 	// Loop over the boundary - threadblocks delineated by start...finish
-	double A = 1.f*double(Nx*Ny);
+	double A = 1.f*double((Nx-2)*(Ny-2));
 	double sum = 0.f;
+    char id;
 	for (n=outlet; n<N-Nx*Ny; n++){
+        id = ID[n];
+        if (id>0){
+            //........................................................................
+            // Read distributions from "opposite" memory convention
+            //........................................................................
+            f2 = distodd[n];
+            f4 = distodd[N+n];
+            //f6 = distodd[2*N+n];
+            f8 = distodd[3*N+n];
+            f10 = distodd[4*N+n];
+            //f12 = distodd[5*N+n];
+            f14 = distodd[6*N+n];
+            //f16 = distodd[7*N+n];
+            f18 = distodd[8*N+n];
+            //........................................................................
+            f0 = disteven[n];
+            f1 = disteven[N+n];
+            f3 = disteven[2*N+n];
+            f5 = disteven[3*N+n];
+            f7 = disteven[4*N+n];
+            f9 = disteven[5*N+n];
+            f11 = disteven[6*N+n];
+            //f13 = disteven[7*N+n];
+            f15 = disteven[8*N+n];
+            //f17 = disteven[9*N+n];
 
-		//........................................................................
-		// Read distributions from "opposite" memory convention
-		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
-		//........................................................................
-		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
-
-		sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
-
+            sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
+        }
 	}
 	dout = sum/(A*(1.0+flux));
 	return dout;

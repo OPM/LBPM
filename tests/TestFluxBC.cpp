@@ -105,7 +105,7 @@ int main (int argc, char **argv)
 		}
 
 		if (pBC && Dm.kproc == nprocz-1){
-			dout = ScaLBL_D3Q19_Flux_BC_Z(f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 			printf("Computed outlet pressure: %f \n", dout);
 			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		}
