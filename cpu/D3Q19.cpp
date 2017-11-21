@@ -293,7 +293,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 	double din = 0.f;
 	N = Nx*Ny*Nz;
 
-	double A = 1.f*double(Nx*Ny);
+	double A = 1.f*double((Nx-2)*(Ny-2));
 	double sum = 0.f;
 	char id;
 	for (n=Nx*Ny; n<2*Nx*Ny; n++){
@@ -303,26 +303,26 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			// Read distributions from "opposite" memory convention
 			//........................................................................
 			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
+			f2 = distodd[n];
+			f4 = distodd[N+n];
+			f6 = distodd[2*N+n];
+			f8 = distodd[3*N+n];
+			f10 = distodd[4*N+n];
+			f12 = distodd[5*N+n];
+			f14 = distodd[6*N+n];
+			f16 = distodd[7*N+n];
+			f18 = distodd[8*N+n];
 			//........................................................................
 			f0 = disteven[n];
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
+			f1 = disteven[N+n];
+			f3 = disteven[2*N+n];
+			f5 = disteven[3*N+n];
+			f7 = disteven[4*N+n];
+			f9 = disteven[5*N+n];
+			f11 = disteven[6*N+n];
+			f13 = disteven[7*N+n];
+			f15 = disteven[8*N+n];
+			f17 = disteven[9*N+n];
 			//...................................................
 
 			// Determine the outlet flow velocity
@@ -402,26 +402,26 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, do
 		// Read distributions from "opposite" memory convention
 		//........................................................................
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		f2 = distodd[n];
+		f4 = distodd[N+n];
+		f6 = distodd[2*N+n];
+		f8 = distodd[3*N+n];
+		f10 = distodd[4*N+n];
+		f12 = distodd[5*N+n];
+		f14 = distodd[6*N+n];
+		f16 = distodd[7*N+n];
+		f18 = distodd[8*N+n];
 		//........................................................................
 		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		f1 = disteven[N+n];
+		f3 = disteven[2*N+n];
+		f5 = disteven[3*N+n];
+		f7 = disteven[4*N+n];
+		f9 = disteven[5*N+n];
+		f11 = disteven[6*N+n];
+		f13 = disteven[7*N+n];
+		f15 = disteven[8*N+n];
+		f17 = disteven[9*N+n];
 		//...................................................
 		//........Determine the inlet flow velocity.........
 		//			uz = -1 + (f0+f3+f4+f1+f2+f7+f8+f10+f9
@@ -447,11 +447,19 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, do
 		f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
 		f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
 		//........Store in "opposite" memory location..........
-		distodd[2*N+n] = f5;
+		/*		distodd[2*N+n] = f5;
 		distodd[5*N+n] = f11;
 		disteven[7*N+n] = f14;
 		distodd[7*N+n] = f15;
 		disteven[9*N+n] = f18;
+
+		*/
+
+		disteven[3*N+n] = f5;
+		disteven[6*N+n] = f11;
+		distodd[6*N+n] = f14;
+		disteven[8*N+n] = f15;
+		distodd[8*N+n] = f18;
 		/*
 		printf("Site=%i\n",n);
 		printf("ux=%f, uy=%f, uz=%f\n",ux,uy,uz);
@@ -480,26 +488,26 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, do
 		//........................................................................
 		// Read distributions from "opposite" memory convention
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		f2 = distodd[n];
+		f4 = distodd[N+n];
+		f6 = distodd[2*N+n];
+		f8 = distodd[3*N+n];
+		f10 = distodd[4*N+n];
+		f12 = distodd[5*N+n];
+		f14 = distodd[6*N+n];
+		f16 = distodd[7*N+n];
+		f18 = distodd[8*N+n];
 		//........................................................................
 		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		f1 = disteven[N+n];
+		f3 = disteven[2*N+n];
+		f5 = disteven[3*N+n];
+		f7 = disteven[4*N+n];
+		f9 = disteven[5*N+n];
+		f11 = disteven[6*N+n];
+		f13 = disteven[7*N+n];
+		f15 = disteven[8*N+n];
+		f17 = disteven[9*N+n];
 		//........Determine the outlet flow velocity.........
 		//			uz = 1 - (f0+f3+f4+f1+f2+f7+f8+f10+f9+
 		//					  2*(f6+f16+f17+f12+f13))/dout;
@@ -531,11 +539,11 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, do
 		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
 
 		//........Store in "opposite" memory location..........
-		disteven[3*N+n] = f6;
-		disteven[6*N+n] = f12;
-		distodd[6*N+n] = f13;
-		disteven[8*N+n] = f16;
-		distodd[8*N+n] = f17;
+		distodd[2*N+n] = f6;
+		distodd[5*N+n] = f12;
+		disteven[7*N+n] = f13;
+		distodd[7*N+n] = f16;
+		disteven[9*N+n] = f17;
 		//...................................................
 
 	}
