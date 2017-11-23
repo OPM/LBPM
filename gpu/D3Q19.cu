@@ -557,7 +557,7 @@ __global__ void dvc_D3Q19_Flux_BC_z(double *disteven, double *distodd, double fl
 	double f10,f12,f13,f16,f17;
 
 	//double A = 1.f*double(Nx*Ny);
-	double factor = 1.f/(double(Nx*Ny)*(1.0-flux));
+	double factor = 1.f/(double((Nx-2)*(Ny-2))*(1.0-flux));
 
 	double sum = 0.f;
 
@@ -567,26 +567,26 @@ __global__ void dvc_D3Q19_Flux_BC_z(double *disteven, double *distodd, double fl
 	if (n < 2*Nx*Ny){
 
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-//		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-//		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-//		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		f2 = distodd[n];
+		f4 = distodd[N+n];
+		f6 = distodd[2*N+n];
+		f8 = distodd[3*N+n];
+		f10 = distodd[4*N+n];
+		f12 = distodd[5*N+n];
+		//f14 = distodd[6*N+n];
+		f16 = distodd[7*N+n];
+		//f18 = distodd[8*N+n];
 		//........................................................................
 		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-//		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-//		f18 = disteven[9*N+n];
+		f1 = disteven[N+n];
+		f3 = disteven[2*N+n];
+		//f5 = disteven[3*N+n];
+		f7 = disteven[4*N+n];
+		f9 = disteven[5*N+n];
+		//f11 = disteven[6*N+n];
+		f13 = disteven[7*N+n];
+		//f15 = disteven[8*N+n];
+		f17 = disteven[9*N+n];
 		//...................................................
 		// compute local sum to determine the density value to set pressure
 		//sum = (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17))/(A*(1.0-flux));
@@ -617,7 +617,7 @@ __global__ void dvc_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double fl
 	N = Nx*Ny*Nz;
 	n = outlet +  blockIdx.x*blockDim.x + threadIdx.x;
 
-	double factor = 1.f/(double(Nx*Ny)*(1.0+flux));
+	double factor = 1.f/(double((Nx-2)*(Ny-2))*(1.0+flux));
 	double sum = 0.f;
 
 	// Loop over the boundary - threadblocks delineated by start...finish
@@ -625,26 +625,26 @@ __global__ void dvc_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double fl
    		//........................................................................
 		// Read distributions from "opposite" memory convention
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-//		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-//		f17 = distodd[8*N+n];
+		f2 = distodd[n];
+		f4 = distodd[N+n];
+		//f6 = distodd[2*N+n];
+		f8 = distodd[3*N+n];
+		f10 = distodd[4*N+n];
+		//f12 = distodd[5*N+n];
+		f14 = distodd[6*N+n];
+		//f16 = distodd[7*N+n];
+		f18 = distodd[8*N+n];
 		//........................................................................
 		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-//		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-//		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-//		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		f1 = disteven[N+n];
+		f3 = disteven[2*N+n];
+		f5 = disteven[3*N+n];
+		f7 = disteven[4*N+n];
+		f9 = disteven[5*N+n];
+		f11 = disteven[6*N+n];
+		//f13 = disteven[7*N+n];
+		f15 = disteven[8*N+n];
+		//f17 = disteven[9*N+n];
 
 		// Local sum (based on the consistency condition)
 		//sum = (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18))/(A*(1.0+flux));
@@ -682,26 +682,26 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distod
 			// Read distributions from "opposite" memory convention
 			//........................................................................
 			//........................................................................
-			f1 = distodd[n];
-			f3 = distodd[N+n];
-			f5 = distodd[2*N+n];
-			f7 = distodd[3*N+n];
-			f9 = distodd[4*N+n];
-			f11 = distodd[5*N+n];
-			f13 = distodd[6*N+n];
-			f15 = distodd[7*N+n];
-			f17 = distodd[8*N+n];
-			//........................................................................
-			f0 = disteven[n];
-			f2 = disteven[N+n];
-			f4 = disteven[2*N+n];
-			f6 = disteven[3*N+n];
-			f8 = disteven[4*N+n];
-			f10 = disteven[5*N+n];
-			f12 = disteven[6*N+n];
-			f14 = disteven[7*N+n];
-			f16 = disteven[8*N+n];
-			f18 = disteven[9*N+n];
+            f2 = distodd[n];
+            f4 = distodd[N+n];
+            f6 = distodd[2*N+n];
+            f8 = distodd[3*N+n];
+            f10 = distodd[4*N+n];
+            f12 = distodd[5*N+n];
+            f14 = distodd[6*N+n];
+            f16 = distodd[7*N+n];
+            f18 = distodd[8*N+n];
+            //........................................................................
+            f0 = disteven[n];
+            f1 = disteven[N+n];
+            f3 = disteven[2*N+n];
+            f5 = disteven[3*N+n];
+            f7 = disteven[4*N+n];
+            f9 = disteven[5*N+n];
+            f11 = disteven[6*N+n];
+            f13 = disteven[7*N+n];
+            f15 = disteven[8*N+n];
+            f17 = disteven[9*N+n];
 			//...................................................
 			//........Determine the inlet flow velocity.........
 			//			uz = -1 + (f0+f3+f4+f1+f2+f7+f8+f10+f9
@@ -727,11 +727,11 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distod
 			f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
 			f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
 			//........Store in "opposite" memory location..........
-			distodd[2*N+n] = f5;
-			distodd[5*N+n] = f11;
-			disteven[7*N+n] = f14;
-			distodd[7*N+n] = f15;
-			disteven[9*N+n] = f18;
+            disteven[3*N+n] = f5;
+            disteven[6*N+n] = f11;
+            distodd[6*N+n] = f14;
+            disteven[8*N+n] = f15;
+            distodd[8*N+n] = f18;
 		}
 	}
 
@@ -753,26 +753,26 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distod
 		//........................................................................
 		// Read distributions from "opposite" memory convention
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		f2 = distodd[n];
+		f4 = distodd[N+n];
+		f6 = distodd[2*N+n];
+		f8 = distodd[3*N+n];
+		f10 = distodd[4*N+n];
+		f12 = distodd[5*N+n];
+		f14 = distodd[6*N+n];
+		f16 = distodd[7*N+n];
+		f18 = distodd[8*N+n];
 		//........................................................................
 		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		f1 = disteven[N+n];
+		f3 = disteven[2*N+n];
+		f5 = disteven[3*N+n];
+		f7 = disteven[4*N+n];
+		f9 = disteven[5*N+n];
+		f11 = disteven[6*N+n];
+		f13 = disteven[7*N+n];
+		f15 = disteven[8*N+n];
+		f17 = disteven[9*N+n];
 		//........Determine the outlet flow velocity.........
 		//			uz = 1 - (f0+f3+f4+f1+f2+f7+f8+f10+f9+
 		//					  2*(f6+f16+f17+f12+f13))/dout;
@@ -804,11 +804,11 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distod
 		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
 
 		//........Store in "opposite" memory location..........
-		disteven[3*N+n] = f6;
-		disteven[6*N+n] = f12;
-		distodd[6*N+n] = f13;
-		disteven[8*N+n] = f16;
-		distodd[8*N+n] = f17;
+		distodd[2*N+n] = f6;
+		distodd[5*N+n] = f12;
+		disteven[7*N+n] = f13;
+		distodd[7*N+n] = f16;
+		disteven[9*N+n] = f17;
 		//...................................................
 	}
 }
