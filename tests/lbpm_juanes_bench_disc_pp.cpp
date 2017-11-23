@@ -334,9 +334,9 @@ int main(int argc, char **argv)
 	double MidTop = 0.5*double(TopDisc+Nz-5);
 	double DiscThickness = (double(BotDisc)-MidBot); 
 
-       	if (rank ==0) printf("     Bottom Middle  = %i \n",MidBot);
-	if (rank ==0) printf("     Top Middle  = %i \n",MidTop);
-	if (rank ==0) printf("     Disc thickness = %i \n",DiscThickness);
+       	if (rank ==0) printf("     Bottom Middle  = %f \n",MidBot);
+	if (rank ==0) printf("     Top Middle  = %f \n",MidTop);
+	if (rank ==0) printf("     Disc thickness = %f \n",DiscThickness);
 
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -370,9 +370,9 @@ int main(int argc, char **argv)
 					else 				dst = dist_to_outlet;
 				}
 
-				if (k<5) 			SignDist(i,j,k) = dist_to_bottom;
-				else if (k>Nz-6) 		SignDist(i,j,k) = dist_to_top;
-				else if (dst < SignDist(i,j,k))	SignDist(i,j,k) = dst;
+				if (k<int(MidBot-DiscThickness))       	SignDist(i,j,k) = dist_to_bottom;
+				else if (k>int(MidTop+DiscThickness)) 	SignDist(i,j,k) = dist_to_top;
+				else if (dst < SignDist(i,j,k))	        SignDist(i,j,k) = dst;
 			}
 		}
 	}
@@ -418,7 +418,7 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 
 				if (SignDist(n) > 0.0){
-					if (k<4) 			id[n]=1;
+					if (k<5) 			id[n]=1;
 					else if (k>Nz-6)    		id[n]=2;
 					else if (dist_to_inlet > 0.f) 	id[n]=1;
 					else if (dist_to_outlet > 0.f) 	id[n]=2;
