@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 
 	int inlet_radius;  // radius of the inlet hole (flow goes through)
 	int outlet_radius; // radius of the outlet layer (flow goes around)
-
+	int depth;         // depth fo the micromodel
 	int i,j,k,n;
 
 	if (rank==0){
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 	if (argc == 4){
 		Rin=strtod(argv[1],NULL);
 		Rout=strtod(argv[2],NULL);
-		depth = atoi(argv[3));
+		depth = atoi(argv[3]);
 
 		//inlet_radius=atoi(argv[1]);
 		//outlet_radius=atoi(argv[2]);
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 	int dist_mem_size = N*sizeof(double);
 	
 	// Maximum depth based on the
-	if (depth > depth = Nz-12) depth = Nz-12;
+	if (depth > Nz-12) depth = Nz-12;
 	
 	if (rank==0){
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
