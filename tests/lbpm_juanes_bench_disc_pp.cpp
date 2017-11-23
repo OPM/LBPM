@@ -334,6 +334,10 @@ int main(int argc, char **argv)
 	double MidTop = 0.5*double(TopDisc+Nz-5);
 	double DiscThickness = (double(BotDisc)-MidBot); 
 
+       	if (rank ==0) printf("     Bottom Middle  = %i \n",MidBot);
+	if (rank ==0) printf("     Top Middle  = %i \n",MidTop);
+	if (rank ==0) printf("     Disc thickness = %i \n",DiscThickness);
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
