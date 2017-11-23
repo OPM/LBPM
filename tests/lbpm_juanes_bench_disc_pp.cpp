@@ -152,7 +152,6 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
-	int depth;
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -209,15 +208,17 @@ int main(int argc, char **argv)
 
 	// **************************************************************
 	double Rin,Rout;
-	if (argc == 3){
+	if (argc == 4){
 		Rin=strtod(argv[1],NULL);
-		Rout=strtod(argv[2],NULL);		
+		Rout=strtod(argv[2],NULL);
+		depth = atoi(argv[3));
+
 		//inlet_radius=atoi(argv[1]);
 		//outlet_radius=atoi(argv[2]);
 	}
 
 	else{
-	  INSIST(argc==3,"Did not provide correct input arguments!");
+	  INSIST(argc==4,"Did not provide correct input arguments! Rin, Rout, Depth");
 	}
 
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -237,8 +238,9 @@ int main(int argc, char **argv)
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
-	depth = Nz-12;
 	
+	// Maximum depth based on the
+	if (depth > depth = Nz-12) depth = Nz-12;
 	
 	if (rank==0){
 		printf("Process grid = %ix%ix%i \n", nprocx,nprocy,nprocz);
@@ -326,6 +328,8 @@ int main(int argc, char **argv)
 	if (rank ==0) printf("     Inlet radius = %i \n",inlet_radius);
 	if (rank ==0) printf("     Outlet radius = %i \n",outlet_radius);
 
+	int TopDisc = (Nz+depth)/2;
+	int BotDisc = (Nz-depth)/2;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -350,13 +354,15 @@ int main(int argc, char **argv)
 				else{
 					// distance map for the solid boundary at the outlet layer
 					if (dist_to_top > 0.f)			dst  = dist_to_top;
-					else if (dist_to_outlet > 0.f)		dst = sqrt(dist_to_top*dist_to_top + dist_to_outlet*dist_to_outlet);
+					else if (dist_to_outlet > 0.f)	dst = sqrt(dist_to_top*dist_to_top + dist_to_outlet*dist_to_outlet);
 					else 							dst = dist_to_outlet;
 				}
 
-				if (k<5) 						SignDist(i,j,k) = dist_to_bottom;
-				else if (k>Nz-6) 				SignDist(i,j,k) = dist_to_top;
-				else if (dst < SignDist(i,j,k)) SignDist(i,j,k) = dst;
+				//if (k<5) 						SignDist(i,j,k) = dist_to_bottom;
+				//else if (k>Nz-6) 				SignDist(i,j,k) = dist_to_top;
+				if (k<BotDisc) 						SignDist(i,j,k) = dist_to_bottom;
+				else if (k>TopDisc) 				SignDist(i,j,k) = dist_to_top;
+				else if (dst < SignDist(i,j,k)) 	SignDist(i,j,k) = dst;
 			}
 		}
 	}
