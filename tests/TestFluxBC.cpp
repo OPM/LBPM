@@ -70,6 +70,15 @@ int main (int argc, char **argv)
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
+        // Don't compute in the halo
+        for (k=0;k<Nz;k++){
+            for (j=0;j<Ny;j++){
+                for (i=0;i<Nx;i++){
+                    int n = k*Nx*Ny+j*Nx+i;
+                    if (i==0 || i==Nx-1 || j==0 || j==Ny-1 || k==0 || k==Nz-1)	id[n] = 0;
+                }
+            }
+        }
 		// Copy to the device
 		ScaLBL_CopyToDevice(ID, id, N);
 		//...........................................................................
@@ -100,13 +109,13 @@ int main (int argc, char **argv)
 		//printf("kproc=%i \n",Dm.kproc);
 		if (pBC && Dm.kproc == 0){
 		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,Nx,Ny,Nz);
-			printf("Computed inlet pressure: %f \n", din);
-			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+		  printf("Computed inlet pressure: %.10g \n", din);
+		  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		}
 
 		if (pBC && Dm.kproc == nprocz-1){
 			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-			printf("Computed outlet pressure: %f \n", dout);
+		    printf("Computed outlet pressure: %.10g \n", dout);
 			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		}
 
@@ -126,13 +135,17 @@ int main (int argc, char **argv)
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = Nx*Ny+j*Nx + i;
-				sum += vel[offset+n];
+				sum += -1.f*vel[offset+n];//extract the z-component of the velocity
+                                          //NOTE: After applying the pressure BC, the 
+                                          //distributions are stored in the "opposite" memory
+                                          //thus the pre-factor '-1.0' for getting the 
+                                          //velocity in the correct directions
 			}
 		}
 		double err;
 
 		double value;
-		value = sum/(Nx*Ny)/din;
+		value = sum/((Nx-2)*(Ny-2))/din;
 		printf("Inlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
 		if (err > 1e-14){
@@ -145,10 +158,14 @@ int main (int argc, char **argv)
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = (Nz-2)*Nx*Ny+j*Nx + i;
-				sum += vel[offset+n];
+				sum += -1.f*vel[offset+n];//extract the z-component of the velocity
+                                          //NOTE: After applying the pressure BC, the 
+                                          //distributions are stored in the "opposite" memory
+                                          //thus the pre-factor '-1.0' for getting the 
+                                          //velocity in the correct directions
 			}
 		}
-		value = sum/(Nx*Ny)/dout;
+		value = sum/((Nx-2)*(Ny-2))/dout;
 		err = fabs(flux - value);
 		printf("Outlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
