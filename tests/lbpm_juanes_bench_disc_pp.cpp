@@ -330,6 +330,10 @@ int main(int argc, char **argv)
 
 	int TopDisc = (Nz+depth)/2;
 	int BotDisc = (Nz-depth)/2;
+       	double MidBot = 0.5*double(BotDisc+4);
+	double MidTop = 0.5*double(TopDisc+Nz-5);
+	double DiscThickness = (double(BotDisc)-MidBot); 
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -339,30 +343,32 @@ int main(int argc, char **argv)
 				int gj = jproc*Ny + j;
 
 				// distance to the bottom layer
-				double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
-				double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
+				//double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
+				//double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
+
+				double dist_to_bottom = fabs(double(MidBot-k)) - DiscThickness;
+				double dist_to_top = fabs(double(MidTop-k)) - DiscThickness;
+
 				double dist_to_inlet = double(inlet_radius) - sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y)));
 				double dist_to_outlet = sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y))) - double(outlet_radius);
 
 				if (k<Nz/2){
 					// distance map for the solid boundary at the inlet layer
-					if (dist_to_inlet > 0.f) 		dst = dist_to_inlet;
+					if (dist_to_inlet > 0.f)	dst = dist_to_inlet;
 					else if (dist_to_bottom > 0.f) 	dst = dist_to_bottom;
-					else 							dst = dist_to_inlet;
+					else       			dst = dist_to_inlet;
 				    
 				}
 				else{
 					// distance map for the solid boundary at the outlet layer
-					if (dist_to_top > 0.f)			dst  = dist_to_top;
+					if (dist_to_top > 0.f)		dst  = dist_to_top;
 					else if (dist_to_outlet > 0.f)	dst = sqrt(dist_to_top*dist_to_top + dist_to_outlet*dist_to_outlet);
-					else 							dst = dist_to_outlet;
+					else 				dst = dist_to_outlet;
 				}
 
-				//if (k<5) 						SignDist(i,j,k) = dist_to_bottom;
-				//else if (k>Nz-6) 				SignDist(i,j,k) = dist_to_top;
-				if (k<BotDisc) 						SignDist(i,j,k) = dist_to_bottom;
-				else if (k>TopDisc) 				SignDist(i,j,k) = dist_to_top;
-				else if (dst < SignDist(i,j,k)) 	SignDist(i,j,k) = dst;
+				if (k<5) 			SignDist(i,j,k) = dist_to_bottom;
+				else if (k>Nz-6) 		SignDist(i,j,k) = dist_to_top;
+				else if (dst < SignDist(i,j,k))	SignDist(i,j,k) = dst;
 			}
 		}
 	}
@@ -380,6 +386,8 @@ int main(int argc, char **argv)
 	}
 	sum=0;
 	pore_vol = 0.0;
+	printf("Bottom disc=%i\n",BotDisc);
+	printf("Top disc=%i\n",TopDisc);
 	for ( k=1;k<Nz-1;k++){
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
@@ -389,8 +397,16 @@ int main(int argc, char **argv)
 				int gj = jproc*Ny + j;
 
 				// distance to the bottom layer
-				double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
-				double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
+
+				//double dist_to_bottom = fabs(5.0 - double(k)) - 0.5;
+				//double dist_to_top = fabs(6.0 - double(Nz - k)) - 0.5;
+
+				//double dist_to_bottom = fabs(double(BotDisc-k)) - 0.5;
+				//double dist_to_top = fabs(double(TopDisc-k)) - 0.5;
+
+				double dist_to_bottom = fabs(double(MidBot-k)) - DiscThickness;
+				double dist_to_top = fabs(double(MidTop-k)) - DiscThickness;
+
 				double dist_to_inlet = double(inlet_radius) - sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y)));
 				double dist_to_outlet = sqrt(double((gi-center_x)*(gi-center_x) + (gj-center_y)*(gj-center_y))) - double(outlet_radius);
 
@@ -398,11 +414,11 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 
 				if (SignDist(n) > 0.0){
-					if (k<4) 						id[n]=1;
-					else if (k>Nz-6)    				id[n]=2;
+					if (k<4) 			id[n]=1;
+					else if (k>Nz-6)    		id[n]=2;
 					else if (dist_to_inlet > 0.f) 	id[n]=1;
 					else if (dist_to_outlet > 0.f) 	id[n]=2;
-					else 							id[n]=2;
+					else 				id[n]=2;
 				}
 				// compute the porosity (actual interface location used)
 				if (SignDist(n) > 0.0){
