@@ -714,6 +714,11 @@ extern "C" void ScaLBL_D3Q19_Velocity(char *ID, double *disteven, double *distod
 				distodd[q*N+n] = -1.0;
 			}
 			disteven[9*N+n] = -1.0;
+            
+            //For ID[n]<0 - solid nodes
+			vel[n] = 0.0;
+			vel[N+n] = 0.0;
+			vel[2*N+n] = 0.0;
 		}
 	}
 }
