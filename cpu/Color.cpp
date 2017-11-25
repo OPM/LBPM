@@ -955,8 +955,8 @@ extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *d
 }
 
 extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
-								double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
-								double alpha, double beta, double Fx, double Fy, double Fz)
+					       double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
+					       double rho1, double rho2, double alpha, double beta, double Fx, double Fy, double Fz)
 {
 
 	int i,j,k,n,nn,N;
@@ -969,6 +969,7 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 	// additional variables needed for computations
 	double rho,jx,jy,jz,C,nx,ny,nz;
 	double tau,rlx_setA,rlx_setB;
+	double rho0;
 
 	N = Nx*Ny*Nz;
 	char id;
@@ -1097,6 +1098,8 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			tau=tau1 + 0.5*(1.0-f1)*(tau2-tau1);
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
+			// local density
+			rho0=rho1 + 0.5*(1.0-f1)*(rho2-rho1);
 
 			//......No color gradient at z-boundary if pressure BC are set.............
 			//	if (pBC && k==0) nx = ny = nz = 0.f;
@@ -1183,18 +1186,18 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
 			if (C == 0.0)	nx = ny = nz = 0.0;
-			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
-			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
+			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
-			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-			m13 = m13 + rlx_setA*( (jx*jy/rho) + 0.5*alpha*C*nx*ny - m13);
-			m14 = m14 + rlx_setA*( (jy*jz/rho) + 0.5*alpha*C*ny*nz - m14);
-			m15 = m15 + rlx_setA*( (jx*jz/rho) + 0.5*alpha*C*nx*nz - m15);
+			m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);

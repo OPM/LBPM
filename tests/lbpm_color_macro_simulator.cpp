@@ -136,7 +136,8 @@ int main(int argc, char **argv)
 	double D = 1.0;		// reference length for non-dimensionalization
 	// Color Model parameters
 	int timestepMax;
-	double tau1, tau2, Fx,Fy,Fz,tol,err;
+	double tau1, tau2, rho1,rho2;
+	double Fx,Fy,Fz,tol,err;
 	double alpha, beta;
 	double das, dbs, phi_s;
 	double din,dout;
@@ -163,8 +164,10 @@ int main(int argc, char **argv)
 		ifstream input("Color.in");
 		if (input.is_open()){
 			// Line 1: model parameters (tau, alpha, beta, das, dbs)
-			input >> tau1;			// Viscosity parameter
-			input >> tau2;			// Viscosity parameter
+			input >> tau1;			// Viscosity non-wetting
+			input >> tau2;			// Viscosity wetting
+			input >> rho1;			// density non-wetting
+			input >> rho2;			// density wetting
 			input >> alpha;			// Surface Tension parameter
 			input >> beta;			// Width of the interface
 			input >> phi_s;			// value of phi at the solid surface
@@ -192,6 +195,7 @@ int main(int argc, char **argv)
 		    // Print warning
 			printf("WARNING: No input file provided (Color.in is missing)! Default parameters will be used. \n");
 			tau1 = tau2 = 1.0;
+			rho1 = rho2 = 1.0;
 			alpha=0.005;
 			beta= 0.9;
 			Fx = Fy = Fz = 0.0;
@@ -235,6 +239,8 @@ int main(int argc, char **argv)
 	//.................................................
 	MPI_Bcast(&tau1,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&tau2,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&rho1,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&rho2,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
@@ -292,6 +298,8 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 		printf("tau (non-wetting) = %f \n", tau1);
 		printf("tau (wetting) = %f \n", tau2);
+		printf("density (non-wetting) = %f \n", rho1);
+		printf("density (wetting) = %f \n", rho2);
 		printf("alpha = %f \n", alpha);		
 		printf("beta = %f \n", beta);
 		printf("das = %f \n", das);
@@ -828,7 +836,7 @@ int main(int argc, char **argv)
 		// Fused Color Gradient and Collision 
 		//*************************************************************************
 		ScaLBL_D3Q19_ColorCollide_gen( ID,f_even,f_odd,Phi,ColorGrad,
-							 Velocity,Nx,Ny,Nz,tau1,tau2,alpha,beta,Fx,Fy,Fz);
+							 Velocity,Nx,Ny,Nz,tau1,tau2,rho1,rho2,alpha,beta,Fx,Fy,Fz);
 		//*************************************************************************
 
 		ScaLBL_DeviceBarrier();
