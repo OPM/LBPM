@@ -1300,9 +1300,9 @@ __global__  void dvc_ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, 
 			distodd[7*N+n] = f15;
 			distodd[8*N+n] = f17;
 			//...Store the Velocity..........................
-			Velocity[n] = jx;
-			Velocity[N+n] = jy;
-			Velocity[2*N+n] = jz;
+			Velocity[n] = jx/rho0;
+			Velocity[N+n] = jy/rho0;
+			Velocity[2*N+n] = jz/rho0;
 			//***************************************************************
 
 			}// check if n is in the solid
