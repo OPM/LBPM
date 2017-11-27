@@ -601,12 +601,12 @@ int main(int argc, char **argv)
         }
         if (pBC && kproc == 0)    {
             ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);            
-            ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+            ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
         }
             
         if (pBC && kproc == nprocz-1){
             ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-            ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+            ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
         }
 
         //...........................................................................
@@ -710,12 +710,12 @@ int main(int argc, char **argv)
             // Pressure boundary conditions
             if (pBC && kproc == 0)    {
                 ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);            
-                ScaLBL_Color_BC_z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+                ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
             }
                 
             if (pBC && kproc == nprocz-1){
                 ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-                ScaLBL_Color_BC_Z(Phi,Den,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+                ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
             }
             
             //...................................................................................

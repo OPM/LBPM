@@ -108,6 +108,7 @@ extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *Velocity, do
 {
 	int i,j,k,n,N;
 	double na,nb,ux,uy,uz;
+	double a1,b1,a2,b2;
 
 	N = Nx*Ny*Nz;
 	// Fill the inlet with component a
@@ -211,6 +212,7 @@ extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Velocity, do
 {
 	int i,j,k,n,N;
 	double na,nb,ux,uy,uz;
+	double a1,b1,a2,b2;
 
 	N = Nx*Ny*Nz;
 	// Fill the outlet with component b
