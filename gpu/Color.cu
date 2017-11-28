@@ -122,7 +122,7 @@ __global__  void dvc_ScaLBL_Color_InitDistance(char *ID, double *Den, double *Ph
 	}
 }
 //*************************************************************************
-__global__  void dvc_ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
+__global__  void dvc_ScaLBL_Color_BC_z(double *Phi, double *Den, double *Velocity, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int ij,k,n,N;
@@ -142,26 +142,48 @@ __global__  void dvc_ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even,
 			Den[n] = 1.0;
 			Den[N+n] = 0.0;
 
-			A_even[n] = 0.3333333333333333;
-			A_odd[n] = 0.1111111111111111;
-			A_even[N+n] = 0.1111111111111111;
-			A_odd[N+n] = 0.1111111111111111;
-			A_even[2*N+n] = 0.1111111111111111;
-			A_odd[2*N+n] = 0.1111111111111111;
-			A_even[3*N+n] = 0.1111111111111111;
+			na = 1.0;
+			nb = 0.0;
+			ux = Velocity[n];
+			uy = Velocity[N+n];
+			uz = Velocity[2*N+n];
+			A_even[n] = 0.3333333333333333*na;
+			B_even[n] = 0.3333333333333333*nb;
 
-			B_even[n] = 0.0;
-			B_odd[n] = 0.0;
-			B_even[N+n] = 0.0;
-			B_odd[N+n] = 0.0;
-			B_even[2*N+n] = 0.0;
-			B_odd[2*N+n] = 0.0;
-			B_even[3*N+n] = 0.0;
+			a1 = na*(0.1111111111111111*(1+4.5*ux));
+			b1 = nb*(0.1111111111111111*(1+4.5*ux));
+			a2 = na*(0.1111111111111111*(1-4.5*ux));
+			b2 = nb*(0.1111111111111111*(1-4.5*ux));
+
+			A_odd[n] = a1;
+			A_even[N+n] = a2;
+			B_odd[n]  = b1;
+			B_even[N+n] = b2;
+
+			a1 = na*(0.1111111111111111*(1+4.5*uy));
+			b1 = nb*(0.1111111111111111*(1+4.5*uy));
+			a2 = na*(0.1111111111111111*(1-4.5*uy));
+			b2 = nb*(0.1111111111111111*(1-4.5*uy));
+
+			A_odd[N+n]	= a1;
+			A_even[2*N+n] = a2;
+ 	      		B_odd[N+n]  = b1;
+			B_even[2*N+n] = b2;
+
+			a1 = na*(0.1111111111111111*(1+4.5*uz));
+			b1 = nb*(0.1111111111111111*(1+4.5*uz));
+			a2 = na*(0.1111111111111111*(1-4.5*uz));
+			b2 = nb*(0.1111111111111111*(1-4.5*uz));
+
+			A_odd[2*N+n] = a1;
+			A_even[3*N+n] = a2;
+			B_odd[2*N+n] = b1;
+			B_even[3*N+n] = b2;
 		}
 	}
 }
 //*************************************************************************
-__global__  void dvc_ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
+__global__  void dvc_ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Velocity, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int ij,k,n,N;
@@ -175,21 +197,43 @@ __global__  void dvc_ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even,
 			Den[n] = 0.0;
 			Den[N+n] = 1.0;
 
-			A_even[n] = 0.0;
-			A_odd[n] = 0.0;
-			A_even[N+n] = 0.0;
-			A_odd[N+n] = 0.0;
-			A_even[2*N+n] = 0.0;
-			A_odd[2*N+n] = 0.0;
-			A_even[3*N+n] = 0.0;
+			na = 0.0;
+			nb = -1.0;
+			ux = Velocity[n];
+			uy = Velocity[N+n];
+			uz = Velocity[2*N+n];
+			A_even[n] = 0.3333333333333333*na;
+			B_even[n] = 0.3333333333333333*nb;
 
-			B_even[n] = 0.3333333333333333;
-			B_odd[n] = 0.1111111111111111;
-			B_even[N+n] = 0.1111111111111111;
-			B_odd[N+n] = 0.1111111111111111;
-			B_even[2*N+n] = 0.1111111111111111;
-			B_odd[2*N+n] = 0.1111111111111111;
-			B_even[3*N+n] = 0.1111111111111111;
+			a1 = na*(0.1111111111111111*(1+4.5*ux));
+			b1 = nb*(0.1111111111111111*(1+4.5*ux));
+			a2 = na*(0.1111111111111111*(1-4.5*ux));
+			b2 = nb*(0.1111111111111111*(1-4.5*ux));
+
+			A_odd[n] = a1;
+			A_even[N+n] = a2;
+			B_odd[n]  = b1;
+			B_even[N+n] = b2;
+
+			a1 = na*(0.1111111111111111*(1+4.5*uy));
+			b1 = nb*(0.1111111111111111*(1+4.5*uy));
+			a2 = na*(0.1111111111111111*(1-4.5*uy));
+			b2 = nb*(0.1111111111111111*(1-4.5*uy));
+
+			A_odd[N+n]	= a1;
+			A_even[2*N+n] = a2;
+ 	      		B_odd[N+n]  = b1;
+			B_even[2*N+n] = b2;
+
+			a1 = na*(0.1111111111111111*(1+4.5*uz));
+			b1 = nb*(0.1111111111111111*(1+4.5*uz));
+			a2 = na*(0.1111111111111111*(1-4.5*uz));
+			b2 = nb*(0.1111111111111111*(1-4.5*uz));
+
+			A_odd[2*N+n] = a1;
+			A_even[3*N+n] = a2;
+			B_odd[2*N+n] = b1;
+			B_even[3*N+n] = b2;
 
 		}
 		for (k=Nz-1; k<Nz; k++){
@@ -1675,14 +1719,14 @@ extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A
 	 dvc_ScaLBL_D3Q7_ColorCollideMass<<<NBLOCKS,NTHREADS >>>(ID, A_even, A_odd, B_even, B_odd, Den, Phi, ColorGrad, Velocity, beta, N, pBC);
 }
 // Pressure Boundary Conditions Functions
-extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *Vel, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_ScaLBL_Color_BC_z<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
+	dvc_ScaLBL_Color_BC_z<<< GRID,512 >>>(Phi, Den, Vel, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
 }
-extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Vel, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz){
 
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_ScaLBL_Color_BC_Z<<< GRID,512 >>>(Phi, Den, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
+	dvc_ScaLBL_Color_BC_Z<<< GRID,512 >>>(Phi, Den, Vel, A_even, A_odd, B_even, B_odd, Nx, Ny, Nz);
 }
