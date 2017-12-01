@@ -103,10 +103,13 @@ extern "C" void ScaLBL_Color_InitDistance(char *ID, double *Den, double *Phi, do
 
 
 //*************************************************************************
-extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *Velocity, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
+	double na,nb,ux,uy,uz;
+	double a1,b1,a2,b2;
+
 	N = Nx*Ny*Nz;
 	// Fill the inlet with component a
 	for (k=0; k<1; k++){
@@ -126,6 +129,7 @@ extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, doub
 				Den[n] = 1.0;
 				Den[N+n] = 0.0;
 
+				/*
 				A_even[n] = 0.3333333333333333;
 				A_odd[n] = 0.1111111111111111;	
 				A_even[N+n] = 0.1111111111111111;
@@ -135,21 +139,81 @@ extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, doub
 				A_even[3*N+n] = 0.1111111111111111;
 				
 				B_even[n] = 0.0;
-				B_odd[n] = 0.0;	
+				B_odd[n] = 0.0;
 				B_even[N+n] = 0.0;
-				B_odd[N+n] = 0.0;	
+				B_odd[N+n] = 0.0;
 				B_even[2*N+n] = 0.0;
 				B_odd[2*N+n] = 0.0;
 				B_even[3*N+n] = 0.0;
+				*/
+
+				na = 1.0;
+				nb = 0.0;
+				//....Load the flow velocity...........
+				ux = Velocity[n];
+				uy = Velocity[N+n];
+				uz = Velocity[2*N+n];
+
+				A_even[n] = 0.3333333333333333*na;
+				B_even[n] = 0.3333333333333333*nb;
+				// Non-Stationary equilibrium distributions
+				//feq[0] = 0.1111111111111111*(1+4.5*ux);
+				//feq[1] = 0.1111111111111111*(1-4.5*ux);
+				//feq[2] = 0.1111111111111111*(1+4.5*uy);
+				//feq[3] = 0.1111111111111111*(1-4.5*uy);
+				//feq[4] = 0.1111111111111111*(1+4.5*uz);
+				//feq[5] = 0.1111111111111111*(1-4.5*uz);
+
+				//...............................................
+				// q = 0,2,4
+				// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+				a1 = na*(0.1111111111111111*(1+4.5*ux));
+				b1 = nb*(0.1111111111111111*(1+4.5*ux));
+				a2 = na*(0.1111111111111111*(1-4.5*ux));
+				b2 = nb*(0.1111111111111111*(1-4.5*ux));
+
+				A_odd[n] 	= a1;
+				A_even[N+n] = a2;
+				B_odd[n] 	= b1;
+				B_even[N+n] = b2;
+				//...............................................
+				// q = 2
+				// Cq = {0,1,0}
+				a1 = na*(0.1111111111111111*(1+4.5*uy));
+				b1 = nb*(0.1111111111111111*(1+4.5*uy));
+				a2 = na*(0.1111111111111111*(1-4.5*uy));
+				b2 = nb*(0.1111111111111111*(1-4.5*uy));
+
+				A_odd[N+n] 	= a1;
+				A_even[2*N+n] = a2;
+				B_odd[N+n] 	= b1;
+				B_even[2*N+n] = b2;
+				//...............................................
+				// q = 4
+				// Cq = {0,0,1}
+				a1 = na*(0.1111111111111111*(1+4.5*uz));
+				b1 = nb*(0.1111111111111111*(1+4.5*uz));
+				a2 = na*(0.1111111111111111*(1-4.5*uz));
+				b2 = nb*(0.1111111111111111*(1-4.5*uz));
+
+				A_odd[2*N+n] = a1;
+				A_even[3*N+n] = a2;
+				B_odd[2*N+n] = b1;
+				B_even[3*N+n] = b2;
+
+
 			}					
 		}
 	}
 }
 //*************************************************************************
-extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Velocity, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
 {
 	int i,j,k,n,N;
+	double na,nb,ux,uy,uz;
+	double a1,b1,a2,b2;
+
 	N = Nx*Ny*Nz;
 	// Fill the outlet with component b
 	for (k=Nz-3; k<Nz-1; k++){
@@ -161,7 +225,7 @@ extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, doub
 				Den[n] = 0.0;
 				Den[N+n] = 1.0;
 				
-				A_even[n] = 0.0;
+/*				A_even[n] = 0.0;
 				A_odd[n] = 0.0;	
 				A_even[N+n] = 0.0;
 				A_odd[N+n] = 0.0;	
@@ -176,6 +240,61 @@ extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, doub
 				B_even[2*N+n] = 0.1111111111111111;
 				B_odd[2*N+n] = 0.1111111111111111;
 				B_even[3*N+n] = 0.1111111111111111;
+				*/
+				na = 0.0;
+				nb = 1.0;
+				//....Load the flow velocity...........
+				ux = Velocity[n];
+				uy = Velocity[N+n];
+				uz = Velocity[2*N+n];
+
+				A_even[n] = 0.3333333333333333*na;
+				B_even[n] = 0.3333333333333333*nb;
+				// Non-Stationary equilibrium distributions
+				//feq[0] = 0.1111111111111111*(1+4.5*ux);
+				//feq[1] = 0.1111111111111111*(1-4.5*ux);
+				//feq[2] = 0.1111111111111111*(1+4.5*uy);
+				//feq[3] = 0.1111111111111111*(1-4.5*uy);
+				//feq[4] = 0.1111111111111111*(1+4.5*uz);
+				//feq[5] = 0.1111111111111111*(1-4.5*uz);
+
+				//...............................................
+				// q = 0,2,4
+				// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+				a1 = na*(0.1111111111111111*(1+4.5*ux));
+				b1 = nb*(0.1111111111111111*(1+4.5*ux));
+				a2 = na*(0.1111111111111111*(1-4.5*ux));
+				b2 = nb*(0.1111111111111111*(1-4.5*ux));
+
+				A_odd[n] 	= a1;
+				A_even[N+n] = a2;
+				B_odd[n] 	= b1;
+				B_even[N+n] = b2;
+				//...............................................
+				// q = 2
+				// Cq = {0,1,0}
+				a1 = na*(0.1111111111111111*(1+4.5*uy));
+				b1 = nb*(0.1111111111111111*(1+4.5*uy));
+				a2 = na*(0.1111111111111111*(1-4.5*uy));
+				b2 = nb*(0.1111111111111111*(1-4.5*uy));
+
+				A_odd[N+n] 	= a1;
+				A_even[2*N+n] = a2;
+				B_odd[N+n] 	= b1;
+				B_even[2*N+n] = b2;
+				//...............................................
+				// q = 4
+				// Cq = {0,0,1}
+				a1 = na*(0.1111111111111111*(1+4.5*uz));
+				b1 = nb*(0.1111111111111111*(1+4.5*uz));
+				a2 = na*(0.1111111111111111*(1-4.5*uz));
+				b2 = nb*(0.1111111111111111*(1-4.5*uz));
+
+				A_odd[2*N+n] = a1;
+				A_even[3*N+n] = a2;
+				B_odd[2*N+n] = b1;
+				B_even[3*N+n] = b2;
+
 				
 			}					
 		}
@@ -955,8 +1074,8 @@ extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *d
 }
 
 extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
-								double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
-								double alpha, double beta, double Fx, double Fy, double Fz)
+					       double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
+					       double rho1, double rho2, double alpha, double beta, double Fx, double Fy, double Fz)
 {
 
 	int i,j,k,n,nn,N;
@@ -969,6 +1088,7 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 	// additional variables needed for computations
 	double rho,jx,jy,jz,C,nx,ny,nz;
 	double tau,rlx_setA,rlx_setB;
+	double rho0;
 
 	N = Nx*Ny*Nz;
 	char id;
@@ -1097,6 +1217,8 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			tau=tau1 + 0.5*(1.0-f1)*(tau2-tau1);
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
+			// local density
+			rho0=rho1 + 0.5*(1.0-f1)*(rho2-rho1);
 
 			//......No color gradient at z-boundary if pressure BC are set.............
 			//	if (pBC && k==0) nx = ny = nz = 0.f;
@@ -1183,18 +1305,18 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			//........................................................................
 			//..........Toelke, Fruediger et. al. 2006...............
 			if (C == 0.0)	nx = ny = nz = 0.0;
-			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) -alpha*C - m1);
-			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho)- m2);
+			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
 			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
 			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
 			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
-			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-			m13 = m13 + rlx_setA*( (jx*jy/rho) + 0.5*alpha*C*nx*ny - m13);
-			m14 = m14 + rlx_setA*( (jy*jz/rho) + 0.5*alpha*C*ny*nz - m14);
-			m15 = m15 + rlx_setA*( (jx*jz/rho) + 0.5*alpha*C*nx*nz - m15);
+			m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
@@ -1296,9 +1418,9 @@ extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, doubl
 			distodd[7*N+n] = f15;
 			distodd[8*N+n] = f17;
 			//...Store the Velocity..........................
-			Velocity[n] = jx;
-			Velocity[N+n] = jy;
-			Velocity[2*N+n] = jz;
+			Velocity[n] = jx/rho0;
+			Velocity[N+n] = jy/rho0;
+			Velocity[2*N+n] = jz/rho0;
 			//***************************************************************
 		}	// check if n is in the solid
 	} // loop over n

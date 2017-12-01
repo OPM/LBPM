@@ -77,7 +77,7 @@ extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *d
 								double alpha, double beta, double Fx, double Fy, double Fz);
 
 extern "C" void ScaLBL_D3Q19_ColorCollide_gen( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
-								double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2,
+								double *Velocity, int Nx, int Ny, int Nz, double tau1, double tau2, double rho1, double rho2,
 					       double alpha, double beta, double Fx, double Fy, double Fz);
 
 extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
@@ -86,10 +86,10 @@ extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A
 
 extern "C" void ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int N);
 
-extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *Vel, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz);
 
-extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
+extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Vel, double *A_even, double *A_odd,
 								  double *B_even, double *B_odd, int Nx, int Ny, int Nz);
 
 extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
