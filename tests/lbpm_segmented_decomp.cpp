@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
 		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
 		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
 		MPI_Bcast(&xStart,1,MPI_INT,0,comm);
