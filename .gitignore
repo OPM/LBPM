@@ -3,6 +3,7 @@
 *.o*
 *.e*
 *.dat
+*.swp
 hybrid
 bin
 lib
