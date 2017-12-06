@@ -849,11 +849,13 @@ int main(int argc, char **argv)
 		// Pressure boundary conditions
 		if (BoundaryCondition==1 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==1 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 		}
@@ -861,11 +863,13 @@ int main(int argc, char **argv)
 		// Velocity boundary conditions
 		if (BoundaryCondition==2 && Mask.kproc == 0)	{
 			ScaLBL_D3Q19_Velocity_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,0);
 		}
 		if (BoundaryCondition==2 && Mask.kproc == nprocz-1){
 			ScaLBL_D3Q19_Velocity_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 			ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,Nz-1);
 		}
@@ -878,11 +882,13 @@ int main(int argc, char **argv)
 			// set the initial boundary conditions
 			if (Mask.kproc == 0)	{
 				ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+	            ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 				ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			    ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 			}
 			if (Mask.kproc == nprocz-1){
 				ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+	            ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
 				ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 			    ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 			}
