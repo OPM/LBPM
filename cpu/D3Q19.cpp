@@ -282,7 +282,7 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 }
 
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double flux,
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double Q,
 								  int Nx, int Ny, int Nz){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -293,7 +293,6 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 	double din = 0.f;
 	N = Nx*Ny*Nz;
 
-	double A = 1.f*double((Nx-2)*(Ny-2));
 	double sum = 0.f;
 	char id;
 	for (n=Nx*Ny; n<2*Nx*Ny; n++){
@@ -331,11 +330,11 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 		}
 	}
-	din = sum/(A*(1.0-flux));
+	din = sum/(1.0-Q);
 	return din;
 }
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux,
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double Q,
 		int Nx, int Ny, int Nz, int outlet){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -347,7 +346,6 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *dis
 	N = Nx*Ny*Nz;
 
 	// Loop over the boundary - threadblocks delineated by start...finish
-	double A = 1.f*double((Nx-2)*(Ny-2));
 	double sum = 0.f;
     char id;
 	for (n=outlet; n<N-Nx*Ny; n++){
@@ -380,7 +378,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *dis
             sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
         }
 	}
-	dout = sum/(A*(1.0+flux));
+	dout = sum/(1.0+Q);
 	return dout;
 }
 

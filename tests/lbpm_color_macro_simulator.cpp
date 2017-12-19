@@ -501,16 +501,17 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (Dm.kproc==0 && k==0)			id[n]=1;
-					if (Dm.kproc==0 && k==1)			id[n]=1;
-					if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
-					if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					if (id[n] > 0){
+						if (Dm.kproc==0 && k==0)			id[n]=1;
+						if (Dm.kproc==0 && k==1)			id[n]=1;
+						if (Dm.kproc==nprocz-1 && k==Nz-2)	id[n]=2;
+						if (Dm.kproc==nprocz-1 && k==Nz-1)	id[n]=2;
+					}
 					Mask.id[n] = id[n];
 				}
 			}
 		}
 	}
-
 
 	// Initialize communication structures in averaging domain
 	for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
@@ -711,10 +712,7 @@ int main(int argc, char **argv)
 	  double Area=double(Dm.nprocx*Dm.nprocy*(Dm.Nx-2)*(Dm.Ny-2));
 	  if (rank==0){
 	    printf("Using flux boundary condition \n");
-	    printf("   flux = %f \n",flux);
-	    printf("   area = %f \n",Area);
-	    printf("   Q = %f \n",flux*Area);
-	    printf("   dsw /dt  = %f (expected)\n",flux/(porosity*double(Dm.nprocz*(Dm.Nz-2))));
+	    printf("   Volumetric flux: Q = %f \n",flux);
 	    printf("   outlet pressure: %f \n",dout);
 
 	  }
@@ -723,14 +721,14 @@ int main(int argc, char **argv)
 	  }
 	  double tmpdin=din;
 	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-	  din=din/(1.0*Dm.nprocx*Dm.nprocy);
 
 	  if (pBC && Dm.kproc == 0){
 	    if (rank==0) printf("Flux = %.3e, Computed inlet pressure: %f \n",flux,din);
 	    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-
+		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+		ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
 	  }
 
 	  if (pBC && Dm.kproc == nprocz-1){
@@ -738,6 +736,8 @@ int main(int argc, char **argv)
 	    ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
 		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+		ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 	  }
 	}
 
@@ -955,15 +955,12 @@ int main(int argc, char **argv)
 		// Set flux boundary condition
 		if (BoundaryCondition==4){
 		  din=0.f;
-		  double Area=double(Dm.nprocx*Dm.nprocy*(Dm.Nx-2)*(Dm.Ny-2));
 
 		  if (pBC && Dm.kproc == 0){
 		     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,Nx,Ny,Nz);
 		  }
 		  double tmpdin=din;
 		  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-		  din=din/(1.0*Dm.nprocx*Dm.nprocy);
-
 
 		  if (pBC && Dm.kproc == 0){
 		    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
