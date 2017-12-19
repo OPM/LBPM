@@ -547,7 +547,7 @@ __global__ void dvc_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, doubl
 	}
 }
 
-__global__ void dvc_D3Q19_Flux_BC_z(char *ID, double *disteven, double *distodd, double flux, double *dvcsum,
+__global__ void dvc_D3Q19_Flux_BC_z(char *ID, double *disteven, double *distodd, double flux, double area, double *dvcsum,
 								  int Nx, int Ny, int Nz){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -557,7 +557,7 @@ __global__ void dvc_D3Q19_Flux_BC_z(char *ID, double *disteven, double *distodd,
 	double f10,f12,f13,f16,f17;
 
 	//double A = 1.f*double(Nx*Ny);
-	double factor = 1.f/((1.0-flux));
+	double factor = 1.f/((area-flux));
 
 	double sum = 0.f;
 
@@ -609,7 +609,7 @@ __global__ void dvc_D3Q19_Flux_BC_z(char *ID, double *disteven, double *distodd,
 	   atomicAdd(dvcsum, sum);
 }
 
-__global__ void dvc_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux, double *dvcsum,
+__global__ void dvc_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux, double area, double *dvcsum,
 								   int Nx, int Ny, int Nz, int outlet){
 	int n,N;
 	// distributions
@@ -619,7 +619,7 @@ __global__ void dvc_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd,
 	N = Nx*Ny*Nz;
 	n = outlet +  blockIdx.x*blockDim.x + threadIdx.x;
 
-	double factor = 1.f/(1.0+flux);
+	double factor = 1.f/(area+flux);
 	double sum = 0.f;
 
 	// Loop over the boundary - threadblocks delineated by start...finish
@@ -887,7 +887,7 @@ extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, do
 	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(disteven, distodd, uz, Nx, Ny, Nz, outlet);
 }
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux,int Nx, int Ny, int Nz){
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux, double area, int Nx, int Ny, int Nz){
 
 	int GRID = Nx*Ny / 512 + 1;
 
@@ -904,7 +904,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	cudaMemset(dvcsum,0,sizeof(double)*Nx*Ny);
 
 	// compute the local flux and store the result
-	dvc_D3Q19_Flux_BC_z<<<GRID,512>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz);
+	dvc_D3Q19_Flux_BC_z<<<GRID,512>>>(disteven, distodd, flux, area, dvcsum, Nx, Ny, Nz);
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
@@ -916,7 +916,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	return din;
 }
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux, int Nx, int Ny, int Nz, int outlet){
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux, double area, int Nx, int Ny, int Nz, int outlet){
 
 	int GRID = Nx*Ny / 512 + 1;
 
@@ -933,7 +933,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	cudaMemset(dvcsum,0,sizeof(double)*Nx*Ny);
 
 	// compute the local flux and store the result
-	dvc_D3Q19_Flux_BC_Z<<<GRID,512>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz, outlet);
+	dvc_D3Q19_Flux_BC_Z<<<GRID,512>>>(disteven, distodd, flux, area, dvcsum, Nx, Ny, Nz, outlet);
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);

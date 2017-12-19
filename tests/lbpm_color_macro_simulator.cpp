@@ -391,6 +391,8 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
+	double inlet_area_local=0.f;
+	double InletArea;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -411,10 +413,15 @@ int main(int argc, char **argv)
 				// compute the porosity (actual interface location used)
 				if (Averages->SDs(n) > 0.0){
 					sum++;	
+					if (k==1){
+					  inlet_area_local+=1.f;
+					}
+
 				}
 			}
 		}
 	}
+	MPI_Allreduce(&inlet_area_local,&InletArea,1,MPI_DOUBLE,MPI_SUM,comm);
 
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank);
@@ -445,11 +452,12 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = pore_vol*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 	//.........................................................
-	// If external boundary conditions are applied remove solid
+	/*	// If external boundary conditions are applied remove solid
 	if (BoundaryCondition >  0  && Dm.kproc == 0){
 	  // zero out the first layer so that no comms are performed on that boundary
 	  for (j=0; j<Ny; j++){
@@ -489,6 +497,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	*/
 	//.........................................................
 	// don't perform computations at the eight corners
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
@@ -713,11 +722,12 @@ int main(int argc, char **argv)
 	  if (rank==0){
 	    printf("Using flux boundary condition \n");
 	    printf("   Volumetric flux: Q = %f \n",flux);
+	    printf("   Inlet area  = %f \n",InletArea);
 	    printf("   outlet pressure: %f \n",dout);
 
 	  }
 	  if (pBC && Dm.kproc == 0){
-	     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,Nx,Ny,Nz);
+	     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
 	  }
 	  double tmpdin=din;
 	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
@@ -957,7 +967,7 @@ int main(int argc, char **argv)
 		  din=0.f;
 
 		  if (pBC && Dm.kproc == 0){
-		     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,Nx,Ny,Nz);
+		     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
 		  }
 		  double tmpdin=din;
 		  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);

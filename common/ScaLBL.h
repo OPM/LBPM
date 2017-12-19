@@ -59,10 +59,10 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, do
 								   int Nx, int Ny, int Nz, int outlet);
 
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double flux,
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double flux, double area,
 								  int Nx, int Ny, int Nz);
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux,
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double flux, double area,
 								   int Nx, int Ny, int Nz, int outlet);
 
 extern "C" void ScaLBL_Color_Init(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz);

@@ -105,16 +105,17 @@ int main (int argc, char **argv)
 		//......................................................................
 
 		double flux = 0.1;
-
+		double area=double((Nx-2)*(Ny-2));
+		
 		//printf("kproc=%i \n",Dm.kproc);
 		if (pBC && Dm.kproc == 0){
-		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,Nx,Ny,Nz);
+		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,area,Nx,Ny,Nz);
 		  printf("Computed inlet pressure: %.10g \n", din);
 		  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		}
 
 		if (pBC && Dm.kproc == nprocz-1){
-			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,area,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		    printf("Computed outlet pressure: %.10g \n", dout);
 			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		}

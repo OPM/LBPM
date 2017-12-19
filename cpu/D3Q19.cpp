@@ -282,7 +282,7 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 }
 
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double Q,
+extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *distodd, double Q, double area,
 								  int Nx, int Ny, int Nz){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -330,11 +330,11 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 		}
 	}
-	din = sum/(1.0-Q);
+	din = sum/(area-Q);
 	return din;
 }
 
-extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double Q,
+extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd, double Q, double area,
 		int Nx, int Ny, int Nz, int outlet){
 	// Note that this routine assumes the distributions are stored "opposite"
 	// odd distributions in disteven and even distributions in distodd.
@@ -378,7 +378,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *dis
             sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
         }
 	}
-	dout = sum/(1.0+Q);
+	dout = sum/(area+Q);
 	return dout;
 }
 
