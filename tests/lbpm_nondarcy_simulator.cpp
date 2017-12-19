@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 				/*
 				 * Set simulation parameters internally
 				 */
-				tau=1.f;
+				tau=0.7;
 				Fx = 0.f;
 				Fy = 0.f;
 				Fz = 1.0e-7;
