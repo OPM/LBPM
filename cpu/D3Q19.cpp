@@ -330,6 +330,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 		}
 	}
+	//printf("sum=%f,area=%f,Q=%f\n",sum,area,Q);
 	din = sum/(area-Q);
 	return din;
 }
