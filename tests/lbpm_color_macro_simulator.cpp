@@ -370,7 +370,6 @@ int main(int argc, char **argv)
 //	char value;
 	char *id;
 	id = new char[N];
-	int sum = 0;
 	double sum_local;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
@@ -427,6 +426,7 @@ int main(int argc, char **argv)
 	}	
 	MPI_Allreduce(&inlet_area_local,&InletArea,1,MPI_DOUBLE,MPI_SUM,comm);
 
+
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	size_t readID;
@@ -434,8 +434,26 @@ int main(int argc, char **argv)
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	readID=fread(id,1,N,IDFILE);
 	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
-
 	fclose(IDFILE);
+
+    // Calculate the actual inlet cross-sectional area
+	double inlet_area_local=0.f;
+	double InletArea;
+    if (Dm.kproc==0)
+    {
+        for ( k=1;k<2;k++){
+            for ( j=1;j<Ny-1;j++){
+                for ( i=1;i<Nx-1;i++){
+                    int n = k*Nx*Ny+j*Nx+i;
+                    if (id[n] > 0){
+                        inlet_area_local+=1.f;
+                    }
+                }
+            }
+        }
+    
+    }
+	MPI_Allreduce(&inlet_area_local,&InletArea,1,MPI_DOUBLE,MPI_SUM,comm);
 
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
 	int kstart,kfinish;
