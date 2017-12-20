@@ -146,10 +146,10 @@ int main (int argc, char **argv)
 		double err;
 
 		double value;
-		value = sum/((Nx-2)*(Ny-2))/din;
+		value = sum/din;
 		printf("Inlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
-		if (err > 1e-14){
+		if (err > 1e-8){
 			error = 1;
 			printf("  Inlet error %f \n",err);
 		}
@@ -166,11 +166,11 @@ int main (int argc, char **argv)
                                           //velocity in the correct directions
 			}
 		}
-		value = sum/((Nx-2)*(Ny-2))/dout;
+		value = sum/dout;
 		err = fabs(flux - value);
 		printf("Outlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
-		if (err > 1e-14){
+		if (err > 1e-8){
 			error += 2;
 			printf("   Outlet error %f \n",err);
 		}
