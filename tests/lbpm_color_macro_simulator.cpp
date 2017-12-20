@@ -391,8 +391,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
-	double inlet_area_local=0.f;
-	double InletArea;
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -413,14 +412,19 @@ int main(int argc, char **argv)
 				// compute the porosity (actual interface location used)
 				if (Averages->SDs(n) > 0.0){
 					sum++;	
-					if (k==1){
-					  inlet_area_local+=1.f;
-					}
-
 				}
 			}
 		}
 	}
+
+	double inlet_area_local=0.f;
+	double InletArea;
+	for ( j=1;j<Ny-1;j++){
+		for ( i=1;i<Nx-1;i++){
+			int n=Nx*Ny+j*Nx+i;
+			if (id[n] > 0)  inlet_area_local+=1.f;
+		}
+	}	
 	MPI_Allreduce(&inlet_area_local,&InletArea,1,MPI_DOUBLE,MPI_SUM,comm);
 
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
@@ -717,7 +721,7 @@ int main(int argc, char **argv)
 
 	// Set flux boundary condition
 	if (BoundaryCondition==4){
-	  din=0.f;
+	  double tmpdin=0.f;
 	  double Area=double(Dm.nprocx*Dm.nprocy*(Dm.Nx-2)*(Dm.Ny-2));
 	  if (rank==0){
 	    printf("Using flux boundary condition \n");
@@ -727,9 +731,8 @@ int main(int argc, char **argv)
 
 	  }
 	  if (pBC && Dm.kproc == 0){
-	     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
+	     tmpdin = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
 	  }
-	  double tmpdin=din;
 	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 
 	  if (pBC && Dm.kproc == 0){
@@ -964,12 +967,11 @@ int main(int argc, char **argv)
 
 		// Set flux boundary condition
 		if (BoundaryCondition==4){
-		  din=0.f;
+		  double tmpdin=0.f;
 
 		  if (pBC && Dm.kproc == 0){
-		     din = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
+		     tmpdin = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
 		  }
-		  double tmpdin=din;
 		  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 
 		  if (pBC && Dm.kproc == 0){
