@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	sum=0;
+	double sum=0;
 	pore_vol = 0.0;
 	for ( k=0;k<Nz;k++){
 		for ( j=0;j<Ny;j++){
@@ -415,17 +415,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-	double inlet_area_local=0.f;
-	double InletArea;
-	for ( j=1;j<Ny-1;j++){
-		for ( i=1;i<Nx-1;i++){
-			int n=Nx*Ny+j*Nx+i;
-			if (id[n] > 0)  inlet_area_local+=1.f;
-		}
-	}	
-	MPI_Allreduce(&inlet_area_local,&InletArea,1,MPI_DOUBLE,MPI_SUM,comm);
-
 
 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank);
