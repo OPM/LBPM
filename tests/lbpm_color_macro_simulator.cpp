@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 	//.................................................
 	
 	double flux = 0.f;
-	if (BoundaryCondition==4) flux = din;
+	if (BoundaryCondition==4) flux = din*rho1; // mass flux must adjust for density (see formulation for details)
 
     // Get the rank info
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
@@ -733,9 +733,9 @@ int main(int argc, char **argv)
 	}
 
 	// Set flux boundary condition
+	double SumLocal,SumGlobal;
 	if (BoundaryCondition==4){
-	  double tmpdin=0.f;
-	  double Area=double(Dm.nprocx*Dm.nprocy*(Dm.Nx-2)*(Dm.Ny-2));
+	  double SumLocal=0.f;
 	  if (rank==0){
 	    printf("Using flux boundary condition \n");
 	    printf("   Volumetric flux: Q = %f \n",flux);
@@ -743,11 +743,13 @@ int main(int argc, char **argv)
 	    printf("   outlet pressure: %f \n",dout);
 
 	  }
+	  SumLocal=0.0;
 	  if (pBC && Dm.kproc == 0){
-	     tmpdin = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
+	     SumLocal = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
 	  }
-	  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-
+	  MPI_Allreduce(&SumLocal,&SumGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	  din = flux / InletArea + SumGlobal;
+	  
 	  if (pBC && Dm.kproc == 0){
 	    if (rank==0) printf("Flux = %.3e, Computed inlet pressure: %f \n",flux,din);
 	    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
@@ -982,31 +984,31 @@ int main(int argc, char **argv)
 
 		// Set flux boundary condition
 		if (BoundaryCondition==4){
-		  double tmpdin=0.f;
+			SumLocal=0.0;
+			if (pBC && Dm.kproc == 0){
+				SumLocal = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
+			}
+			MPI_Allreduce(&SumLocal,&SumGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+			din = flux / InletArea + SumGlobal;
 
-		  if (pBC && Dm.kproc == 0){
-		     tmpdin = ScaLBL_D3Q19_Flux_BC_z(ID,f_even,f_odd,flux,InletArea,Nx,Ny,Nz);
-		  }
-		  MPI_Allreduce(&tmpdin,&din,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+			if (pBC && Dm.kproc == 0){
+				ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
+				ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+				ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			}
 
-		  if (pBC && Dm.kproc == 0){
-		    ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
-	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
-			ScaLBL_Color_BC_z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-		  }
-
-		  if (pBC && Dm.kproc == nprocz-1){
-		   // if (rank==nprocx*nprocy*nprocz-1) printf("Flux = %.3e, Computed outlet pressure: %f \n",flux,dout);
-		    ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
-	        ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
-			ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-		  }
+			if (pBC && Dm.kproc == nprocz-1){
+				// if (rank==nprocx*nprocy*nprocz-1) printf("Flux = %.3e, Computed outlet pressure: %f \n",flux,dout);
+				ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+				ScaLBL_D3Q19_Velocity(ID,f_even,f_odd,Velocity,Nx,Ny,Nz);
+				ScaLBL_Color_BC_Z(Phi,Den,Velocity,A_even,A_odd,B_even,B_odd,Nx,Ny,Nz);
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			}
 		}
 
 		MPI_Barrier(comm);
-        PROFILE_STOP("Update");
+		PROFILE_STOP("Update");
 
 		// Timestep completed!
 		timestep++;
