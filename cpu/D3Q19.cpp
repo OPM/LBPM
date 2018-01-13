@@ -331,7 +331,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 		}
 	}
-	din = sum/(A*(1.0-flux));
+	din = sum/(A);
 	return din;
 }
 
@@ -380,7 +380,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *dis
             sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
         }
 	}
-	dout = sum/(A*(1.0+flux));
+	dout = sum/(A);
 	return dout;
 }
 
@@ -392,6 +392,7 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, do
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz;
+	ux = uy = 0.0;
 
 	N = Nx*Ny*Nz;
 
@@ -435,8 +436,8 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, do
 		//					  f17+f1-f2-f14+f11+f7-f8-f10+f9);
 		//			f13= -din*uz+f5+f15+f18+f11+f14-f6-f16-f17-f12;
 		// Determine the inlet flow velocity
-		ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
-		uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
+		//ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
+		//uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
 		uz = din - (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
@@ -479,6 +480,7 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, do
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz;
+	ux = uy = 0.0;
 
 	double Cxz,Cyz;
 	N = Nx*Ny*Nz;
@@ -526,8 +528,8 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, do
 		//uz = -1.0 + (f0+f4+f3+f2+f1+f8+f7+f9+f10 + 2*(f6+f16+f17+f12+f13))/dout;
 
 		// Determine the inlet flow velocity
-		ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-		uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
 		uz = -dout + (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
 
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
