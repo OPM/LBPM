@@ -330,7 +330,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(char *ID,  double *disteven, double *di
 			sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 		}
 	}
-	din = sum/(A);
+	din = sum/area;
 
 	return din;
 }
@@ -379,7 +379,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *dis
             sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
         }
 	}
-	dout = sum/(A);
+	dout = sum/area;
 	return dout;
 }
 

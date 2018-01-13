@@ -557,7 +557,7 @@ __global__ void dvc_D3Q19_Flux_BC_z(char *ID, double *disteven, double *distodd,
 	double f10,f12,f13,f16,f17;
 
 	//double A = 1.f*double(Nx*Ny);
-	double factor = 1.f/(double((Nx-2)*(Ny-2)));
+	double factor = 1.f/area;
 
 	double sum = 0.f;
 
@@ -619,7 +619,7 @@ __global__ void dvc_D3Q19_Flux_BC_Z(char *ID, double *disteven, double *distodd,
 	N = Nx*Ny*Nz;
 	n = outlet +  blockIdx.x*blockDim.x + threadIdx.x;
 
-	double factor = 1.f/(double((Nx-2)*(Ny-2)));
+	double factor = 1.f/area;
 
 	double sum = 0.f;
 
