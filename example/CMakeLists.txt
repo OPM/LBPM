@@ -11,6 +11,7 @@ INSTALL_EXAMPLE( relperm )
 INSTALL_EXAMPLE( Poiseuille )
 INSTALL_EXAMPLE( Juanes )
 INSTALL_EXAMPLE( MicroModel )
+INSTALL_EXAMPLE( Tiff )
 
 
 # Create unit tests for each example

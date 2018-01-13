@@ -103,20 +103,22 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 		if (jmin>Ny)	jmin = Ny-1;
 		if (jmax<0)		jmax = 0;
 		if (jmax>Ny)	jmax = Ny-1;
-		// Loop over the domain for this sphere (may be null)
-		for (k=0;k<Nz;k++){
-			for (j=jmin;j<jmax;j++){
-				for (i=imin;i<imax;i++){
-					// x,y,z is distance in physical units
-					x = i*hx;
-					y = j*hy;
-					// if inside disc, set to zero
-					// get the position in the list -- x direction assigned the same
-					n = k*Nx*Ny+j*Nx+i;
-					// Compute the distance
-					distance = sqrt((cx-x)*(cx-x)+(cy-y)*(cy-y)) - r;
-					// Assign the minimum distance
-					if (distance < Distance[n])		Distance[n] = distance;
+		if (imin < Nx-1 && jmin< Ny-1 && imax > 0 && jmax >0){
+			// Loop over the domain for this sphere (may be null)
+			for (k=0;k<Nz;k++){
+				for (j=jmin;j<jmax;j++){
+					for (i=imin;i<imax;i++){
+						// x,y,z is distance in physical units
+						x = i*hx;
+						y = j*hy;
+						// if inside disc, set to zero
+						// get the position in the list -- x direction assigned the same
+						n = k*Nx*Ny+j*Nx+i;
+						// Compute the distance
+						distance = sqrt((cx-x)*(cx-x)+(cy-y)*(cy-y)) - r;
+						// Assign the minimum distance
+						if (distance < Distance[n])		Distance[n] = distance;
+					}
 				}
 			}
 		}
@@ -170,7 +172,9 @@ int main(int argc, char **argv)
 	int outlet_radius; // radius of the outlet layer (flow goes around)
 	int depth;         // depth fo the micromodel
 	int i,j,k,n;
-
+	int BCx,BCX,BCy,BCY;
+	BCx = BCX = BCy = BCY = 0;
+	
 	if (rank==0){
 		//.......................................................................
 		// Reading the domain information file
@@ -208,17 +212,20 @@ int main(int argc, char **argv)
 
 	// **************************************************************
 	double Rin,Rout;
-	if (argc == 4){
+	if (argc == 8){
 		Rin=strtod(argv[1],NULL);
 		Rout=strtod(argv[2],NULL);
 		depth = atoi(argv[3]);
-
+		BCx = atoi(argv[4]);
+		BCX = atoi(argv[5]);
+		BCy = atoi(argv[6]);
+		BCY = atoi(argv[7]);
 		//inlet_radius=atoi(argv[1]);
 		//outlet_radius=atoi(argv[2]);
 	}
 
 	else{
-	  INSIST(argc==4,"Did not provide correct input arguments! Rin, Rout, Depth");
+	  INSIST(argc==8,"Did not provide correct input arguments! Rin, Rout, Depth");
 	}
 
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -392,9 +399,9 @@ int main(int argc, char **argv)
 	pore_vol = 0.0;
 	printf("Bottom disc=%i\n",BotDisc);
 	printf("Top disc=%i\n",TopDisc);
-	for ( k=1;k<Nz-1;k++){
-		for ( j=1;j<Ny-1;j++){
-			for ( i=1;i<Nx-1;i++){
+	for ( k=0;k<Nz;k++){
+		for ( j=0;j<Ny;j++){
+			for ( i=0;i<Nx;i++){
 
 				// global index
 				int gi = iproc*Nx + i;
@@ -424,6 +431,7 @@ int main(int argc, char **argv)
 					else if (dist_to_outlet > 0.f) 	id[n]=2;
 					else 				id[n]=2;
 				}
+
 				// compute the porosity (actual interface location used)
 				if (SignDist(n) > 0.0){
 					sum++;

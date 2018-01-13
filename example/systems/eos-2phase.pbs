@@ -1,0 +1,55 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N Juanes
+#PBS -j oe
+#PBS -l walltime=04:00:00,nodes=64
+##PBS -l walltime=01:00:00,nodes=18
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+##PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#LBPM_WIA_INSTALL_DIR=/lustre/atlas/proj-shared/geo106/build-eos-LBPM-WIA
+
+LBPM_WIA_INSTALL_DIR=/ccs/proj/geo106/eos/VarDen/LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+
+module load cray-hdf5-parallel
+module load cray-netcdf-hdf5parallel
+
+
+#module swap cray-mpich2 cray-mpich2/5.6.3
+#module load cudatoolkit
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+#export MPICH_RDMA_ENABLED_CUDA=1
+#aprun -n 27 -N 1 /lustre/atlas/scratch/mcclurej/geo106/LBPM-WIA/bin/lb2_Color_wia_mpi
+
+#LIST=$(ls|grep sw)
+#for DIR in $LIST; do 
+#  cd $DIR
+#  sat=$(cat Color.in  |head -3 | tail -1)
+#  aprun -n 64 $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_decomp
+#  aprun -n 64 $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_pp
+#  aprun -n 144 $LBPM_WIA_INSTALL_DIR/bin/lbpm_random_pp 1 0 
+#  aprun -n 144 $LBPM_WIA_INSTALL_DIR/bin/lbpm_random_pp 1 1
+
+#  aprun -n 144 $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_decomp 0 2
+
+#     aprun -n 64 $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_decomp 0 2
+
+     aprun -n 1024 $LBPM_WIA_INSTALL_DIR/bin/lbpm_color_macro_simulator
+#     aprun -n 256 $LBPM_WIA_INSTALL_DIR/bin/lbpm_color_simulator
+
+#  aprun -n 16 -N 8 $LBPM_WIA_INSTALL_DIR/bin/lbpm_segmented_pp 
+#  aprun -n 16 -N 8 $LBPM_WIA_INSTALL_DIR/bin/lbpm_random_pp 0 1
+
+
+exit;

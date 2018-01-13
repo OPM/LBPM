@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
 		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
 		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
 		MPI_Bcast(&xStart,1,MPI_INT,0,comm);
@@ -169,6 +169,10 @@ int main(int argc, char **argv)
 									int y = yStart + jp*ny + j-1;
 									//		int z = zStart + kp*nz + k-1;
 									int z = zStart + kp*nz + k-1 - z_transition_size;
+									if (x<xStart) 	x=xStart;
+									if (!(x<Nx))	x=Nx-1;
+									if (y<yStart) 	y=yStart;
+									if (!(y<Ny))	y=Ny-1;
 									if (z<zStart) 	z=zStart;
 									if (!(z<Nz))	z=Nz-1;
 									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;

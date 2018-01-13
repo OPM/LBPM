@@ -105,16 +105,17 @@ int main (int argc, char **argv)
 		//......................................................................
 
 		double flux = 0.1;
-
+		double area=double((Nx-2)*(Ny-2));
+		
 		//printf("kproc=%i \n",Dm.kproc);
 		if (pBC && Dm.kproc == 0){
-		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,Nx,Ny,Nz);
+		  din = ScaLBL_D3Q19_Flux_BC_z(ID, f_even,f_odd,flux,area,Nx,Ny,Nz);
 		  printf("Computed inlet pressure: %.10g \n", din);
 		  ScaLBL_D3Q19_Pressure_BC_z(f_even,f_odd,din,Nx,Ny,Nz);
 		}
 
 		if (pBC && Dm.kproc == nprocz-1){
-			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,Nx,Ny,Nz,Nx*Ny*(Nz-2));
+			dout = ScaLBL_D3Q19_Flux_BC_Z(ID,f_even,f_odd,flux,area,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		    printf("Computed outlet pressure: %.10g \n", dout);
 			ScaLBL_D3Q19_Pressure_BC_Z(f_even,f_odd,dout,Nx,Ny,Nz,Nx*Ny*(Nz-2));
 		}
@@ -145,10 +146,10 @@ int main (int argc, char **argv)
 		double err;
 
 		double value;
-		value = sum/((Nx-2)*(Ny-2))/din;
+		value = sum/din;
 		printf("Inlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
-		if (err > 1e-14){
+		if (err > 1e-8){
 			error = 1;
 			printf("  Inlet error %f \n",err);
 		}
@@ -165,11 +166,11 @@ int main (int argc, char **argv)
                                           //velocity in the correct directions
 			}
 		}
-		value = sum/((Nx-2)*(Ny-2))/dout;
+		value = sum/dout;
 		err = fabs(flux - value);
 		printf("Outlet Flux: input=%f, output=%f \n",flux,value);
 		err = fabs(flux - value);
-		if (err > 1e-14){
+		if (err > 1e-8){
 			error += 2;
 			printf("   Outlet error %f \n",err);
 		}

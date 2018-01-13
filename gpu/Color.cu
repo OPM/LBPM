@@ -144,9 +144,9 @@ __global__  void dvc_ScaLBL_Color_BC_z(double *Phi, double *Den, double *Velocit
 
 			na = 1.0;
 			nb = 0.0;
-			ux = Velocity[n];
-			uy = Velocity[N+n];
-			uz = Velocity[2*N+n];
+			ux = -1.0*Velocity[n];
+			uy = -1.0*Velocity[N+n];
+			uz = -1.0*Velocity[2*N+n];
 			A_even[n] = 0.3333333333333333*na;
 			B_even[n] = 0.3333333333333333*nb;
 
@@ -199,9 +199,9 @@ __global__  void dvc_ScaLBL_Color_BC_Z(double *Phi, double *Den, double *Velocit
 
 			na = 0.0;
 			nb = -1.0;
-			ux = Velocity[n];
-			uy = Velocity[N+n];
-			uz = Velocity[2*N+n];
+			ux = -1.0*Velocity[n];
+			uy = -1.0*Velocity[N+n];
+			uz = -1.0*Velocity[2*N+n];
 			A_even[n] = 0.3333333333333333*na;
 			B_even[n] = 0.3333333333333333*nb;
 
