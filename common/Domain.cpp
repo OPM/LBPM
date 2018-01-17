@@ -218,6 +218,7 @@ void Domain::getBlobConnections(int * List, int count, int neighbor, int directi
 
 void Domain::InitializeRanks()
 {
+    int i,j,k;
     // map the rank to the block index
     kproc = rank/(nprocx*nprocy);
     jproc = (rank-nprocx*nprocy*kproc)/nprocx;
