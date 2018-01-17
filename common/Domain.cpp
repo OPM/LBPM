@@ -219,14 +219,15 @@ void Domain::getBlobConnections(int * List, int count, int neighbor, int directi
 void Domain::InitializeRanks()
 {
     // map the rank to the block index
-    iproc = rank%nprocx;
-    jproc = (rank/nprocx)%nprocy;
     kproc = rank/(nprocx*nprocy);
-
+    jproc = (rank-nprocx*nprocy*kproc)/nprocx;
+    iproc = rank-nprocx*nprocy*kproc-nprocx*jproc;
+    
     // set up the neighbor ranks
-    int i = iproc;
-    int j = jproc;
-    int k = kproc;
+    i = iproc;
+    j = jproc;
+    k = kproc;
+
     rank_X = getRankForBlock(i+1,j,k);
     rank_x = getRankForBlock(i-1,j,k);
     rank_Y = getRankForBlock(i,j+1,k);
@@ -256,13 +257,15 @@ void Domain::CommInit(MPI_Comm Communicator){
     //......................................................................................
     //Get the ranks of each process and it's neighbors
     // map the rank to the block index
-    iproc = rank%nprocx;
-    jproc = (rank/nprocx)%nprocy;
     kproc = rank/(nprocx*nprocy);
+    jproc = (rank-nprocx*nprocy*kproc)/nprocx;
+    iproc = rank-nprocx*nprocy*kproc-nprocx*jproc;
+    
     // set up the neighbor ranks
     i = iproc;
     j = jproc;
     k = kproc;
+
     rank_X = getRankForBlock(i+1,j,k);
     rank_x = getRankForBlock(i-1,j,k);
     rank_Y = getRankForBlock(i,j+1,k);
