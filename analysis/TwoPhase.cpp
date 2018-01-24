@@ -1,8 +1,8 @@
-#include "TwoPhase.h"
+#include "analysis/TwoPhase.h"
 
-#include "pmmc.h"
-#include "Domain.h"
-#include "Communication.h"
+#include "analysis/pmmc.h"
+#include "common/Domain.h"
+#include "common/Communication.h"
 #include "analysis/analysis.h"
 
 #include "shared_ptr.h"
