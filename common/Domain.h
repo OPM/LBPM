@@ -24,6 +24,7 @@ void read_domain( int rank, int nprocs, MPI_Comm comm,
     int& nprocx, int& nprocy, int& nprocz, int& nx, int& ny, int& nz,
     int& nspheres, double& Lx, double& Ly, double& Lz );
 
+
 //! Class to hold domain info
 struct Domain{
     // Default constructor
@@ -89,16 +90,15 @@ struct Domain{
 
 	// Solid indicator function
 	char *id;
-	// Blob information
-	IntArray BlobLabel;
-	IntArray BlobGraph;
 
 	void InitializeRanks();
 	void CommInit(MPI_Comm comm);
 	void CommunicateMeshHalo(DoubleArray &Mesh);
-	void BlobComm(MPI_Comm comm);
+	void AssignComponentLabels(double *phase);
 
-	void AssignBlobConnections();
+	void TestCommInit(MPI_Comm comm);
+
+    //void MemoryOptimizedLayout(IntArray &Map, int *neighborList, int Np);
 
 private:
 
@@ -109,28 +109,6 @@ private:
 		int k2 = (k+nprocz)%nprocz;
 		return i2 + j2*nprocx + k2*nprocx*nprocy;
 	}
-	inline void PackBlobData(int *list, int count, int *sendbuf, int *data){
-		// Fill in the phase ID values from neighboring processors
-		// This packs up the values that need to be sent from one processor to another
-		int idx,n;
-		for (idx=0; idx<count; idx++){
-			n = list[idx];
-			sendbuf[idx] = data[n];
-		}
-	}
-	inline void UnpackBlobData(int *list, int count, int *recvbuf, int *data){
-		// Fill in the phase ID values from neighboring processors
-		// This unpacks the values once they have been recieved from neighbors
-		int idx,n;
-		for (idx=0; idx<count; idx++){
-			n = list[idx];
-			data[n] = recvbuf[idx];
-		}
-	}
-	
-	int VoxelConnection(int n);
-	
-	void getBlobConnections(int * List, int count, int neighbor, int direction);
 };
 
 
@@ -595,161 +573,6 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
     }
     File.close();
 
-}
-inline double minmod(double &a, double &b){
-
-	double value;
-
-	value = a;
-	if 	( a*b < 0.0)	    value=0.0;
-	else if (fabs(a) > fabs(b)) value = b;
-
-	return value;
-}
-
-inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
-
-	/*
-	 * This routine converts the data in the Distance array to a signed distance
-	 * by solving the equation df/dt = sign(1-|grad f|), where Distance provides
-	 * the values of f on the mesh associated with domain Dm
-	 * It has been tested with segmented data initialized to values [-1,1]
-	 * and will converge toward the signed distance to the surface bounding the associated phases
-	 *
-	 * Reference:
-	 * Min C (2010) On reinitializing level set functions, Journal of Computational Physics	229
-	 */
-
-	int i,j,k;
-	double dt=0.1;
-	double Dx,Dy,Dz;
-	double Dxp,Dxm,Dyp,Dym,Dzp,Dzm;
-	double Dxxp,Dxxm,Dyyp,Dyym,Dzzp,Dzzm;
-	double sign,norm;
-	double LocalVar,GlobalVar,LocalMax,GlobalMax;
-
-	int xdim,ydim,zdim;
-	xdim=Dm.Nx-2;
-	ydim=Dm.Ny-2;
-	zdim=Dm.Nz-2;
-	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
-
-	// Arrays to store the second derivatives
-	DoubleArray Dxx(Dm.Nx,Dm.Ny,Dm.Nz);
-	DoubleArray Dyy(Dm.Nx,Dm.Ny,Dm.Nz);
-	DoubleArray Dzz(Dm.Nx,Dm.Ny,Dm.Nz);
-
-	int count = 0;
-	while (count < timesteps){
-
-		// Communicate the halo of values
-		fillData.fill(Distance);
-
-		// Compute second order derivatives
-		for (k=1;k<Dm.Nz-1;k++){
-			for (j=1;j<Dm.Ny-1;j++){
-				for (i=1;i<Dm.Nx-1;i++){
-					Dxx(i,j,k) = Distance(i+1,j,k) + Distance(i-1,j,k) - 2*Distance(i,j,k);
-					Dyy(i,j,k) = Distance(i,j+1,k) + Distance(i,j-1,k) - 2*Distance(i,j,k);
-					Dzz(i,j,k) = Distance(i,j,k+1) + Distance(i,j,k-1) - 2*Distance(i,j,k);
-				}
-			}
-		}
-		fillData.fill(Dxx);
-		fillData.fill(Dyy);
-		fillData.fill(Dzz);
-
-		LocalMax=LocalVar=0.0;
-		// Execute the next timestep
-		for (k=1;k<Dm.Nz-1;k++){
-			for (j=1;j<Dm.Ny-1;j++){
-				for (i=1;i<Dm.Nx-1;i++){
-
-					int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
-
-					sign = 1;
-					if (ID[n] == 0) sign = -1;
-
-					// local second derivative terms
-					Dxxp = minmod(Dxx(i,j,k),Dxx(i+1,j,k));
-					Dyyp = minmod(Dyy(i,j,k),Dyy(i,j+1,k));
-					Dzzp = minmod(Dzz(i,j,k),Dzz(i,j,k+1));
-					Dxxm = minmod(Dxx(i,j,k),Dxx(i-1,j,k));
-					Dyym = minmod(Dyy(i,j,k),Dyy(i,j-1,k));
-					Dzzm = minmod(Dzz(i,j,k),Dzz(i,j,k-1));
-
-					/* //............Compute upwind derivatives ...................
-                    Dxp = Distance(i+1,j,k) - Distance(i,j,k) + 0.5*Dxxp;
-                    Dyp = Distance(i,j+1,k) - Distance(i,j,k) + 0.5*Dyyp;
-                    Dzp = Distance(i,j,k+1) - Distance(i,j,k) + 0.5*Dzzp;
-
-
-                    Dxm = Distance(i,j,k) - Distance(i-1,j,k) + 0.5*Dxxm;
-                    Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
-                    Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
-					 */
-					Dxp = Distance(i+1,j,k)- Distance(i,j,k) - 0.5*Dxxp;
-					Dyp = Distance(i,j+1,k)- Distance(i,j,k) - 0.5*Dyyp;
-					Dzp = Distance(i,j,k+1)- Distance(i,j,k) - 0.5*Dzzp;
-
-					Dxm = Distance(i,j,k) - Distance(i-1,j,k) + 0.5*Dxxm;
-					Dym = Distance(i,j,k) - Distance(i,j-1,k) + 0.5*Dyym;
-					Dzm = Distance(i,j,k) - Distance(i,j,k-1) + 0.5*Dzzm;
-
-					// Compute upwind derivatives for Godunov Hamiltonian
-					if (sign < 0.0){
-						if (Dxp + Dxm > 0.f)  	Dx = Dxp*Dxp;
-						else					Dx = Dxm*Dxm;
-
-						if (Dyp + Dym > 0.f)  	Dy = Dyp*Dyp;
-						else					Dy = Dym*Dym;
-
-						if (Dzp + Dzm > 0.f)  	Dz = Dzp*Dzp;
-						else					Dz = Dzm*Dzm;
-					}
-					else{
-
-						if (Dxp + Dxm < 0.f)  	Dx = Dxp*Dxp;
-						else					Dx = Dxm*Dxm;
-
-						if (Dyp + Dym < 0.f)  	Dy = Dyp*Dyp;
-						else					Dy = Dym*Dym;
-
-						if (Dzp + Dzm < 0.f)  	Dz = Dzp*Dzp;
-						else					Dz = Dzm*Dzm;
-					}
-
-					//Dx = max(Dxp*Dxp,Dxm*Dxm);
-					//Dy = max(Dyp*Dyp,Dym*Dym);
-					//Dz = max(Dzp*Dzp,Dzm*Dzm);
-
-					norm=sqrt(Dx + Dy + Dz);
-					if (norm > 1.0) norm=1.0;
-
-					Distance(i,j,k) += dt*sign*(1.0 - norm);
-					LocalVar +=  dt*sign*(1.0 - norm);
-
-					if (fabs(dt*sign*(1.0 - norm)) > LocalMax)
-						LocalMax = fabs(dt*sign*(1.0 - norm));
-				}
-			}
-		}
-
-		MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-		MPI_Allreduce(&LocalMax,&GlobalMax,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
-		GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
-		count++;
-
-
-		if (count%50 == 0 && Dm.rank==0 )
-			printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
-
-		if (fabs(GlobalMax) < 1e-5){
-			if (Dm.rank==0) printf("Exiting with max tolerance of 1e-5 \n");
-			count=timesteps;
-		}
-	}
-	return GlobalVar;
 }
 
 

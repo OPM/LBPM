@@ -4,7 +4,7 @@
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
-#include "ProfilerApp.h"
+//#include "ProfilerApp.h"
 
 
 /********************************************************
@@ -104,7 +104,7 @@ fillHalo<TYPE>::~fillHalo( )
 template<class TYPE>
 void fillHalo<TYPE>::fill( Array<TYPE>& data )
 {
-    PROFILE_START("fillHalo::fill",1);
+    //PROFILE_START("fillHalo::fill",1);
     int depth2 = data.size(3);
     ASSERT((int)data.size(0)==nx+2*ngx);
     ASSERT((int)data.size(1)==ny+2*ngy);
@@ -156,7 +156,7 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
             }
         }
     }
-    PROFILE_STOP("fillHalo::fill",1);
+    //PROFILE_STOP("fillHalo::fill",1);
 }
 template<class TYPE>
 void fillHalo<TYPE>::pack( const Array<TYPE>& data, int i0, int j0, int k0, TYPE *buffer )
@@ -207,7 +207,7 @@ template<class TYPE>
 template<class TYPE1, class TYPE2>
 void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
 {
-    PROFILE_START("fillHalo::copy",1);
+    //PROFILE_START("fillHalo::copy",1);
     ASSERT( (int)src.size(0)==nx || (int)src.size(0)==nx+2*ngx );
     ASSERT( (int)dst.size(0)==nx || (int)dst.size(0)==nx+2*ngx );
     bool src_halo = (int)src.size(0)==nx+2*ngx;
@@ -254,7 +254,7 @@ void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
         }
         fill(dst);
     }
-    PROFILE_STOP("fillHalo::copy",1);
+    //PROFILE_STOP("fillHalo::copy",1);
 }
 
 

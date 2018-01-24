@@ -61,9 +61,6 @@ namespace Utilities
     //! Factor a number into it's prime factors
     std::vector<int> factor(size_t number);
 
-    //! Print AMP Banner
-    void nullUse( void* );
-
 } // namespace Utilities
 
 
