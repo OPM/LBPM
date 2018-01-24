@@ -21,6 +21,8 @@
  * @param[in] timesteps     Maximum number of timesteps to process
  * @return  Returns the global variation
  */
+inline double Eikonal(DoubleArray &Distance, const char *ID, const Domain &Dm, int timesteps);
+
 float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps);
 
 
