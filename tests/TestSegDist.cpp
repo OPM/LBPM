@@ -11,6 +11,8 @@
 #include <fstream>
 #include "common/Array.h"
 #include "common/Domain.h"
+#include "analysis/eikonal.h"
+
 
 int main(int argc, char **argv)
 {

@@ -11,7 +11,8 @@
 #include <sstream>
 #include "common/Array.h"
 #include "common/Domain.h"
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
+#include "analysis/eikonal.h"
 
 inline void MeanFilter(DoubleArray &Mesh){
 	for (int k=1; k<(int)Mesh.size(2)-1; k++){
