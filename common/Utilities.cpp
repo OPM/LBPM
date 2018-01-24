@@ -236,9 +236,9 @@ size_t Utilities::getMemoryUsage()
     size_t N_bytes = 0;
     #if defined(USE_LINUX)
         struct mallinfo meminfo = mallinfo();
-        size_t size_hblkhd = static_cast<size_t>( meminfo.hblkhd );
-        size_t size_uordblks = static_cast<size_t>( meminfo.uordblks );
-        N_bytes = static_cast<size_t>( size_hblkhd + size_uordblks );
+        size_t size_hblkhd = static_cast<unsigned int>( meminfo.hblkhd );
+        size_t size_uordblks = static_cast<unsigned int>( meminfo.uordblks );
+        N_bytes = size_hblkhd + size_uordblks;
     #elif defined(USE_MAC)
         struct task_basic_info t_info;
         mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
@@ -347,3 +347,11 @@ std::vector<int> Utilities::factor(size_t number)
     std::sort( factors.begin(), factors.end() );
     return factors;
 }
+
+
+// Dummy function to prevent compiler from optimizing away variable
+void Utilities::nullUse( void* data )
+{
+    NULL_USE(data);
+}
+
