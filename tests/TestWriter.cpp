@@ -12,7 +12,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
-
+#include "ProfilerApp.h"
 
 inline bool approx_equal( const Point& A, const Point& B )
 {
