@@ -2,23 +2,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <mm_malloc.h>
 
 extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
 	//cudaMalloc(address,size);
-	(*address) = malloc(size);
-    memset(*address,0,size);
+	(*address) = _mm_malloc(size,64);
+	memset(*address,0,size);
 	
 	if (*address==NULL){
 		printf("Memory allocation failed! \n");
 	}
 }
 
-
-extern "C" void ScaLBL_FreeDeviceMemory(void* address){
-	if ( address != NULL )
-        free( address );
+extern "C" void ScaLBL_FreeDeviceMemory(void* pointer){
+	_mm_free(pointer);
 }
-
 
 extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){
 //	cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);

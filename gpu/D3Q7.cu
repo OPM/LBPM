@@ -1,6 +1,6 @@
 // GPU Functions for D3Q7 Lattice Boltzmann Methods
 
-#define NBLOCKS 32
+#define NBLOCKS 560
 #define NTHREADS 128
 
 __global__  void dvc_ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
@@ -55,6 +55,26 @@ __global__ void dvc_ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, 
 			for (component=0; component<number; component++){
 			n = list[idx];
 			Data[number*n+component] += recvbuf[idx*number+component];
+		}
+	}
+}
+
+__global__ void dvc_ScaLBL_D3Q7_Unpack(int q,  int *list,  int start, int count,
+		double *recvbuf, double *dist, int N){
+	//....................................................................................
+	// Unpack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n,idx;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx<count){
+		// Get the value from the list -- note that n is the index is from the send (non-local) process
+		n = list[idx];
+		// unpack the distribution to the proper location
+		if (!(n<0)) { dist[q*N+n] = recvbuf[start+idx];
+		//printf("%f \n",,dist[q*N+n]);
 		}
 	}
 }
@@ -185,6 +205,11 @@ __global__  void dvc_ScaLBL_D3Q7_Density(char *ID, double *disteven, double *dis
             }
 		}
 	}
+}
+
+extern "C" void ScaLBL_D3Q7_Unpack(int q, int *list,  int start, int count, double *recvbuf, double *dist, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_Unpack <<<GRID,512 >>>(q, list, start, count, recvbuf, dist, N);
 }
 
 extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){

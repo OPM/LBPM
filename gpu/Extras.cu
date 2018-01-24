@@ -10,9 +10,8 @@ extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
 	}	
 }
 
-extern "C" void ScaLBL_FreeDeviceMemory(void* address){
-	if ( address != NULL )
-        cudaFree( address );
+extern "C" void ScaLBL_FreeDeviceMemory(void* pointer){
+       cudaFree(pointer);
 }
 
 extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size){

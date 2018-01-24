@@ -4,7 +4,7 @@
 //*************************************************************************
 #include <cuda.h>
 
-#define NBLOCKS 32
+#define NBLOCKS 560
 #define NTHREADS 128
 
 __global__ void INITIALIZE(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
@@ -106,7 +106,9 @@ __global__ void Compute_VELOCITY(char *ID, double *disteven, double *distodd, do
 }
 
 //*************************************************************************
-__global__ void D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
+__global__ void 
+__launch_bounds__(512,2)
+D3Q19_MRT(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz,
 					double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz)
 {
 

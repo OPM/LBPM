@@ -1,23 +1,5 @@
 // CPU Functions for D3Q7 Lattice Boltzmann Methods
 
-extern "C" void ScaLBL_D3Q7_Unpack(int q, int *list,  int start, int count,
-					   double *recvbuf, double *dist, int N){
-	//....................................................................................
-	// Unack distribution from the recv buffer
-	// Distribution q matche Cqx, Cqy, Cqz
-	// swap rule means that the distributions in recvbuf are OPPOSITE of q
-	// dist may be even or odd distributions stored by stream layout
-	//....................................................................................
-	int n,idx;
-	for (idx=0; idx<count; idx++){
-		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = list[idx];
-		// unpack the distribution to the proper location
-		if (!(n<0)) dist[q*N+n] = recvbuf[start+idx];
-		//dist[q*N+n] = recvbuf[start+idx];
-
-	}
-}
 extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
@@ -40,6 +22,26 @@ extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, doub
 		Data[n] = recvbuf[idx];
 	}
 }
+
+extern "C" void ScaLBL_D3Q7_Unpack(int q, int *list,  int start, int count,
+		double *recvbuf, double *dist, int N){
+	//....................................................................................
+	// Unack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n,idx;
+	for (idx=0; idx<count; idx++){
+		// Get the value from the list -- note that n is the index is from the send (non-local) process
+		n = list[idx];
+		// unpack the distribution to the proper location
+		if (!(n<0)) dist[q*N+n] = recvbuf[start+idx];
+		//dist[q*N+n] = recvbuf[start+idx];
+
+	}
+}
+
 
 extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N){
 	//....................................................................................
