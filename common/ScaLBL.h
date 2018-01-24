@@ -22,6 +22,7 @@ extern "C" void ScaLBL_DeviceBarrier();
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N);
 
 extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list, int start, int count, double *recvbuf, double *dist, int N);
+extern "C" void ScaLBL_D3Q7_Unpack(int q, int *list, int start, int count, double *recvbuf, double *dist, int N);
 
 extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double *Data, int N);
 
@@ -1373,27 +1374,27 @@ void ScaLBL_Communicator::BiRecvD3Q7(double *A_even, double *A_odd, double *B_ev
 	//..................................................................................
 	*/
 	//...Map recieve list for the X face: q=2,8,10,12,13 ................................
-	ScaLBL_D3Q19_Unpack(0,dvcRecvDist_X,0,recvCount_X,recvbuf_X,A_odd,N);
-	ScaLBL_D3Q19_Unpack(0,dvcRecvDist_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,N);
+	ScaLBL_D3Q7_Unpack(0,dvcRecvDist_X,0,recvCount_X,recvbuf_X,A_odd,N);
+	ScaLBL_D3Q7_Unpack(0,dvcRecvDist_X,recvCount_X,recvCount_X,recvbuf_X,B_odd,N);
 	//...................................................................................
 	//...Map recieve list for the x face: q=1,7,9,11,13..................................
-	ScaLBL_D3Q19_Unpack(1,dvcRecvDist_x,0,recvCount_x,recvbuf_x,A_even,N);
-	ScaLBL_D3Q19_Unpack(1,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,B_even,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_x,0,recvCount_x,recvbuf_x,A_even,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,B_even,N);
 	//...................................................................................
 	//...Map recieve list for the y face: q=4,8,9,16,18 .................................
-	ScaLBL_D3Q19_Unpack(1,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,A_odd,N);
-	ScaLBL_D3Q19_Unpack(1,dvcRecvDist_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,A_odd,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_Y,recvCount_Y,recvCount_Y,recvbuf_Y,B_odd,N);
 	//...................................................................................
 	//...Map recieve list for the Y face: q=3,7,10,15,17 ................................
-	ScaLBL_D3Q19_Unpack(2,dvcRecvDist_y,0,recvCount_y,recvbuf_y,A_even,N);
-	ScaLBL_D3Q19_Unpack(2,dvcRecvDist_y,recvCount_y,recvCount_y,recvbuf_y,B_even,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_y,0,recvCount_y,recvbuf_y,A_even,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_y,recvCount_y,recvCount_y,recvbuf_y,B_even,N);
 	//...................................................................................
 	//...Map recieve list for the z face<<<6,12,13,16,17)................................
-	ScaLBL_D3Q19_Unpack(2,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,A_odd,N);
-	ScaLBL_D3Q19_Unpack(2,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,A_odd,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,B_odd,N);
 	//...Map recieve list for the Z face<<<5,11,14,15,18)................................
-	ScaLBL_D3Q19_Unpack(3,dvcRecvDist_z,0,recvCount_z,recvbuf_z,A_even,N);
-	ScaLBL_D3Q19_Unpack(3,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,B_even,N);
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_z,0,recvCount_z,recvbuf_z,A_even,N);
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,B_even,N);
 	//..................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
