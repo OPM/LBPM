@@ -37,8 +37,7 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
-extern "C" void ScaLBL_D3Q19_Pressure(const char *ID, const double *disteven, const double *distodd, 
-		double *Pressure, int Nx, int Ny, int Nz);
+extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,

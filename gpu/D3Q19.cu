@@ -1552,46 +1552,45 @@ __global__  void dvc_ScaLBL_D3Q19_Momentum(double *dist, double *vel, int N)
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *disteven, const double *distodd,
-		double *Pressure, int Nx, int Ny, int Nz)
+__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, int Np)
 {
-	int n,N;
+	int n;
 	// distributions
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-
-	N = Nx*Ny*Nz;
 
 	int S = N/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<N){				//.......................................................................
-				// Registers to store the distributions
-				//........................................................................
-				f0 = disteven[n];
-				f2 = disteven[N+n];
-				f4 = disteven[2*N+n];
-				f6 = disteven[3*N+n];
-				f8 = disteven[4*N+n];
-				f10 = disteven[5*N+n];
-				f12 = disteven[6*N+n];
-				f14 = disteven[7*N+n];
-				f16 = disteven[8*N+n];
-				f18 = disteven[9*N+n];
-				//........................................................................
-				f1 = distodd[n];
-				f3 = distodd[1*N+n];
-				f5 = distodd[2*N+n];
-				f7 = distodd[3*N+n];
-				f9 = distodd[4*N+n];
-				f11 = distodd[5*N+n];
-				f13 = distodd[6*N+n];
-				f15 = distodd[7*N+n];
-				f17 = distodd[8*N+n];
-				//.................Compute the velocity...................................
-				Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
-						f9+f12+f11+f14+f13+f16+f15+f18+f17);
+		if (n<Np){				//.......................................................................
+			// Registers to store the distributions
+			//........................................................................
+			//........................................................................
+			// Registers to store the distributions
+			//........................................................................
+			f2 = dist[2*N+n];
+			f4 = dist[4*N+n];
+			f6 = dist[6*N+n];
+			f8 = dist[8*N+n];
+			f10 = dist[10*N+n];
+			f12 = dist[12*N+n];
+			f14 = dist[14*N+n];
+			f16 = dist[16*N+n];
+			f18 = dist[18*N+n];
+			//........................................................................
+			f1 = dist[N+n];
+			f3 = dist[3*N+n];
+			f5 = dist[5*N+n];
+			f7 = dist[7*N+n];
+			f9 = dist[9*N+n];
+			f11 = dist[11*N+n];
+			f13 = dist[13*N+n];
+			f15 = dist[15*N+n];
+			f17 = dist[17*N+n];
+			//.................Compute the velocity...................................
+			Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
+					f9+f12+f11+f14+f13+f16+f15+f18+f17);
 		}
 	}
 }
@@ -2344,8 +2343,7 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np){
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_Pressure(char *ID, double *disteven, double *distodd, double *Pressure,
-		int Nx, int Ny, int Nz){
+extern "C" void ScaLBL_D3Q19_Pressure(double *fq, double *Pressure, int Np){
 	dvc_ScaLBL_D3Q19_Pressure<<< NBLOCKS,NTHREADS >>>(disteven, distodd, Pressure, Nx, Ny, Nz);
 }
 
