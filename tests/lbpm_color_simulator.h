@@ -312,10 +312,10 @@ void run_analysis( int timestep, int restart_interval,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
+		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cfq;

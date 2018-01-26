@@ -493,10 +493,10 @@ int main(int argc, char **argv)
 		//...........................................................................
 		ScaLBL_DeviceBarrier();
 		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
+		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
