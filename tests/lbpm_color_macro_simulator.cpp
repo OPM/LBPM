@@ -513,10 +513,10 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToHost(Averages->Vel_y.data(),&Velocity[N],Np*sizeof(double));
 		ScaLBL_CopyToHost(Averages->Vel_z.data(),&Velocity[2*N],Np*sizeof(double));
 	
-		double TmpDat;
+		double *TmpDat;
 		TmpDat = new double [Np];
-    	ScaLBL_CopyToHost(&TmpDat[0],&Pressure[0],SIZE);
-    	ScaLBL_Comm.RegularLayout(Map,TmpDat,Averages->Press.data());
+		ScaLBL_CopyToHost(&TmpDat[0],&Pressure[0], Np*sizeof(double));
+		ScaLBL_Comm.RegularLayout(Map,TmpDat,Averages->Press.data());
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
