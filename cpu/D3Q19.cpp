@@ -1053,7 +1053,7 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np)
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, int N)
+extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *Pressure, int N)
 {
 	int n;
 	// distributions

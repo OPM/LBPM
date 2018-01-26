@@ -1552,7 +1552,7 @@ __global__  void dvc_ScaLBL_D3Q19_Momentum(double *dist, double *vel, int N)
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, int N)
+__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *dist, double *Pressure, int N)
 {
 	int n;
 	// distributions
@@ -2344,7 +2344,7 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np){
 }
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *fq, double *Pressure, int Np){
-	dvc_ScaLBL_D3Q19_Pressure<<< NBLOCKS,NTHREADS >>>(disteven, distodd, Pressure, Nx, Ny, Nz);
+	dvc_ScaLBL_D3Q19_Pressure<<< NBLOCKS,NTHREADS >>>(fq, Pressure, Np);
 }
 
 extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,int Nx, int Ny, int Nz){
