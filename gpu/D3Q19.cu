@@ -1569,6 +1569,7 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure(const double *dist, double *Pressure,
 			//........................................................................
 			// Registers to store the distributions
 			//........................................................................
+			f0 = dist[n];
 			f2 = dist[2*N+n];
 			f4 = dist[4*N+n];
 			f6 = dist[6*N+n];

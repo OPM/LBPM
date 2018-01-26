@@ -1064,6 +1064,7 @@ extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *Pressure, int N)
 		//........................................................................
 		// Registers to store the distributions
 		//........................................................................
+		f0 = dist[n];
 		f2 = dist[2*N+n];
 		f4 = dist[4*N+n];
 		f6 = dist[6*N+n];
