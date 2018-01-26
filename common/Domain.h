@@ -500,25 +500,20 @@ inline void WriteLocalSolidDistance(char *FILENAME, double *Distance, int N)
 }
 
 
-inline void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cDistEven, const double *cDistOdd, int N)
+inline void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np)
 {
     int q,n;
     double value;
     ofstream File(FILENAME,ios::binary);
-    for (n=0; n<N; n++){
+    for (n=0; n<Np; n++){
         // Write the two density values
         value = cDen[n];
         File.write((char*) &value, sizeof(value));
-        value = cDen[N+n];
+        value = cDen[Np+n];
         File.write((char*) &value, sizeof(value));
         // Write the even distributions
-        for (q=0; q<10; q++){
-            value = cDistEven[q*N+n];
-            File.write((char*) &value, sizeof(value));
-        }
-        // Write the odd distributions
-        for (q=0; q<9; q++){
-            value = cDistOdd[q*N+n];
+        for (q=0; q<19; q++){
+            value = cfq[q*Np+n];
             File.write((char*) &value, sizeof(value));
         }
     }
@@ -526,30 +521,21 @@ inline void WriteCheckpoint(const char *FILENAME, const double *cDen, const doub
 
 }
 
-inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
+inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, int Np)
 {
     int q=0, n=0;
     double value=0;
     ifstream File(FILENAME,ios::binary);
-    for (n=0; n<N; n++){
+    for (n=0; n<Np; n++){
         // Write the two density values
         File.read((char*) &value, sizeof(value));
         cDen[n] = value;
-    //    if (n== 66276)    printf("Density a  = %f \n",value);
         File.read((char*) &value, sizeof(value));
-        cDen[N+n] = value;
-    //    if (n== 66276)    printf("Density b  = %f \n",value);
+        cDen[Np+n] = value;
         // Read the even distributions
-        for (q=0; q<10; q++){
+        for (q=0; q<19; q++){
             File.read((char*) &value, sizeof(value));
-            cDistEven[q*N+n] = value;
-    //        if (n== 66276)    printf("dist even %i  = %f \n",q,value);
-        }
-        // Read the odd distributions
-        for (q=0; q<9; q++){
-            File.read((char*) &value, sizeof(value));
-            cDistOdd[q*N+n] = value;
-    //        if (n== 66276)    printf("dist even %i  = %f \n",q,value);
+            cfq[q*Np+n] = value;
         }
     }
     File.close();

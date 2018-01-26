@@ -33,18 +33,18 @@ class WriteRestartWorkItem: public ThreadPool::WorkItem
 {
 public:
     WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cDen_,
-        std::shared_ptr<double> cDistEven_, std::shared_ptr<double>cDistOdd_, int N_ ):
-        filename(filename_), cDen(cDen_), cDistEven(cDistEven_), cDistOdd(cDistOdd_), N(N_) {}
+        std::shared_ptr<double> cfq_, int N_ ):
+        filename(filename_), cDen(cDen_), cfq(cfq_), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
-        WriteCheckpoint(filename,cDen.get(),cDistEven.get(),cDistOdd.get(),N);
+        WriteCheckpoint(filename,cDen.get(),cfq.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
     };
     virtual bool has_result() const { return false; }
 private:
     WriteRestartWorkItem();
     const char* filename;
-    std::shared_ptr<double> cDen, cDistEven, cDistOdd;
+    std::shared_ptr<double> cDen, cfq;
     const int N;
 };
 
@@ -222,15 +222,13 @@ private:
     double beta;
 };
 
-
-
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 
     const RankInfoStruct& rank_info, TwoPhase& Averages,
     BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
-    int Nx, int Ny, int Nz, bool pBC, double beta, double err,
+    int Np, int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, const double *Velocity, 
-    const char *ID, const double *f_even, const double *f_odd, const double *Den, 
+    const char *ID, const double *fq, const double *Den, 
     const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
     ThreadPool& tpool, AnalysisWaitIdStruct& wait )
 {
@@ -312,21 +310,19 @@ void run_analysis( int timestep, int restart_interval,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-        ScaLBL_CopyToHost(Averages.Press.data(),Pressure,N*sizeof(double));
-        ScaLBL_CopyToHost(Averages.Vel_x.data(),&Velocity[0],N*sizeof(double));
-        ScaLBL_CopyToHost(Averages.Vel_y.data(),&Velocity[N],N*sizeof(double));
-        ScaLBL_CopyToHost(Averages.Vel_z.data(),&Velocity[2*N],N*sizeof(double));
+		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
         PROFILE_STOP("Copy-State",1);
     }
-    std::shared_ptr<double> cDen, cDistEven, cDistOdd;
+    std::shared_ptr<double> cDen, cfq;
     if ( (type&CreateRestart) != 0 ) {
         // Copy restart data to the CPU
-        cDen = std::shared_ptr<double>(new double[2*N],DeleteArray<double>);
-        cDistEven = std::shared_ptr<double>(new double[10*N],DeleteArray<double>);
-        cDistOdd = std::shared_ptr<double>(new double[9*N],DeleteArray<double>);
-        ScaLBL_CopyToHost(cDistEven.get(),f_even,10*N*sizeof(double));
-        ScaLBL_CopyToHost(cDistOdd.get(),f_odd,9*N*sizeof(double));
-        ScaLBL_CopyToHost(cDen.get(),Den,2*N*sizeof(double));
+        cDen = std::shared_ptr<double>(new double[2*Np],DeleteArray<double>);
+        cfq = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
+        ScaLBL_CopyToHost(cfq.get(),fq,19*Np*sizeof(double));
+        ScaLBL_CopyToHost(cDen.get(),Den,2*Np*sizeof(double));
     }
     PROFILE_STOP("Copy data to host",1);
 
@@ -376,7 +372,7 @@ void run_analysis( int timestep, int restart_interval,
 	  fclose(Rst);
 	}
         // Write the restart file (using a seperate thread)
-        WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cDistEven,cDistOdd,N);
+        WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cfq,Np);
         work->add_dependency(wait.restart);
         wait.restart = tpool.add_work(work);
     }

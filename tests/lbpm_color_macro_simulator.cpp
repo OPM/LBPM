@@ -471,18 +471,15 @@ int main(int argc, char **argv)
 			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 
 			// Read in the restart file to CPU buffers
-			double *cDen = new double[2*N];
-			double *cDistEven = new double[10*N];
-			double *cDistOdd = new double[9*N];
-			ReadCheckpoint(LocalRestartFile, cDen, cDistEven, cDistOdd, N);
+			double *cDen = new double[2*Np];
+			double *cfq = new double[19*Np];
+			ReadCheckpoint(LocalRestartFile, cDen, cfq, Np);
 			// Copy the restart data to the GPU
-			ScaLBL_CopyToDevice(f_even,cDistEven,10*N*sizeof(double));
-			ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
-			ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
+			ScaLBL_CopyToDevice(fq,cfq,19*Np*sizeof(double));
+			ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
 			ScaLBL_DeviceBarrier();
 			delete [] cDen;
-			delete [] cDistEven;
-			delete [] cDistOdd;
+			delete [] cfq;
 			MPI_Barrier(comm);
 		}
 
@@ -508,15 +505,10 @@ int main(int argc, char **argv)
 		//...........................................................................
 		ScaLBL_DeviceBarrier();
 		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
-		ScaLBL_CopyToHost(Averages->Press.data(),Pressure,Np*sizeof(double));
-		ScaLBL_CopyToHost(Averages->Vel_x.data(),&Velocity[0],Np*sizeof(double));
-		ScaLBL_CopyToHost(Averages->Vel_y.data(),&Velocity[N],Np*sizeof(double));
-		ScaLBL_CopyToHost(Averages->Vel_z.data(),&Velocity[2*N],Np*sizeof(double));
-	
-		double *TmpDat;
-		TmpDat = new double [Np];
-		ScaLBL_CopyToHost(&TmpDat[0],&Pressure[0], Np*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,TmpDat,Averages->Press.data());
+		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
@@ -660,7 +652,7 @@ int main(int argc, char **argv)
 
 			// Run the analysis
 			run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
-					Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,f_even,f_odd,Den,
+					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,fq,Den,
 					LocalRestartFile,meshData,fillData,tpool,work_ids);
 
 			// Save the timers

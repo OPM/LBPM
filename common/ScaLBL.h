@@ -4269,10 +4269,15 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 }
 
 void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, double *regdata){
+	// Gets data from the device and stores in regular layout
 	int i,j,k,n,idx;
 	int Nx = map.size(0);
 	int Ny = map.size(1);
 	int Nz = map.size(2);
+
+	double *TmpDat;
+	TmpDat = new double [Np];
+	ScaLBL_CopyToHost(&TmpDat[0],&data[0], Np*sizeof(double));
 
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -4280,12 +4285,14 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, double *regd
 				n=k*Nx*Ny+j*Nx+i;
 				idx=map(i,j,k);
 				if (!(idx<0)){
-					double value=data[idx];
+					double value=TmpDat[idx];
 					regdata[n]=value;
 				}
 			}
 		}
 	}
+	
+	delete [] TmpDat;
 }
 
 
