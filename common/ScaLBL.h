@@ -4276,8 +4276,8 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, double *regd
 	int Nz = map.size(2);
 
 	double *TmpDat;
-	TmpDat = new double [Np];
-	ScaLBL_CopyToHost(&TmpDat[0],&data[0], Np*sizeof(double));
+	TmpDat = new double [N];
+	ScaLBL_CopyToHost(&TmpDat[0],&data[0], N*sizeof(double));
 
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
