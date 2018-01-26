@@ -120,8 +120,8 @@ int main(int argc, char **argv)
 				// Set default values
 				// Print warning
 				printf("WARNING: No input file provided (Color.in is missing)! Default parameters will be used. \n");
-				tau1 = tau2 = 1.0;
-				rho1 = rho2 = 1.0;
+				tauA = tauB = 1.0;
+				rhoA = rhoB = 1.0;
 				alpha=0.005;
 				beta= 0.9;
 				Fx = Fy = Fz = 0.0;
@@ -205,10 +205,10 @@ int main(int argc, char **argv)
 
 		if (rank==0){
 			printf("********************************************************\n");
-			printf("tau (non-wetting) = %f \n", tau1);
-			printf("tau (wetting) = %f \n", tau2);
-			printf("density (non-wetting) = %f \n", rho1);
-			printf("density (wetting) = %f \n", rho2);
+			printf("tau (non-wetting) = %f \n", tauA);
+			printf("tau (wetting) = %f \n", tauB);
+			printf("density (non-wetting) = %f \n", rhoA);
+			printf("density (wetting) = %f \n", rhoB);
 			printf("alpha = %f \n", alpha);		
 			printf("beta = %f \n", beta);
 			printf("gamma_{wn} = %f \n", 5.796*alpha);
@@ -494,9 +494,9 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
 		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
+		ScaLBL_Comm.RegularLayout(Map,&Vel[0],Averages->Vel_x.data());
+		ScaLBL_Comm.RegularLayout(Map,&Vel[Np],Averages->Vel_y.data());
+		ScaLBL_Comm.RegularLayout(Map,&Vel[2*Np],Averages->Vel_z.data());
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
