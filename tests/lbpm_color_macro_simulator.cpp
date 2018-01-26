@@ -59,18 +59,19 @@ int main(int argc, char **argv)
 
 		// Variables that specify the computational domain  
 		string FILENAME;
-		int Nx,Ny,Nz;		// local sub-domain size
+		int Nx,Ny,Nz,Np;		// local sub-domain size
 		double Lx,Ly,Lz;	// Domain length
 		double D = 1.0;		// reference length for non-dimensionalization
 		// Color Model parameters
 		int timestepMax;
-		double tau1, tau2, rho1,rho2;
+		double tauA, tauB, rhoA,rhoB;
 		double Fx,Fy,Fz,tol,err;
 		double alpha, beta;
 		int BoundaryCondition;
 		int InitialCondition;
 		//	bool pBC,Restart;
-		int i,j,k;
+		int i,j,k,n;
+		int dist_mem_size;
 		double din, dout, flux;
 		double inletA,inletB,outletA,outletB;
 		inletA=1.f;
@@ -92,10 +93,10 @@ int main(int argc, char **argv)
 			ifstream input("Color.in");
 			if (input.is_open()){
 				// Line 1: model parameters (tau, alpha, beta, das, dbs)
-				input >> tau1;			// Viscosity non-wetting
-				input >> tau2;			// Viscosity wetting
-				input >> rho1;			// density non-wetting
-				input >> rho2;			// density wetting
+				input >> tauA;			// Viscosity non-wetting
+				input >> tauB;			// Viscosity wetting
+				input >> rhoA;			// density non-wetting
+				input >> rhoB;			// density wetting
 				input >> alpha;			// Surface Tension parameter
 				input >> beta;			// Width of the interface
 				// Line 2:  External force components (Fx,Fy, Fz)
@@ -159,10 +160,10 @@ int main(int argc, char **argv)
 		// Broadcast simulation parameters from rank 0 to all other procs
 		MPI_Barrier(comm);
 		//.................................................
-		MPI_Bcast(&tau1,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&tau2,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&rho1,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&rho2,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&tauA,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&tauB,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&rhoA,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&rhoB,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
@@ -187,7 +188,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
 
-		double flux = 0.f;
+		flux = 0.f;
 		if (BoundaryCondition==4) flux = din*rho1; // mass flux must adjust for density (see formulation for details)
 
 		// Get the rank info
@@ -252,8 +253,6 @@ int main(int argc, char **argv)
 
 		Nx+=2; Ny+=2; Nz += 2;
 		int N = Nx*Ny*Nz;
-		int dist_mem_size = N*sizeof(double);
-
 		//.......................................................................
 		if (rank == 0)	printf("Read input media... \n");
 		//.......................................................................
@@ -273,7 +272,7 @@ int main(int argc, char **argv)
 		//	char value;
 		char *id;
 		id = new char[N];
-		double sum_local;
+		double sum, sum_local;
 		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 		if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 		double porosity, pore_vol;
@@ -300,7 +299,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		double sum=0;
+		sum=0.f;
 		pore_vol = 0.0;
 		for ( k=0;k<Nz;k++){
 			for ( j=0;j<Ny;j++){
@@ -329,9 +328,8 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Compute the media porosity, assign phase labels and solid composition
 		//.......................................................................
-		double sum;
-		double sum_local=0.0, porosity;
-		int Np=0;  // number of local pore nodes
+		sum_local=0.0;
+		Np=0;  // number of local pore nodes
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
 		Dm.AssignComponentLabels(PhaseLabel);
@@ -382,7 +380,7 @@ int main(int argc, char **argv)
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
 		//......................device distributions.................................
-		int dist_mem_size = Np*sizeof(double);
+		dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
 
 		int *NeighborList;
@@ -642,7 +640,7 @@ int main(int argc, char **argv)
 
 			// Run the analysis
 			run_analysis(timestep,RESTART_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
-					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,fq,Den,
+					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,Map,fq,Den,
 					LocalRestartFile,meshData,fillData,tpool,work_ids);
 
 			// Save the timers

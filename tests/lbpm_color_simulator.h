@@ -225,11 +225,11 @@ private:
 
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 
-    const RankInfoStruct& rank_info, const ScaLBL_Comm, TwoPhase& Averages,
+    const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, TwoPhase& Averages,
     BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
     int Np, int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, const double *Velocity, 
-    const char *ID, const double *fq, const double *Den, 
+    const int *Map, const double *fq, const double *Den, 
     const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
     ThreadPool& tpool, AnalysisWaitIdStruct& wait )
 {
@@ -303,7 +303,7 @@ void run_analysis( int timestep, int restart_interval,
         // Wait 
         PROFILE_START("Copy-Pressure",1);
 		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-    	ScaLBL_D3Q19_Momentum(fq,Vel,Np);
+    	ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
         ScaLBL_DeviceBarrier();
         PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Wait",1);
