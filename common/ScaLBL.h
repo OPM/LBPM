@@ -257,7 +257,7 @@ public:
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
 	void RegularLayout(IntArray map, double *data, DoubleArray regdata);
-	
+
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
 	void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);

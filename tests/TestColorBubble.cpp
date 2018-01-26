@@ -521,50 +521,18 @@ int main(int argc, char **argv)
     	double PoreVel = sum*iVol_global;
     	if (rank==0) printf("Velocity = %f \n",PoreVel);
     	
-    	double *PHASE;
+    	/*
+      	double *PHASE;
     	PHASE= new double [Nx*Ny*Nz];
     	SIZE=Nx*Ny*Nz*sizeof(double);
     	ScaLBL_CopyToHost(&PHASE[0],&Phi[0],SIZE);
     	
     	FILE *OUTFILE;
-    	OUTFILE = fopen("Phase.raw","wb");
+		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+		OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PHASE,8,N,OUTFILE);
     	fclose(OUTFILE);
-    	
-    	double *DENA, *DENB, *TMPDAT;
-    	SIZE=Np*sizeof(double);
-    	TMPDAT = new double [Np];
-    	DENA= new double [Nx*Ny*Nz];
-    	DENB= new double [Nx*Ny*Nz];
-    	ScaLBL_CopyToHost(&TMPDAT[0],&Den[0],SIZE);
-    	ScaLBL_Comm.RegularLayout(Map,TMPDAT,DENA);
-    	ScaLBL_CopyToHost(&TMPDAT[0],&Den[Np],SIZE);
-    	ScaLBL_Comm.RegularLayout(Map,TMPDAT,DENB);
-
-    	FILE *AFILE;
-		sprintf(LocalRankFilename,"na.%05i.raw",rank);
-    	AFILE = fopen(LocalRankFilename,"wb");
-    	fwrite(DENA,8,N,AFILE);
-    	fclose(AFILE);
-
-    	FILE *BFILE;
-    	BFILE = fopen("nB.raw","wb");
-    	fwrite(DENB,8,N,BFILE);
-    	fclose(BFILE);
-
-    	double *CG;
-    	CG= new double [3*Np];
-    	ScaLBL_CopyToHost(&CG[0],&ColorGrad[0],3*SIZE);
-    	for (int idx=0; idx<Np; idx++){
-    		double C=CG[idx]*CG[idx]+CG[Np+idx]*CG[Np+idx]+CG[2*Np+idx]*CG[2*Np+idx];
-    		TMPDAT[idx]=C;
-    	}
-    	ScaLBL_Comm.RegularLayout(Map,TMPDAT,DENB);
-    	FILE *CGFILE;
-    	CGFILE = fopen("cgrad.raw","wb");
-    	fwrite(DENB,8,N,CGFILE);
-    	fclose(CGFILE);
-    	
+    	*/
  
 	}
 	// ****************************************************

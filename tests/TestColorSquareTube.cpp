@@ -483,7 +483,8 @@ int main(int argc, char **argv)
     		}
     	}
 
-    	double *PHASE;
+    	/*
+      	double *PHASE;
     	PHASE= new double [Nx*Ny*Nz];
     	SIZE=Nx*Ny*Nz*sizeof(double);
     	ScaLBL_CopyToHost(&PHASE[0],&Phi[0],SIZE);
@@ -531,7 +532,7 @@ int main(int argc, char **argv)
 		CGFILE = fopen(LocalRankFilename,"wb");
     	fwrite(DENB,8,N,CGFILE);
     	fclose(CGFILE);
-    	
+    	*/
  
 	}
 	// ****************************************************
