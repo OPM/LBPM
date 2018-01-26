@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 		//.................................................
 
 		flux = 0.f;
-		if (BoundaryCondition==4) flux = din*rho1; // mass flux must adjust for density (see formulation for details)
+		if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details
 
 		// Get the rank info
 		const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
 		double *fq, *Aq, *Bq;
 		double *Den, *Phi;
 		double *ColorGrad;
-		double *Vel;
+		double *Velocity;
 		double *Pressure;
 		
 		//...........................................................................
@@ -481,7 +481,7 @@ int main(int argc, char **argv)
 		Averages->UpdateSolid();
 		//.......................................................................		
 		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-    	ScaLBL_D3Q19_Momentum(fq,Vel,Np);
+		ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
 		ScaLBL_DeviceBarrier();

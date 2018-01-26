@@ -229,7 +229,7 @@ void run_analysis( int timestep, int restart_interval,
     BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
     int Np, int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, double *Velocity, 
-    const IntArray *Map, double *fq, double *Den, 
+    IntArray Map, double *fq, double *Den, 
     const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
     ThreadPool& tpool, AnalysisWaitIdStruct& wait )
 {
@@ -312,10 +312,10 @@ void run_analysis( int timestep, int restart_interval,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages.Press.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages.Vel_x.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages.Vel_y.data());
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages.Vel_z.data());
+		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages.Press->data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages.Vel_x->data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages.Vel_y->data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages.Vel_z->data());
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cfq;
