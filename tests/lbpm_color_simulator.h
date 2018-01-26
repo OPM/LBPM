@@ -2,6 +2,7 @@
 #include "common/Array.h"
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
+#include "common/ScaLBL.h"
 #include "IO/MeshDatabase.h"
 
 //#define ANALYSIS_INTERVAL 6
@@ -224,7 +225,7 @@ private:
 
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 
-    const RankInfoStruct& rank_info, TwoPhase& Averages,
+    const RankInfoStruct& rank_info, const ScaLBL_Comm, TwoPhase& Averages,
     BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
     int Np, int Nx, int Ny, int Nz, bool pBC, double beta, double err,
     const double *Phi, double *Pressure, const double *Velocity, 
@@ -301,7 +302,8 @@ void run_analysis( int timestep, int restart_interval,
         // Copy the members of Averages to the cpu (phase was copied above)
         // Wait 
         PROFILE_START("Copy-Pressure",1);
-        ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
+		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
+    	ScaLBL_D3Q19_Momentum(fq,Vel,Np);
         ScaLBL_DeviceBarrier();
         PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Wait",1);

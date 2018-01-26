@@ -78,7 +78,6 @@ int main(int argc, char **argv)
 		inletB=0.f;
 		outletA=0.f;
 		outletB=1.f;
-		typeBC=4;
 		flux = 10.f;
 		dout=1.f;
 
@@ -143,7 +142,6 @@ int main(int argc, char **argv)
 				domain >> Nx;
 				domain >> Ny;
 				domain >> Nz;
-				domain >> nspheres;
 				domain >> Lx;
 				domain >> Ly;
 				domain >> Lz;
@@ -155,7 +153,6 @@ int main(int argc, char **argv)
 				printf("WARNING: No input file provided (Domain.in is missing)! Default parameters will be used. \n");
 				nprocx=nprocy=nprocz=1;
 				Nx=Ny=Nz=10;
-				nspheres=0;
 				Lx=Ly=Lz=1.0;
 			}
 		}
@@ -186,7 +183,6 @@ int main(int argc, char **argv)
 		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
 		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
 		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
 		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
@@ -402,7 +398,6 @@ int main(int argc, char **argv)
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
-
 		ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
@@ -426,8 +421,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		//for (int idx=0; idx<Np; idx++) printf("Map=%i\n",TmpMap[idx]);
-
 		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] TmpMap;
@@ -439,7 +432,6 @@ int main(int argc, char **argv)
 		//...........................................................................
 
 		if (rank==0)	printf ("Initializing distributions \n");
-		// Initialize the phase field and variables
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, Np);
@@ -454,7 +446,6 @@ int main(int argc, char **argv)
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 		}
 		
-
 		if (Restart == true){
 			if (rank==0){
 				printf("Reading restart file! \n");
@@ -596,15 +587,15 @@ int main(int argc, char **argv)
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
-			if (typeBC > 0){
+			if (BoundaryCondition > 0){
 				ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 				ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 			}
-			if (typeBC == 3){
+			if (BoundaryCondition == 3){
 				ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			if (typeBC == 4){
+			if (BoundaryCondition == 4){
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
@@ -630,15 +621,15 @@ int main(int argc, char **argv)
 					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
-			if (typeBC > 0){
+			if (BoundaryCondition > 0){
 				ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 				ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 			}
-			if (typeBC == 3){
+			if (BoundaryCondition == 3){
 				ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			else if (typeBC == 4){
+			else if (BoundaryCondition == 4){
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
@@ -651,7 +642,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-			run_analysis(timestep,RESTART_INTERVAL,rank_info,*Averages,last_ids,last_index,last_id_map,
+			run_analysis(timestep,RESTART_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
 					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,ID,fq,Den,
 					LocalRestartFile,meshData,fillData,tpool,work_ids);
 
