@@ -256,7 +256,7 @@ public:
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
-	void RegularLayout(IntArray map, double *data, double *regdata);
+	void RegularLayout(const IntArray map, double *data, double *regdata);
 	
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -4267,7 +4267,7 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 	//...................................................................................
 }
 
-void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, double *regdata){
+void ScaLBL_Communicator::RegularLayout(const IntArray map, double *data, double *regdata){
 	// Gets data from the device and stores in regular layout
 	int i,j,k,n,idx;
 	int Nx = map.size(0);
