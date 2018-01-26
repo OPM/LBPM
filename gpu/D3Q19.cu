@@ -1552,7 +1552,7 @@ __global__  void dvc_ScaLBL_D3Q19_Momentum(double *dist, double *vel, int N)
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, int Np)
+__global__  void dvc_ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, int N)
 {
 	int n;
 	// distributions
@@ -1563,7 +1563,7 @@ __global__  void dvc_ScaLBL_D3Q19_Pressure(const double *fq, double *Pressure, i
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<Np){				//.......................................................................
+		if (n<N){				//.......................................................................
 			// Registers to store the distributions
 			//........................................................................
 			//........................................................................
