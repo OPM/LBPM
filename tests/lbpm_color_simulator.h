@@ -228,7 +228,7 @@ void run_analysis( int timestep, int restart_interval,
     const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, TwoPhase& Averages,
     BlobIDstruct& last_ids, BlobIDstruct& last_index, BlobIDList& last_id_map,
     int Np, int Nx, int Ny, int Nz, bool pBC, double beta, double err,
-    const double *Phi, double *Pressure, const double *Velocity, 
+    const double *Phi, double *Pressure, double *Velocity, 
     const int *Map, double *fq, double *Den, 
     const char *LocalRestartFile, std::vector<IO::MeshDataStruct>& visData, fillHalo<double>& fillData,
     ThreadPool& tpool, AnalysisWaitIdStruct& wait )

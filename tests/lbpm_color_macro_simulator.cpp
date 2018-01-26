@@ -401,7 +401,7 @@ int main(int argc, char **argv)
 		ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nx*Ny*Nz);		
 		ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
-		ScaLBL_AllocateDeviceMemory((void **) &Vel, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
 		
 		//...........................................................................
@@ -494,9 +494,9 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
 		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press.data());
-		ScaLBL_Comm.RegularLayout(Map,&Vel[0],Averages->Vel_x.data());
-		ScaLBL_Comm.RegularLayout(Map,&Vel[Np],Averages->Vel_y.data());
-		ScaLBL_Comm.RegularLayout(Map,&Vel[2*Np],Averages->Vel_z.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y.data());
+		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z.data());
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
@@ -580,7 +580,7 @@ int main(int argc, char **argv)
 			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
@@ -596,7 +596,7 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
@@ -614,7 +614,7 @@ int main(int argc, char **argv)
 
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
@@ -630,7 +630,7 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			//************************************************************************
