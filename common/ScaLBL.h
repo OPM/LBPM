@@ -175,6 +175,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_ColorMass(double *Aq, double *Bq, double *De
 
 extern "C" void ScaLBL_D3Q19_AAodd_ColorMass(int *d_neighborList, double *Aq, double *Bq, double *Den, double *Vel,
 		double *ColorGrad, double beta, int start, int finish, int Np);
+*/
 /*
 class ScaLBL_Color{
 public:
