@@ -276,7 +276,7 @@ MACRO( CONFIGURE_SYSTEM )
     ENDIF()
     # Remove extra library links
     # Get the compiler
-    IDENTIFY_COMPILER()
+    SET_COMPILER_FLAGS()
     CHECK_ENABLE_FLAG( USE_STATIC 0 )
     # Add system dependent flags
     MESSAGE("System is: ${CMAKE_SYSTEM_NAME}")
@@ -330,8 +330,6 @@ MACRO( CONFIGURE_SYSTEM )
     ELSE()
         MESSAGE( FATAL_ERROR "OS not detected" )
     ENDIF()
-    # Set the compile flags based on the build
-    SET_COMPILER_FLAGS()
     # Add the static flag if necessary
     IF ( USE_STATIC )
         SET_STATIC_FLAGS()
