@@ -5,15 +5,15 @@
 #include "threadpool/thread_pool.h"
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
-#include <math.h>
 #include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
+#include <mutex>
 #include <stdexcept>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
 #include <vector>
-#include <mutex>
 
 
 #define MAX( x, y ) ( ( x ) > ( y ) ? ( x ) : ( y ) )
@@ -28,8 +28,8 @@
 #include "mpi.h"
 #endif
 
-#define to_ns(x) std::chrono::duration_cast<std::chrono::nanoseconds>(x).count()
-#define to_ms(x) std::chrono::duration_cast<std::chrono::milliseconds>(x).count()
+#define to_ns( x ) std::chrono::duration_cast<std::chrono::nanoseconds>( x ).count()
+#define to_ms( x ) std::chrono::duration_cast<std::chrono::milliseconds>( x ).count()
 
 
 // Wrapper functions for mpi
@@ -82,18 +82,17 @@ void waste_cpu( int N )
 // Sleep for the given time
 // Note: since we may encounter interrupts, we may not sleep for the desired time
 //   so we need to perform the sleep in a loop
-void sleep_ms( int64_t N ) {
+void sleep_ms( int64_t N )
+{
     auto t1 = std::chrono::high_resolution_clock::now();
     auto t2 = std::chrono::high_resolution_clock::now();
-    while ( to_ms(t2-t1) < N ) {
-        int N2 = N - to_ms(t2-t1);
-        std::this_thread::sleep_for( std::chrono::milliseconds(N2) );
+    while ( to_ms( t2 - t1 ) < N ) {
+        int N2 = N - to_ms( t2 - t1 );
+        std::this_thread::sleep_for( std::chrono::milliseconds( N2 ) );
         t2 = std::chrono::high_resolution_clock::now();
     }
 }
-void sleep_s( int N ) {
-    sleep_ms(1000*N);
-}
+void sleep_s( int N ) { sleep_ms( 1000 * N ); }
 
 
 // Function to sleep for N seconds then increment a global count
@@ -133,9 +132,9 @@ void print_processor( ThreadPool *tpool )
     int processor = ThreadPool::getCurrentProcessor();
     char tmp[100];
     sprintf( tmp, "%i:  Thread,proc = %i,%i\n", rank, thread, processor );
-    sleep_ms( 10*rank );
+    sleep_ms( 10 * rank );
     print_processor_mutex.lock();
-    std::cout << tmp;
+    pout << tmp;
     print_processor_mutex.unlock();
     sleep_ms( 100 );
 }
@@ -161,7 +160,9 @@ int test_member_thread( ThreadPool *tpool )
 }
 
 
-// Functions to test the templates
+/******************************************************************
+ * Test the TPOOL_ADD_WORK macro with variable number of arguments *
+ ******************************************************************/
 static int myfun0() { return 0; }
 static int myfun1( int ) { return 1; }
 static int myfun2( int, float ) { return 2; }
@@ -170,60 +171,6 @@ static int myfun4( int, float, double, char ) { return 4; }
 static int myfun5( int, float, double, char, std::string ) { return 5; }
 static int myfun6( int, float, double, char, std::string, int ) { return 6; }
 static int myfun7( int, float, double, char, std::string, int, int ) { return 7; }
-
-
-// Function to test instantiation of functions with different number of arguments
-// clang-format off
-static void vfunarg00() {}
-static void vfunarg01( int ) {}
-static void vfunarg02( int, char ) {}
-static void vfunarg03( int, char, double ) {}
-static void vfunarg04( int, char, double, int ) {}
-static void vfunarg05( int, char, double, int, char ) {}
-static void vfunarg06( int, char, double, int, char, double ) {}
-static void vfunarg07( int, char, double, int, char, double, int ) {}
-static void vfunarg08( int, char, double, int, char, double, int, char ) {}
-static void vfunarg09( int, char, double, int, char, double, int, char, double ) {}
-static void vfunarg10( int, char, double, int, char, double, int, char, double, int ) {}
-static void vfunarg11( int, char, double, int, char, double, int, char, double, int, char ) {}
-static void vfunarg12( int, char, double, int, char, double, int, char, double, int, char, double ) {}
-static void vfunarg13( int, char, double, int, char, double, int, char, double, int, char, double, int ) {}
-static void vfunarg14( int, char, double, int, char, double, int, char, double, int, char, double, int, char ) {}
-static void vfunarg15( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) {}
-static void vfunarg16( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) {}
-static void vfunarg17( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) {}
-static void vfunarg18( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) {}
-static void vfunarg19( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) {}
-static void vfunarg20( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) {}
-static void vfunarg21( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) {}
-static void vfunarg22( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) {}
-static void vfunarg23( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) {}
-static void vfunarg24( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) {}
-static int funarg00() { return 0; }
-static int funarg01( int ) { return 1; }
-static int funarg02( int, char ) { return 2; }
-static int funarg03( int, char, double ) { return 3; }
-static int funarg04( int, char, double, int ) { return 4; }
-static int funarg05( int, char, double, int, char ) { return 5; }
-static int funarg06( int, char, double, int, char, double ) { return 6; }
-static int funarg07( int, char, double, int, char, double, int ) { return 7; }
-static int funarg08( int, char, double, int, char, double, int, char ) { return 8; }
-static int funarg09( int, char, double, int, char, double, int, char, double ) { return 9; }
-static int funarg10( int, char, double, int, char, double, int, char, double, int ) { return 10; }
-static int funarg11( int, char, double, int, char, double, int, char, double, int, char ) { return 11; }
-static int funarg12( int, char, double, int, char, double, int, char, double, int, char, double ) { return 12; }
-static int funarg13( int, char, double, int, char, double, int, char, double, int, char, double, int ) { return 13; }
-static int funarg14( int, char, double, int, char, double, int, char, double, int, char, double, int, char ) { return 14; }
-static int funarg15( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) { return 15; }
-static int funarg16( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) { return 16; }
-static int funarg17( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) { return 17; }
-static int funarg18( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) { return 18; }
-static int funarg19( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) { return 19; }
-static int funarg20( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) { return 20; }
-static int funarg21( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) { return 21; }
-static int funarg22( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int ) { return 22; }
-static int funarg23( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char ) { return 23; }
-static int funarg24( int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double, int, char, double ) { return 24; }
 static int test_function_arguements( ThreadPool *tpool )
 {
     int N_errors = 0;
@@ -231,88 +178,56 @@ static int test_function_arguements( ThreadPool *tpool )
     ThreadPool::thread_id_t id0 = TPOOL_ADD_WORK( tpool, myfun0, ( nullptr ) );
     ThreadPool::thread_id_t id1 = TPOOL_ADD_WORK( tpool, myfun1, ( (int) 1 ) );
     ThreadPool::thread_id_t id2 = TPOOL_ADD_WORK( tpool, myfun2, ( (int) 1, (float) 2 ) );
-    ThreadPool::thread_id_t id3 = TPOOL_ADD_WORK( tpool, myfun3, ( (int) 1, (float) 2, (double) 3 ) );
-    ThreadPool::thread_id_t id4 = TPOOL_ADD_WORK( tpool, myfun4, ( (int) 1, (float) 2, (double) 3, (char) 4 ) );
-    ThreadPool::thread_id_t id5 = TPOOL_ADD_WORK( tpool, myfun5, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ) ) );
-    ThreadPool::thread_id_t id52= TPOOL_ADD_WORK( tpool, myfun5, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ) ), -1 );
-    ThreadPool::thread_id_t id6 = TPOOL_ADD_WORK( tpool, myfun6, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ), (int) 1 ) );
-    ThreadPool::thread_id_t id7 = TPOOL_ADD_WORK( tpool, myfun7, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ), (int) 1, (int) 1 ) );
+    ThreadPool::thread_id_t id3 =
+        TPOOL_ADD_WORK( tpool, myfun3, ( (int) 1, (float) 2, (double) 3 ) );
+    ThreadPool::thread_id_t id4 =
+        TPOOL_ADD_WORK( tpool, myfun4, ( (int) 1, (float) 2, (double) 3, (char) 4 ) );
+    ThreadPool::thread_id_t id5 = TPOOL_ADD_WORK(
+        tpool, myfun5, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ) ) );
+    ThreadPool::thread_id_t id52 = TPOOL_ADD_WORK(
+        tpool, myfun5, ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ) ), -1 );
+    ThreadPool::thread_id_t id6 = TPOOL_ADD_WORK( tpool, myfun6,
+        ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ), (int) 1 ) );
+    ThreadPool::thread_id_t id7 = TPOOL_ADD_WORK( tpool, myfun7,
+        ( (int) 1, (float) 2, (double) 3, (char) 4, std::string( "test" ), (int) 1, (int) 1 ) );
     tpool->wait_pool_finished();
-    if ( !tpool->isFinished( id0 ) ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id0 ) != 0 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id1 ) != 1 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id2 ) != 2 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id3 ) != 3 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id4 ) != 4 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id5 ) != 5 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id52 ) != 5 ){ N_errors++; }
-    if ( tpool->getFunctionRet<int>( id6 ) != 6 ) { N_errors++; }
-    if ( tpool->getFunctionRet<int>( id7 ) != 7 ) { N_errors++; }
-    // Test all the different numbers of arguments allowed
-    TPOOL_ADD_WORK( tpool, vfunarg00, ( nullptr ) );
-    TPOOL_ADD_WORK( tpool, vfunarg01, ( 1 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg02, ( 1, 'a' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg03, ( 1, 'a', 3.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg04, ( 1, 'a', 3.0, 4 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg05, ( 1, 'a', 3.0, 4, 'e' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg06, ( 1, 'a', 3.0, 4, 'e', 6.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg07, ( 1, 'a', 3.0, 4, 'e', 6.0, 7 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg08, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg09, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg10, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg11, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg12, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg13, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg14, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg15, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg16, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg17, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg18, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg19, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg20, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg21, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg22, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22 ) );
-    TPOOL_ADD_WORK( tpool, vfunarg23, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22, 'w' ) );
-    TPOOL_ADD_WORK( tpool, vfunarg24, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22, 'w', 24.0 ) );
-    std::vector<ThreadPool::thread_id_t> ids( 25 );
-    ids[0]  = TPOOL_ADD_WORK( tpool, funarg00, ( nullptr ) );
-    ids[1]  = TPOOL_ADD_WORK( tpool, funarg01, ( 1 ) );
-    ids[2]  = TPOOL_ADD_WORK( tpool, funarg02, ( 1, 'a' ) );
-    ids[3]  = TPOOL_ADD_WORK( tpool, funarg03, ( 1, 'a', 3.0 ) );
-    ids[4]  = TPOOL_ADD_WORK( tpool, funarg04, ( 1, 'a', 3.0, 4 ) );
-    ids[5]  = TPOOL_ADD_WORK( tpool, funarg05, ( 1, 'a', 3.0, 4, 'e' ) );
-    ids[6]  = TPOOL_ADD_WORK( tpool, funarg06, ( 1, 'a', 3.0, 4, 'e', 6.0 ) );
-    ids[7]  = TPOOL_ADD_WORK( tpool, funarg07, ( 1, 'a', 3.0, 4, 'e', 6.0, 7 ) );
-    ids[8]  = TPOOL_ADD_WORK( tpool, funarg08, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h' ) );
-    ids[9]  = TPOOL_ADD_WORK( tpool, funarg09, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0 ) );
-    ids[10] = TPOOL_ADD_WORK( tpool, funarg10, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10 ) );
-    ids[11] = TPOOL_ADD_WORK( tpool, funarg11, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k' ) );
-    ids[12] = TPOOL_ADD_WORK( tpool, funarg12, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0 ) );
-    ids[13] = TPOOL_ADD_WORK( tpool, funarg13, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13 ) );
-    ids[14] = TPOOL_ADD_WORK( tpool, funarg14, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'h' ) );
-    ids[15] = TPOOL_ADD_WORK( tpool, funarg15, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'h', 15.0 ) );
-    ids[16] = TPOOL_ADD_WORK( tpool, funarg16, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16 ) );
-    ids[17] = TPOOL_ADD_WORK( tpool, funarg17, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q' ) );
-    ids[18] = TPOOL_ADD_WORK( tpool, funarg18, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0 ) );
-    ids[19] = TPOOL_ADD_WORK( tpool, funarg19, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19 ) );
-    ids[20] = TPOOL_ADD_WORK( tpool, funarg20, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't' ) );
-    ids[21] = TPOOL_ADD_WORK( tpool, funarg21, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0 ) );
-    ids[22] = TPOOL_ADD_WORK( tpool, funarg22, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22 ) );
-    ids[23] = TPOOL_ADD_WORK( tpool, funarg23, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22, 'w' ) );
-    ids[24] = TPOOL_ADD_WORK( tpool, funarg24, ( 1, 'a', 3.0, 4, 'e', 6.0, 7, 'h', 9.0, 10, 'k', 12.0, 13, 'n', 15.0, 16, 'q', 18.0, 19, 't', 21.0, 22, 'w', 24.0 ) );
-    tpool->wait_all( ids );
-    for ( size_t i = 0; i < ids.size(); i++ ) {
-        if ( tpool->getFunctionRet<int>( ids[i] ) != static_cast<int>( i ) )
-            N_errors++;
+    if ( !tpool->isFinished( id0 ) ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id0 ) != 0 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id1 ) != 1 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id2 ) != 2 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id3 ) != 3 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id4 ) != 4 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id5 ) != 5 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id52 ) != 5 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id6 ) != 6 ) {
+        N_errors++;
+    }
+    if ( tpool->getFunctionRet<int>( id7 ) != 7 ) {
+        N_errors++;
     }
     return N_errors;
 }
-// clang-format on
 
 
 /******************************************************************
-* Examples to derive a user work item                             *
-******************************************************************/
+ * Examples to derive a user work item                             *
+ ******************************************************************/
 class UserWorkItemVoid : public ThreadPool::WorkItem
 {
 public:
@@ -323,15 +238,15 @@ public:
         NULL_USE( dummy );
     }
     // User defined run (can do anything)
-    virtual void run() override
+    void run() override
     {
         // Perform the tasks
         printf( "Hello work from UserWorkItem (void)" );
     }
     // Will the routine return a result
-    virtual bool has_result() const override { return false; }
+    bool has_result() const override { return false; }
     // User defined destructor
-    virtual ~UserWorkItemVoid() {}
+    ~UserWorkItemVoid() override = default;
 };
 class UserWorkItemInt : public ThreadPool::WorkItemRet<int>
 {
@@ -343,38 +258,31 @@ public:
         NULL_USE( dummy );
     }
     // User defined run (can do anything)
-    virtual void run() override
+    void run() override
     {
         // Perform the tasks
         printf( "Hello work from UserWorkItem (int)" );
         // Store the results (it's type will match the template)
         ThreadPool::WorkItemRet<int>::d_result = 1;
     }
-    // Will the routine return a result
-    virtual bool has_result() const override { return false; }
     // User defined destructor
-    virtual ~UserWorkItemInt() {}
+    ~UserWorkItemInt() override = default;
 };
 
 
 /******************************************************************
-* test the time to run N tasks in parallel                        *
-******************************************************************/
-inline double run_parallel( ThreadPool *tpool, int N_tasks, int N_work )
+ * test the time to run N tasks in parallel                        *
+ ******************************************************************/
+template<class Ret, class... Args>
+inline double launchAndTime( ThreadPool &tpool, int N, Ret ( *routine )( Args... ), Args... args )
 {
-    // Make sure the thread pool is empty
-    tpool->wait_pool_finished();
-    // Add the work
-    std::vector<ThreadPool::thread_id_t> ids;
-    ids.reserve( N_tasks );
+    tpool.wait_pool_finished();
     auto start = std::chrono::high_resolution_clock::now();
-    for ( int i = 0; i < N_tasks; i++ )
-        ids.push_back( TPOOL_ADD_WORK( tpool, waste_cpu, ( N_work ) ) );
-    // Wait for the thread pool to finish
-    tpool->wait_pool_finished();
-    // Compute the time spent running the tasks
+    for ( int i = 0; i < N; i++ )
+        ThreadPool_add_work( &tpool, 0, routine, args... );
+    tpool.wait_pool_finished();
     auto stop = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration<double>(stop-start).count();
+    return std::chrono::duration<double>( stop - start ).count();
 }
 
 
@@ -384,8 +292,8 @@ ThreadPool::thread_id_t f2( ThreadPool::thread_id_t a ) { return a; }
 
 
 /******************************************************************
-* Test the basic functionallity of the atomics                    *
-******************************************************************/
+ * Test the basic functionallity of the atomics                    *
+ ******************************************************************/
 int test_atomics()
 {
     using namespace AtomicOperations;
@@ -411,33 +319,35 @@ int test_atomics()
 
 
 /******************************************************************
-* Test FIFO behavior                                              *
-******************************************************************/
-void test_FIFO( UnitTest& ut, ThreadPool& tpool )
+ * Test FIFO behavior                                              *
+ ******************************************************************/
+void test_FIFO( UnitTest &ut, ThreadPool &tpool )
 {
-    int rank = getRank();
-    int size = getSize();
-    for (int r=0; r<size; r++) {
+    int rank    = getRank();
+    int size    = getSize();
+    const int N = 4000;
+    for ( int r = 0; r < size; r++ ) {
         barrier();
         if ( r != rank )
-            continue;   
+            continue;
         std::vector<ThreadPool::thread_id_t> ids;
-        for (size_t i=0; i<4000; i++)
-            ids.push_back( TPOOL_ADD_WORK( &tpool, sleep_inc2, ( 0.001 ) ) );
+        ids.reserve( N );
+        for ( size_t i = 0; i < N; i++ )
+            ids.emplace_back( TPOOL_ADD_WORK( &tpool, sleep_inc2, ( 0.001 ) ) );
         bool pass = true;
         while ( tpool.N_queued() > 0 ) {
-            int i1=-1, i2=ids.size();
-            for (size_t i=0; i<ids.size(); i++) {
+            int i1 = -1, i2 = ids.size();
+            for ( int i = N - 1; i >= 0; i-- ) {
                 bool started = ids[i].started();
                 if ( started )
-                    i1 = std::max<int>(i1,i);   // Last index to processing item
+                    i1 = std::max<int>( i1, i ); // Last index to processing item
                 else
-                    i2 = std::min<int>(i2,i);   // First index to queued item
+                    i2 = std::min<int>( i2, i ); // First index to queued item
             }
-            int diff = i1==-1 ? 0:(i2-i1-1);
-            if ( abs(diff)>4 ) {
-                printf("%i %i %i\n",i1,i2,diff);
-                pass = pass && abs(i2-i1-1)<=2;
+            int diff = i1 == -1 ? 0 : ( i2 - i1 - 1 );
+            if ( abs( diff ) > 4 ) {
+                printf( "%i %i %i\n", i1, i2, diff );
+                pass = pass && abs( i2 - i1 - 1 ) <= 2;
             }
         }
         ids.clear();
@@ -451,8 +361,8 @@ void test_FIFO( UnitTest& ut, ThreadPool& tpool )
 
 
 /******************************************************************
-* The main program                                                *
-******************************************************************/
+ * The main program                                                *
+ ******************************************************************/
 #ifdef USE_WINDOWS
 int __cdecl main( int argc, char **argv )
 {
@@ -510,11 +420,7 @@ int main( int argc, char *argv[] )
 
     // Get the number of processors availible
     barrier();
-    int N_procs = 0;
-    try {
-        N_procs = ThreadPool::getNumberOfProcessors();
-    } catch ( ... ) {
-    }
+    int N_procs = ThreadPool::getNumberOfProcessors();
     if ( N_procs > 0 )
         ut.passes( "getNumberOfProcessors" );
     else
@@ -524,15 +430,11 @@ int main( int argc, char *argv[] )
 
     // Get the processor affinities for the process
     barrier();
-    std::vector<int> cpus;
-    try {
-        cpus = ThreadPool::getProcessAffinity();
-        printp( "%i cpus for current process: ", (int) cpus.size() );
-        for ( size_t i = 0; i < cpus.size(); i++ )
-            printp( "%i ", cpus[i] );
-        printp( "\n" );
-    } catch ( ... ) {
-    }
+    std::vector<int> cpus = ThreadPool::getProcessAffinity();
+    printp( "%i cpus for current process: ", (int) cpus.size() );
+    for ( int cpu : cpus )
+        printp( "%i ", cpu );
+    printp( "\n" );
     if ( !cpus.empty() ) {
         ut.passes( "getProcessAffinity" );
     } else {
@@ -559,8 +461,8 @@ int main( int argc, char *argv[] )
             cpus                  = ThreadPool::getProcessAffinity();
             std::vector<int> cpus = ThreadPool::getProcessAffinity();
             printp( "%i cpus for current process (updated): ", (int) cpus.size() );
-            for ( size_t i = 0; i < cpus.size(); i++ )
-                printp( "%i ", cpus[i] );
+            for ( int cpu : cpus )
+                printp( "%i ", cpu );
             printp( "\n" );
             pass = cpus.size() > 1;
         } else {
@@ -630,8 +532,8 @@ int main( int argc, char *argv[] )
             std::vector<int> procs_thread = tpool.getThreadAffinity( i );
             if ( procs_thread != procs ) {
                 printp( "%i: Initial thread affinity: ", rank );
-                for ( size_t i = 0; i < procs_thread.size(); i++ )
-                    printp( "%i ", procs_thread[i] );
+                for ( int i : procs_thread )
+                    printp( "%i ", i );
                 printp( "\n" );
                 pass = false;
             }
@@ -646,15 +548,15 @@ int main( int argc, char *argv[] )
             int N_procs_thread = std::max<int>( (int) cpus.size() / N_threads, 1 );
             for ( int i = 0; i < N_threads; i++ ) {
                 std::vector<int> procs_thread( N_procs_thread, -1 );
-                for ( int j         = 0; j < N_procs_thread; j++ )
+                for ( int j = 0; j < N_procs_thread; j++ )
                     procs_thread[j] = procs[( i * N_procs_thread + j ) % procs.size()];
                 tpool.setThreadAffinity( i, procs_thread );
                 sleep_ms( 10 ); // Give time for OS to update thread affinities
                 std::vector<int> procs_thread2 = tpool.getThreadAffinity( i );
                 if ( procs_thread2 != procs_thread ) {
                     printp( "%i: Final thread affinity: ", rank );
-                    for ( size_t i = 0; i < procs_thread.size(); i++ )
-                        printp( "%i ", procs_thread[i] );
+                    for ( int i : procs_thread )
+                        printp( "%i ", i );
                     printp( "\n" );
                     pass = false;
                 }
@@ -674,8 +576,8 @@ int main( int argc, char *argv[] )
     for ( int i = 0; i < N_threads; i++ ) {
         std::vector<int> procs_thread = tpool.getThreadAffinity( i );
         printp( "Thread affinity: " );
-        for ( size_t i = 0; i < procs_thread.size(); i++ )
-            printp( "%i ", procs_thread[i] );
+        for ( int i : procs_thread )
+            printp( "%i ", i );
         printp( "\n" );
     }
 
@@ -683,9 +585,7 @@ int main( int argc, char *argv[] )
     barrier();
     ThreadPool::set_OS_warnings( 1 );
     print_processor( &tpool );
-    for ( int i = 0; i < N_threads; i++ )
-        TPOOL_ADD_WORK( &tpool, print_processor, ( &tpool ) );
-    tpool.wait_pool_finished();
+    launchAndTime( tpool, N_threads, print_processor, &tpool );
 
     // Run some basic tests
     barrier();
@@ -694,8 +594,8 @@ int main( int argc, char *argv[] )
         for ( int i = 0; i < N_work; i++ )
             waste_cpu( data1[i] );
     }
-    auto stop = std::chrono::high_resolution_clock::now();
-    double time = std::chrono::duration<double>(stop-start).count();
+    auto stop   = std::chrono::high_resolution_clock::now();
+    double time = std::chrono::duration<double>( stop - start ).count();
     printp( "Time for serial cycle = %0.0f us\n", 1e6 * time / N_it );
     printp( "Time for serial item = %0.0f ns\n", 1e9 * time / ( N_it * N_work ) );
     id = TPOOL_ADD_WORK( &tpool, waste_cpu, ( data1[0] ) );
@@ -728,20 +628,14 @@ int main( int argc, char *argv[] )
     tpool.wait_pool_finished();
     start = std::chrono::high_resolution_clock::now();
     sleep_inc( 1 );
-    stop = std::chrono::high_resolution_clock::now();
-    double sleep_serial = std::chrono::duration<double>(stop-start).count();
-    ids2.clear();
-    start = std::chrono::high_resolution_clock::now();
-    for ( int i = 0; i < N_threads; i++ )
-        ids2.push_back( TPOOL_ADD_WORK( &tpool, sleep_inc, ( 1 ) ) );
-    tpool.wait_all( N_procs_used, &ids2[0] );
-    stop = std::chrono::high_resolution_clock::now();
-    ids2.clear();
-    double sleep_parallel = std::chrono::duration<double>(stop-start).count();
+    stop                  = std::chrono::high_resolution_clock::now();
+    double sleep_serial   = std::chrono::duration<double>( stop - start ).count();
+    double sleep_parallel = launchAndTime( tpool, N_threads, sleep_inc, 1 );
     double sleep_speedup  = N_procs_used * sleep_serial / sleep_parallel;
     printf( "%i:  Speedup on %i sleeping threads: %0.3f\n", rank, N_procs_used, sleep_speedup );
     printf( "%i:    ts = %0.3f, tp = %0.3f\n", rank, sleep_serial, sleep_parallel );
-    if ( fabs( sleep_serial - 1.0 ) < 0.05 && fabs( sleep_parallel - 1.0 ) < 0.25 && sleep_speedup>3 )
+    if ( fabs( sleep_serial - 1.0 ) < 0.05 && fabs( sleep_parallel - 1.0 ) < 0.25 &&
+         sleep_speedup > 3 )
         ut.passes( "Passed thread sleep" );
     else
         ut.failure( "Failed thread sleep" );
@@ -770,11 +664,11 @@ int main( int argc, char *argv[] )
         // Run in serial
         start = std::chrono::high_resolution_clock::now();
         waste_cpu( N );
-        stop = std::chrono::high_resolution_clock::now();
-        double time_serial = std::chrono::duration<double>(stop-start).count();
+        stop               = std::chrono::high_resolution_clock::now();
+        double time_serial = std::chrono::duration<double>( stop - start ).count();
         // Run in parallel
-        double time_parallel2 = run_parallel( &tpool, N_procs_used, N / 1000 );
-        double time_parallel  = run_parallel( &tpool, N_procs_used, N );
+        double time_parallel  = launchAndTime( tpool, N_procs_used, waste_cpu, N );
+        double time_parallel2 = launchAndTime( tpool, N_procs_used, waste_cpu, N / 1000 );
         double speedup        = N_procs_used * time_serial / time_parallel;
         printf( "%i:  Speedup on %i procs: %0.3f\n", rank, N_procs_used, speedup );
         printf( "%i:    ts = %0.3f, tp = %0.3f, tp2 = %0.3f\n", rank, time_serial, time_parallel,
@@ -823,8 +717,8 @@ int main( int argc, char *argv[] )
         ids.reserve( 5 );
         global_sleep_count = 0; // Reset the count before this test
         ThreadPool::thread_id_t id0;
-        auto id1 = TPOOL_ADD_WORK( &tpool, sleep_inc, ( 1 ) );
-        auto id2 = TPOOL_ADD_WORK( &tpool, sleep_inc, ( 2 ) );
+        auto id1    = TPOOL_ADD_WORK( &tpool, sleep_inc, ( 1 ) );
+        auto id2    = TPOOL_ADD_WORK( &tpool, sleep_inc, ( 2 ) );
         auto *wait1 = new WorkItemFull<bool, int>( check_inc, 1 );
         auto *wait2 = new WorkItemFull<bool, int>( check_inc, 2 );
         wait1->add_dependency( id0 );
@@ -842,15 +736,15 @@ int main( int argc, char *argv[] )
         tpool.wait_pool_finished();
         // Test waiting on more dependencies than in the thread pool (changing priorities)
         ids.clear();
-        for (size_t i=0; i<20; i++)
+        for ( size_t i = 0; i < 20; i++ )
             ids.push_back( TPOOL_ADD_WORK( &tpool, sleep_inc2, ( 0.1 ) ) );
-        auto *wait3 = new WorkItemFull<void,double>( sleep_inc2, 0 );
+        auto *wait3 = new WorkItemFull<void, double>( sleep_inc2, 0 );
         wait3->add_dependencies( ids );
         id = tpool.add_work( wait3, 50 );
         tpool.wait( id );
         bool pass = true;
-        for (size_t i=0; i<ids.size(); i++)
-            pass = pass && ids[i].finished();
+        for ( auto &id : ids )
+            pass = pass && id.finished();
         ids.clear();
         if ( pass )
             ut.passes( "Dependencies2" );
@@ -896,21 +790,21 @@ int main( int argc, char *argv[] )
             for ( int i = 0; i < N_work; i++ )
                 delete work[i];
             auto t4 = std::chrono::high_resolution_clock::now();
-            time_create += to_ns(t2-t1);
-            time_run    += to_ns(t3-t2);
-            time_delete += to_ns(t4-t3);
+            time_create += to_ns( t2 - t1 );
+            time_run += to_ns( t3 - t2 );
+            time_delete += to_ns( t4 - t3 );
             if ( ( n + 1 ) % 100 == 0 )
                 printp( "Cycle %i of %i finished\n", n + 1, N_it );
         }
         stop = std::chrono::high_resolution_clock::now();
-        time = std::chrono::duration<double>(stop-start).count();
+        time = std::chrono::duration<double>( stop - start ).count();
         PROFILE_STOP( timer_name );
         printp( "   time = %0.0f ms\n", 1e3 * time );
         printp( "   time / cycle = %0.0f us\n", 1e6 * time / N_it );
         printp( "   average time / item = %0.0f ns\n", 1e9 * time / ( N_it * N_work ) );
-        printp( "      create = %i ns\n", static_cast<int>( time_create / ( N_it * N_work ) ) );
-        printp( "      run    = %i ns\n", static_cast<int>( time_run    / ( N_it * N_work ) ) );
-        printp( "      delete = %i us\n", static_cast<int>( time_delete / ( N_it * N_work ) ) );
+        printp( "      create = %i ns\n", time_create / ( N_it * N_work ) );
+        printp( "      run    = %i ns\n", time_run / ( N_it * N_work ) );
+        printp( "      delete = %i us\n", time_delete / ( N_it * N_work ) );
     }
 
     // Test the timing adding a single item
@@ -921,17 +815,17 @@ int main( int argc, char *argv[] )
         if ( it == 0 ) {
             printp( "Testing timmings (adding a single item to empty tpool):\n" );
             timer_name = "Add single item to empty pool";
-            tpool_ptr = &tpool0;
+            tpool_ptr  = &tpool0;
         } else if ( it == 1 ) {
             printp( "Testing timmings (adding a single item):\n" );
             timer_name = "Add single item to tpool";
-            tpool_ptr = &tpool;
+            tpool_ptr  = &tpool;
         }
         PROFILE_START( timer_name );
         std::vector<ThreadPool::thread_id_t> ids( N_work );
         int64_t time_add  = 0;
         int64_t time_wait = 0;
-        start = std::chrono::high_resolution_clock::now();
+        start             = std::chrono::high_resolution_clock::now();
         for ( int n = 0; n < N_it; n++ ) {
             auto t1 = std::chrono::high_resolution_clock::now();
             for ( int i = 0; i < N_work; i++ )
@@ -939,19 +833,19 @@ int main( int argc, char *argv[] )
             auto t2 = std::chrono::high_resolution_clock::now();
             tpool_ptr->wait_all( N_work, &ids[0] );
             auto t3 = std::chrono::high_resolution_clock::now();
-            time_add += to_ns(t2-t1);
-            time_wait += to_ns(t3-t2);
+            time_add += to_ns( t2 - t1 );
+            time_wait += to_ns( t3 - t2 );
             if ( ( n + 1 ) % 100 == 0 )
                 printp( "Cycle %i of %i finished\n", n + 1, N_it );
         }
         stop = std::chrono::high_resolution_clock::now();
-        time = std::chrono::duration<double>(stop-start).count();
+        time = std::chrono::duration<double>( stop - start ).count();
         PROFILE_STOP( timer_name );
         printp( "   time = %0.0f ms\n", 1e3 * time );
         printp( "   time / cycle = %0.0f us\n", 1e6 * time / N_it );
         printp( "   average time / item = %0.0f ns\n", 1e9 * time / ( N_it * N_work ) );
-        printp( "      create and add = %i ns\n", static_cast<int>( time_add / ( N_it * N_work ) ) );
-        printp( "      wait = %i us\n", static_cast<int>( time_wait / ( N_it * N_work ) ) );
+        printp( "      create and add = %i ns\n", time_add / ( N_it * N_work ) );
+        printp( "      wait = %i us\n", time_wait / ( N_it * N_work ) );
     }
 
     // Test the timing pre-creating the work items and adding multiple at a time
@@ -962,11 +856,11 @@ int main( int argc, char *argv[] )
         if ( it == 0 ) {
             printp( "Testing timmings (adding a block of items to empty tpool):\n" );
             timer_name = "Add multiple items to empty pool";
-            tpool_ptr = &tpool0;
+            tpool_ptr  = &tpool0;
         } else if ( it == 1 ) {
             printp( "Testing timmings (adding a block of items):\n" );
             timer_name = "Add multiple items to tpool";
-            tpool_ptr = &tpool;
+            tpool_ptr  = &tpool;
         }
         PROFILE_START( timer_name );
         int64_t time_create_work = 0;
@@ -978,26 +872,26 @@ int main( int argc, char *argv[] )
             auto t1 = std::chrono::high_resolution_clock::now();
             for ( int i = 0; i < N_work; i++ )
                 work[i] = ThreadPool::createWork<void, int>( waste_cpu, data1[i] );
-            auto t2 = std::chrono::high_resolution_clock::now();
+            auto t2  = std::chrono::high_resolution_clock::now();
             auto ids = tpool_ptr->add_work( work, priority );
-            auto t3 = std::chrono::high_resolution_clock::now();
+            auto t3  = std::chrono::high_resolution_clock::now();
             tpool_ptr->wait_all( ids );
             auto t4 = std::chrono::high_resolution_clock::now();
-            time_create_work += to_ns(t2-t1);
-            time_add_work += to_ns(t3-t2);
-            time_wait_work += to_ns(t4-t3);
+            time_create_work += to_ns( t2 - t1 );
+            time_add_work += to_ns( t3 - t2 );
+            time_wait_work += to_ns( t4 - t3 );
             if ( ( n + 1 ) % 100 == 0 )
                 printp( "Cycle %i of %i finished\n", n + 1, N_it );
         }
         stop = std::chrono::high_resolution_clock::now();
-        time = std::chrono::duration<double>(stop-start).count();
+        time = std::chrono::duration<double>( stop - start ).count();
         PROFILE_STOP( timer_name );
         printp( "   time = %0.0f ms\n", 1e3 * time );
         printp( "   time / cycle = %0.0f us\n", 1e6 * time / N_it );
         printp( "   average time / item = %0.0f ns\n", 1e9 * time / ( N_it * N_work ) );
-        printp( "      create = %i ns\n", static_cast<int>( time_create_work / ( N_it * N_work ) ) );
-        printp( "      add = %i ns\n",  static_cast<int>( time_add_work / ( N_it * N_work ) ) );
-        printp( "      wait = %i ns\n", static_cast<int>( time_wait_work / ( N_it * N_work ) ) );
+        printp( "      create = %i ns\n", time_create_work / ( N_it * N_work ) );
+        printp( "      add = %i ns\n", time_add_work / ( N_it * N_work ) );
+        printp( "      wait = %i ns\n", time_wait_work / ( N_it * N_work ) );
     }
 
     // Run a dependency test that tests a simple case that should keep the thread pool busy
@@ -1035,8 +929,8 @@ int main( int argc, char *argv[] )
     barrier();
     pass = true;
     try {
-        ThreadPool *tpool = new ThreadPool( MAX_NUM_THREADS - 1 );
-        if ( tpool->getNumThreads() != MAX_NUM_THREADS - 1 )
+        ThreadPool *tpool = new ThreadPool( ThreadPool::MAX_NUM_THREADS - 1 );
+        if ( tpool->getNumThreads() != ThreadPool::MAX_NUM_THREADS - 1 )
             pass = false;
         if ( !ThreadPool::is_valid( tpool ) )
             pass = false;
@@ -1056,14 +950,14 @@ int main( int argc, char *argv[] )
     // Print the test results
     barrier();
     ut.report();
-    int N_errors = static_cast<int>( ut.NumFailGlobal() );
+    auto N_errors = static_cast<int>( ut.NumFailGlobal() );
 
     // Shudown MPI
     pout << "Shutting down\n";
     barrier();
 #ifdef USE_TIMER
     if ( rank == 0 )
-        MemoryApp::print( std::cout );
+        MemoryApp::print( pout );
 #endif
 #ifdef USE_MPI
     MPI_Finalize();

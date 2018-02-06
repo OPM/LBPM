@@ -1,15 +1,15 @@
 #include "threadpool/atomic_helpers.h"
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <vector>
-#include <thread>
-#include <chrono>
-#include <functional>
 #include <atomic>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <vector>
 
 
 #define perr std::cerr
@@ -21,18 +21,18 @@
 static void modify_counter( int N, AtomicOperations::counter_t &counter )
 {
     if ( N > 0 ) {
-        for (int i=0; i<N; i++)
+        for ( int i = 0; i < N; i++ )
             counter.increment();
     } else if ( N < 0 ) {
-        for (int i=0; i<-N; i++)
+        for ( int i = 0; i < -N; i++ )
             counter.decrement();
     }
 }
 
 
 /******************************************************************
-* The main program                                                *
-******************************************************************/
+ * The main program                                                *
+ ******************************************************************/
 #ifdef USE_WINDOWS
 int __cdecl main( int, char ** )
 {
@@ -60,25 +60,25 @@ int main( int, char *[] )
     // Create the counter we want to test
     AtomicOperations::counter_t count;
     if ( count.increment() == 1 )
-        ut.passes("increment count");
+        ut.passes( "increment count" );
     else
-        ut.failure("increment count");
+        ut.failure( "increment count" );
     if ( count.decrement() == 0 )
-        ut.passes("decrement count");
+        ut.passes( "decrement count" );
     else
-        ut.failure("decrement count");
-    count.setCount(3);
+        ut.failure( "decrement count" );
+    count.setCount( 3 );
     if ( count.getCount() == 3 )
-        ut.passes("set count");
+        ut.passes( "set count" );
     else
-        ut.failure("set count");
-    count.setCount(0);
+        ut.failure( "set count" );
+    count.setCount( 0 );
 
     // Increment the counter in serial
     auto start = std::chrono::high_resolution_clock::now();
     modify_counter( N_count, count );
-    auto stop = std::chrono::high_resolution_clock::now();
-    double time_inc_serial = std::chrono::duration<double>(stop-start).count() / N_count;
+    auto stop              = std::chrono::high_resolution_clock::now();
+    double time_inc_serial = std::chrono::duration<double>( stop - start ).count() / N_count;
     int val                = count.getCount();
     if ( val != N_count ) {
         char tmp[100];
@@ -90,8 +90,8 @@ int main( int, char *[] )
     // Decrement the counter in serial
     start = std::chrono::high_resolution_clock::now();
     modify_counter( -N_count, count );
-    stop = std::chrono::high_resolution_clock::now();
-    double time_dec_serial = std::chrono::duration<double>(stop-start).count() / N_count;
+    stop                   = std::chrono::high_resolution_clock::now();
+    double time_dec_serial = std::chrono::duration<double>( stop - start ).count() / N_count;
     val                    = count.getCount();
     if ( val != 0 ) {
         char tmp[100];
@@ -104,12 +104,13 @@ int main( int, char *[] )
     std::vector<std::thread> threads( N_threads );
     start = std::chrono::high_resolution_clock::now();
     for ( int i = 0; i < N_threads; i++ )
-        threads[i] = std::thread( modify_counter, N_count, std::ref(count) );
+        threads[i] = std::thread( modify_counter, N_count, std::ref( count ) );
     for ( int i = 0; i < N_threads; i++ )
         threads[i].join();
     stop = std::chrono::high_resolution_clock::now();
-    double time_inc_parallel = std::chrono::duration<double>(stop-start).count() / ( N_count * N_threads );
-    val                      = count.getCount();
+    double time_inc_parallel =
+        std::chrono::duration<double>( stop - start ).count() / ( N_count * N_threads );
+    val = count.getCount();
     if ( val != N_count * N_threads ) {
         char tmp[100];
         sprintf( tmp, "Count of %i did not match expected count of %i", val, N_count * N_threads );
@@ -120,12 +121,13 @@ int main( int, char *[] )
     // Decrement the counter in parallel
     start = std::chrono::high_resolution_clock::now();
     for ( int i = 0; i < N_threads; i++ )
-        threads[i] = std::thread( modify_counter, -N_count, std::ref(count) );
+        threads[i] = std::thread( modify_counter, -N_count, std::ref( count ) );
     for ( int i = 0; i < N_threads; i++ )
         threads[i].join();
     stop = std::chrono::high_resolution_clock::now();
-    double time_dec_parallel = std::chrono::duration<double>(stop-start).count() / ( N_count * N_threads );
-    val                      = count.getCount();
+    double time_dec_parallel =
+        std::chrono::duration<double>( stop - start ).count() / ( N_count * N_threads );
+    val = count.getCount();
     if ( val != 0 ) {
         char tmp[100];
         sprintf( tmp, "Count of %i did not match expected count of %i", val, 0 );
@@ -147,6 +149,6 @@ int main( int, char *[] )
 
     // Finished
     ut.report();
-    int N_errors = static_cast<int>( ut.NumFailGlobal() );
+    auto N_errors = static_cast<int>( ut.NumFailGlobal() );
     return N_errors;
 }

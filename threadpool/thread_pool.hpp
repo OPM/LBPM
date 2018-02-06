@@ -23,7 +23,7 @@
  */
 #define TPOOL_TUPLE_TO_SEQ( t ) TPOOL_TUPLE_TO_SEQ_##II t
 #define TPOOL_TUPLE_TO_SEQ_II( a, ... ) a, ##__VA_ARGS__
-#ifdef USE_WINDOWS
+#if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
 #define TPOOL_GET_PRIORITY( a, N, c, ... ) N
 #define TPOOL_ADD_WORK( TPOOL, FUNCTION, ARGS, ... )                                      \
     ThreadPool_add_work( TPOOL, TPOOL_GET_PRIORITY( 0, __VA_ARGS__, 0, 0 ) + 0, FUNCTION, \
@@ -40,35 +40,35 @@
 // \cond HIDDEN_SYMBOLS
 
 
-
 // Unpack a tuple and call a function
-template <int...>
+template<int...>
 struct index_tuple {
 };
-template <int I, typename IndexTuple, typename... Types>
+template<int I, typename IndexTuple, typename... Types>
 struct make_indexes_impl;
-template <int I, int... Indexes, typename T, typename... Types>
+template<int I, int... Indexes, typename T, typename... Types>
 struct make_indexes_impl<I, index_tuple<Indexes...>, T, Types...> {
     typedef typename make_indexes_impl<I + 1, index_tuple<Indexes..., I>, Types...>::type type;
 };
-template <int I, int... Indexes>
+template<int I, int... Indexes>
 struct make_indexes_impl<I, index_tuple<Indexes...>> {
     typedef index_tuple<Indexes...> type;
 };
-template <typename... Types>
+template<typename... Types>
 struct make_indexes : make_indexes_impl<0, index_tuple<>, Types...> {
 };
-template <class Ret, class... Args, int... Indexes>
-inline Ret apply_helper( Ret ( *pf )( Args... ), index_tuple<Indexes...>, std::tuple<Args...> &&tup )
+template<class Ret, class... Args, int... Indexes>
+inline Ret apply_helper(
+    Ret ( *pf )( Args... ), index_tuple<Indexes...>, std::tuple<Args...> &&tup )
 {
     return pf( std::forward<Args>( std::get<Indexes>( tup ) )... );
 }
-template <class Ret, class... Args>
+template<class Ret, class... Args>
 inline Ret apply( Ret ( *pf )( Args... ), const std::tuple<Args...> &tup )
 {
     return apply_helper( pf, typename make_indexes<Args...>::type(), std::tuple<Args...>( tup ) );
 }
-template <class Ret, class... Args>
+template<class Ret, class... Args>
 inline Ret apply( Ret ( *pf )( Args... ), std::tuple<Args...> &&tup )
 {
     return apply_helper(
@@ -77,21 +77,21 @@ inline Ret apply( Ret ( *pf )( Args... ), std::tuple<Args...> &&tup )
 
 
 // Specialization for no return argument
-template <>
+template<>
 class ThreadPool::WorkItemRet<void> : public ThreadPool::WorkItem
 {
 public:
     virtual void run() override = 0;
-    virtual bool has_result() const override { return false; }
     void get_results() {}
     virtual ~WorkItemRet() {}
+    virtual bool has_result() const override final { return false; }
 };
 
 
 // Final class for the work item
-template <class Ret, class... Args>
+template<class Ret, class... Args>
 class WorkItemFull;
-template <class... Args>
+template<class... Args>
 class WorkItemFull<void, Args...> : public ThreadPool::WorkItemRet<void>
 {
 private:
@@ -104,14 +104,10 @@ public:
         : ThreadPool::WorkItemRet<void>(), routine( routine2 ), args( ts... )
     {
     }
-    virtual void run() override
-    {
-        apply( routine, args );
-    }
-    virtual bool has_result() const override { return false; }
+    virtual void run() override { apply( routine, args ); }
     virtual ~WorkItemFull() {}
 };
-template <class Ret, class... Args>
+template<class Ret, class... Args>
 class WorkItemFull : public ThreadPool::WorkItemRet<Ret>
 {
 private:
@@ -124,62 +120,60 @@ public:
         : ThreadPool::WorkItemRet<Ret>(), routine( routine2 ), args( ts... )
     {
     }
-    virtual void run() override
-    {
-        this->d_result = apply( routine, args );
-    }
-    virtual bool has_result() const override { return true; }
+    virtual void run() override { this->d_result = apply( routine, args ); }
     virtual ~WorkItemFull() {}
 };
 
 
 // Functions to add work to the thread pool
-template <class Ret, class... Ts>
+template<class Ret, class... Ts>
 inline ThreadPool::thread_id_t ThreadPool_add_work(
     ThreadPool *tpool, int priority, Ret ( *routine )( Ts... ), Ts... ts )
 {
-    ThreadPool::WorkItem *work = new WorkItemFull<Ret, Ts...>( routine, ts... );
-    return tpool->add_work( work, priority );
+    auto work = new WorkItemFull<Ret, Ts...>( routine, ts... );
+    return ThreadPool::add_work( tpool, work, priority );
 }
-template <class Ret>
+template<class Ret>
 inline ThreadPool::thread_id_t ThreadPool_add_work(
     ThreadPool *tpool, int priority, Ret ( *routine )(), void * )
 {
-    ThreadPool::WorkItem *work = new WorkItemFull<Ret>( routine );
-    return tpool->add_work( work, priority );
+    auto work = new WorkItemFull<Ret>( routine );
+    return ThreadPool::add_work( tpool, work, priority );
 }
-template <class Ret, class... Args>
-inline ThreadPool::WorkItem* ThreadPool::createWork( Ret( *routine )( Args... ), Args... args )
+template<class Ret, class... Args>
+inline ThreadPool::WorkItem *ThreadPool::createWork( Ret ( *routine )( Args... ), Args... args )
 {
     return new WorkItemFull<Ret, Args...>( routine, args... );
 }
 
 
 /******************************************************************
-* Function to get the returned function value                     *
-******************************************************************/
-template <class T> inline constexpr T zeroConstructor();
-template<> inline constexpr bool zeroConstructor<bool>( ) { return false; }
-template<> inline constexpr char zeroConstructor<char>( ) { return 0; }
-template<> inline constexpr unsigned char zeroConstructor<unsigned char>( ) { return 0; }
-template<> inline constexpr int zeroConstructor<int>( ) { return 0; }
-template<> inline constexpr unsigned int zeroConstructor<unsigned int>( ) { return 0; }
-template<> inline constexpr long zeroConstructor<long>( ) { return 0; }
-template<> inline constexpr unsigned long zeroConstructor<unsigned long>( ) { return 0; }
-template<> inline constexpr float zeroConstructor<float>( ) { return 0; }
-template<> inline constexpr double zeroConstructor<double>( ) { return 0; }
-template <class T> inline constexpr T zeroConstructor() { return T(); }
-template <class Ret>
-inline Ret ThreadPool::getFunctionRet( const ThreadPool::thread_id_t &id ) const
+ * Function to get the returned function value                     *
+ ******************************************************************/
+// clang-format off
+template<class T> inline constexpr T zeroConstructor();
+template<> inline constexpr bool zeroConstructor<bool>() { return false; }
+template<> inline constexpr char zeroConstructor<char>() { return 0; }
+template<> inline constexpr unsigned char zeroConstructor<unsigned char>() { return 0; }
+template<> inline constexpr int zeroConstructor<int>() { return 0; }
+template<> inline constexpr unsigned int zeroConstructor<unsigned int>() { return 0; }
+template<> inline constexpr long zeroConstructor<long>() { return 0; }
+template<> inline constexpr unsigned long zeroConstructor<unsigned long>() { return 0; }
+template<> inline constexpr float zeroConstructor<float>() { return 0; }
+template<> inline constexpr double zeroConstructor<double>() { return 0; }
+template<class T> inline constexpr T zeroConstructor() { return T(); }
+template<class Ret>
+inline Ret ThreadPool::getFunctionRet( const ThreadPool::thread_id_t &id )
 {
-    WorkItemRet<Ret> *work = dynamic_cast<WorkItemRet<Ret>*>( getFinishedWorkItem( id ) );
+    auto work = dynamic_cast<WorkItemRet<Ret> *>( getFinishedWorkItem( id ) );
     return work == nullptr ? zeroConstructor<Ret>() : work->get_results();
 }
+// clang-format on
 
 
 /******************************************************************
-* Inline functions to wait for the work items to finish           *
-******************************************************************/
+ * Inline functions to wait for the work items to finish           *
+ ******************************************************************/
 inline int ThreadPool::wait( ThreadPool::thread_id_t id ) const
 {
     bool finished;
@@ -218,7 +212,7 @@ inline int ThreadPool::wait_any( const std::vector<thread_id_t> &ids ) const
 }
 inline int ThreadPool::wait_all( size_t N_work, const ThreadPool::thread_id_t *ids ) const
 {
-    if ( N_work==0 )
+    if ( N_work == 0 )
         return 0;
     auto finished = new bool[N_work];
     wait_some( N_work, ids, N_work, finished );
@@ -234,25 +228,32 @@ inline int ThreadPool::wait_all( const std::vector<thread_id_t> &ids ) const
     delete[] finished;
     return 0;
 }
-inline std::vector<int> ThreadPool::wait_some( int N_wait, const std::vector<thread_id_t> &ids ) const
+inline int ThreadPool::wait_all( const ThreadPool *tpool, const std::vector<thread_id_t> &ids )
 {
-    auto finished = new bool[ids.size()];
+    if ( tpool )
+        return tpool->wait_all( ids );
+    return ids.size();
+}
+inline std::vector<int> ThreadPool::wait_some(
+    int N_wait, const std::vector<thread_id_t> &ids ) const
+{
+    auto finished  = new bool[ids.size()];
     int N_finished = wait_some( ids.size(), ids.data(), N_wait, finished );
-    std::vector<int> index(N_finished,-1);
-    for ( size_t i=0, j=0; i < ids.size(); i++ ) {
+    std::vector<int> index( N_finished, -1 );
+    for ( size_t i = 0, j = 0; i < ids.size(); i++ ) {
         if ( finished[i] ) {
             index[j] = i;
             j++;
         }
     }
-    delete [] finished;
+    delete[] finished;
     return index;
 }
 
 
 /******************************************************************
-* Functions to add work items.                                    *
-******************************************************************/
+ * Functions to add work items.                                    *
+ ******************************************************************/
 inline ThreadPool::thread_id_t ThreadPool::add_work( WorkItem *work, int priority )
 {
     ThreadPool::thread_id_t id;
@@ -280,11 +281,37 @@ inline std::vector<ThreadPool::thread_id_t> ThreadPool::add_work(
         delete[] priority2;
     return ids;
 }
+inline ThreadPool::thread_id_t ThreadPool::add_work(
+    ThreadPool *tpool, ThreadPool::WorkItem *work, int priority )
+{
+    ThreadPool::thread_id_t id;
+    if ( tpool ) {
+        id = tpool->add_work( work, priority );
+    } else {
+        id.reset( priority, std::rand(), work );
+        work->d_state = 2;
+        work->run();
+        work->d_state = 3;
+    }
+    return id;
+}
+inline std::vector<ThreadPool::thread_id_t> ThreadPool::add_work( ThreadPool *tpool,
+    const std::vector<ThreadPool::WorkItem *> &work, const std::vector<int> &priority )
+{
+    if ( tpool ) {
+        return tpool->add_work( work, priority );
+    } else {
+        std::vector<ThreadPool::thread_id_t> ids( work.size() );
+        for ( size_t i = 0; i < work.size(); i++ )
+            ids[i] = add_work( tpool, work[i], priority[i] );
+        return ids;
+    }
+}
 
 
 /******************************************************************
-* Class functions to for the thread id                            *
-******************************************************************/
+ * Class functions to for the thread id                            *
+ ******************************************************************/
 inline ThreadPool::thread_id_t::thread_id_t()
     : d_id( nullThreadID ), d_count( NULL ), d_work( NULL )
 {
@@ -326,7 +353,7 @@ inline ThreadPool::thread_id_t::thread_id_t( const volatile ThreadPool::thread_i
     if ( d_count != NULL )
         AtomicOperations::atomic_increment( d_count );
 }
-#ifndef USE_WINDOWS
+#if !defined( WIN32 ) && !defined( _WIN32 ) && !defined( WIN64 ) && !defined( _WIN64 )
 inline ThreadPool::thread_id_t::thread_id_t( const thread_id_t &rhs )
     : d_id( rhs.d_id ), d_count( rhs.d_count ), d_work( rhs.d_work )
 {
@@ -417,8 +444,8 @@ inline uint64_t ThreadPool::thread_id_t::createId( int priority, uint64_t local_
     if ( priority >= 0 )
         tmp2 |= 0x80;
     uint64_t id = tmp2;
-    id = ( id << 56 ) + local_id;
-    return id;    
+    id          = ( id << 56 ) + local_id;
+    return id;
 }
 inline void ThreadPool::thread_id_t::reset( int priority, uint64_t local_id, void *work )
 {
@@ -435,8 +462,8 @@ inline void ThreadPool::thread_id_t::reset( int priority, uint64_t local_id, voi
     d_count = nullptr;
     d_work  = nullptr;
     if ( work != nullptr ) {
-        d_work = work;
-        d_count = &(reinterpret_cast<WorkItem *>( work )->d_count);
+        d_work   = work;
+        d_count  = &( reinterpret_cast<WorkItem *>( work )->d_count );
         *d_count = 1;
     }
 }
@@ -473,7 +500,7 @@ inline bool ThreadPool::thread_id_t::ready() const
     bool ready = true;
     if ( !isNull() ) {
         auto tmp = work();
-        for (size_t i=0; i<tmp->d_N_ids; i++)
+        for ( size_t i = 0; i < tmp->d_N_ids; i++ )
             ready = ready && tmp->d_ids[i].finished();
     }
     return ready;
@@ -481,21 +508,22 @@ inline bool ThreadPool::thread_id_t::ready() const
 
 
 /******************************************************************
-* This function checks if the id is valid                         *
-******************************************************************/
+ * This function checks if the id is valid                         *
+ ******************************************************************/
 inline bool ThreadPool::isValid( const ThreadPool::thread_id_t &id ) const
 {
-    static_assert( sizeof(atomic_64)==8, "atomic_64 must be a 64-bit integer" );
+    static_assert( sizeof( atomic_64 ) == 8, "atomic_64 must be a 64-bit integer" );
     uint64_t local_id = id.getLocalID();
     uint64_t next_id  = d_id_assign - 1;
-    return local_id!=0 && id.initialized() && local_id<=thread_id_t::maxThreadID && local_id>next_id;
+    return local_id != 0 && id.initialized() && local_id <= thread_id_t::maxThreadID &&
+           local_id > next_id;
 }
 
 
 /******************************************************************
-* Function to get the thread number                               *
-* (-1 if it is not a member thread)                               *
-******************************************************************/
+ * Function to get the thread number                               *
+ * (-1 if it is not a member thread)                               *
+ ******************************************************************/
 inline int ThreadPool::getThreadNumber() const
 {
     std::thread::id id = std::this_thread::get_id();

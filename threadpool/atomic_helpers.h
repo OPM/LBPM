@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <typeinfo>
-#include <stdexcept>
 
 // Choose the OS
 #if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
@@ -88,6 +87,16 @@ inline int32_atomic atomic_get( const int32_atomic volatile *x );
  * \param[in] x     The pointer to the value to get
  */
 inline int64_atomic atomic_get( const int64_atomic volatile *x );
+
+
+/**
+ * \brief Get the value
+ * \details Read the data in x
+ * \param[in] x     The pointer to the value to get
+ */
+template<class TYPE>
+inline TYPE *atomic_get( volatile TYPE **x );
+
 
 /**
  * \brief Set the value
@@ -185,9 +194,8 @@ inline bool atomic_compare_and_swap( void *volatile *v, void *x, void *y );
  * \brief Fetch the current value and "and" with given value
  * \details Perform *v = (*v) & x, returning the previous value
  * \return Returns the previous value before the "and" operation
- * \param[in] v     The pointer to the value to check and swap
- * \param[in] x     The value to compare
- * \param[in] y     The value to swap iff *v==x
+ * \param[in] v     The pointer to the value to check and and
+ * \param[in] x     The value to and
  */
 inline int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic x );
 
@@ -195,9 +203,8 @@ inline int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic
  * \brief Fetch the current value and "and" with given value
  * \details Perform *v = (*v) & x, returning the previous value
  * \return Returns the previous value before the "and" operation
- * \param[in] v     The pointer to the value to check and swap
- * \param[in] x     The value to compare
- * \param[in] y     The value to swap iff *v==x
+ * \param[in] v     The pointer to the value to check and and
+ * \param[in] x     The value to and
  */
 inline int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic x );
 
@@ -205,9 +212,8 @@ inline int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic
  * \brief Fetch the current value and "or" with given value
  * \details Perform *v = (*v) | x, returning the previous value
  * \return Returns the previous value before the "and" operation
- * \param[in] v     The pointer to the value to check and swap
- * \param[in] x     The value to compare
- * \param[in] y     The value to swap iff *v==x
+ * \param[in] v     The pointer to the value to check and or
+ * \param[in] x     The value to or
  */
 inline int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic x );
 
@@ -216,52 +222,52 @@ inline int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic 
  * \details Perform *v = (*v) | x, returning the previous value
  * \return Returns the previous value before the "and" operation
  * \param[in] v     The pointer to the value to check and swap
- * \param[in] x     The value to compare
- * \param[in] y     The value to swap iff *v==x
+ * \param[in] v     The pointer to the value to check and or
+ * \param[in] x     The value to or
  */
 inline int64_atomic atomic_fetch_and_or( int64_atomic volatile *v, int64_atomic x );
-
 
 
 /**
  * \brief Class to store a pool of objects
  * \details This class stores a pool of objects that can be added/removed in a thread-safe way
  */
-template<class TYPE,int N_MAX>
+template<class TYPE, int N_MAX>
 class pool
 {
-  public:
-    pool( )
+public:
+    pool()
     {
-        d_data = new volatile TYPE*[N_MAX];
-        for (int i=0; i<N_MAX; i++)
+        d_data = new volatile TYPE *[N_MAX];
+        for ( int i = 0; i < N_MAX; i++ )
             d_data[i] = new TYPE;
     }
-    ~pool( )
+    ~pool()
     {
-        for (int i=0; i<N_MAX; i++)
+        for ( int i = 0; i < N_MAX; i++ )
             if ( d_data[i] != nullptr )
                 delete d_data[i];
-        delete [] d_data;
+        delete[] d_data;
     }
-    inline TYPE* get()
-    {
-        int i=0;
-        while ( true ) {
-            TYPE* tmp = const_cast<TYPE*>( d_data[i] );
-            bool swapped = atomic_compare_and_swap( (void* volatile*) &d_data[i], tmp, nullptr );
-            if ( swapped && ( tmp != nullptr ) )
-                return tmp;
-            i = (i+1)%N_MAX;
-        }
-    }
-    inline void put( TYPE* ptr )
+    inline TYPE *get()
     {
         int i = 0;
-        while ( !atomic_compare_and_swap( (void* volatile*) &d_data[i], nullptr, ptr ) )
-            i = (i+1)%N_MAX;
+        while ( true ) {
+            TYPE *tmp    = const_cast<TYPE *>( d_data[i] );
+            bool swapped = atomic_compare_and_swap( (void *volatile *) &d_data[i], tmp, nullptr );
+            if ( swapped && ( tmp != nullptr ) )
+                return tmp;
+            i = ( i + 1 ) % N_MAX;
+        }
     }
-  private:
+    inline void put( TYPE *ptr )
+    {
+        int i = 0;
+        while ( !atomic_compare_and_swap( (void *volatile *) &d_data[i], nullptr, ptr ) )
+            i = ( i + 1 ) % N_MAX;
+    }
+
+private:
     volatile TYPE **d_data;
     pool( const pool &rhs );
     pool &operator=( const pool &rhs );
@@ -323,10 +329,24 @@ inline int64_atomic atomic_decrement( int64_atomic volatile *x )
 {
     return OSAtomicDecrement64Barrier( x );
 }
-int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic x ) { return OSAtomicOr32Orig( x, (volatile uint32_t *) v ); }
-int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic x ) { return OSAtomicAnd32Orig( x, (volatile uint32_t *) v); }
-int64_atomic atomic_fetch_and_or( int64_atomic volatile *v, int64_atomic x ) { throw std::logic_error("Not availible for this OS"); return 0; }
-int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic x ) { throw std::logic_error("Not availible for this OS"); return 0; }
+int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic x )
+{
+    return OSAtomicOr32Orig( x, (volatile uint32_t *) v );
+}
+int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic x )
+{
+    return OSAtomicAnd32Orig( x, (volatile uint32_t *) v );
+}
+int64_atomic atomic_fetch_and_or( int64_atomic volatile *v, int64_atomic x )
+{
+    throw std::logic_error( "Not availible for this OS" );
+    return 0;
+}
+int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic x )
+{
+    throw std::logic_error( "Not availible for this OS" );
+    return 0;
+}
 inline int32_atomic atomic_add( int32_atomic volatile *x, int32_atomic y )
 {
     return OSAtomicAdd32Barrier( y, x );
@@ -352,10 +372,22 @@ int32_atomic atomic_increment( int32_atomic volatile *x ) { return __sync_add_an
 int64_atomic atomic_increment( int64_atomic volatile *x ) { return __sync_add_and_fetch( x, 1 ); }
 int32_atomic atomic_decrement( int32_atomic volatile *x ) { return __sync_sub_and_fetch( x, 1 ); }
 int64_atomic atomic_decrement( int64_atomic volatile *x ) { return __sync_sub_and_fetch( x, 1 ); }
-int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic x ) { return __sync_fetch_and_or( v, x ); }
-int64_atomic atomic_fetch_and_or( int64_atomic volatile *v, int64_atomic x ) { return __sync_fetch_and_or( v, x ); }
-int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic x ) { return __sync_fetch_and_and( v, x ); }
-int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic x ) { return __sync_fetch_and_and( v, x ); }
+int32_atomic atomic_fetch_and_or( int32_atomic volatile *v, int32_atomic x )
+{
+    return __sync_fetch_and_or( v, x );
+}
+int64_atomic atomic_fetch_and_or( int64_atomic volatile *v, int64_atomic x )
+{
+    return __sync_fetch_and_or( v, x );
+}
+int32_atomic atomic_fetch_and_and( int32_atomic volatile *v, int32_atomic x )
+{
+    return __sync_fetch_and_and( v, x );
+}
+int64_atomic atomic_fetch_and_and( int64_atomic volatile *v, int64_atomic x )
+{
+    return __sync_fetch_and_and( v, x );
+}
 inline int32_atomic atomic_add( int32_atomic volatile *x, int32_atomic y )
 {
     return __sync_add_and_fetch( x, y );
@@ -459,29 +491,42 @@ inline int64_atomic atomic_get( const int64_atomic volatile *x )
 {
     return atomic_add( const_cast<int64_atomic volatile *>( x ), 0 );
 }
+template<class TYPE>
+inline TYPE *atomic_get( volatile TYPE **x )
+{
+    return reinterpret_cast<TYPE *>(
+        atomic_add( reinterpret_cast<int64_atomic volatile *>( x ), 0 ) );
+}
 inline void atomic_set( int32_atomic volatile *x, int32_atomic y )
 {
     int32_atomic tmp = *x;
-    while ( !atomic_compare_and_swap( x, tmp, y ) ) { tmp = *x; }
+    while ( !atomic_compare_and_swap( x, tmp, y ) ) {
+        tmp = *x;
+    }
 }
 inline void atomic_set( int64_atomic volatile *x, int64_atomic y )
 {
     int64_atomic tmp = *x;
-    while ( !atomic_compare_and_swap( x, tmp, y ) ) { tmp = *x; }
+    while ( !atomic_compare_and_swap( x, tmp, y ) ) {
+        tmp = *x;
+    }
 }
 inline void atomic_swap( int32_atomic volatile *x, int32_atomic *y )
 {
     int32_atomic tmp = *x;
-    while ( !atomic_compare_and_swap( x, tmp, *y ) ) { tmp = *x; }
+    while ( !atomic_compare_and_swap( x, tmp, *y ) ) {
+        tmp = *x;
+    }
     *y = tmp;
 }
 inline void atomic_swap( int64_atomic volatile *x, int64_atomic *y )
 {
     int64_atomic tmp = *x;
-    while ( !atomic_compare_and_swap( x, tmp, *y ) ) { tmp = *x; }
+    while ( !atomic_compare_and_swap( x, tmp, *y ) ) {
+        tmp = *x;
+    }
     *y = tmp;
 }
-
 
 
 // Define an atomic counter
@@ -499,6 +544,7 @@ public:
     inline void setCount( int val ) { count = val; }
     // Get the current value of the count
     inline int getCount() const { return count; }
+
 private:
     counter_t( const counter_t & );
     counter_t &operator=( const counter_t & );

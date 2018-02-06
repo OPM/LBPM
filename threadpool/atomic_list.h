@@ -1,52 +1,48 @@
 #ifndef included_AtomicModelAtomicList
 #define included_AtomicModelAtomicList
 
-#include <functional>
-#include <csignal>
 #include <atomic>
+#include <csignal>
+#include <functional>
 
 #include "threadpool/atomic_helpers.h"
 
 
-
 /** \class AtomicList
  *
- * \brief Maintain a sorted list of entries 
+ * \brief Maintain a sorted list of entries
  * \details This class implements a basic sorted list that is thread-safe and lock-free.
  *    Entries are stored smallest to largest according to the compare operator
  */
-template< class TYPE, int MAX_SIZE, class COMPARE = std::less<TYPE> >
+template<class TYPE, int MAX_SIZE, class COMPARE = std::less<TYPE>>
 class AtomicList final
 {
 public:
     //! Default constructor
-    AtomicList( const TYPE& default_value=TYPE(), const COMPARE& comp=COMPARE() );
+    AtomicList( const TYPE &default_value = TYPE(), const COMPARE &comp = COMPARE() );
 
     /*!
      * \brief   Remove an item from the list
      * \details Find and remove first entry that meets the given criteria
-     * @return          Return the item that matches the criteria, or the default item if no item matches
-     * @param comp	 	Comparison function object (i.e. an object that satisfies
+     * @return          Return the item that matches the criteria,
+     *                  or the default item if no item matches
+     * @param compare   Comparison function object (i.e. an object that satisfies
      *                  the requirements of Compare) which returns ​true if the
      *                  given value meets the selection criteria.
      *                  The signature of the comparison function should be equivalent to:
      *                      bool cmp( const TYPE& value, ... );
+     * @param args      Additional arguments for the comparison
      */
-    template<class Compare, class ... Args>
+    template<class Compare, class... Args>
     inline TYPE remove( Compare compare, Args... args );
 
     //! Remove the first from the list
-    inline TYPE remove_first( );
+    inline TYPE remove_first();
 
     /*!
      * \brief   Insert an item
      * \details Insert an item into the list
      * @param x         Item to insert
-     * @param comp	 	Comparison function object (i.e. an object that satisfies
-     *                  the requirements of Compare) which returns ​true if the
-     *                  first argument is less than (i.e. is ordered before) the second. 
-     *                  The signature of the comparison function should be equivalent to:
-     *                      bool cmp(const TYPE &a, const TYPE &b);
      */
     inline void insert( TYPE x );
 
@@ -54,19 +50,19 @@ public:
      * \brief   Return the size of the list
      * \details Return the number of items in the list
      */
-    inline int size( ) const { return AtomicOperations::atomic_get(&d_N); }
+    inline int size() const { return AtomicOperations::atomic_get( &d_N ); }
 
     /*!
      * \brief   Check if the list is empty
      * \details Return true if the list is empty
      */
-    inline bool empty( ) const { return AtomicOperations::atomic_get(&d_N)==0; }
+    inline bool empty() const { return AtomicOperations::atomic_get( &d_N ) == 0; }
 
     /*!
      * \brief   Return the capacity of the list
      * \details Return the maximum number of items the list can hold
      */
-    inline int capacity( ) const { return MAX_SIZE; }
+    inline int capacity() const { return MAX_SIZE; }
 
     /*!
      * \brief   Check the list
@@ -76,15 +72,15 @@ public:
      *    It is intended for debugging purposes only!
      * @return          This function returns true if the list is in a good working state
      */
-    inline bool check( );
+    inline bool check();
 
 
     //! Return the total number of inserts since object creation
-    inline int64_t N_insert() const { return AtomicOperations::atomic_get(&d_N_insert); }
+    inline int64_t N_insert() const { return AtomicOperations::atomic_get( &d_N_insert ); }
 
 
     //! Return the total number of removals since object creation
-    inline int64_t N_remove() const { return AtomicOperations::atomic_get(&d_N_remove); }
+    inline int64_t N_remove() const { return AtomicOperations::atomic_get( &d_N_remove ); }
 
 private:
     // Data members
@@ -92,7 +88,7 @@ private:
     volatile TYPE d_default;
     volatile TYPE d_objects[MAX_SIZE];
     volatile AtomicOperations::int32_atomic d_N;
-    volatile AtomicOperations::int32_atomic d_next[MAX_SIZE+1];
+    volatile AtomicOperations::int32_atomic d_next[MAX_SIZE + 1];
     volatile AtomicOperations::int32_atomic d_unused;
     volatile AtomicOperations::int64_atomic d_N_insert;
     volatile AtomicOperations::int64_atomic d_N_remove;
@@ -112,12 +108,12 @@ private:
         if ( i != -1 )
             AtomicOperations::atomic_fetch_and_or( &d_next[i], value );
     }
-    inline int get_unused( )
+    inline int get_unused()
     {
         int i = 0;
         while ( i == 0 )
             i = AtomicOperations::atomic_fetch_and_and( &d_unused, 0 );
-        AtomicOperations::atomic_fetch_and_or( &d_unused, -(d_next[i]+4)+1 );
+        AtomicOperations::atomic_fetch_and_or( &d_unused, -( d_next[i] + 4 ) + 1 );
         d_next[i] = -3;
         return i;
     }
@@ -126,14 +122,14 @@ private:
         int j = 0;
         while ( j == 0 )
             AtomicOperations::atomic_swap( &d_unused, &j );
-        d_next[i] = -3-j;
+        d_next[i] = -3 - j;
         AtomicOperations::atomic_fetch_and_or( &d_unused, i );
     }
 
 
 private:
-    AtomicList( const AtomicList& );
-    AtomicList& operator=( const AtomicList& );
+    AtomicList( const AtomicList & );
+    AtomicList &operator=( const AtomicList & );
 };
 
 
@@ -142,7 +138,7 @@ private:
  * \brief Pool allocator
  * \details This class implements a basic fast pool allocator that is thread-safe.
  */
-template< class TYPE, class INT_TYPE=int >
+template<class TYPE, class INT_TYPE = int>
 class MemoryPool final
 {
 public:
@@ -150,21 +146,21 @@ public:
     explicit MemoryPool( size_t size );
 
     //! destructor
-    ~MemoryPool( );
+    ~MemoryPool();
 
     /*!
      * \brief   Allocate an object
      * \details Allocates a new object from the pool
      * @return          Return the new pointer, or nullptr if there is no more room in the pool
      */
-    inline TYPE* allocate( );
+    inline TYPE *allocate();
 
     /*!
      * \brief   Insert an item
      * \details Insert an item into the list
      * @param ptr       The pointer to free
      */
-    inline void free( TYPE* ptr );
+    inline void free( TYPE *ptr );
 
 private:
     // Data members
@@ -172,11 +168,9 @@ private:
     volatile AtomicOperations::int32_atomic d_next;
 
 private:
-    MemoryPool( const MemoryPool& );
-    MemoryPool& operator=( const MemoryPool& );
+    MemoryPool( const MemoryPool & );
+    MemoryPool &operator=( const MemoryPool & );
 };
-
-
 
 
 #include "threadpool/atomic_list.hpp"

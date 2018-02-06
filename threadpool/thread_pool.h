@@ -3,53 +3,25 @@
 // PARTICULAR PURPOSE.
 #ifndef included_AtomicModelThreadPool
 #define included_AtomicModelThreadPool
+
+#include <condition_variable>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <stdarg.h>
 #include <stdexcept>
 #include <stdio.h>
 #include <string.h>
+#include <thread>
 #include <typeinfo>
 #include <vector>
-#include <mutex>
-#include <thread>
-#include <condition_variable>
 
 
 #include "threadpool/atomic_helpers.h"
 #include "threadpool/atomic_list.h"
 
 
-// Choose the OS
-#if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
-    // Using windows
-    #define USE_WINDOWS
-#elif defined( __APPLE__ )
-    // Using MAC
-    #define USE_MAC
-#elif defined( __linux ) || defined( __unix ) || defined( __posix )
-    // Using linux
-    #define USE_LINUX
-#else
-    #error Unknown OS
-#endif
-
-
-// Set some definitions
-#define MAX_NUM_THREADS 128     // The maximum number of threads (must be a multiple of 64)
-#define MAX_QUEUED 1024         // The maximum number of items in the work queue at any moment
-#define MAX_WAIT 16             // The maximum number of active waits at any given time
-#define MAX_WAIT_TIME_DEBUG 600 // The maximum time in a wait command before printing a warning message
-
-#define PROFILE_THREADPOOL_PERFORMANCE 0    // Add profile timers to the threadpool (default is 0)
-#define MONITOR_THREADPOOL_PERFORMANCE 0    // Add detailed performance counters (default is 0)
-
-
-// Check the c++ std
-#if CXX_STD==98
-#error Thread pool class requires c++11 or newer
-#endif
-
+// clang-format off
 
 
 /** \class ThreadPool
@@ -75,6 +47,13 @@
  */
 class ThreadPool
 {
+public:
+    ///// Set some global properties
+    constexpr static int MAX_NUM_THREADS = 128; // The maximum number of threads (must be a multiple of 64)
+    constexpr static int MAX_QUEUED = 1024;     // The maximum number of items in the work queue at any moment
+    constexpr static int MAX_WAIT = 16;         // The maximum number of active waits at any given time
+    constexpr static bool PROFILE_THREADPOOL_PERFORMANCE = false; // Add profile timers to the threadpool
+    constexpr static bool MONITOR_THREADPOOL_PERFORMANCE = false; // Add detailed performance counters
 
 public:
     ///// Member classes
@@ -102,7 +81,7 @@ public:
         inline thread_id_t( volatile thread_id_t &&rhs );
         inline thread_id_t &operator=( const thread_id_t &rhs ) volatile;
         inline thread_id_t &operator=( volatile thread_id_t &&rhs ) volatile;
-#ifndef USE_WINDOWS
+#if !defined( WIN32 ) && !defined( _WIN32 ) && !defined( WIN64 ) && !defined( _WIN64 )
         inline thread_id_t( const thread_id_t &rhs );
         inline thread_id_t &operator=( thread_id_t &&rhs );
         inline thread_id_t &operator=( const thread_id_t &rhs );
@@ -245,7 +224,7 @@ public:
         //! Run the work item
         virtual void run() override = 0;
         //! Will the routine return a result
-        virtual bool has_result() const override = 0;
+        virtual bool has_result() const override final { return !std::is_same<return_type,void>::value; }
         //! Return the results
         return_type get_results() const { return d_result; }
         //! Virtual destructor
@@ -353,10 +332,12 @@ public:
      *   in the ThreadPool without checking the existing work unless the desired number of
      *   threads is 0.  In this case, the function will wait for all work items to finish
      *   before deleting the existing work threads.
+
      *   Member threads may not call this function.
      * @param N                 The desired number of worker threads
      * @param affinity          The affinity scheduler to use:
      *                          none - Let the OS handle the affinities (default)
+
      *                          independent - Give each thread an independent set of processors
      * @param procs             The processors to use (defaults to the process affinitiy list)
      */
@@ -366,6 +347,16 @@ public:
         const int *procs2 = procs.empty() ? nullptr : ( &procs[0] );
         setNumThreads( N, affinity.c_str(), (int) procs.size(), procs2 );
     }
+
+
+    /*!
+     * \brief   Function to set the maximum wait time
+     * \details  This function sets the maximum time the thread pool will
+     *    wait before warning about a possible hung thread.
+     *    Default is to wait 10 minutes.
+     * @param time              The number of seconds to wait (seconds)
+     */
+    inline void setMaxWaitTimeDebug( const int time ) { d_max_wait_time = time; }
 
 
     /*!
@@ -400,16 +391,14 @@ public:
      * @param id                The id of the work item
      */
     template <class return_type>
-    inline return_type getFunctionRet( const thread_id_t &id ) const;
+    static inline return_type getFunctionRet( const thread_id_t &id );
 
 
     /*!
      * \brief   Function to create a work item
      * \details This function creates a work item that can be added to the queue
-     * @param work              Pointer to the work item to add
-     *                          Note that the threadpool will automatically destroy the item when
-     * finished
-     * @param priority          A value indicating the priority of the work item (0-default)
+     * @param routine           Function to call from the thread pool
+     * @param args              Function arguments to pass
      */
     template <class Ret, class... Args>
     static inline WorkItem* createWork( Ret( *routine )( Args... ), Args... args );
@@ -505,6 +494,7 @@ public:
      *   If successful it returns the indicies of the finished work items (the index in the array ids).
      *   Note: any thread may call this routine, but they will block until finished.
      *   For worker threads this may eventually lead to a deadlock.
+     * @param N_wait            Number of work items to wait for
      * @param ids               Vector of work items to wait for
      */
     inline std::vector<int> wait_some( int N_wait, const std::vector<thread_id_t> &ids ) const;
@@ -552,6 +542,69 @@ public:
     //! Return the number of items queued
     int N_queued( ) const { return d_queue_list.size(); }
 
+
+    //! Set the error handler for threads
+    void setErrorHandler( std::function<void(const std::string&)> fun );
+
+
+public: // Static interface
+
+    /*!
+     * \brief   Function to return the number of work threads
+     * \details This function returns the number of threads in the thread pool,
+     *    or 0 if the thread pool is empty or does not exist
+     * @param tpool         Threadpool to add work to (may be null)
+     */
+    static inline int numThreads( const ThreadPool* tpool ) { return tpool ? tpool->getNumThreads() : 0; }
+
+    /*!
+     * \brief   Function to add a work item
+     * \details This function adds a work item to the queue
+     *   Note: any thread may call this routine.
+     * @param tpool         Threadpool to add work to (may be null)
+     * @param work          Pointer to the work item to add
+     *                      Note that the threadpool will automatically destroy the item when finished
+     * @param priority      A value indicating the priority of the work item (0-default)
+     */
+    static inline thread_id_t add_work( ThreadPool* tpool, ThreadPool::WorkItem *work, int priority = 0 );
+
+
+    /*!
+     * \brief   Function to add multiple work items
+     * \details This function adds multiple work item to the queue
+     *   Note: any thread may call this routine.
+     * @param tpool         Threadpool to add work to (may be null)
+     * @param work          Vector of pointers to the work items to add
+     *                      Note that the threadpool will automatically destroy the item when finished
+     * @param priority      Vector of values indicating the priority of the work items
+     */
+    static inline std::vector<thread_id_t> add_work( ThreadPool* tpool, const std::vector<ThreadPool::WorkItem *> &work,
+        const std::vector<int> &priority = std::vector<int>() );
+
+
+    /*!
+     * \brief   Function to wait until all of the given work items have finished their work
+     * \details This is the function waits for all given of the work items to finish.  It returns 0
+     * if successful.
+     *   Note: any thread may call this routine, but they will block until finished.
+     *   For worker threads this may eventually lead to a deadlock.
+     * @param tpool         Threadpool containing work (must match call to add_work)
+     * @param ids           Vector of work items to wait for
+     */
+    static inline int wait_all( const ThreadPool* tpool, const std::vector<thread_id_t> &ids );
+
+
+    /*!
+     * \brief   Function to wait until all work items in the thread pool have finished their work
+     * \details This function will wait until all work has finished.
+     *   Note: member threads may not call this function.
+     *   Only one non-member thread should call this routine at a time.
+     * @param tpool         Threadpool containing work (must match call to add_work)
+     */
+    static inline void wait_pool_finished( const ThreadPool* tpool ) { if ( tpool ) { tpool->wait_pool_finished(); } }
+
+
+
 private:
     typedef AtomicOperations::int32_atomic int32_atomic;
 
@@ -593,7 +646,7 @@ private:
       public:
         wait_ids_struct( size_t N, const ThreadPool::thread_id_t *ids, size_t N_wait,
             AtomicOperations::pool<condition_variable,128>& cv_pool, int N_wait_list, volatile wait_ids_struct **list );
-        ~wait_ids_struct( ) { d_cv_pool.put( d_wait_event ); delete [] d_finished; delete [] d_ids; }
+        ~wait_ids_struct( );
         void id_finished( const ThreadPool::thread_id_t& id ) const;
         bool wait_for( double seconds );
       private:
@@ -628,7 +681,10 @@ private:
     inline void add_work( const ThreadPool::thread_id_t& id );
 
     // Function to get a work item that has finished
-    WorkItem *getFinishedWorkItem( ThreadPool::thread_id_t id ) const;
+    static inline WorkItem *getFinishedWorkItem( const ThreadPool::thread_id_t& id )
+    {
+        return id.finished() ? id.work():nullptr;
+    }
 
     // This function provides a wrapper (needed for the threads)
     static inline void create_new_thread( ThreadPool *tpool, int id )
@@ -676,10 +732,13 @@ private:
     std::thread::id d_threadId[MAX_NUM_THREADS]; // Unique id for each thread
     queue_type d_queue_list;                // The work queue
     size_t d_NULL_TAIL;                     // Null data buffer to check memory bounds
+    int d_max_wait_time;                    // The maximum time in a wait command before printing a warning message
+    std::function<void(const std::string&)> d_errorHandler;
 };
 
 
 #include "threadpool/thread_pool.hpp"
 
 
+// clang-format on
 #endif

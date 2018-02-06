@@ -9,8 +9,23 @@
 #define ANALYSIS_INTERVAL 1000
 #define BLOBID_INTERVAL 1000
 
-enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
+
+enum class AnalysisType : uint64_t { AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
     CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
+
+AnalysisType& operator |=(AnalysisType &lhs, AnalysisType rhs)  
+{
+    lhs = static_cast<AnalysisType> (
+        static_cast<std::underlying_type<AnalysisType>::type>(lhs) |
+        static_cast<std::underlying_type<AnalysisType>::type>(rhs)           
+    );
+    return lhs;
+}
+bool matches( AnalysisType x, AnalysisType y )
+{
+    return static_cast<std::underlying_type<AnalysisType>::type>(x) &
+        static_cast<std::underlying_type<AnalysisType>::type>(y) != 0;
+}
 
 
 template<class TYPE>
@@ -30,7 +45,7 @@ struct AnalysisWaitIdStruct {
 
 
 // Helper class to write the restart file from a seperate thread
-class WriteRestartWorkItem: public ThreadPool::WorkItem
+class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
     WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cDen_,
@@ -41,7 +56,6 @@ public:
         WriteCheckpoint(filename,cDen.get(),cfq.get(),N);
         PROFILE_STOP("Save Checkpoint",1);
     };
-    virtual bool has_result() const { return false; }
 private:
     WriteRestartWorkItem();
     const char* filename;
@@ -54,7 +68,7 @@ private:
 static const std::string id_map_filename = "lbpm_id_map.txt";
 typedef std::shared_ptr<std::pair<int,IntArray> > BlobIDstruct;
 typedef std::shared_ptr<std::vector<BlobIDType> > BlobIDList;
-class BlobIdentificationWorkItem1: public ThreadPool::WorkItem
+class BlobIdentificationWorkItem1: public ThreadPool::WorkItemRet<void>
 {
 public:
     BlobIdentificationWorkItem1( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
@@ -75,7 +89,6 @@ public:
         new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,newcomm);
         PROFILE_STOP("Identify blobs",1);
     }
-    virtual bool has_result() const { return false; }
 private:
     BlobIdentificationWorkItem1();
     int timestep;
@@ -87,7 +100,7 @@ private:
     BlobIDList new_list;
     MPI_Comm newcomm;
 };
-class BlobIdentificationWorkItem2: public ThreadPool::WorkItem
+class BlobIdentificationWorkItem2: public ThreadPool::WorkItemRet<void>
 {
 public:
     BlobIdentificationWorkItem2( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
@@ -122,7 +135,6 @@ public:
         }
         PROFILE_STOP("Identify blobs maps",1);
     }
-    virtual bool has_result() const { return false; }
 private:
     BlobIdentificationWorkItem2();
     int timestep;
@@ -137,7 +149,7 @@ private:
 
 
 // Helper class to write the vis file from a thread
-class WriteVisWorkItem: public ThreadPool::WorkItem
+class WriteVisWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
     WriteVisWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
@@ -164,7 +176,6 @@ public:
         IO::writeData( timestep, visData, newcomm );
         PROFILE_STOP("Save Vis",1);
     };
-    virtual bool has_result() const { return false; }
 private:
     WriteVisWorkItem();
     int timestep;
@@ -177,7 +188,7 @@ private:
 
 // Helper class to run the analysis from within a thread
 // Note: Averages will be modified after the constructor is called
-class AnalysisWorkItem: public ThreadPool::WorkItem
+class AnalysisWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
     AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
@@ -191,10 +202,10 @@ public:
         Averages.Label_NWP_map = *id_list;
         Averages.NumberComponents_WP = 1;
         Averages.Label_WP.fill(0.0);
-        if ( (type&CopyPhaseIndicator) != 0 ) {
+        if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
             // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
         }
-        if ( (type&ComputeAverages) != 0 ) {
+        if ( matches(type,AnalysisType::ComputeAverages) ) {
             PROFILE_START("Compute dist",1);
             Averages.Initialize();
             Averages.ComputeDelPhi();
@@ -212,7 +223,6 @@ public:
             PROFILE_STOP("Compute dist",1);
         }
     }
-    virtual bool has_result() const { return false; }
 private:
     AnalysisWorkItem();
     AnalysisType type;
@@ -222,6 +232,7 @@ private:
     BlobIDList id_list;
     double beta;
 };
+
 
 // Function to start the analysis
 void run_analysis( int timestep, int restart_interval, 
@@ -236,46 +247,45 @@ void run_analysis( int timestep, int restart_interval,
     int N = Nx*Ny*Nz;
 
     // Determin the analysis we want to perform
-    AnalysisType type = AnalyzeNone;
+    AnalysisType type = AnalysisType::AnalyzeNone;
     if ( timestep%ANALYSIS_INTERVAL + 5 == ANALYSIS_INTERVAL ) {
         // Copy the phase indicator field for the earlier timestep
-        type = static_cast<AnalysisType>( type | CopyPhaseIndicator );
+        type |= AnalysisType::CopyPhaseIndicator;
     }
     if ( timestep%BLOBID_INTERVAL == 0 ) {
         // Identify blobs and update global ids in time
-        type = static_cast<AnalysisType>( type | IdentifyBlobs );
+        type |= AnalysisType::IdentifyBlobs;
     }
-    /*    #ifdef USE_CUDA
+    /*#ifdef USE_CUDA
         if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%50==0 ) {
             // Keep a few blob identifications queued up to keep the processors busy,
             // allowing us to track the blobs as fast as possible
             // Add more detailed estimates of the update frequency required to track blobs
-            type = static_cast<AnalysisType>( type | IdentifyBlobs );
+            type |= AnalysisType::IdentifyBlobs;
         }
-    #endif
-    */
+    #endif */
     if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
-        type = static_cast<AnalysisType>( type | CopySimState );
-        type = static_cast<AnalysisType>( type | IdentifyBlobs );
+        type |= AnalysisType::CopySimState;
+        type |= AnalysisType::IdentifyBlobs;
     }
     if ( timestep%ANALYSIS_INTERVAL == 5 ) {
         // Run the analysis
-        type = static_cast<AnalysisType>( type | ComputeAverages );
+        type |= AnalysisType::ComputeAverages;
     }
     if (timestep%restart_interval == 0) {
         // Write the restart file
-        type = static_cast<AnalysisType>( type | CreateRestart );
+        type |= AnalysisType::CreateRestart;
     }
     if (timestep%restart_interval == 0) {
         // Write the visualization data
-        type = static_cast<AnalysisType>( type | WriteVis );
-        type = static_cast<AnalysisType>( type | CopySimState );
-        type = static_cast<AnalysisType>( type | IdentifyBlobs );
+        type |= AnalysisType::WriteVis;
+        type |= AnalysisType::CopySimState;
+        type |= AnalysisType::IdentifyBlobs;
     }
     
     // Return if we are not doing anything
-    if ( type == AnalyzeNone )
+    if ( type == AnalysisType::AnalyzeNone )
         return;
 
     PROFILE_START("start_analysis");
@@ -284,26 +294,28 @@ void run_analysis( int timestep, int restart_interval,
     ScaLBL_DeviceBarrier();
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
-    if ( (type&CopyPhaseIndicator)!=0 || (type&ComputeAverages)!=0 ||
-         (type&CopySimState)!=0 || (type&IdentifyBlobs)!=0 )
+    if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
+         matches(type,AnalysisType::ComputeAverages) ||
+         matches(type,AnalysisType::CopySimState) || 
+         matches(type,AnalysisType::IdentifyBlobs) )
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(Nx,Ny,Nz));
         ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
     }
-    if ( (type&CopyPhaseIndicator)!=0 ) {
+    if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
         memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
     }
-    if ( (type&ComputeAverages)!=0 ) {
+    if ( matches(type,AnalysisType::ComputeAverages) ) {
         memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
         //Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tminus);
     }
-    if ( (type&CopySimState) != 0 ) {
+    if ( matches(type,AnalysisType::CopySimState) ) {
         // Copy the members of Averages to the cpu (phase was copied above)
         // Wait 
         PROFILE_START("Copy-Pressure",1);
-		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-    	ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
+        ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
+        ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
         ScaLBL_DeviceBarrier();
         PROFILE_STOP("Copy-Pressure",1);
         PROFILE_START("Copy-Wait",1);
@@ -312,14 +324,14 @@ void run_analysis( int timestep, int restart_interval,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages.Press);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages.Vel_x);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages.Vel_y);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages.Vel_z);
+        ScaLBL_Comm.RegularLayout(Map,Pressure,Averages.Press);
+        ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages.Vel_x);
+        ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages.Vel_y);
+        ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cfq;
-    if ( (type&CreateRestart) != 0 ) {
+    if ( matches(type,AnalysisType::CreateRestart) ) {
         // Copy restart data to the CPU
         cDen = std::shared_ptr<double>(new double[2*Np],DeleteArray<double>);
         cfq = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
@@ -329,14 +341,14 @@ void run_analysis( int timestep, int restart_interval,
     PROFILE_STOP("Copy data to host",1);
 
     // Spawn threads to do blob identification work
-    if ( (type&IdentifyBlobs)!=0 ) {
+    if ( matches(type,AnalysisType::IdentifyBlobs) ) {
         BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDList new_list(new std::vector<BlobIDType>());
-        ThreadPool::WorkItem *work1 = new BlobIdentificationWorkItem1(timestep,
-            Nx,Ny,Nz,rank_info,phase,Averages.SDs,last_ids,new_index,new_ids,new_list);
-        ThreadPool::WorkItem *work2 = new BlobIdentificationWorkItem2(timestep,
-            Nx,Ny,Nz,rank_info,phase,Averages.SDs,last_ids,new_index,new_ids,new_list);
+        auto work1 = new BlobIdentificationWorkItem1(timestep,Nx,Ny,Nz,rank_info,
+            phase,Averages.SDs,last_ids,new_index,new_ids,new_list);
+        auto work2 = new BlobIdentificationWorkItem2(timestep,Nx,Ny,Nz,rank_info,
+            phase,Averages.SDs,last_ids,new_index,new_ids,new_list);
         work1->add_dependency(wait.blobID);
         work2->add_dependency(tpool.add_work(work1));
         wait.blobID = tpool.add_work(work2);
@@ -346,9 +358,8 @@ void run_analysis( int timestep, int restart_interval,
     }
 
     // Spawn threads to do the analysis work
-    if ( (type&ComputeAverages) != 0 ) {
-        ThreadPool::WorkItem *work = new AnalysisWorkItem(
-            type,timestep,Averages,last_index,last_id_map,beta);
+    if ( matches(type,AnalysisType::ComputeAverages) ) {
+        auto work = new AnalysisWorkItem(type,timestep,Averages,last_index,last_id_map,beta);
         work->add_dependency(wait.blobID);
         work->add_dependency(wait.analysis);
         work->add_dependency(wait.vis);     // Make sure we are done using analysis before modifying
@@ -356,35 +367,35 @@ void run_analysis( int timestep, int restart_interval,
     }
 
     // Spawn a thread to write the restart file
-    if ( (type&CreateRestart) != 0 ) {
+    if ( matches(type,AnalysisType::CreateRestart) ) {
         int rank = MPI_WORLD_RANK();
-        //if (pBC) {
-            //err = fabs(sat_w - sat_w_previous);
-            //sat_w_previous = sat_w;
-	  //if (rank==0){
-	  // printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
-	  // }
-	  // }
+        /* if (pBC) {
+            err = fabs(sat_w - sat_w_previous);
+            sat_w_previous = sat_w;
+            if (rank==0){
+               printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
+           }
+        } */
         // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
         tpool.wait(wait.restart);
-	// Retain the timestep associated with the restart files
-	if (rank==0){
-	  FILE *Rst = fopen("Restart.txt","w");
-	  fprintf(Rst,"%i\n",timestep+5);
-	  fclose(Rst);
-	}
+        // Retain the timestep associated with the restart files
+        if (rank==0) {
+            FILE *Rst = fopen("Restart.txt","w");
+            fprintf(Rst,"%i\n",timestep+5);
+            fclose(Rst);
+        }
         // Write the restart file (using a seperate thread)
-        WriteRestartWorkItem *work = new WriteRestartWorkItem(LocalRestartFile,cDen,cfq,Np);
+        auto work = new WriteRestartWorkItem(LocalRestartFile,cDen,cfq,Np);
         work->add_dependency(wait.restart);
         wait.restart = tpool.add_work(work);
     }
 
     // Save the results for visualization
-    if ( (type&CreateRestart) != 0 ) {
+    if ( matches(type,AnalysisType::CreateRestart) ) {
         // Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
         tpool.wait(wait.vis);
         // Write the vis files
-        ThreadPool::WorkItem *work = new WriteVisWorkItem( timestep, visData, Averages, fillData );
+        auto work = new WriteVisWorkItem( timestep, visData, Averages, fillData );
         work->add_dependency(wait.blobID);
         work->add_dependency(wait.analysis);
         work->add_dependency(wait.vis);

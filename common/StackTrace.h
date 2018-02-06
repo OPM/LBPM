@@ -1,14 +1,11 @@
-#ifndef included_AtomicStackTrace
-#define included_AtomicStackTrace
+#ifndef included_StackTrace
+#define included_StackTrace
 
 #include <functional>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <vector>
-#include <thread>
-#include <memory>
 #include <set>
+#include <thread>
+#include <vector>
 
 
 // Check for and include MPI
@@ -39,35 +36,51 @@ struct stack_info {
     int line;
     //! Default constructor
     stack_info() : address( nullptr ), address2( nullptr ), line( 0 ) {}
+    //! Reset the stack
+    void clear();
     //! Operator==
-    bool operator==( const stack_info& rhs ) const;
+    bool operator==( const stack_info &rhs ) const;
     //! Operator!=
-    bool operator!=( const stack_info& rhs ) const;
+    bool operator!=( const stack_info &rhs ) const;
+    //! Get the minimum width to print the addresses
+    int getAddressWidth() const;
     //! Print the stack info
-    std::string print() const;
+    std::string print( int widthAddress = 16, int widthObject = 20, int widthFunction = 32 ) const;
     //! Compute the number of bytes needed to store the object
     size_t size() const;
     //! Pack the data to a byte array, returning a pointer to the end of the data
-    char* pack( char* ptr ) const;
+    char *pack( char *ptr ) const;
     //! Unpack the data from a byte array, returning a pointer to the end of the data
-    const char* unpack( const char* ptr );
+    const char *unpack( const char *ptr );
     //! Pack a vector of data to a memory block
-    static std::vector<char> packArray( const std::vector<stack_info>& data );
+    static std::vector<char> packArray( const std::vector<stack_info> &data );
     //! Unpack a vector of data from a memory block
-    static std::vector<stack_info> unpackArray( const char* data );
+    static std::vector<stack_info> unpackArray( const char *data );
 };
 
 
 struct multi_stack_info {
-    int N;
-    stack_info stack;
-    std::vector<multi_stack_info> children;
+    int N;                                  // Number of threads/processes
+    stack_info stack;                       // Current stack item
+    std::vector<multi_stack_info> children; // Children
     //! Default constructor
     multi_stack_info() : N( 0 ) {}
+    //! Construct from a simple call stack
+    explicit multi_stack_info( const std::vector<stack_info> & );
+    //! Copy constructor from a simple call stack
+    multi_stack_info &operator=( const std::vector<stack_info> & );
+    //! Reset the stack
+    void clear();
     //! Add the given stack to the multistack
-    void add( size_t N, const stack_info *stack );
+    void add( size_t len, const stack_info *stack );
     //! Print the stack info
-    std::vector<std::string> print( const std::string& prefix=std::string() ) const;
+    std::vector<std::string> print( const std::string &prefix = std::string() ) const;
+
+private:
+    void print2( const std::string &prefix, int w[3], std::vector<std::string> &text ) const;
+    int getAddressWidth() const;
+    int getObjectWidth() const;
+    int getFunctionWidth() const;
 };
 
 
@@ -95,7 +108,7 @@ std::vector<stack_info> getCallStack( std::thread::native_handle_type id );
  *    Note: This functionality may not be availible on all platforms
  * @return          Returns vector containing the stack
  */
-multi_stack_info getAllCallStacks( );
+multi_stack_info getAllCallStacks();
 
 
 /*!
@@ -107,7 +120,17 @@ multi_stack_info getAllCallStacks( );
  *    Note: This functionality may not be availible on all platforms
  * @return          Returns vector containing the stack
  */
-multi_stack_info getGlobalCallStacks( );
+multi_stack_info getGlobalCallStacks();
+
+
+/*!
+ * @brief  Clean up the stack trace
+ * @details  This function modifies the stack trace to remove entries
+ *    related to acquiring the stack trace in an attempt to make it
+ *    more useful for display/users.
+ * @param[in,out] stack     The stack trace to modify
+ */
+void cleanupStackTrace( multi_stack_info &stack );
 
 
 //! Function to return the current call stack for the current thread
@@ -136,8 +159,9 @@ std::string signalName( int signal );
  * Return the symbols from the current executable (not availible for all platforms)
  * @return      Returns 0 if sucessful
  */
-int getSymbols(
-    std::vector<void *> &address, std::vector<char> &type, std::vector<std::string> &obj );
+int getSymbols( std::vector<void *> &address,
+                std::vector<char> &type,
+                std::vector<std::string> &obj );
 
 
 /*!
@@ -159,16 +183,17 @@ enum class terminateType { signal, exception };
 
 /*!
  * Set the error handlers
- * @param[in]   Function to terminate the program: abort(msg,type)
+ * @param[in] abort     Function to terminate the program: abort(msg,type)
  */
 void setErrorHandlers( std::function<void( std::string, terminateType )> abort );
 
 
 /*!
  * Set the given signals to the handler
- * @param[in]   Function to terminate the program: abort(msg,type)
+ * @param[in] signals   Signals to handle
+ * @param[in] handler   Function to terminate the program: abort(msg,type)
  */
-void setSignals( const std::vector<int>& signals, void (*handler) (int) );
+void setSignals( const std::vector<int> &signals, void ( *handler )( int ) );
 
 
 //! Clear a signal set by setSignals
@@ -176,28 +201,28 @@ void clearSignal( int signal );
 
 
 //! Clear all signals set by setSignals
-void clearSignals( );
+void clearSignals();
 
 
 //! Return a list of all signals that can be caught
-std::vector<int> allSignalsToCatch( );
+std::vector<int> allSignalsToCatch();
 
 //! Return a default list of signals to catch
-std::vector<int> defaultSignalsToCatch( );
+std::vector<int> defaultSignalsToCatch();
 
 
 //! Get a list of the active threads
-std::set<std::thread::native_handle_type> activeThreads( );
+std::set<std::thread::native_handle_type> activeThreads();
 
 //! Get a handle to this thread
-std::thread::native_handle_type thisThread( );
+std::thread::native_handle_type thisThread();
 
 
 //! Initialize globalCallStack functionallity
 void globalCallStackInitialize( MPI_Comm comm );
 
 //! Clean up globalCallStack functionallity
-void globalCallStackFinalize( );
+void globalCallStackFinalize();
 
 
 /*!
@@ -208,9 +233,10 @@ void globalCallStackFinalize( );
  * @param[out] exit_code    Exit code returned from child process
  * @return                  Returns string containing the output
  */
-std::string exec( const std::string& cmd, int& exit_code );
+std::string exec( const std::string &cmd, int &exit_code );
 
 
 } // namespace StackTrace
+
 
 #endif

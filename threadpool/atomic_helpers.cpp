@@ -27,4 +27,3 @@ int atomic_pthread_lock_initialized = create_atomic_pthread_lock();
 
 } // AtomicOperations namespace
 
-
