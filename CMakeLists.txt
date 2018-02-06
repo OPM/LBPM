@@ -1,14 +1,21 @@
 # Set some CMake properties    
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-CMAKE_POLICY(SET CMP0014 OLD)
-IF ( ${CMAKE_MAJOR_VERSION} EQUAL 3 )
-    CMAKE_POLICY(SET CMP0026 OLD)
-ENDIF()
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 
 
 MESSAGE("====================")
 MESSAGE("Configuring LBPM-WIA")
 MESSAGE("====================")
+
+
+# Set the project name
+SET( PROJ LBPM )          # Set the project name for CMake
+SET( LBPM_LIB lbpm-wia )  # Set the final library name
+SET( LBPM_INC  )          # Set an optional subfolder for includes (e.g. include/name/...)
+SET( TEST_MAX_PROCS 16 )
+
+
+# Initialize the project
+PROJECT( ${PROJ} )
 
 
 # Prevent users from building in place
@@ -17,26 +24,27 @@ IF ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}" )
 ENDIF()
 
 
-# Set the project name
-PROJECT( LBPM-WIA )
+# Set the default C++ standard
 IF ( NOT CXX_STD )
     SET( CXX_STD 11 )
 ENDIF()
 
 
-# Set some common paths
-SET( LBPM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
-SET( LBPM_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} )
-IF( PREFIX )
-    SET( LBPM_INSTALL_DIR ${PREFIX} )
-ELSEIF( NOT LBPM_INSTALL_DIR )
-    SET( LBPM_INSTALL_DIR ${CMAKE_CURRENT_BINARY_DIR} )
+# Set source/install paths
+SET( ${PROJ}_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" )
+SET( ${PROJ}_BUILD_DIR  "${CMAKE_CURRENT_BINARY_DIR}" )
+IF( ${PROJ}_INSTALL_DIR )
+    SET( ${PROJ}_INSTALL_DIR "${${PROJ}_INSTALL_DIR}" )
+ELSEIF( PREFIX )
+    SET( ${PROJ}_INSTALL_DIR "${PREFIX}" )
+ELSEIF( NOT ${PROJ}_INSTALL_DIR )
+    SET( ${PROJ}_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}" )
 ENDIF()
-SET( CMAKE_MODULE_PATH ${LBPM_SOURCE_DIR} ${LBPM_SOURCE_DIR}/cmake )
+INCLUDE_DIRECTORIES( "${${PROJ}_INSTALL_DIR}/include" )
+SET( CMAKE_MODULE_PATH ${${PROJ}_SOURCE_DIR} ${${PROJ}_SOURCE_DIR}/cmake )
 
 
 # Include macros
-SET( PROJ LBPM )
 INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros.cmake" )
 INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/libraries.cmake" )
 INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/LBPM-macros.cmake" )
@@ -56,15 +64,6 @@ ENABLE_TESTING()
 INCLUDE( CTest )
 
 
-# Create custom targets for build-test, check, and distclean
-ADD_CUSTOM_TARGET( doc )
-ADD_CUSTOM_TARGET( latex_docs )
-ADD_CUSTOM_TARGET( build-test )
-ADD_CUSTOM_TARGET( build-examples )
-ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common visit IO threadpool )
-
-
 # Check the compile mode and compile flags
 IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_SYSTEM()
@@ -72,25 +71,27 @@ ENDIF()
 
 
 # Add some directories to include
-INCLUDE_DIRECTORIES( "${LBPM_INSTALL_DIR}/include" )
+INCLUDE_DIRECTORIES( "${${PROJ}_INSTALL_DIR}/include" )
 
 
-# Set doxygen info
+# Create the target for documentation
+ADD_CUSTOM_TARGET( doc )
+ADD_CUSTOM_TARGET( latex_docs )
 CHECK_ENABLE_FLAG( USE_DOXYGEN 1 )
 CHECK_ENABLE_FLAG( USE_LATEX 1 )
-FILE( MAKE_DIRECTORY "${LBPM_INSTALL_DIR}/doc" )
+FILE( MAKE_DIRECTORY "${${PROJ}_INSTALL_DIR}/doc" )
 IF ( USE_DOXYGEN )
-    SET( DOXYFILE_IN ${LBPM_SOURCE_DIR}/doxygen/Doxyfile.in)
-    SET( DOXY_HEADER_FILE ${LBPM_SOURCE_DIR}/doxygen/html/header.html )
-    SET( DOXY_FOOTER_FILE ${LBPM_SOURCE_DIR}/doxygen/html/footer.html )
-    SET( DOXYFILE_OUTPUT_DIR ${LBPM_BUILD_DIR}/doc/ )
-    SET( DOXYFILE_SRC_HTML_DIR ${LBPM_SOURCE_DIR}/doxygen/html )
-    SET( DOXYFILE_SOURCE_DIR ${LBPM_SOURCE_DIR} )
+    SET( DOXYFILE_LATEX YES )
+    SET( DOXYFILE_IN "${${PROJ}_SOURCE_DIR}/doxygen/Doxyfile.in" )
+    SET( DOXY_HEADER_FILE "${${PROJ}_SOURCE_DIR}/doxygen/html/header.html" )
+    SET( DOXY_FOOTER_FILE "${${PROJ}_SOURCE_DIR}/doxygen/html/footer.html" )
+    SET( DOXYFILE_OUTPUT_DIR "${${PROJ}_INSTALL_DIR}/doc" )
+    SET( DOXYFILE_SRC_HTML_DIR "${${PROJ}_SOURCE_DIR}/doxygen/html" )
+    SET( DOXYFILE_SOURCE_DIR "${${PROJ}_SOURCE_DIR}" )
     SET( REL_PACKAGE_HTML "" )
     SET( DOXYGEN_MACROS "" )
     MESSAGE("DOXYGEN_MACROS = ${DOXYGEN_MACROS}")
-    INCLUDE( ${LBPM_SOURCE_DIR}/cmake/UseDoxygen.cmake )
-    SET(DOXYFILE_LATEX "YES")
+    INCLUDE( "${${PROJ}_SOURCE_DIR}/cmake/UseDoxygen.cmake" )
     IF ( DOXYGEN_FOUND )
         ADD_DEPENDENCIES( doxygen latex_docs )
         ADD_DEPENDENCIES( doc latex_docs doxygen )
@@ -98,6 +99,13 @@ IF ( USE_DOXYGEN )
         SET( USE_DOXYGEN 0 )
     ENDIF()
 ENDIF()
+
+
+# Create custom targets for build-test, check, and distclean
+ADD_CUSTOM_TARGET( build-test )
+ADD_CUSTOM_TARGET( build-examples )
+ADD_CUSTOM_TARGET( check COMMAND  make test  )
+ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common visit IO threadpool )
 
 
 # Configure external packages
@@ -111,14 +119,11 @@ IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_TIMER( 0 "${${PROJ}_INSTALL_DIR}/null_timer" )
     CONFIGURE_LINE_COVERAGE()
     INCLUDE( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SharedPtr.cmake" )
-    CONFIGURE_SHARED_PTR( "${LBPM_INSTALL_DIR}/include" "std" )
+    CONFIGURE_SHARED_PTR( "${${PROJ}_INSTALL_DIR}/include" "std" )
     # Set the external library link list
     SET( EXTERNAL_LIBS ${EXTERNAL_LIBS} ${TIMER_LIBS} )
 ENDIF()
 
-
-# Configure internal libraries (order matters)
-SET( LBPM_LIBS  lbpm-wia )
 
 
 # Macro to create 1,2,4 processor tests
@@ -131,7 +136,7 @@ ENDMACRO()
 
 # Add the src directories
 IF ( NOT ONLY_BUILD_DOCS )
-    BEGIN_PACKAGE_CONFIG( lbpm-wia )
+    BEGIN_PACKAGE_CONFIG( lbpm-wia-library )
     ADD_PACKAGE_SUBDIRECTORY( common )
     ADD_PACKAGE_SUBDIRECTORY( analysis )
     ADD_PACKAGE_SUBDIRECTORY( IO )
@@ -141,11 +146,12 @@ IF ( NOT ONLY_BUILD_DOCS )
     ELSE()
         ADD_PACKAGE_SUBDIRECTORY( cpu )
     ENDIF()
-    INSTALL_LBPM_TARGET( lbpm-wia )
+    INSTALL_LBPM_TARGET( lbpm-wia-library  )
     ADD_SUBDIRECTORY( tests )
     ADD_SUBDIRECTORY( threadpool/test )
     ADD_SUBDIRECTORY( example )
     #ADD_SUBDIRECTORY( workflows )
+    INSTALL_PROJ_LIB()
 ENDIF()
 
 
