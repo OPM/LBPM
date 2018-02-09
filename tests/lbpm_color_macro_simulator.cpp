@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 		int RESTART_INTERVAL=20000;
 		//int ANALYSIS_)INTERVAL=1000;	
 		int BLOB_ANALYSIS_INTERVAL=1000;
-		int timestep = -1;
+		int timestep = 6;
 
 		if (rank==0){
 			//.............................................................
@@ -330,9 +330,6 @@ int main(int argc, char **argv)
 		//.......................................................................
 		sum_local=0.0;
 		Np=0;  // number of local pore nodes
-		double *PhaseLabel;
-		PhaseLabel = new double[N];
-		Dm.AssignComponentLabels(PhaseLabel);
 		//.......................................................................
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
@@ -358,7 +355,10 @@ int main(int argc, char **argv)
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
 		Mask.CommInit(comm);
-
+		double *PhaseLabel;
+		PhaseLabel = new double[N];
+		Mask.AssignComponentLabels(PhaseLabel);
+		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
@@ -600,6 +600,12 @@ int main(int argc, char **argv)
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
+			// Run the analysis
+			run_analysis(timestep,RESTART_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
+					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,Map,fq,Den,
+					LocalRestartFile,meshData,fillData,tpool,work_ids);
+
+
 			// *************EVEN TIMESTEP*************
 			timestep++;
 			// Compute the Phase indicator field
@@ -667,7 +673,17 @@ int main(int argc, char **argv)
 		if (rank==0) printf("********************************************************\n");
 
 		// ************************************************************************
-
+    	double *PHASE;
+    	int SIZE=Nx*Ny*Nz*sizeof(double);
+    	PHASE= new double [Nx*Ny*Nz];
+    	ScaLBL_CopyToHost(&PHASE[0],&Phi[0],SIZE);
+		
+    	FILE *OUTFILE;
+		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+		OUTFILE = fopen(LocalRankFilename,"wb");
+    	fwrite(PHASE,8,N,OUTFILE);
+    	fclose(OUTFILE);
+    	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
 		// ****************************************************

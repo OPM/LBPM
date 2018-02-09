@@ -201,7 +201,7 @@ void Domain::CommInit(MPI_Comm Communicator){
 	//jproc = (rank/nprocx)%nprocy;
 	//kproc = rank/(nprocx*nprocy);
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(Communicator);
 	kproc = rank/(nprocx*nprocy);
 	jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 	iproc = rank-nprocx*nprocy*kproc-nprocx*jproc;
@@ -231,8 +231,9 @@ void Domain::CommInit(MPI_Comm Communicator){
 	rank_yZ = getRankForBlock(i,j-1,k+1);
 	//......................................................................................
 
-	MPI_Comm_group(Communicator,&Group);
-	MPI_Comm_create(Communicator,Group,&Comm);
+	//MPI_Comm_group(Communicator,&Group);
+	//MPI_Comm_create(Communicator,Group,&Comm);
+    MPI_Comm_dup(MPI_COMM_WORLD,&Comm);
 
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
@@ -541,8 +542,8 @@ void Domain::AssignComponentLabels(double *phase)
 	vector <char> Label;
 	vector <double> Affinity;
 	// Read the labels
-	//	if (rank==0){
-	/*		printf("Component labels:\n");
+	if (rank==0){
+		printf("Component labels:\n");
 		ifstream iFILE("ComponentLabels.csv");
 		if (iFILE.good()){
 			while (!iFILE.eof()){
@@ -555,36 +556,48 @@ void Domain::AssignComponentLabels(double *phase)
 			}
 		}
 		else{
-	 */
-	if (rank ==0 ) {
-		printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
+			printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
+			// Set default values
+			VALUE=0; AFFINITY=-1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+			VALUE=1; AFFINITY=1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+			VALUE=2; AFFINITY=-1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+		}
 	}
-	// Set default values
-	VALUE=0; AFFINITY=-1.0;
-	Label.push_back(VALUE);
-	Affinity.push_back(AFFINITY);
-	NLABELS++;
-	VALUE=1; AFFINITY=1.0;
-	Label.push_back(VALUE);
-	Affinity.push_back(AFFINITY);
-	NLABELS++;
-	VALUE=2; AFFINITY=-1.0;
-	Label.push_back(VALUE);
-	Affinity.push_back(AFFINITY);
-	NLABELS++;
-	//		}
-//	}
+	MPI_Barrier(Comm);
+
 	// Broadcast the list
-	//	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
-
+	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
+	//printf("rank=%i, NLABELS=%i \n ",rank,NLABELS);
+	
 	// Copy into contiguous buffers
-	//char *LabelList;
-	//double * AffinityList;
-	//LabelList=new char[NLABELS];
-	//AffinityList=new double[NLABELS];
-	//MPI_Bcast(&LabelList,NLABELS,MPI_CHAR,0,Comm);
-	//MPI_Bcast(&AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
+	char *LabelList;
+	double * AffinityList;
+	LabelList=new char[NLABELS];
+	AffinityList=new double[NLABELS];
 
+	if (rank==0){
+	for (int idx=0; idx < NLABELS; idx++){
+		VALUE=Label[idx];
+		AFFINITY=Affinity[idx];
+		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank,idx,VALUE,AFFINITY);
+		LabelList[idx]=VALUE;
+		AffinityList[idx]=AFFINITY;
+	} 
+	}
+	MPI_Barrier(Comm);
+
+	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,Comm);
+	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
+	
 	// Assign the labels
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -593,8 +606,9 @@ void Domain::AssignComponentLabels(double *phase)
 				VALUE=id[n];
 				// Assign the affinity from the paired list
 				for (int idx=0; idx < NLABELS; idx++){
-					if (VALUE == Label[idx]){
-						AFFINITY=Affinity[idx];
+					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank,idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
 						idx = NLABELS;
 					}
 				}
