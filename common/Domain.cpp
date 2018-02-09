@@ -546,10 +546,12 @@ void Domain::AssignComponentLabels(double *phase)
 		printf("Component labels:\n");
 		ifstream iFILE("ComponentLabels.csv");
 		if (iFILE.good()){
+			int value;
 			while (!iFILE.eof()){
-				iFILE>>VALUE;
+				iFILE>>value;
 				iFILE>>AFFINITY;
-				Label.push_back(VALUE);
+				VALUE=char(value);
+				Label.push_back(value);
 				Affinity.push_back(AFFINITY);
 				NLABELS++;
 				printf("%i %f\n",VALUE,AFFINITY);
