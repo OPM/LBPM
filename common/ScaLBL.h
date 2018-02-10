@@ -257,7 +257,7 @@ public:
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
-	void RegularLayout(IntArray map, double *data, DoubleArray regdata);
+	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -4268,7 +4268,7 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 	//...................................................................................
 }
 
-void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, DoubleArray regdata){
+void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, DoubleArray &regdata){
 	// Gets data from the device and stores in regular layout
 	int i,j,k,n,idx;
 	int Nx = map.size(0);
@@ -4276,21 +4276,22 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, DoubleArray 
 	int Nz = map.size(2);
 
 	double *TmpDat;
+	double value;
 	TmpDat = new double [N];
 	ScaLBL_CopyToHost(&TmpDat[0],&data[0], N*sizeof(double));
-
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=map(i,j,k);
 				if (!(idx<0)){
-					double value=TmpDat[idx];
+					value=TmpDat[idx];
 					regdata(i,j,k)=value;
 				}
 			}
 		}
 	}
+	//printf("r=%i, value=%f   ",rank,value);
 	
 	delete [] TmpDat;
 }
