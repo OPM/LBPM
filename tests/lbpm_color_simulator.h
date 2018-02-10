@@ -248,7 +248,7 @@ void run_analysis( int timestep, int restart_interval,
 
     // Determin the analysis we want to perform
     AnalysisType type = AnalysisType::AnalyzeNone;
-    if ( timestep%ANALYSIS_INTERVAL + 5 == ANALYSIS_INTERVAL ) {
+    if ( timestep%ANALYSIS_INTERVAL + 8 == ANALYSIS_INTERVAL ) {
         // Copy the phase indicator field for the earlier timestep
         type |= AnalysisType::CopyPhaseIndicator;
     }
@@ -264,12 +264,12 @@ void run_analysis( int timestep, int restart_interval,
             type |= AnalysisType::IdentifyBlobs;
         }
     #endif */
-    if ( timestep%ANALYSIS_INTERVAL == 0 ) {
+    if ( timestep%ANALYSIS_INTERVAL + 4 == 0 ) {
         // Copy the averages to the CPU (and identify blobs)
         type |= AnalysisType::CopySimState;
         type |= AnalysisType::IdentifyBlobs;
     }
-    if ( timestep%ANALYSIS_INTERVAL == 5 ) {
+    if ( timestep%ANALYSIS_INTERVAL == 0 ) {
         // Run the analysis
         type |= AnalysisType::ComputeAverages;
     }
@@ -381,7 +381,7 @@ void run_analysis( int timestep, int restart_interval,
         // Retain the timestep associated with the restart files
         if (rank==0) {
             FILE *Rst = fopen("Restart.txt","w");
-            fprintf(Rst,"%i\n",timestep+5);
+            fprintf(Rst,"%i\n",timestep+4);
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)

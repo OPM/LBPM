@@ -600,12 +600,6 @@ int main(int argc, char **argv)
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
-			// Run the analysis
-			run_analysis(timestep,RESTART_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
-					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,Map,fq,Den,
-					LocalRestartFile,meshData,fillData,tpool,work_ids);
-
-
 			// *************EVEN TIMESTEP*************
 			timestep++;
 			// Compute the Phase indicator field
