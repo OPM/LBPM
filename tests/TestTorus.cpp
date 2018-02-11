@@ -7,7 +7,7 @@
 #include <math.h>
 #include "common/Communication.h"
 #include "analysis/analysis.h"
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
 
 //#include "Domain.h"
 

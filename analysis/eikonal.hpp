@@ -2,7 +2,7 @@
 #define Eikonal_HPP_INC
 
 #include "analysis/eikonal.h"
-#include "common/imfilter.h"
+#include "analysis/imfilter.h"
 
 
 

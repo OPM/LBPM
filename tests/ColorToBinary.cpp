@@ -6,7 +6,7 @@
 #include <iostream>
 #include <math.h>
 #include "analysis/analysis.h"
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
 
 using namespace std;
 

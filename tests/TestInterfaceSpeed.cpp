@@ -1,7 +1,7 @@
 #include <iostream>
 #include <math.h>
 
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "IO/Mesh.h"

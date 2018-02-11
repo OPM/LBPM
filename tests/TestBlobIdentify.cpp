@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <math.h>
-#include "common/pmmc.h"
+#include "analysis/pmmc.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "IO/MeshDatabase.h"

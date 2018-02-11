@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/pmmc.h"
+#include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"    // This includes mpi.h

@@ -2,24 +2,17 @@
 #for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
 
 source $MODULESHOME/init/bash
-module unload PrgEnv-intel
-module load PrgEnv-gnu
-module unload gcc
-module load gcc/5.3.0
-module load cray-hdf5-parallel
-module load cray-netcdf-hdf5parallel
-
 # Set the modules and enviornmental variables
-#module load DefApps
-#module load PrgEnv-intel
-#module unload cray-libsci
-#module load cray-mpich ugni xpmem udreg altd
-#module load moab torque
+module unload PrgEnv-intel
+module load PrgEnv-gnu/6.0.4
+module unload gcc cmake
+module load gcc/6.3.0
+module load cray-hdf5-parallel/1.10.0.1
+module load cray-netcdf-hdf5parallel
 module load mercurial git
-module load cmake
+module load cmake3/3.6.1
 
 export MPICH_RDMA_ENABLED_CUDA=0
-
 
 echo $GNU_VERSION
 module list
@@ -42,9 +35,11 @@ cmake                                        \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
-       -D USE_NETCDF=1	    		     \
+       -DBUILD_SHARED_LIBS=OFF		     \
+       -D USE_NETCDF=0	    		     \
        -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
        -D HDF5_DIRECTORY=$HDF5_DIR	     \
+       -D CMAKE_SKIP_RPATH=true		     \
     ~/LBPM-WIA
 
 #    -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \

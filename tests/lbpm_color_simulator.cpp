@@ -8,7 +8,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
 #include "ProfilerApp.h"

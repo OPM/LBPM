@@ -11,7 +11,7 @@
 #include "common/Array.h"
 #include "common/Communication.h"
 #include "common/Domain.h"
-#include "common/pmmc.h"
+#include "analysis/pmmc.h"
 
 int main(int argc, char **argv)
 {

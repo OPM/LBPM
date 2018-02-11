@@ -2,8 +2,7 @@
 #include "analysis/analysis.h"
 #include "analysis/eikonal.h"
 #include "analysis/filters.h"
-#include "analysis/uCT.h"
-#include "common/imfilter.h"
+#include "analysis/imfilter.h"
 
 
 template<class T>

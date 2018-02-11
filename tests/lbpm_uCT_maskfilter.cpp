@@ -23,7 +23,7 @@
 #include "analysis/eikonal.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
-#include "common/TwoPhase.h"
+#include "analysis/TwoPhase.h"
 
 #include "ProfilerApp.h"
 

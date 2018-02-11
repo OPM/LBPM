@@ -153,7 +153,7 @@ Array<TYPE> create_filter( const std::vector<int>& N, const std::string &type, c
 }
 
 
-#include "common/imfilter.hpp"
+#include "analysis/imfilter.hpp"
 
 #endif
 

@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "common/Array.h"
-#include "common/PointList.h"
 #include "common/Communication.h"
+#include "analysis/PointList.h"
 #include "shared_ptr.h"
 
 

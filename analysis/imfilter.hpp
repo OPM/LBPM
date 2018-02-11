@@ -1,4 +1,4 @@
-#include "common/imfilter.h"
+#include "analysis/imfilter.h"
 #include "ProfilerApp.h"
 #include <math.h>
 #include <string.h>

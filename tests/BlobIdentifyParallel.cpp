@@ -5,9 +5,9 @@
 
 #include <iostream>
 #include <math.h>
-#include "common/pmmc.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
+#include "analysis/pmmc.h"
 #ifdef PROFILE
  #include "ProfilerApp.h"
 #endif
