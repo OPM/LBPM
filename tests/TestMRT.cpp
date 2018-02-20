@@ -523,7 +523,7 @@ int main(int argc, char **argv)
 		int dim = 50;
 		//if (rank == 0) printf("dim=%d\n",dim);
 		int timestep = 1;
-		int timesteps = 100;
+		int timesteps = 1000;
 		int centralNode = 2;
 
 		double tau = 1.0;
@@ -609,6 +609,7 @@ int main(int argc, char **argv)
 		if (rank==0){
 			printf("********************************************************\n");
 			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+			printf("Process grid = %i x %i x %i\n",nprocx,nprocy,nprocz);
 			printf("********************************************************\n");
 		}
 
@@ -649,6 +650,7 @@ int main(int argc, char **argv)
 		fread(Dm.id,1,N,IDFILE);
 		fclose(IDFILE);
 
+		MPI_Barrier(comm);
 		Dm.CommInit(comm);
 
 		//.......................................................................
@@ -669,6 +671,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		MPI_Barrier(comm);
 		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
