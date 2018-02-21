@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			domain >> Nx;
 			domain >> Ny;
 			domain >> Nz;
-			domain >> nspheres;
+			//domain >> nspheres;
 			domain >> Lx;
 			domain >> Ly;
 			domain >> Lz;
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
 		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
 		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		//MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
 		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
