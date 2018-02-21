@@ -1658,15 +1658,15 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, 
 		f2 = dist[1*Np+n];
 		f3 = dist[4*Np+n];
 		f4 = dist[3*Np+n];
-		f5 = dist[6*Np+n];
+		f6 = dist[5*Np+n];
 		f7 = dist[8*Np+n];
 		f8 = dist[7*Np+n];
 		f9 = dist[10*Np+n];
 		f10 = dist[9*Np+n];
-		f11 = dist[12*Np+n];
-		f14 = dist[13*Np+n];
-		f15 = dist[16*Np+n];
-		f18 = dist[17*Np+n];
+		f12 = dist[11*Np+n];
+		f13 = dist[14*Np+n];
+		f16 = dist[15*Np+n];
+		f17 = dist[18*Np+n];
 		//...................................................
 		// Determine the inlet flow velocity
 		//ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
@@ -1722,8 +1722,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, 
 		f14 = dist[13*Np+n];
 		f15 = dist[16*Np+n];
 		f18 = dist[17*Np+n];
-		//........Determine the outlet flow velocity.........
-
+		
+		// Determine the outlet flow velocity
 		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
 		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
 		uz = -dout + (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
@@ -1737,7 +1737,6 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, 
 		f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
 		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
 
-		//........Store in "opposite" memory location..........
 		dist[5*Np+n] = f6;
 		dist[11*Np+n] = f12;
 		dist[14*Np+n] = f13;
