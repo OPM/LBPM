@@ -1964,7 +1964,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, doub
 	//if (threadIdx.x==0)
 	//   atomicAdd(dvcsum, sum);
 	
-    extern __shared__ double temp[NTHREADS];
+    extern __shared__ double temp[];
     thread_group g = this_thread_block();
     double block_sum = reduce_sum(g, temp, sum);
 
@@ -2039,7 +2039,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z(int *d_neighborList, int *list
 	//if (threadIdx.x==0)
 	//   atomicAdd(dvcsum, sum);
 	
-    extern __shared__ double temp[NTHREADS];
+    extern __shared__ double temp[];
     thread_group g = this_thread_block();
     double block_sum = reduce_sum(g, temp, sum);
 
@@ -2426,11 +2426,12 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	double din;
 	double sum[1];
  	double *dvcsum;
+	int sharedBytes = NTHREADS*sizeof(double);
 	cudaMalloc((void **)&dvcsum,sizeof(double)*Nx*Ny);
 	cudaMemset(dvcsum,0,sizeof(double)*Nx*Ny);
 
 	// compute the local flux and store the result
-	dvc_D3Q19_Flux_BC_z<<<GRID,512>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz);
+	dvc_D3Q19_Flux_BC_z<<<GRID,512,sharedBytes>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz);
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);

@@ -19,7 +19,7 @@ cmake                                    \
     -D USE_DOXYGEN:BOOL=false		  \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Release     \
-    -D CUDA_FLAGS="-arch sm_60 -Xptxas=-v -Xptxas -dlcm=cg"         \
+    -D CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg"         \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_CUDA=1                        \
     -D USE_TIMER=0			 \
