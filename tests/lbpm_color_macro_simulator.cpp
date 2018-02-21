@@ -320,9 +320,9 @@ int main(int argc, char **argv)
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
-		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+		if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
 		readID=fread(id,1,N,IDFILE);
-		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
+		if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
 		fclose(IDFILE);
 		
 		//.......................................................................
