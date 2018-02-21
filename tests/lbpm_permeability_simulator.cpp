@@ -129,9 +129,8 @@ int main(int argc, char **argv)
 		RESTART_INTERVAL=interval;
 		// **************************************************************
 		// **************************************************************
-		double rlxA = 1.f/tau;
-		double rlxB = 8.f*(2.f-rlxA)/(8.f-rlxA);
-
+		double rlx_setA = 1.f/tau;
+		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
 		if (nprocs != nprocx*nprocy*nprocz){
 			printf("nprocx =  %i \n",nprocx);
@@ -162,7 +161,6 @@ int main(int argc, char **argv)
 		Nx += 2;	Ny += 2;	Nz += 2;
 
 		int N = Nx*Ny*Nz;
-		int dist_mem_size = N*sizeof(double);
 
 		//.......................................................................
 		if (rank == 0)	printf("Read input media... \n");
@@ -183,11 +181,10 @@ int main(int argc, char **argv)
 		//	char value;
 		char *id;
 		id = new char[N];
-		int sum = 0;
-		double sum_local;
+
 		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 		if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
-		double porosity, pore_vol;
+
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
 
@@ -216,7 +213,7 @@ int main(int argc, char **argv)
 		// Compute the media porosity
 		//.......................................................................
 		double sum,porosity;
-		double sum_local=0.0;	pore_vol = 0.0;
+		double sum_local=0.0;
 		int Np=0;  // number of local pore nodes
 		for ( k=1;k<Nz-1;k++){
 			for ( j=1;j<Ny-1;j++){
@@ -267,6 +264,7 @@ int main(int argc, char **argv)
 		//		double *f_even,*f_odd;
 		double * dist;
 		double * Velocity;
+		double * Pressure;
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &dist, 19*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
@@ -342,8 +340,8 @@ int main(int argc, char **argv)
 				// Copy the phase from the GPU -> CPU
 				//...........................................................................
 				ScaLBL_DeviceBarrier();
-		        ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-		        ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
+		        ScaLBL_D3Q19_Pressure(dist,Pressure,Np);
+		        ScaLBL_D3Q19_Momentum(dist,Velocity,Np);
 		        
 		        ScaLBL_Comm.RegularLayout(Map,Pressure,Averages.Press);
 		        ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages.Vel_x);
