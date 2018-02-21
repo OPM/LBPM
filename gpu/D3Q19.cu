@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cooperative_groups.h>
 
 #define NBLOCKS 1024
 #define NTHREADS 256
@@ -65,7 +66,7 @@ __global__ void sum_kernel_block(double *sum, double *input, int n)
 	double my_sum = thread_sum(input, n);
 
     extern __shared__ double temp[];
-    auto g = this_thread_block();
+    thread_group g = this_thread_block();
     double block_sum = reduce_sum(g, temp, my_sum);
 
     if (g.thread_rank() == 0) atomicAdd(sum, block_sum);
