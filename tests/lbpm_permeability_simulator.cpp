@@ -154,8 +154,12 @@ int main(int argc, char **argv)
 		// Initialized domain and averaging framework for Two-Phase Flow
 		int BC=pBC;
 		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+		Dm.CommInit(comm);
 		TwoPhase Averages(Dm);
 
+		// Mask that excludes the solid phase
+		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 		MPI_Barrier(comm);
 
 		Nx += 2;	Ny += 2;	Nz += 2;
@@ -204,7 +208,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n] = 0;
+					Mask.id[n] = 0;
 				}
 			}
 		}
@@ -220,7 +224,7 @@ int main(int argc, char **argv)
 				for ( i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					if (Averages.SDs(n) > 0.0){
-						Dm.id[n] = 2;	
+						Mask.id[n] = 2;	
 					}
 					// compute the porosity (actual interface location used)
 					if (Averages.SDs(n) > 0.0){
@@ -240,9 +244,10 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-		Dm.CommInit(comm);
 		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		Mask.CommInit(comm);
+
+		ScaLBL_Communicator ScaLBL_Comm(Mask);
 
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
@@ -252,8 +257,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 
 		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		// ScaLBL_Comm.MemoryDenseLayoutFull(Map,neighborList,Dm.id,Np);    // this was how I tested for correctness
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 
 		MPI_Barrier(comm);
 
