@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 		TwoPhase Averages(Dm);
 
 		// Mask that excludes the solid phase
-		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 		MPI_Barrier(comm);
 
 		Nx += 2;	Ny += 2;	Nz += 2;
