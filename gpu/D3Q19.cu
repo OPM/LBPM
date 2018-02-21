@@ -1964,7 +1964,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, doub
 	//if (threadIdx.x==0)
 	//   atomicAdd(dvcsum, sum);
 	
-    extern __shared__ double temp[];
+    extern __shared__ double temp[NTHREADS];
     thread_group g = this_thread_block();
     double block_sum = reduce_sum(g, temp, sum);
 
@@ -2039,7 +2039,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z(int *d_neighborList, int *list
 	//if (threadIdx.x==0)
 	//   atomicAdd(dvcsum, sum);
 	
-    extern __shared__ double temp[];
+    extern __shared__ double temp[NTHREADS];
     thread_group g = this_thread_block();
     double block_sum = reduce_sum(g, temp, sum);
 
