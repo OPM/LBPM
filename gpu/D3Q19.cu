@@ -1960,9 +1960,15 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, doub
 		sum = factor*(f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 	}
 
-	sum = blockReduceSum(sum);
-	if (threadIdx.x==0)
-	   atomicAdd(dvcsum, sum);
+	//sum = blockReduceSum(sum);
+	//if (threadIdx.x==0)
+	//   atomicAdd(dvcsum, sum);
+	
+    extern __shared__ double temp[];
+    thread_group g = this_thread_block();
+    double block_sum = reduce_sum(g, temp, sum);
+
+    if (g.thread_rank() == 0) atomicAdd(dvcsum, block_sum);
 }
 
 
@@ -2029,9 +2035,15 @@ __global__  void dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z(int *d_neighborList, int *list
 
 	}
 
-	sum = blockReduceSum(sum);
-	if (threadIdx.x==0)
-	   atomicAdd(dvcsum, sum);
+	//sum = blockReduceSum(sum);
+	//if (threadIdx.x==0)
+	//   atomicAdd(dvcsum, sum);
+	
+    extern __shared__ double temp[];
+    thread_group g = this_thread_block();
+    double block_sum = reduce_sum(g, temp, sum);
+
+    if (g.thread_rank() == 0) atomicAdd(dvcsum, block_sum);
 }
 
 
