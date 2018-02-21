@@ -29,6 +29,48 @@ __constant__ __device__ double mrt_V12=0.04166666666666666;
 //__shared__ double Transform[722]=
 //	   {};
 
+using namespace cooperative_groups;
+__device__ double reduce_sum(thread_group g, double *temp, double val)
+{
+    int lane = g.thread_rank();
+
+    // Each iteration halves the number of active threads
+    // Each thread adds its partial sum[i] to sum[lane+i]
+    for (int i = g.size() / 2; i > 0; i /= 2)
+    {
+        temp[lane] = val;
+        g.sync(); // wait for all threads to store
+        if(lane<i) val += temp[lane + i];
+        g.sync(); // wait for all threads to load
+    }
+    return val; // note: only thread 0 will return full sum
+}
+
+__device__ double thread_sum(double *input, double n) 
+{
+    double sum = 0;
+
+    for(int i = blockIdx.x * blockDim.x + threadIdx.x;
+        i < n / 4; 
+        i += blockDim.x * gridDim.x)
+    {
+        int4 in = ((int4*)input)[i];
+        sum += in.x + in.y + in.z + in.w;
+    }
+    return sum;
+}
+
+__global__ void sum_kernel_block(double *sum, double *input, int n)
+{
+	double my_sum = thread_sum(input, n);
+
+    extern __shared__ double temp[];
+    auto g = this_thread_block();
+    double block_sum = reduce_sum(g, temp, my_sum);
+
+    if (g.thread_rank() == 0) atomicAdd(sum, block_sum);
+}
+
 __inline__ __device__
 double warpReduceSum(double val) {
 	for (int offset = warpSize/2; offset > 0; offset /= 2)
