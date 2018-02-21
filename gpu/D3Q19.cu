@@ -2481,9 +2481,10 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
  	double *dvcsum;
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
+	int sharedBytes = 512*sizeof(double);
 
 	// compute the local flux and store the result
-	dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z<<<GRID,512>>>(list, dist, flux, area, dvcsum, count, N);
+	dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z<<<GRID,512,sharedBytes>>>(list, dist, flux, area, dvcsum, count, N);
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
@@ -2511,9 +2512,10 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
  	double *dvcsum;
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
+	int sharedBytes = 512*sizeof(double);
 
 	// compute the local flux and store the result
-	dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z<<<GRID,512>>>(neighborList, list, dist, flux, area, dvcsum, count, N);
+	dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z<<<GRID,512,sharedBytes>>>(neighborList, list, dist, flux, area, dvcsum, count, N);
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
