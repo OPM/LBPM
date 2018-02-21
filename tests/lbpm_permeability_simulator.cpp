@@ -224,10 +224,8 @@ int main(int argc, char **argv)
 				for ( i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					if (Averages.SDs(n) > 0.0){
+						// compute the porosity (actual interface location used)
 						Mask.id[n] = 2;	
-					}
-					// compute the porosity (actual interface location used)
-					if (Averages.SDs(n) > 0.0){
 						sum_local+=1.0;
 						Np++;
 					}
@@ -241,7 +239,7 @@ int main(int argc, char **argv)
 
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
-		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
+
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device
