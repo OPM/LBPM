@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 		id = new char[N];
 		double sum, sum_local;
 		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-		if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+		//if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 		double porosity, pore_vol;
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 		// Read the signed distance
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-		ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
+		ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
@@ -217,11 +217,11 @@ int main(int argc, char **argv)
 			for ( j=0;j<Ny;j++){
 				for ( i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					if (Averages->SDs(n) > 0.0){
+					if (Averages.SDs(n) > 0.0){
 						id[n] = 2;	
 					}
 					// compute the porosity (actual interface location used)
-					if (Averages->SDs(n) > 0.0){
+					if (Averages.SDs(n) > 0.0){
 						sum++;	
 					}
 				}
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
 		// Compute the media porosity, assign phase labels and solid composition
 		//.......................................................................
 		sum_local=0.0;
-		Np=0;  // number of local pore nodes
+		int Np=0;  // number of local pore nodes
 		//.......................................................................
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
@@ -383,9 +383,9 @@ int main(int argc, char **argv)
 				Averages.ComputeLocal();
 				Averages.Reduce();
 
-				double vawx = -Averages.vaw_global(0);
-				double vawy = -Averages.vaw_global(1);
-				double vawz = -Averages.vaw_global(2);
+				double vawx = Averages.vaw_global(0);
+				double vawy = Averages.vaw_global(1);
+				double vawz = Averages.vaw_global(2);
 				if (rank==0){
 					// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
 					//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
