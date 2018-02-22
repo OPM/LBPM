@@ -168,6 +168,8 @@ int main(int argc, char **argv)
 		//.......................................................................
 		if (rank == 0)	printf("Read input media... \n");
 		//.......................................................................
+
+		//.......................................................................
 		// Filenames used
 		char LocalRankString[8];
 		char LocalRankFilename[40];
@@ -182,61 +184,93 @@ int main(int argc, char **argv)
 		//	char value;
 		char *id;
 		id = new char[N];
-
-		double iVol_global = 1.0/(1.0*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
+		double sum, sum_local;
+		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+		if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+		double porosity, pore_vol;
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
+
 		//.......................................................................
+		// Read the signed distance
 		sprintf(LocalRankString,"%05d",rank);
-		//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-		//	WriteLocalSolidID(LocalRankFilename, id, N);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-		ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
+		ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
 		//.......................................................................
 		// Assign the phase ID field based on the signed distance
 		//.......................................................................
+
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					Mask.id[n] = 0;
+					int n = k*Nx*Ny+j*Nx+i;
+					id[n] = 0;
 				}
 			}
 		}
+		sum=0.f;
+		pore_vol = 0.0;
+		for ( k=0;k<Nz;k++){
+			for ( j=0;j<Ny;j++){
+				for ( i=0;i<Nx;i++){
+					int n = k*Nx*Ny+j*Nx+i;
+					if (Averages->SDs(n) > 0.0){
+						id[n] = 2;	
+					}
+					// compute the porosity (actual interface location used)
+					if (Averages->SDs(n) > 0.0){
+						sum++;	
+					}
+				}
+			}
+		}
+
+		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+		sprintf(LocalRankFilename,"ID.%05i",rank);
+		size_t readID;
+		FILE *IDFILE = fopen(LocalRankFilename,"rb");
+		if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
+		readID=fread(id,1,N,IDFILE);
+		if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
+		fclose(IDFILE);
+		
 		//.......................................................................
-		// Compute the media porosity
+		// Compute the media porosity, assign phase labels and solid composition
 		//.......................................................................
-		double sum,porosity;
-		double sum_local=0.0;
-		int Np=0;  // number of local pore nodes
-		for ( k=1;k<Nz-1;k++){
-			for ( j=1;j<Ny-1;j++){
-				for ( i=1;i<Nx-1;i++){
+		sum_local=0.0;
+		Np=0;  // number of local pore nodes
+		//.......................................................................
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Averages.SDs(i,j,k) > 0.0){
-						// compute the porosity (actual interface location used)
-						Mask.id[n] = 2;	
+					if (id[n] > 0){
 						sum_local+=1.0;
 						Np++;
 					}
 				}
 			}
 		}
-		MPI_Barrier(comm);
 		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
-		MPI_Barrier(comm);
-		if (rank == 0) cout << "Domain set." << endl;
+		//.........................................................
+		// don't perform computations at the eight corners
+		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
+		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
+		//.........................................................
+
+		// Initialize communication structures in averaging domain
+		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
+		Mask.CommInit(comm);
 
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device
-		Mask.CommInit(comm);
 
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
 
