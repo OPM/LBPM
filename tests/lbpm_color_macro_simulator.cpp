@@ -516,7 +516,7 @@ int main(int argc, char **argv)
 		int N_threads = 4;
 		if ( provided_thread_support < MPI_THREAD_MULTIPLE )
 			N_threads = 0;
-		if ( N_threads > 0 ) {
+		/*if ( N_threads > 0 ) {
 			// Set the affinity
 			int N_procs = ThreadPool::getNumberOfProcessors();
 			std::vector<int> procs(N_procs);
@@ -524,6 +524,7 @@ int main(int argc, char **argv)
 				procs[i] = i;
 			ThreadPool::setProcessAffinity(procs);
 		}
+		*/
 		ThreadPool tpool(N_threads);
 
 		// Create the MeshDataStruct
