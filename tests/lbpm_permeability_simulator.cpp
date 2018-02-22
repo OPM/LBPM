@@ -163,13 +163,10 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		Nx += 2;	Ny += 2;	Nz += 2;
-
 		int N = Nx*Ny*Nz;
 
 		//.......................................................................
 		if (rank == 0)	printf("Read input media... \n");
-		//.......................................................................
-
 		//.......................................................................
 		// Filenames used
 		char LocalRankString[8];
@@ -186,12 +183,9 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char[N];
 
-		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-		if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
-
+		double iVol_global = 1.0/(1.0*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
-
 		//.......................................................................
 		sprintf(LocalRankString,"%05d",rank);
 		//	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -212,7 +206,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-
 		//.......................................................................
 		// Compute the media porosity
 		//.......................................................................
@@ -223,7 +216,7 @@ int main(int argc, char **argv)
 			for ( j=1;j<Ny-1;j++){
 				for ( i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Averages.SDs(n) > 0.0){
+					if (Averages.SDs(i,j,k) > 0.0){
 						// compute the porosity (actual interface location used)
 						Mask.id[n] = 2;	
 						sum_local+=1.0;
