@@ -383,9 +383,9 @@ int main(int argc, char **argv)
 				Averages.ComputeLocal();
 				Averages.Reduce();
 
-				double vawx = -Averages.vaw_global(0);
-				double vawy = -Averages.vaw_global(1);
-				double vawz = -Averages.vaw_global(2);
+				double vawx = Averages.vaw_global(0);
+				double vawy = Averages.vaw_global(1);
+				double vawz = Averages.vaw_global(2);
 				if (rank==0){
 					// ************* DIMENSIONLESS FORCHEIMER EQUATION *************************
 					//  Dye, A.L., McClure, J.E., Gray, W.G. and C.T. Miller
