@@ -57,6 +57,17 @@ int main(int argc, char **argv)
 		PROFILE_START("Main");
 		Utilities::setErrorHandlers();
 
+		int ANALYSIS_INTERVAL;
+		int BLOBID_INTERVAL;
+		if (argc == 3){
+			ANALYSIS_INTERVAL=atoi(argv[1]);
+			BLOBID_INTERVAL = atoi(argv[2]);
+		}
+		else{
+			ANALYSIS_INTERVAL=1000;
+			BLOBID_INTERVAL = 1000;
+		}
+
 		// Variables that specify the computational domain  
 		string FILENAME;
 		int Nx,Ny,Nz,Np;		// local sub-domain size
@@ -640,7 +651,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-			run_analysis(timestep,RESTART_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
+			run_analysis(timestep,RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
 					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,Map,fq,Den,
 					LocalRestartFile,meshData,fillData,tpool,work_ids);
 
