@@ -8,10 +8,10 @@
 
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
+#include "analysis/runAnalysis.h"
 #include "common/MPI_Helpers.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
-#include "lbpm_color_simulator.h"
 
 /*
  * Simulator for two-phase flow in porous media
@@ -19,6 +19,7 @@
  */
 
 using namespace std;
+
 
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM 
@@ -527,53 +528,12 @@ int main(int argc, char **argv)
 		int N_threads = 4;
 		if ( provided_thread_support < MPI_THREAD_MULTIPLE )
 			N_threads = 0;
-		/*if ( N_threads > 0 ) {
-			// Set the affinity
-			int N_procs = ThreadPool::getNumberOfProcessors();
-			std::vector<int> procs(N_procs);
-			for (int i=0; i<N_procs; i++)
-				procs[i] = i;
-			ThreadPool::setProcessAffinity(procs);
-		}
-		*/
-		ThreadPool tpool(N_threads);
-
-		// Create the MeshDataStruct
-		fillHalo<double> fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1);
-		std::vector<IO::MeshDataStruct> meshData(1);
-		meshData[0].meshName = "domain";
-		meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz) );
-		std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
-		std::shared_ptr<IO::Variable> PressVar( new IO::Variable() );
-		std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
-		std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );
-		PhaseVar->name = "phase";
-		PhaseVar->type = IO::VariableType::VolumeVariable;
-		PhaseVar->dim = 1;
-		PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
-		meshData[0].vars.push_back(PhaseVar);
-		PressVar->name = "Pressure";
-		PressVar->type = IO::VariableType::VolumeVariable;
-		PressVar->dim = 1;
-		PressVar->data.resize(Nx-2,Ny-2,Nz-2);
-		meshData[0].vars.push_back(PressVar);
-		SignDistVar->name = "SignDist";
-		SignDistVar->type = IO::VariableType::VolumeVariable;
-		SignDistVar->dim = 1;
-		SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
-		meshData[0].vars.push_back(SignDistVar);
-		BlobIDVar->name = "BlobID";
-		BlobIDVar->type = IO::VariableType::VolumeVariable;
-		BlobIDVar->dim = 1;
-		BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
-		meshData[0].vars.push_back(BlobIDVar);
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-		BlobIDstruct last_ids, last_index;
-		BlobIDList last_id_map;
-		writeIDMap(ID_map_struct(),0,id_map_filename);
-		AnalysisWaitIdStruct work_ids;
+        runAnalysis analysis( N_threads, RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
+            rank_info, ScaLBL_Comm, Dm, Np, Nx, Ny, Nz, Lx, Ly, Lz, pBC, beta, err, Map, LocalRestartFile );
+        analysis.setAffinities( "none" );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 			PROFILE_START("Update");
@@ -651,15 +611,13 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-			run_analysis(timestep,RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,rank_info,ScaLBL_Comm,*Averages,last_ids,last_index,last_id_map,
-					Np,Nx,Ny,Nz,pBC,beta,err,Phi,Pressure,Velocity,Map,fq,Den,
-					LocalRestartFile,meshData,fillData,tpool,work_ids);
+            analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 			// Save the timers
 			if ( timestep%50==0 )
 				PROFILE_SAVE("lbpm_color_simulator",1);
 		}
-		tpool.wait_pool_finished();
+        analysis.finish();
 		PROFILE_STOP("Loop");
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
