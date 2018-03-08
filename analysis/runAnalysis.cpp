@@ -336,6 +336,7 @@ runAnalysis::~runAnalysis( )
 }
 void runAnalysis::finish( )
 {
+    PROFILE_START("finish");
     // Wait for the work items to finish
 	d_tpool.wait_pool_finished();
     // Clear the wait ids
@@ -345,6 +346,7 @@ void runAnalysis::finish( )
     d_wait_restart.reset();
     // Syncronize
     MPI_Barrier( d_comm );
+    PROFILE_STOP("finish");
 }
 
 

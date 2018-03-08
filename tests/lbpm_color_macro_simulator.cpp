@@ -613,12 +613,10 @@ int main(int argc, char **argv)
 			// Run the analysis
             analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
-			// Save the timers
-			if ( timestep%50==0 )
-				PROFILE_SAVE("lbpm_color_simulator",1);
 		}
         analysis.finish();
 		PROFILE_STOP("Loop");
+		PROFILE_SAVE("lbpm_color_simulator",1);
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
