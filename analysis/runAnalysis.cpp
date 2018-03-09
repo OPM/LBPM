@@ -267,7 +267,7 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis( int N_threads, int restart_interval, int analysis_interval,
+runAnalysis::runAnalysis( int restart_interval, int analysis_interval,
     int blobid_interval, const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& Dm,
     int Np, int Nx, int Ny, int Nz, double Lx, double Ly, double Lz, bool pBC, double beta, double err,
     IntArray Map, const std::string& LocalRestartFile ):
@@ -276,7 +276,6 @@ runAnalysis::runAnalysis( int N_threads, int restart_interval, int analysis_inte
     d_analysis_interval( analysis_interval ),
     d_blobid_interval( blobid_interval ),
     d_beta( beta ),
-    d_tpool( N_threads ),
     d_ScaLBL_Comm( ScaLBL_Comm ),
     d_rank_info( rank_info ),
     d_Map( Map ),
@@ -362,12 +361,33 @@ void print( const std::vector<int>& ids )
         printf(", %i",ids[i]);
     printf("\n");
 }
-void runAnalysis::setAffinities( const std::string& method )
+void runAnalysis::createThreads( const std::string& method, int N_threads )
 {
-    int N_procs = d_tpool.getNumberOfProcessors();
-    int proc = d_tpool.getCurrentProcessor();
-    auto affinity = d_tpool.getProcessAffinity();
-    
+    // Check if we are not using analysis threads
+	if ( method == "none" )
+        return;
+    // Check if we have thread support
+    int thread_support;
+    MPI_Query_thread( &thread_support );
+	if ( thread_support < MPI_THREAD_MULTIPLE ) {
+		std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+        return;
+    }
+    // Create the threads
+    const auto cores = d_tpool.getProcessAffinity();
+    if ( cores.empty() ) {
+        // We were not able to get the cores for the process
+        d_tpool.setNumThreads( N_threads );
+    } else if ( method == "default" ) {
+        // Create the given number of threads, but let the OS manage affinities
+        d_tpool.setNumThreads( N_threads );
+    } else if ( method == "independent" ) {
+        int N = cores.size() - 1;
+        d_tpool.setNumThreads( N );
+        d_tpool.setThreadAffinity( { cores[0] } );
+        for ( int i=0; i<N; i++)
+            d_tpool.setThreadAffinity( i, { cores[i+1] } );
+    }
     // Print the current affinities
     if ( d_rank == 0 ) {
         printf("Affinities - rank 0:\n");

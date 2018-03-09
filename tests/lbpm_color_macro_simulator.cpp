@@ -34,8 +34,6 @@ int main(int argc, char **argv)
 	MPI_Comm_dup(MPI_COMM_WORLD,&comm);
 	int rank = comm_rank(comm);
 	int nprocs = comm_size(comm);
-	if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
-		std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 		// parallel domain size (# of sub-domains)
@@ -58,16 +56,15 @@ int main(int argc, char **argv)
 		PROFILE_START("Main");
 		Utilities::setErrorHandlers();
 
-		int ANALYSIS_INTERVAL;
-		int BLOBID_INTERVAL;
-		if (argc == 3){
-			ANALYSIS_INTERVAL=atoi(argv[1]);
-			BLOBID_INTERVAL = atoi(argv[2]);
+		int ANALYSIS_INTERVAL = 1000;
+		int BLOBID_INTERVAL = 1000;
+        std::string analysis_method = "independent";
+		if (argc >= 3) {
+			ANALYSIS_INTERVAL = atoi(argv[1]);
+			BLOBID_INTERVAL   = atoi(argv[2]);
 		}
-		else{
-			ANALYSIS_INTERVAL=1000;
-			BLOBID_INTERVAL = 1000;
-		}
+		if (argc >= 4)
+			analysis_method = std::string(argv[3]);
 
 		// Variables that specify the computational domain  
 		string FILENAME;
@@ -524,16 +521,12 @@ int main(int argc, char **argv)
 		err = 1.0; 	
 		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
-		// Create the thread pool
-		int N_threads = 4;
-		if ( provided_thread_support < MPI_THREAD_MULTIPLE )
-			N_threads = 0;
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-        runAnalysis analysis( N_threads, RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
+        runAnalysis analysis( RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
             rank_info, ScaLBL_Comm, Dm, Np, Nx, Ny, Nz, Lx, Ly, Lz, pBC, beta, err, Map, LocalRestartFile );
-        analysis.setAffinities( "none" );
+        analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 			PROFILE_START("Update");

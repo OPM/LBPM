@@ -23,7 +23,7 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis( int N_threads, int restart_interval, int analysis_interval, int blobid_interval,
+    runAnalysis( int restart_interval, int analysis_interval, int blobid_interval,
         const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm,
         int Np, int Nx, int Ny, int Nz, double Lx, double Ly, double Lz, bool pBC, double beta, double err,
         IntArray Map, const std::string& LocalRestartFile );
@@ -40,11 +40,18 @@ public:
 
     /*!
      *  \brief    Set the affinities
-     *  \details  This function will set the affinity of this thread and all analysis threads
+     *  \details  This function will create the analysis threads and set the affinity
+     *      of this thread and all analysis threads.  If MPI_THREAD_MULTIPLE is not
+     *      enabled, the analysis threads will be disabled and the analysis will run in the current thread.
      * @param[in] method    Method used to control the affinities:
-     *                      none - Don't do anything
+     *                      none - Don't use threads (runs all analysis in the current thread)
+     *                      default - Create the specified number of threads, but don't load balance
+     *                      independent - Create the necessary number of threads to fill all cpus,
+     *                                and set the affinities based on the current process such
+     *                                that all threads run on independent cores
+     * @param[in] N_threads Number of threads, only used by some of the methods
      */
-    void setAffinities( const std::string& method = "none" );
+    void createThreads( const std::string& method = "default", int N_threads = 4 );
 
 
 private:
