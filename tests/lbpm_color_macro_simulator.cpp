@@ -354,7 +354,30 @@ int main(int argc, char **argv)
 		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
-
+		//.........................................................
+		// If external boundary conditions are applied remove solid
+		if (BoundaryCondition >  0  && Dm.kproc == 0){
+			for (k=0; k<3; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						int n = k*Nx*Ny+j*Nx+i;
+						//id[n] = 1;
+						Averages->SDs(n) = max(Averages->SDs(n),1.0*(2.5-k));
+					}					
+				}
+			}
+		}
+		if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+			for (k=Nz-3; k<Nz; k++){
+				for (j=0;j<Ny;j++){
+					for (i=0;i<Nx;i++){
+						int n = k*Nx*Ny+j*Nx+i;
+						//id[n] = 2;
+						Averages->SDs(n) = max(Averages->SDs(n),1.0*(k-Nz+2.5));
+					}					
+				}
+			}
+		}
 		//.........................................................
 		// don't perform computations at the eight corners
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
@@ -441,17 +464,18 @@ int main(int argc, char **argv)
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, Np);
-		if (Dm.kproc==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		if (BoundaryCondition >0 ){
+			if (Dm.kproc==0){
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+			}
+			if (Dm.kproc == nprocz-1){
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+			}
 		}
-		if (Dm.kproc == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-		
 		if (Restart == true){
 			if (rank==0){
 				printf("Reading restart file! \n");
