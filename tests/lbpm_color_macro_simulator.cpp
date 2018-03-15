@@ -545,6 +545,9 @@ int main(int argc, char **argv)
 		err = 1.0; 	
 		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
+		if (rank==0){
+		  printf("Analysis intervals: (restart) %i, (TCAT) %i, (blobtracking) %i \n",RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL);
+		}
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
