@@ -232,9 +232,9 @@ int main(int argc, char **argv)
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
-		if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
+		if (IDFILE==NULL) ERROR("lbpm_permeability_simulator: Error opening file: ID.xxxxx");
 		readID=fread(id,1,N,IDFILE);
-		if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
+		if (readID != size_t(N)) printf("lbpm_permeability_simulator: Error reading ID (rank=%i) \n",rank);
 		fclose(IDFILE);
 		
 		//.......................................................................
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 		//.........................................................
+		MPI_Barrier(comm);
 
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
