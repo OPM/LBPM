@@ -645,7 +645,7 @@ int main(int argc, char **argv)
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
 		// Performance obtained from each node
-		double MLUPS = double(Nx*Ny*Nz)/cputime/1000000;
+		double MLUPS = double(Np)/cputime/1000000;
 
 		if (rank==0) printf("********************************************************\n");
 		if (rank==0) printf("CPU time = %f \n", cputime);
@@ -655,16 +655,6 @@ int main(int argc, char **argv)
 		if (rank==0) printf("********************************************************\n");
 
 		// ************************************************************************
-    	double *PHASE;
-    	int SIZE=Nx*Ny*Nz*sizeof(double);
-    	PHASE= new double [Nx*Ny*Nz];
-    	ScaLBL_CopyToHost(&PHASE[0],&Phi[0],SIZE);
-		
-    	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
-		OUTFILE = fopen(LocalRankFilename,"wb");
-    	fwrite(PHASE,8,N,OUTFILE);
-    	fclose(OUTFILE);
     	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
