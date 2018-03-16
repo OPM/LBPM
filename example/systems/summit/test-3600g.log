@@ -1,0 +1,142 @@
+Fri Mar 16 11:29:36 EDT 2018
+********************************************************
+Running Unit Test for D3Q19 MPI Communication	
+********************************************************
+********************************************************
+Sub-domain size = 320 x 320 x 320
+Parallel domain size = 10 x 10 x 6
+********************************************************
+Assigning phase ID from file 
+Initialize from segmented data: solid=0, NWP=1, WP=2 
+Media porosity = 0.359970 
+Domain set.
+Create ScaLBL_Communicator 
+Set up memory efficient layout 
+Allocating distributions 
+Setting up device map and neighbor list 
+Setting the distributions, size = : 11795503
+********************************************************
+No. of timesteps for timing: 100 
+********************************************************
+CPU time = 1.329585 
+Lattice update rate (per process)= -719.278687 MLUPS 
+Lattice update rate (process)= -431567.212128 MLUPS 
+********************************************************
+DRAM bandwidth (per process)= 943.718400 GB/sec 
+Communication bandwidth (per process)= 2.813606 Gbit/sec 
+Aggregated communication bandwidth = 1688.163840 Gbit/sec 
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@batch3>
+Subject: Job 43296: <COLOR> in cluster <summit> Done
+
+Job <COLOR> was submitted from host <login2> by user <mcclurej> in cluster <summit> at Fri Mar 16 11:28:16 2018
+Job was executed on host(s) <1*batch3>, in queue <batch>, as user <mcclurej> in cluster <summit> at Fri Mar 16 11:29:16 2018
+                            <42*a07n04>
+                            <42*a07n05>
+                            <42*a07n10>
+                            <42*a07n11>
+                            <42*a07n12>
+                            <42*a07n13>
+                            <42*a07n14>
+                            <42*a07n15>
+                            <42*a07n16>
+                            <42*a07n17>
+                            <42*a08n01>
+                            <42*a08n02>
+                            <42*a08n03>
+                            <42*a08n04>
+                            <42*a08n05>
+                            <42*a08n06>
+                            <42*a08n07>
+                            <42*a08n08>
+                            <42*a08n09>
+                            <42*a08n10>
+                            <42*a08n11>
+                            <42*a08n12>
+                            <42*a08n14>
+                            <42*a08n15>
+                            <42*a08n16>
+                            <42*a08n17>
+                            <42*a08n18>
+                            <42*a09n02>
+                            <42*a09n03>
+                            <42*a09n04>
+                            <42*a09n05>
+                            <42*a09n06>
+                            <42*a09n07>
+                            <42*a09n08>
+                            <42*a09n09>
+                            <42*a09n10>
+                            <42*a09n11>
+                            <42*a09n13>
+                            <42*a09n14>
+                            <42*a09n15>
+                            <42*a09n16>
+                            <42*a09n17>
+                            <42*a09n18>
+                            <42*a10n01>
+                            <42*a10n02>
+                            <42*a10n03>
+                            <42*a10n04>
+                            <42*a10n05>
+                            <42*a10n06>
+                            <42*a10n07>
+                            <42*a10n08>
+                            <42*a10n09>
+                            <42*a10n10>
+                            <42*a10n11>
+                            <42*a10n12>
+                            <42*a10n13>
+                            <42*a10n14>
+                            <42*a10n15>
+                            <42*a10n16>
+                            <42*a10n17>
+                            <42*a10n18>
+                            <42*a11n01>
+                            <42*a11n02>
+                            <42*a11n03>
+                            <42*a11n04>
+                            <42*a11n05>
+                            <42*a15n02>
+                            <42*a15n03>
+                            <42*a15n04>
+                            <42*a15n05>
+                            <42*a15n06>
+                            <42*a15n07>
+                            <42*a15n08>
+                            <42*a15n09>
+                            <42*a15n10>
+                            <42*a15n11>
+                            <42*a15n12>
+                            <42*a15n13>
+                            <42*a15n14>
+                            <42*a15n15>
+                            <42*a15n16>
+                            <42*a15n17>
+                            <42*a15n18>
+                            <42*a16n01>
+                            <42*a16n02>
+                            <42*a16n03>
+                            <42*a16n04>
+                            <42*a16n05>
+                            <42*a16n06>
+                            <42*a16n07>
+                            <42*a16n08>
+                            <42*a16n09>
+                            <42*a16n10>
+                            <42*a16n11>
+                            <42*a16n12>
+                            <42*a16n13>
+                            <42*a16n14>
+                            <42*a16n15>
+                            <42*a16n16>
+                            <42*a16n17>
+</ccs/home/mcclurej> was used as the home directory.
+</gpfs/alpinetds/csc275/scratch/mcclurej/SCALING/WEAK> was used as the working directory.
+Started at Fri Mar 16 11:29:16 2018
+Terminated at Fri Mar 16 11:29:59 2018
+Results reported at Fri Mar 16 11:29:59 2018
+
+The output (if any) is above this job summary.
+
