@@ -103,48 +103,7 @@ extern "C" void ScaLBL_Color_InitDistance(char *ID, double *Den, double *Phi, do
 
 
 //*************************************************************************
-extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
-								  double *B_even, double *B_odd, int Nx, int Ny, int Nz)
-{
-	int i,j,k,n,N;
-	N = Nx*Ny*Nz;
-	// Fill the inlet with component a
-	for (k=0; k<1; k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				Phi[n] = 1.0;
-			}					
-		}
-	}
-	
-	for (k=1; k<3; k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				Phi[n] = 1.0;
-				Den[n] = 1.0;
-				Den[N+n] = 0.0;
 
-				A_even[n] = 0.3333333333333333;
-				A_odd[n] = 0.1111111111111111;	
-				A_even[N+n] = 0.1111111111111111;
-				A_odd[N+n] = 0.1111111111111111;	
-				A_even[2*N+n] = 0.1111111111111111;
-				A_odd[2*N+n] = 0.1111111111111111;
-				A_even[3*N+n] = 0.1111111111111111;
-				
-				B_even[n] = 0.0;
-				B_odd[n] = 0.0;	
-				B_even[N+n] = 0.0;
-				B_odd[N+n] = 0.0;	
-				B_even[2*N+n] = 0.0;
-				B_odd[2*N+n] = 0.0;
-				B_even[3*N+n] = 0.0;
-			}					
-		}
-	}
-}
 //*************************************************************************
 extern "C" void ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
 {
@@ -158,6 +117,36 @@ extern "C" void ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, d
 		
 		nm = Map[n];
 		Phi[nm] = (vA-vB)/(vA+vB);
+	}
+}
+
+extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		Den[n] = vA;
+		double valB = Den[Np+n]; // mass that reaches inlet is conserved
+
+		nm = Map[n];
+		Phi[nm] = (vA-valB)/(vA+valB);
+	}
+}
+
+extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		double valA = Den[n]; // mass that reaches outlet is conserved
+		Den[Np+n] = vB;
+		
+		nm = Map[n];
+		Phi[nm] = (valA-vB)/(valA+vB);
 	}
 }
 //*************************************************************************

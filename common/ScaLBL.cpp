@@ -3986,7 +3986,7 @@ void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double 
 	double Value=(vA-vB)/(vA+vB);
 	if (kproc == 0) {
 		// Set the phase indicator field and density on the z inlet
-		ScaLBL_Color_BC(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
+		ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
 		ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,0);
 	}
 }
@@ -3995,7 +3995,7 @@ void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double 
 	double Value=(vA-vB)/(vA+vB);
 	if (kproc == nprocz-1){
 		// Set the phase indicator field and density on the Z outlet
-		ScaLBL_Color_BC(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
+		ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
 		ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,Nz-1);
 	}
 }

@@ -125,6 +125,7 @@ __global__  void dvc_ScaLBL_Color_InitDistance(char *ID, double *Den, double *Ph
 }
 
 //*************************************************************************
+
 __global__  void dvc_ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
 {
 	int idx,n,nm;
@@ -137,6 +138,35 @@ __global__  void dvc_ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *D
 		
 		nm = Map[n];
 		Phi[nm] = (vA-vB)/(vA+vB);
+	}
+}
+__global__  void dvc_ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		Den[n] = vA;
+		double valB = Den[Np+n]; // mass that reaches inlet is conserved
+
+		nm = Map[n];
+		Phi[nm] = (vA-valB)/(vA+valB);
+	}
+}
+
+__global__  void dvc_ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double valA = Den[n]; // mass that reaches outlet is conserved
+		Den[Np+n] = vB;
+		
+		nm = Map[n];
+		Phi[nm] = (valA-vB)/(valA+vB);
 	}
 }
 //*************************************************************************
@@ -4077,13 +4107,23 @@ extern "C" void ScaLBL_D3Q19_AAodd_ColorMass(int *d_neighborList, double *Aq, do
 	}
 }
 
-extern "C" void ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np){
+extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np){
     int GRID = count / 512 + 1;
-    dvc_ScaLBL_Color_BC<<<GRID,512>>>(list, Map, Phi, Den, vA, vB, count, Np);
+    dvc_ScaLBL_Color_BC_z<<<GRID,512>>>(list, Map, Phi, Den, vA, vB, count, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_Color_BC: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_Color_BC_z: %s \n",cudaGetErrorString(err));
 	}
 }
+
+extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np){
+    int GRID = count / 512 + 1;
+    dvc_ScaLBL_Color_BC_Z<<<GRID,512>>>(list, Map, Phi, Den, vA, vB, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_Color_BC_Z: %s \n",cudaGetErrorString(err));
+	}
+}
+
 
 
