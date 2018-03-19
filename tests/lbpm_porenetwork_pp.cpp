@@ -38,16 +38,9 @@ int main(int argc, char **argv)
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 
-	double UpperTubeRadius =15.0;
-	double LowerTubeRadius =15.0;
-	int BC;
-	int BubbleTop,BubbleBottom;
-	double BulbRadius;
-	LowerTubeRadius=strtod(argv[1],NULL);
-	LowerTubeRadius=strtod(argv[2],NULL);
-	BulbRadius=strtod(argv[3],NULL);
-	BubbleBottom = atoi(argv[4]);
-	BubbleTop = atoi(argv[5]);
+	int nsph,ncyl;
+	nsph = atoi(argv[1]);
+	ncyl = atoi(argv[2]);
 
 	BC=0;
 
@@ -150,8 +143,6 @@ int main(int argc, char **argv)
 	double pore_vol;
 	
 	
-	int ncyl = 20;
-	int nsph = 8;
 	DoubleArray cylinders(7,ncyl); // (x, y, z, X, Y, Z, radius)
 	DoubleArray spheres(4,nsph); // ( x, y, z, radius)
 
