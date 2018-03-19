@@ -28,20 +28,14 @@ int main(int argc, char **argv)
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
 	//*****************************************
-	// MPI ranks for all 18 neighbors
-	//**********************************
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//**********************************
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
+	//**********************************
 
-	int nsph,ncyl;
+	int nsph,ncyl, BC;
 	nsph = atoi(argv[1]);
 	ncyl = atoi(argv[2]);
-
+	BC = 0;
 	if (rank == 0){
 		printf("********************************************************\n");
 		printf("Generate LBM input geometry from simple pore network");
