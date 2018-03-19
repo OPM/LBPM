@@ -79,6 +79,7 @@ ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
 	nprocx = Dm.nprocx;
 	nprocy = Dm.nprocy;
 	nprocz = Dm.nprocz;
+	BoundaryCondition = Dm.BoundaryCondition;
 	//......................................................................................
 
 	ScaLBL_AllocateDeviceMemory((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory

@@ -227,6 +227,7 @@ public:
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int next;
+	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
 	// 		- determines how much memory is allocated
@@ -240,7 +241,6 @@ public:
 	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
-
 
 	void MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
