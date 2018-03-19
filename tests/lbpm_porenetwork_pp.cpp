@@ -152,8 +152,18 @@ int main(int argc, char **argv)
 	
 	int ncyl = 20;
 	int nsph = 8;
-	cylinders  = DoubleArray(7,ncyl); // (x, y, z, X, Y, Z, radius)
-	spheres  = DoubleArray(4,nsph); // ( x, y, z, radius)
+	DoubleArray cylinders(7,ncyl); // (x, y, z, X, Y, Z, radius)
+	DoubleArray spheres(4,nsph); // ( x, y, z, radius)
+
+	// Read from text file
+	ifstream SPHERES ( "spheres.csv" ); // declare file stream: http://www.cplusplus.com/reference/iostream/ifstream/
+	string value;
+	while ( SPHERES.good() )
+	{
+		printf("Reading spheres \n");
+		getline ( SPHERES, value, ',' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		cout << string( value, 1, value.length()-2 ); // display value removing the first and the last character from it
+	}	
 
 	sum=0;
 	for (k=0;k<Nz;k++){
