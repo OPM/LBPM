@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#BSUB -P CSC275MCCLURE
+#BSUB -J COLOR
+#BSUB -o test-1200g.o%J
+#BSUB -W 10
+#BSUB -nnodes 200
+##BSUB -env "all,JOB_FEATURE=NVME"
+ 
+date
+
+module load gcc cuda 
+#source $OLCF_SPECTRUM_MPI_ROOT/jsm_pmix/bin/export_smpi_env -gpu
+
+#cd /ccs/home/mcclurej/summit/build/ScaLBL/example/Sph1896/
+
+#cp Domain.in.8g Domain.in
+
+export LBPM_WIA_DIR=$HOME/summit/build/LBPM-WIA/tests
+
+cd /gpfs/alpinetds/csc275/scratch/mcclurej/SCALING/WEAK/1200p
+
+jsrun  -n1200 -r6 -g1 -c1 -brs --smpiargs="-gpu" $LBPM_WIA_DIR/TestCommD3Q19
+
+
+exit;

@@ -424,7 +424,7 @@ int main(int argc, char **argv)
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
 		// Performance obtained from each node
-		double MLUPS = double(Nx*Ny*Nz)/cputime/1000000;
+		double MLUPS = double(Np)/cputime/1000000;
 
 		if (rank==0) printf("********************************************************\n");
 		if (rank==0) printf("CPU time = %f \n", cputime);

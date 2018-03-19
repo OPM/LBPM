@@ -11,7 +11,7 @@
 using namespace std;
 
 
-extern void GlobalFlipScaLBL_D3Q19_Init(double *dist_even, double *dist_odd, int Nx, int Ny, int Nz, 
+extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int Nx, int Ny, int Nz,
 								int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz)
 {
 	// Set of Discrete velocities for the D3Q19 Model
@@ -24,64 +24,57 @@ extern void GlobalFlipScaLBL_D3Q19_Init(double *dist_even, double *dist_odd, int
 	int x,y,z;		// Global indices
 	int xn,yn,zn; 	// Global indices of neighbor 
 	int X,Y,Z;		// Global size
+	int idx;
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
     NULL_USE(Z);
 	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
+
+
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				
-				n = (k+1)*(Nx+2)*(Ny+2) + (j+1)*(Nx+2) + i+1;
-				
-				// Get the 'global' index
-				x = iproc*Nx+i;
-				y = jproc*Ny+j;
-				z = kproc*Nz+k;
-				for (q=0; q<9; q++){
-					// Odd distribution
-					Cqx = D3Q19[2*q][0];
-					Cqy = D3Q19[2*q][1];
-					Cqz = D3Q19[2*q][2];
-					xn = x - Cqx;
-					yn = y - Cqy;
-					zn = z - Cqz;
-					if (xn < 0) xn += nprocx*Nx;
-					if (yn < 0) yn += nprocy*Ny;
-					if (zn < 0) zn += nprocz*Nz;
-					if (!(xn < nprocx*Nx)) xn -= nprocx*Nx;
-					if (!(yn < nprocy*Ny)) yn -= nprocy*Ny;
-					if (!(zn < nprocz*Nz)) zn -= nprocz*Nz;	
-					
-					dist_even[(q+1)*N+n] = (zn*X*Y+yn*X+xn) + (2*q+1)*0.01;
-					
-					// Odd distribution
-					xn = x + Cqx;
-					yn = y + Cqy;
-					zn = z + Cqz;
-					if (xn < 0) xn += nprocx*Nx;
-					if (yn < 0) yn += nprocy*Ny;
-					if (zn < 0) zn += nprocz*Nz;
-					if (!(xn < nprocx*Nx)) xn -= nprocx*Nx;
-					if (!(yn < nprocy*Ny)) yn -= nprocy*Ny;
-					if (!(zn < nprocz*Nz)) zn -= nprocz*Nz;
-					
-					dist_odd[q*N+n] =  (zn*X*Y+yn*X+xn) + 2*(q+1)*0.01;
-				
+
+				//n = (k+1)*(Nx+2)*(Ny+2) + (j+1)*(Nx+2) + i+1;
+				idx=Map(i,j,k);
+
+				if (idx > 0){
+					// Get the 'global' index
+					x = iproc*Nx+i;
+					y = jproc*Ny+j;
+					z = kproc*Nz+k;
+					for (q=0; q<18; q++){
+						// Odd distribution
+						Cqx = D3Q19[q][0];
+						Cqy = D3Q19[q][1];
+						Cqz = D3Q19[q][2];
+						xn = x - Cqx;
+						yn = y - Cqy;
+						zn = z - Cqz;
+						xn=x; yn=y;zn=z;
+						if (xn < 0) xn += nprocx*Nx;
+						if (yn < 0) yn += nprocy*Ny;
+						if (zn < 0) zn += nprocz*Nz;
+						if (!(xn < nprocx*Nx)) xn -= nprocx*Nx;
+						if (!(yn < nprocy*Ny)) yn -= nprocy*Ny;
+						if (!(zn < nprocz*Nz)) zn -= nprocz*Nz;	
+
+						dist[(q+1)*Np+idx] = (zn*X*Y+yn*X+xn) + (q+1)*0.01;
+
+					}
 				}
 			}
 		}
 	}
-	
 }
 
-extern int GlobalCheckDebugDist(double *dist_even, double *dist_odd, int Nx, int Ny, int Nz, 
-		int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz)
+extern int GlobalCheckDebugDist(double *dist, IntArray Map, int Np, int Nx, int Ny, int Nz, 
+		int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz, int start, int finish)
 {
 
 	int returnValue = 0;
-	int q,i,j,k,n,N;
+	int q,i,j,k,n,N,idx;
 	int Cqx,Cqy,Cqz; // Discrete velocity
 	int x,y,z;		// Global indices
 	int xn,yn,zn; 	// Global indices of neighbor 
@@ -89,37 +82,30 @@ extern int GlobalCheckDebugDist(double *dist_even, double *dist_odd, int Nx, int
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
-    NULL_USE(Z);
+	NULL_USE(Z);
 	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 
-				n = (k+1)*(Nx+2)*(Ny+2) + (j+1)*(Nx+2) + i+1;
+				idx=Map(i,j,k);
 
-				// Get the 'global' index
-				x = iproc*Nx+i;
-				y = jproc*Ny+j;
-				z = kproc*Nz+k;
-				for (q=0; q<9; q++){
+				if (idx > start && idx< finish){
+					// Get the 'global' index
+					x = iproc*Nx+i;
+					y = jproc*Ny+j;
+					z = kproc*Nz+k;
+					for (q=0; q<18; q++){
 
-					if (dist_even[(q+1)*N+n] != (z*X*Y+y*X+x) + 2*(q+1)*0.01){
-						printf("******************************************\n");
-						printf("error in even distribution q = %i \n", 2*(q+1));
-						printf("i,j,k= %i, %i, %i \n", x,y,z);
-						printf("dist = %5.2f \n", dist_even[(q+1)*N+n]);
-						printf("n= %i \n",z*X*Y+y*X+x);
-						returnValue++;
-					}
+						if (dist[(q+1)*Np+idx] != (z*X*Y+y*X+x) + (q+1)*0.01){
+							printf("******************************************\n");
+							printf("error in distribution q = %i \n", (q+1));
+							printf("i,j,k= %i, %i, %i \n", x,y,z);
+							printf("dist = %5.2f \n", dist[(q+1)*Np+idx]);
+							printf("n= %i \n",z*X*Y+y*X+x);
+							returnValue++;
+						}
 
-
-					if (dist_odd[q*N+n] !=  (z*X*Y+y*X+x) + (2*q+1)*0.01){
-						printf("******************************************\n");
-						printf("error in odd distribution q = %i \n", 2*q+1);
-						printf("i,j,k= %i, %i, %i \n", x,y,z);
-						printf("dist = %5.2f \n", dist_odd[q*N+n]);
-						printf("n= %i \n",z*X*Y+y*X+x);
-						returnValue++;
 					}
 				}
 			}
@@ -311,20 +297,20 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char[Nx*Ny*Nz];
 
-		/*
-		 * 	if (rank==0) printf("Assigning phase ID from file \n");
-		 * 	if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	fread(id,1,N,IDFILE);
-	fclose(IDFILE);
-		 */
+
+		if (rank==0) printf("Assigning phase ID from file \n");
+		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+		FILE *IDFILE = fopen(LocalRankFilename,"rb");
+		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+		fread(id,1,N,IDFILE);
+		fclose(IDFILE);
+		 
 		// Setup the domain
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					id[n] = 1;
+					//id[n] = 1;
 					Dm.id[n] = id[n];
 				}
 			}
@@ -337,6 +323,7 @@ int main(int argc, char **argv)
 		double sum;
 		double sum_local=0.0, porosity;
 		char component = 0; // solid phase
+		int Np=0;
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
@@ -344,6 +331,7 @@ int main(int argc, char **argv)
 					if (id[n] == component){
 						sum_local+=1.0;
 					}
+					else Np++;
 				}
 			}
 		}
@@ -357,33 +345,53 @@ int main(int argc, char **argv)
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
 
+		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-		// Create a communicator for the device
+		// Create a communicator for the device (will use optimized layout)
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
-
-		//...........device phase ID.................................................
-		if (rank==0)	printf ("Copying phase ID to device \n");
-		char *ID;
-		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-		// Copy to the device
-		ScaLBL_CopyToDevice(ID, id, N);
-		//...........................................................................
-
-		//...........................................................................
-		//				MAIN  VARIABLES ALLOCATED HERE
-		//...........................................................................
-		// LBM variables
-		if (rank==0)	printf ("Allocating distributions \n");
+		
+		if (rank==0)	printf ("Set up memory efficient layout \n");
+		int neighborSize=18*Np*sizeof(int);
+		int *neighborList;
+		IntArray Map(Nx,Ny,Nz);
+		neighborList= new int[18*Np];
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		MPI_Barrier(comm);
+		
 		//......................device distributions.................................
-		double *f_even,*f_odd;
+		dist_mem_size = Np*sizeof(double);
+		if (rank==0)	printf ("Allocating distributions \n");
+		
+		int *NeighborList;
+		int *dvcMap;
+		double *fq;
 		//...........................................................................
-		ScaLBL_AllocateDeviceMemory((void **) &f_even, 10*dist_mem_size);	// Allocate device memory
-		ScaLBL_AllocateDeviceMemory((void **) &f_odd, 9*dist_mem_size);	// Allocate device memory
+		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 		//...........................................................................
-		double *f_even_host,*f_odd_host;
-		f_even_host = new double [10*N];
-		f_odd_host = new double [9*N];
+		
+		double *fq_host;
+		fq_host = new double [19*Np];
+		
+		// Update GPU data structures
+		if (rank==0)	printf ("Setting up device map and neighbor list \n");
+		int *TmpMap;
+		TmpMap=new int[Np];
+		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					int idx=Map(i,j,k);
+					if (!(idx < 0))
+						TmpMap[idx] = k*Nx*Ny+j*Nx+i;
+				}
+			}
+		}
+		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
+		ScaLBL_DeviceBarrier();
+		delete [] TmpMap;
+
 		//...........................................................................
 
 		/*	// Write the communcation structure into a file for debugging
@@ -414,29 +422,27 @@ int main(int argc, char **argv)
 	fprintf(CommFile,"\n");
 	fclose(CommFile);
 		 */
-		if (rank==0)	printf("Setting the distributions, size = : %i\n", N);
+		if (rank==0)	printf("Setting the distributions, size = : %i\n", Np);
 		//...........................................................................
-		GlobalFlipScaLBL_D3Q19_Init(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
-		ScaLBL_CopyToDevice(f_even, f_even_host, 10*dist_mem_size);
-		ScaLBL_CopyToDevice(f_odd, f_odd_host, 9*dist_mem_size);
+		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		//*************************************************************************
-		// Pack and send the D3Q19 distributions
-		ScaLBL_Comm.SendD3Q19(f_even, f_odd);
-		//*************************************************************************
-		// 		Swap the distributions for momentum transport
-		//*************************************************************************
-		ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
-		//*************************************************************************
-		// Wait for communications to complete and unpack the distributions
-		ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
-		//*************************************************************************
-
+		// First timestep
+		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+	
+		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		
+		// Second timestep
+		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+		
+		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		
+		
 		//...........................................................................
-		ScaLBL_CopyToHost(f_even_host,f_even,10*N*sizeof(double));
-		ScaLBL_CopyToHost(f_odd_host,f_odd,9*N*sizeof(double));
-		check =	GlobalCheckDebugDist(f_even_host, f_odd_host, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		ScaLBL_CopyToHost(fq_host,fq,19*Np*sizeof(double));
+		check =	GlobalCheckDebugDist(fq_host, Map, Np, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz,0,ScaLBL_Comm.next);
 		//...........................................................................
 
 		int timestep = 0;
@@ -453,17 +459,16 @@ int main(int argc, char **argv)
 		//************ MAIN ITERATION LOOP (timing communications)***************************************/
 		while (timestep < 100){
 
-			//*************************************************************************
-			// Pack and send the D3Q19 distributions
-			ScaLBL_Comm.SendD3Q19(f_even, f_odd);
-			//*************************************************************************
-			// 		Swap the distributions for momentum transport
-			//*************************************************************************
-			ScaLBL_D3Q19_Swap(ID, f_even, f_odd, Nx, Ny, Nz);
-			//*************************************************************************
-			// Wait for communications to complete and unpack the distributions
-			ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
-			//*************************************************************************
+			// First timestep
+			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+			
+			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+			
+			// Second timestep
+			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+			
+			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+			//*********************************************
 
 			ScaLBL_DeviceBarrier();
 			MPI_Barrier(comm);
@@ -476,7 +481,7 @@ int main(int argc, char **argv)
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
-		double MLUPS = double(Nx*Ny*Nz*timestep)/cputime/1000000;
+		double MLUPS = double(Np)*double(timestep)/cputime*1e-6;
 		if (rank==0) printf("********************************************************\n");
 		if (rank==0) printf("CPU time = %f \n", cputime);
 		if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
@@ -486,9 +491,9 @@ int main(int argc, char **argv)
 
 		// Number of memory references from the swap algorithm (per timestep)
 		// 18 reads and 18 writes for each lattice site
-		double MemoryRefs = (Nx-2)*(Ny-2)*(Nz-2)*36;
+		double MemoryRefs = double(Np)*36;
 		// number of memory references for the swap algorithm - GigaBytes / second
-		if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9);
+		if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*double(timestep)*1e-9);
 		// Report bandwidth in Gigabits per second
 		// communication bandwidth includes both send and recieve
 		if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
