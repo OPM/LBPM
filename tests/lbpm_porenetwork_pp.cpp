@@ -191,16 +191,16 @@ int main(int argc, char **argv)
 					double s = (alpha*xi + beta*yj + gamma*zk)/(alpha*alpha + beta*beta + gamma*gamma);
 					double distance=0.f;
 					if (s > length){
-						distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z))
+						distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
 					}
 					if (s<0){
-						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z))
+						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 					}
 					else{
 						double xs = x + alpha*s;
 						double ys = y + beta*s;
 						double zs = z + gamma*s;
-						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs))
+						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
 					}
 					if (distance < Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
 				}
