@@ -42,8 +42,6 @@ int main(int argc, char **argv)
 	nsph = atoi(argv[1]);
 	ncyl = atoi(argv[2]);
 
-	BC=0;
-
 	if (rank == 0){
 		printf("********************************************************\n");
 		printf("Generate LBM input geometry from simple pore network");
@@ -142,7 +140,6 @@ int main(int argc, char **argv)
 	//if (pBC) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	double pore_vol;
 	
-	
 	DoubleArray cylinders(7,ncyl); // (x, y, z, X, Y, Z, radius)
 	DoubleArray spheres(4,nsph); // ( x, y, z, radius)
 
@@ -220,14 +217,6 @@ int main(int argc, char **argv)
 				// Initialize phase positions
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
-				}
-				else if (Dm.kproc*Nz+k<BubbleBottom){
-					id[n] = 2;
-					sum++;
-				}
-				else if (Dm.kproc*Nz+k<BubbleTop){
-					id[n] = 1;
-					sum++;
 				}
 				else{
 					id[n] = 2;
