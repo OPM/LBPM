@@ -138,13 +138,23 @@ int main(int argc, char **argv)
 	DoubleArray spheres(4,nsph); // ( x, y, z, radius)
 
 	// Read from text file
+		printf("Reading spheres \n");
 	ifstream SPHERES ( "spheres.csv" ); // declare file stream: http://www.cplusplus.com/reference/iostream/ifstream/
 	string value;
+	int index=0;
 	while ( SPHERES.good() )
 	{
-		printf("Reading spheres \n");
-		getline ( SPHERES, value, ',' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
-		cout << string( value, 1, value.length()-2 ); // display value removing the first and the last character from it
+		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		spheres(0,index)=strtod(value.c_str(),NULL);
+		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		spheres(1,index)=strtod(value.c_str(),NULL);
+		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		spheres(2,index)=strtod(value.c_str(),NULL);
+		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		spheres(3,index)=strtod(value.c_str(),NULL);
+		printf("cx=%f,cy=%f,cz=%f,r=%f\n",spheres(0,index),spheres(1,index),spheres(2,index),spheres(3,index));
+		index++;
+		//cout << string( value, 1, value.length()-2 ); // display value removing the first and the last character from it
 	}	
 
 	sum=0;
