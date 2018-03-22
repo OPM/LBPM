@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				Averages.SDS(i,j,k) = 2.f*Nx;
+				Averages.SDs(i,j,k) = -2.f*Nx;
 			}
 		}
 	}
@@ -221,8 +221,9 @@ int main(int argc, char **argv)
 						double ys = y + beta*s;
 						double zs = z + gamma*s;
 						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
+						//printf("alpha=%f,beta=%f,gamma=%f,distance=%f\n",alpha,beta,gamma,distance);
 					}
-					if (distance < Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
+					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
 				}
 				
 				// Compute the distance to each sphere
@@ -237,7 +238,7 @@ int main(int argc, char **argv)
 
 					double distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 
-					if (distance < Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
+					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
 				}
 			}				
 		}
