@@ -143,35 +143,46 @@ int main(int argc, char **argv)
 	int index=0;
 	while ( index < nsph )	{
 		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		spheres(0,index)=strtod(value.c_str(),NULL);
 		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		spheres(1,index)=strtod(value.c_str(),NULL);
 		getline ( SPHERES, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		spheres(2,index)=strtod(value.c_str(),NULL);
 		getline ( SPHERES, value ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		spheres(3,index)=strtod(value.c_str(),NULL);
 		printf("cx=%f,cy=%f,cz=%f,r=%f\n",spheres(0,index),spheres(1,index),spheres(2,index),spheres(3,index));
 		index++;
 		//cout << string( value, 1, value.length()-2 ); // display value removing the first and the last character from it
 	}	
 
-	printf("Reading spheres \n");
+	printf("Reading cylinders \n");
 	ifstream CYLINDERS ( "cylinders.csv" ); // declare file stream: http://www.cplusplus.com/reference/iostream/ifstream/
 	index=0;
 	while ( index < ncyl )	{
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(0,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(1,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(2,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(3,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(4,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value, ' ' ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(5,index)=strtod(value.c_str(),NULL);
 		getline ( CYLINDERS, value ); // read a string until next comma: http://www.cplusplus.com/reference/string/getline/
+		value = value*double(Nx-1)/Lx;
 		cylinders(6,index)=strtod(value.c_str(),NULL);
 		printf("x=%f,y=%f,z=%f,r=%f\n",cylinders(0,index),cylinders(1,index),cylinders(2,index),cylinders(6,index));
 		index++;
@@ -186,13 +197,13 @@ int main(int argc, char **argv)
 
 				// Compute the distance to each cylinder
 				for (int p=0; p<ncyl; p++){
-				  double x = cylinders(0,p)*Lx/(Nx-1);
-					double y = cylinders(1,p)/Ly*(Ny-1);
-					double z = cylinders(2,p)/Lz*(Nz-1);
-					double X = cylinders(3,p)/Lx*(Nx-1);
-					double Y = cylinders(4,p)/Ly*(Ny-1);
-					double Z = cylinders(5,p)/Lz*(Nz-1);
-					double radius = cylinders(6,p)/Lx*(Nx-1);
+				  double x = cylinders(0,p);
+					double y = cylinders(1,p);
+					double z = cylinders(2,p);
+					double X = cylinders(3,p);
+					double Y = cylinders(4,p);
+					double Z = cylinders(5,p);
+					double radius = cylinders(6,p);
 					double length = sqrt(x*x+y*y+z*z);
 					double alpha = (X - x)/length;
 					double beta = (Y - y)/length;
@@ -220,10 +231,10 @@ int main(int argc, char **argv)
 				
 				// Compute the distance to each sphere
 				for (int p=0; p<nsph; p++){
-					double x = spheres(0,p)/Lx*(Nx-1);
-					double y = spheres(1,p)/Ly*(Ny-1);
-					double z = spheres(2,p)/Lz*(Nz-1);
-					double radius = spheres(3,p)/Lx*(Nx-1);
+					double x = spheres(0,p);
+					double y = spheres(1,p);
+					double z = spheres(2,p);
+					double radius = spheres(3,p);
 					double xi = double(i);
 					double yj = double(j);
 					double zk = double(k);
