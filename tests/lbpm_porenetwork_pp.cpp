@@ -178,6 +178,13 @@ int main(int argc, char **argv)
 		//cout << string( value, 1, value.length()-2 ); // display value removing the first and the last character from it
 	}	
 
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				Averages.SDS(i,j,k) = 2.f*Nx;
+			}
+		}
+	}
 	sum=0;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
