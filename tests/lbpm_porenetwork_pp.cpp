@@ -62,7 +62,6 @@ int main(int argc, char **argv)
 		domain >> Nx;
 		domain >> Ny;
 		domain >> Nz;
-		domain >> nspheres;
 		domain >> Lx;
 		domain >> Ly;
 		domain >> Lz;
@@ -187,13 +186,13 @@ int main(int argc, char **argv)
 
 				// Compute the distance to each cylinder
 				for (int p=0; p<ncyl; p++){
-					double x = cylinders(0,p);
-					double y = cylinders(1,p);
-					double z = cylinders(2,p);
-					double X = cylinders(3,p);
-					double Y = cylinders(4,p);
-					double Z = cylinders(5,p);
-					double radius = cylinders(6,p);
+				  double x = cylinders(0,p)*Lx/(Nx-1);
+					double y = cylinders(1,p)/Ly*(Ny-1);
+					double z = cylinders(2,p)/Lz*(Nz-1);
+					double X = cylinders(3,p)/Lx*(Nx-1);
+					double Y = cylinders(4,p)/Ly*(Ny-1);
+					double Z = cylinders(5,p)/Lz*(Nz-1);
+					double radius = cylinders(6,p)/Lx*(Nx-1);
 					double length = sqrt(x*x+y*y+z*z);
 					double alpha = (X - x)/length;
 					double beta = (Y - y)/length;
@@ -221,10 +220,10 @@ int main(int argc, char **argv)
 				
 				// Compute the distance to each sphere
 				for (int p=0; p<nsph; p++){
-					double x = spheres(0,p);
-					double y = spheres(1,p);
-					double z = spheres(2,p);
-					double radius = spheres(3,p);
+					double x = spheres(0,p)/Lx*(Nx-1);
+					double y = spheres(1,p)/Ly*(Ny-1);
+					double z = spheres(2,p)/Lz*(Nz-1);
+					double radius = spheres(3,p)/Lx*(Nx-1);
 					double xi = double(i);
 					double yj = double(j);
 					double zk = double(k);
@@ -264,7 +263,7 @@ int main(int argc, char **argv)
 		}
 	}
 	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
-
+	if (rank==0) printf("Pore volume = %f \n",pore_vol/double(Nx*Ny*Nz));
 	//.........................................................
 	// don't perform computations at the eight corners
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
