@@ -94,7 +94,7 @@ int main(int argc, char **argv)
 
 	if (rank==0){
 		printf("********************************************************\n");
-		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
+		printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
 		printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
 		printf("********************************************************\n");
 	}
@@ -106,8 +106,7 @@ int main(int argc, char **argv)
 	
 	MPI_Barrier(comm);
 
-	Nz += 2;
-	Nx = Ny = Nz;	// Cubic domain
+	Nx += 2; Ny += 2; Nz += 2;
 
 	int N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
@@ -210,19 +209,19 @@ int main(int argc, char **argv)
 					// value of s along center line {x=alpha*s, y = beta*s, z=gamma*s} that is closest to i,j,k
 					double s = (alpha*xi + beta*yj + gamma*zk)/(alpha*alpha + beta*beta + gamma*gamma);
 					double distance=0.f;
-					if (s > length){
+					/*if (s > length){
 						distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
 					}
-					if (s<0){
+					else if (s<0){
 						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 					}
-					else{
+					else{*/
 						double xs = x + alpha*s;
 						double ys = y + beta*s;
 						double zs = z + gamma*s;
 						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
-						//printf("alpha=%f,beta=%f,gamma=%f,distance=%f\n",alpha,beta,gamma,distance);
-					}
+						//if (distance>0)printf("s=%f,alpha=%f,beta=%f,gamma=%f,distance=%f\n",s,alpha,beta,gamma,distance);
+						//}
 					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
 				}
 				
