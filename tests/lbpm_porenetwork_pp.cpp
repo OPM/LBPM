@@ -216,9 +216,9 @@ int main(int argc, char **argv)
 						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 					}
 					else{*/
-						double xs = x + alpha*s;
-						double ys = y + beta*s;
-						double zs = z + gamma*s;
+						double xs = alpha*s;
+						double ys = beta*s;
+						double zs = gamma*s;
 						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
 						//if (distance>0)printf("s=%f,alpha=%f,beta=%f,gamma=%f,distance=%f\n",s,alpha,beta,gamma,distance);
 						//}
