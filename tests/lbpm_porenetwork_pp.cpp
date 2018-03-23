@@ -209,19 +209,19 @@ int main(int argc, char **argv)
 					// value of s along center line {x=alpha*s, y = beta*s, z=gamma*s} that is closest to i,j,k
 					double s = (alpha*xi + beta*yj + gamma*zk)/(alpha*alpha + beta*beta + gamma*gamma);
 					double distance=0.f;
-					/*if (s > length){
+					if (s > length){
 						distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
 					}
 					else if (s<0){
 						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 					}
-					else{*/
+					else{
 						double xs = alpha*s;
 						double ys = beta*s;
 						double zs = gamma*s;
 						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
 						//if (distance>0)printf("s=%f,alpha=%f,beta=%f,gamma=%f,distance=%f\n",s,alpha,beta,gamma,distance);
-						//}
+					}
 					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
 				}
 				
