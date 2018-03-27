@@ -148,10 +148,11 @@ __global__  void dvc_ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double 
 	if (idx < count){
 		n = list[idx];
 		Den[n] = vA;
-		double valB = Den[Np+n]; // mass that reaches inlet is conserved
+		Den[Np+n] = vB;
+		//double valB = Den[Np+n]; // mass that reaches inlet is conserved
 
 		nm = Map[n];
-		Phi[nm] = (vA-valB)/(vA+valB);
+		Phi[nm] = (vA-vB)/(vA+vB);
 	}
 }
 
@@ -162,11 +163,12 @@ __global__  void dvc_ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double 
 	idx = blockIdx.x*blockDim.x + threadIdx.x;
 	if (idx < count){
 		n = list[idx];
-		double valA = Den[n]; // mass that reaches outlet is conserved
+		//double valA = Den[n]; // mass that reaches outlet is conserved
+		Den[n] = vA;
 		Den[Np+n] = vB;
 		
 		nm = Map[n];
-		Phi[nm] = (valA-vB)/(valA+vB);
+		Phi[nm] = (vA-vB)/(vA+vB);
 	}
 }
 //*************************************************************************
