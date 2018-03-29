@@ -261,6 +261,8 @@ public:
 	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
+	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
+	void TriRecvD3Q7AA(double *Aq, double *Bq, double *Cq);
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
 	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);

@@ -3848,6 +3848,120 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 
 }
 
+void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	if (Lock==true){
+		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+	}
+	else{
+		Lock=true;
+	}
+	// assign tag of 19 to D3Q19 communication
+	sendtag = recvtag = 15;
+	ScaLBL_DeviceBarrier();
+	// Pack the distributions
+	//...Packing for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,Aq,N);
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,Bq,N);
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,2*sendCount_x,sendCount_x,sendbuf_x,Cq,N);
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,Aq,N);
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,Bq,N);
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,2*sendCount_X,sendCount_X,sendbuf_X,Cq,N);
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,Aq,N);
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,Bq,N);
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,2*sendCount_y,sendCount_y,sendbuf_y,Cq,N);
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,Aq,N);
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,Bq,N);
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,2*sendCount_Y,sendCount_Y,sendbuf_Y,Cq,N);
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,Aq,N);
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,Bq,N);
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,2*sendCount_z,sendCount_z,sendbuf_z,Cq,N);
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,Aq,N);
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,sendCount_Z,sendCount_Z,sendbuf_Z,Bq,N);
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,2*sendCount_Z,sendCount_Z,sendbuf_Z,Cq,N);
+
+	//...................................................................................
+	// Send all the distributions
+	MPI_Isend(sendbuf_x, 3*sendCount_x,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_SCALBL,&req1[0]);
+	MPI_Irecv(recvbuf_X, 3*recvCount_X,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_SCALBL,&req2[0]);
+	MPI_Isend(sendbuf_X, 3*sendCount_X,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_SCALBL,&req1[1]);
+	MPI_Irecv(recvbuf_x, 3*recvCount_x,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_SCALBL,&req2[1]);
+	MPI_Isend(sendbuf_y, 3*sendCount_y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_SCALBL,&req1[2]);
+	MPI_Irecv(recvbuf_Y, 3*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_SCALBL,&req2[2]);
+	MPI_Isend(sendbuf_Y, 3*sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_SCALBL,&req1[3]);
+	MPI_Irecv(recvbuf_y, 3*recvCount_y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_SCALBL,&req2[3]);
+	MPI_Isend(sendbuf_z, 3*sendCount_z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_SCALBL,&req1[4]);
+	MPI_Irecv(recvbuf_Z, 3*recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_SCALBL,&req2[4]);
+	MPI_Isend(sendbuf_Z, 3*sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_SCALBL,&req1[5]);
+	MPI_Irecv(recvbuf_z, 3*recvCount_z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_SCALBL,&req2[5]);
+
+}
+
+
+void ScaLBL_Communicator::TriRecvD3Q7AA(double *Aq, double *Bq, double *Cq){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	//...................................................................................
+	// Wait for completion of D3Q19 communication
+	MPI_Waitall(6,req1,stat1);
+	MPI_Waitall(6,req2,stat2);
+	ScaLBL_DeviceBarrier();
+
+	//...................................................................................
+	// NOTE: AA Routine writes to opposite
+	// Unpack the distributions on the device
+	//...................................................................................
+	//...Unpacking for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,Aq,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,Bq,N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,2*recvCount_x,recvCount_x,recvbuf_x,Cq,N);
+	//...................................................................................
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,Aq,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,recvCount_X,recvCount_X,recvbuf_X,Bq,N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,2*recvCount_X,recvCount_X,recvbuf_X,Cq,N);
+	//...................................................................................
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,Aq,N);
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,recvCount_y,recvCount_y,recvbuf_y,Bq,N);
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,2*recvCount_y,recvCount_y,recvbuf_y,Cq,N);
+	//...................................................................................
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,Aq,N);
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,recvCount_Y,recvCount_Y,recvbuf_Y,Bq,N);
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,Cq,N);
+	//...................................................................................
+	
+	if (BoundaryCondition > 0 && kproc == 0){
+		// don't unpack
+	}
+	else if (BoundaryCondition > 0 && kproc == nprocz-1){
+		// don't unpack
+	}
+	else {
+		//...Packing for z face(6,12,13,16,17)................................
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,Aq,N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,Bq,N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,Cq,N);
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,Aq,N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,Bq,N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,Cq,N);
+	}
+	
+	//...................................................................................
+	Lock=false; // unlock the communicator after communications complete
+	//...................................................................................
+
+}
+
+
 void ScaLBL_Communicator::SendHalo(double *data){
 	//...................................................................................
 	if (Lock==true){
