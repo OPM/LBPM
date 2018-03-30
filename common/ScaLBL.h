@@ -41,6 +41,11 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 
+// BGK MODEL
+extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
+extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
 		double Fy, double Fz);
