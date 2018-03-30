@@ -273,7 +273,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int star
 		// q = 18
 		dist[nr17] = f18*(1.0-rlx) + 
 				rlx*0.02777777777777778*(rho - 3.0*(uy-uz) + 4.5*(uy-uz)*(uy-uz) - uu) - 0.08333333333*(Fy-Fz);
-	
 
 	}
 }
