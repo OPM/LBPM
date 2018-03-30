@@ -35,7 +35,6 @@ int main(int argc, char **argv)
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
 
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -129,8 +128,7 @@ int main(int argc, char **argv)
 		RESTART_INTERVAL=interval;
 		// **************************************************************
 		// **************************************************************
-		double rlx_setA = 1.f/tau;
-		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
+		double rlx = 1.f/tau;
 
 		if (nprocs != nprocx*nprocy*nprocz){
 			printf("nprocx =  %i \n",nprocx);
