@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #define NBLOCKS 1024
 #define NTHREADS 256
 
@@ -8,7 +10,12 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish,
 	// non-conserved moments
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
 
-	for (int n=start; n<finish; n++){
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+	    //........Get 1-D index for this thread....................
+	    		  n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+			    if ( n<finish ){
 		// q=0
 		f0 = dist[n];
 		f1 = dist[2*Np+n];
@@ -110,6 +117,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish,
 				rlx*0.02777777777777778*(rho - 3.0*(uy-uz) + 4.5*(uy-uz)*(uy-uz) - uu) - 0.08333333333*(Fy-Fz);
 
 		//........................................................................
+		}
 	}
 }
 
@@ -121,9 +129,12 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int 
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
 
-	int nread;
-	for (int n=start; n<finish; n++){
-		
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+	    //........Get 1-D index for this thread....................
+	    		  n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+			    if ( n<finish ){		
 		// q=0
 		f0 = dist[n];
 		// q=1
@@ -276,13 +287,13 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int 
 		// q = 18
 		dist[nr17] = f18*(1.0-rlx) + 
 				rlx*0.02777777777777778*(rho - 3.0*(uy-uz) + 4.5*(uy-uz)*(uy-uz) - uu) - 0.08333333333*(Fy-Fz);
-
+		}
 	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
 	
-    dvc_ScaLBL_AAeven_BGK<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,Fx,Fy,Fz);
+    dvc_ScaLBL_D3Q19_AAeven_BGK<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,Fx,Fy,Fz);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -291,7 +302,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
-    dvc_ScaLBL_AAodd_BGK<<<NBLOCKS,NTHREADS >>>(neighborlist,dist,start,finish,Np,rlx,Fx,Fy,Fz);
+    dvc_ScaLBL_D3Q19_AAodd_BGK<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,Fx,Fy,Fz);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
