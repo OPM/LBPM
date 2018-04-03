@@ -565,15 +565,15 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
-
-			// Halo exchange for phase field
-			ScaLBL_Comm_Regular.SendHalo(Phi);
-			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+			// Halo exchange for phase field
+			ScaLBL_Comm_Regular.SendHalo(Phi);
+
 			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
+			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
