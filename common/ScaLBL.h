@@ -19,6 +19,10 @@ extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size)
 
 extern "C" void ScaLBL_CopyToHost(void* dest, const void* source, size_t size);
 
+extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size);
+
+extern "C" void ScaLBL_CopyToZeroCopy(void* dest, const void* source, size_t size);
+
 extern "C" void ScaLBL_DeviceBarrier();
 
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N);
