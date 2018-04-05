@@ -346,14 +346,14 @@ int main(int argc, char **argv)
 
 			timestep++;
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_BGK(NeighborList, dist, ScaLBL_Comm.first_exterior, ScaLBL_Comm.last_exterior, Np, rlx, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAodd_BGK(NeighborList, dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_BGK(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 			timestep++;
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_BGK(dist, ScaLBL_Comm.first_exterior, ScaLBL_Comm.last_exterior, Np, rlx, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAeven_BGK(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_BGK(dist, 0, ScaLBL_Comm.next, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);

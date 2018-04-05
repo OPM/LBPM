@@ -2491,7 +2491,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		printf("\n\n");
 	 */
 	
-	Np = (last_interior%16 + 1)*16
+	Np = (last_interior%16 + 1)*16;
 	
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){
@@ -2499,7 +2499,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			for (i=1;i<Nx-1;i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
-				//if (idx > Np) printf("ScaLBL_Communicator::MemoryOptimizedLayout: Map(%i,%i,%i) = %i > %i \n",i,j,k,Map(i,j,k),Np);
+				if (idx > Np) printf("ScaLBL_Communicator::MemoryOptimizedLayout: Map(%i,%i,%i) = %i > %i \n",i,j,k,Map(i,j,k),Np);
 				else if (!(idx<0)){
 					// store the idx associated with each neighbor
 					// store idx for self if neighbor is in solid or out of domain

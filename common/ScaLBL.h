@@ -256,7 +256,7 @@ public:
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
 
-	void MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
+	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
