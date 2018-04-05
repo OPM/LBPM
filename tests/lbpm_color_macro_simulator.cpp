@@ -399,11 +399,10 @@ int main(int argc, char **argv)
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
 		
 		if (rank==0)	printf ("Set up memory efficient layout \n");
-		int neighborSize=18*Np*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
+		neighborList= new int[18*(Np+32)];
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
 
 		//...........................................................................
@@ -412,8 +411,8 @@ int main(int argc, char **argv)
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
 		//......................device distributions.................................
-		dist_mem_size = Np*sizeof(double);
-		if (rank==0)	printf ("Allocating distributions \n");
+		int dist_mem_size = Np*sizeof(double);
+		int neighborSize=18*(Np*sizeof(int));
 
 		int *NeighborList;
 		int *dvcMap;
@@ -562,7 +561,7 @@ int main(int argc, char **argv)
 			// Compute the Phase indicator field
 			// Read for Aq, Bq happens in this routine (requires communication)
 			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
+			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 
@@ -573,7 +572,7 @@ int main(int argc, char **argv)
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
 			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
+					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
@@ -596,7 +595,7 @@ int main(int argc, char **argv)
 			timestep++;
 			// Compute the Phase indicator field
 			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
+			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 
@@ -607,7 +606,7 @@ int main(int argc, char **argv)
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
 			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
+					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
 			if (BoundaryCondition > 0){
