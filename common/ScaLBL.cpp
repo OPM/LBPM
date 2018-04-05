@@ -2397,32 +2397,86 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			}
 		}
 	}
-
-	// Step 1/2: Index the outer walls of the grid only
-	idx=0;	next=0;
 	for (k=1; k<Nz-1; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 				// domain interior
 				Map(i,j,k) = -1;
-				// Local index
-				n = k*Nx*Ny+j*Nx+i;
-				if (id[n] != 0){
-					// Counts for the six faces
-					if (i==1)       Map(n)=idx++;
-					else if (j==1)  Map(n)=idx++;
-					else if (k==1)  Map(n)=idx++;
-					else if (i==Nx-2)  Map(n)=idx++;
-					else if (j==Ny-2)  Map(n)=idx++;
-					else if (k==Nz-2)  Map(n)=idx++;
-				}
+			}
+		}
+	}
+	
+	// ********* Exterior **********
+	// Step 1/2: Index the outer walls of the grid only
+	idx=0;	next=0;
+	k=1;
+	for (j=1; j<Ny-1; j++){
+		for (i=1; i<Nx-1; i++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				// Counts for the z faces
+				Map(n)=idx++;
+			}
+		}
+	}
+	i=1;
+	for (k=2; k<Nz-2; k++){
+		for (j=1; j<Ny-1; j++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				// Counts for the six faces
+				Map(n)=idx++;
+			}
+		}
+	}
+	i=Nx-2;
+	for (k=2; k<Nz-2; k++){
+		for (j=1; j<Ny-1; j++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				// Counts for the six faces
+				Map(n)=idx++;
+			}
+		}
+	}
+	j=1;
+	for (k=2; k<Nz-2; k++){
+		for (i=2; i<Nx-2; i++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				Map(n)=idx++;
+			}
+		}
+	}
+	j=Ny-2;
+	for (k=2; k<Nz-2; k++){
+		for (i=2; i<Nx-2; i++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				Map(n)=idx++;
+			}
+		}
+	}
+	k=Nz-2;
+	for (j=1; j<Ny-1; j++){
+		for (i=1; i<Nx-1; i++){
+			// Local index
+			n = k*Nx*Ny+j*Nx+i;
+			if (id[n] != 0){
+				// Counts for the z faces
+				else if (k==Nz-2)  Map(n)=idx++;
 			}
 		}
 	}
 	next=idx;
-
-
-	// create a stride
+	
+	// ********* Interior **********
+	// align the next read
 	first_interior=(next/16 + 1)*16;
 	idx = first_interior;
 	// Step 2/2: Next loop over the domain interior in block-cyclic fashion
