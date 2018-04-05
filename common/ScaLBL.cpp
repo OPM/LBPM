@@ -2373,7 +2373,7 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutFull(IntArray &Map, int *neighbor
 }
 
 
-void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np){
+int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np){
 	/*
 	 * Generate a memory optimized layout
 	 *   id[n] == 0 implies that site n should be ignored (treat as a mask)
@@ -2422,6 +2422,9 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLi
 	next=idx;
 
 
+	// create a stride
+	first_interior=(next/16 + 1)*16;
+	idx = first_interior;
 	// Step 2/2: Next loop over the domain interior in block-cyclic fashion
 	for (k=2; k<Nz-2; k++){
 		for (j=2; j<Ny-2; j++){
@@ -2435,6 +2438,7 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLi
 			}
 		}
 	}
+	last_interior=idx;
 
 	/*
 	int MemBlockSize=32;
@@ -2469,9 +2473,9 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLi
 	}
 
 	*/
-	if (idx > Np ){
-		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Failed to create memory efficient layout!\n");
-	}
+//	if (idx > Np ){
+//		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Failed to create memory efficient layout!\n");
+//	}
 	/*
 		for (k=1;k<Nz-1;k++){
 			printf("....k=%i .....\n",k);
@@ -2486,14 +2490,16 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLi
 		}
 		printf("\n\n");
 	 */
-
+	
+	Np = (last_interior%16 + 1)*16
+	
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
-				if (idx > Np) printf("ScaLBL_Communicator::MemoryOptimizedLayout: Map(%i,%i,%i) = %i > %i \n",i,j,k,Map(i,j,k),Np);
+				//if (idx > Np) printf("ScaLBL_Communicator::MemoryOptimizedLayout: Map(%i,%i,%i) = %i > %i \n",i,j,k,Map(i,j,k),Np);
 				else if (!(idx<0)){
 					// store the idx associated with each neighbor
 					// store idx for self if neighbor is in solid or out of domain
@@ -2960,9 +2966,10 @@ void ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLi
 
 	// Reset the value of N to match the dense structure
 	N = Np;
-
+	
 	// Clean up
 	delete [] TempBuffer;
+	return(Np);
 }
 
 

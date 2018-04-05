@@ -240,6 +240,7 @@ public:
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int next;
+	int first_interior,last_interior;
 	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
