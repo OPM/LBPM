@@ -13,11 +13,13 @@ int main(int argc, char **argv){
 	unsigned long int NX,NY,NZ;
 	unsigned long int i,j,k;
 	unsigned long int x,y,z;
+	unsigned long int x0,y0,z0;
 	unsigned long int N, N_full;
 
 	Bx = atoi(argv[1]);
 	By = atoi(argv[2]);
 	Bz = atoi(argv[3]);
+	z0 = atoi(argv[4]);
 	//Bx = By = Bz = 9;
 	Nx = Ny = Nz = 1024;
 	N = Nx*Ny*Nz;
@@ -27,6 +29,7 @@ int main(int argc, char **argv){
 	NZ=Bz*Nz;
 	N_full=NX*NY*NZ;
 	printf("System size is: %i x %i x %i \n",NX,NY,NZ);
+	printf("Starting block is: %i \n", z0);
 	
 	// Filenames used
 	//char LocalRankString[8];
@@ -42,7 +45,7 @@ int main(int argc, char **argv){
 	char *ID;
 	ID = new char [N_full];
 	
-	for (unsigned long int bz=0; bz<Bz; bz++){
+	for (unsigned long int bz=z0; bz<Bz; bz++){
 		for (unsigned long int by=0; by<By; by++){
 			for (unsigned long int bx=0; bx<Bx; bx++){
 				sprintf(sx,"%d",bx);
