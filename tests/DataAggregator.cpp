@@ -15,7 +15,10 @@ int main(int argc, char **argv){
 	unsigned long int x,y,z;
 	unsigned long int N, N_full;
 
-	Bx = By = Bz = 9;
+	Bx = atoi(argv[1]);
+	By = atoi(argv[2]);
+	Bz = atoi(argv[3]);
+	//Bx = By = Bz = 9;
 	Nx = Ny = Nz = 1024;
 	N = Nx*Ny*Nz;
 	
@@ -68,7 +71,7 @@ int main(int argc, char **argv){
 		}
 	}
 	printf("Done getting data -- writing main file \n");
-	FILE *OUT = fopen(LocalRankFilename,"wb");
+	FILE *OUT = fopen("FullData.raw","wb");
 	fwrite(ID,1,N_full,OUT);
 	fclose(OUT);
 	printf("Completed! \n");
