@@ -80,7 +80,6 @@ int main(int argc, char **argv)
 		int InitialCondition;
 		//	bool pBC,Restart;
 		int i,j,k,n;
-		int dist_mem_size;
 		double din, dout, flux;
 		double inletA,inletB,outletA,outletB;
 		inletA=1.f;
