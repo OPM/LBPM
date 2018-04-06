@@ -334,6 +334,42 @@ int main(int argc, char **argv)
 		if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
 		fclose(IDFILE);
 		
+		// Read id from restart
+		if (Restart == true){
+			if (rank==0){
+				printf("Reading restart file! \n");
+				ifstream restart("Restart.txt");
+				if (restart.is_open()){
+					restart  >> timestep;
+					printf("Restarting from timestep =%i \n",timestep);
+				}
+				else{
+					printf("WARNING:No Restart.txt file, setting timestep=0 \n");
+					timestep=0;
+				}
+			}
+			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+			FILE *RESTART = fopen(LocalRestartFile,"rb");
+			if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
+			readID=fread(id,1,N,RESTART);
+			if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading Restart (rank=%i) \n",rank);
+			fclose(RESTART);
+			/*
+			// Read in the restart file to CPU buffers
+			double *cDen = new double[2*Np];
+			double *cfq = new double[19*Np];
+			ReadCheckpoint(LocalRestartFile, cDen, cfq, Np);
+			// Copy the restart data to the GPU
+			ScaLBL_CopyToDevice(fq,cfq,19*Np*sizeof(double));
+			ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
+			ScaLBL_DeviceBarrier();
+			delete [] cDen;
+			delete [] cfq;
+			*/
+			MPI_Barrier(comm);
+		}
+		
+		
 		//.......................................................................
 		// Compute the media porosity, assign phase labels and solid composition
 		//.......................................................................
@@ -476,39 +512,6 @@ int main(int argc, char **argv)
 				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 			}
 		}
-		if (Restart == true){
-			if (rank==0){
-				printf("Reading restart file! \n");
-				ifstream restart("Restart.txt");
-				if (restart.is_open()){
-					restart  >> timestep;
-					printf("Restarting from timestep =%i \n",timestep);
-				}
-				else{
-					printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-					timestep=0;
-				}
-			}
-			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
-
-			// Read in the restart file to CPU buffers
-			double *cDen = new double[2*Np];
-			double *cfq = new double[19*Np];
-			ReadCheckpoint(LocalRestartFile, cDen, cfq, Np);
-			// Copy the restart data to the GPU
-			ScaLBL_CopyToDevice(fq,cfq,19*Np*sizeof(double));
-			ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
-			ScaLBL_DeviceBarrier();
-			delete [] cDen;
-			delete [] cfq;
-			MPI_Barrier(comm);
-
-            ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-                            alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-            ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-			alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
-
-		}
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -571,15 +574,15 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
-
-			// Halo exchange for phase field
-			ScaLBL_Comm_Regular.SendHalo(Phi);
-			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+			// Halo exchange for phase field
+			ScaLBL_Comm_Regular.SendHalo(Phi);
+
 			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
+			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
