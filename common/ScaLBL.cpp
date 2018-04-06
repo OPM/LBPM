@@ -2469,7 +2469,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			n = k*Nx*Ny+j*Nx+i;
 			if (id[n] != 0){
 				// Counts for the z faces
-				else if (k==Nz-2)  Map(n)=idx++;
+				Map(n)=idx++;
 			}
 		}
 	}
