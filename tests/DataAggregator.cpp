@@ -15,11 +15,14 @@ int main(int argc, char **argv){
 	unsigned long int x,y,z;
 	unsigned long int x0,y0,z0;
 	unsigned long int N, N_full;
+	unsigned long int Z0,Zf;
 
 	Bx = atoi(argv[1]);
 	By = atoi(argv[2]);
 	Bz = atoi(argv[3]);
 	z0 = atoi(argv[4]);
+	Z0 = atoi(argv[5]);
+	ZF = atoi(argv[7]);
 	//Bx = By = Bz = 9;
 	Nx = Ny = Nz = 1024;
 	N = Nx*Ny*Nz;
@@ -27,9 +30,11 @@ int main(int argc, char **argv){
 	NX=Bx*Nx;
 	NY=By*Ny;
 	NZ=Bz*Nz;
-	N_full=NX*NY*NZ;
-	printf("System size is: %i x %i x %i \n",NX,NY,NZ);
-	printf("Starting block is: %i \n", z0);
+	N_full=NX*NY*(ZF-Z0);
+	printf("System size (read) is: %i x %i x %i \n",NX,NY,NZ);
+	printf("Starting block (read) is: %i \n", z0);
+	printf("First z slice (write) is: %i \n", Z0);
+	printf("Last z slice (write) is: %i \n", Zf);
 	
 	// Filenames used
 	//char LocalRankString[8];
@@ -65,8 +70,8 @@ int main(int argc, char **argv){
 						for ( i=0;i<Nx;i++){
 							x = bx*Nx + i;
 							y = by*Ny + j;
-							z = bz*Nz + k;
-							ID[z*NX*NY+y*NX+x] = ID[k*Nx*Ny+j*Nx+i];
+							z = bz*Nz + k - Z0;
+							if (!(z<0) && z<Zf)		ID[z*NX*NY+y*NX+x] = ID[k*Nx*Ny+j*Nx+i];
 						}
 					}
 				}			
