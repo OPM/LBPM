@@ -17,21 +17,29 @@ int main(int argc, char **argv){
 	unsigned long int N, N_full;
 	unsigned long int Z0,Zf;
 
-	Bx = atoi(argv[1]);
-	By = atoi(argv[2]);
-	Bz = atoi(argv[3]);
-	z0 = atoi(argv[4]);
-	Z0 = atoi(argv[5]);
-	ZF = atoi(argv[7]);
+	//Read the block size
+	Nx = atoi(argv[1]);
+	Ny = atoi(argv[2]);
+	Nz = atoi(argv[3]);
+	x0 = atoi(argv[4]);
+	y0 = atoi(argv[5]);
+	z0 = atoi(argv[6]);
+	NX = atoi(argv[7]);
+	NY = atoi(argv[8]);
+	NZ = atoi(argv[9]);
+
 	//Bx = By = Bz = 9;
-	Nx = Ny = Nz = 1024;
+	//Nx = Ny = Nz = 1024;
 	N = Nx*Ny*Nz;
-	
-	NX=Bx*Nx;
-	NY=By*Ny;
-	NZ=Bz*Nz;
-	N_full=NX*NY*(ZF-Z0);
+	N_full=NX*NY*NZ;
+
+	// compute the number of blocks to read
+	Bx=NX/Nx+1;
+	By=NY/Ny+1;
+	Bz=NZ/Nz+1;
+
 	printf("System size (read) is: %i x %i x %i \n",NX,NY,NZ);
+	printf("Block size (read) is: %i x %i x %i \n",Nx,Ny,Nz);
 	printf("Starting block (read) is: %i, %i, %i \n", x0,y0,z0);
 	printf("First z slice (write) is: %i \n", Z0);
 	printf("Last z slice (write) is: %i \n", Zf);
@@ -50,9 +58,9 @@ int main(int argc, char **argv){
 	char *ID;
 	ID = new char [N_full];
 	
-	for (unsigned long int bz=z0; bz<Bz; bz++){
-		for (unsigned long int by=0; by<By; by++){
-			for (unsigned long int bx=0; bx<Bx; bx++){
+	for (unsigned long int bz=z0/Nz; bz<Bz; bz++){
+		for (unsigned long int by=y0/Ny; by<By; by++){
+			for (unsigned long int bx=x0/Nx; bx<Bx; bx++){
 				sprintf(sx,"%d",bx);
 				sprintf(sy,"%d",by);
 				sprintf(sz,"%d",bz);
@@ -68,16 +76,30 @@ int main(int argc, char **argv){
 				for ( k=0;k<Nz;k++){
 					for ( j=0;j<Ny;j++){
 						for ( i=0;i<Nx;i++){
-							x = bx*Nx + i;
-							y = by*Ny + j;
-							z = bz*Nz + k - Z0;
-							if (!(z<0) && z<Zf)		ID[z*NX*NY+y*NX+x] = ID[k*Nx*Ny+j*Nx+i];
+							x = bx*Nx + i -x0;
+							y = by*Ny + j -y0;
+							z = bz*Nz + k -z0;
+							if (!(x<0) && x<x0+NX && !(y<0) && y<y0+NY &&
+							    !(z<0) && z<z0+NZ)
+							  ID[z*NX*NY+y*NX+x] = ID[k*Nx*Ny+j*Nx+i];
 						}
 					}
 				}			
 			}
 		}
 	}
+
+	// Compute porosity 
+	unsigned long int count=0;
+	for (k=0; k<NZ; k++){
+	  for (j=0; j<NY; j++){
+	    for (i=0; i<NX; i++){
+	      if (ID < 215) count++; 
+	    }
+	  }
+	}
+	printf("Porosity is %f \n",double(count)/double(NX*NY*NZ))
+
 	printf("Done getting data -- writing main file \n");
 	FILE *OUT = fopen("FullData.raw","wb");
 	fwrite(ID,1,N_full,OUT);
