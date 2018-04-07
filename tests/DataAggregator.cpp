@@ -94,11 +94,11 @@ int main(int argc, char **argv){
 	for (k=0; k<NZ; k++){
 	  for (j=0; j<NY; j++){
 	    for (i=0; i<NX; i++){
-	      if (ID < 215) count++; 
+	      if (ID[k*NX*NY+j*NX+i] < 215) count++; 
 	    }
 	  }
 	}
-	printf("Porosity is %f \n",double(count)/double(NX*NY*NZ))
+	printf("Porosity is %f \n",double(count)/double(NX*NY*NZ));
 
 	printf("Done getting data -- writing main file \n");
 	FILE *OUT = fopen("FullData.raw","wb");
