@@ -32,7 +32,7 @@ int main(int argc, char **argv){
 	NZ=Bz*Nz;
 	N_full=NX*NY*(ZF-Z0);
 	printf("System size (read) is: %i x %i x %i \n",NX,NY,NZ);
-	printf("Starting block (read) is: %i \n", z0);
+	printf("Starting block (read) is: %i, %i, %i \n", x0,y0,z0);
 	printf("First z slice (write) is: %i \n", Z0);
 	printf("Last z slice (write) is: %i \n", Zf);
 	
