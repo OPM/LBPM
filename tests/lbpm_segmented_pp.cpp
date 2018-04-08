@@ -35,9 +35,9 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 	int b0x =iproc*(Nx-2)/1024;
 	int b0y =jproc*(Ny-2)/1024;
 	int b0z =kproc*(Nz-2)/1024;
-	int Bx =iproc*(Nx-2)/1024;
-	int By =jproc*(Ny-2)/1024;
-	int Bz =kproc*(Nz-2)/1024;
+	int Bx =(iproc+1)*(Nx-2)/1024+1;
+	int By =(jproc+1)*(Ny-2)/1024+1;
+	int Bz =(kproc+1)*(Nz-2)/1024+1;
 
 	// arrays to hold the strings 
     char LocalRankFilename[40];
@@ -56,17 +56,17 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 				sprintf(sx,"%d",bx);
 				sprintf(sy,"%d",by);
 				sprintf(sz,"%d",bz);
-				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
-				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
-				printf("Reading file: %s \n", LocalRankFilename);
-				fflush(stdout);
+				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a2_x",sx,"_y",sy,"_z",sz,".gbd");
+				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
+				//printf("Reading file: %s \n", LocalRankFilename);
+				//fflush(stdout);
 				
 				// Read the file
 				size_t readID;
 				FILE *IDFILE = fopen(LocalRankFilename,"rb");
 				readID=fread(id,1,1024*1024*1024,IDFILE);
 				fclose(IDFILE);
-				printf("Loading data ... \n");
+				//printf("Loading data ... \n");
 				
 				// loop over global index
 				for ( k=0;k<Nz;k++){
@@ -77,8 +77,9 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 							y = jproc*(Ny-2) + j - 1 - 1024*by;
 							z = kproc*(Nz-2) + k - 1 - 1024*bz;
 							if (!(x<0) && !(y<0) && !(z<0) && x < 1024  && y < 1024  && z < 1024){
-								char value=0;
-								// check porespace nodes
+							  //char value=id[z*1024*1024 + y*1024 + x];
+							  char value=0;
+								  // check porespace nodes
 								if (id[z*1024*1024 + y*1024 + x] < 215)	value = 1;
 								// set the ID
 								ID[k*Nx*Ny + j*Nx + i] = value;
