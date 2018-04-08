@@ -28,6 +28,84 @@ inline void MeanFilter(DoubleArray &Mesh){
 }
 
 
+double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny, int Nz){
+
+	int x,y,z,i,j,k;
+	// Get the list of blocks that contain the local rank
+	int b0x =iproc*(Nx-2)/1024-1;
+	int b0y =jproc*(Ny-2)/1024-1;
+	int b0z =kproc*(Nz-2)/1024-1;
+	int Bx =iproc*(Nx-2)/1024 +1;
+	int By =jproc*(Ny-2)/1024 +1;
+	int Bz =kproc*(Nz-2)/1024 +1;
+	
+	// array to store ids read from block
+	char *id;
+	id = new char [1024*1024*1024];
+
+	for (int bz=b0z; bz<Bz; bz++){
+		for (int by=b0y; by<By; by++){
+			for (int bx=b0x; bx<Bx; bx++){
+				sprintf(sx,"%d",bx);
+				sprintf(sy,"%d",by);
+				sprintf(sz,"%d",bz);
+				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
+				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
+				//printf("Reading file: %s \n", LocalRankFilename);
+				//fflush(stdout);
+				
+				// Read the file
+				size_t readID;
+				FILE *IDFILE = fopen(LocalRankFilename,"rb");
+				readID=fread(id,1,1024*1024*1024,IDFILE);
+				fclose(IDFILE);
+				printf("Loading data ... \n");
+				
+				// loop over global index
+				for ( k=0;k<Nz;k++){
+					for ( j=0;j<Ny;j++){
+						for ( i=0;i<Nx;i++){
+							//  id for this process relative to current block
+							x = iproc*(Nx-2) + i - 1 - 1024*bx;
+							y = jproc*(Ny-2) + j - 1 - 1024*by;
+							z = kproc*(Nz-2) + k - 1 - 1024*bz;
+							if (!(x<0) && !(y<0) && !(z<0) && x < 1024  && y < 1024  && z < 1024){
+								char value=0;
+								// check porespace nodes
+								if (id[z*1024*1024 + y*1024 + x] < 215)	value = 1;
+								// set the ID
+								ID[k*Nx*Ny + j*Nx + i] = value;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Compute porosity 
+	uint64_t count=0;
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				if (ID[k*Nx*Ny+j*Nx+i] == 1) count++; 
+			}
+		}
+	}
+	double porosity = double(count)/double((Nx-2)*(Ny-2)*(Nz-2));
+	return porosity;
+	/*printf("Porosity is %f \n",double(count)/double(NX*NY*NZ));
+
+	printf("Done getting data -- writing main file \n");
+	FILE *OUT = fopen("FullData.raw","wb");
+	fwrite(ID,1,N,OUT);
+	fclose(OUT);
+	printf("Completed! \n");
+	 */
+}
+
+
+
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -46,6 +124,12 @@ int main(int argc, char **argv)
 		int i,j,k,n;
 		int BC=0;
 		//  char fluidValue,solidValue;
+		int MAXTIME=1000;
+		int READ_FROM_BLOCK=0;
+		if (argc > 2){
+			MAXTIME=atoi(argv[1]);
+			READ_FROM_BLOCK=atoi(argv[2]);			
+		}
 
 		std::vector<char> solidValues;
 		std::vector<char> nwpValues;
@@ -96,18 +180,31 @@ int main(int argc, char **argv)
 		Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 		for (n=0; n<N; n++) Dm.id[n]=1;
 		Dm.CommInit(comm);
-
-		// Read the phase ID
-		size_t readID;
-		sprintf(LocalRankFilename,"ID.%05i",rank);
-		FILE *ID = fopen(LocalRankFilename,"rb");
-		readID=fread(Dm.id,1,N,ID);
-		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
-		fclose(ID);
-
-		// Initialize the domain and communication
 		nx+=2; ny+=2; nz+=2;
 
+		// Read the phase ID
+		double porosity;
+		sprintf(LocalRankFilename,"ID.%05i",rank);
+		if (READ_FROM_BLOCK == 0){
+			size_t readID;
+			FILE *ID = fopen(LocalRankFilename,"rb");
+			readID=fread(Dm.id,1,N,ID);
+			if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
+			fclose(ID);
+		}
+		else{
+			// Read from the large block and write the local ID file
+			if (rank==0) printf("Reading ID file from blocks \n");
+			porosity = ReadFromBlock(Dm.id,Dm.iproc,Dm.jproc,Dm.kproc,nx,ny,nz);
+			
+			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
+			FILE *ID = fopen(LocalRankFilename,"wb");
+			fwrite(Dm.id,1,N,ID);
+			fclose(ID);
+			if (rank==0) printf("Succeeded! \n");
+		}
+
+		// Initialize the domain and communication
 		char *id;
 		id = new char [N];
 		TwoPhase Averages(Dm);
@@ -141,7 +238,7 @@ int main(int argc, char **argv)
 		double LocalVar, TotalVar;
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		int Maxtime=10*max(max(Dm.Nx*Dm.nprocx,Dm.Ny*Dm.nprocy),Dm.Nz*Dm.nprocz);
-		Maxtime=1000;
+		Maxtime=min(Maxtime,MAXTIME);
 		LocalVar = Eikonal(Averages.SDs,id,Dm,Maxtime);
 
 		MPI_Allreduce(&LocalVar,&TotalVar,1,MPI_DOUBLE,MPI_SUM,comm);
