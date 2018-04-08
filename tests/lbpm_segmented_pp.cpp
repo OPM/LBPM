@@ -38,7 +38,14 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 	int Bx =iproc*(Nx-2)/1024 +1;
 	int By =jproc*(Ny-2)/1024 +1;
 	int Bz =kproc*(Nz-2)/1024 +1;
-	
+
+	// arrays to hold the strings 
+    char LocalRankFilename[40];
+    char sx[2];
+    char sy[2];
+    char sz[2];
+    char tmpstr[10];
+    
 	// array to store ids read from block
 	char *id;
 	id = new char [1024*1024*1024];
