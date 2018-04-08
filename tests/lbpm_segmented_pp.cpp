@@ -58,8 +58,8 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 				sprintf(sz,"%d",bz);
 				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
 				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
-				//printf("Reading file: %s \n", LocalRankFilename);
-				//fflush(stdout);
+				printf("Reading file: %s \n", LocalRankFilename);
+				fflush(stdout);
 				
 				// Read the file
 				size_t readID;
@@ -176,6 +176,8 @@ int main(int argc, char **argv)
 			printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
 			printf("Number of MPI ranks used: %i \n", nprocs);
 			printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
+			fflush(stdout);
+
 		}
 		if ( nprocs < nprocx*nprocy*nprocz ){
 			ERROR("Insufficient number of processors");
@@ -202,13 +204,17 @@ int main(int argc, char **argv)
 		else{
 			// Read from the large block and write the local ID file
 			if (rank==0) printf("Reading ID file from blocks \n");
+			fflush(stdout);
 			porosity = ReadFromBlock(Dm.id,Dm.iproc,Dm.jproc,Dm.kproc,nx,ny,nz);
 			
 			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
+			fflush(stdout);
 			FILE *ID = fopen(LocalRankFilename,"wb");
 			fwrite(Dm.id,1,N,ID);
 			fclose(ID);
 			if (rank==0) printf("Succeeded! \n");
+			fflush(stdout);
+
 		}
 
 		// Initialize the domain and communication
