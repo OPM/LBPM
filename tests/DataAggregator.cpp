@@ -79,8 +79,8 @@ int main(int argc, char **argv){
 				sprintf(sx,"%d",bx);
 				sprintf(sy,"%d",by);
 				sprintf(sz,"%d",bz);
-				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
-				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
+				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
+				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
 				printf("Reading file: %s \n", LocalRankFilename);
 				fflush(stdout);
 
