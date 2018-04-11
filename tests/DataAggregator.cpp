@@ -49,6 +49,9 @@ int main(int argc, char **argv){
 	Bx=NX/Nx+1;
 	By=NY/Ny+1;
 	Bz=NZ/Nz+1;
+	if (Bx>8) Bx=8;
+	if (By>8) By=8;
+	if (Bz>8) Bz=8;
 
 	printf("System size (output) is: %i x %i x %i \n",NX,NY,NZ);
 	printf("Block size (read) is: %i x %i x %i \n",Nx,Ny,Nz);
@@ -79,7 +82,7 @@ int main(int argc, char **argv){
 				sprintf(sx,"%d",bx);
 				sprintf(sy,"%d",by);
 				sprintf(sz,"%d",bz);
-				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a1_x",sx,"_y",sy,"_z",sz,".gbd");
+				sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","a2_x",sx,"_y",sy,"_z",sz,".gbd");
 				//sprintf(LocalRankFilename,"%s%s%s%s%s%s%s","dis_",sx,"x_",sy,"y_",sz,"z.gbd");
 				printf("Reading file: %s \n", LocalRankFilename);
 				fflush(stdout);

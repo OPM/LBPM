@@ -134,8 +134,10 @@ int main(int argc, char **argv)
 		//  char fluidValue,solidValue;
 		int MAXTIME=1000;
 		int READ_FROM_BLOCK=0;
-		if (argc > 2){
+		if (argc > 1){
 			MAXTIME=atoi(argv[1]);
+		}
+		if (argc > 2){
 			READ_FROM_BLOCK=atoi(argv[2]);			
 		}
 
@@ -208,6 +210,7 @@ int main(int argc, char **argv)
 			fflush(stdout);
 			porosity = ReadFromBlock(Dm.id,Dm.iproc,Dm.jproc,Dm.kproc,nx,ny,nz);
 			
+			MPI_Barrier(MPI_COMM_WORLD);
 			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
 			fflush(stdout);
 			FILE *ID = fopen(LocalRankFilename,"wb");
