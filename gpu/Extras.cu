@@ -2,6 +2,15 @@
 #include <cuda.h>
 #include <stdio.h>
 
+extern "C" int ScaLBL_SetDevice(){
+	int n_devices; 
+	int local_rank = atoi(getenv("MV2_COMM_WORLD_LOCAL_RANK"));
+	cudaGetDeviceCount(&n_devices); 
+	int device = local_rank % n_devices; 
+	cudaSetDevice(device); 
+	return device;
+}
+
 extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
        	cudaMalloc(address,size);
 	cudaError_t err = cudaGetLastError();
