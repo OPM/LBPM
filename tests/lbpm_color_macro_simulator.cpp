@@ -36,9 +36,6 @@ int main(int argc, char **argv)
 	int nprocs = comm_size(comm);
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 
-		// Initialize compute device
-		int device=ScaLBL_SetDevice(rank);
-
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
 		int iproc,jproc,kproc;
@@ -51,6 +48,11 @@ int main(int argc, char **argv)
 			printf("Running Color LBM	\n");
 			printf("********************************************************\n");
 		}
+		// Initialize compute device
+		int device=ScaLBL_SetDevice(rank);
+		printf("Using GPU ID %i for rank %i \n",device,rank);
+		ScaLBL_DeviceBarrier();
+		MPI_Barrier(comm);
 
 		PROFILE_ENABLE(1);
 		//PROFILE_ENABLE_TRACE();
@@ -583,6 +585,7 @@ int main(int argc, char **argv)
 
 			ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
@@ -609,14 +612,13 @@ int main(int argc, char **argv)
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 
-			// Halo exchange for phase field
-			ScaLBL_Comm_Regular.SendHalo(Phi);
-			ScaLBL_Comm_Regular.RecvHalo(Phi);
-
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
+			// Halo exchange for phase field
+			ScaLBL_Comm_Regular.SendHalo(Phi);
 			ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
 			if (BoundaryCondition > 0){
