@@ -167,8 +167,10 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
 		count++;
 
 
-		if (count%50 == 0 && Dm.rank==0 )
+		if (count%50 == 0 && Dm.rank==0 ){
 			printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
+			fflush(stdout);
+		}
 
 		if (fabs(GlobalMax) < 1e-5){
 			if (Dm.rank==0) printf("Exiting with max tolerance of 1e-5 \n");

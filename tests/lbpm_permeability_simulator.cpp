@@ -190,7 +190,6 @@ int main(int argc, char **argv)
 		double porosity, pore_vol;
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
-
 		//.......................................................................
 		// Read the signed distance
 		sprintf(LocalRankString,"%05d",rank);
@@ -278,17 +277,15 @@ int main(int argc, char **argv)
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
 
-		int neighborSize=18*Np*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
-
+		neighborList= new int[18*(Np+32)];
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
+		int neighborSize=18*(Np*sizeof(int));
 
 		int *NeighborList;
 		//		double *f_even,*f_odd;
@@ -350,14 +347,14 @@ int main(int argc, char **argv)
 
 			timestep++;
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 			timestep++;
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);

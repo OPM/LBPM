@@ -19,6 +19,10 @@ extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size)
 
 extern "C" void ScaLBL_CopyToHost(void* dest, const void* source, size_t size);
 
+extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size);
+
+extern "C" void ScaLBL_CopyToZeroCopy(void* dest, const void* source, size_t size);
+
 extern "C" void ScaLBL_DeviceBarrier();
 
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N);
@@ -236,6 +240,7 @@ public:
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int next;
+	int first_interior,last_interior;
 	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
@@ -251,7 +256,7 @@ public:
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
 
-	void MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
+	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
 	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
