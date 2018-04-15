@@ -272,15 +272,15 @@ int main(int argc, char **argv)
 		// Create a communicator for the device
 
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
-
-		// LBM variables
-		if (rank==0)	printf ("Allocating distributions \n");
-
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*(Np+32)];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
+		
+		// LBM variables
+		if (rank==0)	printf ("Allocating distributions \n");
+
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);

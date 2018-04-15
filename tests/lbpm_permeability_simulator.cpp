@@ -190,7 +190,6 @@ int main(int argc, char **argv)
 		double porosity, pore_vol;
 		//...........................................................................
 		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
-
 		//.......................................................................
 		// Read the signed distance
 		sprintf(LocalRankString,"%05d",rank);
