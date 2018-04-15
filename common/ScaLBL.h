@@ -11,7 +11,7 @@
 #define ScalLBL_H
 #include "common/Domain.h"
 
-extern "C" int ScaLBL_SetDevice();
+extern "C" int ScaLBL_SetDevice(int rank);
 
 extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size);
 

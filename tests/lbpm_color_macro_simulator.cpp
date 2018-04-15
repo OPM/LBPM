@@ -27,9 +27,6 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  // Initialize compute device
-	int device=ScaLBL_SetDevice();
-	
 	// Initialize MPI
 	int provided_thread_support = -1;
 	MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
@@ -38,6 +35,9 @@ int main(int argc, char **argv)
 	int rank = comm_rank(comm);
 	int nprocs = comm_size(comm);
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
+
+		// Initialize compute device
+		int device=ScaLBL_SetDevice(rank);
 
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
