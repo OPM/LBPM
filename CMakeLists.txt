@@ -114,6 +114,7 @@ ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common vi
 
 # Check for CUDA
 IF ( USE_CUDA )
+    ADD_DEFINITIONS( -DUSE_CUDA )
     ENABLE_LANGUAGE( CUDA )
 ENDIF()
 
