@@ -12,23 +12,25 @@ rm -rf CMake*
 
 
 # Configure
-cmake                                    \
-    -D CMAKE_C_COMPILER:PATH=cc          \
-    -D CMAKE_CXX_COMPILER:PATH=CC        \
-    -D CMAKE_CXX_FLAGS=""       \
-    -D MPI_COMPILER:BOOL=TRUE            \
-    -D MPIEXEC=aprun                     \
-    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-    -D CMAKE_BUILD_TYPE:STRING=Release     \
-    -D CXX_STD=11			  \
-    -D CUDA_FLAGS="-arch sm_35"          \
-    -D USE_SILO=1			 \
-    -D SILO_DIRECTORY=/sw/xk6/silo/4.8/sles11.1_gnu4.5.3 \
-    -D HDF5_DIRECTORY=/opt/cray/hdf5/1.8.16/GNU/4.9 \
-    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
-    -D USE_CUDA=1                        \
-    -D USE_TIMER=0                        \
+cmake                                       \
+    -D CMAKE_BUILD_TYPE:STRING=Release      \
+    -D CMAKE_C_COMPILER:PATH=cc             \
+    -D CMAKE_CXX_COMPILER:PATH=CC           \
+    -D CMAKE_CXX_COMPILER:PATH=CC           \
+    -D CXX_STD=11			                \
+    -D USE_CUDA=1                           \
+        -D CMAKE_CUDA_FLAGS="-arch sm_35"   \
+        -D CMAKE_CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_MPI=1                            \
+        -D MPI_COMPILER:BOOL=TRUE           \
+        -D MPIEXEC=aprun                    \
+        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D USE_SILO=1			                \
+        -D SILO_DIRECTORY=/sw/xk6/silo/4.8/sles11.1_gnu4.5.3 \
+        -D HDF5_DIRECTORY=/opt/cray/hdf5/1.8.16/GNU/4.9 \
+    -D USE_TIMER=0                          \
     ${HOME}/LBPM-WIA
+
 
 
 # Build the code

@@ -1,5 +1,5 @@
 # Set some CMake properties    
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED( VERSION 3.9 )
 
 
 MESSAGE("====================")
@@ -28,6 +28,10 @@ ENDIF()
 IF ( NOT CXX_STD )
     SET( CXX_STD 11 )
 ENDIF()
+
+
+# Disable Link Time Optimization until we have a chance to test
+SET( DISABLE_LTO )
 
 
 # Set source/install paths
@@ -108,10 +112,15 @@ ADD_CUSTOM_TARGET( check COMMAND  make test  )
 ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common visit IO threadpool )
 
 
+# Check for CUDA
+IF ( USE_CUDA )
+    ENABLE_LANGUAGE( CUDA )
+ENDIF()
+
+
 # Configure external packages
 IF ( NOT ONLY_BUILD_DOCS )
     CONFIGURE_MPI()     # MPI must be before other libraries
-    CONFIGURE_CUDA()
     CONFIGURE_MIC()
     CONFIGURE_NETCDF()
     CONFIGURE_SILO()

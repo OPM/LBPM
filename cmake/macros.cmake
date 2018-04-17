@@ -3,8 +3,10 @@ INCLUDE(CheckCSourceCompiles)
 INCLUDE(CheckCXXCompilerFlag)
 INCLUDE(CheckCXXSourceCompiles)
 IF ( NOT TEST_FAIL_REGULAR_EXPRESSION )
-    # SET( TEST_FAIL_REGULAR_EXPRESSION "(FAILED)|(leaked context IDs detected)|(handles are still allocated)" )
-    SET( TEST_FAIL_REGULAR_EXPRESSION "FAILED" )
+    # Note: we cannot check for "handles are still allocated" due to PETSc.  See static variable
+    #   Petsc_Reduction_keyval on line 234 of comb.c
+    #SET( TEST_FAIL_REGULAR_EXPRESSION "(FAILED)|(leaked context IDs detected)|(handles are still allocated)" )
+    SET( TEST_FAIL_REGULAR_EXPRESSION "(FAILED)" )
 ENDIF()
 
 
@@ -18,6 +20,27 @@ IF ( NOT ${PROJ}_INSTALL_DIR )
 ENDIF()
 IF ( NOT CMAKE_BUILD_TYPE )
     MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE must be set before including macros.cmake")
+ENDIF()
+
+
+# Enable json
+SET( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
+
+# Check for link time optimization (LTO)
+IF ( ${CMAKE_BUILD_TYPE} STREQUAL "Release" AND ${CMAKE_VERSION} VERSION_GREATER 3.9.4
+    AND NOT DISABLE_LTO AND NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION )
+    CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
+    INCLUDE( CheckIPOSupported )
+    CHECK_IPO_SUPPORTED(RESULT supported OUTPUT error)
+    IF( supported )
+        MESSAGE(STATUS "IPO / LTO enabled")
+        SET( CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE )
+    ELSE()
+        MESSAGE(STATUS "IPO / LTO not supported: <${error}>")
+    ENDIF()
+ELSEIF( NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION )
+    MESSAGE(STATUS "IPO / LTO disabled")
 ENDIF()
 
 
@@ -200,7 +223,7 @@ MACRO( FIND_FILES_PATH IN_PATH )
     SET( CUDASOURCES ${CUDASOURCES} ${T_CUDASOURCES} )
     SET( CSOURCES ${CSOURCES} ${T_CSOURCES} )
     SET( FSOURCES ${FSOURCES} ${T_FSOURCES} )
-    SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} ${T_FSOURCES} )
+    SET( SOURCES ${SOURCES} ${T_CXXSOURCES} ${T_CSOURCES} ${T_FSOURCES} ${CUDASOURCES} )
 ENDMACRO()
 
 
@@ -245,7 +268,7 @@ MACRO( INSTALL_${PROJ}_TARGET PACKAGE )
         ENDFOREACH()
     ENDIF()
     # Add the library and install the package
-    IF ( NOT ONLY_BUILD_DOCS AND ( SOURCES OR CUDASOURCES ) )
+    IF ( NOT ONLY_BUILD_DOCS AND SOURCES )
         # Set RPATH variables
         IF ( NOT CMAKE_RPATH_VARIABLES_SET )
             SET(CMAKE_RPATH_VARIABLES_SET ON)
@@ -263,20 +286,9 @@ MACRO( INSTALL_${PROJ}_TARGET PACKAGE )
         # Create the library
         IF ( ${PROJ}_LIB )
             # We are using a single project library
-            ADD_LIBRARY( ${PACKAGE} OBJECT ${SOURCES} ${CUDASOURCES} )
-            IF( USE_CUDA )
-                SET( ${PROJ}_CUDA_SOURCES ${${PROJ}_CUDA_SOURCES} ${CUDASOURCES} CACHE INTERNAL "")
-                SET( tmp ${${PROJ}_CUDA_SOURCES} )
-                IF ( tmp )
-                    LIST( REMOVE_DUPLICATES tmp )
-                ENDIF()
-                SET( ${PROJ}_CUDA_SOURCES ${tmp} CACHE INTERNAL "")
-            ENDIF()
+            ADD_LIBRARY( ${PACKAGE} OBJECT ${SOURCES} )
         ELSE()
             # We are creating individual libraries
-            IF( USE_CUDA )
-                CUDA_COMPILE( CUBINS ${CUDASOURCES} )
-            ENDIF()
             ADD_LIBRARY( ${PACKAGE} ${LIB_TYPE} ${SOURCES} ${CUBINS} )
             TARGET_LINK_EXTERNAL_LIBRARIES( ${PACKAGE} )
         ENDIF()
@@ -308,13 +320,7 @@ MACRO( INSTALL_PROJ_LIB )
     FOREACH ( tmp ${${PROJ}_LIBS} )
         SET( tmp_link_list ${tmp_link_list} $<TARGET_OBJECTS:${tmp}> )
     ENDFOREACH()
-    IF( USE_CUDA )
-        SET( ${PROJ}_CUDA_SOURCES ${${PROJ}_CUDA_SOURCES} ${CUDASOURCES} CACHE INTERNAL "")
-        CUDA_COMPILE( CUBINS ${${PROJ}_CUDA_SOURCES} )
-        ADD_LIBRARY( ${${PROJ}_LIB} ${CUBINS} ${tmp_link_list} )
-    ELSE()
-        ADD_LIBRARY( ${${PROJ}_LIB} ${tmp_link_list} )
-    ENDIF()
+    ADD_LIBRARY( ${${PROJ}_LIB} ${tmp_link_list} )
     TARGET_LINK_EXTERNAL_LIBRARIES( ${${PROJ}_LIB} LINK_PUBLIC )
     INSTALL( TARGETS ${${PROJ}_LIB} DESTINATION ${${PROJ}_INSTALL_DIR}/lib )
 ENDMACRO()
@@ -385,7 +391,7 @@ MACRO( IDENTIFY_COMPILER )
             SET(USING_CLANG TRUE)
             ADD_DEFINITIONS( -DUSING_CLANG )
             MESSAGE("Using Clang")
-        ELSEIF( (${CMAKE_C_COMPILER_ID} MATCHES "XL") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "XL") )
+        ELSEIF( USING_XL OR (${CMAKE_C_COMPILER_ID} MATCHES "XL") OR (${CMAKE_CXX_COMPILER_ID} MATCHES "XL") )
             SET(USING_XL TRUE)
             ADD_DEFINITIONS( -DUSING_XL )
             MESSAGE("Using XL")
@@ -397,7 +403,7 @@ MACRO( IDENTIFY_COMPILER )
             MESSAGE(FATAL_ERROR "Unknown C/C++ compiler")
         ENDIF()
     ENDIF()
-    # SET the Fortran++ compiler
+    # SET the Fortran compiler
     IF ( CMAKE_Fortran_COMPILER_WORKS )
         IF( CMAKE_COMPILER_IS_GNUG77 OR (${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU") )
             SET( USING_GFORTRAN TRUE )
@@ -741,7 +747,11 @@ MACRO( TARGET_LINK_EXTERNAL_LIBRARIES TARGET_NAME )
     FOREACH ( tmp ${BLAS_LAPACK_LIBS} )
         TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${ARGN} ${tmp} )
     ENDFOREACH()
-    FOREACH ( tmp ${CUDA_LIBS} ${CUDA_LIBRARIES} )
+    FOREACH ( MPI_LIBRARIES )
+        TARGET_LINK_LIBRARIES( ${EXE} ${ARGN} ${tmp} )
+    ENDFOREACH()
+    FOREACH ( tmp ${CMAKE_C_IMPLICIT_LINK_LIBRARIES}
+        ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES} ${CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES} )
         TARGET_LINK_LIBRARIES( ${TARGET_NAME} ${ARGN} ${tmp} )
     ENDFOREACH()
 ENDMACRO()
@@ -793,16 +803,16 @@ MACRO( ADD_PROJ_EXE_DEP EXE )
         TARGET_COMPILE_DEFINITIONS( ${EXE} PUBLIC ${COVERAGE_FLAGS} )
     ENDIF()
     # Link to external libraries
-    SET_TARGET_PROPERTIES( ${EXE} PROPERTIES LINK_FLAGS "${LDFLAGS} ${LDFLAGS_EXTRA}" )
     TARGET_LINK_LIBRARIES( ${EXE} ${LINK_LIBRARIES} )
-    TARGET_LINK_LIBRARIES( ${EXE} ${CUDA_LIBS} ${CUDA_LIBRARIES} )
     TARGET_LINK_EXTERNAL_LIBRARIES( ${EXE} )
-    IF ( USE_MPI OR USE_EXT_MPI OR HAVE_MPI )
-        TARGET_LINK_LIBRARIES( ${EXE} ${MPI_LIBRARIES} )
-        SET_TARGET_PROPERTIES( ${EXE} PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS} " )
-    ENDIF()
     TARGET_LINK_LIBRARIES( ${EXE} ${COVERAGE_LIBS} ${LDLIBS} ${LDLIBS_EXTRA} )
     TARGET_LINK_LIBRARIES( ${EXE} ${SYSTEM_LIBS} ${SYSTEM_LDFLAGS} )
+    # Set extra link flags
+    IF ( USE_MPI OR USE_EXT_MPI OR HAVE_MPI )
+        SET_TARGET_PROPERTIES( ${EXE} PROPERTIES LINK_FLAGS "${MPI_LINK_FLAGS} ${LDFLAGS} ${LDFLAGS_EXTRA}" )
+    ELSE()
+        SET_TARGET_PROPERTIES( ${EXE} PROPERTIES LINK_FLAGS "${LDFLAGS} ${LDFLAGS_EXTRA}" )
+    ENDIF()
 ENDMACRO()
 
 
@@ -1202,8 +1212,8 @@ FUNCTION( CREATE_MATLAB_WRAPPER )
         SET( MATLAB_GUI "${CMAKE_CURRENT_BINARY_DIR}/tmp/matlab-gui" )
         SET( MATLAB_CMD "${CMAKE_CURRENT_BINARY_DIR}/tmp/matlab-cmd" )
         SET( MATLAB_INSTALL_CMD "matlab-cmd" )
-        FILE( WRITE "${MATLAB_GUI}" "LD_PRELOAD=\"${tmp_libs}\" MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash \"$@\"\n")
-        FILE( WRITE "${MATLAB_CMD}" "LD_PRELOAD=\"${tmp_libs}\" MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash -nodisplay -nojvm \"$@\"\n")
+        FILE( WRITE "${MATLAB_GUI}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash \"$@\"\n")
+        FILE( WRITE "${MATLAB_CMD}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash -nodisplay -nojvm \"$@\"\n")
     ENDIF()
     FILE( COPY "${MATLAB_GUI}" DESTINATION "${${PROJ}_INSTALL_DIR}/mex"
         FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -1264,6 +1274,7 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
         CMakeCache.txt
         CMakeFiles
         CMakeTmp
+        CMakeDoxy*
         cmake.check_cache
         *.cmake
         compile.log
@@ -1276,6 +1287,7 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
         include
         doc
         docs
+        examples
         latex_docs
         lib
         Makefile.config
