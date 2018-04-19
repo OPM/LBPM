@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 		
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
-		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);
 		
 		//...........................................................................
 		// Update GPU data structures
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 		// Create a dummy distribution data structure
 		double *fq;
 		fq = new double[19*Np];
-
+		if (rank==0)	printf ("Setting up distributions \n");
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
@@ -230,9 +230,12 @@ int main(int argc, char **argv)
 				fq[q*Np+idx]=k*100.f+j*10.f+i*1.f+0.01*q;
 			}
 		}
+				if (rank==0)	printf ("Setting up distributions \n");
+		
 		*/
 		// Loop over the distributions for interior lattice sites
-		int start=ScaLBL_Comm.next;
+		if (rank==0)	printf ("Loop over distributions \n");
+
 		for (int idx=ScaLBL_Comm.first_interior; idx<ScaLBL_Comm.last_interior; idx++){
 			n = TmpMap[idx];
 			k = n/(Nx*Ny);
