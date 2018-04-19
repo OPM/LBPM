@@ -88,13 +88,13 @@ int main (int argc, char **argv)
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
 
 		if (rank==0)	printf ("Set up the neighborlist \n");
-
-		int neighborSize=18*Np*sizeof(int);
+		int Npad=Np+32;
+		int neighborSize=18*Npad*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
+		neighborList= new int[18*Npad];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -108,7 +108,6 @@ int main (int argc, char **argv)
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
-
 		ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 		//...........................................................................
 		// Update GPU data structures
@@ -196,7 +195,7 @@ int main (int argc, char **argv)
 		while (timestep < 2000) {
 
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
@@ -205,7 +204,7 @@ int main (int argc, char **argv)
 			timestep++;
 
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(fq, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAeven_MRT(fq,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);

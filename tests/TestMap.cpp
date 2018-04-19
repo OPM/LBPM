@@ -167,13 +167,13 @@ int main(int argc, char **argv)
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
-
-		int neighborSize=18*Np*sizeof(int);
+		int Npad=Np+32;
+		int neighborSize=18*Npad*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
+		neighborList= new int[18*Npad];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 		*/
 		// Loop over the distributions for interior lattice sites
 		int start=ScaLBL_Comm.next;
-		for (int idx=start; idx<Np; idx++){
+		for (int idx=ScaLBL_Comm.first_interior; idx<ScaLBL_Comm.last_interior; idx++){
 			n = TmpMap[idx];
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;

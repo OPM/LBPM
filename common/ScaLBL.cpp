@@ -2397,6 +2397,8 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		}
 	}
 
+	//printf("Exterior... \n");
+
 	// ********* Exterior **********
 	// Step 1/2: Index the outer walls of the grid only
 	idx=0;	next=0;
@@ -2420,7 +2422,8 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		}
 	}
 	next=idx;
-
+	
+	//printf("Interior... \n");
 	
 	// ********* Interior **********
 	// align the next read
@@ -2493,6 +2496,8 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	 */
 	
 	Np = (last_interior/16 + 1)*16;
+	
+	//printf("Set neighbors Np=%i \n",Np);
 	
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){

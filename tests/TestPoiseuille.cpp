@@ -222,15 +222,13 @@ int main(int argc, char **argv)
 
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
-
-		int neighborSize=18*Np*sizeof(int);
+		if (rank==0)	printf ("Set up the neighborlist \n");
+		int Npad=Np+32;
+		int neighborSize=18*Npad*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		// ScaLBL_Comm.MemoryDenseLayoutFull(Map,neighborList,Dm.id,Np);    // this was how I tested for correctness
-
+		neighborList= new int[18*Npad];
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -271,14 +269,14 @@ int main(int argc, char **argv)
 		while (timestep < 2000) {
 
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
