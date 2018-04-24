@@ -460,8 +460,7 @@ int main(int argc, char **argv)
 		int *dvcMap;
 		double *fq, *Aq, *Bq;
 		double *Den, *Phi;
-		double *Distance;
-		double *GradDist;
+		double *SolidPotential;
 		double *Velocity;
 		double *Pressure;
 		
@@ -475,8 +474,7 @@ int main(int argc, char **argv)
 		ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);		
 		ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
-		ScaLBL_AllocateDeviceMemory((void **) &Distance, sizeof(double)*Np);		
-		ScaLBL_AllocateDeviceMemory((void **) &GradDist, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
 		
 		//...........................................................................
 		// Update GPU data structures
@@ -496,11 +494,34 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		delete [] TmpMap;
 		
+		// Compute the solid interaction potential and copy result to device
+		if (rank==0) printf("Computing solid interaction potential \n");
+		int *Tmp;
+		Tmp=new int[3*Np];
+		Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
+		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					int idx=Map(i,j,k);
+					int n = k*Nx*Ny+j*Nx+i;
+					if (!(idx < 0)){
+						double d = Averages->SDs(n);
+						double dx = Averages->SDs_x(n);
+						double dy = Averages->SDs_y(n);
+						double dz = Averages->SDs_z(n);
+					}
+				}
+			}
+		}
+		ScaLBL_CopyToDevice(SolidPotential, Tmp, 3*sizeof(double)*Np);
+		ScaLBL_DeviceBarrier();
+		delete [] Tmp;
+		
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 		// initialize phi based on PhaseLabel (include solid component labels)
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
-		ScaLBL_CopyToDevice(Distance, PhaseLabel, N*sizeof(double));
+		//ScaLBL_CopyToDevice(Distance, PhaseLabel, N*sizeof(double));
 		//...........................................................................
 
 		if (rank==0)	printf ("Initializing distributions \n");
@@ -578,17 +599,17 @@ int main(int argc, char **argv)
 			// Compute the Phase indicator field
 			// Read for Aq, Bq happens in this routine (requires communication)
 			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
 			// Halo exchange for phase field
 			ScaLBL_Comm_Regular.SendHalo(Phi);
 
-			ScaLBL_D3Q19_AAodd_dfh(NeighborList, fq, Aq, Bq, Den, Phi, Distance, GradDist, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
@@ -604,24 +625,24 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAodd_Color(NeighborList, fq, Aq, Bq, Den, Phi, Distance, GradDist, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 			// *************EVEN TIMESTEP*************
 			timestep++;
 			// Compute the Phase indicator field
 			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
 			// Halo exchange for phase field
 			ScaLBL_Comm_Regular.SendHalo(Phi);
-			ScaLBL_D3Q19_AAeven_dfh(fq, Aq, Bq, Den, Phi, Distance, GradDist, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
@@ -637,11 +658,10 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAeven_dfh(fq, Aq, Bq, Den, Phi, Distance, GradDist, Velocity, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			//************************************************************************
-			
 			MPI_Barrier(comm);
 			PROFILE_STOP("Update");
 
