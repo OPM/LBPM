@@ -1,5 +1,3 @@
-include ( macros )
-
 # Add thread pool tests
 ADD_LBPM_TEST( test_atomic )
 ADD_LBPM_TEST( test_atomic_list )
