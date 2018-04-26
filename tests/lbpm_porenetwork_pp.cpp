@@ -208,12 +208,12 @@ int main(int argc, char **argv)
 					double zk = double(k) - z;
 					// value of s along center line {x=alpha*s, y = beta*s, z=gamma*s} that is closest to i,j,k
 					double s = (alpha*xi + beta*yj + gamma*zk)/(alpha*alpha + beta*beta + gamma*gamma);
-					double distance=0.f;
+					double distance=Averages.SDs(i,j,k);
 					if (s > length){
-						distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
+						//distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
 					}
 					else if (s<0){
-						distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
+						//distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 					}
 					else{
 						double xs = alpha*s;
