@@ -14,92 +14,6 @@
 #include "common/Domain.h"
 
 
-void AssignComponentLabels(double *phase)
-{
-	int NLABELS=0;
-	char VALUE=0;
-	double AFFINITY=0.f;
-	
-	vector <char> Label;
-	vector <double> Affinity;
-	// Read the labels
-	if (rank==0){
-		printf("Component labels:\n");
-		ifstream iFILE("ComponentLabels.csv");
-		if (iFILE.good()){
-			int value;
-			while (!iFILE.eof()){
-				iFILE>>value;
-				iFILE>>AFFINITY;
-				VALUE=char(value);
-				Label.push_back(value);
-				Affinity.push_back(AFFINITY);
-				NLABELS++;
-				printf("%i %f\n",VALUE,AFFINITY);
-			}
-		}
-		else{
-			printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
-			// Set default values
-			VALUE=0; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			VALUE=1; AFFINITY=1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			VALUE=2; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-		}
-	}
-	MPI_Barrier(Comm);
-
-	// Broadcast the list
-	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
-	//printf("rank=%i, NLABELS=%i \n ",rank,NLABELS);
-	
-	// Copy into contiguous buffers
-	char *LabelList;
-	double * AffinityList;
-	LabelList=new char[NLABELS];
-	AffinityList=new double[NLABELS];
-
-	if (rank==0){
-	for (int idx=0; idx < NLABELS; idx++){
-		VALUE=Label[idx];
-		AFFINITY=Affinity[idx];
-		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank,idx,VALUE,AFFINITY);
-		LabelList[idx]=VALUE;
-		AffinityList[idx]=AFFINITY;
-	} 
-	}
-	MPI_Barrier(Comm);
-
-	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,Comm);
-	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
-	
-	// Assign the labels
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (int idx=0; idx < NLABELS; idx++){
-					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank,idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						AFFINITY=AffinityList[idx];
-						idx = NLABELS;
-					}
-				}
-				phase[n] = AFFINITY;
-			}
-		}
-	}
-}
 
 int main(int argc, char **argv)
 {
@@ -326,12 +240,12 @@ int main(int argc, char **argv)
 				}
 			}
 			for (int label=0; label<NLABELS; label++){
-				int oldlabel=atoi(LabelList[2*label]);
-				int newlabel=atoi(LabelList[2*label]+1);
-				printf("Original label=%i, New label=%i \n");
+				char oldlabel=LabelList[2*label];
+				char newlabel=LabelList[2*label+1];
+				printf("Original label=%c, New label=%c \n",oldlabel,newlabel);
 			}
 		}
-		MPI_Barrier(Comm);
+		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Bcast(LabelList,2*NLABELS,MPI_CHAR,0,MPI_COMM_WORLD);
 		
 		for (k=0;k<nz;k++){
