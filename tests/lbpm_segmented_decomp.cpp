@@ -211,8 +211,8 @@ int main(int argc, char **argv)
 		if (rank==0) printf("All sub-domains recieved \n");
 
 		//  Assign New Labels
-		char *LabelList;
-		LabelList=new char[2*NLABELS];
+		int *LabelList;
+		LabelList=new int[2*NLABELS];
 		if (rank==0){
 			printf("Assigning new lablels \n");
 			if (rank==0){
@@ -224,8 +224,8 @@ int main(int argc, char **argv)
 					while (!iFILE.eof()){
 						iFILE>>oldlabel;
 						iFILE>>newlabel;
-						LabelList[2*label] = char(oldlabel);
-						LabelList[2*label+1] = char(newlabel);
+						LabelList[2*label] = (oldlabel);
+						LabelList[2*label+1] = (newlabel);
 						label++;
 					}
 				}
@@ -234,28 +234,28 @@ int main(int argc, char **argv)
 					// Set default values
 					NLABELS=3;
 					for (int label=0; label<NLABELS; label++){
-						LabelList[2*label] = char(label);
-						LabelList[2*label+1] = char(label);
+						LabelList[2*label] = (label);
+						LabelList[2*label+1] = (label);
 					}
 				}
 			}
 			for (int label=0; label<NLABELS; label++){
-				char oldlabel=LabelList[2*label];
-				char newlabel=LabelList[2*label+1];
-				printf("Original label=%c, New label=%c \n",oldlabel,newlabel);
+				int oldlabel=LabelList[2*label];
+				int newlabel=LabelList[2*label+1];
+				printf("Original label=%i, New label=%i \n",oldlabel,newlabel);
 			}
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Bcast(LabelList,2*NLABELS,MPI_CHAR,0,MPI_COMM_WORLD);
+		MPI_Bcast(LabelList,2*NLABELS,MPI_INT,0,MPI_COMM_WORLD);
 		
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){
 				for (i=0;i<nx;i++){
 					n = k*nx*ny+j*nx+i;
 					for (int label=0; label<NLABELS; label++){
-						char oldlabel=LabelList[2*label];
-						char newlabel=LabelList[2*label+1];
-						if (Dm.id[n]==oldlabel)  Dm.id[n] = newlabel;
+						int oldlabel=LabelList[2*label];
+						int newlabel=LabelList[2*label+1];
+						if (Dm.id[n]==char(oldlabel))  Dm.id[n] = char(newlabel);
 					}
 				}
 			}
