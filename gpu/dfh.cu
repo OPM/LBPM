@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <cuda_profiler_api.h>
 
+#define NBLOCKS 1024
+#define NTHREADS 256
+
 // LBM based on density functional hydrodynamics
 __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 			double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
@@ -1361,13 +1364,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	cudaProfilerStart();
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_Color, cudaFuncCachePreferL1);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_DFH, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB, 
+	dvc_ScaLBL_D3Q19_AAeven_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAeven_Color: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_DFH: %s \n",cudaGetErrorString(err));
 	}
 	cudaProfilerStop();
 
@@ -1378,14 +1381,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	cudaProfilerStart();
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_Color, cudaFuncCachePreferL1);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_DFH, cudaFuncCachePreferL1);
 	
 	dvc_ScaLBL_D3Q19_AAodd_DFH<<<NBLOCKS,NTHREADS >>>(neighborList,dist, Aq, Bq, Den, Phi, SolidPotential, 
 			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz,  start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAodd_Color: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_DFH: %s \n",cudaGetErrorString(err));
 	}
 	cudaProfilerStop();
 }
@@ -1398,7 +1401,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_DFH(int *NeighborList, double *Aq, double *Bq,
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_PhaseField: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAodd_DFH: %s \n",cudaGetErrorString(err));
 	}
 	cudaProfilerStop();
 }
@@ -1410,7 +1413,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 	dvc_ScaLBL_D3Q7_AAeven_DFH<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, Phi, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_PhaseField: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAeven_DFH: %s \n",cudaGetErrorString(err));
 	}
 	cudaProfilerStop();
 
