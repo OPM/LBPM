@@ -3885,7 +3885,7 @@ __global__ void dvc_ScaLBL_D3Q19_Gradient(int *Map, double *phi, double *ColorGr
 		}
 	}
 }
-__global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int Np){
+__global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	int idx,n;
 	double phi,nA,nB;
 
@@ -4048,8 +4048,8 @@ extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *Phi, double *ColorGrad, 
 
 }
 
-extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int Np){
-	dvc_ScaLBL_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, Aq, Bq, Np); 
+extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	dvc_ScaLBL_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, Aq, Bq, start, finish, Np); 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_ColorGrad: %s \n",cudaGetErrorString(err));

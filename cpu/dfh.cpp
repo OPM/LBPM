@@ -1429,6 +1429,7 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double
 		m1 = Phi[nn];
 		nn = neighborList[n]%Np;
 		m2 = Phi[nn];
+		printf("m1=%f, m2=%f \n",m1,m2);
 		nn = neighborList[n+3*Np]%Np;
 		m3 = Phi[nn];
 		nn = neighborList[n+2*Np]%Np;
@@ -1437,7 +1438,7 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double
 		m5 = Phi[nn];
 		nn = neighborList[n+4*Np]%Np;
 		m6 = Phi[nn];		
-		nn = neighborList[n+7*Np]%Np;
+/*		nn = neighborList[n+7*Np]%Np;
 		m7 = Phi[nn];
 		nn = neighborList[n+6*Np]%Np;
 		m8 = Phi[nn];		
@@ -1461,7 +1462,7 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double
 		m17 = Phi[nn];
 		nn = neighborList[n+16*Np]%Np;
 		m18 = Phi[nn];					
-		
+		*/
 		//............Compute the Color Gradient...................................
 		//............Compute the wn fluid Gradient...................................
 		nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
