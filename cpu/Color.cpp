@@ -2769,11 +2769,11 @@ extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *phi, double *ColorGrad, 
 	}
 }
 
-extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int Np){
+extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	int idx,n;
 	double phi,nA,nB;
 
-	for (idx=0; idx<Np; idx++){
+	for (idx=start; idx<finish; idx++){
 
 		n = Map[idx];
 		phi = Phi[n];
