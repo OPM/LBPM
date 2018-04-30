@@ -42,9 +42,9 @@ extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size){
 }
 
 extern "C" void ScaLBL_CopyToZeroCopy(void* dest, const void* source, size_t size){
-        //cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
-        //cudaError_t err = cudaGetLastError();
-        memcpy(dest, source, size);
+        cudaMemcpy(dest,source,size,cudaMemcpyHostToDevice);
+        cudaError_t err = cudaGetLastError();
+        //memcpy(dest, source, size);
 
 }
 
