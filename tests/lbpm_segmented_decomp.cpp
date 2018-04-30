@@ -13,6 +13,8 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 
+
+
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -28,16 +30,14 @@ int main(int argc, char **argv)
 		bool MULTINPUT=false;
 
 		int NWP,SOLID,rank_offset;
-		SOLID=atoi(argv[1]);
-		NWP=atoi(argv[2]);
-		//char NWP,SOLID;
-		//SOLID=argv[1][0];
-		//NWP=argv[2][0];
+		int NLABELS=atoi(argv[1]);
+		//SOLID=atoi(argv[1]);
+		//NWP=atoi(argv[2]);
 		if (rank==0){
-			printf("Solid Label: %i \n",SOLID);
-			printf("NWP Label: %i \n",NWP);
+			//printf("Solid Label: %i \n",SOLID);
+			//printf("NWP Label: %i \n",NWP);
 		}
-		if (argc > 3){
+		if (argc > 2){
 			MULTINPUT=true;
 			rank_offset = atoi(argv[3]);
 		}
@@ -208,16 +208,55 @@ int main(int argc, char **argv)
 
 		nx+=2; ny+=2; nz+=2;
 		N=nx*ny*nz;
-
 		if (rank==0) printf("All sub-domains recieved \n");
+
+		//  Assign New Labels
+		int *LabelList;
+		LabelList=new int[2*NLABELS];
+		if (rank==0){
+			printf("Assigning new lablels \n");
+			if (rank==0){
+				printf("Component labels:\n");
+				ifstream iFILE("ComponentLabels.csv");
+				if (iFILE.good()){
+					int oldlabel, newlabel;
+					int label=0;
+					while (!iFILE.eof()){
+						iFILE>>oldlabel;
+						iFILE>>newlabel;
+						LabelList[2*label] = (oldlabel);
+						LabelList[2*label+1] = (newlabel);
+						label++;
+					}
+				}
+				else{
+					printf("Using default labels: Solid (0 --> -1), NWP (1 --> 1), WP (2 --> 2)\n");
+					// Set default values
+					NLABELS=3;
+					for (int label=0; label<NLABELS; label++){
+						LabelList[2*label] = (label);
+						LabelList[2*label+1] = (label);
+					}
+				}
+			}
+			for (int label=0; label<NLABELS; label++){
+				int oldlabel=LabelList[2*label];
+				int newlabel=LabelList[2*label+1];
+				printf("Original label=%i, New label=%i \n",oldlabel,newlabel);
+			}
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		MPI_Bcast(LabelList,2*NLABELS,MPI_INT,0,MPI_COMM_WORLD);
+		
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){
 				for (i=0;i<nx;i++){
 					n = k*nx*ny+j*nx+i;
-					if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
-					else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
-					else                     Dm.id[n] = 2;
-
+					for (int label=0; label<NLABELS; label++){
+						int oldlabel=LabelList[2*label];
+						int newlabel=LabelList[2*label+1];
+						if (Dm.id[n]==char(oldlabel))  Dm.id[n] = char(newlabel);
+					}
 				}
 			}
 		}

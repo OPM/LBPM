@@ -2,7 +2,7 @@
 #module load cmake
 
 #source /gpfs/gpfs_stage1/b6p315aa/setup/setup-mpi.sh
-module load cmake/3.6.1 gcc
+module load cmake gcc
 module load cuda
 
 # configure
@@ -11,12 +11,12 @@ cmake                                       \
     -D CMAKE_BUILD_TYPE:STRING=Release      \
     -D CMAKE_C_COMPILER:PATH=mpicc          \
     -D CMAKE_CXX_COMPILER:PATH=mpicxx       \
-    -D CMAKE_C_FLAGS=""                     \
-    -D CMAKE_CXX_FLAGS=""                   \
+    -D CMAKE_C_FLAGS="-std=c++11"                     \
+    -D CMAKE_CXX_FLAGS="-std=c++11"                   \
     -D CMAKE_CXX_STANDARD=11                \
     -D USE_CUDA=1                           \
         -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg" \
-        -D CMAKE_CUDA_HOST_COMPILER="/usr/bin/gcc" \
+        -D CMAKE_CUDA_HOST_COMPILER="/sw/summit/gcc/6.4.0/bin/gcc" \
     -D USE_MPI=1                            \
         -D MPI_COMPILER:BOOL=TRUE           \
         -D MPIEXEC=mpirun                   \
@@ -25,4 +25,4 @@ cmake                                       \
     -D USE_TIMER=0			                \
     ~/LBPM-WIA
 
-#make VERBOSE=1 -j1 && make install
+make VERBOSE=1 -j1 && make install
