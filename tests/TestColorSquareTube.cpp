@@ -321,7 +321,8 @@ int main(int argc, char **argv)
 
 		if (rank==0)	printf ("Initializing distributions \n");
 		// Initialize the phase field and variables
-		ScaLBL_D3Q19_Init(fq, Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+
 		if (rank==0)	printf ("Initializing phase field \n");
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, Np);
 		if (Dm.kproc==0){
