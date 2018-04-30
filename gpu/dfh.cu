@@ -6,7 +6,7 @@
 #define NTHREADS 256
 
 __global__ void dvc_ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
-	int idx,n;
+	int idx;
 	double phi,nA,nB;
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -49,7 +49,7 @@ __global__ void dvc_ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double
 __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 			double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 			double Fx, double Fy, double Fz, int start, int finish, int Np){
-	int ijk,nn,n;
+	int nn,n;
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
@@ -622,7 +622,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 		double *Phi, double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	int n,nn,ijk,nread;
+	int n,nn,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 	int nr7,nr8,nr9,nr10;
 	int nr11,nr12,nr13,nr14;
@@ -1267,7 +1267,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 
 __global__  void dvc_ScaLBL_D3Q7_AAodd_DFH(int *neighborList, double *Aq, double *Bq, 
 		double *Den, double *Phi, int start, int finish, int Np){
-	int idx,n,nread;
+	int n,nread;
 	double fq,nA,nB;
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -1530,8 +1530,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 
 extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
 
-	int strideY=Nx;
-	int strideZ=Nx*Ny;
 	dvc_ScaLBL_D3Q19_Gradient_DFH<<<NBLOCKS,NTHREADS >>>(NeighborList, Phi, ColorGrad, 0, Np, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
