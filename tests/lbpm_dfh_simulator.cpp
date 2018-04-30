@@ -81,6 +81,7 @@ int main(int argc, char **argv)
 		double tauA, tauB, rhoA,rhoB;
 		double Fx,Fy,Fz,tol,err;
 		double alpha, beta;
+		double bns,bws,cns,cws;
 		int BoundaryCondition;
 		int InitialCondition;
 		//	bool pBC,Restart;
@@ -112,6 +113,10 @@ int main(int argc, char **argv)
 				input >> rhoB;			// density wetting
 				input >> alpha;			// Surface Tension parameter
 				input >> beta;			// Width of the interface
+				input >> cws;			// solid interaction coefficients
+				input >> bws;			// solid interaction coefficients
+				input >> cns;			// solid interaction coefficients
+				input >> bns;			// solid interaction coefficients
 				// Line 2:  External force components (Fx,Fy, Fz)
 				input >> Fx;
 				input >> Fy;
@@ -179,6 +184,10 @@ int main(int argc, char **argv)
 		MPI_Bcast(&rhoB,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&cns,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&cws,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&bns,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&bws,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
 		MPI_Bcast(&InitialCondition,1,MPI_INT,0,comm);
 		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
@@ -496,8 +505,8 @@ int main(int argc, char **argv)
 		
 		// Compute the solid interaction potential and copy result to device
 		if (rank==0) printf("Computing solid interaction potential \n");
-		int *Tmp;
-		Tmp=new int[3*Np];
+		double *Tmp;
+		Tmp=new double[3*Np];
 		Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
@@ -509,6 +518,13 @@ int main(int argc, char **argv)
 						double dx = Averages->SDs_x(n);
 						double dy = Averages->SDs_y(n);
 						double dz = Averages->SDs_z(n);
+						double value=cns*exp(-bns*fabs(d))-cws*exp(-bns*fabs(d));
+						Tmp[idx] = value*dx;
+						Tmp[idx+Np] = value*dy;
+						Tmp[idx+2*Np] = value*dz;
+						// initialize fluid phases
+						if (Dm.id[n] == 1)	PhaseLabel[idx] = 1.0;
+						else 				PhaseLabel[idx] = -1.0;
 					}
 				}
 			}
@@ -520,26 +536,13 @@ int main(int argc, char **argv)
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 		// initialize phi based on PhaseLabel (include solid component labels)
-		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
-		//ScaLBL_CopyToDevice(Distance, PhaseLabel, N*sizeof(double));
+		ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
 		//...........................................................................
 
 		if (rank==0)	printf ("Initializing distributions \n");
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, Np);
-		if (BoundaryCondition >0 ){
-			if (Dm.kproc==0){
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-			}
-			if (Dm.kproc == nprocz-1){
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-			}
-		}
+		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, Np);
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -690,6 +693,15 @@ int main(int argc, char **argv)
 		if (rank==0) printf("********************************************************\n");
 
 		// ************************************************************************
+    	
+		// Copy back final phase indicator field and convert to regular layout
+		DoubleArray PhaseField(Nx,Ny,Nz);
+        ScaLBL_Comm.RegularLayout(Map,Phi,PhaseField);
+    	FILE *OUTFILE;
+		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+		OUTFILE = fopen(LocalRankFilename,"wb");
+    	fwrite(PhaseField.data(),8,N,OUTFILE);
+    	fclose(OUTFILE);
     	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
