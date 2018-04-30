@@ -13,10 +13,10 @@ extern "C" int ScaLBL_SetDevice(int rank){
 }
 
 extern "C" void ScaLBL_AllocateDeviceMemory(void** address, size_t size){
-       	cudaMalloc(address,size);
+	cudaMalloc(address,size);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-	   printf("Error in cudaMalloc: %s \n",cudaGetErrorString(err));
+		printf("Error in cudaMalloc: %s \n",cudaGetErrorString(err));
 	}	
 }
 
@@ -33,11 +33,12 @@ extern "C" void ScaLBL_CopyToDevice(void* dest, const void* source, size_t size)
 }
 
 extern "C" void ScaLBL_AllocateZeroCopy(void** address, size_t size){
-    cudaMallocHost(address,size);
-        cudaError_t err = cudaGetLastError();
-        if (cudaSuccess != err){
-           printf("Error in cudaMallocHost: %s \n",cudaGetErrorString(err));
-        }
+	//cudaMallocHost(address,size);
+	cudaMalloc(address,size);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("Error in cudaMallocHost: %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_CopyToZeroCopy(void* dest, const void* source, size_t size){
