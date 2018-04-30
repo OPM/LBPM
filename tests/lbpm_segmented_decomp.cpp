@@ -248,6 +248,8 @@ int main(int argc, char **argv)
 		MPI_Barrier(MPI_COMM_WORLD);
 		MPI_Bcast(LabelList,2*NLABELS,MPI_INT,0,MPI_COMM_WORLD);
 		
+		char *newIDs;
+		newIDs= new char [nx*ny*nz];
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){
 				for (i=0;i<nx;i++){
@@ -255,7 +257,7 @@ int main(int argc, char **argv)
 					for (int label=0; label<NLABELS; label++){
 						int oldlabel=LabelList[2*label];
 						int newlabel=LabelList[2*label+1];
-						if (Dm.id[n]==char(oldlabel))  Dm.id[n] = char(newlabel);
+						if (Dm.id[n]==char(oldlabel))  newIDs[n] = char(newlabel);
 					}
 				}
 			}
@@ -271,6 +273,7 @@ int main(int argc, char **argv)
 				for (i=1;i<nx-1;i++){
 					n=k*nx*ny+j*nx+i;
 					total++;
+					Dm.id[n] = newIDs[n];
 					if (Dm.id[n] == 0){
 						count++;
 					}

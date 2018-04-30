@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 		}
 		// Initialize compute device
 		int device=ScaLBL_SetDevice(rank);
-		printf("Using GPU ID %i for rank %i \n",device,rank);
+		//printf("Using GPU ID %i for rank %i \n",device,rank);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
