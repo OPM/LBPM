@@ -1,6 +1,40 @@
 #include <math.h>
 #include <stdio.h>
 
+extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	int idx,n;
+	double phi,nA,nB;
+
+	for (idx=start; idx<finish; idx++){
+		phi = Phi[idx];
+		if (phi > 0.f){
+			nA = 1.0; nB = 0.f;
+		}
+		else{
+			nB = 1.0; nA = 0.f;
+		}
+		Den[idx] = nA;
+		Den[Np+idx] = nB;
+
+		Aq[idx]=0.3333333333333333*nA;
+		Aq[Np+idx]=0.1111111111111111*nA;
+		Aq[2*Np+idx]=0.1111111111111111*nA;
+		Aq[3*Np+idx]=0.1111111111111111*nA;
+		Aq[4*Np+idx]=0.1111111111111111*nA;
+		Aq[5*Np+idx]=0.1111111111111111*nA;
+		Aq[6*Np+idx]=0.1111111111111111*nA;
+
+		Bq[idx]=0.3333333333333333*nB;
+		Bq[Np+idx]=0.1111111111111111*nB;
+		Bq[2*Np+idx]=0.1111111111111111*nB;
+		Bq[3*Np+idx]=0.1111111111111111*nB;
+		Bq[4*Np+idx]=0.1111111111111111*nB;
+		Bq[5*Np+idx]=0.1111111111111111*nB;
+		Bq[6*Np+idx]=0.1111111111111111*nB;
+	}
+}
+
+
 // LBM based on density functional hydrodynamics
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
@@ -1377,4 +1411,72 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 		//idx = Map[n];
 		Phi[n] = (nA-nB)/(nA+nB); 	
 	}	
+}
+
+extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
+	
+	int n,nn;
+	// distributions
+	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double m3,m5,m7;
+	double nx,ny,nz;
+
+	// non-conserved moments
+	// additional variables needed for computations
+
+	for (n=start; n<finish; n++){
+		nn = neighborList[n+Np]%Np;
+		m1 = Phi[nn];
+		nn = neighborList[n]%Np;
+		m2 = Phi[nn];
+		nn = neighborList[n+3*Np]%Np;
+		m3 = Phi[nn];
+		nn = neighborList[n+2*Np]%Np;
+		m4 = Phi[nn];		
+		nn = neighborList[n+5*Np]%Np;
+		m5 = Phi[nn];
+		nn = neighborList[n+4*Np]%Np;
+		m6 = Phi[nn];		
+		nn = neighborList[n+7*Np]%Np;
+		m7 = Phi[nn];
+		nn = neighborList[n+6*Np]%Np;
+		m8 = Phi[nn];		
+		nn = neighborList[n+9*Np]%Np;
+		m9 = Phi[nn];
+		nn = neighborList[n+8*Np]%Np;
+		m10 = Phi[nn];		
+		nn = neighborList[n+11*Np]%Np;
+		m11 = Phi[nn];
+		nn = neighborList[n+10*Np]%Np;
+		m12 = Phi[nn];		
+		nn = neighborList[n+13*Np]%Np;
+		m13 = Phi[nn];
+		nn = neighborList[n+12*Np]%Np;
+		m14 = Phi[nn];		
+		nn = neighborList[n+15*Np]%Np;
+		m15 = Phi[nn];
+		nn = neighborList[n+14*Np]%Np;
+		m16 = Phi[nn];		
+		nn = neighborList[n+17*Np]%Np;
+		m17 = Phi[nn];
+		nn = neighborList[n+16*Np]%Np;
+		m18 = Phi[nn];					
+		
+		//............Compute the Color Gradient...................................
+		//............Compute the wn fluid Gradient...................................
+		nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+		ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+		nz = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+		
+		//...........Normalize the Color Gradient.................................
+		//	C = sqrt(nx*nx+ny*ny+nz*nz);
+		//	nx = nx/C;
+		//	ny = ny/C;
+		//	nz = nz/C;
+		//...Store the Color Gradient....................
+		ColorGrad[n] = nx;
+		ColorGrad[Np+n] = ny;
+		ColorGrad[2*Np+n] = nz;
+		//...............................................
+	}
 }
