@@ -440,13 +440,12 @@ int main(int argc, char **argv)
 		
 		int Npad=Np+32;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
-		
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
-
+		Np = Npad;
 		//...........................................................................
 		//				MAIN  VARIABLES ALLOCATED HERE
 		//...........................................................................
