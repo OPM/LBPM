@@ -158,7 +158,6 @@ int main(int argc, char **argv)
 		Nz += 2;
 		int N = Nx*Ny*Nz;
 
-		int Np=0;  // number of local pore nodes
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
 		//.......................................................................
@@ -167,7 +166,6 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					Dm.id[n]=1;
-					Np++;
 					// Initialize gradient ColorGrad = (1,2,3)
 					double value=double(3*k+2*j+i);
 					PhaseLabel[n]= value;
@@ -185,13 +183,23 @@ int main(int argc, char **argv)
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
+		
+		int Np=0;  // number of local pore nodes
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					Np++;
+				}
+			}
+		}
+		Np+=32;
 
 		int neighborSize=18*Np*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -252,7 +260,20 @@ int main(int argc, char **argv)
     	int SIZE=3*Np*sizeof(double);
     	ScaLBL_CopyToHost(&COLORGRAD[0],&ColorGrad[0],SIZE);
 
-
+    	for (k=1;k<Nz-1;k++){
+    		for (j=1;j<Ny-1;j++){
+    			for (i=1;i<Nx-1;i++){
+    				n = k*Nx*Ny+j*Nx+i;
+    				if (Dm.id[n] > 0){
+    					int idx = Map(i,j,k);
+    					printf("%i ",idx);
+    				}
+    			}
+    			printf("\n");
+    		}
+    		printf("-------\n");
+    	}
+    	
     	double CX,CY,CZ;
     	for (k=2;k<Nz-2;k++){
     		for (j=2;j<Ny-2;j++){
@@ -264,8 +285,14 @@ int main(int argc, char **argv)
     					CY=COLORGRAD[Np+idx];
     					CZ=COLORGRAD[2*Np+idx];
     					double error=sqrt((CX-1.0)*(CX-1.0)+(CY-2.0)*(CY-2.0)+ (CZ-3.0)*(CZ-3.0));
-    					if (error > 1e-8)
-    						printf("i,j,k=%i,%i,%i: Color gradient=%f,%f,%f \n",i,j,k,CX,CY,CZ);
+    					if (error > 1e-8){
+    						printf("i,j,k=%i,%i,%i; idx=%i: Color gradient=%f,%f,%f \n",i,j,k,idx,CX,CY,CZ);
+    						for (int q=0; q<18; q++){
+    							int nn = neighborList[q*Np+idx]%Np;
+    							double value= PHASE[nn];
+    							printf("     q=%i, nn=%i, value=%f \n",q,nn,value);
+    						}
+    					}
     				}
     			}
     		}
