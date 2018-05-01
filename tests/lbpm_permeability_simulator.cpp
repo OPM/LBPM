@@ -256,8 +256,8 @@ int main(int argc, char **argv)
 		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
-		int Npad=(Np/32 + 1)*32;
-		Np=Npad;
+		//int Npad=(Np/32 + 1)*32;
+		//Np=Npad;
 		//.........................................................
 		// don't perform computations at the eight corners
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
