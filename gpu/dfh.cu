@@ -5,6 +5,34 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
+__global__ void dvc_ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
+		int *list, int start, int count, double *recvbuf, double *grad, int N){
+	//....................................................................................
+	// Unpack distribution from the recv buffer
+	// Distribution q matche Cqx, Cqy, Cqz
+	// swap rule means that the distributions in recvbuf are OPPOSITE of q
+	// dist may be even or odd distributions stored by stream layout
+	//....................................................................................
+	int n,idx;
+	double value, tmp;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx<count){
+		// Get the index from the list
+		n = list[start+idx];
+		// unpack the distribution to the proper location
+		value=weight*recvbuf[idx];
+		if (!(n<0)){
+			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
+			tmp = Cqx*value;
+			atomicAdd(tmp, &grad[n]);
+			tmp = Cqy*value;
+			atomicAdd(tmp, &grad[N+n]);
+			tmp = Cqz*value;
+			atomicAdd(tmp, &grad[2*N+n]);
+		}
+	}
+}
+
 __global__ void dvc_ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	int idx;
 	double phi,nA,nB;
@@ -1460,6 +1488,17 @@ __global__ void dvc_ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, do
 		}
 	}
 }
+
+extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
+		int *list, int start, int count, double *recvbuf, double *grad, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_Gradient_Unpack<<<GRID,512 >>>(weight, Cqx, Cqy, Cqz, list, start, count, recvbuf, grad, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_Gradient_Unpack: %s \n",cudaGetErrorString(err));
+	}
+}
+
 extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	dvc_ScaLBL_DFH_Init<<<NBLOCKS,NTHREADS >>>(Phi, Den, Aq, Bq, start, finish, Np); 
 	cudaError_t err = cudaGetLastError();
