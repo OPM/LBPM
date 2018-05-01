@@ -37,6 +37,9 @@ extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double
 
 extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N);
 
+extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
+		int *list, int start, int count, double *recvbuf, double *grad, int N);
+
 extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N);
 
 extern "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int number, double *Data, int N);
@@ -294,6 +297,7 @@ public:
 	void TriRecvD3Q7AA(double *Aq, double *Bq, double *Cq);
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
+	void RecvGrad(double *Gradient);
 	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);
 
 	// Routines to set boundary conditions

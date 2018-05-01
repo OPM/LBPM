@@ -192,18 +192,17 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Np+=32;
+		int Npad=(Np/16 + 2)*16;
 
-		int neighborSize=18*Np*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
-
+		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
+		int neighborSize=18*Np*sizeof(int);
 		if (rank==0)	printf ("Allocating distributions \n");
 
 		int *NeighborList;

@@ -1,6 +1,28 @@
 #include <math.h>
 #include <stdio.h>
 
+extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
+		int *list, int start, int count, double *recvbuf, double *grad, int N){
+	//....................................................................................
+	// unpack halo and incorporate into D3Q19 based gradient 
+	// Distribution q matche Cqx, Cqy, Cqz
+	//....................................................................................
+	int n,idx;
+	double value;
+	for (idx=0; idx<count; idx++){
+		// Get the index from the list
+		n = list[start+idx];
+		// unpack the distribution to the proper location
+		value=weight*recvbuf[idx];
+		if (!(n<0)){
+			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
+			grad[n] += Cqx*value;
+			grad[N+n] += Cqy*value;
+			grad[2*N+n] += Cqz*value;
+		}
+	}
+}
+
 extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	int idx,n;
 	double phi,nA,nB;
