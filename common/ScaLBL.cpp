@@ -3596,70 +3596,70 @@ void ScaLBL_Communicator::RecvGrad(double *grad){
 	// Unpack the gradributions on the device
 	//...................................................................................
 	//...Unpacking for x face(2,8,10,12,14)................................
-	ScaLBL_Gradient_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,grad,N);
-	ScaLBL_Gradient_Unpack(8,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,grad,N);
-	ScaLBL_Gradient_Unpack(10,dvcRecvDist_x,2*recvCount_x,recvCount_x,recvbuf_x,grad,N);
-	ScaLBL_Gradient_Unpack(12,dvcRecvDist_x,3*recvCount_x,recvCount_x,recvbuf_x,grad,N);
-	ScaLBL_Gradient_Unpack(14,dvcRecvDist_x,4*recvCount_x,recvCount_x,recvbuf_x,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,-1,0,0,dvcRecvDist_x,0,recvCount_x,recvbuf_x,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,-1,0,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,1,0,dvcRecvDist_x,2*recvCount_x,recvCount_x,recvbuf_x,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,-1,dvcRecvDist_x,3*recvCount_x,recvCount_x,recvbuf_x,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,1,dvcRecvDist_x,4*recvCount_x,recvCount_x,recvbuf_x,grad,N);
 	//...................................................................................
 	//...Packing for X face(1,7,9,11,13)................................
-	ScaLBL_Gradient_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,grad,N);
-	ScaLBL_Gradient_Unpack(7,dvcRecvDist_X,recvCount_X,recvCount_X,recvbuf_X,grad,N);
-	ScaLBL_Gradient_Unpack(9,dvcRecvDist_X,2*recvCount_X,recvCount_X,recvbuf_X,grad,N);
-	ScaLBL_Gradient_Unpack(11,dvcRecvDist_X,3*recvCount_X,recvCount_X,recvbuf_X,grad,N);
-	ScaLBL_Gradient_Unpack(13,dvcRecvDist_X,4*recvCount_X,recvCount_X,recvbuf_X,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,1,0,0,dvcRecvDist_X,0,recvCount_X,recvbuf_X,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,1,0,dvcRecvDist_X,recvCount_X,recvCount_X,recvbuf_X,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,-1,0,dvcRecvDist_X,2*recvCount_X,recvCount_X,recvbuf_X,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,1,dvcRecvDist_X,3*recvCount_X,recvCount_X,recvbuf_X,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,-1,dvcRecvDist_X,4*recvCount_X,recvCount_X,recvbuf_X,grad,N);
 	//...................................................................................
 	//...Packing for y face(4,8,9,16,18).................................
-	ScaLBL_Gradient_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,grad,N);
-	ScaLBL_Gradient_Unpack(8,dvcRecvDist_y,recvCount_y,recvCount_y,recvbuf_y,grad,N);
-	ScaLBL_Gradient_Unpack(9,dvcRecvDist_y,2*recvCount_y,recvCount_y,recvbuf_y,grad,N);
-	ScaLBL_Gradient_Unpack(16,dvcRecvDist_y,3*recvCount_y,recvCount_y,recvbuf_y,grad,N);
-	ScaLBL_Gradient_Unpack(18,dvcRecvDist_y,4*recvCount_y,recvCount_y,recvbuf_y,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,0,-1,0,dvcRecvDist_y,0,recvCount_y,recvbuf_y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,-1,0,dvcRecvDist_y,recvCount_y,recvCount_y,recvbuf_y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,-1,0,dvcRecvDist_y,2*recvCount_y,recvCount_y,recvbuf_y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,-1,dvcRecvDist_y,3*recvCount_y,recvCount_y,recvbuf_y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,1,dvcRecvDist_y,4*recvCount_y,recvCount_y,recvbuf_y,grad,N);
 	//...................................................................................
 	//...Packing for Y face(3,7,10,15,17).................................
-	ScaLBL_Gradient_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,grad,N);
-	ScaLBL_Gradient_Unpack(7,dvcRecvDist_Y,recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
-	ScaLBL_Gradient_Unpack(10,dvcRecvDist_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
-	ScaLBL_Gradient_Unpack(15,dvcRecvDist_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
-	ScaLBL_Gradient_Unpack(17,dvcRecvDist_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,0,1,0,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,1,0,dvcRecvDist_Y,recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,1,0,dvcRecvDist_Y,2*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,1,dvcRecvDist_Y,3*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,-1,dvcRecvDist_Y,4*recvCount_Y,recvCount_Y,recvbuf_Y,grad,N);
 	//...................................................................................
 	//...Packing for z face(6,12,13,16,17)................................
-	ScaLBL_Gradient_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,grad,N);
-	ScaLBL_Gradient_Unpack(12,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,grad,N);
-	ScaLBL_Gradient_Unpack(13,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,grad,N);
-	ScaLBL_Gradient_Unpack(16,dvcRecvDist_z,3*recvCount_z,recvCount_z,recvbuf_z,grad,N);
-	ScaLBL_Gradient_Unpack(17,dvcRecvDist_z,4*recvCount_z,recvCount_z,recvbuf_z,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,0,0,-1,dvcRecvDist_z,0,recvCount_z,recvbuf_z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,-1,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,-1,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,-1,dvcRecvDist_z,3*recvCount_z,recvCount_z,recvbuf_z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,-1,dvcRecvDist_z,4*recvCount_z,recvCount_z,recvbuf_z,grad,N);
 	//...Packing for Z face(5,11,14,15,18)................................
-	ScaLBL_Gradient_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,grad,N);
-	ScaLBL_Gradient_Unpack(11,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
-	ScaLBL_Gradient_Unpack(14,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
-	ScaLBL_Gradient_Unpack(15,dvcRecvDist_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
-	ScaLBL_Gradient_Unpack(18,dvcRecvDist_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
+	ScaLBL_Gradient_Unpack(1.0,0,0,1,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,1,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,1,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,1,dvcRecvDist_Z,3*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,1,dvcRecvDist_Z,4*recvCount_Z,recvCount_Z,recvbuf_Z,grad,N);
 	//..................................................................................
 	//...Pack the xy edge (8)................................
-	ScaLBL_Gradient_Unpack(8,dvcRecvDist_xy,0,recvCount_xy,recvbuf_xy,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,-1,0,dvcRecvDist_xy,0,recvCount_xy,recvbuf_xy,grad,N);
 	//...Pack the Xy edge (9)................................
-	ScaLBL_Gradient_Unpack(9,dvcRecvDist_Xy,0,recvCount_Xy,recvbuf_Xy,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,-1,0,dvcRecvDist_Xy,0,recvCount_Xy,recvbuf_Xy,grad,N);
 	//...Pack the xY edge (10)................................
-	ScaLBL_Gradient_Unpack(10,dvcRecvDist_xY,0,recvCount_xY,recvbuf_xY,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,1,0,DdvcRecvDist_xY,0,recvCount_xY,recvbuf_xY,grad,N);
 	//...Pack the XY edge (7)................................
-	ScaLBL_Gradient_Unpack(7,dvcRecvDist_XY,0,recvCount_XY,recvbuf_XY,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,1,0,dvcRecvDist_XY,0,recvCount_XY,recvbuf_XY,grad,N);
 	//...Pack the xz edge (12)................................
-	ScaLBL_Gradient_Unpack(12,dvcRecvDist_xz,0,recvCount_xz,recvbuf_xz,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,-1,dvcRecvDist_xz,0,recvCount_xz,recvbuf_xz,grad,N);
 	//...Pack the xZ edge (14)................................
-	ScaLBL_Gradient_Unpack(14,dvcRecvDist_xZ,0,recvCount_xZ,recvbuf_xZ,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,1,dvcRecvDist_xZ,0,recvCount_xZ,recvbuf_xZ,grad,N);
 	//...Pack the Xz edge (13)................................
-	ScaLBL_Gradient_Unpack(13,dvcRecvDist_Xz,0,recvCount_Xz,recvbuf_Xz,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,-1,dvcRecvDist_Xz,0,recvCount_Xz,recvbuf_Xz,grad,N);
 	//...Pack the XZ edge (11)................................
-	ScaLBL_Gradient_Unpack(11,dvcRecvDist_XZ,0,recvCount_XZ,recvbuf_XZ,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,1,0,1,dvcRecvDist_XZ,0,recvCount_XZ,recvbuf_XZ,grad,N);
 	//...Pack the yz edge (16)................................
-	ScaLBL_Gradient_Unpack(16,dvcRecvDist_yz,0,recvCount_yz,recvbuf_yz,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,-1,dvcRecvDist_yz,0,recvCount_yz,recvbuf_yz,grad,N);
 	//...Pack the yZ edge (18)................................
-	ScaLBL_Gradient_Unpack(18,dvcRecvDist_yZ,0,recvCount_yZ,recvbuf_yZ,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,-1,1,dvcRecvDist_yZ,0,recvCount_yZ,recvbuf_yZ,grad,N);
 	//...Pack the Yz edge (17)................................
-	ScaLBL_Gradient_Unpack(17,dvcRecvDist_Yz,0,recvCount_Yz,recvbuf_Yz,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,-1,dvcRecvDist_Yz,0,recvCount_Yz,recvbuf_Yz,grad,N);
 	//...Pack the YZ edge (15)................................
-	ScaLBL_Gradient_Unpack(15,dvcRecvDist_YZ,0,recvCount_YZ,recvbuf_YZ,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,0,1,1,dvcRecvDist_YZ,0,recvCount_YZ,recvbuf_YZ,grad,N);
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
