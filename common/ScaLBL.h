@@ -85,7 +85,6 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 // Density functional hydrodynamics LBM
 extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int Np);
 
-
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np);
