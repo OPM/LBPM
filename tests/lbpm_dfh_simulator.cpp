@@ -447,9 +447,8 @@ int main(int argc, char **argv)
 		//Create a second communicator based on the regular data layout
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
 		
-		int Npad=(Np/32 + 1)*32;
+		int Npad=(Np/16 + 2)*16;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
-		
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];

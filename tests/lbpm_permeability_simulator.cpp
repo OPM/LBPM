@@ -277,10 +277,11 @@ int main(int argc, char **argv)
 
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
+		int Npad=(Np/16 + 2)*16;
 
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*(Np)];
+		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
 

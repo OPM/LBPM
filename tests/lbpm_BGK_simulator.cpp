@@ -271,8 +271,7 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device
 
-		int Npad=(Np/32 + 1)*32;
-		Np = Npad;
+		int Npad=(Np/16 + 2)*16;
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
