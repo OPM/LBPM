@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*(Np)];
+		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
 		MPI_Barrier(comm);
 		
