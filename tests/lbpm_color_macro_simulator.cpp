@@ -543,8 +543,11 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
 		//...........................................................................
 
-		if (rank==0) printf("********************************************************\n");
-		if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
+		if (rank==0){
+			printf("********************************************************\n");
+			printf("No. of timesteps: %i \n", timestepMax);
+			fflush(stdout);
+		}
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
