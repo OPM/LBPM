@@ -24,11 +24,11 @@ __global__ void dvc_ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy
 		if (!(n<0)){
 			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
 			tmp = Cqx*value;
-			atomicAdd(tmp, &grad[n]);
+			atomicAdd(&grad[n],tmp);
 			tmp = Cqy*value;
-			atomicAdd(tmp, &grad[N+n]);
+			atomicAdd(&grad[N+n],tmp);
 			tmp = Cqz*value;
-			atomicAdd(tmp, &grad[2*N+n]);
+			atomicAdd(&grad[2*N+n],tmp);
 		}
 	}
 }
