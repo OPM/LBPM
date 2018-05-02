@@ -278,9 +278,9 @@ int main(int argc, char **argv)
     	}
     	
     	double CX,CY,CZ;
-    	for (k=2;k<Nz-2;k++){
-    		for (j=2;j<Ny-2;j++){
-    			for (i=2;i<Nx-2;i++){
+    	for (k=1;k<Nz-1;k++){
+    		for (j=1;j<Ny-1;j++){
+    			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
     				if (Dm.id[n] > 0){
     					int idx = Map(i,j,k);
@@ -290,11 +290,12 @@ int main(int argc, char **argv)
     					double error=sqrt((CX-1.0)*(CX-1.0)+(CY-2.0)*(CY-2.0)+ (CZ-3.0)*(CZ-3.0));
     					if (error > 1e-8){
     						printf("i,j,k=%i,%i,%i; idx=%i: Color gradient=%f,%f,%f \n",i,j,k,idx,CX,CY,CZ);
-    						for (int q=0; q<18; q++){
+    					/*	for (int q=0; q<18; q++){
     							int nn = neighborList[q*Np+idx]%Np;
     							double value= PHASE[nn];
     							printf("     q=%i, nn=%i, value=%f \n",q,nn,value);
     						}
+    						*/
     					}
     				}
     			}
