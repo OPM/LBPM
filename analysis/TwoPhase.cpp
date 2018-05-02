@@ -501,7 +501,7 @@ void TwoPhase::ComputeLocal()
 					efawns += pmmc_CubeContactAngle(CubeValues,Values,SDn_x,SDn_y,SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
 
-					wwnsdnwn += pmmc_CommonCurveSpeed(dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+					wwnsdnwn += pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
 
 					pmmc_CurveCurvature(SDn, SDs, SDn_x, SDn_y, SDn_z, SDs_x, SDs_y,
@@ -740,7 +740,7 @@ void TwoPhase::ComponentAverages()
 					ComponentAverages_NWP(CWNS,LabelNWP) += TempLocal;
 
 					// Kinematic velocity of the common curve
-					pmmc_CommonCurveSpeed(dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
+					pmmc_CommonCurveSpeed(CubeValues, dPdt, vawns, SDn_x, SDn_y, SDn_z,SDs_x,SDs_y,SDs_z,
 							local_nws_pts,i,j,k,n_local_nws_pts);
 					ComponentAverages_WP(VWNSX,LabelWP) += vawns(0);
 					ComponentAverages_WP(VWNSY,LabelWP) += vawns(1);
