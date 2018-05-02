@@ -126,7 +126,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, dou
 				//...........Read the Color Gradient.................................
 				nx = Gradient[n];
 				ny = Gradient[n+Np];
-				bz = Gradient[n+2*Np];
+				nz = Gradient[n+2*Np];
 				C = sqrt(nx*nx+ny*ny+nz*nz);
 				if (C==0.0) C=1.0;
 				nx = nx/C;
