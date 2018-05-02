@@ -37,14 +37,10 @@ int main(int argc, char **argv)
 
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-
-		MPI_Request req1[18],req2[18];
-		MPI_Status stat1[18],stat2[18];
 
 		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Running Color LBM	\n");
+			printf("Running DFH/Color LBM	\n");
 			printf("********************************************************\n");
 		}
 		// Initialize compute device
@@ -74,7 +70,6 @@ int main(int argc, char **argv)
 		string FILENAME;
 		int Nx,Ny,Nz,Np;		// local sub-domain size
 		double Lx,Ly,Lz;	// Domain length
-		double D = 1.0;		// reference length for non-dimensionalization
 		// Color Model parameters
 		int timestepMax;
 		double tauA, tauB, rhoA,rhoB;
@@ -300,7 +295,7 @@ int main(int argc, char **argv)
 		//...........................................................................
 		if (rank == 0) cout << "Setting up bubble..." << endl;
 	    double BubbleRadius = 15.5; // Radius of the capillary tube
-	    sum=0;
+	    sum=0; Np=0;
 	    for (k=0;k<Nz;k++){
 	        for (j=0;j<Ny;j++){
 	            for (i=0;i<Nx;i++){
@@ -311,13 +306,33 @@ int main(int argc, char **argv)
 	                    id[n] = 0;
 	                }
 	                else {
-	                    id[n] = 1;
 	                    sum++;
+	                    Np++;
 	                }
 	            }
 	        }
 	    }
-	    
+        // Initialize the bubble
+        for (k=0;k<Nz;k++){
+            for (j=0;j<Ny;j++){
+                for (i=0;i<Nx;i++){
+                    n = k*Nx*Ny + j*Nz + i;
+                    int iglobal= i+(Nx-2)*Dm.iproc;
+                    int jglobal= j+(Ny-2)*Dm.jproc;
+                    int kglobal= k+(Nz-2)*Dm.kproc;
+                    // Initialize phase position field for parallel bubble test
+                    if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
+                            +(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
+                            +(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
+                        id[n] = 2;
+                    }
+                    else{
+                        id[n]=1;
+                    }
+                }
+            }
+        }
+
 		//.........................................................
 		// don't perform computations at the eight corners
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
@@ -329,14 +344,11 @@ int main(int argc, char **argv)
 		Mask.CommInit(comm);
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
-		Mask.AssignComponentLabels(PhaseLabel);
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
-		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
 		
 		int Npad=(Np/16 + 2)*16;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
@@ -417,6 +429,10 @@ int main(int argc, char **argv)
 						Tmp[idx+2*Np] = value*dz;
 						// initialize fluid phases
 						if (Mask.id[n] == 1)	PhaseLabel[idx] = 1.0;
+						else if (Mask.id[n] == 2){
+							PhaseLabel[idx] = -1.0;
+							count_wet +=1.0;
+						}
 						else {
 							PhaseLabel[idx] = -1.0;
 						}
@@ -424,6 +440,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		printf("wetting fraction=%f \n", count_wet/double(Np));
 		ScaLBL_CopyToDevice(SolidPotential, Tmp, 3*sizeof(double)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] Tmp;
@@ -437,7 +454,7 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, Np);
+		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -448,8 +465,8 @@ int main(int argc, char **argv)
 		// Finalize setup for averaging domain
 		Averages->UpdateSolid();
 		//.......................................................................		
-		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-		ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
+		//ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
+		//ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
 		ScaLBL_DeviceBarrier();

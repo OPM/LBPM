@@ -546,7 +546,7 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, Np);
+		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -557,8 +557,8 @@ int main(int argc, char **argv)
 		// Finalize setup for averaging domain
 		Averages->UpdateSolid();
 		//.......................................................................		
-		ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
-		ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
+		//ScaLBL_D3Q19_Pressure(fq,Pressure,Np);
+		//ScaLBL_D3Q19_Momentum(fq,Velocity,Np);
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
 		ScaLBL_DeviceBarrier();
