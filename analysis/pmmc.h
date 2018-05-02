@@ -743,7 +743,7 @@ inline Point VertexInterp(const Point &p1, const Point &p2, double valp1, double
 }
 //-------------------------------------------------------------------------------
 inline void SolidMarchingCubes(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
-					 int i,int j,int k, int m, int n, int o, DTMutableList<Point>
+					 int i,int j,int k, DTMutableList<Point>
 					 &cellvertices, int &lengthvertices, IntArray &Triangles, int &nTris,
 					 DoubleArray &values){
 	
@@ -1077,7 +1077,7 @@ inline void SolidMarchingCubes(DoubleArray &A, const double &v, DoubleArray &B, 
 }
 //-------------------------------------------------------------------------------
 inline void SOL_SURF(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
-					 int i,int j,int k, int m, int n, int o, DTMutableList<Point>
+					 int i,int j,int k, DTMutableList<Point>
 					 &cellvertices, int &lengthvertices, IntArray &Tlist, int &nTris,
 					 DoubleArray &values){
 
@@ -2536,7 +2536,7 @@ inline void MC( DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, i
     }
 }
 //-------------------------------------------------------------------------------
-inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k, int &m, int &n, int &o,
+inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, int &k,
 				 DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris, int &n_nw_tris,
 				 DTMutableList<Point> &local_nws_pts, int &n_local_nws_pts)
 {
@@ -3044,7 +3044,7 @@ inline void ComputeAreasPMMC(IntArray &cubeList, int start, int finish,
 			////// CONSTRUCT THE nw SURFACE /////////
 			/////////////////////////////////////////
 			if ( n_local_nws_pts > 0){
-				EDGE(F, vF, S, i,j,k, Nx, Ny, Nz, nw_pts, n_nw_pts, nw_tris, n_nw_tris,
+				EDGE(F, vF, S, i,j,k, nw_pts, n_nw_pts, nw_tris, n_nw_tris,
 					 local_nws_pts, n_local_nws_pts);
 			}
 			else {
@@ -3317,7 +3317,7 @@ inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray &MeanCurvature, Doubl
 	}
 }
 //--------------------------------------------------------------------------------------------------------
-inline int pmmc_CubeListFromMesh(IntArray &cubeList, int ncubes, int Nx, int Ny, int Nz)
+inline int pmmc_CubeListFromMesh(IntArray &cubeList, int Nx, int Ny, int Nz)
 {
 	int i,j,k,nc;
 	nc=0;
@@ -3334,12 +3334,6 @@ inline int pmmc_CubeListFromMesh(IntArray &cubeList, int ncubes, int Nx, int Ny,
 		}
 	}
 	return nc;
-}
-//--------------------------------------------------------------------------------------------------------
-inline void pmmc_CubeListFromBlobs()
-{
-
-
 }
 //--------------------------------------------------------------------------------------------------------
 inline double pmmc_CubeSurfaceArea(DTMutableList<Point> &Points, IntArray &Triangles, int ntris)
@@ -3969,7 +3963,7 @@ inline double pmmc_CubeSurfaceOrientation(DoubleArray &Orientation, DTMutableLis
 	return area;
 }
 //--------------------------------------------------------------------------------------------------------
-inline double pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, DoubleArray &ReturnVector,
+inline double pmmc_CommonCurveSpeed(DoubleArray &dPdt, DoubleArray &ReturnVector,
 		DoubleArray &Fx, DoubleArray &Fy, DoubleArray &Fz,							
 		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,
 		DTMutableList<Point> &Points, int i, int j, int k, int npts)
