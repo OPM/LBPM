@@ -611,9 +611,9 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 			
 			// compute the gradient 
-			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
 			ScaLBL_Comm.RecvGrad(Gradient);
 			
 			// Perform the collision operation
@@ -647,9 +647,9 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 			
 			// compute the gradient 
-			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
 			ScaLBL_Comm.RecvGrad(Gradient);
 
 			// Perform the collision operation
