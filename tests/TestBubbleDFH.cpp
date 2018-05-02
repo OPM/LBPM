@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 	                n = k*Nx*Ny + j*Nz + i;
 	                Averages->SDs(i,j,k) = 100.f;
 	                // Initialize phase positions field
-	                if (SDs(i,j,k) < 0.0){
+	                if (Averages->SDs(i,j,k) < 0.0){
 	                    id[n] = 0;
 	                }
 	                else {
