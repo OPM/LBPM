@@ -509,6 +509,7 @@ int main(int argc, char **argv)
 		double *Tmp;
 		Tmp=new double[3*Np];
 		Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
+		double count_wet=0.f;
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
@@ -524,8 +525,10 @@ int main(int argc, char **argv)
 						Tmp[idx+Np] = value*dy;
 						Tmp[idx+2*Np] = value*dz;
 						// initialize fluid phases
-						if (Dm.id[n] == 1)	PhaseLabel[idx] = 1.0;
-						else 				PhaseLabel[idx] = -1.0;
+						if (Mask.id[n] == 1)	PhaseLabel[idx] = 1.0;
+						else {
+							PhaseLabel[idx] = -1.0;
+						}
 					}
 				}
 			}

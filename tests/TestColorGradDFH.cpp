@@ -193,7 +193,6 @@ int main(int argc, char **argv)
 			}
 		}
 		int Npad=(Np/16 + 2)*16;
-
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
@@ -204,7 +203,6 @@ int main(int argc, char **argv)
 		int dist_mem_size = Np*sizeof(double);
 		int neighborSize=18*Np*sizeof(int);
 		if (rank==0)	printf ("Allocating distributions \n");
-
 		int *NeighborList;
 		int *dvcMap;
 		double *Phi;
@@ -254,8 +252,12 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(Phi, PHASE, Np*sizeof(double));
 		//...........................................................................
 
-		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, ColorGrad, Potential, 0, Np, Np);
-	
+		// compute the gradient 
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_Comm.SendHalo(Phi);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+		ScaLBL_Comm.RecvGrad(ColorGrad);
+		
     	double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
