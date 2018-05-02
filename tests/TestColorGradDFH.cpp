@@ -208,11 +208,13 @@ int main(int argc, char **argv)
 		int *NeighborList;
 		int *dvcMap;
 		double *Phi;
+		double *Potential;
 		double *ColorGrad;
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);		
+		ScaLBL_AllocateDeviceMemory((void **) &Potential, sizeof(double)*Np);		
 		ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
 		
 		//...........................................................................
@@ -252,7 +254,7 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(Phi, PHASE, Np*sizeof(double));
 		//...........................................................................
 
-		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, ColorGrad, 0, Np, Np);
+		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, ColorGrad, Potential, 0, Np, Np);
 	
     	double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
