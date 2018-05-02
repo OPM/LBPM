@@ -521,7 +521,7 @@ int main(int argc, char **argv)
 			// compute the gradient 
 			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_Comm.RecvGrad(Gradient);
 			
 			// Perform the collision operation
@@ -557,7 +557,7 @@ int main(int argc, char **argv)
 			// compute the gradient 
 			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_Comm.RecvGrad(Gradient);
 
 			// Perform the collision operation
@@ -615,10 +615,45 @@ int main(int argc, char **argv)
 		DoubleArray PhaseField(Nx,Ny,Nz);
         ScaLBL_Comm.RegularLayout(Map,Phi,PhaseField);
     	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+		sprintf(LocalRankFilename,"Phase.raw",rank);
 		OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PhaseField.data(),8,N,OUTFILE);
     	fclose(OUTFILE);
+    	
+		DoubleArray Cx(Nx,Ny,Nz);
+		DoubleArray Cy(Nx,Ny,Nz);
+		DoubleArray Cz(Nx,Ny,Nz);
+		DoubleArray GradNorm(Nx,Ny,Nz);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[0],Cx);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[Np],Cy);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[2*Np],Cz);
+		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					GradNorm(i,j,k) = Cx(i,j,k)*Cx(i,j,k) + Cy(i,j,k)*Cy(i,j,k) + Cz(i,j,k)*Cz(i,j,k);
+				}
+			}
+		}
+    	FILE *GFILE;
+		sprintf(LocalRankFilename,"Gradient.raw",rank);
+		GFILE = fopen(LocalRankFilename,"wb");
+    	fwrite(GradNorm.data(),8,N,GFILE);
+    	fclose(GFILE);
+    	
+		DoubleArray Rho1(Nx,Ny,Nz);
+		DoubleArray Rho2(Nx,Ny,Nz);
+        ScaLBL_Comm.RegularLayout(Map,&Den[0],Rho1);
+        ScaLBL_Comm.RegularLayout(Map,&Den[Np],Rho2);
+    	FILE *RFILE1;
+		sprintf(LocalRankFilename,"Rho1.raw",rank);
+		RFILE1 = fopen(LocalRankFilename,"wb");
+    	fwrite(Rho1.data(),8,N,RFILE1);
+    	fclose(RFILE1);
+    	FILE *RFILE2;
+		sprintf(LocalRankFilename,"Rho2.raw",rank);
+		RFILE2 = fopen(LocalRankFilename,"wb");
+    	fwrite(Rho2.data(),8,N,RFILE2);
+    	fclose(RFILE2);
     	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
