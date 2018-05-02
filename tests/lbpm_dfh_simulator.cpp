@@ -609,9 +609,9 @@ int main(int argc, char **argv)
 			
 			// compute the gradient 
 			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm_Regular.SendHalo(Phi);
+			ScaLBL_Comm.SendHalo(Phi);
 			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
-			ScaLBL_Comm_Regular.RecvGrad(Gradient);
+			ScaLBL_Comm.RecvGrad(Gradient);
 			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
@@ -645,9 +645,9 @@ int main(int argc, char **argv)
 			
 			// compute the gradient 
 			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm_Regular.SendHalo(Phi);
+			ScaLBL_Comm.SendHalo(Phi);
 			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
-			ScaLBL_Comm_Regular.RecvGrad(Gradient);
+			ScaLBL_Comm.RecvGrad(Gradient);
 
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
