@@ -59,7 +59,7 @@ extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq
 
 // LBM based on density functional hydrodynamics
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
-		double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	int ijk,nn,n;
@@ -105,60 +105,10 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		rlx_setA = 1.f/tau;
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
-		//					COMPUTE THE COLOR GRADIENT
-		//........................................................................
-		//.................Read Phase Indicator Values............................
-		//........................................................................
-		nn = neighborList[n+Np]%Np;
-		m1 = Phi[nn];
-		nn = neighborList[n]%Np;
-		m2 = Phi[nn];
-		nn = neighborList[n+3*Np]%Np;
-		m3 = Phi[nn];
-		nn = neighborList[n+2*Np]%Np;
-		m4 = Phi[nn];		
-		nn = neighborList[n+5*Np]%Np;
-		m5 = Phi[nn];
-		nn = neighborList[n+4*Np]%Np;
-		m6 = Phi[nn];		
-		nn = neighborList[n+7*Np]%Np;
-		m7 = Phi[nn];
-		nn = neighborList[n+6*Np]%Np;
-		m8 = Phi[nn];		
-		nn = neighborList[n+9*Np]%Np;
-		m9 = Phi[nn];
-		nn = neighborList[n+8*Np]%Np;
-		m10 = Phi[nn];		
-		nn = neighborList[n+11*Np]%Np;
-		m11 = Phi[nn];
-		nn = neighborList[n+10*Np]%Np;
-		m12 = Phi[nn];		
-		nn = neighborList[n+13*Np]%Np;
-		m13 = Phi[nn];
-		nn = neighborList[n+12*Np]%Np;
-		m14 = Phi[nn];		
-		nn = neighborList[n+15*Np]%Np;
-		m15 = Phi[nn];
-		nn = neighborList[n+14*Np]%Np;
-		m16 = Phi[nn];		
-		nn = neighborList[n+17*Np]%Np;
-		m17 = Phi[nn];
-		nn = neighborList[n+16*Np]%Np;
-		m18 = Phi[nn];					
-		//............Compute the Color Gradient...................................
-		//............Compute the wn fluid Gradient...................................
-		nx = (m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-		ny = (m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-		nz = (m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));		
-		// .... read the solid potential gradient.....................
-		m1 = SolidPotential[n];
-		m2 = SolidPotential[n+Np];
-		m3 = SolidPotential[n+2*Np];
-		nx += m1;
-		ny += m2;
-		nz += m3;
-
-		//...........Normalize the Color Gradient.................................
+		//...........Read the Color Gradient.................................
+		nx = Gradient[n];
+		ny = Gradient[n+Np];
+		bz = Gradient[n+2*Np];
 		C = sqrt(nx*nx+ny*ny+nz*nz);
 		if (C==0.0) C=1.0;
 		nx = nx/C;
@@ -626,11 +576,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 	
 }
 
-//extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Velocity,
-//		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *SolidPotential, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Phi, double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 	
 	int n,nn,ijk,nread;
@@ -679,64 +626,15 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		rlx_setA = 1.f/tau;
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 		
-		//					COMPUTE THE COLOR GRADIENT
-		//........................................................................
-		//.................Read Phase Indicator Values............................
-		//........................................................................
-		nn = neighborList[n+Np]%Np;
-		m1 = Phi[nn];
-		nn = neighborList[n]%Np;
-		m2 = Phi[nn];
-		nn = neighborList[n+3*Np]%Np;
-		m3 = Phi[nn];
-		nn = neighborList[n+2*Np]%Np;
-		m4 = Phi[nn];		
-		nn = neighborList[n+5*Np]%Np;
-		m5 = Phi[nn];
-		nn = neighborList[n+4*Np]%Np;
-		m6 = Phi[nn];		
-		nn = neighborList[n+7*Np]%Np;
-		m7 = Phi[nn];
-		nn = neighborList[n+6*Np]%Np;
-		m8 = Phi[nn];		
-		nn = neighborList[n+9*Np]%Np;
-		m9 = Phi[nn];
-		nn = neighborList[n+8*Np]%Np;
-		m10 = Phi[nn];		
-		nn = neighborList[n+11*Np]%Np;
-		m11 = Phi[nn];
-		nn = neighborList[n+10*Np]%Np;
-		m12 = Phi[nn];		
-		nn = neighborList[n+13*Np]%Np;
-		m13 = Phi[nn];
-		nn = neighborList[n+12*Np]%Np;
-		m14 = Phi[nn];		
-		nn = neighborList[n+15*Np]%Np;
-		m15 = Phi[nn];
-		nn = neighborList[n+14*Np]%Np;
-		m16 = Phi[nn];		
-		nn = neighborList[n+17*Np]%Np;
-		m17 = Phi[nn];
-		nn = neighborList[n+16*Np]%Np;
-		m18 = Phi[nn];					
-		//............Compute the Color Gradient...................................
-		//............Compute the wn fluid Gradient...................................
-		nx = (m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-		ny = (m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-		nz = (m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-		// .... read the solid potential gradient.....................
-		m1 = SolidPotential[n];
-		m2 = SolidPotential[n+Np];
-		m3 = SolidPotential[n+2*Np];
-		nx += m1;
-		ny += m2;
-		nz += m3;
-		//...........Normalize the Color Gradient.................................
+		//...........Read the Color Gradient.................................
+		nx = Gradient[n];
+		ny = Gradient[n+Np];
+		bz = Gradient[n+2*Np];
 		C = sqrt(nx*nx+ny*ny+nz*nz);
 		if (C==0.0) C=1.0;
 		nx = nx/C;
 		ny = ny/C;
-		nz = nz/C;		
+		nz = nz/C;			
 
 		// q=0
 		fq = dist[n];
@@ -1433,7 +1331,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 	}	
 }
 
-extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, double *SolidPotential, int start, int finish, int Np){
 	
 	int n,nn;
 	// distributions
@@ -1487,6 +1385,14 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double
 		nx = (m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
 		ny = (m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
 		nz = (m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+		
+		// .... read the solid potential gradient.....................
+		m1 = SolidPotential[n];
+		m2 = SolidPotential[n+Np];
+		m3 = SolidPotential[n+2*Np];
+		nx += m1;
+		ny += m2;
+		nz += m3;
 		
 		//...........Normalize the Color Gradient.................................
 		//	C = sqrt(nx*nx+ny*ny+nz*nz);

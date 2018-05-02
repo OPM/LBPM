@@ -470,6 +470,7 @@ int main(int argc, char **argv)
 		double *Den, *Phi;
 		double *SolidPotential;
 		double *Velocity;
+		double *Gradient;
 		double *Pressure;
 		
 		//...........................................................................
@@ -482,6 +483,7 @@ int main(int argc, char **argv)
 		ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);		
 		ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
 		
 		//...........................................................................
@@ -605,14 +607,16 @@ int main(int argc, char **argv)
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
 			
+			// compute the gradient 
+			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_Comm_Regular.SendHalo(Phi);
+			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_Comm_Regular.RecvGrad(Gradient);
+			
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-			// Halo exchange for phase field
-			ScaLBL_Comm_Regular.SendHalo(Phi);
-
-			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
@@ -627,7 +631,7 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
@@ -638,14 +642,17 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+			
+			// compute the gradient 
+			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+			ScaLBL_Comm_Regular.SendHalo(Phi);
+			ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.first_interior, Np);
+			ScaLBL_Comm_Regular.RecvGrad(Gradient);
 
 			// Perform the collision operation
 			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-			// Halo exchange for phase field
-			ScaLBL_Comm_Regular.SendHalo(Phi);
-			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm_Regular.RecvHalo(Phi);
 			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
 			if (BoundaryCondition > 0){
@@ -660,7 +667,7 @@ int main(int argc, char **argv)
 				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
-			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, SolidPotential, rhoA, rhoB, tauA, tauB,
+			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm.next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			//************************************************************************
