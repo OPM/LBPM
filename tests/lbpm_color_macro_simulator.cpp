@@ -501,7 +501,9 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.next, Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+
 		if (BoundaryCondition >0 ){
 			if (Dm.kproc==0){
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
