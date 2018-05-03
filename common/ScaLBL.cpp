@@ -2435,69 +2435,16 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			  // Local index (regular layout)
 			  n = k*Nx*Ny + j*Nx + i;
 			  if (id[n] != 0 ){
-				Map(n) = idx;
-				neighborList[idx++] = n; // index of self in regular layout
+				Map(n) = idx++;
+				//neighborList[idx++] = n; // index of self in regular layout
 			  }
 			}
 		}
 	}
 	last_interior=idx;
-
-	/*
-	int MemBlockSize=32;
-		k=2;
-	while (k<Nz-2){
-		int kmax = min(k+MemBlockSize,Nz-2);
-		j=2;
-		while (j<Ny-2){
-			int jmax = min(j+MemBlockSize,Ny-2);
-			i=2;
-			while (i<Nx-2){
-				int imax = min(i+MemBlockSize,Nx-2);
-				// Loop over the size of the local block
-				//printf("Executing block [%i,%i]x[%i,%i] (idx=%i) \n",i,imax,k,kmax,idx);
-				for (int kb=k; kb<kmax; kb++){
-					for (int jb=j; jb<jmax; jb++){
-						for (int ib=i; ib<imax; ib++){
-							// Local index (regular layout)
-							n = kb*Nx*Ny + jb*Nx + ib;
-							if (id[n] != 0 ){
-								Map(n) = idx;
-								neighborList[idx++] = n; // index of self in regular layout
-							}
-						}
-					}
-				}
-				i=imax;
-			}
-			j=jmax;
-		}
-		k=kmax;
-	}
-
-	*/
-//	if (idx > Np ){
-//		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Failed to create memory efficient layout!\n");
-//	}
-	/*
-		for (k=1;k<Nz-1;k++){
-			printf("....k=%i .....\n",k);
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
-					n=k*Nx*Ny+j*Nx+i;
-					idx=Map(i,j,k);
-					printf("%i ",idx);
-				}
-       			printf("\n");
-			}
-		}
-		printf("\n\n");
-	 */
 	
 	Np = (last_interior/16 + 1)*16;
-	
-	//printf("Set neighbors Np=%i \n",Np);
-	
+		
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
