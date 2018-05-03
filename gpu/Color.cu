@@ -3893,7 +3893,7 @@ __global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, d
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
 		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (idx<Np) {
+		if (idx<finish) {
 
 			n = Map[idx];
 			phi = Phi[n];
