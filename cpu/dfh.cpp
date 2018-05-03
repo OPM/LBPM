@@ -16,9 +16,9 @@ extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, do
 		value=weight*recvbuf[idx];
 		if (!(n<0)){
 			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
-			grad[n] += Cqx*value;
-			grad[N+n] += Cqy*value;
-			grad[2*N+n] += Cqz*value;
+			grad[n] -= Cqx*value;
+			grad[N+n] -= Cqy*value;
+			grad[2*N+n] -= Cqz*value;
 		}
 	}
 }

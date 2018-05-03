@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 		int RESTART_INTERVAL=20000;
 		//int ANALYSIS_)INTERVAL=1000;	
 		int BLOB_ANALYSIS_INTERVAL=1000;
-		int timestep = 6;
+		int timestep = 0;
 
 		if (rank==0){
 			//.............................................................
@@ -497,6 +497,7 @@ int main(int argc, char **argv)
 		err = 1.0; 	
 		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
+		if (rank==0) printf("ScaLBL_Comm.next=%i, ScaLBL_Comm.first_interior=%i, %i",ScaLBL_Comm.next, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior);
 		if (rank==0){
 		  printf("Analysis intervals: (restart) %i, (TCAT) %i, (blobtracking) %i \n",RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL);
 		}
