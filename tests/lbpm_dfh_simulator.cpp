@@ -312,7 +312,6 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Assign the phase ID field based on the signed distance
 		//.......................................................................
-
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -438,7 +437,6 @@ int main(int argc, char **argv)
 		Mask.CommInit(comm);
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
-		Mask.AssignComponentLabels(PhaseLabel);
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -448,7 +446,7 @@ int main(int argc, char **argv)
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
 		
 		int Npad=(Np/16 + 2)*16;
-		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
+		if (rank==0)	printf ("Set up memory efficient layout \n");
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
