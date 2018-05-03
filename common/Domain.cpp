@@ -2,7 +2,7 @@
 // Copyright 2008-2013
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
+#include <iostream>C
 #include <fstream>
 #include <math.h>
 #include <time.h>

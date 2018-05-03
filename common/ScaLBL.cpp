@@ -1,4 +1,3 @@
-#include "common/Domain.h"
 #include "common/ScaLBL.h"
 
 ScaLBL_Communicator::ScaLBL_Communicator(Domain &Dm){
