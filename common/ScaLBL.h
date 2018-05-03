@@ -38,7 +38,7 @@ extern "C" void ScaLBL_Scalar_Pack(int *list, int count, double *sendbuf, double
 extern "C" void ScaLBL_Scalar_Unpack(int *list, int count, double *recvbuf, double *Data, int N);
 
 extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
-		int *list, int start, int count, double *recvbuf, double *grad, int N);
+		int *list, int start, int count, double *recvbuf, double *phi, double *grad, int N);
 
 extern "C" void ScaLBL_PackDenD3Q7(int *list, int count, double *sendbuf, int number, double *Data, int N);
 
@@ -83,7 +83,7 @@ extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *Phi, double *ColorGrad, 
 extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np);
 
 // Density functional hydrodynamics LBM
-extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int Np);
+extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
@@ -296,7 +296,7 @@ public:
 	void TriRecvD3Q7AA(double *Aq, double *Bq, double *Cq);
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
-	void RecvGrad(double *Gradient);
+	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);
 
 	// Routines to set boundary conditions

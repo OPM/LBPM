@@ -20,7 +20,6 @@
 
 using namespace std;
 
-
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM 
 //*************************************************************************
@@ -38,14 +37,10 @@ int main(int argc, char **argv)
 
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-
-		MPI_Request req1[18],req2[18];
-		MPI_Status stat1[18],stat2[18];
 
 		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Running Color LBM	\n");
+			printf("Running DFH/Color LBM	\n");
 			printf("********************************************************\n");
 		}
 		// Initialize compute device
@@ -75,7 +70,6 @@ int main(int argc, char **argv)
 		string FILENAME;
 		int Nx,Ny,Nz,Np;		// local sub-domain size
 		double Lx,Ly,Lz;	// Domain length
-		double D = 1.0;		// reference length for non-dimensionalization
 		// Color Model parameters
 		int timestepMax;
 		double tauA, tauB, rhoA,rhoB;
@@ -98,7 +92,7 @@ int main(int argc, char **argv)
 		int RESTART_INTERVAL=20000;
 		//int ANALYSIS_)INTERVAL=1000;	
 		int BLOB_ANALYSIS_INTERVAL=1000;
-		int timestep = 6;
+		int timestep = 0;
 
 		if (rank==0){
 			//.............................................................
@@ -299,133 +293,46 @@ int main(int argc, char **argv)
 		if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 		double porosity, pore_vol;
 		//...........................................................................
-		if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
+		if (rank == 0) cout << "Setting up bubble..." << endl;
+	    double BubbleRadius = 15.5; // Radius of the capillary tube
+	    sum=0; Np=0;
+	    for (k=0;k<Nz;k++){
+	        for (j=0;j<Ny;j++){
+	            for (i=0;i<Nx;i++){
+	                n = k*Nx*Ny + j*Nz + i;
+	                Averages->SDs(i,j,k) = 100.f;
+	                // Initialize phase positions field
+	                if (Averages->SDs(i,j,k) < 0.0){
+	                    id[n] = 0;
+	                }
+	                else {
+	                    sum++;
+	                    Np++;
+	                }
+	            }
+	        }
+	    }
+        // Initialize the bubble
+        for (k=0;k<Nz;k++){
+            for (j=0;j<Ny;j++){
+                for (i=0;i<Nx;i++){
+                    n = k*Nx*Ny + j*Nz + i;
+                    int iglobal= i+(Nx-2)*Dm.iproc;
+                    int jglobal= j+(Ny-2)*Dm.jproc;
+                    int kglobal= k+(Nz-2)*Dm.kproc;
+                    // Initialize phase position field for parallel bubble test
+                    if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
+                            +(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
+                            +(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
+                        id[n] = 2;
+                    }
+                    else{
+                        id[n]=1;
+                    }
+                }
+            }
+        }
 
-		//.......................................................................
-		// Read the signed distance
-		sprintf(LocalRankString,"%05d",rank);
-		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-		ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-		MPI_Barrier(comm);
-		if (rank == 0) cout << "Domain set." << endl;
-
-		//.......................................................................
-		// Assign the phase ID field based on the signed distance
-		//.......................................................................
-		for (k=0;k<Nz;k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					id[n] = 0;
-				}
-			}
-		}
-		sum=0.f;
-		pore_vol = 0.0;
-		for ( k=0;k<Nz;k++){
-			for ( j=0;j<Ny;j++){
-				for ( i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					if (Averages->SDs(n) > 0.0){
-						id[n] = 2;	
-					}
-					// compute the porosity (actual interface location used)
-					if (Averages->SDs(n) > 0.0){
-						sum++;	
-					}
-				}
-			}
-		}
-
-		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-		sprintf(LocalRankFilename,"ID.%05i",rank);
-		size_t readID;
-		FILE *IDFILE = fopen(LocalRankFilename,"rb");
-		if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
-		readID=fread(id,1,N,IDFILE);
-		if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
-		fclose(IDFILE);
-		
-		// Read id from restart
-		if (Restart == true){
-			if (rank==0){
-				printf("Reading restart file! \n");
-				ifstream restart("Restart.txt");
-				if (restart.is_open()){
-					restart  >> timestep;
-					printf("Restarting from timestep =%i \n",timestep);
-				}
-				else{
-					printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-					timestep=0;
-				}
-			}
-			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
-			FILE *RESTART = fopen(LocalRestartFile,"rb");
-			if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
-			readID=fread(id,1,N,RESTART);
-			if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading Restart (rank=%i) \n",rank);
-			fclose(RESTART);
-			/*
-			// Read in the restart file to CPU buffers
-			double *cDen = new double[2*Np];
-			double *cfq = new double[19*Np];
-			ReadCheckpoint(LocalRestartFile, cDen, cfq, Np);
-			// Copy the restart data to the GPU
-			ScaLBL_CopyToDevice(fq,cfq,19*Np*sizeof(double));
-			ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
-			ScaLBL_DeviceBarrier();
-			delete [] cDen;
-			delete [] cfq;
-			*/
-			MPI_Barrier(comm);
-		}
-		
-		
-		//.......................................................................
-		// Compute the media porosity, assign phase labels and solid composition
-		//.......................................................................
-		sum_local=0.0;
-		Np=0;  // number of local pore nodes
-		//.......................................................................
-		for (k=1;k<Nz-1;k++){
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					if (id[n] > 0){
-						sum_local+=1.0;
-						Np++;
-					}
-				}
-			}
-		}
-		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
-		porosity = sum*iVol_global;
-		if (rank==0) printf("Media porosity = %f \n",porosity);
-		//.........................................................
-		// If external boundary conditions are applied remove solid
-		if (BoundaryCondition >  0  && Dm.kproc == 0){
-			for (k=0; k<3; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-						int n = k*Nx*Ny+j*Nx+i;
-						//id[n] = 1;
-						Averages->SDs(n) = max(Averages->SDs(n),1.0*(2.5-k));
-					}					
-				}
-			}
-		}
-		if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
-			for (k=Nz-3; k<Nz; k++){
-				for (j=0;j<Ny;j++){
-					for (i=0;i<Nx;i++){
-						int n = k*Nx*Ny+j*Nx+i;
-						//id[n] = 2;
-						Averages->SDs(n) = max(Averages->SDs(n),1.0*(k-Nz+2.5));
-					}					
-				}
-			}
-		}
 		//.........................................................
 		// don't perform computations at the eight corners
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
@@ -442,11 +349,9 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
 		ScaLBL_Communicator ScaLBL_Comm(Mask);
-		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
 		
 		int Npad=(Np/16 + 2)*16;
-		if (rank==0)	printf ("Set up memory efficient layout \n");
+		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
@@ -524,6 +429,10 @@ int main(int argc, char **argv)
 						Tmp[idx+2*Np] = value*dz;
 						// initialize fluid phases
 						if (Mask.id[n] == 1)	PhaseLabel[idx] = 1.0;
+						else if (Mask.id[n] == 2){
+							PhaseLabel[idx] = -1.0;
+							count_wet +=1.0;
+						}
 						else {
 							PhaseLabel[idx] = -1.0;
 						}
@@ -531,6 +440,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		printf("wetting fraction=%f \n", count_wet/double(Np));
 		ScaLBL_CopyToDevice(SolidPotential, Tmp, 3*sizeof(double)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] Tmp;
@@ -705,10 +615,45 @@ int main(int argc, char **argv)
 		DoubleArray PhaseField(Nx,Ny,Nz);
         ScaLBL_Comm.RegularLayout(Map,Phi,PhaseField);
     	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+		sprintf(LocalRankFilename,"Phase.raw",rank);
 		OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PhaseField.data(),8,N,OUTFILE);
     	fclose(OUTFILE);
+    	
+		DoubleArray Cx(Nx,Ny,Nz);
+		DoubleArray Cy(Nx,Ny,Nz);
+		DoubleArray Cz(Nx,Ny,Nz);
+		DoubleArray GradNorm(Nx,Ny,Nz);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[0],Cx);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[Np],Cy);
+        ScaLBL_Comm.RegularLayout(Map,&Gradient[2*Np],Cz);
+		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					GradNorm(i,j,k) = Cx(i,j,k)*Cx(i,j,k) + Cy(i,j,k)*Cy(i,j,k) + Cz(i,j,k)*Cz(i,j,k);
+				}
+			}
+		}
+    	FILE *GFILE;
+		sprintf(LocalRankFilename,"Gradient.raw",rank);
+		GFILE = fopen(LocalRankFilename,"wb");
+    	fwrite(GradNorm.data(),8,N,GFILE);
+    	fclose(GFILE);
+    	
+		DoubleArray Rho1(Nx,Ny,Nz);
+		DoubleArray Rho2(Nx,Ny,Nz);
+        ScaLBL_Comm.RegularLayout(Map,&Den[0],Rho1);
+        ScaLBL_Comm.RegularLayout(Map,&Den[Np],Rho2);
+    	FILE *RFILE1;
+		sprintf(LocalRankFilename,"Rho1.raw",rank);
+		RFILE1 = fopen(LocalRankFilename,"wb");
+    	fwrite(Rho1.data(),8,N,RFILE1);
+    	fclose(RFILE1);
+    	FILE *RFILE2;
+		sprintf(LocalRankFilename,"Rho2.raw",rank);
+		RFILE2 = fopen(LocalRankFilename,"wb");
+    	fwrite(Rho2.data(),8,N,RFILE2);
+    	fclose(RFILE2);
     	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);

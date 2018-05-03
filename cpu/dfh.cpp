@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
-		int *list, int start, int count, double *recvbuf, double *grad, int N){
+		int *list, int start, int count, double *recvbuf, double *phi, double *grad, int N){
 	//....................................................................................
 	// unpack halo and incorporate into D3Q19 based gradient 
 	// Distribution q matche Cqx, Cqy, Cqz
@@ -13,9 +13,9 @@ extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, do
 		// Get the index from the list
 		n = list[start+idx];
 		// unpack the distribution to the proper location
-		value=weight*recvbuf[idx];
 		if (!(n<0)){
 			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
+			value=weight*(recvbuf[idx] - phi[n]);
 			grad[n] += Cqx*value;
 			grad[N+n] += Cqy*value;
 			grad[2*N+n] += Cqz*value;

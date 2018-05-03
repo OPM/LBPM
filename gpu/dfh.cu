@@ -6,7 +6,7 @@
 #define NTHREADS 256
 
 __global__ void dvc_ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
-		int *list, int start, int count, double *recvbuf, double *grad, int N){
+		int *list, int start, int count, double *recvbuf, double *phi, double *grad, int N){
 	//....................................................................................
 	// Unpack distribution from the recv buffer
 	// Distribution q matche Cqx, Cqy, Cqz
@@ -20,8 +20,8 @@ __global__ void dvc_ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy
 		// Get the index from the list
 		n = list[start+idx];
 		// unpack the distribution to the proper location
-		value=weight*recvbuf[idx];
 		if (!(n<0)){
+			value=weight*(recvbuf[idx] - phi[n]);
 			// PARALLEL UPDATE MUST BE DONE ATOMICALLY
 			tmp = Cqx*value;
 			atomicAdd(&grad[n],tmp);
@@ -1390,9 +1390,9 @@ __global__ void dvc_ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, do
 }
 
 extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, double Cqz, 
-		int *list, int start, int count, double *recvbuf, double *grad, int N){
+		int *list, int start, int count, double *recvbuf, double *phi, double *grad, int N){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_Gradient_Unpack<<<GRID,512 >>>(weight, Cqx, Cqy, Cqz, list, start, count, recvbuf, grad, N);
+	dvc_ScaLBL_Gradient_Unpack<<<GRID,512 >>>(weight, Cqx, Cqy, Cqz, list, start, count, recvbuf, phi, grad, N);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_Gradient_Unpack: %s \n",cudaGetErrorString(err));

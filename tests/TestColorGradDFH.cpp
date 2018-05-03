@@ -193,7 +193,6 @@ int main(int argc, char **argv)
 			}
 		}
 		int Npad=(Np/16 + 2)*16;
-
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
@@ -204,7 +203,6 @@ int main(int argc, char **argv)
 		int dist_mem_size = Np*sizeof(double);
 		int neighborSize=18*Np*sizeof(int);
 		if (rank==0)	printf ("Allocating distributions \n");
-
 		int *NeighborList;
 		int *dvcMap;
 		double *Phi;
@@ -254,8 +252,12 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(Phi, PHASE, Np*sizeof(double));
 		//...........................................................................
 
-		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, ColorGrad, Potential, 0, Np, Np);
-	
+		// compute the gradient 
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_Comm.SendHalo(Phi);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, 0, ScaLBL_Comm.first_interior, Np);
+		ScaLBL_Comm.RecvGrad(Phi,ColorGrad);
+		
     	double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
@@ -276,9 +278,9 @@ int main(int argc, char **argv)
     	}
     	
     	double CX,CY,CZ;
-    	for (k=2;k<Nz-2;k++){
-    		for (j=2;j<Ny-2;j++){
-    			for (i=2;i<Nx-2;i++){
+    	for (k=1;k<Nz-1;k++){
+    		for (j=1;j<Ny-1;j++){
+    			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
     				if (Dm.id[n] > 0){
     					int idx = Map(i,j,k);
@@ -288,11 +290,12 @@ int main(int argc, char **argv)
     					double error=sqrt((CX-1.0)*(CX-1.0)+(CY-2.0)*(CY-2.0)+ (CZ-3.0)*(CZ-3.0));
     					if (error > 1e-8){
     						printf("i,j,k=%i,%i,%i; idx=%i: Color gradient=%f,%f,%f \n",i,j,k,idx,CX,CY,CZ);
-    						for (int q=0; q<18; q++){
+    					/*	for (int q=0; q<18; q++){
     							int nn = neighborList[q*Np+idx]%Np;
     							double value= PHASE[nn];
     							printf("     q=%i, nn=%i, value=%f \n",q,nn,value);
     						}
+    						*/
     					}
     				}
     			}
