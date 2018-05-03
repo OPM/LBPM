@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 		ScaLBL_Comm.SendHalo(Phi);
 		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, 0, ScaLBL_Comm.first_interior, Np);
-		ScaLBL_Comm.RecvGrad(ColorGrad);
+		ScaLBL_Comm.RecvGrad(Phi,ColorGrad);
 		
     	double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
