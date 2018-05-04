@@ -488,6 +488,15 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		// check that TmpMap is valid
+		for (int idx=0; idx<ScaLBL_Comm.last_interior; idx++){
+			if (idx == ScaLBL_Comm.next) idx = ScaLBL_Comm.first_interior;
+			int n = TmpMap[idx];
+			if (n > Nx*Ny*Nz){
+				printf("Bad value! idx=%i \n");
+				TmpMap[idx] = Nx*Ny*Nz-1;
+			}
+		}
 		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] TmpMap;
