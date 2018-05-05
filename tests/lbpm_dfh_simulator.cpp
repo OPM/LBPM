@@ -437,6 +437,7 @@ int main(int argc, char **argv)
 		Mask.CommInit(comm);
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
+		Mask.AssignComponentLabels(PhaseLabel);
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -506,27 +507,77 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Computing solid interaction potential \n");
 		double *Tmp;
 		Tmp=new double[3*Np];
-		Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
-		double count_wet=0.f;
+		//Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
+		// Create the distance stencil
+		// Compute solid forces based on mean field approximation
+		double *Dst;
+		Dst = new double [5*5*5];
+		for (int kk=0; kk<5; kk++){
+			for (int jj=0; jj<5; jj++){
+				for (int ii=0; ii<5; ii++){
+					int index = kk*25+jj*5+ii;
+					Dst[index] = sqrt(double(ii-2)*double(ii-2) + double(jj-2)*double(jj-2)+ double(kk-2)*double(kk-2));
+				}
+			}
+		}
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
 					int idx=Map(i,j,k);
 					int n = k*Nx*Ny+j*Nx+i;
 					if (!(idx < 0)){
-						double d = Averages->SDs(n);
-						double dx = Averages->SDs_x(n);
-						double dy = Averages->SDs_y(n);
-						double dz = Averages->SDs_z(n);
-						double value=cns*exp(-bns*fabs(d))-cws*exp(-bns*fabs(d));
+
+						double phi_x = 0.f;
+						double phi_y = 0.f;
+						double phi_z = 0.f;
+						for (int kk=0; kk<5; kk++){
+							for (int jj=0; jj<5; jj++){
+								for (int ii=0; ii<5; ii++){
+									
+									int index = kk*25+jj*5+ii;
+									double distval= Dst[index];
+
+									int idi=i+ii-2;
+									int idj=j+jj-2;
+									int idk=k+kk-2;
+									
+									if (idi < 0) idi=0;
+									if (idj < 0) idj=0;
+									if (idk < 0) idk=0;
+									if (!(idi < Nx)) idi=Nx-1;
+									if (!(idj < Ny)) idj=Ny-1;
+									if (!(idk < Nz)) idk=Nz-1;
+
+									int nn = idk*Nx*Ny + idj*Nx + idi;
+									if (!(Mask.id[nn] > 0)){
+									double vec_x = double(ii-2);
+									double vec_y = double(jj-2);
+									double vec_z = double(kk-2);
+									
+									double ALPHA=PhaseLabel[nn];
+									double GAMMA=-2.f;
+									if (distval > 2.f) ALPHA=0.f; // symmetric cutoff distance									
+									phi_x += ALPHA*exp(GAMMA*distval)*vec_x/distval;
+									phi_y += ALPHA*exp(GAMMA*distval)*vec_y/distval;
+									phi_z += ALPHA*exp(GAMMA*distval)*vec_z/distval;
+									}
+								}
+							}
+						}
+						Tmp[idx] = phi_x;
+						Tmp[idx+Np] = phi_y;
+						Tmp[idx+2*Np] = phi_z;
+						
+						/*						double d = Averages->SDs(n);
+												double dx = Averages->SDs_x(n);
+												double dy = Averages->SDs_y(n);
+												double dz = Averages->SDs_z(n);
+												double value=cns*exp(-bns*fabs(d))-cws*exp(-bns*fabs(d));
+												
 						Tmp[idx] = value*dx;
 						Tmp[idx+Np] = value*dy;
 						Tmp[idx+2*Np] = value*dz;
-						// initialize fluid phases
-						if (Mask.id[n] == 1)	PhaseLabel[idx] = 1.0;
-						else {
-							PhaseLabel[idx] = -1.0;
-						}
+						*/
 					}
 				}
 			}
@@ -534,7 +585,41 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(SolidPotential, Tmp, 3*sizeof(double)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] Tmp;
+		delete [] Dst;
 		
+		DoubleArray Psx(Nx,Ny,Nz);
+		DoubleArray Psy(Nx,Ny,Nz);
+		DoubleArray Psz(Nx,Ny,Nz);
+		DoubleArray Psnorm(Nx,Ny,Nz);
+		ScaLBL_Comm.RegularLayout(Map,&SolidPotential[0],Psx);
+		ScaLBL_Comm.RegularLayout(Map,&SolidPotential[Np],Psy);
+		ScaLBL_Comm.RegularLayout(Map,&SolidPotential[2*Np],Psz);
+		for (n=0; n<N; n++) Psnorm(n) = Psx(n)*Psx(n)+Psy(n)*Psy(n)+Psz(n)*Psz(n);
+		FILE *PFILE;
+		sprintf(LocalRankFilename,"Potential.%05i.raw",rank);
+		PFILE = fopen(LocalRankFilename,"wb");
+		fwrite(Psnorm.data(),8,N,PFILE);
+		fclose(PFILE);
+
+		// initialize fluid phases
+		double count_wet=0.f;
+		for (k=1; k<Nz-1; k++){
+			for (j=1; j<Ny-1; j++){
+				for (i=1; i<Nx-1; i++){
+					int idx=Map(i,j,k);
+					int n = k*Nx*Ny+j*Nx+i;
+					if (!(idx < 0)){
+						if (Mask.id[n] == 1)
+							PhaseLabel[idx] = 1.0;
+						else {
+							PhaseLabel[idx] = -1.0;
+							count_wet+=1.f;
+						}
+					}
+				}
+			}
+		}
+		printf("sw=%f \n",count_wet/double(Np));
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 		// initialize phi based on PhaseLabel (include solid component labels)
@@ -676,7 +761,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-            analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+            //analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		}
         analysis.finish();
