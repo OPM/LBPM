@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 		// Initialize compute device
-		int device=ScaLBL_SetDevice(rank);
+		//		int device=ScaLBL_SetDevice(rank);
 		//printf("Using GPU ID %i for rank %i \n",device,rank);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
@@ -300,35 +300,6 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
-		//.......................................................................
-		// Assign the phase ID field based on the signed distance
-		//.......................................................................
-
-		for (k=0;k<Nz;k++){
-			for (j=0;j<Ny;j++){
-				for (i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					id[n] = 0;
-				}
-			}
-		}
-		sum=0.f;
-		pore_vol = 0.0;
-		for ( k=0;k<Nz;k++){
-			for ( j=0;j<Ny;j++){
-				for ( i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					if (Averages->SDs(n) > 0.0){
-						id[n] = 2;	
-					}
-					// compute the porosity (actual interface location used)
-					if (Averages->SDs(n) > 0.0){
-						sum++;	
-					}
-				}
-			}
-		}
-
 		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
@@ -373,7 +344,7 @@ int main(int argc, char **argv)
 			MPI_Barrier(comm);
 		}
 		
-		
+		fflush(stdout);
 		//.......................................................................
 		// Compute the media porosity, assign phase labels and solid composition
 		//.......................................................................
@@ -431,6 +402,7 @@ int main(int argc, char **argv)
 		PhaseLabel = new double[N];
 		Mask.AssignComponentLabels(PhaseLabel);
 		
+		fflush(stdout);
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
@@ -451,6 +423,7 @@ int main(int argc, char **argv)
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
 		//......................device distributions.................................
+		fflush(stdout);
 		int dist_mem_size = Np*sizeof(double);
 		int neighborSize=18*(Np*sizeof(int));
 
@@ -477,6 +450,7 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Update GPU data structures
 		if (rank==0)	printf ("Setting up device map and neighbor list \n");
+		fflush(stdout);
 		int *TmpMap;
 		TmpMap=new int[Np];
 		for (k=1; k<Nz-1; k++){

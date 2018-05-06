@@ -49,8 +49,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 		// Initialize compute device
-		int device=ScaLBL_SetDevice(rank);
-		printf("Using GPU ID %i for rank %i \n",device,rank);
+		//		int device=ScaLBL_SetDevice(rank);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
@@ -81,7 +80,6 @@ int main(int argc, char **argv)
 		double tauA, tauB, rhoA,rhoB;
 		double Fx,Fy,Fz,tol,err;
 		double alpha, beta;
-		double bns,bws,cns,cws;
 		int BoundaryCondition;
 		int InitialCondition;
 		//	bool pBC,Restart;
@@ -113,10 +111,6 @@ int main(int argc, char **argv)
 				input >> rhoB;			// density wetting
 				input >> alpha;			// Surface Tension parameter
 				input >> beta;			// Width of the interface
-				input >> cws;			// solid interaction coefficients
-				input >> bws;			// solid interaction coefficients
-				input >> cns;			// solid interaction coefficients
-				input >> bns;			// solid interaction coefficients
 				// Line 2:  External force components (Fx,Fy, Fz)
 				input >> Fx;
 				input >> Fy;
@@ -184,10 +178,6 @@ int main(int argc, char **argv)
 		MPI_Bcast(&rhoB,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&cns,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&cws,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&bns,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&bws,1,MPI_DOUBLE,0,comm);
 		MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
 		MPI_Bcast(&InitialCondition,1,MPI_INT,0,comm);
 		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
@@ -619,7 +609,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		printf("sw=%f \n",count_wet/double(Np));
+		//printf("sw=%f \n",count_wet/double(Np));
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 		// initialize phi based on PhaseLabel (include solid component labels)
@@ -645,14 +635,14 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Copy the phase indicator field for the earlier timestep
 		ScaLBL_DeviceBarrier();
-		ScaLBL_CopyToHost(Averages->Phase_tplus.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Averages->Phase_tplus.data(),Phi,Np*sizeof(double));
 		//...........................................................................
 		// Copy the data for for the analysis timestep
 		//...........................................................................
 		// Copy the phase from the GPU -> CPU
 		//...........................................................................
 		ScaLBL_DeviceBarrier();
-		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
+		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,Np*sizeof(double));
 		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press);
 		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x);
 		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
@@ -761,7 +751,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-            analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+			//            analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		}
         analysis.finish();
