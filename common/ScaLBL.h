@@ -297,7 +297,7 @@ public:
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
-	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);
+	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);

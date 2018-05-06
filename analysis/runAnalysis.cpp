@@ -493,8 +493,8 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
         //ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
-        DoubleArray PHASE(d_N[0],d_N[1],d_N[2]));
-		ScaLBL_Comm.RegularLayout(Map,Phi,PHASE);
+        DoubleArray PHASE(d_N[0],d_N[1],d_N[2]);
+	d_ScaLBL_Comm.RegularLayout(d_Map,Phi,PHASE);
         memcpy(PHASE.data(),phase->data(),N*sizeof(double));
 
     }

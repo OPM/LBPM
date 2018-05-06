@@ -4125,7 +4125,7 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 	//...................................................................................
 }
 
-void ScaLBL_Communicator::RegularLayout(IntArray map, double *data, DoubleArray &regdata){
+void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, DoubleArray &regdata){
 	// Gets data from the device and stores in regular layout
 	int i,j,k,n,idx;
 	int Nx = map.size(0);
