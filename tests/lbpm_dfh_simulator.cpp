@@ -492,7 +492,7 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 		ScaLBL_DeviceBarrier();
 		delete [] TmpMap;
-		
+
 		// Compute the solid interaction potential and copy result to device
 		if (rank==0) printf("Computing solid interaction potential \n");
 		double *Tmp;
@@ -523,14 +523,14 @@ int main(int argc, char **argv)
 						for (int kk=0; kk<5; kk++){
 							for (int jj=0; jj<5; jj++){
 								for (int ii=0; ii<5; ii++){
-									
+
 									int index = kk*25+jj*5+ii;
 									double distval= Dst[index];
 
 									int idi=i+ii-2;
 									int idj=j+jj-2;
 									int idk=k+kk-2;
-									
+
 									if (idi < 0) idi=0;
 									if (idj < 0) idj=0;
 									if (idk < 0) idk=0;
@@ -540,16 +540,16 @@ int main(int argc, char **argv)
 
 									int nn = idk*Nx*Ny + idj*Nx + idi;
 									if (!(Mask.id[nn] > 0)){
-									double vec_x = double(ii-2);
-									double vec_y = double(jj-2);
-									double vec_z = double(kk-2);
-									
-									double ALPHA=PhaseLabel[nn];
-									double GAMMA=-2.f;
-									if (distval > 2.f) ALPHA=0.f; // symmetric cutoff distance									
-									phi_x += ALPHA*exp(GAMMA*distval)*vec_x/distval;
-									phi_y += ALPHA*exp(GAMMA*distval)*vec_y/distval;
-									phi_z += ALPHA*exp(GAMMA*distval)*vec_z/distval;
+										double vec_x = double(ii-2);
+										double vec_y = double(jj-2);
+										double vec_z = double(kk-2);
+
+										double ALPHA=PhaseLabel[nn];
+										double GAMMA=-2.f;
+										if (distval > 2.f) ALPHA=0.f; // symmetric cutoff distance									
+										phi_x += ALPHA*exp(GAMMA*distval)*vec_x/distval;
+										phi_y += ALPHA*exp(GAMMA*distval)*vec_y/distval;
+										phi_z += ALPHA*exp(GAMMA*distval)*vec_z/distval;
 									}
 								}
 							}
@@ -557,17 +557,17 @@ int main(int argc, char **argv)
 						Tmp[idx] = phi_x;
 						Tmp[idx+Np] = phi_y;
 						Tmp[idx+2*Np] = phi_z;
-						
+
 						/*						double d = Averages->SDs(n);
 												double dx = Averages->SDs_x(n);
 												double dy = Averages->SDs_y(n);
 												double dz = Averages->SDs_z(n);
 												double value=cns*exp(-bns*fabs(d))-cws*exp(-bns*fabs(d));
-												
+
 						Tmp[idx] = value*dx;
 						Tmp[idx+Np] = value*dy;
 						Tmp[idx+2*Np] = value*dz;
-						*/
+						 */
 					}
 				}
 			}
@@ -642,7 +642,7 @@ int main(int argc, char **argv)
 		// Copy the phase from the GPU -> CPU
 		//...........................................................................
 		ScaLBL_DeviceBarrier();
-		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,Np*sizeof(double));
+		ScaLBL_Comm.RegularLayout(Map,Phi,Averages->Phase);
 		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press);
 		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x);
 		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
