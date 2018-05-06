@@ -751,7 +751,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-			//            analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+			analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		}
         analysis.finish();

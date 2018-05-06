@@ -492,10 +492,13 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
          matches(type,AnalysisType::IdentifyBlobs) )
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
-        ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
+        //ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
+		ScaLBL_Comm.RegularLayout(Map,Phi,phase.get());
+
     }
     if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
         memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
+
         //Averages.ColorToSignedDistance(d_beta,Averages.Phase,Averages.Phase_tplus);
     }
     if ( matches(type,AnalysisType::ComputeAverages) ) {
