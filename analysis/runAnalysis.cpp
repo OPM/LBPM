@@ -465,7 +465,7 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
  *  Run the analysis                                               *
  ******************************************************************/
 void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
-    double *Pressure, double *Velocity, double *fq, double *Den )
+		       double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
@@ -493,10 +493,29 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     {
         phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
         //ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
-        DoubleArray PHASE(d_N[0],d_N[1],d_N[2]);
-	d_ScaLBL_Comm.RegularLayout(d_Map,Phi,PHASE);
-        memcpy(PHASE.data(),phase->data(),N*sizeof(double));
-
+        //   try 2 d_ScaLBL_Comm.RegularLayout(d_Map,Phi,Averages.Phase);
+        //   memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        int Nx = d_N[0];
+        int Ny = d_N[1];
+        int Nz = d_N[2];
+        double *TmpDat;
+        double value;
+        TmpDat = new double [d_Np];
+        ScaLBL_CopyToHost(&TmpDat[0],&Phi[0], d_Np*sizeof(double));
+        for (int k=0; k<Nz; k++){
+	  for (int j=0; j<Ny; j++){
+	    for (int i=0; i<Nx; i++){
+	      int n=k*Nx*Ny+j*Nx+i;
+	      int idx=d_Map(i,j,k);
+	      if (!(idx<0)){
+		double value=TmpDat[idx];
+		//regdata(i,j,k)=value;
+		phase->data()[n]=value;
+	      }
+	    }
+	  }
+        }
+        delete [] TmpDat;
     }
     if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
         memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));

@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 		int RESTART_INTERVAL=20000;
 		//int ANALYSIS_)INTERVAL=1000;	
 		int BLOB_ANALYSIS_INTERVAL=1000;
-		int timestep = 6;
+		int timestep = 0;
 
 		if (rank==0){
 			//.............................................................
@@ -782,7 +782,8 @@ int main(int argc, char **argv)
     	FILE *OUTFILE;
 		sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
 		OUTFILE = fopen(LocalRankFilename,"wb");
-    	fwrite(PhaseField.data(),8,N,OUTFILE);
+    	//fwrite(PhaseField.data(),8,N,OUTFILE);
+    	fwrite(Averages->Phase.data(),8,N,OUTFILE);
     	fclose(OUTFILE);
     	
 		PROFILE_STOP("Main");
