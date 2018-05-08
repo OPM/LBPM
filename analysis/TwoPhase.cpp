@@ -1225,7 +1225,7 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT)
 void TwoPhase::PrintAll(int timestep)
 {
 	if (Dm.rank==0){
-		fprintf(TIMELOG,"%i %.5g ",timestep-5,dEs);										// change in surface energy
+		fprintf(TIMELOG,"%i %.5g ",timestep,dEs);										// change in surface energy
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
 		fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
@@ -1250,7 +1250,7 @@ void TwoPhase::PrintAll(int timestep)
 	else{
 		sat_w = 1.0 - nwp_volume/(nwp_volume+wp_volume);
 
-		fprintf(TIMELOG,"%i ",timestep-5);										// change in surface energy
+		fprintf(TIMELOG,"%i ",timestep);										// change in surface energy
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw,pan);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn,ans,aws);				// interfacial areas
 		fprintf(TIMELOG,"%.5g %.5g ",Jwn, Kwn);								// curvature of wn interface
