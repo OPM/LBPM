@@ -243,7 +243,8 @@ int main(int argc, char **argv)
 
 		int count = 0;
 		int total = 0;
-		int totalGlobal = nx*ny*nz*nprocs;
+		int totalGlobal = 0;
+		int countGlobal = 0;
 		for (k=1;k<nz-1;k++){
 			for (j=1;j<ny-1;j++){
 				for (i=1;i<nx-1;i++){
@@ -255,9 +256,10 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
 		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		float porosity = float(totalGlobal-countGlobal)/totalGlobal;
-		if (rank==0) printf("Porosity=%f\n",porosity);
+		float poros = float(totalGlobal-countGlobal)/totalGlobal;
+		if (rank==0) printf("Porosity=%f\n",poros);
 
 
 		// Initialize the signed distance function
