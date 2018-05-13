@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 				}
 			}
 			float porosity = float(totalGlobal-countGlobal)/totalGlobal;
-			printf("Original Porosity=%f\n",porosity);
+			//printf("Original Porosity=%f\n",porosity);
 		}
 
 		count = 0;
