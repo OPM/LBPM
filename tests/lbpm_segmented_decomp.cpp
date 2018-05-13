@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 					n=k*nx*ny+j*nx+i;
 					total++;
 					Dm.id[n] = newIDs[n];
-					if (Dm.id[n] == 0){
+					if (!(Dm.id[n] > 0)){
 						count++;
 					}
 				}
