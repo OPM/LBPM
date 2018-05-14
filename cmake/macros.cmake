@@ -35,11 +35,14 @@ IF ( ${CMAKE_BUILD_TYPE} STREQUAL "Release" AND ${CMAKE_VERSION} VERSION_GREATER
     CHECK_IPO_SUPPORTED(RESULT supported OUTPUT error)
     IF( supported )
         MESSAGE(STATUS "IPO / LTO enabled")
+        SET( LTO TRUE )
         SET( CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE )
     ELSE()
-        MESSAGE(STATUS "IPO / LTO not supported: <${error}>")
+        SET( LTO FALSE )
+        MESSAGE(STATUS "IPO / LTO not supported")
     ENDIF()
 ELSEIF( NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION )
+    SET( LTO FALSE )
     MESSAGE(STATUS "IPO / LTO disabled")
 ENDIF()
 
@@ -320,7 +323,7 @@ MACRO( INSTALL_PROJ_LIB )
     FOREACH ( tmp ${${PROJ}_LIBS} )
         SET( tmp_link_list ${tmp_link_list} $<TARGET_OBJECTS:${tmp}> )
     ENDFOREACH()
-    ADD_LIBRARY( ${${PROJ}_LIB} ${tmp_link_list} )
+    ADD_LIBRARY( ${${PROJ}_LIB} ${LIB_TYPE} ${tmp_link_list} )
     TARGET_LINK_EXTERNAL_LIBRARIES( ${${PROJ}_LIB} LINK_PUBLIC )
     INSTALL( TARGETS ${${PROJ}_LIB} DESTINATION ${${PROJ}_INSTALL_DIR}/lib )
 ENDMACRO()
@@ -408,6 +411,9 @@ MACRO( IDENTIFY_COMPILER )
         IF( CMAKE_COMPILER_IS_GNUG77 OR (${CMAKE_Fortran_COMPILER_ID} MATCHES "GNU") )
             SET( USING_GFORTRAN TRUE )
             MESSAGE("Using gfortran")
+            IF ( NOT USING_GCC )
+                LIST( REMOVE_ITEM CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES gcc )
+            ENDIF()
         ELSEIF ( (${CMAKE_Fortran_COMPILER_ID} MATCHES "Intel") ) 
             SET(USING_IFORT TRUE)
             MESSAGE("Using ifort")
@@ -477,76 +483,6 @@ MACRO( ADD_USER_FLAGS )
 ENDMACRO()
 
 
-# Macro to add user c++ std 
-MACRO( ADD_CXX_STD )
-    IF ( NOT CXX_STD )
-        MESSAGE( FATAL_ERROR "The desired c++ standard must be specified: CXX_STD=(98,11,14,NONE)")
-    ENDIF()
-    IF ( ${CXX_STD} STREQUAL "NONE" )
-        # Do nothing
-        return()
-    ELSEIF ( (NOT ${CXX_STD} STREQUAL "98") AND (NOT ${CXX_STD} STREQUAL "11") AND (NOT ${CXX_STD} STREQUAL "14") )
-        MESSAGE( FATAL_ERROR "Unknown c++ standard (98,11,14,NONE)" )
-    ENDIF()
-    # Add the flags
-    SET( CMAKE_CXX_STANDARD ${CXX_STD} )
-    MESSAGE( "C++ standard: ${CXX_STD}" )
-    SET( CXX_STD_FLAG )
-    IF ( USING_GCC )
-        # GNU: -std=
-        IF ( ${CXX_STD} STREQUAL "98" )
-            SET( CXX_STD_FLAG -std=c++98 )
-        ELSEIF ( ${CXX_STD} STREQUAL "11" )
-            SET( CXX_STD_FLAG -std=c++11 )
-        ELSEIF ( ${CXX_STD} STREQUAL "14" )
-            SET( CXX_STD_FLAG -std=c++1y )
-        ELSE()
-            MESSAGE(FATAL_ERROR "Unknown standard")
-        ENDIF()
-    ELSEIF ( USING_MSVC )
-        # Microsoft: Does not support this level of control
-    ELSEIF ( USING_ICC )
-        # ICC: -std=
-        SET( CXX_STD_FLAG -std=c++${CXX_STD} )
-    ELSEIF ( USING_CRAY )
-        # Cray: Does not seem to support controlling the std?
-    ELSEIF ( USING_PGCC )
-        # PGI: -std=
-        IF ( ${CXX_STD} STREQUAL "98" )
-            SET( CXX_STD_FLAG --c++0x )
-        ELSEIF ( ${CXX_STD} STREQUAL "11" )
-            SET( CXX_STD_FLAG --c++11 )
-        ELSEIF ( ${CXX_STD} STREQUAL "14" )
-            MESSAGE( FATAL_ERROR "C++14 features are not availible yet for PGI" )
-        ELSE()
-            MESSAGE(FATAL_ERROR "Unknown standard")
-        ENDIF()
-    ELSEIF ( USING_CLANG )
-        # Clang: -std=
-        IF ( ( ${CXX_STD} STREQUAL "98") OR ( ${CXX_STD} STREQUAL "11" ) )
-            SET( CXX_STD_FLAG -std=c++${CXX_STD} )
-        ELSEIF ( ${CXX_STD} STREQUAL "14" )
-            SET( CXX_STD_FLAG -std=c++1y )
-        ELSE()
-            MESSAGE(FATAL_ERROR "Unknown standard")
-        ENDIF()
-    ELSEIF ( USING_XL )
-        # XL: -std=
-        IF ( ( ${CXX_STD} STREQUAL "98") OR ( ${CXX_STD} STREQUAL "11" ) )
-            SET( CXX_STD_FLAG -std=c++${CXX_STD} )
-        ELSEIF ( ${CXX_STD} STREQUAL "14" )
-            SET( CXX_STD_FLAG -std=c++1y )
-        ELSE()
-            MESSAGE(FATAL_ERROR "Unknown standard")
-        ENDIF()
-    ELSEIF ( USING_DEFAULT )
-        # Default: do nothing
-    ENDIF()
-    ADD_DEFINITIONS( -DCXX_STD=${CXX_STD} )
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_STD_FLAG}")
-ENDMACRO()
-
-
 # Macro to set the compile/link flags
 MACRO( SET_COMPILER_FLAGS )
     # Initilaize the compiler
@@ -585,8 +521,6 @@ MACRO( SET_COMPILER_FLAGS )
     SET( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" CACHE STRING "Release flags" FORCE)
     # Add the user flags
     ADD_USER_FLAGS()
-    # Add the c++ standard flags
-    ADD_CXX_STD()
     # Set the warnings to use
     SET_WARNINGS()
     # Test the compile flags
@@ -1098,71 +1032,19 @@ ENDMACRO()
 
 
 # Add a matlab mex file
-FUNCTION( ADD_MATLAB_MEX MEXFILE )
-    # Set the MEX compiler and default link flags
-    IF ( USING_MSVC )
-        SET( MEX_LDFLAGS ${MEX_LDFLAGS} -L${CMAKE_CURRENT_BINARY_DIR}/.. 
-            -L${CMAKE_CURRENT_BINARY_DIR}/../Debug -L${CMAKE_CURRENT_BINARY_DIR} )
-    ENDIF()
-    SET( MEX_LDFLAGS ${MEX_LDFLAGS} -L${CMAKE_CURRENT_BINARY_DIR}/.. -L${CMAKE_CURRENT_BINARY_DIR}/../.. ${SYSTEM_LDFLAGS} )
-    SET( MEX_LIBS    ${MEX_LIBS}    ${SYSTEM_LIBS}    )
-    IF ( NOT USING_MSVC )
-        FOREACH( rpath ${CMAKE_INSTALL_RPATH} )
-            SET( MEX_LDFLAGS ${MEX_LDFLAGS} "-Wl,-rpath,${rpath},--no-undefined" )
-        ENDFOREACH()
-    ENDIF()
-    IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
-        SET( MEX_FLAGS ${MEX_FLAGS} -g )
-    ELSEIF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
-        SET( MEX_FLAGS ${MEX_FLAGS} -O )
-    ELSE()
-        MESSAGE( FATAL_ERROR "Unknown build type: ${CMAKE_BUILD_TYPE}" )
-    ENDIF()
-    # Create the mex comamnd
-    STRING(REGEX REPLACE "[.]cpp" "" TARGET ${MEXFILE})
-    STRING(REGEX REPLACE "[.]c"   "" TARGET ${TARGET})
-    FILE(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/temp/${TARGET}" )
-    IF ( USING_MSVC )
-        SET( MEX_BAT_FILE "${CMAKE_CURRENT_BINARY_DIR}/temp/${TARGET}/compile_mex.bat" )
-        FILE( WRITE  "${MEX_BAT_FILE}" "${MEX_EXE} \"${CMAKE_CURRENT_SOURCE_DIR}/${MEXFILE}\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${MEX_FLAGS}"   "\"" "\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${COMPFLAGS}"   "\"" "\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${MEX_INCLUDE}" "\"" "\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${MEX_LDFLAGS}" "\"" "\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${MEX_LIBS}"    "\"" "\" " )
-        APPEND_LIST( "${MEX_BAT_FILE}" "${COVERAGE_MATLAB_LIBS}" "\"" "\" " )
-        SET( MEX_COMMAND "${MEX_BAT_FILE}" )
-    ELSE()
-        STRING(REPLACE " " ";" MEX_CFLAGS "$$CFLAGS ${CMAKE_C_FLAGS}")
-        STRING(REPLACE " " ";" MEX_CXXFLAGS "$$CXXFLAGS ${CMAKE_CXX_FLAGS}")
-        SET( MEX_COMMAND ${MEX_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/${MEXFILE} 
-            ${MEX_FLAGS} ${MEX_INCLUDE} 
-            CFLAGS="${MEX_CFLAGS}" 
-            CXXFLAGS="${MEX_CXXFLAGS}" 
-            LDFLAGS="${MEX_LDFLAGS}" 
-            ${MEX_LIBS} ${COVERAGE_MATLAB_LIBS} 
-        )
-    ENDIF()
-    ADD_CUSTOM_COMMAND( 
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.${MEX_EXTENSION}
-        COMMAND ${MEX_COMMAND}
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/temp/${TARGET}/${TARGET}.${MEX_EXTENSION}" "${CMAKE_CURRENT_BINARY_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/temp/${TARGET}/${TARGET}.${MEX_EXTENSION}" "${${PROJ}_INSTALL_DIR}/mex"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/temp/${TARGET}
-        DEPENDS ${${PROJ}_LIBS} ${MATLAB_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/${MEXFILE}
+FUNCTION( ADD_MATLAB_MEX SOURCE )
+    STRING( REGEX REPLACE "[.]cpp" "" TARGET ${SOURCE} )
+    STRING( REGEX REPLACE "[.]c"   "" TARGET ${TARGET} )
+    MATLAB_ADD_MEX(
+        NAME ${TARGET}
+        SRC ${SOURCE}
     )
-    ADD_CUSTOM_TARGET( ${TARGET}
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.${MEX_EXTENSION}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MEXFILE}
-    )
-    IF ( MATLAB_TARGET )
-        ADD_DEPENDENCIES( ${TARGET} ${MATLAB_TARGET} )
-    ENDIF()
-    IF ( ${PROJ}_LIBS )
-        ADD_DEPENDENCIES( ${TARGET} ${${PROJ}_LIBS} )
-    ENDIF()
+    TARGET_LINK_LIBRARIES( ${TARGET} ${MATLAB_TARGET} )
+    ADD_PROJ_EXE_DEP( ${TARGET} )
     ADD_DEPENDENCIES( mex ${TARGET} )
-    SET( MEX_FILES2 ${MEX_FILES} "${${PROJ}_INSTALL_DIR}/mex/${TARGET}.${MEX_EXTENSION}" )
+    INSTALL( TARGETS ${TARGET} DESTINATION ${${PROJ}_INSTALL_DIR}/mex )
+    ADD_DEPENDENCIES( mex ${TARGET} )
+    SET( MEX_FILES2 ${MEX_FILES} "${${PROJ}_INSTALL_DIR}/mex/${TARGET}.${Matlab_MEX_EXTENSION}" )
     LIST( REMOVE_DUPLICATES MEX_FILES2 )
     SET( MEX_FILES ${MEX_FILES2} CACHE INTERNAL "" )
 ENDFUNCTION()
@@ -1178,7 +1060,7 @@ MACRO( ADD_MATLAB_TEST EXEFILE ${ARGN} )
     IF ( USING_MSVC )
         SET( MATLAB_OPTIONS "-logfile" "log_${EXEFILE}" )
     ENDIF()
-    SET( MATLAB_COMMAND "try, ${EXEFILE}, catch ME, ME, clear all global, exit(1), end, disp('ALL TESTS PASSED'); exit(0)" )
+    SET( MATLAB_COMMAND "try, ${EXEFILE}, catch ME, disp(getReport(ME)), clear all global, exit(1), end, disp('ALL TESTS PASSED'); exit(0)" )
     SET( MATLAB_DEBUGGER_OPTIONS )
     IF ( MATLAB_DEBUGGER )
         SET( MATLAB_DEBUGGER_OPTIONS -D${MATLAB_DEBUGGER} )
@@ -1195,7 +1077,6 @@ FUNCTION( CREATE_MATLAB_WRAPPER )
     SET( tmp_libs ${MEX_LIBCXX} ${MEX_FILES} )
     STRING(REGEX REPLACE ";" ":" tmp_libs "${tmp_libs}")
     STRING(REGEX REPLACE ";" ":" tmp_path "${MATLABPATH}")
-    FIND_PROGRAM( MATLAB_EXE2 NAME matlab PATHS "${MATLAB_DIRECTORY}/bin" NO_DEFAULT_PATH )
     IF ( USING_MSVC )
         # Create a matlab wrapper for windows
         SET( MATLAB_GUI "${CMAKE_CURRENT_BINARY_DIR}/tmp/matlab-gui.bat" )
@@ -1212,8 +1093,8 @@ FUNCTION( CREATE_MATLAB_WRAPPER )
         SET( MATLAB_GUI "${CMAKE_CURRENT_BINARY_DIR}/tmp/matlab-gui" )
         SET( MATLAB_CMD "${CMAKE_CURRENT_BINARY_DIR}/tmp/matlab-cmd" )
         SET( MATLAB_INSTALL_CMD "matlab-cmd" )
-        FILE( WRITE "${MATLAB_GUI}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash \"$@\"\n")
-        FILE( WRITE "${MATLAB_CMD}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${MATLAB_EXE2}\" -singleCompThread -nosplash -nodisplay -nojvm \"$@\"\n")
+        FILE( WRITE "${MATLAB_GUI}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${Matlab_MAIN_PROGRAM}\" -singleCompThread -nosplash \"$@\"\n")
+        FILE( WRITE "${MATLAB_CMD}" "LD_PRELOAD=\"${tmp_libs}\" MKL_NUM_THREADS=1 MATLABPATH=\"${tmp_path}\" \"${Matlab_MAIN_PROGRAM}\" -singleCompThread -nosplash -nodisplay -nojvm \"$@\"\n")
     ENDIF()
     FILE( COPY "${MATLAB_GUI}" DESTINATION "${${PROJ}_INSTALL_DIR}/mex"
         FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE )
@@ -1294,6 +1175,7 @@ MACRO( ADD_DISTCLEAN ${ARGN} )
         install_manifest.txt
         test
         matlab
+        Matlab
         mex
         tmp
         #tmp#

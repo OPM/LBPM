@@ -121,7 +121,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
 static IO::MeshDatabase getDatabase( const std::string& filename, const IO::MeshDataStruct& mesh, int format )
 {
     int rank = MPI_WORLD_RANK();
-    char domainname[10];
+    char domainname[100];
     sprintf(domainname,"%s_%05i",mesh.meshName.c_str(),rank);
     // Create the MeshDatabase
     IO::MeshDatabase database;
@@ -310,12 +310,11 @@ static void writeSiloDomainMesh( DBfile *fid, const IO::MeshDataStruct& meshData
                                    info.jy*mesh.Ly/info.ny, (info.jy+1)*mesh.Ly/info.ny,
                                    info.kz*mesh.Lz/info.nz, (info.kz+1)*mesh.Lz/info.nz };
     std::array<int,3> N = { mesh.nx, mesh.ny, mesh.nz };
-    std::array<int,3> baseindex = { info.ix, info.jy, info.kz };
-    const std::string meshname = database.domains[0].name;
+    auto meshname = database.domains[0].name;
     silo::writeUniformMesh<3>( fid, meshname, range, N );
     silo::write<int>( fid, meshname+"_rankinfo", { mesh.rank, mesh.nprocx, mesh.nprocy, mesh.nprocz } );
     for (size_t i=0; i<meshData.vars.size(); i++) {
-        const IO::Variable& var = *meshData.vars[i];
+        const auto& var = *meshData.vars[i];
         auto type = static_cast<silo::VariableType>( var.type );
         if ( var.precision == IO::DataType::Double ) {
             silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, var.data, type );
@@ -336,10 +335,8 @@ static void writeSiloDomainMesh( DBfile *fid, const IO::MeshDataStruct& meshData
 static IO::MeshDatabase write_domain_silo( DBfile *fid, const std::string& filename,
     const IO::MeshDataStruct& mesh, int format )
 {
-    const int level = 0;
-    int rank = MPI_WORLD_RANK();
     // Create the MeshDatabase
-    IO::MeshDatabase database = getDatabase( filename, mesh, format );
+    auto database = getDatabase( filename, mesh, format );
     if ( database.meshClass=="PointList" ) {
         writeSiloPointList( fid, mesh, database );
     } else if ( database.meshClass=="TriMesh" ) {
@@ -429,7 +426,7 @@ static std::vector<IO::MeshDatabase> writeMeshesSilo(
     sprintf(fullpath,"%s/%s",path.c_str(),filename);
     auto fid = silo::open( fullpath, silo::CREATE );
     for (size_t i=0; i<meshData.size(); i++) {
-        std::shared_ptr<IO::Mesh> mesh = meshData[i].mesh;
+        auto mesh = meshData[i].mesh;
         meshes_written.push_back( write_domain_silo(fid,filename,meshData[i],format) );
     }
     silo::close( fid );
