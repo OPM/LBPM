@@ -155,25 +155,20 @@ int main(int argc, char **argv)
 			printf("Reduced domain size = %i \n",Np);
 		}
 
-
 		// LBM variables
-		if (rank==0)	printf ("Allocating distributions \n");
-
-		int neighborSize=18*Np*sizeof(int);
+		if (rank==0)	printf ("Set up the neighborlist \n");
+		int Npad=Np+32;
+		int neighborSize=18*Npad*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		// ScaLBL_Comm.MemoryDenseLayoutFull(Map,neighborList,Dm.id,Np);    // this was how I tested for correctness
-
+		neighborList= new int[18*Npad];
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
+		if (rank==0)	printf ("Allocating distributions \n");
 		int dist_mem_size = Np*sizeof(double);
-
 		int *NeighborList;
-		//		double *f_even,*f_odd;
 		double * dist;
 		double * Velocity;
 		//...........................................................................
@@ -187,7 +182,6 @@ int main(int argc, char **argv)
 		 *  AA Algorithm begins here
 		 *
 		 */
-		//ScaLBL_D3Q19_Init(ID, dist, &dist[10*Np], Np, 1, 1);
 		double *DIST;
 		DIST = new double [19*Np];
 		double VALUE=0.1;
@@ -215,7 +209,6 @@ int main(int argc, char **argv)
 		   DIST[17*Np + n] = 1.0;
 		   DIST[18*Np + n] = 1.0;
 	 	}
-
 		ScaLBL_CopyToDevice(dist, DIST, 19*Np*sizeof(double));	
 
 	
