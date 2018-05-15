@@ -34,7 +34,6 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		string FILENAME = argv[1];
 		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
@@ -50,6 +49,7 @@ int main(int argc, char **argv)
 		Fx = 0; Fy = 0;
 		Fz = 1e-3; //1.f; // 1e-3;
 
+		string FILENAME = argv[1];
         // Load inputs
 		if (rank==0)	printf("Loading input database \n");
 		auto db = std::make_shared<Database>(FILENAME);
@@ -158,7 +158,6 @@ int main(int argc, char **argv)
 			printf("Total domain size = %i \n",N);
 			printf("Reduced domain size = %i \n",Np);
 		}
-
 
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");

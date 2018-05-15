@@ -10,21 +10,6 @@
 #include "common/MPI_Helpers.h"
 
 
-std::shared_ptr<Database> loadInputs( int nprocs )
-{
-    auto db = std::make_shared<Database>( "Domain.in" );
-    const int dim = 50;
-    db->putScalar<int>( "BC", 0 );
-    if ( nprocs == 1 ){
-        db->putVector<int>( "nproc", { 1, 1, 1 } );
-        db->putVector<int>( "n", { 4, 4, 4 } );
-        db->putScalar<int>( "nspheres", 0 );
-        db->putVector<double>( "L", { 1, 1, 1 } );
-    }
-    return db;
-}
-
-
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -44,9 +29,8 @@ int main(int argc, char **argv)
 			printf("Running Unit Test: TestPressVel	\n");
 			printf("********************************************************\n");
 		}
-
+		
 		// BGK Model parameters
-		string FILENAME;
 		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
@@ -59,14 +43,16 @@ int main(int argc, char **argv)
 		Fz = 1.0e-4;
 
         // Load inputs
-        auto db = loadInputs( nprocs );
-        int Nx = db->getVector<int>( "n" )[0];
-        int Ny = db->getVector<int>( "n" )[1];
-        int Nz = db->getVector<int>( "n" )[2];
-        int nprocx = db->getVector<int>( "nproc" )[0];
-        int nprocy = db->getVector<int>( "nproc" )[1];
-        int nprocz = db->getVector<int>( "nproc" )[2];
-
+		string FILENAME = argv[1];
+		if (rank==0)	printf("Loading input database \n");
+		auto db = std::make_shared<Database>(FILENAME);
+		auto domain_db= db-> getDatabase("Domain");
+        int Nx = domain_db->getVector<int>( "n" )[0];
+        int Ny = domain_db->getVector<int>( "n" )[1];
+        int Nz = domain_db->getVector<int>( "n" )[2];
+        int nprocx = domain_db->getVector<int>( "nproc" )[0];
+        int nprocy = domain_db->getVector<int>( "nproc" )[1];
+        int nprocz = domain_db->getVector<int>( "nproc" )[2];
 		if (rank==0){
 			printf("********************************************************\n");
 			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
@@ -91,7 +77,6 @@ int main(int argc, char **argv)
 
 		Domain Dm(db);
 
-
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -104,12 +89,6 @@ int main(int argc, char **argv)
 		sprintf(LocalRankString,"%05d",rank);
 		char LocalRankFilename[40];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
-		/*
-		FILE *IDFILE = fopen(LocalRankFilename,"rb");
-		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-		fread(Dm.id,1,N,IDFILE);
-		fclose(IDFILE);
-		*/
 
 		Dm.CommInit(comm);
 
@@ -155,25 +134,20 @@ int main(int argc, char **argv)
 			printf("Reduced domain size = %i \n",Np);
 		}
 
-
 		// LBM variables
-		if (rank==0)	printf ("Allocating distributions \n");
-
-		int neighborSize=18*Np*sizeof(int);
+		if (rank==0)	printf ("Set up the neighborlist \n");
+		int Npad=Np+32;
+		int neighborSize=18*Npad*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		// ScaLBL_Comm.MemoryDenseLayoutFull(Map,neighborList,Dm.id,Np);    // this was how I tested for correctness
-
+		neighborList= new int[18*Npad];
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
+		if (rank==0)	printf ("Allocating distributions \n");
 		int dist_mem_size = Np*sizeof(double);
-
 		int *NeighborList;
-		//		double *f_even,*f_odd;
 		double * dist;
 		double * Velocity;
 		//...........................................................................
@@ -187,7 +161,6 @@ int main(int argc, char **argv)
 		 *  AA Algorithm begins here
 		 *
 		 */
-		//ScaLBL_D3Q19_Init(ID, dist, &dist[10*Np], Np, 1, 1);
 		double *DIST;
 		DIST = new double [19*Np];
 		double VALUE=0.1;
@@ -215,10 +188,8 @@ int main(int argc, char **argv)
 		   DIST[17*Np + n] = 1.0;
 		   DIST[18*Np + n] = 1.0;
 	 	}
-
 		ScaLBL_CopyToDevice(dist, DIST, 19*Np*sizeof(double));	
 
-	
 	   double *Vz;
   	   Vz= new double [Np];
 	   size_t SIZE=Np*sizeof(double);

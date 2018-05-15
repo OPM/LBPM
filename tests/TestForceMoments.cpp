@@ -11,8 +11,6 @@
 
 using namespace std;
 
-
-
 extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 	if (rank == 0) {
 		int n;
@@ -63,7 +61,6 @@ int main(int argc, char **argv)
 		// parallel domain size (# of sub-domains)
 		int iproc,jproc,kproc;
 
-
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Unit Test: TestForceMoments	\n");
@@ -71,7 +68,6 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		string FILENAME;
 		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
@@ -88,16 +84,18 @@ int main(int argc, char **argv)
 		Fx = Fy = 1.0;
 		Fz = 1.0;
 
-
         // Load inputs
-        auto db = loadInputs( nprocs );
-        int Nx = db->getVector<int>( "n" )[0];
-        int Ny = db->getVector<int>( "n" )[1];
-        int Nz = db->getVector<int>( "n" )[2];
-        int nprocx = db->getVector<int>( "nproc" )[0];
-        int nprocy = db->getVector<int>( "nproc" )[1];
-        int nprocz = db->getVector<int>( "nproc" )[2];
-
+		string FILENAME = argv[1];
+        // Load inputs
+		if (rank==0)	printf("Loading input database \n");
+		auto db = std::make_shared<Database>(FILENAME);
+		auto domain_db= db-> getDatabase("Domain");
+        int Nx = domain_db->getVector<int>( "n" )[0];
+        int Ny = domain_db->getVector<int>( "n" )[1];
+        int Nz = domain_db->getVector<int>( "n" )[2];
+        int nprocx = domain_db->getVector<int>( "nproc" )[0];
+        int nprocy = domain_db->getVector<int>( "nproc" )[1];
+        int nprocz = domain_db->getVector<int>( "nproc" )[2];
 		if (rank==0){
 			printf("********************************************************\n");
 			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
