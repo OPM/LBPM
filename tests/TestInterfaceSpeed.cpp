@@ -15,20 +15,6 @@
 #define SPEED -1
 #define PI 3.14159
 
-
-std::shared_ptr<Database> loadInputs( int nprocs )
-{
-    auto db = std::make_shared<Database>( );
-    const int dim = 50;
-    db->putScalar<int>( "BC", 0 );
-    db->putVector<int>( "nproc", { 1, 1, 1 } );
-    db->putVector<int>( "n", { N, N, N } );
-    db->putScalar<int>( "nspheres", 0 );
-    db->putVector<double>( "L", { 1, 1, 1 } );
-    return db;
-}
-
-
 int main (int argc, char *argv[])
 {
 	// Initialize MPI
@@ -39,10 +25,11 @@ int main (int argc, char *argv[])
 	MPI_Comm_size(comm,&nprocs);
 
 	int i,j,k,n;
-        // Load inputs
-        auto db = loadInputs( nprocs );
+	// Load inputs
+	string FILENAME = argv[1];
+	auto db = loadInputs( FILENAME );
 
-		Domain Dm(db);
+	Domain Dm(db);
 
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 

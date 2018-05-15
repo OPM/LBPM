@@ -29,9 +29,8 @@ int main(int argc, char **argv)
 			printf("Running Unit Test: TestPressVel	\n");
 			printf("********************************************************\n");
 		}
-
+		
 		// BGK Model parameters
-		string FILENAME;
 		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
@@ -44,6 +43,7 @@ int main(int argc, char **argv)
 		Fz = 1.0e-4;
 
         // Load inputs
+		string FILENAME = argv[1];
 		if (rank==0)	printf("Loading input database \n");
 		auto db = std::make_shared<Database>(FILENAME);
 		auto domain_db= db-> getDatabase("Domain");
