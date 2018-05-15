@@ -10,12 +10,6 @@
 #include "common/MPI_Helpers.h"
 
 
-bool exists( const std::string& filename )
-{
-     ifstream domain( filename );
-	 return domain.good();
-}
-
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {

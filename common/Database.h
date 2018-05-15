@@ -1,6 +1,7 @@
 #ifndef included_Database
 #define included_Database
 
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -8,6 +9,13 @@
 #include <vector>
 
 #include "common/Units.h"
+
+
+inline bool exists( const std::string& filename )
+{
+     std::ifstream domain( filename );
+	 return domain.good();
+}
 
 
 //! Base class to hold data of a given type
