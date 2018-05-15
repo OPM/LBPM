@@ -45,10 +45,6 @@ int main (int argc, char *argv[])
 	TwoPhase Averages(Dm);
 	int timestep=0;
 
-	int Nx = Dm.Nx;
-	int Ny = Dm.Ny;
-	int Nz = Dm.Nz;
-
 	double Cx,Cy,Cz;
 	double dist1,dist2;
 
