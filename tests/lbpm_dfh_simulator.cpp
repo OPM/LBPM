@@ -60,16 +60,6 @@ int main(int argc, char **argv)
 		PROFILE_START("Main");
 		Utilities::setErrorHandlers();
 
-		int ANALYSIS_INTERVAL = 1000;
-		int BLOBID_INTERVAL = 1000;
-        std::string analysis_method = "independent";
-		if (argc >= 3) {
-			ANALYSIS_INTERVAL = atoi(argv[1]);
-			BLOBID_INTERVAL   = atoi(argv[2]);
-		}
-		if (argc >= 4)
-			analysis_method = std::string(argv[3]);
-
 		// Variables that specify the computational domain  
 		string FILENAME;
 		int Nx,Ny,Nz,Np;		// local sub-domain size
@@ -94,7 +84,6 @@ int main(int argc, char **argv)
 		dout=1.f;
 
 		int RESTART_INTERVAL=20000;
-		//int ANALYSIS_)INTERVAL=1000;	
 		int BLOB_ANALYSIS_INTERVAL=1000;
 		int timestep = 6;
 
@@ -662,15 +651,11 @@ int main(int argc, char **argv)
 		err = 1.0; 	
 		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
-		if (rank==0){
-		  printf("Analysis intervals: (restart) %i, (TCAT) %i, (blobtracking) %i \n",RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL);
-		}
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-        runAnalysis analysis( RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
-            rank_info, ScaLBL_Comm, Dm, Np, Nx, Ny, Nz, Lx, Ly, Lz, pBC, beta, err, Map, LocalRestartFile );
-        analysis.createThreads( analysis_method, 4 );
+        std::shared_ptr<Database> analysis_db;
+        runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, err, Map );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 			PROFILE_START("Update");

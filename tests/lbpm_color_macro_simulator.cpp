@@ -550,8 +550,8 @@ int main(int argc, char **argv)
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-        runAnalysis analysis( RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
-            rank_info, ScaLBL_Comm, Dm, Np, Nx, Ny, Nz, Lx, Ly, Lz, pBC, beta, err, Map, LocalRestartFile );
+        std::shared_ptr<Database> analysis_db;
+        runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, err, Map );
         analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }

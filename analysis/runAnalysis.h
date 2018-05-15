@@ -23,10 +23,10 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis( int restart_interval, int analysis_interval, int blobid_interval,
+    runAnalysis( std::shared_ptr<Database> db,
         const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm,
-        int Np, int Nx, int Ny, int Nz, double Lx, double Ly, double Lz, bool pBC, double beta, double err,
-        IntArray Map, const std::string& LocalRestartFile );
+        int Np, bool pBC, double beta, double err,
+        IntArray Map );
 
     //! Destructor
     ~runAnalysis();
@@ -85,7 +85,7 @@ private:
     int d_N[3];
     int d_Np;
     int d_rank;
-    int d_restart_interval, d_analysis_interval, d_blobid_interval;
+    int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
     double d_beta;
     ThreadPool d_tpool;
     ScaLBL_Communicator d_ScaLBL_Comm;
