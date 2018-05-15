@@ -41,7 +41,6 @@ int main(int argc, char **argv)
 		int i,j,k,n;
 		int timestep = 0;
 
-
 		tau = 1.0;
 		double mu=(tau-0.5)/3.0;
 		double rlx_setA=1.0/tau;

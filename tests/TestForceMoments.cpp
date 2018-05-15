@@ -88,8 +88,7 @@ int main(int argc, char **argv)
 		string FILENAME = argv[1];
         // Load inputs
 		if (rank==0)	printf("Loading input database \n");
-		auto db = std::make_shared<Database>(FILENAME);
-		auto domain_db= db-> getDatabase("Domain");
+		auto domain_db = std::make_shared<Database>(FILENAME);
         int Nx = domain_db->getVector<int>( "n" )[0];
         int Ny = domain_db->getVector<int>( "n" )[1];
         int Nz = domain_db->getVector<int>( "n" )[2];

@@ -25,19 +25,18 @@ int main (int argc, char *argv[])
 	MPI_Comm_size(comm,&nprocs);
 
 	int i,j,k,n;
-	// Load inputs
+
+    // Load inputs
 	string FILENAME = argv[1];
     // Load inputs
 	if (rank==0)	printf("Loading input database \n");
-	auto db = std::make_shared<Database>(FILENAME);
-	auto domain_db= db-> getDatabase("Domain");
+	auto domain_db = std::make_shared<Database>(FILENAME);
     int Nx = domain_db->getVector<int>( "n" )[0];
     int Ny = domain_db->getVector<int>( "n" )[1];
     int Nz = domain_db->getVector<int>( "n" )[2];
     int nprocx = domain_db->getVector<int>( "nproc" )[0];
     int nprocy = domain_db->getVector<int>( "nproc" )[1];
     int nprocz = domain_db->getVector<int>( "nproc" )[2];
-	Domain Dm(db);
 
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 
