@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -48,7 +48,9 @@ int main(int argc, char **argv)
 		Fx = 0; Fy = 0;
 		Fz = 1e-3; //1.f; // 1e-3;
 
-		string FILENAME = argv[1];
+        auto FILENAME = argv[1];
+        auto db = std::make_shared<Database>( FILENAME );
+        auto domain_db = db->getDatabase( "Domain" );
         // Load inputs
 		if (rank==0)	printf("Loading input database \n");
 		auto db = std::make_shared<Database>(FILENAME);

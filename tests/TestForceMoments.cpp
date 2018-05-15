@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
 		int iproc,jproc,kproc;
@@ -234,18 +234,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("No. of timesteps for timing: %i \n", timesteps);
 
 		while (timestep < 2) {
-/*
-		   ScaLBL_D3Q19_AAeven_MRT(dist, 0, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-			timestep++;
 
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-			*/
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE

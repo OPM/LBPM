@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -207,4 +207,6 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
+	return check;
+
 }
