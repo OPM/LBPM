@@ -38,6 +38,8 @@ int main (int argc, char *argv[])
     int nprocy = domain_db->getVector<int>( "nproc" )[1];
     int nprocz = domain_db->getVector<int>( "nproc" )[2];
 
+    Domain Dm(domain_db);
+
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 
 	Dm.CommInit(comm);

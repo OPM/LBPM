@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		Domain Dm(db);
+		Domain Dm(domain_db);
 
 		Nx += 2;
 		Ny += 2;
