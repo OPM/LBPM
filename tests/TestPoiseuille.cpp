@@ -11,26 +11,6 @@
 
 
 
-std::shared_ptr<Database> loadInputs( int nprocs )
-{
-    const int dim = 12;
-	std::shared_ptr<Database> db;
-    if ( exists( "Domain.in" ) ) {
-    	db = std::make_shared<Database>( "Domain.in" );
-	} else if (nprocs==1) {
-        db->putVector<int>( "nproc", { 1, 1, 1 } );
-        db->putVector<int>( "n", { dim, dim, dim } );
-        db->putScalar<int>( "nspheres", 0 );
-        db->putVector<double>( "L", { 1, 1, 1 } );
-	} else if (nprocs==2) {
-        db->putVector<int>( "nproc", { 1, 1, 1 } );
-        db->putVector<int>( "n", { dim/2, dim/2, dim/2 } );
-        db->putScalar<int>( "nspheres", 0 );
-        db->putVector<double>( "L", { 1, 1, 1 } );
-    }
-    db->putScalar<int>( "BC", 0 );
-    return db;
-}
 
 
 //***************************************************************************************
@@ -54,7 +34,7 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		string FILENAME;
+		string FILENAME = argv[1];
 		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
@@ -71,15 +51,15 @@ int main(int argc, char **argv)
 		Fz = 1e-3; //1.f; // 1e-3;
 
         // Load inputs
-        auto db = loadInputs( nprocs );
-        int Nx = db->getVector<int>( "n" )[0];
-        int Ny = db->getVector<int>( "n" )[1];
-        int Nz = db->getVector<int>( "n" )[2];
-        int nprocx = db->getVector<int>( "nproc" )[0];
-        int nprocy = db->getVector<int>( "nproc" )[1];
-        int nprocz = db->getVector<int>( "nproc" )[2];
-
-
+		if (rank==0)	printf("Loading input database \n");
+		auto db = std::make_shared<Database>(FILENAME);
+		auto domain_db= db-> getDatabase("Domain");
+        int Nx = domain_db->getVector<int>( "n" )[0];
+        int Ny = domain_db->getVector<int>( "n" )[1];
+        int Nz = domain_db->getVector<int>( "n" )[2];
+        int nprocx = domain_db->getVector<int>( "nproc" )[0];
+        int nprocy = domain_db->getVector<int>( "nproc" )[1];
+        int nprocz = domain_db->getVector<int>( "nproc" )[2];
 		if (rank==0){
 			printf("********************************************************\n");
 			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
@@ -102,7 +82,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		Domain Dm(db);
+		Domain Dm(domain_db);
 
 		Nx += 2;
 		Ny += 2;
