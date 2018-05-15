@@ -745,12 +745,20 @@ inline Point VertexInterp(const Point &p1, const Point &p2, double valp1, double
 inline void SolidMarchingCubes(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
 					 int i,int j,int k, int m, int n, int o, DTMutableList<Point>
 					 &cellvertices, int &lengthvertices, IntArray &Triangles, int &nTris,
-					 DoubleArray &values){
+					 DoubleArray &values)
+{
+
+    NULL_USE( isovalue );
+    NULL_USE( m );
+    NULL_USE( n );
+    NULL_USE( o );
 	
 	// THIS SUBROUTINE COMPUTES THE VERTICES FOR THE SOLID PHASE IN
 	// A PARTICULAR GRID CELL, THEN ARRANGES THEM INTO TRIANGLES
 	// ALSO ORGANIZES THE LIST OF VALUES TO CORRESPOND WITH VERTEX LIST
 	
+    NULL_USE( v );
+
 	//int N = 0;
 	Point P,Q;
 	Point PlaceHolder;
@@ -1079,7 +1087,12 @@ inline void SolidMarchingCubes(DoubleArray &A, const double &v, DoubleArray &B, 
 inline void SOL_SURF(DoubleArray &A, const double &v, DoubleArray &B, const double &isovalue,
 					 int i,int j,int k, int m, int n, int o, DTMutableList<Point>
 					 &cellvertices, int &lengthvertices, IntArray &Tlist, int &nTris,
-					 DoubleArray &values){
+					 DoubleArray &values)
+{
+    NULL_USE( isovalue );
+    NULL_USE( m );
+    NULL_USE( n );
+    NULL_USE( o );
 
 	// THIS SUBROUTINE COMPUTES THE VERTICES FOR THE SOLID PHASE IN
 	// A PARTICULAR GRID CELL, THEN ARRANGES THEM INTO TRIANGLES
@@ -2540,6 +2553,11 @@ inline void EDGE(DoubleArray &A, double &v, DoubleArray &solid, int &i, int &j, 
 				 DTMutableList<Point> &nw_pts, int &n_nw_pts, IntArray &nw_tris, int &n_nw_tris,
 				 DTMutableList<Point> &local_nws_pts, int &n_local_nws_pts)
 {
+
+    NULL_USE( m );
+    NULL_USE( n );
+    NULL_USE( o );
+
 	// FIND THE POINTS ON THE nw SURFACE THAT ARE ON THE EDGE (COMMON LINE WITH SOLID PHASE)
 	// function A is the fluid data padded (so that it has values inside the solid phase)
 
@@ -3319,6 +3337,8 @@ inline void pmmc_MeshCurvature(DoubleArray &f, DoubleArray &MeanCurvature, Doubl
 //--------------------------------------------------------------------------------------------------------
 inline int pmmc_CubeListFromMesh(IntArray &cubeList, int ncubes, int Nx, int Ny, int Nz)
 {
+    NULL_USE( ncubes );
+
 	int i,j,k,nc;
 	nc=0;
 	//...........................................................................
@@ -3974,6 +3994,8 @@ inline double pmmc_CommonCurveSpeed(DoubleArray &CubeValues, DoubleArray &dPdt, 
 		DoubleArray &Sx, DoubleArray &Sy, DoubleArray &Sz,
 		DTMutableList<Point> &Points, int i, int j, int k, int npts)
 {
+    NULL_USE( CubeValues );
+
 	int p;
 	double s,lwns,norm;
 	double zeta;
@@ -4125,7 +4147,12 @@ inline void pmmc_CurveCurvature(DoubleArray &f, DoubleArray &s,
 				DoubleArray &f_x, DoubleArray &f_y, DoubleArray &f_z,
 				DoubleArray &s_x, DoubleArray &s_y, DoubleArray &s_z, 
 				DoubleArray &KN, DoubleArray &KG,
-		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc){
+		double &KNavg, double &KGavg, DTMutableList<Point> &Points, int npts, int ic, int jc, int kc)
+{
+    NULL_USE( f );
+    NULL_USE( s );
+    NULL_USE( KN );
+    NULL_USE( KG );
 	
 	int p,i,j,k;
 	double length;
@@ -4324,6 +4351,10 @@ inline double pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArr
 									  DoubleArray &SurfaceVector, DoubleArray &AvgSpeed, DoubleArray &AvgVel,
 									  int i, int j, int k, int npts, int ntris)
 {
+    NULL_USE( CubeValues );
+    NULL_USE( SurfaceVector );
+    NULL_USE( npts );
+
 	Point A,B,C,P;
 	double x,y,z;
 	double s,s1,s2,s3,area;
@@ -4378,7 +4409,15 @@ inline double pmmc_InterfaceSpeed(DoubleArray &dPdt, DoubleArray &P_x, DoubleArr
 }
 //--------------------------------------------------------------------------------------------------------
 inline double geomavg_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
-		int &npts, int &ntris, int &i, int &j, int &k){
+		int &npts, int &ntris, int &i, int &j, int &k)
+{
+    NULL_USE( Points );
+    NULL_USE( Triangles );
+    NULL_USE( npts );
+    NULL_USE( ntris );
+    NULL_USE( i );
+    NULL_USE( j );
+    NULL_USE( k );
 
 	/* REFERENCE
 	 *  Huang, Liu, Lee, Yang, Tsang
@@ -4506,7 +4545,10 @@ inline double mink_phase_epc6(IntArray &PhaseID, DoubleArray &CubeValues, int Ph
 }
 
 inline double mink_EulerCharacteristic(DTMutableList<Point> &Points, IntArray &Triangles,
-		DoubleArray &CubeValues, int &npts, int &ntris, int &i, int &j, int &k){
+		DoubleArray &CubeValues, int &npts, int &ntris, int &i, int &j, int &k)
+{
+    
+    NULL_USE( CubeValues );
 
 	// Compute the Euler characteristic for triangles in a cube
 	// Exclude edges and vertices shared with between multiple cubes

@@ -237,14 +237,14 @@ private:
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
 runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
-    tag(tag_),
     comm(comm_),
+    tag(tag_),
     analysis(analysis_)
 {
 }
 runAnalysis::commWrapper::commWrapper( commWrapper &&rhs ):
-    tag(rhs.tag),
     comm(rhs.comm),
+    tag(rhs.tag),
     analysis(rhs.analysis)
 {
     rhs.tag = -1;
@@ -283,8 +283,7 @@ runAnalysis::commWrapper runAnalysis::getComm( )
  ******************************************************************/
 runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& Dm,
-    int Np, bool pBC, double beta, double err,
-    IntArray Map ):
+    int Np, bool pBC, double beta, IntArray Map ):
     d_Np( Np ),
     d_beta( beta ),
     d_ScaLBL_Comm( ScaLBL_Comm ),
@@ -292,6 +291,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_Map( Map ),
     d_fillData(Dm.Comm,Dm.rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1)
 {
+    NULL_USE( pBC );
     INSIST( db, "Input database is empty" );
 	char rankString[20];
 	sprintf(rankString,"%05d",Dm.rank);

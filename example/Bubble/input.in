@@ -21,6 +21,7 @@ Domain {
     n = 80, 80, 80      // Size of local domain (Nx,Ny,Nz)
     n_spheres = 1       // Number of spheres
     L = 1, 1, 1         // Length of domain (x,y,z)
+    BC = 0              // Boundary condition
 }
 
 Analysis {

@@ -23,10 +23,8 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis( std::shared_ptr<Database> db,
-        const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm,
-        int Np, bool pBC, double beta, double err,
-        IntArray Map );
+    runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
+        const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm, int Np, bool pBC, double beta, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
