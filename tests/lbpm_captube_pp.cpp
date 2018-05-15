@@ -11,6 +11,17 @@
 #include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
 
+
+std::shared_ptr<Database> loadInputs( )
+{
+    auto db = std::make_shared<Database>( "Domain.in" );
+    const int dim = 50;
+    db->putScalar<int>( "BC", 0 );
+    return db;
+}
+
+
+//***************************************************************************************
 int main(int argc, char **argv)
 {
 	//*****************************************
@@ -24,8 +35,6 @@ int main(int argc, char **argv)
 	MPI_Comm_size(comm,&nprocs);
 	{
 	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
-	int iproc,jproc,kproc;
 	int sendtag,recvtag;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
@@ -54,55 +63,24 @@ int main(int argc, char **argv)
 
 	// Variables that specify the computational domain  
 	string FILENAME;
-	int Nx,Ny,Nz;		// local sub-domain size
-	int nspheres;		// number of spheres in the packing
-	double Lx,Ly,Lz;	// Domain length
 	int i,j,k,n;
 
 	// pmmc threshold values
 
-	if (rank==0){
-		//.......................................................................
-		// Reading the domain information file
-		//.......................................................................
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
-		//.......................................................................
-	}
-	// **************************************************************
-	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(comm);
-	// Computational domain
-	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-	MPI_Barrier(comm);
 	
 	// **************************************************************
-	if (nprocs != nprocx*nprocy*nprocz){
-		printf("nprocx =  %i \n",nprocx);
-		printf("nprocy =  %i \n",nprocy);
-		printf("nprocz =  %i \n",nprocz);
-		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-	}
-
+        // Load inputs
+        auto db = loadInputs( );
+        int Nx = db->getVector<int>( "n" )[0];
+        int Ny = db->getVector<int>( "n" )[1];
+        int Nz = db->getVector<int>( "n" )[2];
+        int nprocx = db->getVector<int>( "nproc" )[0];
+        int nprocy = db->getVector<int>( "nproc" )[1];
+        int nprocz = db->getVector<int>( "nproc" )[2];
+		int kproc = rank/(nprocx*nprocy);
+		int jproc = (rank-nprocx*nprocy*kproc)/nprocx;
+		int iproc = rank-nprocx*nprocy*kproc-nprocx*jproc;
+		
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
@@ -111,7 +89,7 @@ int main(int argc, char **argv)
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+		Domain Dm(db);
 	Dm.CommInit(comm);
 	TwoPhase Averages(Dm);
 

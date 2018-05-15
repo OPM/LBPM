@@ -21,7 +21,7 @@ inline bool approx_equal( const Point& A, const Point& B )
 }
 inline bool approx_equal( const double& A, const double& B )
 {
-    return fabs(A-B)<=1e-7*fabs(A+B);
+    return fabs(A-B) <= std::max<double>(1e-7*fabs(A+B),1e-20);
 }
 
 
@@ -85,7 +85,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
 
     // Get a list of the timesteps 
     PROFILE_START(format+"-read-timesteps");
-    std::vector<std::string> timesteps = IO::readTimesteps( path + "/" + summary_name );
+    auto timesteps = IO::readTimesteps( path + "/" + summary_name );
     PROFILE_STOP(format+"-read-timesteps");
     if ( timesteps.size()==2 )
         ut.passes(format+": Corrent number of timesteps");
@@ -117,7 +117,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
             pass = true;
             for (size_t k=0; k<database.domains.size(); k++) {
                 PROFILE_START(format+"-read-getMesh");
-                std::shared_ptr<IO::Mesh> mesh = IO::getMesh(path,timestep,database,k);
+                auto mesh = IO::getMesh(path,timestep,database,k);
                 PROFILE_STOP(format+"-read-getMesh");
                 if ( mesh.get()==NULL ) {
                     printf("Failed to load %s\n",database.name.c_str());
@@ -126,7 +126,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
                 }
                 if ( database.name=="pointmesh" ) {
                     // Check the pointmesh
-                    std::shared_ptr<IO::PointList> pmesh = IO::getPointList(mesh);
+                    auto pmesh = IO::getPointList(mesh);
                     if ( pmesh.get()==NULL ) {
                         pass = false;
                         break;
@@ -138,8 +138,8 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
                 }
                 if ( database.name=="trimesh" || database.name=="trilist" ) {
                     // Check the trimesh/trilist
-                    std::shared_ptr<IO::TriMesh> mesh1 = IO::getTriMesh(mesh);
-                    std::shared_ptr<IO::TriList> mesh2 = IO::getTriList(mesh);
+                    auto mesh1 = IO::getTriMesh(mesh);
+                    auto mesh2 = IO::getTriList(mesh);
                     if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
                         pass = false;
                         break;
@@ -198,8 +198,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
                 auto mesh = IO::getMesh(path,timestep,database,k);
                 for (size_t v=0; v<mesh0->vars.size(); v++) {
                     PROFILE_START(format+"-read-getVariable");
-                    std::shared_ptr<IO::Variable> variable = 
-                        IO::getVariable(path,timestep,database,k,mesh0->vars[v]->name);
+                    auto variable = IO::getVariable(path,timestep,database,k,mesh0->vars[v]->name);
                     if ( format=="new" )
                         IO::reformatVariable( *mesh, *variable );
                     PROFILE_STOP(format+"-read-getVariable");
@@ -251,19 +250,19 @@ int main(int argc, char **argv)
     };
 
     // Create the meshes
-    std::shared_ptr<IO::PointList> set1( new IO::PointList(N_points) );
+    auto set1 = std::make_shared<IO::PointList>(N_points);
     for (int i=0; i<N_points; i++) {
         set1->points[i].x = x[i];
         set1->points[i].y = y[i];
         set1->points[i].z = z[i];
     }
-    std::shared_ptr<IO::TriMesh> trimesh( new IO::TriMesh(N_tri,set1) );
+    auto trimesh = std::make_shared<IO::TriMesh>(N_tri,set1);
     for (int i=0; i<N_tri; i++) {
         trimesh->A[i] = tri[i][0];
         trimesh->B[i] = tri[i][1];
         trimesh->C[i] = tri[i][2];
     }
-    std::shared_ptr<IO::TriList> trilist( new IO::TriList(*trimesh) );
+    auto trilist = std::make_shared<IO::TriList>(*trimesh);
     for (int i=0; i<N_tri; i++) {
         Point A(x[tri[i][0]],y[tri[i][0]],z[tri[i][0]]);
         Point B(x[tri[i][1]],y[tri[i][1]],z[tri[i][1]]);
@@ -275,25 +274,25 @@ int main(int argc, char **argv)
         }
     }
     RankInfoStruct rank_data( rank, nprocs, 1, 1 );
-    std::shared_ptr<IO::DomainMesh> domain( new IO::DomainMesh(rank_data,6,7,8,1.0,1.0,1.0) );
+    auto domain = std::make_shared<IO::DomainMesh>(rank_data,6,7,8,1.0,1.0,1.0);
 
     // Create the variables
-    const auto NodeVar = IO::VariableType::NodeVariable;
-    const auto VolVar = IO::VariableType::VolumeVariable;
-    std::shared_ptr<IO::Variable> set_node_mag( new IO::Variable(1,NodeVar,"Node_set_mag") );
-    std::shared_ptr<IO::Variable> set_node_vec( new IO::Variable(3,NodeVar,"Node_set_vec") );
-    std::shared_ptr<IO::Variable> list_node_mag( new IO::Variable(1,NodeVar,"Node_list_mag") );
-    std::shared_ptr<IO::Variable> list_node_vec( new IO::Variable(3,NodeVar,"Node_list_vec") );
-    std::shared_ptr<IO::Variable> point_node_mag( new IO::Variable(1,NodeVar,"Node_point_mag") );
-    std::shared_ptr<IO::Variable> point_node_vec( new IO::Variable(3,NodeVar,"Node_point_vec") );
-    std::shared_ptr<IO::Variable> domain_node_mag( new IO::Variable(1,NodeVar,"Node_domain_mag") );
-    std::shared_ptr<IO::Variable> domain_node_vec( new IO::Variable(3,NodeVar,"Node_domain_vec") );
-    std::shared_ptr<IO::Variable> set_cell_mag( new IO::Variable(1,VolVar,"Cell_set_mag") );
-    std::shared_ptr<IO::Variable> set_cell_vec( new IO::Variable(3,VolVar,"Cell_set_vec") );
-    std::shared_ptr<IO::Variable> list_cell_mag( new IO::Variable(1,VolVar,"Cell_list_mag") );
-    std::shared_ptr<IO::Variable> list_cell_vec( new IO::Variable(3,VolVar,"Cell_list_vec") );
-    std::shared_ptr<IO::Variable> domain_cell_mag( new IO::Variable(1,VolVar,"Cell_domain_mag") );
-    std::shared_ptr<IO::Variable> domain_cell_vec( new IO::Variable(3,VolVar,"Cell_domain_vec") );
+    const auto NodeVar   = IO::VariableType::NodeVariable;
+    const auto VolVar    = IO::VariableType::VolumeVariable;
+    auto set_node_mag    = std::make_shared<IO::Variable>(1,NodeVar,"Node_set_mag");
+    auto set_node_vec    = std::make_shared<IO::Variable>(3,NodeVar,"Node_set_vec");
+    auto list_node_mag   = std::make_shared<IO::Variable>(1,NodeVar,"Node_list_mag");
+    auto list_node_vec   = std::make_shared<IO::Variable>(3,NodeVar,"Node_list_vec");
+    auto point_node_mag  = std::make_shared<IO::Variable>(1,NodeVar,"Node_point_mag");
+    auto point_node_vec  = std::make_shared<IO::Variable>(3,NodeVar,"Node_point_vec");
+    auto domain_node_mag = std::make_shared<IO::Variable>(1,NodeVar,"Node_domain_mag");
+    auto domain_node_vec = std::make_shared<IO::Variable>(3,NodeVar,"Node_domain_vec");
+    auto set_cell_mag    = std::make_shared<IO::Variable>(1,VolVar,"Cell_set_mag");
+    auto set_cell_vec    = std::make_shared<IO::Variable>(3,VolVar,"Cell_set_vec");
+    auto list_cell_mag   = std::make_shared<IO::Variable>(1,VolVar,"Cell_list_mag");
+    auto list_cell_vec   = std::make_shared<IO::Variable>(3,VolVar,"Cell_list_vec");
+    auto domain_cell_mag = std::make_shared<IO::Variable>(1,VolVar,"Cell_domain_mag");
+    auto domain_cell_vec = std::make_shared<IO::Variable>(3,VolVar,"Cell_domain_vec");
     point_node_mag->data.resize( N_points );
     point_node_vec->data.resize( N_points, 3 );
     for (int i=0; i<N_points; i++) {

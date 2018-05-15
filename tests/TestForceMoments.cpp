@@ -30,6 +30,22 @@ extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 	}
 }
 
+
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>( "Domain.in" );
+    const int dim = 50;
+    db->putScalar<int>( "BC", 0 );
+    if ( nprocs == 1 ){
+        db->putVector<int>( "nproc", { 1, 1, 1 } );
+        db->putVector<int>( "n", { 3, 3, 3 } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    }
+    return db;
+}
+
+
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -45,7 +61,6 @@ int main(int argc, char **argv)
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
 		int iproc,jproc,kproc;
 
 
@@ -61,9 +76,6 @@ int main(int argc, char **argv)
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
 		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int dim = 3; if (rank == 0) printf("dim=%d\n",dim);
 		int timestep = 0;
@@ -76,58 +88,15 @@ int main(int argc, char **argv)
 		Fx = Fy = 1.0;
 		Fz = 1.0;
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				printf("domain.good == true \n");
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=3; Ny = 3;
-				Nz = 3;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
 
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
+        // Load inputs
+        auto db = loadInputs( nprocs );
+        int Nx = db->getVector<int>( "n" )[0];
+        int Ny = db->getVector<int>( "n" )[1];
+        int Nz = db->getVector<int>( "n" )[2];
+        int nprocx = db->getVector<int>( "nproc" )[0];
+        int nprocy = db->getVector<int>( "nproc" )[1];
+        int nprocz = db->getVector<int>( "nproc" )[2];
 
 		if (rank==0){
 			printf("********************************************************\n");
@@ -150,9 +119,8 @@ int main(int argc, char **argv)
 		}
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-		int BoundaryCondition=0;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		Domain Dm(db);
 
 		Nx += 2;
 		Ny += 2;

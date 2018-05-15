@@ -15,7 +15,7 @@ SET( TEST_MAX_PROCS 16 )
 
 
 # Initialize the project
-PROJECT( ${PROJ} )
+PROJECT( ${PROJ} LANGUAGES CXX )
 
 
 # Prevent users from building in place
@@ -25,8 +25,13 @@ ENDIF()
 
 
 # Set the default C++ standard
-IF ( NOT CXX_STD )
-    SET( CXX_STD 11 )
+SET( CMAKE_CXX_EXTENSIONS OFF )
+IF ( NOT CMAKE_CXX_STANDARD )
+    IF ( CXX_STD )
+        MESSAGE( WARNING "CXX_STD is obsolete, please set CMAKE_CXX_STANDARD" )
+        SET( CMAKE_CXX_STANDARD ${CXX_STD} )
+    ENDIF()
+    SET( CMAKE_CXX_STANDARD 11 )
 ENDIF()
 
 
@@ -113,6 +118,8 @@ ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common vi
 
 
 # Check for CUDA
+CHECK_ENABLE_FLAG( USE_CUDA 0 )
+NULL_USE( CMAKE_CUDA_FLAGS )
 IF ( USE_CUDA )
     ADD_DEFINITIONS( -DUSE_CUDA )
     ENABLE_LANGUAGE( CUDA )

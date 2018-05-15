@@ -1,13 +1,10 @@
-#ifndef Eikonal_HPP_INC
-#define Eikonal_HPP_INC
-
 #include "analysis/eikonal.h"
 #include "analysis/imfilter.h"
 
 
 
 
-inline float minmod(float &a, float &b)
+static inline float minmod(float &a, float &b)
 {
     float value = a;
     if     ( a*b < 0.0)
@@ -18,7 +15,7 @@ inline float minmod(float &a, float &b)
 }
 
 
-inline double minmod(double &a, double &b){
+static inline double minmod(double &a, double &b){
 
 	double value;
 
@@ -33,9 +30,8 @@ inline double minmod(double &a, double &b){
 /******************************************************************
 * Solve the eikonal equation                                      *
 ******************************************************************/
-
-
-inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
+double Eikonal(DoubleArray &Distance, const char *ID, const Domain &Dm, int timesteps)
+{
 
 	/*
 	 * This routine converts the data in the Distance array to a signed distance
@@ -180,7 +176,7 @@ inline double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps
 	return GlobalVar;
 }
 
-inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps)
+float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps)
 {
     PROFILE_START("Eikonal3D");
 
@@ -327,7 +323,7 @@ inline float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Dom
 /******************************************************************
 * A fast distance calculation                                     *
 ******************************************************************/
-inline bool CalcDist3DIteration( Array<float> &Distance, const Domain &Dm )
+bool CalcDist3DIteration( Array<float> &Distance, const Domain &Dm )
 {
     const float sq2 = sqrt(2.0f);
     const float sq3 = sqrt(3.0f);
@@ -367,7 +363,7 @@ inline bool CalcDist3DIteration( Array<float> &Distance, const Domain &Dm )
     }
     return changed;
 }
-inline void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm )
+void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm )
 {
     PROFILE_START("Calc Distance");
     // Initialize the distance to be 0 fore the cells adjacent to the interface
@@ -402,7 +398,7 @@ inline void CalcDist3D( Array<float> &Distance, const Array<char> &ID, const Dom
 /******************************************************************
 * A fast distance calculation                                     *
 ******************************************************************/
-inline void CalcDistMultiLevelHelper( Array<float> &Distance, const Domain &Dm )
+void CalcDistMultiLevelHelper( Array<float> &Distance, const Domain &Dm )
 {
     size_t ratio = 4;
     std::function<float(const Array<float>&)> coarsen = [ratio]( const Array<float>& data )
@@ -440,7 +436,10 @@ inline void CalcDistMultiLevelHelper( Array<float> &Distance, const Domain &Dm )
         // Coarsen
         Array<float> dist(Nx,Ny,Nz);
         fillData.copy(Distance,dist);
-        Domain Dm2(Nx/ratio,Ny/ratio,Nz/ratio,Dm.rank,Dm.nprocx,Dm.nprocy,Dm.nprocz,Dm.Lx,Dm.Ly,Dm.Lz,0);
+        auto db = Dm.getDatabase()->cloneDatabase();
+        auto n = db->getVector<int>( "n" );
+        db->putVector<int>( "n", { n[0]/ratio, n[1]/ratio, n[2]/ratio } );
+        Domain Dm2(db);
         Dm2.CommInit(Dm.Comm);
         fillHalo<float> fillData2(Dm2.Comm,Dm2.rank_info,Nx/ratio,Ny/ratio,Nz/ratio,1,1,1,0,1);
         auto dist2 = dist.coarsen( {ratio,ratio,ratio}, coarsen );
@@ -483,7 +482,7 @@ inline void CalcDistMultiLevelHelper( Array<float> &Distance, const Domain &Dm )
         }
     }
 }
-inline void CalcDistMultiLevel( Array<float> &Distance, const Array<char> &ID, const Domain &Dm )
+void CalcDistMultiLevel( Array<float> &Distance, const Array<char> &ID, const Domain &Dm )
 {
     PROFILE_START("Calc Distance Multilevel");
     int Nx = Dm.Nx-2;
@@ -515,5 +514,3 @@ inline void CalcDistMultiLevel( Array<float> &Distance, const Array<char> &ID, c
     Distance = imfilter::imfilter_separable<float>( Distance, {H,H,H}, BC );
     PROFILE_STOP("Calc Distance Multilevel");
 }
-
-#endif

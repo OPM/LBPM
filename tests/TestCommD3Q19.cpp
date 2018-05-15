@@ -11,6 +11,36 @@
 using namespace std;
 
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>( "Domain.in" );
+    const int dim = 50;
+    db->putScalar<int>( "BC", 0 );
+    if ( nprocs == 1 ){
+        db->putVector<int>( "nproc", { 1, 1, 1 } );
+        db->putVector<int>( "n", { 3, 1, 1 } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    } else if ( nprocs == 2 ) {
+        db->putVector<int>( "nproc", { 2, 1, 1 } );
+        db->putVector<int>( "n", { dim, dim, dim } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    } else if ( nprocs == 4 ) {
+        db->putVector<int>( "nproc", { 2, 2, 1 } );
+        db->putVector<int>( "n", { dim, dim, dim } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    } else if (nprocs==8){
+        db->putVector<int>( "nproc", { 2, 2, 2 } );
+        db->putVector<int>( "n", { dim, dim, dim } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    }
+    return db;
+}
+
+
 extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int Nx, int Ny, int Nz,
 								int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz)
 {
@@ -176,88 +206,13 @@ int main(int argc, char **argv)
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
 		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=50;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=nprocy=1;
-				nprocz=2;
-				Nx=Ny=Nz=50;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=50;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=50;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nBlocks,1,MPI_UNSIGNED,0,comm);
-		MPI_Bcast(&nthreads,1,MPI_UNSIGNED,0,comm);
-		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
-
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
-
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
+        // Load inputs
+        auto db = loadInputs( nprocs );
+        int Nx = db->getVector<int>( "n" )[0];
+        int Ny = db->getVector<int>( "n" )[1];
+        int Nz = db->getVector<int>( "n" )[2];
 
 		if (rank==0){
 			printf("********************************************************\n");
@@ -272,8 +227,9 @@ int main(int argc, char **argv)
 		iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-		int BoundaryCondition=0;
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		
+		Domain Dm(db);
+
 
 		InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 				rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,

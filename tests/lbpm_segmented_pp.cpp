@@ -228,40 +228,18 @@ int main(int argc, char **argv)
 		//	DoubleArray Distance(nx,ny,nz);
 		//	DoubleArray Phase(nx,ny,nz);
 
+		int count = 0;
 		// Solve for the position of the solid phase
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){
 				for (i=0;i<nx;i++){
 					n = k*nx*ny+j*nx+i;
 					// Initialize the solid phase
-					if (!(Dm.id[n] > 0))	id[n] = 0;
+					if (Dm.id[n] == 0)	id[n] = 0;
 					else		      	id[n] = 1;
 				}
 			}
 		}
-		
-
-		int count = 0;
-		int total = 0;
-		int totalGlobal = 0;
-		int countGlobal = 0;
-		for (k=1;k<nz-1;k++){
-			for (j=1;j<ny-1;j++){
-				for (i=1;i<nx-1;i++){
-					n=k*nx*ny+j*nx+i;
-					total++;
-					if (!(id[n] > 0)){
-						count++;
-					}
-				}
-			}
-		}
-		MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
-		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		float poros = float(totalGlobal-countGlobal)/totalGlobal;
-		if (rank==0) printf("Porosity=%f\n",poros);
-
-
 		// Initialize the signed distance function
 		for (k=0;k<nz;k++){
 			for (j=0;j<ny;j++){

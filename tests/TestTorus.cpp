@@ -9,10 +9,17 @@
 #include "analysis/analysis.h"
 #include "analysis/TwoPhase.h"
 
-//#include "Domain.h"
 
-using namespace std;
-
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>( "Domain.in" );
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 100, 100, 100 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
 
 
 int main(int argc, char **argv)
@@ -34,65 +41,33 @@ int main(int argc, char **argv)
     //.......................................................................
     // Reading the domain information file
     //.......................................................................
-    int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-    double Lx, Ly, Lz;
-    int Nx,Ny,Nz;
     int i,j,k,n;
 
-    if (rank==0){
-  /*  	ifstream domain("Domain.in");
-    	domain >> nprocx;
-    	domain >> nprocy;
-    	domain >> nprocz;
-    	domain >> nx;
-    	domain >> ny;
-    	domain >> nz;
-    	domain >> nspheres;
-    	domain >> Lx;
-    	domain >> Ly;
-    	domain >> Lz;
-    	*/
-    	// Set the domain for single processor test
-    	nprocx=nprocy=nprocz=1;
-    	nx=ny=nz=100;
-    	nspheres=1;
-    	Lx=Ly=Lz=1;
-    }
-	MPI_Barrier(comm);
-	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-	MPI_Barrier(comm);
+        // Load inputs
+        auto db = loadInputs( nprocs );
+        int Nx = db->getVector<int>( "n" )[0];
+        int Ny = db->getVector<int>( "n" )[1];
+        int Nz = db->getVector<int>( "n" )[2];
+        int nprocx = db->getVector<int>( "nproc" )[0];
+        int nprocy = db->getVector<int>( "nproc" )[1];
+        int nprocz = db->getVector<int>( "nproc" )[2];
 
-    // Check that the number of processors >= the number of ranks
-    if ( rank==0 ) {
-        printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
-        printf("Number of MPI ranks used: %i \n", nprocs);
-        printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
-    }
-    if ( nprocs < nprocx*nprocy*nprocz )
-        ERROR("Insufficient number of processors");
+		if (rank==0){
+			printf("********************************************************\n");
+			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+			printf("********************************************************\n");
+		}
 
-    // Set up the domain
-	int BC=0;
+
+
     // Get the rank info
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	Domain Dm(db);
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
-	int N = (nx+2)*(ny+2)*(nz+2);
-	Nx = nx+2;
-	Ny = ny+2;
-	Nz = nz+2;
-	if (rank == 0) cout << "Domain set." << endl;
+	Nx += 2;
+	Ny += 2;
+	Nz += 2;
+	int N = Nx*Ny*Nz;
 	//.......................................................................
 	for ( k=1;k<Nz-1;k++){
 		for ( j=1;j<Ny-1;j++){

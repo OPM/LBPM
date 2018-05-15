@@ -14,6 +14,20 @@
 #include "analysis/eikonal.h"
 
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    INSIST(nprocs==8, "TestSegDist: Number of MPI processes must be equal to 8");
+    auto db = std::make_shared<Database>( );
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 2, 2, 2 } );
+    db->putVector<int>( "n", { 50, 50, 50 } );
+    db->putScalar<int>( "nspheres", 0 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
+
+
+//***************************************************************************************
 int main(int argc, char **argv)
 {
 	// Initialize MPI
@@ -25,39 +39,35 @@ int main(int argc, char **argv)
 	{
 	int i,j,k,n,nn;
 	int iproc,jproc,kproc;
-	int nx,ny,nz;
-	int Nx, Ny, Nz, N;
-    int nprocx, nprocy, nprocz, nspheres;
-    double Lx, Ly, Lz;
-	Nx = Ny = Nz = 50;
-	nx = ny = nz = 50;
-	N = Nx*Ny*Nz;
-	nprocx=nprocy=nprocz=2;
-	Lx = Ly = Lz = 1.0;
-	int BC=0;
 
-	if (nprocs != 8){
-		ERROR("TestSegDist: Number of MPI processes must be equal to 8");
-	}
 
-    if (nprocx !=2 || nprocz !=2 || nprocy !=2 ){
-		ERROR("TestSegDist: MPI process grid must be 2x2x2");
-	}
+
+    // Load inputs
+    auto db = loadInputs( nprocs );
+    int Nx = db->getVector<int>( "n" )[0];
+    int Ny = db->getVector<int>( "n" )[1];
+    int Nz = db->getVector<int>( "n" )[2];
+    int nprocx = db->getVector<int>( "nproc" )[0];
+    int nprocy = db->getVector<int>( "nproc" )[1];
+    int nprocz = db->getVector<int>( "nproc" )[2];
+
 
     // Get the rank info
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				n = k*nx*ny+j*nx+i;
+    Domain Dm(db);
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
 				Dm.id[n] = 1;
 			}
 		}
 	}
 	Dm.CommInit(comm);
 
-	nx+=2; ny+=2; nz+=2;
-	N = nx*ny*nz;
+	int nx = Nx+2;
+    int ny = Ny+2;
+    int nz = Nz+2;
+	int N = nx*ny*nz;
 	int count = 0;
 
 	char *id;

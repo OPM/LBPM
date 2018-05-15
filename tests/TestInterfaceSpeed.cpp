@@ -15,6 +15,20 @@
 #define SPEED -1
 #define PI 3.14159
 
+
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>( );
+    const int dim = 50;
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { N, N, N } );
+    db->putScalar<int>( "nspheres", 0 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
+
+
 int main (int argc, char *argv[])
 {
 	// Initialize MPI
@@ -24,16 +38,11 @@ int main (int argc, char *argv[])
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
-	int npx,npy,npz;
 	int i,j,k,n;
-	int Nx,Ny,Nz;
-	double Lx,Ly,Lz;
-	Nx=Ny=Nz=N;
-	npx=npy=npz=1;
-	Lx=Ly=Lz=1.0;
-	int BC=0;	// periodic boundary condition
+        // Load inputs
+        auto db = loadInputs( nprocs );
 
-	Domain Dm(Nx,Ny,Nz,rank,npx,npy,npz,Lx,Ly,Lz,BC);
+		Domain Dm(db);
 
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 
@@ -42,9 +51,9 @@ int main (int argc, char *argv[])
 	TwoPhase Averages(Dm);
 	int timestep=0;
 
-	Nx = Dm.Nx;
-	Ny = Dm.Ny;
-	Nz = Dm.Nz;
+	int Nx = Dm.Nx;
+	int Ny = Dm.Ny;
+	int Nz = Dm.Nz;
 
 	double Cx,Cy,Cz;
 	double dist1,dist2;

@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 					n=k*nx*ny+j*nx+i;
 					total++;
 					Dm.id[n] = newIDs[n];
-					if (!(Dm.id[n] > 0)){
+					if (Dm.id[n] == 0){
 						count++;
 					}
 				}
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 				}
 			}
 			float porosity = float(totalGlobal-countGlobal)/totalGlobal;
-			//printf("Original Porosity=%f\n",porosity);
+			printf("Original Porosity=%f\n",porosity);
 		}
 
 		count = 0;
