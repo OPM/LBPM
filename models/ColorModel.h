@@ -18,8 +18,8 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_model_color();
-	~ScaLBL_model_color();	
+	ScaLBL_ColorModel();
+	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
 	void ReadInput();
