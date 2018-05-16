@@ -40,7 +40,6 @@ int main(int argc, char **argv)
             return -1;
         }
         auto filename = argv[1];
-        
         auto db = std::make_shared<Database>( filename );
         auto domain_db = db->getDatabase( "Domain" );
         auto color_db = db->getDatabase( "Color" );
@@ -103,7 +102,6 @@ int main(int argc, char **argv)
 
         int timestep = 6;
 
-        flux = 0.f;
         if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details
 
         // Get the rank info
@@ -543,14 +541,12 @@ int main(int argc, char **argv)
 
         if (rank==0) printf("********************************************************\n");
         if (rank==0)    printf("No. of timesteps: %i \n", timestepMax);
-
         //.......create and start timer............
         double starttime,stoptime,cputime;
         ScaLBL_DeviceBarrier();
         MPI_Barrier(comm);
         starttime = MPI_Wtime();
         //.........................................
-
         //************ MAIN ITERATION LOOP ***************************************/
         PROFILE_START("Loop");
         runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
