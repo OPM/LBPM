@@ -230,26 +230,9 @@ private:
     TYPE *d_gcw;
 };
 
-
-
-
-void ReadSpherePacking(int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad);
-
-void SignedDistance(double *Distance, int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad,
-                      double Lx, double Ly, double Lz, int Nx, int Ny, int Nz, 
-                      int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz);
-
-void WriteLocalSolidID(char *FILENAME, char *ID, int N);
-
-void WriteLocalSolidDistance(char *FILENAME, double *Distance, int N);
-
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np);
 
 void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, int Np);
-
-void ReadBinaryFile(char *FILENAME, double *Data, int N);
-
-
 
 
 #endif
