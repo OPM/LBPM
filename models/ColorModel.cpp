@@ -1,20 +1,7 @@
 /*
 color lattice boltzmann model
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <iostream>
-#include <exception>
-#include <stdexcept>
-#include <fstream>
-
-#include "common/Communication.h"
-#include "analysis/TwoPhase.h"
-#include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
-#include "ProfilerApp.h"
-#include "threadpool/thread_pool.h"
+#include "models/ColorModel.h"
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(string filename){
 	// read the input database 

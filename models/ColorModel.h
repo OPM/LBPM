@@ -18,7 +18,7 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel();
+	ScaLBL_ColorModel(string filename);
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
@@ -27,7 +27,7 @@ public:
 	void Initialize();
 	void Run();
 	
-	bool Restart
+	bool Restart;
 	int timestep,timestepMax;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
 	double Fx,Fy,Fz,flux;
