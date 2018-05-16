@@ -10,7 +10,7 @@
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"    // This includes mpi.h
-
+#include "common/SpherePack.h"
 
 /*
  * Pre-Processor to generate signed distance function from disc packing
