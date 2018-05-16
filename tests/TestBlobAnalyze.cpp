@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
-	int N = (nx+2)*(ny+2)*(nz+2);
+
 	Nx = nx+2;
 	Ny = ny+2;
 	Nz = nz+2;
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	SignedDistance(Averages.Phase.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
-					   Dm.iproc,Dm.jproc,Dm.kproc,Dm.nprocx,Dm.nprocy,Dm.nprocz);
+		       Dm.iproc(),Dm.jproc(),Dm.kproc(),Dm.nprocx(),Dm.nprocy(),Dm.nprocz());
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
@@ -294,8 +294,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-    double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
 
 	Averages.UpdateSolid();

@@ -257,7 +257,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		printf("rank=%i, %i,%i,%i \n",rank,Dm.iproc,Dm.jproc,Dm.jproc);
+		printf("rank=%i, %i,%i,%i \n",rank,Dm.iproc(),Dm.jproc(),Dm.jproc());
 		// Initialize a bubble
 		int BubbleRadius=Nx/3;
 		int center_x = (Nx-2)*nprocx/2;
@@ -268,9 +268,9 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny + j*Nx + i;
-					int iglobal= i+(Nx-2)*Dm.iproc;
-					int jglobal= j+(Ny-2)*Dm.jproc;
-					int kglobal= k+(Nz-2)*Dm.kproc;
+					int iglobal= i+(Nx-2)*Dm.iproc();
+					int jglobal= j+(Ny-2)*Dm.jproc();
+					int kglobal= k+(Nz-2)*Dm.kproc();
 
 					// Initialize phase position field for parallel bubble test
 					if ((iglobal-center_x)*(iglobal-center_x)

@@ -170,7 +170,7 @@ int main(int argc, char **argv)
 
 		// Write output blocks with the same sub-domain size as origina
 		// refinement increases the size of the process grid
-		writerank = 8*Dm.kproc*nprocx*nprocy + 4*Dm.jproc*nprocx + 2*Dm.iproc;
+ 		writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc();
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-		writerank = 8*Dm.kproc*nprocx*nprocy + 4*Dm.jproc*nprocx + 2*Dm.iproc+1;
+		writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc()+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 		fclose(WRITEID);
 
 
-		writerank = (2*Dm.kproc)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc+1;
+		writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-		writerank = (2*Dm.kproc)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc;
+		writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -283,8 +283,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-
-		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc)*2*nprocx + 2*Dm.iproc;
+		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc();
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -312,7 +311,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc)*2*nprocx + 2*Dm.iproc+1;
+		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc()+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -340,7 +339,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc;
+		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -368,7 +367,7 @@ int main(int argc, char **argv)
 		fwrite(id,1,nx*ny*nz,WRITEID);
 		fclose(WRITEID);
 
-		writerank = (2*Dm.kproc+1)*4*nprocx*nprocy + (2*Dm.jproc+1)*2*nprocx + 2*Dm.iproc+1;
+		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){

@@ -294,7 +294,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     NULL_USE( pBC );
     INSIST( db, "Input database is empty" );
 	char rankString[20];
-	sprintf(rankString,"%05d",Dm.rank);
+	sprintf(rankString,"%05d",Dm.rank());
     d_N[0] = Dm.Nx;
     d_N[1] = Dm.Ny;
     d_N[2] = Dm.Nz;
