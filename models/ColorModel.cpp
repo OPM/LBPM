@@ -3,12 +3,18 @@ color lattice boltzmann model
  */
 #include "models/ColorModel.h"
 
-ScaLBL_ColorModel::ScaLBL_ColorModel(string filename){
+ScaLBL_ColorModel::ScaLBL_ColorModel(){
+}
+ScaLBL_ColorModel::~ScaLBL_ColorModel(){
+	
+}
+
+void ScaLBL_ColorModel::ReadParams(){
 	// read the input database 
-    db = std::make_shared<Database>( filename );
-    domain_db = db->getDatabase( "Domain" );
-    color_db = db->getDatabase( "Color" );
-    analysis_db = db->getDatabase( "Analysis" );
+    auto db = std::make_shared<Database>( filename );
+    auto domain_db = db->getDatabase( "Domain" );
+    auto color_db = db->getDatabase( "Color" );
+    auto analysis_db = db->getDatabase( "Analysis" );
     
     // Color Model parameters
     timestepMax = domain_db->getScalar<int>( "timestepMax" );

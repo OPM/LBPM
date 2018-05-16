@@ -39,16 +39,9 @@ public:
 		
 private:
 	MPI_Comm comm;
-	Database db;
-	Database domain_db;
-	Database color_db;
-	Database analysis_db;
-      
 	Domain Dm;   // this domain is for analysis
 	Domain Mask; // this domain is for lbm
-
     ScaLBL_Communicator ScaLBL_Comm;
-
     std::shared_ptr<TwoPhase> Averages;
 
 	// filenames
