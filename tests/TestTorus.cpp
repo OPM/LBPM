@@ -103,9 +103,9 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 
 				// global position relative to center
-				x = Dm.iproc*Nx+i - CX;
-				y = Dm.jproc*Ny+j - CY;
-				z = Dm.kproc*Nz+k - CZ;
+				x = Dm.iproc()*Nx+i - CX;
+				y = Dm.jproc()*Ny+j - CY;
+				z = Dm.kproc()*Nz+k - CZ;
 
 				// Shrink the sphere sizes by two voxels to make sure they don't touch
 				Averages.SDs(i,j,k) = 100.0;
@@ -113,12 +113,12 @@ int main(int argc, char **argv)
 				// Single torus
 				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 				// Double torus
-				/*		y = Dm.jproc*Ny+j - CY1;
-				//z = Dm.kproc*Nz+k - CZ +R1;
+				/*		y = Dm.jproc()*Ny+j - CY1;
+				//z = Dm.kproc()*Nz+k - CZ +R1;
 				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 				
-				y = Dm.jproc*Ny+j - CY2;
-				//z = Dm.kproc*Nz+k - CZ-R1;
+				y = Dm.jproc()*Ny+j - CY2;
+				//z = Dm.kproc()*Nz+k - CZ-R1;
 				Averages.Phase(i,j,k) = min(Averages.Phase(i,j,k),
 						sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2);
 				*///..............................................................................
