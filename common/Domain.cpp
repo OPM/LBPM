@@ -15,17 +15,12 @@
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
-
-
-
 // Inline function to read line without a return argument
 static inline void fgetl( char * str, int num, FILE * stream )
 {
     char* ptr = fgets( str, num, stream );
     if ( 0 ) {char *temp = (char *)&ptr; temp++;}
 }
-
-
 
 /********************************************************
  * Constructors/Destructor                               *
@@ -715,8 +710,7 @@ void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
     File.close();
 }
 
-
-inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
+void ReadBinaryFile(char *FILENAME, double *Data, int N)
 {
   int n;
   double value;
@@ -733,6 +727,5 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
     for (n=0; n<N; n++) Data[n] = 1.2e-34;
   }
   File.close();
-
 }
 

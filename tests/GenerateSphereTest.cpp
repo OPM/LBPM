@@ -8,6 +8,7 @@
 
 //#include "common/pmmc.h"
 #include "common/Domain.h"
+#include "common/SpherePack.h"
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
@@ -20,26 +21,26 @@
 using namespace std;
 
 inline void PackID(int *list, int count, char *sendbuf, char *ID){
-  // Fill in the phase ID values from neighboring processors
-  // This packs up the values that need to be sent from one processor to another
-  int idx,n;
+	// Fill in the phase ID values from neighboring processors
+	// This packs up the values that need to be sent from one processor to another
+	int idx,n;
 
-  for (idx=0; idx<count; idx++){
-    n = list[idx];
-    sendbuf[idx] = ID[n];
-  }
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		sendbuf[idx] = ID[n];
+	}
 }
 //***************************************************************************************
 
 inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
-  // Fill in the phase ID values from neighboring processors
-  // This unpacks the values once they have been recieved from neighbors
-  int idx,n;
+	// Fill in the phase ID values from neighboring processors
+	// This unpacks the values once they have been recieved from neighbors
+	int idx,n;
 
-  for (idx=0; idx<count; idx++){
-    n = list[idx];
-    ID[n] = recvbuf[idx];
-  }
+	for (idx=0; idx<count; idx++){
+		n = list[idx];
+		ID[n] = recvbuf[idx];
+	}
 }
 
 

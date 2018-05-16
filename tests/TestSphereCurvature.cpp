@@ -2,6 +2,7 @@
 #include <math.h>
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
+#include "common/SpherePack.h"
 
 using namespace std;
 
