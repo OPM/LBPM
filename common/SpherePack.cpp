@@ -14,6 +14,14 @@
 #include "common/Database.h"
 #include "common/SpherePack.h"
 
+// Inline function to read line without a return argument
+static inline void fgetl( char * str, int num, FILE * stream )
+{
+  char* ptr = fgets( str, num, stream );
+  if ( 0 ) {char *temp = (char *)&ptr; temp++;}
+}
+
+
 void WriteLocalSolidID(char *FILENAME, char *ID, int N)
 {
 	char value;

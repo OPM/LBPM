@@ -15,17 +15,12 @@
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
-
-
-
 // Inline function to read line without a return argument
 static inline void fgetl( char * str, int num, FILE * stream )
 {
     char* ptr = fgets( str, num, stream );
     if ( 0 ) {char *temp = (char *)&ptr; temp++;}
 }
-
-
 
 /********************************************************
  * Constructors/Destructor                               *

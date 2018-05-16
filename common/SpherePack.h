@@ -33,3 +33,5 @@ void AssignLocalSolidID(char *ID, int nspheres, double *List_cx, double *List_cy
 void SignedDistance(double *Distance, int nspheres, double *List_cx, double *List_cy, double *List_cz, double *List_rad,
 		    double Lx, double Ly, double Lz, int Nx, int Ny, int Nz, 
 		    int iproc, int jproc, int kproc, int nprocx, int nprocy, int nprocz);
+
+#endif
