@@ -8,6 +8,7 @@
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "analysis/TwoPhase.h"
+#include "common/SpherePack.h"
 
 //#include "Domain.h"
 
