@@ -58,16 +58,15 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
-    // Full domain used for analysis
-    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));
-    for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) );
-    //   TwoPhase Averages(Dm);
-    Dm.CommInit(comm);
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));     // full domain for analysis
+    Mask  = std::shared_ptr<Domain>(new Domain(domain_db));   // mask domain removes immobile phases
+    for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;     // initialize this way
+    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 
-    // Mask that excludes the immobile phases
-    Domain Mask(domain_db);
     MPI_Barrier(comm);
+    Dm.CommInit(comm);
+    MPI_Barrier(comm);
+
     
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
