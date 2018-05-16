@@ -41,9 +41,9 @@ public:
 		
 private:
 	MPI_Comm comm;
-	Domain Dm;   // this domain is for analysis
-	Domain Mask; // this domain is for lbm
-    ScaLBL_Communicator ScaLBL_Comm;
+	std::shared_ptr<Domain> Dm;   // this domain is for analysis
+	std::shared_ptr<Domain> Mask; // this domain is for lbm
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
     std::shared_ptr<TwoPhase> Averages;
 
 	// filenames

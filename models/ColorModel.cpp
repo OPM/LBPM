@@ -59,7 +59,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
     // Full domain used for analysis
-    Domain Dm(domain_db);
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));
     for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
     Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) );
     //   TwoPhase Averages(Dm);
@@ -197,7 +197,9 @@ void ScaLBL_ColorModel::Create(){
      //...........................................................................
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
         // Create a communicator for the device (will use optimized layout)
-        ScaLBL_Communicator ScaLBL_Comm(Mask);
+        // ScaLBL_Communicator ScaLBL_Comm(Mask); // original
+        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+
         //Create a second communicator based on the regular data layout
         //ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
         
