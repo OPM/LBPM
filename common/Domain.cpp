@@ -674,7 +674,7 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
 }
 
-
+// Ideally stuff below here should be moved somewhere else -- doesn't really belong here
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np)
 {
     int q,n;
@@ -714,4 +714,23 @@ void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
 }
 
 
+inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
+{
+  int n;
+  double value;
+  ifstream File(FILENAME,ios::binary);
+  if (File.good()){
+    for (n=0; n<N; n++){
+      // Write the two density values                                                                                
+      File.read((char*) &value, sizeof(value));
+      Data[n] = value;
+
+    }
+  }
+  else {
+    for (n=0; n<N; n++) Data[n] = 1.2e-34;
+  }
+  File.close();
+
+}
 
