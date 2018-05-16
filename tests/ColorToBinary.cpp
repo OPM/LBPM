@@ -10,6 +10,27 @@
 
 using namespace std;
 
+inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
+{
+  int n;
+  double value;
+  ifstream File(FILENAME,ios::binary);
+  if (File.good()){
+    for (n=0; n<N; n++){
+      // Write the two density values
+      File.read((char*) &value, sizeof(value));
+      Data[n] = value;
+
+    }
+  }
+  else {
+    for (n=0; n<N; n++) Data[n] = 1.2e-34;
+  }
+  File.close();
+
+}
+
+
 inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, int nx, int ny, int nz, int iproc, int
 							jproc, int kproc)
 {
