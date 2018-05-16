@@ -149,7 +149,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     fillFloat.fill( Mean );
     segment( Mean, ID, 0.01 );
     // Compute the distance using the segmented volume
-	Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+	Eikonal( Dist, ID, Dm, ID.size(0)*nprocx );
 	fillFloat.fill(Dist);
     smooth( VOL, Dist, 2.0, MultiScaleSmooth, fillFloat );
     // Compute non-local mean

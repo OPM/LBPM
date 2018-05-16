@@ -12,6 +12,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "analysis/eikonal.h"
+#include "IO/Writer.h"
 
 
 std::shared_ptr<Database> loadInputs( int nprocs )
@@ -37,9 +38,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	{
-	int i,j,k,n,nn;
-	int iproc,jproc,kproc;
-
 
 
     // Load inputs
@@ -47,17 +45,14 @@ int main(int argc, char **argv)
     int Nx = db->getVector<int>( "n" )[0];
     int Ny = db->getVector<int>( "n" )[1];
     int Nz = db->getVector<int>( "n" )[2];
-    int nprocx = db->getVector<int>( "nproc" )[0];
-    int nprocy = db->getVector<int>( "nproc" )[1];
-    int nprocz = db->getVector<int>( "nproc" )[2];
 
 
     // Get the rank info
     Domain Dm(db);
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
 				Dm.id[n] = 1;
 			}
 		}
@@ -67,40 +62,34 @@ int main(int argc, char **argv)
 	int nx = Nx+2;
     int ny = Ny+2;
     int nz = Nz+2;
-	int N = nx*ny*nz;
-	int count = 0;
 
-	char *id;
-	id = new char [N];
 	double BubbleRadius = 25;
-	// Initialize the bubble
-	double x,y,z , Cx,Cy,Cz;
 
-	Cx = 1.0*nx;
-	Cy = 1.0*ny;
-	Cz = 1.0*nz;
+	// Initialize the bubble
+	double Cx = 1.0*nx;
+	double Cy = 1.0*ny;
+	double Cz = 1.0*nz;
 
 	DoubleArray Distance(nx,ny,nz);
 	DoubleArray TrueDist(nx,ny,nz);
+    Array<char> id(nx,ny,nz);
+    id.fill(0);
 
-	for (k=1;k<nz-1;k++){
-		for (j=1;j<ny-1;j++){
-			for (i=1;i<nx-1;i++){
+	for (int k=1;k<nz-1;k++){
+		for (int j=1;j<ny-1;j++){
+			for (int i=1;i<nx-1;i++){
 
 				// True signed distance
-				x = (nx-2)*Dm.iproc+i-1;
-				y = (ny-2)*Dm.jproc+j-1;
-				z = (nz-2)*Dm.kproc+k-1;
+				double x = (nx-2)*Dm.iproc()+i-1;
+				double y = (ny-2)*Dm.jproc()+j-1;
+				double z = (nz-2)*Dm.kproc()+k-1;
 				TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
-
-				n = k*nx*ny+j*nx+i;
 
 				// Initialize phase positions
 				if (TrueDist(i,j,k) < 0.0){
-					id[n] = 0;
-				}
-				else{
-					id[n]=1;
+					id(i,j,k) = 0;
+				} else{
+					id(i,j,k)=1;
 				}
 
 
@@ -109,12 +98,11 @@ int main(int argc, char **argv)
 	}
 	
 	// Initialize the signed distance function
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-				n=k*nx*ny+j*nx+i;
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
 				// Initialize distance to +/- 1
-				Distance(i,j,k) = 1.0*id[n]-0.5;
+				Distance(i,j,k) = 2.0*id(i,j,k)-1.0;
 			}
 		}
 	}
@@ -128,31 +116,55 @@ int main(int argc, char **argv)
 
 	double starttime,stoptime,cputime;
 	starttime = MPI_Wtime();
-	Eikonal(Distance,id,Dm,10);
+	double err1 = Eikonal(Distance,id,Dm,1000);
 	stoptime = MPI_Wtime();
 	cputime = (stoptime - starttime);
 
 	if (rank==0) printf("Total time: %f seconds \n",cputime);
 
 
-	double Error=0.0;
-	int Count = 0;
-	for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
+	double localError=0.0;
+	int localCount = 0;
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
 				if (fabs(TrueDist(i,j,k)) < 3.0){
-					Error += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
-					Count += 1;
+					localError += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
+					localCount++;
 				}
 			}
 		}
 	}
-	Error = sqrt(Error)/(double (Count));
-	if (rank==0) printf("Mean error %f \n", Error);
+    double globalError;
+    int globalCount;
+    MPI_Allreduce(&localError,&globalError,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(&localCount,&globalCount,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	double err2 = sqrt(globalError)/(double (globalCount));
+	if (rank==0) printf("global variation %f \n", err1);
+	if (rank==0) printf("Mean error %f \n", err2);
 
+    // Write the results to visit
+    Array<int> ID0(id.size());
+    ID0.copy( id );
+    Array<double> ID(Nx,Ny,Nz);
+    Array<double> dist1(Nx,Ny,Nz);
+    Array<double> dist2(Nx,Ny,Nz);
+    fillHalo<double> fillData(Dm.Comm, Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+    fillData.copy( ID0, ID );
+    fillData.copy( Distance, dist1 );
+    fillData.copy( TrueDist, dist2 );
+    std::vector<IO::MeshDataStruct> data(1);
+    data[0].meshName = "mesh";
+    data[0].mesh.reset( new IO::DomainMesh( Dm.rank_info, Nx, Ny, Nz, Dm.Lx, Dm.Ly, Dm.Lz ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "ID", ID ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "Distance", dist1 ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "TrueDist", dist2 ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "error", dist1-dist2 ) );
+    IO::initialize( "", "silo", false );
+    IO::writeData( "testSegDist", data, MPI_COMM_WORLD );
 
-    MPI_Barrier(comm);
     }
+    MPI_Barrier(comm);
     MPI_Finalize();
     return 0;
 

@@ -288,7 +288,7 @@ int main(int argc, char **argv)
         if (rank==0) printf("Media porosity = %f \n",porosity);
         //.........................................................
         // If external boundary conditions are applied remove solid
-        if (BoundaryCondition >  0  && Dm.kproc == 0){
+        if (BoundaryCondition >  0  && Dm.kproc() == 0){
             for (int k=0; k<3; k++){
                 for (int j=0;j<Ny;j++){
                     for (int i=0;i<Nx;i++){
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
                 }
             }
         }
-        if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+        if (BoundaryCondition >  0  && Dm.kproc() == nprocz-1){
             for (int k=Nz-3; k<Nz; k++){
                 for (int j=0;j<Ny;j++){
                     for (int i=0;i<Nx;i++){

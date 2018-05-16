@@ -140,11 +140,11 @@ int main(int argc, char **argv)
 				if (Averages.SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
-				else if (Dm.kproc*Nz+k<BubbleBottom){
+				else if (Dm.kproc()*Nz+k<BubbleBottom){
 					id[n] = 2;
 					sum++;
 				}
-				else if (Dm.kproc*Nz+k<BubbleTop){
+				else if (Dm.kproc()*Nz+k<BubbleTop){
 					id[n] = 1;
 					sum++;
 				}

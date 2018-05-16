@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 			// Read from the large block and write the local ID file
 			if (rank==0) printf("Reading ID file from blocks \n");
 			fflush(stdout);
-			porosity = ReadFromBlock(Dm.id,Dm.iproc,Dm.jproc,Dm.kproc,nx,ny,nz);
+			porosity = ReadFromBlock(Dm.id,Dm.iproc(),Dm.jproc(),Dm.kproc(),nx,ny,nz);
 			
 			MPI_Barrier(MPI_COMM_WORLD);
 			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
@@ -222,8 +222,7 @@ int main(int argc, char **argv)
 		}
 
 		// Initialize the domain and communication
-		char *id;
-		id = new char [N];
+        Array<char> id(nx,ny,nz);
 		TwoPhase Averages(Dm);
 		//	DoubleArray Distance(nx,ny,nz);
 		//	DoubleArray Phase(nx,ny,nz);
@@ -235,8 +234,8 @@ int main(int argc, char **argv)
 				for (i=0;i<nx;i++){
 					n = k*nx*ny+j*nx+i;
 					// Initialize the solid phase
-					if (Dm.id[n] == 0)	id[n] = 0;
-					else		      	id[n] = 1;
+					if (Dm.id[n] == 0)	id(i,j,k) = 0;
+					else		      	id(i,j,k) = 1;
 				}
 			}
 		}
@@ -246,7 +245,7 @@ int main(int argc, char **argv)
 				for (i=0;i<nx;i++){
 					n=k*nx*ny+j*nx+i;
 					// Initialize distance to +/- 1
-					Averages.SDs(i,j,k) = 2.0*double(id[n])-1.0;
+					Averages.SDs(i,j,k) = 2.0*double(id(i,j,k))-1.0;
 				}
 			}
 		}
@@ -254,7 +253,7 @@ int main(int argc, char **argv)
 
 		double LocalVar, TotalVar;
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		int Maxtime=10*max(max(Dm.Nx*Dm.nprocx,Dm.Ny*Dm.nprocy),Dm.Nz*Dm.nprocz);
+		int Maxtime=10*max(max(Dm.Nx*Dm.nprocx(),Dm.Ny*Dm.nprocy()),Dm.Nz*Dm.nprocz());
 		Maxtime=min(Maxtime,MAXTIME);
 		LocalVar = Eikonal(Averages.SDs,id,Dm,Maxtime);
 

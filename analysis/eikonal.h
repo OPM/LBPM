@@ -15,23 +15,20 @@
  * Reference:
  * Min C (2010) On reinitializing level set functions, Journal of Computational Physics	229
  *
- * @return  Returns the number of cubes in the blob
  * @param[in/out] Distance  Distance function
  * @param[in] ID            Segmentation id
  * @param[in] DM            Domain information
  * @param[in] timesteps     Maximum number of timesteps to process
  * @return  Returns the global variation
  */
-double Eikonal(DoubleArray &Distance, const char *ID, const Domain &Dm, int timesteps);
-
-float Eikonal3D( Array<float> &Distance, const Array<char> &ID, const Domain &Dm, const int timesteps);
+template<class TYPE>
+TYPE Eikonal( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm, int timesteps);
 
 
 /*!
  * @brief  Calculate the distance using a simple method
  * @details  This routine calculates the distance using a very simple method working off the segmentation id.
  *
- * @return  Returns the number of cubes in the blob
  * @param[in/out] Distance  Distance function
  * @param[in] ID            Segmentation id
  * @param[in] DM            Domain information

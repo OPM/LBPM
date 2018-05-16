@@ -70,7 +70,7 @@ TwoPhase::TwoPhase(Domain &dm):
     As_global(0), wwndnw_global(0), wwnsdnwn_global(0), Jwnwwndnw_global(0), dEs(0), dAwn(0), dAns(0)
 {
 	Nx=dm.Nx; Ny=dm.Ny; Nz=dm.Nz;
-	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz*1.0;
+	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm.nprocx()*Dm.nprocy()*Dm.nprocz()*1.0;
 
 	TempID = new char[Nx*Ny*Nz];
 
@@ -135,7 +135,7 @@ TwoPhase::TwoPhase(Domain &dm):
 	Gns_global.resize(6);
 	Gws_global.resize(6);
 	//.........................................
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		TIMELOG = fopen("timelog.tcat","a+");
 		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR))
 		{
@@ -165,7 +165,7 @@ TwoPhase::TwoPhase(Domain &dm):
 	}
 	else{
 		char LocalRankString[8];
-		sprintf(LocalRankString,"%05d",Dm.rank);
+		sprintf(LocalRankString,"%05d",Dm.rank());
 		char LocalRankFilename[40];
 		sprintf(LocalRankFilename,"%s%s","timelog.tcat.",LocalRankString);
 		TIMELOG = fopen(LocalRankFilename,"a+");
@@ -418,8 +418,8 @@ void TwoPhase::ComputeLocal()
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
-	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc() == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc() == Dm.nprocz()-1) kmax=Nz-4;
 
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
@@ -585,15 +585,15 @@ void TwoPhase::ComponentAverages()
 	ComponentAverages_WP.fill(0.0);
 	ComponentAverages_NWP.fill(0.0);
 	
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		printf("Number of wetting phase components is %i \n",NumberComponents_WP);
 		printf("Number of non-wetting phase components is %i \n",NumberComponents_NWP);
 	}
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm.BoundaryCondition > 0 && Dm.kproc == 0) kmin=4;
-	if (Dm.BoundaryCondition > 0 && Dm.kproc == Dm.nprocz-1) kmax=Nz-4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc() == 0) kmin=4;
+	if (Dm.BoundaryCondition > 0 && Dm.kproc() == Dm.nprocz()-1) kmax=Nz-4;
 	
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
@@ -636,9 +636,9 @@ void TwoPhase::ComponentAverages()
 							ComponentAverages_NWP(VY,LabelNWP) += 0.125*Vel_y(n);
 							ComponentAverages_NWP(VZ,LabelNWP) += 0.125*Vel_z(n);
 							// center of mass
-							ComponentAverages_NWP(CMX,LabelNWP) += 0.125*(i+cube[p][0]+Dm.iproc*Nx);
-							ComponentAverages_NWP(CMY,LabelNWP) += 0.125*(j+cube[p][1]+Dm.jproc*Ny);
-							ComponentAverages_NWP(CMZ,LabelNWP) += 0.125*(k+cube[p][2]+Dm.kproc*Nz);
+							ComponentAverages_NWP(CMX,LabelNWP) += 0.125*(i+cube[p][0]+Dm.iproc()*Nx);
+							ComponentAverages_NWP(CMY,LabelNWP) += 0.125*(j+cube[p][1]+Dm.jproc()*Ny);
+							ComponentAverages_NWP(CMZ,LabelNWP) += 0.125*(k+cube[p][2]+Dm.kproc()*Nz);
 
 							// twice the kinetic energy
 							ComponentAverages_NWP(VSQ,LabelNWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
@@ -656,9 +656,9 @@ void TwoPhase::ComponentAverages()
 							ComponentAverages_WP(VY,LabelWP)+= 0.125*Vel_y(n);
 							ComponentAverages_WP(VZ,LabelWP) += 0.125*Vel_z(n);
 							// Center of mass
-							ComponentAverages_WP(CMX,LabelWP) += 0.125*(i+cube[p][0]+Dm.iproc*Nx);
-							ComponentAverages_WP(CMY,LabelWP) += 0.125*(j+cube[p][1]+Dm.jproc*Ny);
-							ComponentAverages_WP(CMZ,LabelWP) += 0.125*(k+cube[p][2]+Dm.kproc*Nz);
+							ComponentAverages_WP(CMX,LabelWP) += 0.125*(i+cube[p][0]+Dm.iproc()*Nx);
+							ComponentAverages_WP(CMY,LabelWP) += 0.125*(j+cube[p][1]+Dm.jproc()*Ny);
+							ComponentAverages_WP(CMZ,LabelWP) += 0.125*(k+cube[p][2]+Dm.kproc()*Nz);
 							// twice the kinetic energy
 							ComponentAverages_WP(VSQ,LabelWP) += 0.125*(Vel_x(n)*Vel_x(n)+Vel_y(n)*Vel_y(n)+Vel_z(n)*Vel_z(n));
 
@@ -803,7 +803,7 @@ void TwoPhase::ComponentAverages()
 	}
 
 	MPI_Barrier(Dm.Comm);
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		printf("Component averages computed locally -- reducing result... \n");
 	}
 	// Globally reduce the non-wetting phase averages
@@ -819,7 +819,7 @@ void TwoPhase::ComponentAverages()
 	MPI_Allreduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT*NumberComponents_NWP,					MPI_DOUBLE,MPI_SUM,Dm.Comm);
 	//	MPI_Reduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm.Comm);
 
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		printf("rescaling... \n");
 	}
 
@@ -907,7 +907,7 @@ void TwoPhase::ComponentAverages()
 		}
 	}
 
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		printf("reduce WP averages... \n");
 	}
 
@@ -1052,15 +1052,15 @@ void TwoPhase::WriteSurfaces(int logcount)
 						C = P;
 					}
 					// Remap the points
-					A.x += 1.0*Dm.iproc*(Nx-2);
-					A.y += 1.0*Dm.jproc*(Nx-2);
-					A.z += 1.0*Dm.kproc*(Nx-2);
-					B.x += 1.0*Dm.iproc*(Nx-2);
-					B.y += 1.0*Dm.jproc*(Nx-2);
-					B.z += 1.0*Dm.kproc*(Nx-2);
-					C.x += 1.0*Dm.iproc*(Nx-2);
-					C.y += 1.0*Dm.jproc*(Nx-2);
-					C.z += 1.0*Dm.kproc*(Nx-2);
+					A.x += 1.0*Dm.iproc()*(Nx-2);
+					A.y += 1.0*Dm.jproc()*(Nx-2);
+					A.z += 1.0*Dm.kproc()*(Nx-2);
+					B.x += 1.0*Dm.iproc()*(Nx-2);
+					B.y += 1.0*Dm.jproc()*(Nx-2);
+					B.z += 1.0*Dm.kproc()*(Nx-2);
+					C.x += 1.0*Dm.iproc()*(Nx-2);
+					C.y += 1.0*Dm.jproc()*(Nx-2);
+					C.z += 1.0*Dm.kproc()*(Nx-2);
 					wn_mesh->A.push_back(A);
 					wn_mesh->B.push_back(B);
 					wn_mesh->C.push_back(C);
@@ -1070,15 +1070,15 @@ void TwoPhase::WriteSurfaces(int logcount)
 					B = ws_pts(ws_tris(1,r));
 					C = ws_pts(ws_tris(2,r));
 					// Remap the points
-					A.x += 1.0*Dm.iproc*(Nx-2);
-					A.y += 1.0*Dm.jproc*(Nx-2);
-					A.z += 1.0*Dm.kproc*(Nx-2);
-					B.x += 1.0*Dm.iproc*(Nx-2);
-					B.y += 1.0*Dm.jproc*(Nx-2);
-					B.z += 1.0*Dm.kproc*(Nx-2);
-					C.x += 1.0*Dm.iproc*(Nx-2);
-					C.y += 1.0*Dm.jproc*(Nx-2);
-					C.z += 1.0*Dm.kproc*(Nx-2);
+					A.x += 1.0*Dm.iproc()*(Nx-2);
+					A.y += 1.0*Dm.jproc()*(Nx-2);
+					A.z += 1.0*Dm.kproc()*(Nx-2);
+					B.x += 1.0*Dm.iproc()*(Nx-2);
+					B.y += 1.0*Dm.jproc()*(Nx-2);
+					B.z += 1.0*Dm.kproc()*(Nx-2);
+					C.x += 1.0*Dm.iproc()*(Nx-2);
+					C.y += 1.0*Dm.jproc()*(Nx-2);
+					C.z += 1.0*Dm.kproc()*(Nx-2);
 					ws_mesh->A.push_back(A);
 					ws_mesh->B.push_back(B);
 					ws_mesh->C.push_back(C);
@@ -1088,15 +1088,15 @@ void TwoPhase::WriteSurfaces(int logcount)
 					B = ns_pts(ns_tris(1,r));
 					C = ns_pts(ns_tris(2,r));
 					// Remap the points
-					A.x += 1.0*Dm.iproc*(Nx-2);
-					A.y += 1.0*Dm.jproc*(Nx-2);
-					A.z += 1.0*Dm.kproc*(Nx-2);
-					B.x += 1.0*Dm.iproc*(Nx-2);
-					B.y += 1.0*Dm.jproc*(Nx-2);
-					B.z += 1.0*Dm.kproc*(Nx-2);
-					C.x += 1.0*Dm.iproc*(Nx-2);
-					C.y += 1.0*Dm.jproc*(Nx-2);
-					C.z += 1.0*Dm.kproc*(Nx-2);
+					A.x += 1.0*Dm.iproc()*(Nx-2);
+					A.y += 1.0*Dm.jproc()*(Nx-2);
+					A.z += 1.0*Dm.kproc()*(Nx-2);
+					B.x += 1.0*Dm.iproc()*(Nx-2);
+					B.y += 1.0*Dm.jproc()*(Nx-2);
+					B.z += 1.0*Dm.kproc()*(Nx-2);
+					C.x += 1.0*Dm.iproc()*(Nx-2);
+					C.y += 1.0*Dm.jproc()*(Nx-2);
+					C.z += 1.0*Dm.kproc()*(Nx-2);
 					ns_mesh->A.push_back(A);
 					ns_mesh->B.push_back(B);
 					ns_mesh->C.push_back(C);
@@ -1224,7 +1224,7 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT)
 
 void TwoPhase::PrintAll(int timestep)
 {
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		fprintf(TIMELOG,"%i %.5g ",timestep,dEs);										// change in surface energy
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
@@ -1277,7 +1277,7 @@ void TwoPhase::PrintAll(int timestep)
 
 void TwoPhase::PrintComponents(int timestep)
 {
-	if (Dm.rank==0){
+	if (Dm.rank()==0){
 		printf("PRINT %i COMPONENT AVEREAGES: time = %i \n",(int)ComponentAverages_NWP.size(1),timestep);
 		for (int b=0; b<NumberComponents_NWP; b++){
 			//if (ComponentAverages_NWP(TRIMVOL,b) > 0.0){

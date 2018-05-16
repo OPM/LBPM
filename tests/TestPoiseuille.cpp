@@ -48,13 +48,10 @@ int main(int argc, char **argv)
 		Fx = 0; Fy = 0;
 		Fz = 1e-3; //1.f; // 1e-3;
 
-        auto FILENAME = argv[1];
-        auto db = std::make_shared<Database>( FILENAME );
-        auto domain_db = db->getDatabase( "Domain" );
         // Load inputs
 		if (rank==0)	printf("Loading input database \n");
-		auto db = std::make_shared<Database>(FILENAME);
-		auto domain_db= db-> getDatabase("Domain");
+		auto db = std::make_shared<Database>(argv[1]);
+		auto domain_db = db->getDatabase("Domain");
         int Nx = domain_db->getVector<int>( "n" )[0];
         int Ny = domain_db->getVector<int>( "n" )[1];
         int Nz = domain_db->getVector<int>( "n" )[2];

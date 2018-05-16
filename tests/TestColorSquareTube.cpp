@@ -277,12 +277,12 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		// Initialize the phase field and variables
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
-		if (Dm.kproc==0){
+		if (Dm.kproc()==0){
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
 		}
-		if (Dm.kproc == nprocz-1){
+		if (Dm.kproc() == nprocz-1){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);

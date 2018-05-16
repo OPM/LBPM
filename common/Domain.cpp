@@ -33,7 +33,7 @@ static inline void fgetl( char * str, int num, FILE * stream )
 Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
                double lx, double ly, double lz, int BC):
 	Nx(0), Ny(0), Nz(0), 
-	Lx(0), Ly(0), Lz(0), Volume(0), rank(0), BoundaryCondition(0),
+	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
@@ -70,8 +70,8 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     initialize( db );
 }
 Domain::Domain( std::shared_ptr<Database> db ):
-	Nx(0), Ny(0), Nz(0), iproc(0), jproc(0),
-	Lx(0), Ly(0), Lz(0), Volume(0), rank(0), BoundaryCondition(0),
+	Nx(0), Ny(0), Nz(0), 
+	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
@@ -126,13 +126,13 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	rank_info = RankInfoStruct(myrank,nproc[0],nproc[1],nproc[2]);
     // Fill remaining variables
 	N = Nx*Ny*Nz;
-	Volume = nx*ny*nx*nprocx*nprocy*nprocz*1.0;
+	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
 	id = new char[N];
 	memset(id,0,N);
 	BoundaryCondition = d_db->getScalar<int>("BC");
     int nprocs;
     MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
-	INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
+	INSIST(nprocs == nproc[0]*nproc[1]*nproc[2],"Fatal error in processor count!");
 }
 Domain::~Domain()
 {
@@ -199,7 +199,9 @@ void Domain::CommInit(MPI_Comm Communicator)
     MPI_Comm_dup(Communicator,&Comm);
 
 	// set up the neighbor ranks
-	rank_info = RankInfoStruct( rank, nprocx, nprocy, nprocz );
+    int myrank;
+    MPI_Comm_rank( Comm, &myrank );
+	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
 
 	MPI_Barrier(Communicator);
 
@@ -319,42 +321,42 @@ void Domain::CommInit(MPI_Comm Communicator)
 	sendBuf_YZ = new int [sendCount_YZ];
 	sendBuf_XZ = new int [sendCount_XZ];
 	//......................................................................................
-	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x,sendtag+0,Communicator,&req1[0]);
-	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X,recvtag+0,Communicator,&req2[0]);
-	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X,sendtag+1,Communicator,&req1[1]);
-	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x,recvtag+1,Communicator,&req2[1]);
-	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y,sendtag+2,Communicator,&req1[2]);
-	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y,recvtag+2,Communicator,&req2[2]);
-	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y,sendtag+3,Communicator,&req1[3]);
-	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y,recvtag+3,Communicator,&req2[3]);
-	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z,sendtag+4,Communicator,&req1[4]);
-	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z,recvtag+4,Communicator,&req2[4]);
-	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z,sendtag+5,Communicator,&req1[5]);
-	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z,recvtag+5,Communicator,&req2[5]);
-	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy,sendtag+6,Communicator,&req1[6]);
-	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY,recvtag+6,Communicator,&req2[6]);
-	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY,sendtag+7,Communicator,&req1[7]);
-	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy,recvtag+7,Communicator,&req2[7]);
-	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy,sendtag+8,Communicator,&req1[8]);
-	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY,recvtag+8,Communicator,&req2[8]);
-	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY,sendtag+9,Communicator,&req1[9]);
-	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy,recvtag+9,Communicator,&req2[9]);
-	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz,sendtag+10,Communicator,&req1[10]);
-	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ,recvtag+10,Communicator,&req2[10]);
-	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ,sendtag+11,Communicator,&req1[11]);
-	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz,recvtag+11,Communicator,&req2[11]);
-	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz,sendtag+12,Communicator,&req1[12]);
-	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ,recvtag+12,Communicator,&req2[12]);
-	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ,sendtag+13,Communicator,&req1[13]);
-	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz,recvtag+13,Communicator,&req2[13]);
-	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz,sendtag+14,Communicator,&req1[14]);
-	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ,recvtag+14,Communicator,&req2[14]);
-	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ,sendtag+15,Communicator,&req1[15]);
-	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz,recvtag+15,Communicator,&req2[15]);
-	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz,sendtag+16,Communicator,&req1[16]);
-	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ,recvtag+16,Communicator,&req2[16]);
-	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ,sendtag+17,Communicator,&req1[17]);
-	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz,recvtag+17,Communicator,&req2[17]);
+	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x(),sendtag+0,Communicator,&req1[0]);
+	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X(),recvtag+0,Communicator,&req2[0]);
+	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X(),sendtag+1,Communicator,&req1[1]);
+	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x(),recvtag+1,Communicator,&req2[1]);
+	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y(),sendtag+2,Communicator,&req1[2]);
+	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y(),recvtag+2,Communicator,&req2[2]);
+	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y(),sendtag+3,Communicator,&req1[3]);
+	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y(),recvtag+3,Communicator,&req2[3]);
+	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z(),sendtag+4,Communicator,&req1[4]);
+	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z(),recvtag+4,Communicator,&req2[4]);
+	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z(),sendtag+5,Communicator,&req1[5]);
+	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z(),recvtag+5,Communicator,&req2[5]);
+	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy(),sendtag+6,Communicator,&req1[6]);
+	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY(),recvtag+6,Communicator,&req2[6]);
+	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY(),sendtag+7,Communicator,&req1[7]);
+	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy(),recvtag+7,Communicator,&req2[7]);
+	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy(),sendtag+8,Communicator,&req1[8]);
+	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY(),recvtag+8,Communicator,&req2[8]);
+	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY(),sendtag+9,Communicator,&req1[9]);
+	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy(),recvtag+9,Communicator,&req2[9]);
+	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz(),sendtag+10,Communicator,&req1[10]);
+	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ(),recvtag+10,Communicator,&req2[10]);
+	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ(),sendtag+11,Communicator,&req1[11]);
+	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz(),recvtag+11,Communicator,&req2[11]);
+	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz(),sendtag+12,Communicator,&req1[12]);
+	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ(),recvtag+12,Communicator,&req2[12]);
+	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ(),sendtag+13,Communicator,&req1[13]);
+	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz(),recvtag+13,Communicator,&req2[13]);
+	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz(),sendtag+14,Communicator,&req1[14]);
+	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ(),recvtag+14,Communicator,&req2[14]);
+	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ(),sendtag+15,Communicator,&req1[15]);
+	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz(),recvtag+15,Communicator,&req2[15]);
+	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz(),sendtag+16,Communicator,&req1[16]);
+	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ(),recvtag+16,Communicator,&req2[16]);
+	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ(),sendtag+17,Communicator,&req1[17]);
+	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz(),recvtag+17,Communicator,&req2[17]);
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
 	MPI_Barrier(Communicator);
@@ -379,42 +381,42 @@ void Domain::CommInit(MPI_Comm Communicator)
 	recvList_YZ = new int [recvCount_YZ];
 	recvList_XZ = new int [recvCount_XZ];
 	//......................................................................................
-	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x,sendtag,Communicator,&req1[0]);
-	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X,recvtag,Communicator,&req2[0]);
-	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X,sendtag,Communicator,&req1[1]);
-	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x,recvtag,Communicator,&req2[1]);
-	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y,sendtag,Communicator,&req1[2]);
-	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y,recvtag,Communicator,&req2[2]);
-	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y,sendtag,Communicator,&req1[3]);
-	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y,recvtag,Communicator,&req2[3]);
-	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z,sendtag,Communicator,&req1[4]);
-	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z,recvtag,Communicator,&req2[4]);
-	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z,sendtag,Communicator,&req1[5]);
-	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z,recvtag,Communicator,&req2[5]);
-	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy,sendtag,Communicator,&req1[6]);
-	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY,recvtag,Communicator,&req2[6]);
-	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY,sendtag,Communicator,&req1[7]);
-	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy,recvtag,Communicator,&req2[7]);
-	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy,sendtag,Communicator,&req1[8]);
-	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY,recvtag,Communicator,&req2[8]);
-	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY,sendtag,Communicator,&req1[9]);
-	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy,recvtag,Communicator,&req2[9]);
-	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz,sendtag,Communicator,&req1[10]);
-	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ,recvtag,Communicator,&req2[10]);
-	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ,sendtag,Communicator,&req1[11]);
-	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz,recvtag,Communicator,&req2[11]);
-	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz,sendtag,Communicator,&req1[12]);
-	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ,recvtag,Communicator,&req2[12]);
-	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ,sendtag,Communicator,&req1[13]);
-	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz,recvtag,Communicator,&req2[13]);
-	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz,sendtag,Communicator,&req1[14]);
-	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ,recvtag,Communicator,&req2[14]);
-	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ,sendtag,Communicator,&req1[15]);
-	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz,recvtag,Communicator,&req2[15]);
-	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz,sendtag,Communicator,&req1[16]);
-	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ,recvtag,Communicator,&req2[16]);
-	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ,sendtag,Communicator,&req1[17]);
-	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz,recvtag,Communicator,&req2[17]);
+	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x(),sendtag,Communicator,&req1[0]);
+	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X(),recvtag,Communicator,&req2[0]);
+	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X(),sendtag,Communicator,&req1[1]);
+	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x(),recvtag,Communicator,&req2[1]);
+	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y(),sendtag,Communicator,&req1[2]);
+	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y(),recvtag,Communicator,&req2[2]);
+	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y(),sendtag,Communicator,&req1[3]);
+	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y(),recvtag,Communicator,&req2[3]);
+	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z(),sendtag,Communicator,&req1[4]);
+	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z(),recvtag,Communicator,&req2[4]);
+	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z(),sendtag,Communicator,&req1[5]);
+	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z(),recvtag,Communicator,&req2[5]);
+	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy(),sendtag,Communicator,&req1[6]);
+	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY(),recvtag,Communicator,&req2[6]);
+	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY(),sendtag,Communicator,&req1[7]);
+	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy(),recvtag,Communicator,&req2[7]);
+	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy(),sendtag,Communicator,&req1[8]);
+	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY(),recvtag,Communicator,&req2[8]);
+	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY(),sendtag,Communicator,&req1[9]);
+	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy(),recvtag,Communicator,&req2[9]);
+	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz(),sendtag,Communicator,&req1[10]);
+	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ(),recvtag,Communicator,&req2[10]);
+	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ(),sendtag,Communicator,&req1[11]);
+	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz(),recvtag,Communicator,&req2[11]);
+	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz(),sendtag,Communicator,&req1[12]);
+	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ(),recvtag,Communicator,&req2[12]);
+	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ(),sendtag,Communicator,&req1[13]);
+	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz(),recvtag,Communicator,&req2[13]);
+	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz(),sendtag,Communicator,&req1[14]);
+	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ(),recvtag,Communicator,&req2[14]);
+	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ(),sendtag,Communicator,&req1[15]);
+	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz(),recvtag,Communicator,&req2[15]);
+	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz(),sendtag,Communicator,&req1[16]);
+	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ(),recvtag,Communicator,&req2[16]);
+	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ(),sendtag,Communicator,&req1[17]);
+	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz(),recvtag,Communicator,&req2[17]);
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
 	//......................................................................................
@@ -513,7 +515,7 @@ void Domain::AssignComponentLabels(double *phase)
 	vector <char> Label;
 	vector <double> Affinity;
 	// Read the labels
-	if (rank==0){
+	if (rank()==0){
 		printf("Component labels:\n");
 		ifstream iFILE("ComponentLabels.csv");
 		if (iFILE.good()){
@@ -549,7 +551,7 @@ void Domain::AssignComponentLabels(double *phase)
 
 	// Broadcast the list
 	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
-	//printf("rank=%i, NLABELS=%i \n ",rank,NLABELS);
+	//printf("rank=%i, NLABELS=%i \n ",rank(),NLABELS);
 	
 	// Copy into contiguous buffers
 	char *LabelList;
@@ -557,11 +559,11 @@ void Domain::AssignComponentLabels(double *phase)
 	LabelList=new char[NLABELS];
 	AffinityList=new double[NLABELS];
 
-	if (rank==0){
+	if (rank()==0){
 	for (int idx=0; idx < NLABELS; idx++){
 		VALUE=Label[idx];
 		AFFINITY=Affinity[idx];
-		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank,idx,VALUE,AFFINITY);
+		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank(),idx,VALUE,AFFINITY);
 		LabelList[idx]=VALUE;
 		AffinityList[idx]=AFFINITY;
 	} 
@@ -579,7 +581,7 @@ void Domain::AssignComponentLabels(double *phase)
 				VALUE=id[n];
 				// Assign the affinity from the paired list
 				for (int idx=0; idx < NLABELS; idx++){
-					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank,idx, VALUE,LabelList[idx]);
+					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
 						idx = NLABELS;
@@ -617,42 +619,42 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	PackMeshData(sendList_yZ, sendCount_yZ ,sendData_yZ, MeshData);
 	PackMeshData(sendList_YZ, sendCount_YZ ,sendData_YZ, MeshData);
 	//......................................................................................
-	MPI_Sendrecv(sendData_x,sendCount_x,MPI_DOUBLE,rank_x,sendtag,
-			recvData_X,recvCount_X,MPI_DOUBLE,rank_X,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_X,sendCount_X,MPI_DOUBLE,rank_X,sendtag,
-			recvData_x,recvCount_x,MPI_DOUBLE,rank_x,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_y,sendCount_y,MPI_DOUBLE,rank_y,sendtag,
-			recvData_Y,recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_Y,sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,
-			recvData_y,recvCount_y,MPI_DOUBLE,rank_y,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_z,sendCount_z,MPI_DOUBLE,rank_z,sendtag,
-			recvData_Z,recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_Z,sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,
-			recvData_z,recvCount_z,MPI_DOUBLE,rank_z,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_xy,sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,
-			recvData_XY,recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_XY,sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,
-			recvData_xy,recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_Xy,sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,
-			recvData_xY,recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_xY,sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,
-			recvData_Xy,recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_xz,sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,
-			recvData_XZ,recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_XZ,sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,
-			recvData_xz,recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_Xz,sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,
-			recvData_xZ,recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_xZ,sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,
-			recvData_Xz,recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_yz,sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,
-			recvData_YZ,recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_YZ,sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,
-			recvData_yz,recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_Yz,sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,
-			recvData_yZ,recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendData_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,
-			recvData_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_x,sendCount_x,MPI_DOUBLE,rank_x(),sendtag,
+			recvData_X,recvCount_X,MPI_DOUBLE,rank_X(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_X,sendCount_X,MPI_DOUBLE,rank_X(),sendtag,
+			recvData_x,recvCount_x,MPI_DOUBLE,rank_x(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_y,sendCount_y,MPI_DOUBLE,rank_y(),sendtag,
+			recvData_Y,recvCount_Y,MPI_DOUBLE,rank_Y(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Y,sendCount_Y,MPI_DOUBLE,rank_Y(),sendtag,
+			recvData_y,recvCount_y,MPI_DOUBLE,rank_y(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_z,sendCount_z,MPI_DOUBLE,rank_z(),sendtag,
+			recvData_Z,recvCount_Z,MPI_DOUBLE,rank_Z(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Z,sendCount_Z,MPI_DOUBLE,rank_Z(),sendtag,
+			recvData_z,recvCount_z,MPI_DOUBLE,rank_z(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xy,sendCount_xy,MPI_DOUBLE,rank_xy(),sendtag,
+			recvData_XY,recvCount_XY,MPI_DOUBLE,rank_XY(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_XY,sendCount_XY,MPI_DOUBLE,rank_XY(),sendtag,
+			recvData_xy,recvCount_xy,MPI_DOUBLE,rank_xy(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Xy,sendCount_Xy,MPI_DOUBLE,rank_Xy(),sendtag,
+			recvData_xY,recvCount_xY,MPI_DOUBLE,rank_xY(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xY,sendCount_xY,MPI_DOUBLE,rank_xY(),sendtag,
+			recvData_Xy,recvCount_Xy,MPI_DOUBLE,rank_Xy(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xz,sendCount_xz,MPI_DOUBLE,rank_xz(),sendtag,
+			recvData_XZ,recvCount_XZ,MPI_DOUBLE,rank_XZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_XZ,sendCount_XZ,MPI_DOUBLE,rank_XZ(),sendtag,
+			recvData_xz,recvCount_xz,MPI_DOUBLE,rank_xz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Xz,sendCount_Xz,MPI_DOUBLE,rank_Xz(),sendtag,
+			recvData_xZ,recvCount_xZ,MPI_DOUBLE,rank_xZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_xZ,sendCount_xZ,MPI_DOUBLE,rank_xZ(),sendtag,
+			recvData_Xz,recvCount_Xz,MPI_DOUBLE,rank_Xz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_yz,sendCount_yz,MPI_DOUBLE,rank_yz(),sendtag,
+			recvData_YZ,recvCount_YZ,MPI_DOUBLE,rank_YZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_YZ,sendCount_YZ,MPI_DOUBLE,rank_YZ(),sendtag,
+			recvData_yz,recvCount_yz,MPI_DOUBLE,rank_yz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_Yz,sendCount_Yz,MPI_DOUBLE,rank_Yz(),sendtag,
+			recvData_yZ,recvCount_yZ,MPI_DOUBLE,rank_yZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendData_yZ,sendCount_yZ,MPI_DOUBLE,rank_yZ(),sendtag,
+			recvData_Yz,recvCount_Yz,MPI_DOUBLE,rank_Yz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	//........................................................................................
 	UnpackMeshData(recvList_x, recvCount_x ,recvData_x, MeshData);
 	UnpackMeshData(recvList_X, recvCount_X ,recvData_X, MeshData);

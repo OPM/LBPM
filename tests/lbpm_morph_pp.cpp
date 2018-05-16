@@ -168,9 +168,9 @@ int main(int argc, char **argv)
 
 
 	Dm.CommInit(comm);
-	int iproc = Dm.iproc;
-	int jproc = Dm.jproc;
-	int kproc = Dm.kproc;
+	int iproc = Dm.iproc();
+	int jproc = Dm.jproc();
+	int kproc = Dm.kproc();
 
 	// Generate the NWP configuration
 	//if (rank==0) printf("Performing morphological drainage with critical radius %f \n", Rcrit);
