@@ -18,23 +18,25 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel(string filename);
+	ScaLBL_ColorModel();
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
+	void ReadParams(string filename);
 	void ReadInput();
 	void Create();
 	void Initialize();
 	void Run();
 	
-	bool Restart;
+	bool Restart,pBC;
 	int timestep,timestepMax;
+	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
 	
 	int Nx,Ny,Nz,N,Np;
-	int nprocx,nprocy,nprocz,BC;
+	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 		
 private:
@@ -61,7 +63,7 @@ private:
     double *Gradient;
     double *Pressure;
     
-    int rank;
+    //int rank,nprocs;
     	
 };
 
