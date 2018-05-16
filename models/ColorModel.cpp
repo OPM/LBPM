@@ -58,19 +58,17 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
-    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));     // full domain for analysis
-    Mask  = std::shared_ptr<Domain>(new Domain(domain_db));   // mask domain removes immobile phases
-    for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;     // initialize this way
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-
-    MPI_Barrier(comm);
-    Dm.CommInit(comm);
-    MPI_Barrier(comm);
-
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));      // full domain for analysis
+    Mask  = std::shared_ptr<Domain>(new Domain(domain_db));    // mask domain removes immobile phases
     
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
-    
+    for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
+    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+
+    MPI_Barrier(comm);
+    Dm->CommInit(comm);
+    MPI_Barrier(comm);
 }
 
 ScaLBL_ColorModel::~ScaLBL_ColorModel(){
@@ -158,7 +156,7 @@ void ScaLBL_ColorModel::Create(){
      if (rank==0) printf("Media porosity = %f \n",porosity);
      //.........................................................
      // If external boundary conditions are applied remove solid
-     if (BoundaryCondition >  0  && Dm.kproc == 0){
+     if (BoundaryCondition >  0  && Dm->kproc() == 0){
          for (int k=0; k<3; k++){
              for (int j=0;j<Ny;j++){
                  for (int i=0;i<Nx;i++){
@@ -169,7 +167,7 @@ void ScaLBL_ColorModel::Create(){
              }
          }
      }
-     if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+     if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
          for (int k=Nz-3; k<Nz; k++){
              for (int j=0;j<Ny;j++){
                  for (int i=0;i<Nx;i++){
@@ -187,11 +185,11 @@ void ScaLBL_ColorModel::Create(){
      //.........................................................
 
      // Initialize communication structures in averaging domain
-     for (int i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
-     Mask.CommInit(comm);
+     for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+     Mask->CommInit(comm);
      double *PhaseLabel;
      PhaseLabel = new double[N];
-     Mask.AssignComponentLabels(PhaseLabel);
+     Mask->AssignComponentLabels(PhaseLabel);
      
      //...........................................................................
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
@@ -206,7 +204,7 @@ void ScaLBL_ColorModel::Create(){
         if (rank==0)    printf ("Set up memory efficient layout \n");
     	Map.resize(Nx,Ny,Nz);       Map.fill(0);
         auto neighborList= new int[18*Npad];
-        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
+        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
         MPI_Barrier(comm);
 
         //...........................................................................
@@ -299,7 +297,7 @@ void ScaLBL_ColorModel::Initialize(){
 								if (!(idk < Nz)) idk=Nz-1;
 
 								int nn = idk*Nx*Ny + idj*Nx + idi;
-								if (!(Mask.id[nn] > 0)){
+								if (!(Mask->id[nn] > 0)){
 									double vec_x = double(ii-2);
 									double vec_y = double(jj-2);
 									double vec_z = double(kk-2);
@@ -358,7 +356,7 @@ void ScaLBL_ColorModel::Initialize(){
 				int idx=Map(i,j,k);
 				int n = k*Nx*Ny+j*Nx+i;
 				if (!(idx < 0)){
-					if (Mask.id[n] == 1)
+					if (Mask->id[n] == 1)
 						PhaseLabel[idx] = 1.0;
 					else {
 						PhaseLabel[idx] = -1.0;
