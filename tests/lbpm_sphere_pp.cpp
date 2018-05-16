@@ -256,8 +256,6 @@ void SignedDistance(double *Distance, int nspheres, double *List_cx, double *Lis
     for (n=0; n<N; n++)    Distance[n] = Distance[n]/hx;
 }
 
-
-
 int main(int argc, char **argv)
 {
 	//*****************************************
