@@ -64,7 +64,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
     for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm.get()) ); // TwoPhase analysis object
 
     MPI_Barrier(comm);
     Dm->CommInit(comm);
@@ -195,7 +195,7 @@ void ScaLBL_ColorModel::Create(){
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
         // Create a communicator for the device (will use optimized layout)
         // ScaLBL_Communicator ScaLBL_Comm(Mask); // original
-        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask.get()));
 
         //Create a second communicator based on the regular data layout
         //ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
