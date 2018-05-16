@@ -68,6 +68,7 @@ private:
     double *Gradient;
     double *Pressure;
     
+    int rank;
     	
 };
 
