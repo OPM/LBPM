@@ -317,9 +317,9 @@ int main(int argc, char **argv)
             for (j=0;j<Ny;j++){
                 for (i=0;i<Nx;i++){
                     n = k*Nx*Ny + j*Nz + i;
-                    int iglobal= i+(Nx-2)*Dm.iproc;
-                    int jglobal= j+(Ny-2)*Dm.jproc;
-                    int kglobal= k+(Nz-2)*Dm.kproc;
+                    int iglobal= i+(Nx-2)*Dm.iproc();
+                    int jglobal= j+(Ny-2)*Dm.jproc();
+                    int kglobal= k+(Nz-2)*Dm.kproc();
                     // Initialize phase position field for parallel bubble test
                     if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
                             +(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
