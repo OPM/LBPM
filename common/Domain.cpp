@@ -713,8 +713,7 @@ void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
     File.close();
 }
 
-
-inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
+void ReadBinaryFile(char *FILENAME, double *Data, int N)
 {
   int n;
   double value;
@@ -731,6 +730,5 @@ inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
     for (n=0; n<N; n++) Data[n] = 1.2e-34;
   }
   File.close();
-
 }
 

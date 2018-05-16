@@ -234,6 +234,6 @@ void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq
 
 void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, int Np);
 
-inline void ReadBinaryFile(char *FILENAME, double *Data, int N);
+void ReadBinaryFile(char *FILENAME, double *Data, int N);
 
 #endif

@@ -189,6 +189,7 @@ int main(int argc, char **argv)
 				sprintf(LocalRankString,"%05d",proc);
 				sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 				ReadBinaryFile(LocalRankFilename, Temp, nx*ny*nz);	
+				
 				for (k=1; k<nz-1; k++){
 					for (j=1; j<ny-1; j++){
 						for (i=1; i<nz-1; i++){
