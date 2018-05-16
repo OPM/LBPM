@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
 	//*****************************************
