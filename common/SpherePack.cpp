@@ -21,7 +21,6 @@ static inline void fgetl( char * str, int num, FILE * stream )
   if ( 0 ) {char *temp = (char *)&ptr; temp++;}
 }
 
-
 void WriteLocalSolidID(char *FILENAME, char *ID, int N)
 {
 	char value;
