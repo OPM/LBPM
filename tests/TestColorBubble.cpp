@@ -8,6 +8,7 @@
 #include <fstream>
 #include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
+#include "models/ColorModel.h"
 
 using namespace std;
 
@@ -108,7 +109,7 @@ int main(int argc, char **argv)
 			}
 		}
 		auto filename = argv[1];
-		ScaLBL_ColorModel() ColorModel;
+		ScaLBL_ColorModel ColorModel;
 		ColorModel.ReadParams(filename);
 	}
 	// ****************************************************

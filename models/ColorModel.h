@@ -23,6 +23,7 @@ public:
 	
 	// functions in they should be run
 	void ReadParams(string filename);
+	void ReadParams(std::shared_ptr<Database> DB)
 	void ReadInput();
 	void Create();
 	void Initialize();
