@@ -86,7 +86,6 @@ private:
     int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
     double d_beta;
     ThreadPool d_tpool;
-    ScaLBL_Communicator d_ScaLBL_Comm;
     RankInfoStruct d_rank_info;
     IntArray d_Map;
     BlobIDstruct d_last_ids;
@@ -98,6 +97,7 @@ private:
     MPI_Comm d_comm;
     MPI_Comm d_comms[1024];
     volatile bool d_comm_used[1024];
+    std::shared_ptr<ScaLBL_Communicator> d_ScaLBL_Comm;
 
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;

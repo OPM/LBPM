@@ -288,7 +288,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_beta( beta ),
     d_rank_info( rank_info ),
     d_Map( Map ),
-    d_ScaLBL_Comm( ScLBL_Comm ),
+    d_ScaLBL_Comm( ScaLBL_Comm),
     d_fillData(Dm->Comm,Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,1,1,1,0,1)
 {
     NULL_USE( pBC );
@@ -548,10 +548,10 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-        d_ScaLBL_Comm.RegularLayout(d_Map,Pressure,Averages.Press);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cfq;
