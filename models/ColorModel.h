@@ -18,37 +18,32 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_model_color();
-	~ScaLBL_model_color();	
+	ScaLBL_ColorModel();
+	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
+	void ReadParams(string filename);
 	void ReadInput();
 	void Create();
 	void Initialize();
 	void Run();
 	
-	bool Restart
+	bool Restart,pBC;
 	int timestep,timestepMax;
+	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
 	
 	int Nx,Ny,Nz,N,Np;
-	int nprocx,nprocy,nprocz,BC;
+	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
 		
 private:
 	MPI_Comm comm;
-	Database db;
-	Database domain_db;
-	Database color_db;
-	Database analysis_db;
-      
-	Domain Dm;   // this domain is for analysis
-	Domain Mask; // this domain is for lbm
-
-    ScaLBL_Communicator ScaLBL_Comm;
-
+	std::shared_ptr<Domain> Dm;   // this domain is for analysis
+	std::shared_ptr<Domain> Mask; // this domain is for lbm
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
     std::shared_ptr<TwoPhase> Averages;
 
 	// filenames
@@ -68,6 +63,7 @@ private:
     double *Gradient;
     double *Pressure;
     
+    //int rank,nprocs;
     	
 };
 

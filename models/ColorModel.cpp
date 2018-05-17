@@ -1,13 +1,25 @@
 /*
 color lattice boltzmann model
  */
+#include "models/ColorModel.h"
 
-ScaLBL_ColorModel::ScaLBL_ColorModel(string filename){
+ScaLBL_ColorModel::ScaLBL_ColorModel():
+  Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
+  Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
+  Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0)
+{
+
+}
+ScaLBL_ColorModel::~ScaLBL_ColorModel(){
+	
+}
+
+void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
-    db = std::make_shared<Database>( filename );
-    domain_db = db->getDatabase( "Domain" );
-    color_db = db->getDatabase( "Color" );
-    analysis_db = db->getDatabase( "Analysis" );
+    auto db = std::make_shared<Database>( filename );
+    auto domain_db = db->getDatabase( "Domain" );
+    auto color_db = db->getDatabase( "Color" );
+    auto analysis_db = db->getDatabase( "Analysis" );
     
     // Color Model parameters
     timestepMax = domain_db->getScalar<int>( "timestepMax" );
@@ -46,20 +58,17 @@ ScaLBL_ColorModel::ScaLBL_ColorModel(string filename){
     
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
-    // Full domain used for analysis
-    Domain Dm(domain_db);
-    for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) );
-    //   TwoPhase Averages(Dm);
-    Dm.CommInit(comm);
-
-    // Mask that excludes the immobile phases
-    Domain Mask(domain_db);
-    MPI_Barrier(comm);
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));      // full domain for analysis
+    Mask  = std::shared_ptr<Domain>(new Domain(domain_db));    // mask domain removes immobile phases
     
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
-    
+    for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
+    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm.get()) ); // TwoPhase analysis object
+
+    MPI_Barrier(comm);
+    Dm->CommInit(comm);
+    MPI_Barrier(comm);
 }
 
 ScaLBL_ColorModel::~ScaLBL_ColorModel(){
@@ -147,7 +156,7 @@ void ScaLBL_ColorModel::Create(){
      if (rank==0) printf("Media porosity = %f \n",porosity);
      //.........................................................
      // If external boundary conditions are applied remove solid
-     if (BoundaryCondition >  0  && Dm.kproc == 0){
+     if (BoundaryCondition >  0  && Dm->kproc() == 0){
          for (int k=0; k<3; k++){
              for (int j=0;j<Ny;j++){
                  for (int i=0;i<Nx;i++){
@@ -158,7 +167,7 @@ void ScaLBL_ColorModel::Create(){
              }
          }
      }
-     if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+     if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
          for (int k=Nz-3; k<Nz; k++){
              for (int j=0;j<Ny;j++){
                  for (int i=0;i<Nx;i++){
@@ -176,16 +185,18 @@ void ScaLBL_ColorModel::Create(){
      //.........................................................
 
      // Initialize communication structures in averaging domain
-     for (int i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
-     Mask.CommInit(comm);
+     for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+     Mask->CommInit(comm);
      double *PhaseLabel;
      PhaseLabel = new double[N];
-     Mask.AssignComponentLabels(PhaseLabel);
+     Mask->AssignComponentLabels(PhaseLabel);
      
      //...........................................................................
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
         // Create a communicator for the device (will use optimized layout)
-        ScaLBL_Communicator ScaLBL_Comm(Mask);
+        // ScaLBL_Communicator ScaLBL_Comm(Mask); // original
+        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask.get()));
+
         //Create a second communicator based on the regular data layout
         //ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
         
@@ -193,7 +204,7 @@ void ScaLBL_ColorModel::Create(){
         if (rank==0)    printf ("Set up memory efficient layout \n");
     	Map.resize(Nx,Ny,Nz);       Map.fill(0);
         auto neighborList= new int[18*Npad];
-        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
+        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
         MPI_Barrier(comm);
 
         //...........................................................................
@@ -286,7 +297,7 @@ void ScaLBL_ColorModel::Initialize(){
 								if (!(idk < Nz)) idk=Nz-1;
 
 								int nn = idk*Nx*Ny + idj*Nx + idi;
-								if (!(Mask.id[nn] > 0)){
+								if (!(Mask->id[nn] > 0)){
 									double vec_x = double(ii-2);
 									double vec_y = double(jj-2);
 									double vec_z = double(kk-2);
@@ -345,7 +356,7 @@ void ScaLBL_ColorModel::Initialize(){
 				int idx=Map(i,j,k);
 				int n = k*Nx*Ny+j*Nx+i;
 				if (!(idx < 0)){
-					if (Mask.id[n] == 1)
+					if (Mask->id[n] == 1)
 						PhaseLabel[idx] = 1.0;
 					else {
 						PhaseLabel[idx] = -1.0;
