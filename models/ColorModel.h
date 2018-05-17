@@ -45,7 +45,13 @@ private:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
     std::shared_ptr<TwoPhase> Averages;
-
+    
+    // input database
+    std::shared_ptr<Database> db;
+    std::shared_ptr<Database> domain_db;
+    std::shared_ptr<Database> color_db;
+    std::shared_ptr<Database> analysis_db;
+    
 	// filenames
     char LocalRankString[8];
     char LocalRankFilename[40];

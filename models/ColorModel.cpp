@@ -16,26 +16,26 @@ ScaLBL_ColorModel::~ScaLBL_ColorModel(){
 
 void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
-    auto db = std::make_shared<Database>( filename );
-    auto domain_db = db->getDatabase( "Domain" );
-    auto color_db = db->getDatabase( "Color" );
-    auto analysis_db = db->getDatabase( "Analysis" );
+    db = std::make_shared<Database>( filename );
+    domain_db = db->getDatabase( "Domain" );
+    color_db = db->getDatabase( "Color" );
+    analysis_db = db->getDatabase( "Analysis" );
     
     // Color Model parameters
-    timestepMax = domain_db->getScalar<int>( "timestepMax" );
-    tauA = domain_db->getScalar<double>( "tauA" );
-    tauB = domain_db->getScalar<double>( "tauB" );
-    rhoA = domain_db->getScalar<double>( "rhoA" );
-    rhoB = domain_db->getScalar<double>( "rhoB" );
-    Fx = domain_db->getVector<double>( "F" )[0];
-    Fy = domain_db->getVector<double>( "F" )[1];
-    Fz = domain_db->getVector<double>( "F" )[2];
-    alpha = domain_db->getScalar<double>( "alpha" );
-    beta = domain_db->getScalar<double>( "beta" );
-    Restart = domain_db->getScalar<int>( "Restart" );
-    din = domain_db->getScalar<double>( "din" );
-    dout = domain_db->getScalar<double>( "dout" );
-    flux = domain_db->getScalar<double>( "flux" );;
+    timestepMax = color_db->getScalar<int>( "timestepMax" );
+    tauA = color_db->getScalar<double>( "tauA" );
+    tauB = color_db->getScalar<double>( "tauB" );
+    rhoA = color_db->getScalar<double>( "rhoA" );
+    rhoB = color_db->getScalar<double>( "rhoB" );
+    Fx = color_db->getVector<double>( "F" )[0];
+    Fy = color_db->getVector<double>( "F" )[1];
+    Fz = color_db->getVector<double>( "F" )[2];
+    alpha = color_db->getScalar<double>( "alpha" );
+    beta = color_db->getScalar<double>( "beta" );
+    Restart = color_db->getScalar<bool>( "Restart" );
+    din = color_db->getScalar<double>( "din" );
+    dout = color_db->getScalar<double>( "dout" );
+    flux = color_db->getScalar<double>( "flux" );;
     inletA=1.f;
     inletB=0.f;
     outletA=0.f;
