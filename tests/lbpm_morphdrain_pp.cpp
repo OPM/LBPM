@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	xdim=Dm.Nx-2;
 	ydim=Dm.Ny-2;
 	zdim=Dm.Nz-2;
-	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,{xdim,ydim,zdim},{1,1,1},0,1);
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file

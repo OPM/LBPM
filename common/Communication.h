@@ -5,6 +5,8 @@
 #include "common/Utilities.h"
 #include "common/Array.h"
 
+#include <array>
+
 // ********** COMMUNICTION **************************************
 /*
  //..............................................................
@@ -43,18 +45,17 @@ public:
     /*!
      * @brief  Default constructor
      * @param[in] info          Rank and neighbor rank info
-     * @param[in] nx            Number of local cells in the x direction
-     * @param[in] ny            Number of local cells in the y direction
-     * @param[in] nz            Number of local cells in the z direction
-     * @param[in] ngx           Number of ghost cells in the x direction
-     * @param[in] ngy           Number of ghost cells in the y direction
-     * @param[in] ngz           Number of ghost cells in the z direction
+     * @param[in] n             Number of local cells
+     * @param[in] ng            Number of ghost cells
      * @param[in] tag           Initial tag to use for the communication (we will require tag:tag+26)
      * @param[in] depth         Maximum depth to support
+     * @param[in] fill          Fill {faces,edges,corners}
+     * @param[in] periodic      Periodic dimensions
      */
-    fillHalo( MPI_Comm comm, const RankInfoStruct& info, int nx, int ny, int nz, 
-        int ngx, int ngy, int ngz, int tag, int depth,
-        bool fill_face=true, bool fill_edge=true, bool fill_corner=true );
+    fillHalo( MPI_Comm comm, const RankInfoStruct& info,
+        std::array<int,3> n, std::array<int,3> ng, int tag, int depth,
+        std::array<bool,3> fill = {true,true,true},
+        std::array<bool,3> periodic = {true,true,true} );
 
     //!  Destructor
     ~fillHalo( );
@@ -75,15 +76,17 @@ public:
 
 
 private:
+    MPI_Comm comm;
     RankInfoStruct info;
-    int nx, ny, nz, ngx, ngy, ngz, depth;
+    std::array<int,3> n, ng;
+    int depth;
     bool fill_pattern[3][3][3];
     int tag[3][3][3];
     int N_send_recv[3][3][3];
     TYPE *mem;
     TYPE *send[3][3][3], *recv[3][3][3];
     MPI_Request send_req[3][3][3], recv_req[3][3][3];
-    MPI_Comm comm;
+    size_t N_type;
     MPI_Datatype datatype;
     fillHalo();                             // Private empty constructor
     fillHalo(const fillHalo&);              // Private copy constructor
