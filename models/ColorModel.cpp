@@ -194,7 +194,7 @@ void ScaLBL_ColorModel::Create(){
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
         // Create a communicator for the device (will use optimized layout)
         // ScaLBL_Communicator ScaLBL_Comm(Mask); // original
-        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask.get()));
+        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
         //Create a second communicator based on the regular data layout
         //ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
