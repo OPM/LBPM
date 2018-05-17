@@ -282,13 +282,13 @@ runAnalysis::commWrapper runAnalysis::getComm( )
  *  Constructor/Destructors                                        *
  ******************************************************************/
 runAnalysis::runAnalysis( std::shared_ptr<Database> db,
-    const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain* Dm,
+    const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
     int Np, bool pBC, double beta, IntArray Map ):
     d_Np( Np ),
     d_beta( beta ),
     d_rank_info( rank_info ),
     d_Map( Map ),
-    d_ScaLBL_Comm( ScaLBL_Comm ),
+    d_ScaLBL_Comm( ScLBL_Comm ),
     d_fillData(Dm->Comm,Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,1,1,1,0,1)
 {
     NULL_USE( pBC );

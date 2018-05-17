@@ -64,7 +64,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
     for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm.get()) ); // TwoPhase analysis object
+    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 
     MPI_Barrier(comm);
     Dm->CommInit(comm);

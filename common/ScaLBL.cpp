@@ -1,6 +1,6 @@
 #include "common/ScaLBL.h"
 
-ScaLBL_Communicator::ScaLBL_Communicator(Domain *Dm){
+ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
 	Lock=false; // unlock the communicator
 	//......................................................................................

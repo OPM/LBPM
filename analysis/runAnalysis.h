@@ -24,7 +24,7 @@ public:
 
     //! Constructor
     runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
-        const ScaLBL_Communicator &ScaLBL_Comm, const Domain* dm, int Np, bool pBC, double beta, IntArray Map );
+    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool pBC, double beta, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
