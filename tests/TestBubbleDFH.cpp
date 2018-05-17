@@ -20,17 +20,6 @@
 
 using namespace std;
 
-std::shared_ptr<Database> loadInputs( int nprocs )
-{
-    auto db = std::make_shared<Database>();
-    db->putScalar<int>( "BC", 0 );
-    db->putVector<int>( "nproc", { 1, 1, 1 } );
-    db->putVector<int>( "n", { 100, 100, 100 } );
-    db->putScalar<int>( "nspheres", 1 );
-    db->putVector<double>( "L", { 1, 1, 1 } );
-    return db;
-}
-
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM 
 //*************************************************************************
@@ -44,11 +33,9 @@ int main(int argc, char **argv)
 	MPI_Comm_dup(MPI_COMM_WORLD,&comm);
 	int rank = comm_rank(comm);
 	int nprocs = comm_size(comm);
+	int check=0;
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
-
-		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-
+	  int i,j,k,n,Np;
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running DFH/Color LBM	\n");
@@ -98,19 +85,19 @@ int main(int argc, char **argv)
         string FILENAME;
 
         // Color Model parameters
-        int timestepMax = domain_db->getScalar<int>( "timestepMax" );
-        double tauA = domain_db->getScalar<double>( "tauA" );
-        double tauB = domain_db->getScalar<double>( "tauB" );
-        double rhoA = domain_db->getScalar<double>( "rhoA" );
-        double rhoB = domain_db->getScalar<double>( "rhoB" );
-        double Fx = domain_db->getVector<double>( "F" )[0];
-        double Fy = domain_db->getVector<double>( "F" )[1];
-        double Fz = domain_db->getVector<double>( "F" )[2];
-        double alpha = domain_db->getScalar<double>( "alpha" );
-        double beta = domain_db->getScalar<double>( "beta" );
-        bool Restart = domain_db->getScalar<int>( "Restart" );
-        double din = domain_db->getScalar<double>( "din" );
-        double dout = domain_db->getScalar<double>( "dout" );;
+        int timestepMax = color_db->getScalar<int>( "timestepMax" );
+        double tauA = color_db->getScalar<double>( "tauA" );
+        double tauB = color_db->getScalar<double>( "tauB" );
+        double rhoA = color_db->getScalar<double>( "rhoA" );
+        double rhoB = color_db->getScalar<double>( "rhoB" );
+        double Fx = color_db->getVector<double>( "F" )[0];
+        double Fy = color_db->getVector<double>( "F" )[1];
+        double Fz = color_db->getVector<double>( "F" )[2];
+        double alpha = color_db->getScalar<double>( "alpha" );
+        double beta = color_db->getScalar<double>( "beta" );
+        bool Restart = color_db->getScalar<int>( "Restart" );
+        double din = color_db->getScalar<double>( "din" );
+        double dout = color_db->getScalar<double>( "dout" );;
         double inletA=1.f;
         double inletB=0.f;
         double outletA=0.f;
@@ -118,16 +105,16 @@ int main(int argc, char **argv)
         double flux = 10.f;
 
         // Read domain values
-        auto L = domain_db->getVector<int>( "L" );
+        auto L = domain_db->getVector<double>( "L" );
         auto size = domain_db->getVector<int>( "n" );
         auto nproc = domain_db->getVector<int>( "nproc" );
         int BoundaryCondition = domain_db->getScalar<int>( "BC" );
         int Nx = size[0];
         int Ny = size[1];
         int Nz = size[2];
-        int Lx = L[0];
-        int Ly = L[1];
-        int Lz = L[2];
+        double Lx = L[0];
+        double Ly = L[1];
+        double Lz = L[2];
         int nprocx = nproc[0];
         int nprocy = nproc[1];
         int nprocz = nproc[2];
@@ -195,21 +182,6 @@ int main(int argc, char **argv)
         //.......................................................................
         if (rank == 0)    printf("Read input media... \n");
         //.......................................................................
-		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-		//   TwoPhase Averages(Dm);
-		Dm.CommInit(comm);
-
-		// Mask that excludes the solid phase
-		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-		MPI_Barrier(comm);
-
-		Nx+=2; Ny+=2; Nz += 2;
-		int N = Nx*Ny*Nz;
-		//.......................................................................
-		if (rank == 0)	printf("Read input media... \n");
-		//.......................................................................
-
 		//.......................................................................
 		// Filenames used
 		char LocalRankString[8];
@@ -250,10 +222,10 @@ int main(int argc, char **argv)
 	        }
 	    }
         // Initialize the bubble
-        for (k=0;k<Nz;k++){
+	    for (k=0;k<Nz;k++){
             for (j=0;j<Ny;j++){
                 for (i=0;i<Nx;i++){
-                    n = k*Nx*Ny + j*Nz + i;
+                    int n = k*Nx*Ny + j*Nz + i;
                     int iglobal= i+(Nx-2)*Dm.iproc();
                     int jglobal= j+(Ny-2)*Dm.jproc();
                     int kglobal= k+(Nz-2)*Dm.kproc();
@@ -350,6 +322,8 @@ int main(int argc, char **argv)
 		Tmp=new double[3*Np];
 		Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
 		double count_wet=0.f;
+		double cns,bns,cws,bws;
+		cns=bns=bws=cws=1.0;
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
@@ -423,7 +397,8 @@ int main(int argc, char **argv)
 
 		if (rank==0) printf("********************************************************\n");
 		if (rank==0)	printf("No. of timesteps: %i \n", timestepMax);
-
+		double err=1.0;
+		double tol=1.0e-6;
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 		ScaLBL_DeviceBarrier();
@@ -434,15 +409,12 @@ int main(int argc, char **argv)
 		err = 1.0; 	
 		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
-		if (rank==0){
-		  printf("Analysis intervals: (restart) %i, (TCAT) %i, (blobtracking) %i \n",RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL);
-		}
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-        std::shared_ptr<Database> analysis_db;
+		//std::shared_ptr<Database> analysis_db;
         runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
-        analysis.createThreads( analysis_method, 4 );
+        //analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 			PROFILE_START("Update");
@@ -599,6 +571,7 @@ int main(int argc, char **argv)
 	} // Limit scope so variables that contain communicators will free before MPI_Finialize
 	MPI_Comm_free(&comm);
 	MPI_Finalize();
+	return check;
 }
 
 
