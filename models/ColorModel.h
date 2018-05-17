@@ -39,9 +39,7 @@ public:
 	int Nx,Ny,Nz,N,Np;
 	int nprocx,nprocy,nprocz;
 	double Lx,Ly,Lz;
-		
-private:
-	MPI_Comm comm;
+
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
@@ -52,14 +50,8 @@ private:
     std::shared_ptr<Database> domain_db;
     std::shared_ptr<Database> color_db;
     std::shared_ptr<Database> analysis_db;
-    
-	// filenames
-    char LocalRankString[8];
-    char LocalRankFilename[40];
-    char LocalRestartFile[40];
-    
-    IntArray Map;
 
+    IntArray Map;
     char *id;
     int *NeighborList;
     int *dvcMap;
@@ -69,7 +61,15 @@ private:
     double *Velocity;
     double *Gradient;
     double *Pressure;
+		
+private:
+	MPI_Comm comm;
     
+	// filenames
+    char LocalRankString[8];
+    char LocalRankFilename[40];
+    char LocalRestartFile[40];
+   
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
     	

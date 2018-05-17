@@ -111,6 +111,10 @@ int main(int argc, char **argv)
 		auto filename = argv[1];
 		ScaLBL_ColorModel ColorModel;
 		ColorModel.ReadParams(filename);
+		ColorModel.ReadInput();
+		ColorModel.Create();
+		ColorModel.Initialize();
+		ColorModel.Run();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);
