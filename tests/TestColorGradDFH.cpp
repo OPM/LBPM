@@ -11,6 +11,16 @@
 
 using namespace std;
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 100, 100, 100 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
 
 //***************************************************************************************
 int main(int argc, char **argv)
@@ -67,92 +77,24 @@ int main(int argc, char **argv)
 
 		Fx = Fy = 0.f;
 		Fz = 0.f;
+		
+	    // Load inputs
+	    auto db = loadInputs( nprocs );
+	    int Nx = db->getVector<int>( "n" )[0];
+	    int Ny = db->getVector<int>( "n" )[1];
+	    int Nz = db->getVector<int>( "n" )[2];
+	    int nprocx = db->getVector<int>( "nproc" )[0];
+	    int nprocy = db->getVector<int>( "nproc" )[1];
+	    int nprocz = db->getVector<int>( "nproc" )[2];
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=3;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=2; nprocy=1;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				Nx = dim; Ny = dim; Nz = dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
+	    if (rank==0){
+	    	printf("********************************************************\n");
+	    	printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+	    	printf("********************************************************\n");
+	    }
 
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
-
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-			printf("********************************************************\n");
-		}
-
-		MPI_Barrier(comm);
-
-		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-		int BoundaryCondition=0;
-
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-
+	    // Get the rank info
+	    Domain Dm(db);
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -178,7 +120,6 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
 
 		// LBM variables

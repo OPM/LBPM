@@ -20,6 +20,17 @@
 
 using namespace std;
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 100, 100, 100 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
+
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM 
 //*************************************************************************
@@ -56,208 +67,134 @@ int main(int argc, char **argv)
 		PROFILE_START("Main");
 		Utilities::setErrorHandlers();
 
-		int ANALYSIS_INTERVAL = 1000;
-		int BLOBID_INTERVAL = 1000;
-        std::string analysis_method = "independent";
-		if (argc >= 3) {
-			ANALYSIS_INTERVAL = atoi(argv[1]);
-			BLOBID_INTERVAL   = atoi(argv[2]);
-		}
-		if (argc >= 4)
-			analysis_method = std::string(argv[3]);
+        if ( argc < 2 ) {
+            std::cerr << "Invalid number of arguments, no input file specified\n";
+            return -1;
+        }
+        auto filename = argv[1];
+        auto db = std::make_shared<Database>( filename );
+        auto domain_db = db->getDatabase( "Domain" );
+        auto color_db = db->getDatabase( "Color" );
+        auto analysis_db = db->getDatabase( "Analysis" );
 
-		// Variables that specify the computational domain  
-		string FILENAME;
-		int Nx,Ny,Nz,Np;		// local sub-domain size
-		double Lx,Ly,Lz;	// Domain length
-		// Color Model parameters
-		int timestepMax;
-		double tauA, tauB, rhoA,rhoB;
-		double Fx,Fy,Fz,tol,err;
-		double alpha, beta;
-		double bns,bws,cns,cws;
-		int BoundaryCondition;
-		int InitialCondition;
-		//	bool pBC,Restart;
-		int i,j,k,n;
-		double din, dout, flux;
-		double inletA,inletB,outletA,outletB;
-		inletA=1.f;
-		inletB=0.f;
-		outletA=0.f;
-		outletB=1.f;
-		flux = 10.f;
-		dout=1.f;
+        if (rank == 0){
+            printf("********************************************************\n");
+            printf("Running Color LBM    \n");
+            printf("********************************************************\n");
+        }
+        // Initialize compute device
+        //        int device=ScaLBL_SetDevice(rank);
+        ScaLBL_DeviceBarrier();
+        MPI_Barrier(comm);
 
-		int RESTART_INTERVAL=20000;
-		//int ANALYSIS_)INTERVAL=1000;	
-		int BLOB_ANALYSIS_INTERVAL=1000;
-		int timestep = 0;
+        PROFILE_ENABLE(1);
+        //PROFILE_ENABLE_TRACE();
+        //PROFILE_ENABLE_MEMORY();
+        PROFILE_SYNCHRONIZE();
+        PROFILE_START("Main");
+        Utilities::setErrorHandlers();
 
-		if (rank==0){
-			//.............................................................
-			//		READ SIMULATION PARMAETERS FROM INPUT FILE
-			//.............................................................
-			ifstream input("Color.in");
-			if (input.is_open()){
-				// Line 1: model parameters (tau, alpha, beta, das, dbs)
-				input >> tauA;			// Viscosity non-wetting
-				input >> tauB;			// Viscosity wetting
-				input >> rhoA;			// density non-wetting
-				input >> rhoB;			// density wetting
-				input >> alpha;			// Surface Tension parameter
-				input >> beta;			// Width of the interface
-				input >> cws;			// solid interaction coefficients
-				input >> bws;			// solid interaction coefficients
-				input >> cns;			// solid interaction coefficients
-				input >> bns;			// solid interaction coefficients
-				// Line 2:  External force components (Fx,Fy, Fz)
-				input >> Fx;
-				input >> Fy;
-				input >> Fz;
-				// Line 4: Pressure Boundary conditions
-				input >> InitialCondition;
-				input >> BoundaryCondition;
-				input >> din;
-				input >> dout;
-				// Line 5: time-stepping criteria
-				input >> timestepMax;		// max no. of timesteps
-				input >> RESTART_INTERVAL;	// restart interval
-				input >> tol;		      	// error tolerance
-				// Line 6: Analysis options
-				input >> BLOB_ANALYSIS_INTERVAL; // interval to analyze blob states
-				//.............................................................
-			}
-			else{
-				// Set default values
-				// Print warning
-				printf("WARNING: No input file provided (Color.in is missing)! Default parameters will be used. \n");
-				tauA = tauB = 1.0;
-				rhoA = rhoB = 1.0;
-				alpha=0.005;
-				beta= 0.9;
-				Fx = Fy = Fz = 0.0;
-				InitialCondition=0;
-				BoundaryCondition=0;
-				din=dout=1.0;
-				timestepMax=0;
-			}
+        // Variables that specify the computational domain  
+        string FILENAME;
 
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (input.is_open()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-				//.......................................................................
-			}
-			else{
-				// Set default values
-				// Print warning
-				printf("WARNING: No input file provided (Domain.in is missing)! Default parameters will be used. \n");
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=10;
-				Lx=Ly=Lz=1.0;
-			}
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&tauA,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&tauB,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&rhoA,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&rhoB,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&cns,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&cws,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&bns,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&bws,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
-		MPI_Bcast(&InitialCondition,1,MPI_INT,0,comm);
-		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
-		MPI_Bcast(&RESTART_INTERVAL,1,MPI_INT,0,comm);
-		MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
-		// Computational domain
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
+        // Color Model parameters
+        int timestepMax = domain_db->getScalar<int>( "timestepMax" );
+        double tauA = domain_db->getScalar<double>( "tauA" );
+        double tauB = domain_db->getScalar<double>( "tauB" );
+        double rhoA = domain_db->getScalar<double>( "rhoA" );
+        double rhoB = domain_db->getScalar<double>( "rhoB" );
+        double Fx = domain_db->getVector<double>( "F" )[0];
+        double Fy = domain_db->getVector<double>( "F" )[1];
+        double Fz = domain_db->getVector<double>( "F" )[2];
+        double alpha = domain_db->getScalar<double>( "alpha" );
+        double beta = domain_db->getScalar<double>( "beta" );
+        bool Restart = domain_db->getScalar<int>( "Restart" );
+        double din = domain_db->getScalar<double>( "din" );
+        double dout = domain_db->getScalar<double>( "dout" );;
+        double inletA=1.f;
+        double inletB=0.f;
+        double outletA=0.f;
+        double outletB=1.f;
+        double flux = 10.f;
 
-		flux = 0.f;
-		if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details
+        // Read domain values
+        auto L = domain_db->getVector<int>( "L" );
+        auto size = domain_db->getVector<int>( "n" );
+        auto nproc = domain_db->getVector<int>( "nproc" );
+        int BoundaryCondition = domain_db->getScalar<int>( "BC" );
+        int Nx = size[0];
+        int Ny = size[1];
+        int Nz = size[2];
+        int Lx = L[0];
+        int Ly = L[1];
+        int Lz = L[2];
+        int nprocx = nproc[0];
+        int nprocy = nproc[1];
+        int nprocz = nproc[2];
 
-		// Get the rank info
-		const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+        int timestep = 6;
 
-		MPI_Barrier(comm);
+        if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details
 
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
+        // Get the rank info
+        const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("tau (non-wetting) = %f \n", tauA);
-			printf("tau (wetting) = %f \n", tauB);
-			printf("density (non-wetting) = %f \n", rhoA);
-			printf("density (wetting) = %f \n", rhoB);
-			printf("alpha = %f \n", alpha);		
-			printf("beta = %f \n", beta);
-			printf("gamma_{wn} = %f \n", 5.796*alpha);
-			printf("Force(x) = %f \n", Fx);
-			printf("Force(y) = %f \n", Fy);
-			printf("Force(z) = %f \n", Fz);
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-			printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
-			if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
-			if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
-			if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
-			if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
-			if (BoundaryCondition==4) printf("Average flux boundary conditions will be applied \n");
-			if (InitialCondition==0) printf("Initial conditions assigned from phase ID file \n");
-			if (InitialCondition==1) printf("Initial conditions assigned from restart file \n");
-			printf("********************************************************\n");
-		}
+        MPI_Barrier(comm);
 
-		// Initialized domain and averaging framework for Two-Phase Flow
-		bool pBC,velBC;
-		if (BoundaryCondition==1 || BoundaryCondition==3 || BoundaryCondition == 4)
-			pBC=true;
-		else						pBC=false;
-		if (BoundaryCondition==2)	velBC=true;
-		else						velBC=false;
+        if (nprocs != nprocx*nprocy*nprocz){
+            printf("nprocx =  %i \n",nprocx);
+            printf("nprocy =  %i \n",nprocy);
+            printf("nprocz =  %i \n",nprocz);
+            INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
+        }
 
-		bool Restart;
-		if (InitialCondition==1)    Restart=true;
-		else 						Restart=false;
-		NULL_USE(pBC);  NULL_USE(velBC);
+        if (rank==0){
+            printf("********************************************************\n");
+            printf("tau (non-wetting) = %f \n", tauA);
+            printf("tau (wetting) = %f \n", tauB);
+            printf("density (non-wetting) = %f \n", rhoA);
+            printf("density (wetting) = %f \n", rhoB);
+            printf("alpha = %f \n", alpha);        
+            printf("beta = %f \n", beta);
+            printf("gamma_{wn} = %f \n", 5.796*alpha);
+            printf("Force(x) = %f \n", Fx);
+            printf("Force(y) = %f \n", Fy);
+            printf("Force(z) = %f \n", Fz);
+            printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+            printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
+            if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
+            if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
+            if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
+            if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
+            if (BoundaryCondition==4) printf("Average flux boundary conditions will be applied \n");
+            if (!Restart) printf("Initial conditions assigned from phase ID file \n");
+            if (Restart) printf("Initial conditions assigned from restart file \n");
+            printf("********************************************************\n");
+        }
 
-		// Full domain used for averaging (do not use mask for analysis)
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+        // Initialized domain and averaging framework for Two-Phase Flow
+        bool pBC;
+        if (BoundaryCondition==1 || BoundaryCondition==3 || BoundaryCondition == 4)
+            pBC=true;
+        else
+            pBC=false;
+
+        // Full domain used for averaging (do not use mask for analysis)
+        Domain Dm(domain_db);
+        for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+        //   TwoPhase Averages(Dm);
+        Dm.CommInit(comm);
+
+        // Mask that excludes the solid phase
+        Domain Mask(domain_db);
+        MPI_Barrier(comm);
+
+        Nx+=2; Ny+=2; Nz += 2;
+        int N = Nx*Ny*Nz;
+        //.......................................................................
+        if (rank == 0)    printf("Read input media... \n");
+        //.......................................................................
 		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 		//   TwoPhase Averages(Dm);
