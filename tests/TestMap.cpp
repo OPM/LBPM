@@ -175,6 +175,14 @@ int main(int argc, char **argv)
 
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
 		MPI_Barrier(comm);
+		
+		// Check the neighborlist
+		for (int idx=0; idx<ScaLBL_Comm.LastExterior()){
+			for (int q=0; q<18; q++){
+				int nn = neighborList[q*Np+idx]%Np;
+				if (nn>Np) printf("error at q=%i, idx=%i \n",q,idx);
+			}
+		}
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
