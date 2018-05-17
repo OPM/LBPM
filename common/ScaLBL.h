@@ -136,9 +136,10 @@ public:
 	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
+	int BoundaryCondition;
+	
 	int next;
 	int first_interior,last_interior;
-	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
 	// 		- determines how much memory is allocated
@@ -153,6 +154,10 @@ public:
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
 
+	int LastExterior();
+	int FirstInterior();
+	int LastInterior();
+	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
@@ -195,6 +200,7 @@ private:
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 	// only one set of Send requests can be active at any time (per instance)
 	int i,j,k,n;
+
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
 	int sendtag,recvtag;

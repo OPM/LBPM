@@ -311,6 +311,15 @@ ScaLBL_Communicator::~ScaLBL_Communicator(){
 	// destrutor does nothing (bad idea)
 	// -- note that there needs to be a way to free memory allocated on the device!!!
 }
+int ScaLBL_Communicator::LastExterior(){
+	return next;
+}
+int ScaLBL_Communicator::FirstInterior(){
+	return first_interior;
+}
+int ScaLBL_Communicator::LastInterior(){
+	return last_interior;
+}
 
 void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 		int *d3q19_recvlist){
