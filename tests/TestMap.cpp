@@ -159,7 +159,26 @@ int main(int argc, char **argv)
 		//Create a second communicator based on the regular data layout
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
 
-
+		// Check that domain information properly copied to ScaLBL communicator
+		if (ScaLBL_Comm.sendCount_x != Dm.sendCount_x) printf("domain error x \n");
+		if (ScaLBL_Comm.sendCount_X != Dm.sendCount_X) printf("domain error X \n");
+		if (ScaLBL_Comm.sendCount_y != Dm.sendCount_y) printf("domain error y \n");
+		if (ScaLBL_Comm.sendCount_Y != Dm.sendCount_Y) printf("domain error Y \n");
+		if (ScaLBL_Comm.sendCount_z != Dm.sendCount_z) printf("domain error z \n");
+		if (ScaLBL_Comm.sendCount_Z != Dm.sendCount_Z) printf("domain error Z \n");
+		if (ScaLBL_Comm.sendCount_xy != Dm.sendCount_xy) printf("domain error xy \n");
+		if (ScaLBL_Comm.sendCount_xY != Dm.sendCount_xY) printf("domain error xY \n");
+		if (ScaLBL_Comm.sendCount_Xy != Dm.sendCount_Xy) printf("domain error Xy \n");
+		if (ScaLBL_Comm.sendCount_XY != Dm.sendCount_XY) printf("domain error XY \n");
+		if (ScaLBL_Comm.sendCount_xz != Dm.sendCount_xz) printf("domain error xz \n");
+		if (ScaLBL_Comm.sendCount_xZ != Dm.sendCount_xZ) printf("domain error xZ \n");
+		if (ScaLBL_Comm.sendCount_Xz != Dm.sendCount_Xz) printf("domain error Xz \n");
+		if (ScaLBL_Comm.sendCount_XZ != Dm.sendCount_XZ) printf("domain error XZ \n");
+		if (ScaLBL_Comm.sendCount_yz != Dm.sendCount_yz) printf("domain error yz \n");
+		if (ScaLBL_Comm.sendCount_yZ != Dm.sendCount_yZ) printf("domain error yZ \n");
+		if (ScaLBL_Comm.sendCount_Yz != Dm.sendCount_Yz) printf("domain error Yz \n");
+		if (ScaLBL_Comm.sendCount_YZ != Dm.sendCount_YZ) printf("domain error YZ \n");		
+		
 		if (rank==0){
 			printf("Total domain size = %i \n",N);
 			printf("Reduced domain size = %i \n",Np);
