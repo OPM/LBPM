@@ -54,7 +54,7 @@
 #define PI 3.14159265359
 
 // Constructor
-TwoPhase::TwoPhase(Domain *dm):
+TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 	n_nw_pts(0), n_ns_pts(0), n_ws_pts(0), n_nws_pts(0), n_local_sol_pts(0), n_local_nws_pts(0),
     n_nw_tris(0), n_ns_tris(0), n_ws_tris(0), n_nws_seg(0), n_local_sol_tris(0),
     nc(0), kstart(0), kfinish(0), fluid_isovalue(0), solid_isovalue(0),	Volume(0),
@@ -196,8 +196,8 @@ TwoPhase::~TwoPhase()
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData)
 {
-	double factor,temp,value;
-	/*	factor=0.5/Beta;
+  /*double factor,temp,value;
+		factor=0.5/Beta;
 	// Initialize to -1,1 (segmentation)
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
