@@ -34,13 +34,9 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-
-
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Color Model: TestColorGradDFH	\n");
@@ -49,13 +45,11 @@ int main(int argc, char **argv)
 
 		// BGK Model parameters
 		string FILENAME;
-		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double Fx,Fy,Fz,tol;
 		// Domain variables
 		double Lx,Ly,Lz;
 		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int dim = 3;
 		//if (rank == 0) printf("dim=%d\n",dim);

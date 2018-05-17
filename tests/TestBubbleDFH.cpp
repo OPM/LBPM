@@ -95,7 +95,7 @@ int main(int argc, char **argv)
         double Fz = color_db->getVector<double>( "F" )[2];
         double alpha = color_db->getScalar<double>( "alpha" );
         double beta = color_db->getScalar<double>( "beta" );
-        bool Restart = color_db->getScalar<int>( "Restart" );
+        bool Restart = color_db->getScalar<bool>( "Restart" );
         double din = color_db->getScalar<double>( "din" );
         double dout = color_db->getScalar<double>( "dout" );;
         double inletA=1.f;
