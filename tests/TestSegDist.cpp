@@ -17,11 +17,18 @@
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
-    INSIST(nprocs==8, "TestSegDist: Number of MPI processes must be equal to 8");
+    std::vector<int> nproc;
+    if ( nprocs == 1 ) {
+        nproc = { 1, 1, 1 };
+    } else if ( nprocs == 8 ) {
+        nproc = { 2, 2, 2 };
+    } else {
+        ERROR("TestSegDist: Unsupported number of processors");
+    }
     auto db = std::make_shared<Database>( );
     db->putScalar<int>( "BC", 0 );
-    db->putVector<int>( "nproc", { 2, 2, 2 } );
-    db->putVector<int>( "n", { 100, 100, 100 } );
+    db->putVector<int>( "nproc", nproc );
+    db->putVector<int>( "n", { 200, 200, 200 } );
     db->putScalar<int>( "nspheres", 0 );
     db->putVector<double>( "L", { 1, 1, 1 } );
     return db;
@@ -63,35 +70,30 @@ int main(int argc, char **argv)
     int ny = Ny+2;
     int nz = Nz+2;
 
-    double BubbleRadius = 0.3*nx;
-
     // Initialize the bubble
-    double Cx = 1.0*nx;
-    double Cy = 1.0*ny;
-    double Cz = 1.0*nz;
+    double BubbleRadius = 0.15*Nx*Dm.nprocx();
+    double Cx = 0.40*Nx*Dm.nprocx();
+    double Cy = 0.45*Nx*Dm.nprocy();
+    double Cz = 0.50*Nx*Dm.nprocy();
 
     DoubleArray TrueDist(nx,ny,nz);
     Array<char> id(nx,ny,nz);
     id.fill(0);
 
-    for (int k=1;k<nz-1;k++){
-        for (int j=1;j<ny-1;j++){
-            for (int i=1;i<nx-1;i++){
-
+    for (int k=1; k<nz-1; k++) {
+        double z = k - 0.5 + Dm.kproc()*Nz;
+        for (int j=1; j<ny-1; j++) {
+            double y = j - 0.5 + Dm.jproc()*Ny;
+            for (int i=1; i<nx-1; i++) {
+                double x = i - 0.5 + Dm.iproc()*Nx;
                 // True signed distance
-                double x = (nx-2)*Dm.iproc()+i-1;
-                double y = (ny-2)*Dm.jproc()+j-1;
-                double z = (nz-2)*Dm.kproc()+k-1;
                 TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
-
                 // Initialize phase positions
                 if (TrueDist(i,j,k) < 0.0){
                     id(i,j,k) = 0;
                 } else{
                     id(i,j,k)=1;
                 }
-
-
             }
         }
     }
@@ -106,24 +108,18 @@ int main(int argc, char **argv)
     if (rank==0)
         printf("Total time: %f seconds \n",t2-t1);
 
-    double localError=0.0;
-    int localCount = 0;
-    for (int k=0;k<nz;k++){
-        for (int j=0;j<ny;j++){
-            for (int i=0;i<nx;i++){
-                if (fabs(TrueDist(i,j,k)) < 3.0){
-                    localError += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
-                    localCount++;
-                }
+    double err = 0.0;
+    for (int i=1; i<Nx-1; i++) {
+        for (int j=1; j<Ny-1; j++) {
+            for (int k=1; k<Nz-1; k++) {
+                err += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
             }
         }
     }
-    double globalError;
-    int globalCount;
-    MPI_Allreduce(&localError,&globalError,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    MPI_Allreduce(&localCount,&globalCount,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    double err2 = sqrt(globalError)/(double (globalCount));
-    if (rank==0) printf("Mean error %f \n", err2);
+    err = sumReduce( Dm.Comm, err );
+    err = sqrt( err / (nx*ny*nz*nprocs) );
+    if (rank==0)
+        printf("Mean error %0.4f \n", err);
 
     // Write the results to visit
     Array<int> ID0(id.size());
