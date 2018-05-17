@@ -27,8 +27,8 @@ int main(int argc, char **argv)
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
 		int iproc,jproc,kproc;
+		int i,j,k,n,Npad;
         auto filename = argv[1];
         auto db = std::make_shared<Database>( filename );
         auto domain_db = db->getDatabase( "Domain" );
@@ -44,12 +44,6 @@ int main(int argc, char **argv)
         //        int device=ScaLBL_SetDevice(rank);
         ScaLBL_DeviceBarrier();
         MPI_Barrier(comm);
-
-        PROFILE_ENABLE(1);
-        //PROFILE_ENABLE_TRACE();
-        //PROFILE_ENABLE_MEMORY();
-        PROFILE_SYNCHRONIZE();
-        PROFILE_START("Main");
         Utilities::setErrorHandlers();
 
         // Variables that specify the computational domain  
@@ -140,8 +134,6 @@ int main(int argc, char **argv)
         // Full domain used for averaging (do not use mask for analysis)
         Domain Dm(domain_db);
         for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-        //   TwoPhase Averages(Dm);
         Dm.CommInit(comm);
 
         // Mask that excludes the solid phase
@@ -204,6 +196,7 @@ int main(int argc, char **argv)
 		double *fq, *Aq, *Bq;
 		double *Den, *Phi;
 		double *Gradient;
+		double *SolidPotential;
 		double *Vel;
 		double *Pressure;
 
@@ -218,6 +211,7 @@ int main(int argc, char **argv)
 		ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Vel, 3*sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
 		
 		//...........................................................................
 		// Update GPU data structures
