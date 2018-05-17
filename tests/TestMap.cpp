@@ -177,10 +177,19 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		
 		// Check the neighborlist
-		for (int idx=0; idx<ScaLBL_Comm.LastExterior()){
+		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm.LastExterior(),ScaLBL_Comm.FirstInterior(),ScaLBL_Comm.LastInterior());
+		for (int idx=0; idx<ScaLBL_Comm.LastExterior(); idx++){
 			for (int q=0; q<18; q++){
 				int nn = neighborList[q*Np+idx]%Np;
-				if (nn>Np) printf("error at q=%i, idx=%i \n",q,idx);
+				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
+		      
+			}
+		}
+		for (int idx=ScaLBL_Comm.FirstInterior(); idx<ScaLBL_Comm.LastInterior(); idx++){
+			for (int q=0; q<18; q++){
+				int nn = neighborList[q*Np+idx]%Np;
+				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
+		      
 			}
 		}
 
