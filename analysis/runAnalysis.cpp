@@ -282,22 +282,22 @@ runAnalysis::commWrapper runAnalysis::getComm( )
  *  Constructor/Destructors                                        *
  ******************************************************************/
 runAnalysis::runAnalysis( std::shared_ptr<Database> db,
-    const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& Dm,
+    const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain* Dm,
     int Np, bool pBC, double beta, IntArray Map ):
     d_Np( Np ),
     d_beta( beta ),
-    d_ScaLBL_Comm( ScaLBL_Comm ),
     d_rank_info( rank_info ),
     d_Map( Map ),
-    d_fillData(Dm.Comm,Dm.rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,1,1,1,0,1)
+    d_ScaLBL_Comm( ScaLBL_Comm ),
+    d_fillData(Dm->Comm,Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,1,1,1,0,1)
 {
     NULL_USE( pBC );
     INSIST( db, "Input database is empty" );
 	char rankString[20];
-	sprintf(rankString,"%05d",Dm.rank());
-    d_N[0] = Dm.Nx;
-    d_N[1] = Dm.Ny;
-    d_N[2] = Dm.Nz;
+	sprintf(rankString,"%05d",Dm->rank());
+    d_N[0] = Dm->Nx;
+    d_N[1] = Dm->Ny;
+    d_N[2] = Dm->Nz;
     d_restart_interval = db->getScalar<int>( "restart_interval" );
     d_analysis_interval = db->getScalar<int>( "analysis_interval" );
     d_blobid_interval = db->getScalar<int>( "blobid_interval" );
@@ -309,7 +309,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	// Create the MeshDataStruct
 	d_meshData.resize(1);
 	d_meshData[0].meshName = "domain";
-	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm.rank_info,Dm.Nx-2,Dm.Ny-2,Dm.Nz-2,Dm.Lx,Dm.Ly,Dm.Lz );
+	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
@@ -317,22 +317,22 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	PhaseVar->name = "phase";
 	PhaseVar->type = IO::VariableType::VolumeVariable;
 	PhaseVar->dim = 1;
-	PhaseVar->data.resize(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2);
+	PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PhaseVar);
 	PressVar->name = "Pressure";
 	PressVar->type = IO::VariableType::VolumeVariable;
 	PressVar->dim = 1;
-	PressVar->data.resize(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2);
+	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PressVar);
 	SignDistVar->name = "SignDist";
 	SignDistVar->type = IO::VariableType::VolumeVariable;
 	SignDistVar->dim = 1;
-	SignDistVar->data.resize(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2);
+	SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(SignDistVar);
 	BlobIDVar->name = "BlobID";
 	BlobIDVar->type = IO::VariableType::VolumeVariable;
 	BlobIDVar->dim = 1;
-	BlobIDVar->data.resize(Dm.Nx-2,Dm.Ny-2,Dm.Nz-2);
+	BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(BlobIDVar);
     // Initialize the comms
     MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);

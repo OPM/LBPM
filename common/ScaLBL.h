@@ -129,7 +129,7 @@ extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
-	ScaLBL_Communicator(Domain &Dm);
+	ScaLBL_Communicator(Domain *Dm);
 
 	//ScaLBL_Communicator(Domain &Dm, IntArray &Map);
 	~ScaLBL_Communicator();

@@ -24,13 +24,13 @@ public:
 
     //! Constructor
     runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
-        const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm, int Np, bool pBC, double beta, IntArray Map );
+        const ScaLBL_Communicator &ScaLBL_Comm, const Domain* dm, int Np, bool pBC, double beta, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
 
     //! Run the next analysis
-    void run( int timestep, TwoPhase& Averages, const double *Phi,
+    void run( int timestep, TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
 
     //! Finish all active analysis

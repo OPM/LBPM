@@ -71,22 +71,17 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     MPI_Barrier(comm);
 }
 
-ScaLBL_ColorModel::~ScaLBL_ColorModel(){
-	
-}
-
 void ScaLBL_ColorModel::ReadInput(){
+    int rank=Dm->rank();
+    size_t readID;
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
-    sprintf(LocalRankString,"%05d",rank);
+    sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
     // .......... READ THE INPUT FILE .......................................
     id = new char[N];
-    double sum, sum_local;
-    double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
     //...........................................................................
     if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
     //.......................................................................
@@ -98,16 +93,15 @@ void ScaLBL_ColorModel::ReadInput(){
 
     if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
     sprintf(LocalRankFilename,"ID.%05i",rank);
-    size_t readID;
     FILE *IDFILE = fopen(LocalRankFilename,"rb");
     if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
     readID=fread(id,1,N,IDFILE);
-    if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",rank);
+    if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",Dm->rank());
     fclose(IDFILE);
 
     // Read restart file
      if (Restart == true){
-         if (rank==0){
+       if (Dm->rank()==0){
              printf("Reading restart file! \n");
              ifstream restart("Restart.txt");
              if (restart.is_open()){
@@ -136,8 +130,13 @@ void ScaLBL_ColorModel::Create(){
      //.......................................................................
      // Compute the media porosity, assign phase labels and solid composition
      //.......................................................................
-	double porosity;
-	double sum_local=0.0;
+    int nprocs=nprocx*nprocy*nprocz;
+    int rank=Dm->rank();
+    double sum;
+    double porosity;
+    double sum_local=0.0;
+    double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
      Np=0;  // number of local pore nodes
      //.......................................................................
      for (int k=1;k<Nz-1;k++){
@@ -204,7 +203,7 @@ void ScaLBL_ColorModel::Create(){
         if (rank==0)    printf ("Set up memory efficient layout \n");
     	Map.resize(Nx,Ny,Nz);       Map.fill(0);
         auto neighborList= new int[18*Npad];
-        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+        Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
         MPI_Barrier(comm);
 
         //...........................................................................
@@ -232,6 +231,9 @@ void ScaLBL_ColorModel::Create(){
         //...........................................................................
         // Update GPU data structures
         if (rank==0)    printf ("Setting up device map and neighbor list \n");
+	// copy the neighbor list 
+	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+
         int *TmpMap;
         TmpMap=new int[Np];
         for (int k=1; k<Nz-1; k++){
@@ -251,9 +253,12 @@ void ScaLBL_ColorModel::Initialize(){
 	/*
 	 * This function initializes model (includes both mobile and immobile components)
 	 */
-
+       int rank=Dm->rank();
 	// Compute the solid interaction potential and copy result to device
 	if (rank==0) printf("Computing solid interaction potential \n");
+	double *PhaseLabel;
+	PhaseLabel=new double [Nx*Ny*Nz];
+	Mask->AssignComponentLabels(PhaseLabel);
 	double *Tmp;
 	Tmp=new double[3*Np];
 	//Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
@@ -339,9 +344,9 @@ void ScaLBL_ColorModel::Initialize(){
 	DoubleArray Psy(Nx,Ny,Nz);
 	DoubleArray Psz(Nx,Ny,Nz);
 	DoubleArray Psnorm(Nx,Ny,Nz);
-	ScaLBL_Comm.RegularLayout(Map,&SolidPotential[0],Psx);
-	ScaLBL_Comm.RegularLayout(Map,&SolidPotential[Np],Psy);
-	ScaLBL_Comm.RegularLayout(Map,&SolidPotential[2*Np],Psz);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[0],Psx);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[Np],Psy);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[2*Np],Psz);
 	for (int n=0; n<N; n++) Psnorm(n) = Psx(n)*Psx(n)+Psy(n)*Psy(n)+Psz(n)*Psz(n);
 	FILE *PFILE;
 	sprintf(LocalRankFilename,"Potential.%05i.raw",rank);
@@ -367,8 +372,6 @@ void ScaLBL_ColorModel::Initialize(){
 		}
 	}
 	//printf("sw=%f \n",count_wet/double(Np));
-	// copy the neighbor list 
-	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	// initialize phi based on PhaseLabel (include solid component labels)
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
 	//...........................................................................
@@ -376,11 +379,15 @@ void ScaLBL_ColorModel::Initialize(){
     if (rank==0)    printf ("Initializing distributions \n");
     ScaLBL_D3Q19_Init(fq, Np);
     if (rank==0)    printf ("Initializing phase field \n");
-    ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+    ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->last_interior, Np);
     
 }
 
 void ScaLBL_ColorModel::Run(){
+    int nprocs=nprocx*nprocy*nprocz;
+    int rank=Dm->rank();
+    const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+
     if (rank==0) printf("********************************************************\n");
     if (rank==0)    printf("No. of timesteps: %i \n", timestepMax);
     //.......create and start timer............
@@ -390,8 +397,14 @@ void ScaLBL_ColorModel::Run(){
     starttime = MPI_Wtime();
     //.........................................
     //************ MAIN ITERATION LOOP ***************************************/
+    	// read the input database 
+    auto db = std::make_shared<Database>( "input.db" );
+    auto domain_db = db->getDatabase( "Domain" );
+    auto color_db = db->getDatabase( "Color" );
+    auto analysis_db = db->getDatabase( "Analysis" );
+
     PROFILE_START("Loop");
-    runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
+    //    runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
     while (timestep < timestepMax ) {
         //if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
@@ -399,83 +412,83 @@ void ScaLBL_ColorModel::Run(){
         timestep++;
         // Compute the Phase indicator field
         // Read for Aq, Bq happens in this routine (requires communication)
-        ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+        ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
         
         // compute the gradient 
-        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.SendHalo(Phi);
-        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
-        ScaLBL_Comm.RecvGrad(Phi,Gradient);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+        ScaLBL_Comm->RecvGrad(Phi,Gradient);
         
         // Perform the collision operation
-        ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+        ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
         ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set BCs
         if (BoundaryCondition > 0){
-            ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-            ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+            ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+            ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
         }
         if (BoundaryCondition == 3){
-            ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-            ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
         }
         if (BoundaryCondition == 4){
-            din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-            ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+            din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
         }
         ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-                alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm.next, Np);
+                alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->next, Np);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
         // *************EVEN TIMESTEP*************
         timestep++;
         // Compute the Phase indicator field
-        ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-        ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-        ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+        ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+        ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
         
         // compute the gradient 
-        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.SendHalo(Phi);
-        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
-        ScaLBL_Comm.RecvGrad(Phi,Gradient);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+        ScaLBL_Comm->RecvGrad(Phi,Gradient);
 
         // Perform the collision operation
-        ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
+        ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-        ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+        ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set boundary conditions
         if (BoundaryCondition > 0){
-            ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-            ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+            ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+            ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
         }
         if (BoundaryCondition == 3){
-            ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-            ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
         }
         else if (BoundaryCondition == 4){
-            din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-            ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+            din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+            ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
         }
         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-                alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm.next, Np);
+                alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->next, Np);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
         //************************************************************************
         MPI_Barrier(comm);
         PROFILE_STOP("Update");
 
         // Run the analysis
-        analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+	// analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
     }
-    analysis.finish();
+    //    analysis.finish();
     PROFILE_STOP("Loop");
     PROFILE_SAVE("lbpm_color_simulator",1);
     //************************************************************************
