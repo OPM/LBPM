@@ -23,7 +23,7 @@ public:
 	
 	// functions in they should be run
 	void ReadParams(string filename);
-	void ReadParams(std::shared_ptr<Database> DB)
+	void ReadParams(std::shared_ptr<Database> db0)
 	void ReadInput();
 	void Create();
 	void Initialize();
@@ -71,6 +71,7 @@ private:
     double *Pressure;
     
     //int rank,nprocs;
+	void LoadParams(std::shared_ptr<Database> db0)
     	
 };
 
