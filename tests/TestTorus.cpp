@@ -12,7 +12,8 @@
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
-    auto db = std::make_shared<Database>( "Domain.in" );
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
     db->putScalar<int>( "BC", 0 );
     db->putVector<int>( "nproc", { 1, 1, 1 } );
     db->putVector<int>( "n", { 100, 100, 100 } );
