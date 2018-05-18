@@ -11,80 +11,58 @@
 #include "models/ColorModel.h"
 
 using namespace std;
+inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){
+		// initialize a bubble
+  int i,j,k,n;
+  int Np=0;
+  double sum=0.f;
+  int rank = ColorModel.Mask->rank();
+		int nprocx = ColorModel.Mask->nprocx();
+		int nprocy = ColorModel.Mask->nprocy();
+		int nprocz = ColorModel.Mask->nprocz();
+		int Nx = ColorModel.Mask->Nx;
+		int Ny = ColorModel.Mask->Ny;
+		int Nz = ColorModel.Mask->Nz;
+		if (rank == 0) cout << "Setting up bubble..." << endl;
+		sum=0; Np=0;
+		for (k=0;k<Nz;k++){
+		  for (j=0;j<Ny;j++){
+		    for (i=0;i<Nx;i++){
+		      n = k*Nx*Ny + j*Nz + i;
+		      ColorModel.Averages->SDs(i,j,k) = 100.f;
+		      // Initialize phase positions field
+		      if (ColorModel.Averages->SDs(i,j,k) < 0.0){
+			ColorModel.Mask->id[n] = 0;
+		      }
+		      else {
+			sum++;
+			Np++;
+		      }
+		    }
+		  }
+		}
+		// Initialize the bubble
+		for (k=0;k<Nz;k++){
+		  for (j=0;j<Ny;j++){
+		    for (i=0;i<Nx;i++){
+		      n = k*Nx*Ny + j*Nz + i;
+		      int iglobal= i+(Nx-2)*ColorModel.Dm->iproc();
+		      int jglobal= j+(Ny-2)*ColorModel.Dm->jproc();
+		      int kglobal= k+(Nz-2)*ColorModel.Dm->kproc();
+		      // Initialize phase position field for parallel bubble test
+		      if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
+			  +(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
+			  +(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
+                        ColorModel.Mask->id[n] = 2;
+		      }
+		      else{
+                        ColorModel.Mask->id[n]=1;
+		      }
+		    }
+		  }
+		}
 
-inline void AssignComponentLabels(char *id, double *phase, int Nx, int Ny, int Nz, int rank, MPI_Comm comm)
-{
-	int NLABELS=0;
-	char VALUE=0;
-	double AFFINITY=0.f;
-	
-	vector <char> Label;
-	vector <double> Affinity;
-	// Read the labels
-	if (rank==0){
-		printf("Component labels:\n");
-		ifstream iFILE("ComponentLabels.csv");\
-		if (iFILE.good()){
-			while (!iFILE.eof()){
-				iFILE>>VALUE;
-				iFILE>>AFFINITY;
-				Label.push_back(VALUE);
-				Affinity.push_back(AFFINITY);
-				NLABELS++;
-				printf("%i %f\n",VALUE,AFFINITY);
-			}
-		}
-		else{
-			printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
-			// Set default values
-			VALUE=0; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			printf("%i %f\n",VALUE,AFFINITY);
-			VALUE=1; AFFINITY=1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			printf("%i %f\n",VALUE,AFFINITY);
-			VALUE=2; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			printf("%i %f\n",VALUE,AFFINITY);
-		}
-	}
-	// Broadcast the list
-	MPI_Bcast(&NLABELS,1,MPI_INT,0,comm);
-	
-	// Copy into contiguous buffers
-	char *LabelList;
-	double * AffinityList;
-	LabelList=new char[NLABELS];
-	AffinityList=new double[NLABELS];
-	MPI_Bcast(&LabelList,NLABELS,MPI_CHAR,0,comm);
-	MPI_Bcast(&AffinityList,NLABELS,MPI_DOUBLE,0,comm);
-
-	// Assign the labels
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (int idx=0; idx < NLABELS; idx++){
-					if (VALUE == LabelList[idx]){
-						AFFINITY=AffinityList[idx];
-						idx = NLABELS;
-					}
-				}
-				phase[n] = AFFINITY;
-			}
-		}
-	}
 }
-
-
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -111,7 +89,9 @@ int main(int argc, char **argv)
 		auto filename = argv[1];
 		ScaLBL_ColorModel ColorModel;
 		ColorModel.ReadParams(filename);
-		ColorModel.ReadInput();
+		//ColorModel.ReadInput();
+		double radius=15.5;
+		InitializeBubble(ColorModel,radius);
 		ColorModel.Create();
 		ColorModel.Initialize();
 		ColorModel.Run();
