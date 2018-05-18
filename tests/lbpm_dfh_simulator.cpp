@@ -147,15 +147,13 @@ int main(int argc, char **argv)
         else
             pBC=false;
 
-        // Full domain used for averaging (do not use mask for analysis)
-        Domain Dm(domain_db);
-        for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-        //   TwoPhase Averages(Dm);
-        Dm.CommInit(comm);
+	std::shared_ptr<Domain> Dm (new Domain(domain_db));
+        for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
+        Dm->CommInit(comm);
+	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
         // Mask that excludes the solid phase
-        Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+	std::shared_ptr<Domain> Mask (new Domain(domain_db));
         MPI_Barrier(comm);
 
         Nx+=2; Ny+=2; Nz += 2;
@@ -286,7 +284,7 @@ int main(int argc, char **argv)
         if (rank==0) printf("Media porosity = %f \n",porosity);
         //.........................................................
         // If external boundary conditions are applied remove solid
-        if (BoundaryCondition >  0  && Dm.kproc() == 0){
+        if (BoundaryCondition >  0  && Dm->kproc() == 0){
             for (int k=0; k<3; k++){
                 for (int j=0;j<Ny;j++){
                     for (int i=0;i<Nx;i++){
@@ -297,7 +295,7 @@ int main(int argc, char **argv)
                 }
             }
         }
-        if (BoundaryCondition >  0  && Dm.kproc() == nprocz-1){
+        if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
             for (int k=Nz-3; k<Nz; k++){
                 for (int j=0;j<Ny;j++){
                     for (int i=0;i<Nx;i++){
@@ -315,16 +313,18 @@ int main(int argc, char **argv)
         //.........................................................
 
         // Initialize communication structures in averaging domain
-        for (int i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
-        Mask.CommInit(comm);
+        for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+        Mask->CommInit(comm);
         double *PhaseLabel;
         PhaseLabel = new double[N];
-        Mask.AssignComponentLabels(PhaseLabel);
+        Mask->AssignComponentLabels(PhaseLabel);
         
         //...........................................................................
         if (rank==0)    printf ("Create ScaLBL_Communicator \n");
         // Create a communicator for the device (will use optimized layout)
-        ScaLBL_Communicator ScaLBL_Comm(Mask);
+        //ScaLBL_Communicator ScaLBL_Comm(Mask);
+        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+
         //Create a second communicator based on the regular data layout
         ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
         
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
         if (rank==0)    printf ("Set up memory efficient layout \n");
         IntArray Map(Nx,Ny,Nz);
         auto neighborList= new int[18*Npad];
-        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
+        Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
         MPI_Barrier(comm);
 
         //...........................................................................
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
                                     if (!(idk < Nz)) idk=Nz-1;
 
                                     int nn = idk*Nx*Ny + idj*Nx + idi;
-                                    if (!(Mask.id[nn] > 0)){
+                                    if (!(Mask->id[nn] > 0)){
                                     double vec_x = double(ii-2);
                                     double vec_y = double(jj-2);
                                     double vec_z = double(kk-2);
@@ -489,7 +489,7 @@ int main(int argc, char **argv)
                     int idx=Map(i,j,k);
                     int n = k*Nx*Ny+j*Nx+i;
                     if (!(idx < 0)){
-                        if (Mask.id[n] == 1)
+                        if (Mask->id[n] == 1)
                             PhaseLabel[idx] = 1.0;
                         else {
                             PhaseLabel[idx] = -1.0;
@@ -513,9 +513,9 @@ int main(int argc, char **argv)
 
         //.......................................................................
         // Once phase has been initialized, map solid to account for 'smeared' interface
-        //for (i=0; i<N; i++)    Averages.SDs(i) -= (1.0);
+        //for (i=0; i<N; i++)    Averages->SDs(i) -= (1.0);
         // Make sure the id match for the two domains
-        for (int i=0; i<N; i++)    Dm.id[i] = Mask.id[i];
+        for (int i=0; i<N; i++)    Dm->id[i] = Mask->id[i];
         //.......................................................................
         // Finalize setup for averaging domain
         Averages->UpdateSolid();
