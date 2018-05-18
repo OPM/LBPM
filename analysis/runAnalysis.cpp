@@ -289,7 +289,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_rank_info( rank_info ),
     d_Map( Map ),
     d_ScaLBL_Comm( ScaLBL_Comm),
-    d_fillData(Dm->Comm,Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,1,1,1,0,1)
+    d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1)
 {
     NULL_USE( pBC );
     INSIST( db, "Input database is empty" );

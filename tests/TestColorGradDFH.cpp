@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	    }
 
 	    // Get the rank info
-	    Domain Dm(db);
+	    std::shared_ptr<Domain> Dm(new Domain(db));
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -101,20 +101,20 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 					// Initialize gradient ColorGrad = (1,2,3)
 					double value=double(3*k+2*j+i);
 					PhaseLabel[n]= value;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -188,10 +188,10 @@ int main(int argc, char **argv)
 		//...........................................................................
 
 		// compute the gradient 
-		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-		ScaLBL_Comm.SendHalo(Phi);
-		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, 0, ScaLBL_Comm.first_interior, Np);
-		ScaLBL_Comm.RecvGrad(Phi,ColorGrad);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_Comm->SendHalo(Phi);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, 0, ScaLBL_Comm->first_interior, Np);
+		ScaLBL_Comm->RecvGrad(Phi,ColorGrad);
 		
     	double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm.id[n] > 0){
+    				if (Dm->id[n] > 0){
     					int idx = Map(i,j,k);
     					printf("%i ",idx);
     				}
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm.id[n] > 0){
+    				if (Dm->id[n] > 0){
     					int idx = Map(i,j,k);
     					CX=COLORGRAD[idx];
     					CY=COLORGRAD[Np+idx];

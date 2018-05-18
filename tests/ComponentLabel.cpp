@@ -12,68 +12,7 @@
 
 using namespace std;
 
-/*inline void ReadCheckpoint(char *FILENAME, double *cDen, double *cDistEven, double *cDistOdd, int N)
-{
-	int q,n;
-	double value;
-	ifstream File(FILENAME,ios::binary);
-	for (n=0; n<N; n++){
-		// Write the two density values
-		File.read((char*) &value, sizeof(value));
-		cDen[n] = value;
-	//	if (n== 66276)	printf("Density a  = %f \n",value);
-		File.read((char*) &value, sizeof(value));
-		cDen[N+n] = value;
-	//	if (n== 66276)	printf("Density b  = %f \n",value);
-		// Read the even distributions
-		for (q=0; q<10; q++){
-			File.read((char*) &value, sizeof(value));
-			cDistEven[q*N+n] = value;
-	//		if (n== 66276)	printf("dist even %i  = %f \n",q,value);
-		}
-		// Read the odd distributions
-		for (q=0; q<9; q++){
-			File.read((char*) &value, sizeof(value));
-			cDistOdd[q*N+n] = value;
-	//		if (n== 66276)	printf("dist even %i  = %f \n",q,value);
-		}
-	}
-	File.close();
-}
 
-inline void ReadBinaryFile(char *FILENAME, double *Data, int N)
-{
-	int n;
-	double value;
-	ifstream File(FILENAME,ios::binary);
-	for (n=0; n<N; n++){
-		// Write the two density values
-		File.read((char*) &value, sizeof(value));
-		Data[n] = value;
-
-	}
-	File.close();
-}
-
-inline void SetPeriodicBC(DoubleArray &Scalar, int nx, int ny, int nz){
-	
-	int i,j,k,in,jn,kn;
-	for (k=0; k<nz; k++){
-		for (j=0; j<ny; j++){
-			for (i=0; i<nx; i++){
-				in = i; jn=j; kn=k;
-				if (i==0) in = nx-2 ;
-				else if (i==nx-1) in = 0;
-				if (j==0) jn = ny-2;
-				else if (j==ny-1) jn = 0;
-				if (k==0) kn = nz-2;
-				else if (k==nz-1) kn = 0;	
-				Scalar(i,j,k) = Scalar(in,jn,kn);
-			}
-		}
-	}
-}
-*/
 inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressure, DoubleArray &Vel_x, 
 							DoubleArray &Vel_y, DoubleArray &Vel_z, int nx, int ny, int nz, int iproc, int
 							jproc, int kproc)
