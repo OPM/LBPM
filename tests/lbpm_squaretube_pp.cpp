@@ -116,9 +116,9 @@ int main(int argc, char **argv)
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	Dm.CommInit(comm);
-	TwoPhase Averages(Dm);
+	std::shared_ptr<Domain> Dm(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+	Dm->CommInit(comm);
+	std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
@@ -163,17 +163,17 @@ int main(int argc, char **argv)
 
 				if (ORIENTATION==0){
 					// square capillary tube aligned with the x direction
-					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(j-0.5*Ny);
-					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
+					Averages->SDs(i,j,k) = TubeWidth/2 - fabs(j-0.5*Ny);
+					Averages->SDs(i,j,k) = min(Averages->SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
 					// Initialize phase positions
-					if (Averages.SDs(i,j,k) < 0.0){
+					if (Averages->SDs(i,j,k) < 0.0){
 						id[n] = 0;
 					}
-					else if (Dm.iproc()*Nx+k<BubbleBottom){
+					else if (Dm->iproc()*Nx+k<BubbleBottom){
 						id[n] = 2;
 						sum++;
 					}
-					else if (Dm.iproc()*Nx+k<BubbleTop){
+					else if (Dm->iproc()*Nx+k<BubbleTop){
 						id[n] = 1;
 						sum++;
 					}
@@ -184,17 +184,17 @@ int main(int argc, char **argv)
 				}
 				else if (ORIENTATION==1){
 					// square capillary tube aligned with the y direction
-					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
-					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
+					Averages->SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
+					Averages->SDs(i,j,k) = min(Averages->SDs(i,j,k),TubeWidth/2-fabs(k-0.5*Nz));
 					// Initialize phase positions
-					if (Averages.SDs(i,j,k) < 0.0){
+					if (Averages->SDs(i,j,k) < 0.0){
 						id[n] = 0;
 					}
-					else if (Dm.jproc()*Ny+k<BubbleBottom){
+					else if (Dm->jproc()*Ny+k<BubbleBottom){
 						id[n] = 2;
 						sum++;
 					}
-					else if (Dm.jproc()*Ny+k<BubbleTop){
+					else if (Dm->jproc()*Ny+k<BubbleTop){
 						id[n] = 1;
 						sum++;
 					}
@@ -205,17 +205,17 @@ int main(int argc, char **argv)
 				}
 				else { //
 					// square capillary tube aligned with the z direction
-					Averages.SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
-					Averages.SDs(i,j,k) = min(Averages.SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
+					Averages->SDs(i,j,k) = TubeWidth/2 - fabs(i-0.5*Nx);
+					Averages->SDs(i,j,k) = min(Averages->SDs(i,j,k),TubeWidth/2-fabs(j-0.5*Ny));
 					// Initialize phase positions
-					if (Averages.SDs(i,j,k) < 0.0){
+					if (Averages->SDs(i,j,k) < 0.0){
 						id[n] = 0;
 					}
-					else if (Dm.kproc()*Nz+k<BubbleBottom){
+					else if (Dm->kproc()*Nz+k<BubbleBottom){
 						id[n] = 2;
 						sum++;
 					}
-					else if (Dm.kproc()*Nz+k<BubbleTop){
+					else if (Dm->kproc()*Nz+k<BubbleTop){
 						id[n] = 1;
 						sum++;
 					}
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
+    fwrite(Averages->SDs.data(),8,Averages->SDs.length(),DIST);
     fclose(DIST);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);

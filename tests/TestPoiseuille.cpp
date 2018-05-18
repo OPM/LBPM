@@ -9,10 +9,6 @@
 #include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
 
-
-
-
-
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -34,7 +30,6 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		unsigned int nBlocks, nthreads;
 		int timestepMax, interval;
 		double tau,Fx,Fy,Fz,tol;
 		// Domain variables
@@ -80,7 +75,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		Domain Dm(domain_db);
+		std::shared_ptr<Domain> Dm( new Domain(domain_db));
 
 		Nx += 2;
 		Ny += 2;
@@ -97,7 +92,7 @@ int main(int argc, char **argv)
 		/*
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
 		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-		fread(Dm.id,1,N,IDFILE);
+		fread(Dm->id,1,N,IDFILE);
 		fclose(IDFILE);
 		 */
 
@@ -106,14 +101,14 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (i<2) Dm.id[n] = 0;
-					else if (i>Nx-3) Dm.id[n] = 0;
-					else Dm.id[n]=1;
+					if (i<2) Dm->id[n] = 0;
+					else if (i>Nx-3) Dm->id[n] = 0;
+					else Dm->id[n]=1;
 				}
 			}
 		}
 
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 		MPI_Barrier(comm);
 
 		//.......................................................................
@@ -126,7 +121,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						sum_local+=1.0;
 						Np++;
 					}
@@ -142,14 +137,14 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm.id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id, N);
 		//...........................................................................
 
 		if (rank==0){
@@ -165,7 +160,7 @@ int main(int argc, char **argv)
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -195,8 +190,8 @@ int main(int argc, char **argv)
 		starttime = MPI_Wtime();
 
 		/************ MAIN ITERATION LOOP (timing communications)***************************************/
-		//		ScaLBL_Comm.SendD3Q19(dist, &dist[10*Np]);
-		//		ScaLBL_Comm.RecvD3Q19(dist, &dist[10*Np]);
+		//		ScaLBL_Comm->SendD3Q19(dist, &dist[10*Np]);
+		//		ScaLBL_Comm->RecvD3Q19(dist, &dist[10*Np]);
 		//		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//
 
@@ -205,17 +200,17 @@ int main(int argc, char **argv)
 
 		while (timestep < 2000) {
 
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FROM NORMAL
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FORM NORMAL
+			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 			//************************************************************************/
@@ -241,8 +236,8 @@ int main(int argc, char **argv)
 	//	if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9/cputime);
 		// Report bandwidth in Gigabits per second
 		// communication bandwidth includes both send and recieve
-		//if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm.CommunicationCount*64*timestep/1e9/cputime);
-	//	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9/cputime);
+		//if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm->CommunicationCount*64*timestep/1e9/cputime);
+	//	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm->CommunicationCount*64*timestep/1e9/cputime);
 
 		double *Vz;
 		Vz= new double [Np];
@@ -263,7 +258,7 @@ int main(int argc, char **argv)
 		if (rank == 0) {
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				printf("%i ",Dm.id[n]);
+				printf("%i ",Dm->id[n]);
 
 				n = Map(i,j,k);
 				//printf("%i,%i,%i; %i :",i,j,k,n);
@@ -283,7 +278,7 @@ int main(int argc, char **argv)
 		if (rank == 1) {
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				printf("%i ",Dm.id[n]);
+				printf("%i ",Dm->id[n]);
 
 				n = Map(i,j,k);
 				//printf("%i,%i,%i; %i :",i,j,k,n);
