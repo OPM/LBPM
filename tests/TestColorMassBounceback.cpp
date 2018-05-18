@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		int BoundaryCondition=0;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		std::shared_ptr<Domain> Dm(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition));
 
 		Nx += 2;
 		Ny += 2;
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=0;
+					Dm->id[n]=0;
 				}
 			}
 		}
@@ -174,21 +174,21 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 					Np++;
 					// constant color
 					PhaseLabel[n]= -1.0;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular(new ScaLBL_Communicator(Dm));
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -280,28 +280,29 @@ int main(int argc, char **argv)
 		// Initialize the phase field and variables
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 		// *************ODD TIMESTEP*************
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		
 		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 
@@ -317,7 +318,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -344,23 +345,23 @@ int main(int argc, char **argv)
 
 		// *************EVEN TIMESTEP*************
 		// Compute the Phase indicator field
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
 
 		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 
@@ -377,7 +378,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -419,28 +420,29 @@ int main(int argc, char **argv)
 		// Initialize the phase field and variables
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 		// *************ODD TIMESTEP*************
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		
 		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 
@@ -457,7 +459,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -485,23 +487,23 @@ int main(int argc, char **argv)
 
 		// *************EVEN TIMESTEP*************
 		// Compute the Phase indicator field
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
 
 		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		printf("Check after even time \n");
@@ -517,7 +519,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
