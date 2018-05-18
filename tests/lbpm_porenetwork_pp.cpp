@@ -100,10 +100,14 @@ int main(int argc, char **argv)
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	Dm.CommInit(comm);
-	TwoPhase Averages(Dm);
+	//	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	//Dm.CommInit(comm);
+	//TwoPhase Averages(Dm);
 	
+        std::shared_ptr<Domain> Dm (new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+	Dm->CommInit(comm);
+        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+
 	MPI_Barrier(comm);
 
 	Nx += 2; Ny += 2; Nz += 2;
@@ -180,7 +184,7 @@ int main(int argc, char **argv)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				Averages.SDs(i,j,k) = -2.f*Nx;
+				Averages->SDs(i,j,k) = -2.f*Nx;
 			}
 		}
 	}
@@ -208,7 +212,7 @@ int main(int argc, char **argv)
 					double zk = double(k) - z;
 					// value of s along center line {x=alpha*s, y = beta*s, z=gamma*s} that is closest to i,j,k
 					double s = (alpha*xi + beta*yj + gamma*zk)/(alpha*alpha + beta*beta + gamma*gamma);
-					double distance=Averages.SDs(i,j,k);
+					double distance=Averages->SDs(i,j,k);
 					if (s > length){
 						//distance = radius - sqrt((xi-X)*(xi-X) + (yj-Y)*(yj-Y) + (zk-Z)*(zk-Z));
 					}
@@ -222,7 +226,7 @@ int main(int argc, char **argv)
 						distance = radius - sqrt((xi-xs)*(xi-xs) + (yj-ys)*(yj-ys) + (zk-zs)*(zk-zs));
 						//if (distance>0)printf("s=%f,alpha=%f,beta=%f,gamma=%f,distance=%f\n",s,alpha,beta,gamma,distance);
 					}
-					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
+					if (distance > Averages->SDs(i,j,k))		Averages->SDs(i,j,k) = distance;
 				}
 				
 				// Compute the distance to each sphere
@@ -237,7 +241,7 @@ int main(int argc, char **argv)
 
 					double distance = radius - sqrt((xi-x)*(xi-x) + (yj-y)*(yj-y) + (zk-z)*(zk-z));
 
-					if (distance > Averages.SDs(i,j,k))		Averages.SDs(i,j,k) = distance;
+					if (distance > Averages->SDs(i,j,k))		Averages->SDs(i,j,k) = distance;
 				}
 			}				
 		}
@@ -247,7 +251,7 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;	
 				// Initialize phase positions
-				if (Averages.SDs(i,j,k) < 0.0){
+				if (Averages->SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
 				else{
@@ -279,7 +283,7 @@ int main(int argc, char **argv)
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
+    fwrite(Averages->SDs.data(),8,Averages->SDs.length(),DIST);
     fclose(DIST);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);

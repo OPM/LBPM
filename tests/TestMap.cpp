@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		int BoundaryCondition=0;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		std::shared_ptr<Domain> Dm(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition));
 
 		Nx += 2;
 		Ny += 2;
@@ -147,18 +147,17 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n] = 1;
+					Dm->id[n] = 1;
 					Np++;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 
 		// Create a communicator for the device (will use optimized layout)
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
-
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular(new ScaLBL_Communicator(Dm));
 
 		if (rank==0){
 			printf("Total domain size = %i \n",N);
@@ -173,7 +172,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -236,7 +235,7 @@ int main(int argc, char **argv)
 		// Loop over the distributions for interior lattice sites
 		if (rank==0)	printf ("Loop over distributions \n");
 
-		for (int idx=ScaLBL_Comm.first_interior; idx<ScaLBL_Comm.last_interior; idx++){
+		for (int idx=ScaLBL_Comm->first_interior; idx<ScaLBL_Comm->last_interior; idx++){
 			n = TmpMap[idx];
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;

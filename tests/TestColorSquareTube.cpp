@@ -115,9 +115,9 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
+		std::shared_ptr<Domain> Dm (new Domain(db));
+		Dm->CommInit(comm);
 
-		Domain Dm(db);
-		
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
                     n = k*Nx*Ny + j*Nx + i;
-					Dm.id[n]=0;
+					Dm->id[n]=0;
 				}
 			}
 		}
@@ -155,16 +155,16 @@ int main(int argc, char **argv)
 					int kglobal= k+(Nz-2)*kproc;
 
 					// Initialize phase position field for parallel bubble test
-					if (iglobal < 2)						Dm.id[n]=0;
-					else if (iglobal > (Nx-2)*nprocx-2)	Dm.id[n]=0;
-					else if (jglobal < 2)					Dm.id[n]=0;
-					else if (jglobal > (Ny-2)*nprocy-2)	Dm.id[n]=0;
-					else if (kglobal < 20)					Dm.id[n]=1;
-					else									Dm.id[n]=2;
+					if (iglobal < 2)						Dm->id[n]=0;
+					else if (iglobal > (Nx-2)*nprocx-2)	Dm->id[n]=0;
+					else if (jglobal < 2)					Dm->id[n]=0;
+					else if (jglobal > (Ny-2)*nprocy-2)	Dm->id[n]=0;
+					else if (kglobal < 20)					Dm->id[n]=1;
+					else									Dm->id[n]=2;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 
 		//.......................................................................
 		// Compute the media porosity, assign phase labels and solid composition
@@ -174,13 +174,13 @@ int main(int argc, char **argv)
 		int Np=0;  // number of local pore nodes
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
-		Dm.AssignComponentLabels(PhaseLabel);
+		Dm->AssignComponentLabels(PhaseLabel);
 		//.......................................................................
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						sum_local+=1.0;
 						Np++;
 					}
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm.id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id, N);
 		//...........................................................................
 
 		if (rank==0){
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -277,12 +277,12 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		// Initialize the phase field and variables
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
-		if (Dm.kproc()==0){
+		if (Dm->kproc()==0){
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
 		}
-		if (Dm.kproc() == nprocz-1){
+		if (Dm->kproc() == nprocz-1){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm.id[n] > 0){
+    				if (Dm->id[n] > 0){
     					int idx = Map(i,j,k);
     					sum_local+=VEL[2*Np+idx];
     				}
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){ 
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm.id[n] > 0){
+    				if (Dm->id[n] > 0){
     					int idx = Map(i,j,k);
     					double vz = VEL[2*Np+idx];
     					printf("%f ",vz);

@@ -61,9 +61,9 @@ int main(int argc, char **argv)
 
 
     // Get the rank info
-	Domain Dm(db);
+		std::shared_ptr<Domain> Dm(new Domain(db));
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-	TwoPhase Averages(Dm);
+		std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
 	Nx += 2;
 	Ny += 2;
 	Nz += 2;
@@ -73,12 +73,12 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				Dm.id[n] = 1;
+				Dm->id[n] = 1;
 			}
 		}
 	}
 	//.......................................................................
-    Dm.CommInit(comm); // Initialize communications for domains
+    Dm->CommInit(comm); // Initialize communications for domains
 	//.......................................................................
 
 	//.......................................................................
@@ -103,42 +103,42 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 
 				// global position relative to center
-				x = Dm.iproc()*Nx+i - CX;
-				y = Dm.jproc()*Ny+j - CY;
-				z = Dm.kproc()*Nz+k - CZ;
+				x = Dm->iproc()*Nx+i - CX;
+				y = Dm->jproc()*Ny+j - CY;
+				z = Dm->kproc()*Nz+k - CZ;
 
 				// Shrink the sphere sizes by two voxels to make sure they don't touch
-				Averages.SDs(i,j,k) = 100.0;
+				Averages->SDs(i,j,k) = 100.0;
 				//..............................................................................
 				// Single torus
-				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+				Averages->Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 				// Double torus
-				/*		y = Dm.jproc()*Ny+j - CY1;
-				//z = Dm.kproc()*Nz+k - CZ +R1;
-				Averages.Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+				/*		y = Dm->jproc()*Ny+j - CY1;
+				//z = Dm->kproc()*Nz+k - CZ +R1;
+				Averages->Phase(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 				
-				y = Dm.jproc()*Ny+j - CY2;
-				//z = Dm.kproc()*Nz+k - CZ-R1;
-				Averages.Phase(i,j,k) = min(Averages.Phase(i,j,k),
+				y = Dm->jproc()*Ny+j - CY2;
+				//z = Dm->kproc()*Nz+k - CZ-R1;
+				Averages->Phase(i,j,k) = min(Averages->Phase(i,j,k),
 						sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2);
 				*///..............................................................................
 
-				//Averages.Phase(i,j,k) = - Averages.Phase(i,j,k);
-				if (Averages.Phase(i,j,k) > 0.0){
-					Dm.id[n] = 2;
+				//Averages->Phase(i,j,k) = - Averages->Phase(i,j,k);
+				if (Averages->Phase(i,j,k) > 0.0){
+					Dm->id[n] = 2;
 				}
 				else{
-					Dm.id[n] = 1;
+					Dm->id[n] = 1;
 				}
-				Averages.SDn(i,j,k) = Averages.Phase(i,j,k);
-				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
-				Averages.Phase_tplus(i,j,k) = Averages.SDn(i,j,k);
-				Averages.Phase_tminus(i,j,k) = Averages.SDn(i,j,k);
-				Averages.DelPhi(i,j,k) = 0.0;
-				Averages.Press(i,j,k) = 0.0;
-				Averages.Vel_x(i,j,k) = 0.0;
-				Averages.Vel_y(i,j,k) = 0.0;
-				Averages.Vel_z(i,j,k) = 0.0;
+				Averages->SDn(i,j,k) = Averages->Phase(i,j,k);
+				Averages->Phase(i,j,k) = Averages->SDn(i,j,k);
+				Averages->Phase_tplus(i,j,k) = Averages->SDn(i,j,k);
+				Averages->Phase_tminus(i,j,k) = Averages->SDn(i,j,k);
+				Averages->DelPhi(i,j,k) = 0.0;
+				Averages->Press(i,j,k) = 0.0;
+				Averages->Vel_x(i,j,k) = 0.0;
+				Averages->Vel_y(i,j,k) = 0.0;
+				Averages->Vel_z(i,j,k) = 0.0;
 			}
 		}
 	}
@@ -146,25 +146,25 @@ int main(int argc, char **argv)
     double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
 
-	Averages.UpdateSolid();
-    Dm.CommunicateMeshHalo(Averages.Phase);
-    Dm.CommunicateMeshHalo(Averages.SDn);
+	Averages->UpdateSolid();
+    Dm->CommunicateMeshHalo(Averages->Phase);
+    Dm->CommunicateMeshHalo(Averages->SDn);
 
-    Averages.Initialize();
-    Averages.UpdateMeshValues();
+    Averages->Initialize();
+    Averages->UpdateMeshValues();
 
 	if (rank==0) printf("computing local averages  \n");
-	Averages.AssignComponentLabels();
-    Averages.ComponentAverages();
-    Averages.PrintComponents(int(5));
+	Averages->AssignComponentLabels();
+    Averages->ComponentAverages();
+    Averages->PrintComponents(int(5));
 	if (rank==0) printf("reducing averages  \n");
 
 
-    Averages.Initialize();
-    Averages.ComputeLocal();
-    Averages.Reduce();
-    Averages.PrintAll(int(5));
-   // Averages.Reduce();
+    Averages->Initialize();
+    Averages->ComputeLocal();
+    Averages->Reduce();
+    Averages->PrintAll(int(5));
+   // Averages->Reduce();
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
   MPI_Barrier(comm);

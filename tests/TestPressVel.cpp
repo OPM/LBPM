@@ -76,7 +76,8 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		Domain Dm(domain_db);
+		std::shared_ptr<Domain> Dm (new Domain(domain_db));
+		Dm->CommInit(comm);
 
 		Nx += 2;
 		Ny += 2;
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
 		char LocalRankFilename[40];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 
 		//.......................................................................
 		// Compute the media porosity
@@ -103,8 +104,8 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n] = 1;
-					if (Dm.id[n] > 0){
+					Dm->id[n] = 1;
+					if (Dm->id[n] > 0){
 						sum_local+=1.0;
 						Np++;
 					}
@@ -120,14 +121,13 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
-
+		auto ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Dm));
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm.id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id, N);
 		//...........................................................................
 
 		if (rank==0){
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................

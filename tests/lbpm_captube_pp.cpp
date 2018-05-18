@@ -34,8 +34,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	{
-	// parallel domain size (# of sub-domains)
-	int sendtag,recvtag;
 	//*****************************************
 	// MPI ranks for all 18 neighbors
 	//**********************************
@@ -44,8 +42,6 @@ int main(int argc, char **argv)
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
-	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
 
 	double TubeRadius =15.0;
 	int BC;
@@ -88,10 +84,12 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	// Initialized domain and averaging framework for Two-Phase Flow
-		Domain Dm(db);
-	Dm.CommInit(comm);
-	TwoPhase Averages(Dm);
+	double Lx=1.f;
+	double Ly=1.f;
+	double Lz=1.f;
+        std::shared_ptr<Domain> Dm (new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+        Dm->CommInit(comm);
+        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
@@ -133,18 +131,18 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
+				Averages->SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)
 									+ (j-Ny/2)*(j-Ny/2)));
 
 				// Initialize phase positions
-				if (Averages.SDs(i,j,k) < 0.0){
+				if (Averages->SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
-				else if (Dm.kproc()*Nz+k<BubbleBottom){
+				else if (Dm->kproc()*Nz+k<BubbleBottom){
 					id[n] = 2;
 					sum++;
 				}
-				else if (Dm.kproc()*Nz+k<BubbleTop){
+				else if (Dm->kproc()*Nz+k<BubbleTop){
 					id[n] = 1;
 					sum++;
 				}
@@ -177,7 +175,7 @@ int main(int argc, char **argv)
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
+    fwrite(Averages->SDs.data(),8,Averages->SDs.length(),DIST);
     fclose(DIST);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);

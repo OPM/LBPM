@@ -13,7 +13,6 @@ using namespace std;
 
 extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 	if (rank == 0) {
-		int n;
 		int neighbor;
 
 		for (int i = 0; i < Np; i++) {
@@ -32,7 +31,7 @@ extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
     auto db = std::make_shared<Database>( "Domain.in" );
-    const int dim = 50;
+
     db->putScalar<int>( "BC", 0 );
     if ( nprocs == 1 ){
         db->putVector<int>( "nproc", { 1, 1, 1 } );
@@ -118,7 +117,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		Domain Dm(domain_db);
+		std::shared_ptr<Domain> Dm(new Domain(domain_db));
 
 		Nx += 2;
 		Ny += 2;
@@ -135,7 +134,7 @@ int main(int argc, char **argv)
 		/*
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
 		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-		fread(Dm.id,1,N,IDFILE);
+		fread(Dm->id,1,N,IDFILE);
 		fclose(IDFILE);
 		 */
 
@@ -144,11 +143,11 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit(comm);
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
@@ -157,7 +156,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						Np++;
 					}
 				}
@@ -165,16 +164,14 @@ int main(int argc, char **argv)
 		}
 
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-
-		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		auto ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Dm));
 
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm.id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id, N);
 		//...........................................................................
 
 		if (rank==0){
@@ -191,7 +188,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 
 		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 
 
 	        if (rank == 0) PrintNeighborList(neighborList,Np, rank);
@@ -225,8 +222,8 @@ int main(int argc, char **argv)
 		starttime = MPI_Wtime();
 
 		/************ MAIN ITERATION LOOP (timing communications)***************************************/
-		//ScaLBL_Comm.SendD3Q19(dist, &dist[10*Np]);
-		//ScaLBL_Comm.RecvD3Q19(dist, &dist[10*Np]);
+		//ScaLBL_Comm->SendD3Q19(dist, &dist[10*Np]);
+		//ScaLBL_Comm->RecvD3Q19(dist, &dist[10*Np]);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		if (rank==0) printf("Beginning AA timesteps...\n");
@@ -235,17 +232,17 @@ int main(int argc, char **argv)
 
 		while (timestep < 2) {
 
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FROM NORMAL
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FORM NORMAL
+			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 			//************************************************************************/
@@ -293,7 +290,7 @@ int main(int argc, char **argv)
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				//printf("%i ",Dm.id[n]);
+				//printf("%i ",Dm->id[n]);
 				n = Map(i,j,k);
 				//printf("%i,%i,%i; %i :",i,j,k,n);
 				if (n<0) vz =0.f;
@@ -318,7 +315,7 @@ int main(int argc, char **argv)
 			for (k=1;k<Nz-1;k++){
 				for (j=1;j<Ny-1;j++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];
@@ -339,7 +336,7 @@ int main(int argc, char **argv)
 			for (k=1;k<Nz-1;k++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];
@@ -359,7 +356,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];
