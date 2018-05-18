@@ -167,14 +167,14 @@ int main(int argc, char **argv)
             pBC=false;
 
         // Full domain used for averaging (do not use mask for analysis)
-        Domain Dm(domain_db);
-        for (int i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
+        std::shared_ptr<Domain> Dm(new Domain(domain_db));
+        for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
         //   TwoPhase Averages(Dm);
-        Dm.CommInit(comm);
+        Dm->CommInit(comm);
 
         // Mask that excludes the solid phase
-        Domain Mask(domain_db);
+        std::shared_ptr<Domain> Mask(new Domain(domain_db));
         MPI_Barrier(comm);
 
         Nx+=2; Ny+=2; Nz += 2;
@@ -226,9 +226,9 @@ int main(int argc, char **argv)
             for (j=0;j<Ny;j++){
                 for (i=0;i<Nx;i++){
                     int n = k*Nx*Ny + j*Nz + i;
-                    int iglobal= i+(Nx-2)*Dm.iproc();
-                    int jglobal= j+(Ny-2)*Dm.jproc();
-                    int kglobal= k+(Nz-2)*Dm.kproc();
+                    int iglobal= i+(Nx-2)*Dm->iproc();
+                    int jglobal= j+(Ny-2)*Dm->jproc();
+                    int kglobal= k+(Nz-2)*Dm->kproc();
                     // Initialize phase position field for parallel bubble test
                     if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
                             +(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
@@ -249,22 +249,22 @@ int main(int argc, char **argv)
 		//.........................................................
 
 		// Initialize communication structures in averaging domain
-		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
-		Mask.CommInit(comm);
+		for (i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+		Mask->CommInit(comm);
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
-		ScaLBL_Communicator ScaLBL_Comm(Mask);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Mask));
 		
 		int Npad=(Np/16 + 2)*16;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
 		MPI_Barrier(comm);
 
 		//...........................................................................
@@ -339,8 +339,8 @@ int main(int argc, char **argv)
 						Tmp[idx+Np] = value*dy;
 						Tmp[idx+2*Np] = value*dz;
 						// initialize fluid phases
-						if (Mask.id[n] == 1)	PhaseLabel[idx] = 1.0;
-						else if (Mask.id[n] == 2){
+						if (Mask->id[n] == 1)	PhaseLabel[idx] = 1.0;
+						else if (Mask->id[n] == 2){
 							PhaseLabel[idx] = -1.0;
 							count_wet +=1.0;
 						}
@@ -365,13 +365,13 @@ int main(int argc, char **argv)
 		if (rank==0)	printf ("Initializing distributions \n");
 		ScaLBL_D3Q19_Init(fq, Np);
 		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+		ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->last_interior, Np);
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
 		//for (i=0; i<N; i++)	Averages.SDs(i) -= (1.0);
 		// Make sure the id match for the two domains
-		for (i=0; i<N; i++)	Dm.id[i] = Mask.id[i];
+		for (i=0; i<N; i++)	Dm->id[i] = Mask->id[i];
 		//.......................................................................
 		// Finalize setup for averaging domain
 		Averages->UpdateSolid();
@@ -389,10 +389,10 @@ int main(int argc, char **argv)
 		//...........................................................................
 		ScaLBL_DeviceBarrier();
 		ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
-		ScaLBL_Comm.RegularLayout(Map,Pressure,Averages->Press);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[0],Averages->Vel_x);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
-		ScaLBL_Comm.RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
+		ScaLBL_Comm->RegularLayout(Map,Pressure,Averages->Press);
+		ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Averages->Vel_x);
+		ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
+		ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
 		//...........................................................................
 
 		if (rank==0) printf("********************************************************\n");
@@ -422,73 +422,73 @@ int main(int argc, char **argv)
 			timestep++;
 			// Compute the Phase indicator field
 			// Read for Aq, Bq happens in this routine (requires communication)
-			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
 			
 			// compute the gradient 
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
-			ScaLBL_Comm.RecvGrad(Phi,Gradient);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->SendHalo(Phi);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+			ScaLBL_Comm->RecvGrad(Phi,Gradient);
 			
 			// Perform the collision operation
-			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
+			ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set BCs
 			if (BoundaryCondition > 0){
-				ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-				ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+				ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+				ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 			}
 			if (BoundaryCondition == 3){
-				ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
 			if (BoundaryCondition == 4){
-				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+				din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
 			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm.next, Np);
+					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 			// *************EVEN TIMESTEP*************
 			timestep++;
 			// Compute the Phase indicator field
-			ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+			ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
 			
 			// compute the gradient 
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.SendHalo(Phi);
-			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm.next, Np);
-			ScaLBL_Comm.RecvGrad(Phi,Gradient);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->SendHalo(Phi);
+			ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+			ScaLBL_Comm->RecvGrad(Phi,Gradient);
 
 			// Perform the collision operation
-			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
+			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
-			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+					alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+			ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 			// Set boundary conditions
 			if (BoundaryCondition > 0){
-				ScaLBL_Comm.Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-				ScaLBL_Comm.Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+				ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+				ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 			}
 			if (BoundaryCondition == 3){
-				ScaLBL_Comm.D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
 			else if (BoundaryCondition == 4){
-				din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-				ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+				din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+				ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			}
 			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
-					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm.next, Np);
+					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->next, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			//************************************************************************
 			MPI_Barrier(comm);
@@ -522,7 +522,7 @@ int main(int argc, char **argv)
     	
 		// Copy back final phase indicator field and convert to regular layout
 		DoubleArray PhaseField(Nx,Ny,Nz);
-        ScaLBL_Comm.RegularLayout(Map,Phi,PhaseField);
+        ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
     	FILE *OUTFILE;
 		sprintf(LocalRankFilename,"Phase.raw",rank);
 		OUTFILE = fopen(LocalRankFilename,"wb");
@@ -533,9 +533,9 @@ int main(int argc, char **argv)
 		DoubleArray Cy(Nx,Ny,Nz);
 		DoubleArray Cz(Nx,Ny,Nz);
 		DoubleArray GradNorm(Nx,Ny,Nz);
-        ScaLBL_Comm.RegularLayout(Map,&Gradient[0],Cx);
-        ScaLBL_Comm.RegularLayout(Map,&Gradient[Np],Cy);
-        ScaLBL_Comm.RegularLayout(Map,&Gradient[2*Np],Cz);
+        ScaLBL_Comm->RegularLayout(Map,&Gradient[0],Cx);
+        ScaLBL_Comm->RegularLayout(Map,&Gradient[Np],Cy);
+        ScaLBL_Comm->RegularLayout(Map,&Gradient[2*Np],Cz);
 		for (k=1; k<Nz-1; k++){
 			for (j=1; j<Ny-1; j++){
 				for (i=1; i<Nx-1; i++){
@@ -551,8 +551,8 @@ int main(int argc, char **argv)
     	
 		DoubleArray Rho1(Nx,Ny,Nz);
 		DoubleArray Rho2(Nx,Ny,Nz);
-        ScaLBL_Comm.RegularLayout(Map,&Den[0],Rho1);
-        ScaLBL_Comm.RegularLayout(Map,&Den[Np],Rho2);
+        ScaLBL_Comm->RegularLayout(Map,&Den[0],Rho1);
+        ScaLBL_Comm->RegularLayout(Map,&Den[Np],Rho2);
     	FILE *RFILE1;
 		sprintf(LocalRankFilename,"Rho1.raw",rank);
 		RFILE1 = fopen(LocalRankFilename,"wb");

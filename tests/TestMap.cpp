@@ -23,24 +23,18 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-
-
 		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Running Color Model: TestColor	\n");
+			printf("Running Color Model: TestMap	\n");
 			printf("********************************************************\n");
 		}
 
 		// BGK Model parameters
 		string FILENAME;
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double Fx,Fy,Fz,tol;
 		// Domain variables
 		double Lx,Ly,Lz;
 		int nspheres;
@@ -176,15 +170,15 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		
 		// Check the neighborlist
-		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm.LastExterior(),ScaLBL_Comm.FirstInterior(),ScaLBL_Comm.LastInterior());
-		for (int idx=0; idx<ScaLBL_Comm.LastExterior(); idx++){
+		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm->LastExterior(),ScaLBL_Comm->FirstInterior(),ScaLBL_Comm->LastInterior());
+		for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
 			for (int q=0; q<18; q++){
 				int nn = neighborList[q*Np+idx]%Np;
 				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
 		      
 			}
 		}
-		for (int idx=ScaLBL_Comm.FirstInterior(); idx<ScaLBL_Comm.LastInterior(); idx++){
+		for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
 			for (int q=0; q<18; q++){
 				int nn = neighborList[q*Np+idx]%Np;
 				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
@@ -193,12 +187,8 @@ int main(int argc, char **argv)
 		}
 
 		//......................device distributions.................................
-		int dist_mem_size = Np*sizeof(double);
-		if (rank==0)	printf ("Allocating distributions \n");
-
 		int *NeighborList;
 		int *dvcMap;
-		
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);

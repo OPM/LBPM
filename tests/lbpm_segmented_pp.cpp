@@ -44,7 +44,6 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
     char sx[2];
     char sy[2];
     char sz[2];
-    char tmpstr[10];
     
 	// array to store ids read from block
 	char *id;
@@ -62,9 +61,8 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 				//fflush(stdout);
 				
 				// Read the file
-				size_t readID;
 				FILE *IDFILE = fopen(LocalRankFilename,"rb");
-				readID=fread(id,1,1024*1024*1024,IDFILE);
+				fread(id,1,1024*1024*1024,IDFILE);
 				fclose(IDFILE);
 				//printf("Loading data ... \n");
 				
@@ -128,7 +126,6 @@ int main(int argc, char **argv)
 		//.......................................................................
 		int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
 		double Lx, Ly, Lz;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int BC=0;
 		//  char fluidValue,solidValue;
@@ -254,7 +251,7 @@ int main(int argc, char **argv)
 		MeanFilter(Averages->SDs);
 
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		CalcDist(Averages.SDs,id,Dm);
+		CalcDist(Averages->SDs,id,*Dm);
 
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
 		FILE *DIST = fopen(LocalRankFilename,"wb");

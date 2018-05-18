@@ -56,7 +56,7 @@ inline void WriteBlobs(TwoPhase Averages){
 
 inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 	int a;
-	double iVol=1.0/TCAT.Dm.Volume;
+	double iVol=1.0/TCAT.Dm->Volume;
 	double PoreVolume;
 	double nwp_volume,vol_n,pan,pn,pw,pawn,pwn,awn,ans,aws,Jwn,Kwn,lwns,cwns,clwns;
 	double sw,awnD,awsD,ansD,lwnsDD,JwnD,pc;
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
     // Set up the domain
 	int BC=0;
     // Get the rank info
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
+	std::shared_ptr<Domain> Dm(new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	TwoPhase Averages(Dm);
 
@@ -229,12 +229,12 @@ int main(int argc, char **argv)
 		for ( j=1;j<Ny-1;j++){
 			for ( i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				Dm.id[n] = 1;
+				Dm->id[n] = 1;
 			}
 		}
 	}
 	//.......................................................................
-    Dm.CommInit(comm); // Initialize communications for domains
+    Dm->CommInit(comm); // Initialize communications for domains
 	//.......................................................................
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
         //
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	//.......................................................................
 	SignedDistance(Averages.Phase.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
-		       Dm.iproc(),Dm.jproc(),Dm.kproc(),Dm.nprocx(),Dm.nprocy(),Dm.nprocz());
+		       Dm->iproc(),Dm->jproc(),Dm->kproc(),Dm->nprocx(),Dm->nprocy(),Dm->nprocz());
 	//.......................................................................
 	// Assign the phase ID field based on the signed distance
 	//.......................................................................
@@ -277,10 +277,10 @@ int main(int argc, char **argv)
 				Averages.SDs(i,j,k) = 100.0;
 				Averages.Phase(i,j,k) += 2.0;
 				if (Averages.Phase(i,j,k) > 0.0){
-					Dm.id[n] = 2;
+					Dm->id[n] = 2;
 				}
 				else{
-					Dm.id[n] = 1;
+					Dm->id[n] = 1;
 				}
 				Averages.SDn(i,j,k) = -Averages.Phase(i,j,k);
 				Averages.Phase(i,j,k) = Averages.SDn(i,j,k);
@@ -297,8 +297,8 @@ int main(int argc, char **argv)
 	if (rank==0) printf("initializing the system \n");
 
 	Averages.UpdateSolid();
-    Dm.CommunicateMeshHalo(Averages.Phase);
-    Dm.CommunicateMeshHalo(Averages.SDn);
+    Dm->CommunicateMeshHalo(Averages.Phase);
+    Dm->CommunicateMeshHalo(Averages.SDn);
 
     Averages.Initialize();
     Averages.UpdateMeshValues();
