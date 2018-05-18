@@ -18,7 +18,7 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel();
+	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
@@ -28,6 +28,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run();
+	void WriteDebug();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -37,7 +38,7 @@ public:
 	double din,dout,inletA,inletB,outletA,outletB;
 	
 	int Nx,Ny,Nz,N,Np;
-	int nprocx,nprocy,nprocz;
+	int rank,nprocx,nprocy,nprocz,nprocs;
 	double Lx,Ly,Lz;
 
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis

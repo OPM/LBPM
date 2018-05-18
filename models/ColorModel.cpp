@@ -3,10 +3,10 @@ color lattice boltzmann model
  */
 #include "models/ColorModel.h"
 
-ScaLBL_ColorModel::ScaLBL_ColorModel():
-  Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
+ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
+  rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
   Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
-  Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0)
+  Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
@@ -35,7 +35,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     Restart = color_db->getScalar<bool>( "Restart" );
     din = color_db->getScalar<double>( "din" );
     dout = color_db->getScalar<double>( "dout" );
-    flux = color_db->getScalar<double>( "flux" );;
+    flux = color_db->getScalar<double>( "flux" );
     inletA=1.f;
     inletB=0.f;
     outletA=0.f;
@@ -65,6 +65,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     N = Nx*Ny*Nz;
     for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
     Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+    
+    id = new char[N];
 
     MPI_Barrier(comm);
     Dm->CommInit(comm);
@@ -81,7 +83,6 @@ void ScaLBL_ColorModel::ReadInput(){
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
     // .......... READ THE INPUT FILE .......................................
-    id = new char[N];
     //...........................................................................
     if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
     //.......................................................................
@@ -201,7 +202,7 @@ void ScaLBL_ColorModel::Create(){
         
         int Npad=(Np/16 + 2)*16;
         if (rank==0)    printf ("Set up memory efficient layout \n");
-    	Map.resize(Nx,Ny,Nz);       Map.fill(0);
+    	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
         auto neighborList= new int[18*Npad];
         Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
         MPI_Barrier(comm);
@@ -509,4 +510,15 @@ void ScaLBL_ColorModel::Run(){
     if (rank==0) printf("********************************************************\n");
 
     // ************************************************************************
+}
+
+void ScaLBL_ColorModel::WriteDebug(){
+	// Copy back final phase indicator field and convert to regular layout
+	DoubleArray PhaseField(Nx,Ny,Nz);
+	ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
+	FILE *OUTFILE;
+	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,OUTFILE);
+	fclose(OUTFILE);
 }
