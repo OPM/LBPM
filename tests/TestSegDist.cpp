@@ -11,17 +11,24 @@
 #include <fstream>
 #include "common/Array.h"
 #include "common/Domain.h"
-#include "analysis/eikonal.h"
 #include "IO/Writer.h"
+#include "analysis/distance.h"
 
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
-    INSIST(nprocs==8, "TestSegDist: Number of MPI processes must be equal to 8");
+    std::vector<int> nproc;
+    if ( nprocs == 1 ) {
+        nproc = { 1, 1, 1 };
+    } else if ( nprocs == 8 ) {
+        nproc = { 2, 2, 2 };
+    } else {
+        ERROR("TestSegDist: Unsupported number of processors");
+    }
     auto db = std::make_shared<Database>( );
     db->putScalar<int>( "BC", 0 );
-    db->putVector<int>( "nproc", { 2, 2, 2 } );
-    db->putVector<int>( "n", { 50, 50, 50 } );
+    db->putVector<int>( "nproc", nproc );
+    db->putVector<int>( "n", { 200, 200, 200 } );
     db->putScalar<int>( "nspheres", 0 );
     db->putVector<double>( "L", { 1, 1, 1 } );
     return db;
@@ -31,13 +38,13 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
+    // Initialize MPI
+    int rank, nprocs;
+    MPI_Init(&argc,&argv);
     MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
-	{
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
+    {
 
 
     // Load inputs
@@ -49,99 +56,70 @@ int main(int argc, char **argv)
 
     // Get the rank info
     Domain Dm(db);
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				Dm.id[n] = 1;
-			}
-		}
-	}
-	Dm.CommInit(comm);
+    for (int k=0;k<Nz;k++){
+        for (int j=0;j<Ny;j++){
+            for (int i=0;i<Nx;i++){
+                int n = k*Nx*Ny+j*Nx+i;
+                Dm.id[n] = 1;
+            }
+        }
+    }
+    Dm.CommInit(comm);
 
-	int nx = Nx+2;
+    int nx = Nx+2;
     int ny = Ny+2;
     int nz = Nz+2;
 
-	double BubbleRadius = 25;
+    // Initialize the bubble
+    double BubbleRadius = 0.15*Nx*Dm.nprocx();
+    double Cx = 0.40*Nx*Dm.nprocx();
+    double Cy = 0.45*Nx*Dm.nprocy();
+    double Cz = 0.50*Nx*Dm.nprocy();
 
-	// Initialize the bubble
-	double Cx = 1.0*nx;
-	double Cy = 1.0*ny;
-	double Cz = 1.0*nz;
-
-	DoubleArray Distance(nx,ny,nz);
-	DoubleArray TrueDist(nx,ny,nz);
+    DoubleArray TrueDist(nx,ny,nz);
     Array<char> id(nx,ny,nz);
     id.fill(0);
 
-	for (int k=1;k<nz-1;k++){
-		for (int j=1;j<ny-1;j++){
-			for (int i=1;i<nx-1;i++){
+    for (int k=1; k<nz-1; k++) {
+        double z = k - 0.5 + Dm.kproc()*Nz;
+        for (int j=1; j<ny-1; j++) {
+            double y = j - 0.5 + Dm.jproc()*Ny;
+            for (int i=1; i<nx-1; i++) {
+                double x = i - 0.5 + Dm.iproc()*Nx;
+                // True signed distance
+                TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
+                // Initialize phase positions
+                if (TrueDist(i,j,k) < 0.0){
+                    id(i,j,k) = 0;
+                } else{
+                    id(i,j,k)=1;
+                }
+            }
+        }
+    }
 
-				// True signed distance
-				double x = (nx-2)*Dm.iproc()+i-1;
-				double y = (ny-2)*Dm.jproc()+j-1;
-				double z = (nz-2)*Dm.kproc()+k-1;
-				TrueDist(i,j,k) = sqrt((x-Cx)*(x-Cx)+(y-Cy)*(y-Cy)+(z-Cz)*(z-Cz)) - BubbleRadius;
+    MPI_Barrier(comm);
+    if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
 
-				// Initialize phase positions
-				if (TrueDist(i,j,k) < 0.0){
-					id(i,j,k) = 0;
-				} else{
-					id(i,j,k)=1;
-				}
+    double t1 = MPI_Wtime();
+    DoubleArray Distance(nx,ny,nz);
+    CalcDist(Distance,id,Dm,{false,false,false});
+    double t2 = MPI_Wtime();
+    if (rank==0)
+        printf("Total time: %f seconds \n",t2-t1);
 
-
-			}
-		}
-	}
-	
-	// Initialize the signed distance function
-	for (int k=0;k<nz;k++){
-		for (int j=0;j<ny;j++){
-			for (int i=0;i<nx;i++){
-				// Initialize distance to +/- 1
-				Distance(i,j,k) = 2.0*id(i,j,k)-1.0;
-			}
-		}
-	}
-
-	if (rank==0) printf("Nx = %i \n",(int)Distance.size(0));
-	if (rank==0) printf("Ny = %i \n",(int)Distance.size(1));
-	if (rank==0) printf("Nz = %i \n",(int)Distance.size(2));
-
-	MPI_Barrier(comm);
-	if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
-
-	double starttime,stoptime,cputime;
-	starttime = MPI_Wtime();
-	double err1 = Eikonal(Distance,id,Dm,1000);
-	stoptime = MPI_Wtime();
-	cputime = (stoptime - starttime);
-
-	if (rank==0) printf("Total time: %f seconds \n",cputime);
-
-
-	double localError=0.0;
-	int localCount = 0;
-	for (int k=0;k<nz;k++){
-		for (int j=0;j<ny;j++){
-			for (int i=0;i<nx;i++){
-				if (fabs(TrueDist(i,j,k)) < 3.0){
-					localError += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
-					localCount++;
-				}
-			}
-		}
-	}
-    double globalError;
-    int globalCount;
-    MPI_Allreduce(&localError,&globalError,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    MPI_Allreduce(&localCount,&globalCount,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	double err2 = sqrt(globalError)/(double (globalCount));
-	if (rank==0) printf("global variation %f \n", err1);
-	if (rank==0) printf("Mean error %f \n", err2);
+    double err = 0.0;
+    for (int i=1; i<Nx-1; i++) {
+        for (int j=1; j<Ny-1; j++) {
+            for (int k=1; k<Nz-1; k++) {
+                err += (Distance(i,j,k)-TrueDist(i,j,k))*(Distance(i,j,k)-TrueDist(i,j,k));
+            }
+        }
+    }
+    err = sumReduce( Dm.Comm, err );
+    err = sqrt( err / (nx*ny*nz*nprocs) );
+    if (rank==0)
+        printf("Mean error %0.4f \n", err);
 
     // Write the results to visit
     Array<int> ID0(id.size());
@@ -149,17 +127,17 @@ int main(int argc, char **argv)
     Array<double> ID(Nx,Ny,Nz);
     Array<double> dist1(Nx,Ny,Nz);
     Array<double> dist2(Nx,Ny,Nz);
-    fillHalo<double> fillData(Dm.Comm, Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+    fillHalo<double> fillData(Dm.Comm, Dm.rank_info,{Nx,Ny,Nz},{1,1,1},0,1);
     fillData.copy( ID0, ID );
-    fillData.copy( Distance, dist1 );
-    fillData.copy( TrueDist, dist2 );
+    fillData.copy( TrueDist, dist1 );
+    fillData.copy( Distance, dist2 );
     std::vector<IO::MeshDataStruct> data(1);
     data[0].meshName = "mesh";
     data[0].mesh.reset( new IO::DomainMesh( Dm.rank_info, Nx, Ny, Nz, Dm.Lx, Dm.Ly, Dm.Lz ) );
     data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "ID", ID ) );
-    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "Distance", dist1 ) );
-    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "TrueDist", dist2 ) );
-    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "error", dist1-dist2 ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "TrueDist", dist1 ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "Distance", dist2 ) );
+    data[0].vars.emplace_back( new IO::Variable( 1, IO::VariableType::VolumeVariable, "error", dist2-dist1 ) );
     IO::initialize( "", "silo", false );
     IO::writeData( "testSegDist", data, MPI_COMM_WORLD );
 

@@ -12,7 +12,8 @@
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
-    auto db = std::make_shared<Database>( "Domain.in" );
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
     db->putScalar<int>( "BC", 0 );
     db->putVector<int>( "nproc", { 1, 1, 1 } );
     db->putVector<int>( "n", { 100, 100, 100 } );
@@ -43,22 +44,20 @@ int main(int argc, char **argv)
     //.......................................................................
     int i,j,k,n;
 
-        // Load inputs
-        auto db = loadInputs( nprocs );
-        int Nx = db->getVector<int>( "n" )[0];
-        int Ny = db->getVector<int>( "n" )[1];
-        int Nz = db->getVector<int>( "n" )[2];
-        int nprocx = db->getVector<int>( "nproc" )[0];
-        int nprocy = db->getVector<int>( "nproc" )[1];
-        int nprocz = db->getVector<int>( "nproc" )[2];
+    // Load inputs
+    auto db = loadInputs( nprocs );
+    int Nx = db->getVector<int>( "n" )[0];
+    int Ny = db->getVector<int>( "n" )[1];
+    int Nz = db->getVector<int>( "n" )[2];
+    int nprocx = db->getVector<int>( "nproc" )[0];
+    int nprocy = db->getVector<int>( "nproc" )[1];
+    int nprocz = db->getVector<int>( "nproc" )[2];
 
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-			printf("********************************************************\n");
-		}
-
-
+    if (rank==0){
+    	printf("********************************************************\n");
+    	printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+    	printf("********************************************************\n");
+    }
 
     // Get the rank info
 		std::shared_ptr<Domain> Dm(new Domain(db));

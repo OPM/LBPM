@@ -20,7 +20,6 @@
 
 using namespace std;
 
-
 //*************************************************************************
 // Implementation of Two-Phase Immiscible LBM 
 //*************************************************************************
@@ -66,19 +65,19 @@ int main(int argc, char **argv)
         string FILENAME;
 
         // Color Model parameters
-        int timestepMax = domain_db->getScalar<int>( "timestepMax" );
-        double tauA = domain_db->getScalar<double>( "tauA" );
-        double tauB = domain_db->getScalar<double>( "tauB" );
-        double rhoA = domain_db->getScalar<double>( "rhoA" );
-        double rhoB = domain_db->getScalar<double>( "rhoB" );
-        double Fx = domain_db->getVector<double>( "F" )[0];
-        double Fy = domain_db->getVector<double>( "F" )[1];
-        double Fz = domain_db->getVector<double>( "F" )[2];
-        double alpha = domain_db->getScalar<double>( "alpha" );
-        double beta = domain_db->getScalar<double>( "beta" );
-        bool Restart = domain_db->getScalar<int>( "Restart" );
-        double din = domain_db->getScalar<double>( "din" );
-        double dout = domain_db->getScalar<double>( "dout" );;
+        int timestepMax = color_db->getScalar<int>( "timestepMax" );
+        double tauA = color_db->getScalar<double>( "tauA" );
+        double tauB = color_db->getScalar<double>( "tauB" );
+        double rhoA = color_db->getScalar<double>( "rhoA" );
+        double rhoB = color_db->getScalar<double>( "rhoB" );
+        double Fx = color_db->getVector<double>( "F" )[0];
+        double Fy = color_db->getVector<double>( "F" )[1];
+        double Fz = color_db->getVector<double>( "F" )[2];
+        double alpha = color_db->getScalar<double>( "alpha" );
+        double beta = color_db->getScalar<double>( "beta" );
+        bool Restart = color_db->getScalar<bool>( "Restart" );
+        double din = color_db->getScalar<double>( "din" );
+        double dout = color_db->getScalar<double>( "dout" );;
         double inletA=1.f;
         double inletB=0.f;
         double outletA=0.f;
@@ -86,16 +85,16 @@ int main(int argc, char **argv)
         double flux = 10.f;
 
         // Read domain values
-        auto L = domain_db->getVector<int>( "L" );
+        auto L = domain_db->getVector<double>( "L" );
         auto size = domain_db->getVector<int>( "n" );
         auto nproc = domain_db->getVector<int>( "nproc" );
         int BoundaryCondition = domain_db->getScalar<int>( "BC" );
         int Nx = size[0];
         int Ny = size[1];
         int Nz = size[2];
-        int Lx = L[0];
-        int Ly = L[1];
-        int Lz = L[2];
+        double Lx = L[0];
+        double Ly = L[1];
+        double Lz = L[2];
         int nprocx = nproc[0];
         int nprocy = nproc[1];
         int nprocz = nproc[2];

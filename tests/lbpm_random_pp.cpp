@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 	MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY(),sendtag,
 			recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy(),recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz(),sendtag,
-		     recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ(),recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ(),sendtag,
 			recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz(),recvtag,comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz(),sendtag,

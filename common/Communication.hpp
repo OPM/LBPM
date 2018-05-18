@@ -11,16 +11,30 @@
 *  Structure to store the rank info                     *
 ********************************************************/
 template<class TYPE>
-fillHalo<TYPE>::fillHalo( MPI_Comm comm0, const RankInfoStruct& info0, int nx0, int ny0, int nz0, 
-    int ngx0, int ngy0, int ngz0, int tag0, int depth0,
-    bool fill_face, bool fill_edge, bool fill_corner ):
-    info(info0), nx(nx0), ny(ny0), nz(nz0), ngx(ngx0), ngy(ngy0), ngz(ngz0), depth(depth0)
+fillHalo<TYPE>::fillHalo( MPI_Comm comm_, const RankInfoStruct& info_,
+    std::array<int,3> n_, std::array<int,3> ng_, int tag0, int depth_,
+    std::array<bool,3> fill, std::array<bool,3> periodic ):
+    comm(comm_), info(info_), n(n_), ng(ng_), depth(depth_)
 {
-    comm = comm0;
-    datatype = getMPItype<TYPE>();
+    if ( std::is_same<TYPE,double>() ) {
+        N_type = 1;
+        datatype = MPI_DOUBLE;
+    } else if ( std::is_same<TYPE,float>() ) {
+        N_type = 1;
+        datatype = MPI_FLOAT;
+    } else if ( sizeof(TYPE)%sizeof(double)==0 ) {
+        N_type = sizeof(TYPE) / sizeof(double);
+        datatype = MPI_DOUBLE;
+    } else if ( sizeof(TYPE)%sizeof(float)==0 ) {
+        N_type = sizeof(TYPE) / sizeof(float);
+        datatype = MPI_FLOAT;
+    } else {
+        N_type = sizeof(TYPE);
+        datatype = MPI_BYTE;
+    }
     // Set the fill pattern
     memset(fill_pattern,0,sizeof(fill_pattern));
-    if ( fill_face ) {
+    if ( fill[0] ) {
         fill_pattern[0][1][1] = true;
         fill_pattern[2][1][1] = true;
         fill_pattern[1][0][1] = true;
@@ -28,7 +42,7 @@ fillHalo<TYPE>::fillHalo( MPI_Comm comm0, const RankInfoStruct& info0, int nx0, 
         fill_pattern[1][1][0] = true;
         fill_pattern[1][1][2] = true;
     }
-    if ( fill_edge ) {
+    if ( fill[1] ) {
         fill_pattern[0][0][1] = true;
         fill_pattern[0][2][1] = true;
         fill_pattern[2][0][1] = true;
@@ -42,7 +56,7 @@ fillHalo<TYPE>::fillHalo( MPI_Comm comm0, const RankInfoStruct& info0, int nx0, 
         fill_pattern[1][2][0] = true;
         fill_pattern[1][2][2] = true;
     }
-    if ( fill_corner ) {
+    if ( fill[2] ) {
         fill_pattern[0][0][0] = true;
         fill_pattern[0][0][2] = true;
         fill_pattern[0][2][0] = true;
@@ -52,13 +66,50 @@ fillHalo<TYPE>::fillHalo( MPI_Comm comm0, const RankInfoStruct& info0, int nx0, 
         fill_pattern[2][2][0] = true;
         fill_pattern[2][2][2] = true;
     }
+    // Remove communication for non-perioidic directions
+    if ( !periodic[0] && info.ix==0 ) {
+        for (int j=0; j<3; j++) {
+            for (int k=0; k<3; k++)
+                fill_pattern[0][j][k] = false;
+        }
+    }
+    if ( !periodic[0] && info.ix==info.nx-1 ) {
+        for (int j=0; j<3; j++) {
+            for (int k=0; k<3; k++)
+                fill_pattern[2][j][k] = false;
+        }
+    }
+    if ( !periodic[1] && info.jy==0 ) {
+        for (int i=0; i<3; i++) {
+            for (int k=0; k<3; k++)
+                fill_pattern[i][0][k] = false;
+        }
+    }
+    if ( !periodic[1] && info.jy==info.ny-1 ) {
+        for (int i=0; i<3; i++) {
+            for (int k=0; k<3; k++)
+                fill_pattern[i][2][k] = false;
+        }
+    }
+    if ( !periodic[2] && info.kz==0 ) {
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<3; j++)
+                fill_pattern[i][j][0] = false;
+        }
+    }
+    if ( !periodic[2] && info.kz==info.nz-1 ) {
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<3; j++)
+                fill_pattern[i][j][2] = false;
+        }
+    }
     // Determine the number of elements for each send/recv
     for (int i=0; i<3; i++) {
-        int ni = (i-1)==0 ? nx:ngx;
+        int ni = (i-1)==0 ? n[0]:ng[0];
         for (int j=0; j<3; j++) {
-            int nj = (j-1)==0 ? ny:ngy;
+            int nj = (j-1)==0 ? n[1]:ng[1];
             for (int k=0; k<3; k++) {
-                int nk = (k-1)==0 ? nz:ngz;
+                int nk = (k-1)==0 ? n[2]:ng[2];
                 if ( fill_pattern[i][j][k] )
                     N_send_recv[i][j][k] = ni*nj*nk;
                 else
@@ -106,9 +157,9 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
 {
     //PROFILE_START("fillHalo::fill",1);
     int depth2 = data.size(3);
-    ASSERT((int)data.size(0)==nx+2*ngx);
-    ASSERT((int)data.size(1)==ny+2*ngy);
-    ASSERT((int)data.size(2)==nz+2*ngz);
+    ASSERT((int)data.size(0)==n[0]+2*ng[0]);
+    ASSERT((int)data.size(1)==n[1]+2*ng[1]);
+    ASSERT((int)data.size(2)==n[2]+2*ng[2]);
     ASSERT(depth2<=depth);
     ASSERT(data.ndim()==3||data.ndim()==4);
     // Start the recieves
@@ -117,7 +168,7 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
             for (int k=0; k<3; k++) {
                 if ( !fill_pattern[i][j][k] )
                     continue;
-                MPI_Irecv( recv[i][j][k], depth2*N_send_recv[i][j][k], datatype, 
+                MPI_Irecv( recv[i][j][k], N_type*depth2*N_send_recv[i][j][k], datatype, 
                     info.rank[i][j][k], tag[2-i][2-j][2-k], comm, &recv_req[i][j][k] );
             }
         }
@@ -129,7 +180,7 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
                 if ( !fill_pattern[i][j][k] )
                     continue;
                 pack( data, i-1, j-1, k-1, send[i][j][k] );
-                MPI_Isend( send[i][j][k], depth2*N_send_recv[i][j][k], datatype, 
+                MPI_Isend( send[i][j][k], N_type*depth2*N_send_recv[i][j][k], datatype, 
                     info.rank[i][j][k], tag[i][j][k], comm, &send_req[i][j][k] );
             }
         }
@@ -162,12 +213,12 @@ template<class TYPE>
 void fillHalo<TYPE>::pack( const Array<TYPE>& data, int i0, int j0, int k0, TYPE *buffer )
 {
     int depth2 = data.size(3);
-    int ni = i0==0 ? nx:ngx;
-    int nj = j0==0 ? ny:ngy;
-    int nk = k0==0 ? nz:ngz;
-    int is = i0==0 ? ngx:((i0==-1)?ngx:nx);
-    int js = j0==0 ? ngy:((j0==-1)?ngy:ny);
-    int ks = k0==0 ? ngz:((k0==-1)?ngz:nz);
+    int ni = i0==0 ? n[0]:ng[0];
+    int nj = j0==0 ? n[1]:ng[1];
+    int nk = k0==0 ? n[2]:ng[2];
+    int is = i0==0 ? ng[0]:((i0==-1)?ng[0]:n[0]);
+    int js = j0==0 ? ng[1]:((j0==-1)?ng[1]:n[1]);
+    int ks = k0==0 ? ng[2]:((k0==-1)?ng[2]:n[2]);
     for (int d=0; d<depth2; d++) {
         for (int k=0; k<nk; k++) {
             for (int j=0; j<nj; j++) {
@@ -182,12 +233,12 @@ template<class TYPE>
 void fillHalo<TYPE>::unpack( Array<TYPE>& data, int i0, int j0, int k0, const TYPE *buffer )
 {
     int depth2 = data.size(3);
-    int ni = i0==0 ? nx:ngx;
-    int nj = j0==0 ? ny:ngy;
-    int nk = k0==0 ? nz:ngz;
-    int is = i0==0 ? ngx:((i0==-1)?0:nx+ngx);
-    int js = j0==0 ? ngy:((j0==-1)?0:ny+ngy);
-    int ks = k0==0 ? ngz:((k0==-1)?0:nz+ngz);
+    int ni = i0==0 ? n[0]:ng[0];
+    int nj = j0==0 ? n[1]:ng[1];
+    int nk = k0==0 ? n[2]:ng[2];
+    int is = i0==0 ? ng[0]:((i0==-1)?0:n[0]+ng[0]);
+    int js = j0==0 ? ng[1]:((j0==-1)?0:n[1]+ng[1]);
+    int ks = k0==0 ? ng[2]:((k0==-1)?0:n[2]+ng[2]);
     for (int d=0; d<depth2; d++) {
         for (int k=0; k<nk; k++) {
             for (int j=0; j<nj; j++) {
@@ -208,27 +259,27 @@ template<class TYPE1, class TYPE2>
 void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
 {
     //PROFILE_START("fillHalo::copy",1);
-    ASSERT( (int)src.size(0)==nx || (int)src.size(0)==nx+2*ngx );
-    ASSERT( (int)dst.size(0)==nx || (int)dst.size(0)==nx+2*ngx );
-    bool src_halo = (int)src.size(0)==nx+2*ngx;
-    bool dst_halo = (int)dst.size(0)==nx+2*ngx;
+    ASSERT( (int)src.size(0)==n[0] || (int)src.size(0)==n[0]+2*ng[0] );
+    ASSERT( (int)dst.size(0)==n[0] || (int)dst.size(0)==n[0]+2*ng[0] );
+    bool src_halo = (int)src.size(0)==n[0]+2*ng[0];
+    bool dst_halo = (int)dst.size(0)==n[0]+2*ng[0];
     if ( src_halo ) {
-        ASSERT((int)src.size(0)==nx+2*ngx);
-        ASSERT((int)src.size(1)==ny+2*ngy);
-        ASSERT((int)src.size(2)==nz+2*ngz);
+        ASSERT((int)src.size(0)==n[0]+2*ng[0]);
+        ASSERT((int)src.size(1)==n[1]+2*ng[1]);
+        ASSERT((int)src.size(2)==n[2]+2*ng[2]);
     } else {
-        ASSERT((int)src.size(0)==nx);
-        ASSERT((int)src.size(1)==ny);
-        ASSERT((int)src.size(2)==nz);
+        ASSERT((int)src.size(0)==n[0]);
+        ASSERT((int)src.size(1)==n[1]);
+        ASSERT((int)src.size(2)==n[2]);
     }
     if ( dst_halo ) {
-        ASSERT((int)dst.size(0)==nx+2*ngx);
-        ASSERT((int)dst.size(1)==ny+2*ngy);
-        ASSERT((int)dst.size(2)==nz+2*ngz);
+        ASSERT((int)dst.size(0)==n[0]+2*ng[0]);
+        ASSERT((int)dst.size(1)==n[1]+2*ng[1]);
+        ASSERT((int)dst.size(2)==n[2]+2*ng[2]);
     } else {
-        ASSERT((int)dst.size(0)==nx);
-        ASSERT((int)dst.size(1)==ny);
-        ASSERT((int)dst.size(2)==nz);
+        ASSERT((int)dst.size(0)==n[0]);
+        ASSERT((int)dst.size(1)==n[1]);
+        ASSERT((int)dst.size(2)==n[2]);
     }
     if ( src_halo == dst_halo ) {
         // Src and dst halos match
@@ -236,19 +287,19 @@ void fillHalo<TYPE>::copy( const Array<TYPE1>& src, Array<TYPE2>& dst )
             dst(i) = src(i);
     } else if ( src_halo && !dst_halo ) {
         // Src has halos
-        for (int k=0; k<nz; k++) {
-            for (int j=0; j<ny; j++) {
-                for (int i=0; i<nx; i++) {
-                    dst(i,j,k) = src(i+ngx,j+ngy,k+ngz);
+        for (int k=0; k<n[2]; k++) {
+            for (int j=0; j<n[1]; j++) {
+                for (int i=0; i<n[0]; i++) {
+                    dst(i,j,k) = src(i+ng[0],j+ng[1],k+ng[2]);
                 }
             }
         }
     } else if ( !src_halo && dst_halo ) {
         // Dst has halos
-        for (int k=0; k<nz; k++) {
-            for (int j=0; j<ny; j++) {
-                for (int i=0; i<nx; i++) {
-                    dst(i+ngx,j+ngy,k+ngz) = src(i,j,k);
+        for (int k=0; k<n[2]; k++) {
+            for (int j=0; j<n[1]; j++) {
+                for (int i=0; i<n[0]; i++) {
+                    dst(i+ng[0],j+ng[1],k+ng[2]) = src(i,j,k);
                 }
             }
         }

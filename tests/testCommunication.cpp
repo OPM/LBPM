@@ -221,7 +221,7 @@ int testHalo( MPI_Comm comm, int nprocx, int nprocy, int nprocz, int depth )
     }
 
     // Communicate the halo
-    fillHalo<TYPE> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,depth);
+    fillHalo<TYPE> fillData(comm,rank_info,{nx,ny,nz},{1,1,1},0,depth);
     fillData.fill(array);
 
     // Check the results

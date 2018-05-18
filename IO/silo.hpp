@@ -322,9 +322,7 @@ void readTriMesh( DBfile* fid, const std::string& meshname, Array<TYPE>& coords,
     }
     auto zones = mesh->zones;
     int N_zones = zones->nzones;
-    int ndim_zones = zones->ndims;
     ASSERT( zones->nshapes==1 );
-    int shape_type = zones->shapetype[0];
     int shapesize = zones->shapesize[0];
     tri.resize(N_zones,shapesize);
     for (int i=0; i<N_zones; i++) {

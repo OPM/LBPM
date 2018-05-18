@@ -100,7 +100,7 @@ int main(int argc, char **argv)
     readRankData( rank, nx+2, ny+2, nz+2, Phase, SignDist );
 
     // Communication the halos
-    fillHalo<double> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData(comm,rank_info,{nx,ny,nz},{1,1,1},0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 

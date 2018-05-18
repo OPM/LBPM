@@ -12,7 +12,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "analysis/TwoPhase.h"
-#include "analysis/eikonal.h"
+#include "analysis/distance.h"
 
 inline void MeanFilter(DoubleArray &Mesh){
 	for (int k=1; k<(int)Mesh.size(2)-1; k++){
@@ -253,15 +253,8 @@ int main(int argc, char **argv)
 		}
 		MeanFilter(Averages->SDs);
 
-		double LocalVar, TotalVar;
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		int Maxtime=10*max(max(Dm->Nx*Dm->nprocx(),Dm->Ny*Dm->nprocy()),Dm->Nz*Dm->nprocz());
-		Maxtime=min(Maxtime,MAXTIME);
-		LocalVar = Eikonal(Averages->SDs,id,*Dm,Maxtime);
-
-		MPI_Allreduce(&LocalVar,&TotalVar,1,MPI_DOUBLE,MPI_SUM,comm);
-		TotalVar /= nprocs;
-		if (rank==0) printf("Final variation in signed distance function %f \n",TotalVar);
+		CalcDist(Averages.SDs,id,Dm);
 
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
 		FILE *DIST = fopen(LocalRankFilename,"wb");

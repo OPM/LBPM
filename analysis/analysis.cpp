@@ -329,7 +329,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
     }
     const BlobIDArray LocalIDs = IDs;
     // Copy the ids and get the neighbors through the halos
-    fillHalo<BlobIDType> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData(comm,rank_info,{nx,ny,nz},{1,1,1},0,1,{true,true,true});
     fillData.fill(IDs);
     // Create a list of all neighbor ranks (excluding self)
     std::vector<int> neighbors;
@@ -420,7 +420,7 @@ static int LocalToGlobalIDs( int nx, int ny, int nz, const RankInfoStruct& rank_
         }
     }
     // Fill the ghosts
-    fillHalo<BlobIDType> fillData2(comm,rank_info,nx,ny,nz,1,1,1,0,1,true,true,true);
+    fillHalo<BlobIDType> fillData2(comm,rank_info,{nx,ny,nz},{1,1,1},0,1,{true,true,true});
     fillData2.fill(IDs);
     // Reorder based on size (and compress the id space
     int N_blobs_global = ReorderBlobIDs2(IDs,N_blobs_tot,ngx,ngy,ngz,comm);

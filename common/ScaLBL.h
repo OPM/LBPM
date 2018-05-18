@@ -136,9 +136,10 @@ public:
 	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
+	int BoundaryCondition;
+	
 	int next;
 	int first_interior,last_interior;
-	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
 	// 		- determines how much memory is allocated
@@ -153,6 +154,10 @@ public:
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
 
+	int LastExterior();
+	int FirstInterior();
+	int LastInterior();
+	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
@@ -195,6 +200,7 @@ private:
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 	// only one set of Send requests can be active at any time (per instance)
 	int i,j,k,n;
+
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
 	int sendtag,recvtag;
@@ -215,12 +221,12 @@ private:
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//......................................................................................
-
 	//......................................................................................
 	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
 	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
 	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
 	//......................................................................................
+
 	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
 	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
 	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;

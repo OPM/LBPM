@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 
 		// Communication the halos
 		const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-		fillHalo<double> fillData(comm,rank_info,rnx,rny,rnz,1,1,1,0,1);
+		fillHalo<double> fillData(comm,rank_info,{rnx,rny,rnz},{1,1,1},0,1);
 
 		nx+=2; ny+=2; nz+=2;
 		rnx+=2; rny+=2; rnz+=2;
