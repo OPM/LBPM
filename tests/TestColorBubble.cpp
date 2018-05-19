@@ -14,8 +14,6 @@ using namespace std;
 inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){
 	// initialize a bubble
 	int i,j,k,n;
-	int Np=0;
-	double sum=0.f;
 	int rank = ColorModel.Mask->rank();
 	int nprocx = ColorModel.Mask->nprocx();
 	int nprocy = ColorModel.Mask->nprocy();
@@ -24,21 +22,11 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 	int Ny = ColorModel.Mask->Ny;
 	int Nz = ColorModel.Mask->Nz;
 	if (rank == 0) cout << "Setting up bubble..." << endl;
-	sum=0; Np=0;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				ColorModel.Averages->SDs(i,j,k) = 100.f;
-				// Initialize phase positions field
-				if (ColorModel.Averages->SDs(i,j,k) < 0.0){
-					ColorModel.id[n] = 0;
-					ColorModel.id[n] = 0;
-				}
-				else {
-					sum++;
-					Np++;
-				}
 			}
 		}
 	}
@@ -47,19 +35,19 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
-				int iglobal= i+(Nx-2)*ColorModel.Dm->iproc();
-				int jglobal= j+(Ny-2)*ColorModel.Dm->jproc();
-				int kglobal= k+(Nz-2)*ColorModel.Dm->kproc();
+				int iglobal= i+(Nx-2)*ColorModel.Mask->iproc();
+				int jglobal= j+(Ny-2)*ColorModel.Mask->jproc();
+				int kglobal= k+(Nz-2)*ColorModel.Mask->kproc();
 				// Initialize phase position field for parallel bubble test
 				if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
 						+(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
 						+(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
-					ColorModel.id[n] = 2;
-					ColorModel.id[n] = 2;
+					ColorModel.Mask->id[n] = 2;
+					ColorModel.Mask->id[n] = 2;
 				}
 				else{
-					ColorModel.id[n]=1;
-					ColorModel.id[n]=1;
+					ColorModel.Mask->id[n]=1;
+					ColorModel.Mask->id[n]=1;
 				}
 			}
 		}
@@ -92,12 +80,13 @@ int main(int argc, char **argv)
 		auto filename = argv[1];
 		ScaLBL_ColorModel ColorModel(rank,nprocs,comm);
 		ColorModel.ReadParams(filename);
-		//ColorModel.ReadInput();
+		ColorModel.SetDomain();    
+		//ColorModel.ReadInput(); 
 		double radius=15.5;
 		InitializeBubble(ColorModel,radius);
-		ColorModel.Create();
-		ColorModel.Initialize();
-		ColorModel.Run();
+		ColorModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+		ColorModel.Initialize();   // initializing the model will set initial conditions for variables
+		ColorModel.Run();	       
 		ColorModel.WriteDebug();
 	}
 	// ****************************************************

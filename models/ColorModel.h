@@ -24,10 +24,11 @@ public:
 	// functions in they should be run
 	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
-    void AssignComponentLabels(double *phase);
+	void SetDomain();
 	void ReadInput();
 	void Create();
 	void Initialize();
+	void SolidPotential();
 	void Run();
 	void WriteDebug();
 	
@@ -74,6 +75,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
+    void AssignComponentLabels(double *phase);
     	
 };
 

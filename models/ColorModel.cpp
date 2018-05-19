@@ -40,6 +40,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
+	
+	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
@@ -56,19 +58,14 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	nprocy = nproc[1];
 	nprocz = nproc[2];
 
-	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
-
+}
+void ScaLBL_ColorModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-
 	Nx+=2; Ny+=2; Nz += 2;
 	N = Nx*Ny*Nz;
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-
-	// local copy of the ids
-	id = new char[N];
-
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
@@ -80,7 +77,7 @@ void ScaLBL_ColorModel::ReadInput(){
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
-    Dm->ReadIDs();
+    Mask->ReadIDs();
     
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -194,7 +191,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=Dm->id[n];
+				VALUE=Mask->id[n];
 				// Assign the affinity from the paired list
 				for (int idx=0; idx < NLABELS; idx++){
 					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
@@ -222,7 +219,7 @@ void ScaLBL_ColorModel::Create(){
 	
 	//.........................................................
 	// Initialize communication structures in averaging domain
-	for (int i=0; i<Nx*Ny*Nz; i++) Mask->id[i] = Dm->id[i];
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];
 	Mask->CommInit();
 	Np=Mask->PoreCount();
 	//...........................................................................
@@ -285,13 +282,7 @@ void ScaLBL_ColorModel::Create(){
 /********************************************************
  * AssignComponentLabels                                 *
  ********************************************************/
-
-void ScaLBL_ColorModel::Initialize(){
-	/*
-	 * This function initializes model (includes both mobile and immobile components)
-	 */
-       int rank=Dm->rank();
-	// Compute the solid interaction potential and copy result to device
+void ScaLBL_ColorModel::SolidPotential(){
 	if (rank==0) printf("Computing solid interaction potential \n");
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];
@@ -390,8 +381,15 @@ void ScaLBL_ColorModel::Initialize(){
 	PFILE = fopen(LocalRankFilename,"wb");
 	fwrite(Psnorm.data(),8,N,PFILE);
 	fclose(PFILE);
-
+}
+void ScaLBL_ColorModel::Initialize(){
+	/*
+	 * This function initializes model
+	 */
+       int rank=Dm->rank();
 	double count_wet=0.f;
+	double *PhaseLabel;
+	PhaseLabel=new double [Nx*Ny*Nz];
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
