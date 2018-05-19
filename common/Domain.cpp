@@ -29,7 +29,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
                double lx, double ly, double lz, int BC):
 	Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
-	Comm(MPI_COMM_NULL),
+	Comm(MPI_COMM_WORLD),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -55,7 +55,15 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
 	recvData_xy(NULL), recvData_yz(NULL), recvData_xz(NULL), recvData_Xy(NULL), recvData_Yz(NULL), recvData_xZ(NULL),
 	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
 	id(NULL)
-{
+{	
+	// set up the neighbor ranks
+    int myrank;
+    MPI_Comm_rank( Comm, &myrank );
+	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
+	
+    initialize( db );
+	MPI_Barrier(Comm);
+	
     auto db = std::make_shared<Database>( );
     db->putScalar<int>( "BC", BC );
     db->putVector<int>( "nproc", { npx, npx, npx } );
@@ -64,7 +72,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     db->putVector<double>( "L", { lx, ly, lz } );
     initialize( db );
 }
-Domain::Domain( std::shared_ptr<Database> db ):
+Domain::Domain( std::shared_ptr<Database> db, MPI_Communicator Communicator):
 	Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
@@ -94,10 +102,19 @@ Domain::Domain( std::shared_ptr<Database> db ):
 	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
 	id(NULL)
 {
+    MPI_Comm_dup(Communicator,&Comm);
+
+	// set up the neighbor ranks
+    int myrank;
+    MPI_Comm_rank( Comm, &myrank );
+	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
+	
     initialize( db );
+	MPI_Barrier(Comm);
+
 }
 void Domain::initialize( std::shared_ptr<Database> db )
-{
+{	
     d_db = db;
     auto nproc = d_db->getVector<int>("nproc");
     auto n = d_db->getVector<int>("n");
@@ -117,7 +134,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
     Nz = nz+2;
     // Initialize ranks
     int myrank;
-    MPI_Comm_rank( MPI_COMM_WORLD, &myrank );
+    MPI_Comm_rank( Comm, &myrank );
 	rank_info = RankInfoStruct(myrank,nproc[0],nproc[1],nproc[2]);
     // Fill remaining variables
 	N = Nx*Ny*Nz;
@@ -126,7 +143,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	memset(id,0,N);
 	BoundaryCondition = d_db->getScalar<int>("BC");
     int nprocs;
-    MPI_Comm_size( MPI_COMM_WORLD, &nprocs );
+    MPI_Comm_size( Comm, &nprocs );
 	INSIST(nprocs == nproc[0]*nproc[1]*nproc[2],"Fatal error in processor count!");
 }
 Domain::~Domain()
@@ -185,24 +202,11 @@ Domain::~Domain()
 /********************************************************
  * Initialize communication                              *
  ********************************************************/
-void Domain::CommInit(MPI_Comm Communicator)
+void Domain::CommInit()
 {
 	int i,j,k,n;
 	int sendtag = 21;
 	int recvtag = 21;
-
-    MPI_Comm_dup(Communicator,&Comm);
-
-	// set up the neighbor ranks
-    int myrank;
-    MPI_Comm_rank( Comm, &myrank );
-	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
-
-	MPI_Barrier(Communicator);
-
-	//......................................................................................
-	MPI_Request req1[18], req2[18];
-	MPI_Status stat1[18],stat2[18];
 	//......................................................................................
 	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
@@ -316,45 +320,45 @@ void Domain::CommInit(MPI_Comm Communicator)
 	sendBuf_YZ = new int [sendCount_YZ];
 	sendBuf_XZ = new int [sendCount_XZ];
 	//......................................................................................
-	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x(),sendtag+0,Communicator,&req1[0]);
-	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X(),recvtag+0,Communicator,&req2[0]);
-	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X(),sendtag+1,Communicator,&req1[1]);
-	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x(),recvtag+1,Communicator,&req2[1]);
-	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y(),sendtag+2,Communicator,&req1[2]);
-	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y(),recvtag+2,Communicator,&req2[2]);
-	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y(),sendtag+3,Communicator,&req1[3]);
-	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y(),recvtag+3,Communicator,&req2[3]);
-	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z(),sendtag+4,Communicator,&req1[4]);
-	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z(),recvtag+4,Communicator,&req2[4]);
-	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z(),sendtag+5,Communicator,&req1[5]);
-	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z(),recvtag+5,Communicator,&req2[5]);
-	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy(),sendtag+6,Communicator,&req1[6]);
-	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY(),recvtag+6,Communicator,&req2[6]);
-	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY(),sendtag+7,Communicator,&req1[7]);
-	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy(),recvtag+7,Communicator,&req2[7]);
-	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy(),sendtag+8,Communicator,&req1[8]);
-	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY(),recvtag+8,Communicator,&req2[8]);
-	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY(),sendtag+9,Communicator,&req1[9]);
-	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy(),recvtag+9,Communicator,&req2[9]);
-	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz(),sendtag+10,Communicator,&req1[10]);
-	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ(),recvtag+10,Communicator,&req2[10]);
-	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ(),sendtag+11,Communicator,&req1[11]);
-	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz(),recvtag+11,Communicator,&req2[11]);
-	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz(),sendtag+12,Communicator,&req1[12]);
-	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ(),recvtag+12,Communicator,&req2[12]);
-	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ(),sendtag+13,Communicator,&req1[13]);
-	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz(),recvtag+13,Communicator,&req2[13]);
-	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz(),sendtag+14,Communicator,&req1[14]);
-	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ(),recvtag+14,Communicator,&req2[14]);
-	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ(),sendtag+15,Communicator,&req1[15]);
-	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz(),recvtag+15,Communicator,&req2[15]);
-	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz(),sendtag+16,Communicator,&req1[16]);
-	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ(),recvtag+16,Communicator,&req2[16]);
-	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ(),sendtag+17,Communicator,&req1[17]);
-	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz(),recvtag+17,Communicator,&req2[17]);
+	MPI_Isend(&sendCount_x, 1,MPI_INT,rank_x(),sendtag+0,Comm,&req1[0]);
+	MPI_Irecv(&recvCount_X, 1,MPI_INT,rank_X(),recvtag+0,Comm,&req2[0]);
+	MPI_Isend(&sendCount_X, 1,MPI_INT,rank_X(),sendtag+1,Comm,&req1[1]);
+	MPI_Irecv(&recvCount_x, 1,MPI_INT,rank_x(),recvtag+1,Comm,&req2[1]);
+	MPI_Isend(&sendCount_y, 1,MPI_INT,rank_y(),sendtag+2,Comm,&req1[2]);
+	MPI_Irecv(&recvCount_Y, 1,MPI_INT,rank_Y(),recvtag+2,Comm,&req2[2]);
+	MPI_Isend(&sendCount_Y, 1,MPI_INT,rank_Y(),sendtag+3,Comm,&req1[3]);
+	MPI_Irecv(&recvCount_y, 1,MPI_INT,rank_y(),recvtag+3,Comm,&req2[3]);
+	MPI_Isend(&sendCount_z, 1,MPI_INT,rank_z(),sendtag+4,Comm,&req1[4]);
+	MPI_Irecv(&recvCount_Z, 1,MPI_INT,rank_Z(),recvtag+4,Comm,&req2[4]);
+	MPI_Isend(&sendCount_Z, 1,MPI_INT,rank_Z(),sendtag+5,Comm,&req1[5]);
+	MPI_Irecv(&recvCount_z, 1,MPI_INT,rank_z(),recvtag+5,Comm,&req2[5]);
+	MPI_Isend(&sendCount_xy, 1,MPI_INT,rank_xy(),sendtag+6,Comm,&req1[6]);
+	MPI_Irecv(&recvCount_XY, 1,MPI_INT,rank_XY(),recvtag+6,Comm,&req2[6]);
+	MPI_Isend(&sendCount_XY, 1,MPI_INT,rank_XY(),sendtag+7,Comm,&req1[7]);
+	MPI_Irecv(&recvCount_xy, 1,MPI_INT,rank_xy(),recvtag+7,Comm,&req2[7]);
+	MPI_Isend(&sendCount_Xy, 1,MPI_INT,rank_Xy(),sendtag+8,Comm,&req1[8]);
+	MPI_Irecv(&recvCount_xY, 1,MPI_INT,rank_xY(),recvtag+8,Comm,&req2[8]);
+	MPI_Isend(&sendCount_xY, 1,MPI_INT,rank_xY(),sendtag+9,Comm,&req1[9]);
+	MPI_Irecv(&recvCount_Xy, 1,MPI_INT,rank_Xy(),recvtag+9,Comm,&req2[9]);
+	MPI_Isend(&sendCount_xz, 1,MPI_INT,rank_xz(),sendtag+10,Comm,&req1[10]);
+	MPI_Irecv(&recvCount_XZ, 1,MPI_INT,rank_XZ(),recvtag+10,Comm,&req2[10]);
+	MPI_Isend(&sendCount_XZ, 1,MPI_INT,rank_XZ(),sendtag+11,Comm,&req1[11]);
+	MPI_Irecv(&recvCount_xz, 1,MPI_INT,rank_xz(),recvtag+11,Comm,&req2[11]);
+	MPI_Isend(&sendCount_Xz, 1,MPI_INT,rank_Xz(),sendtag+12,Comm,&req1[12]);
+	MPI_Irecv(&recvCount_xZ, 1,MPI_INT,rank_xZ(),recvtag+12,Comm,&req2[12]);
+	MPI_Isend(&sendCount_xZ, 1,MPI_INT,rank_xZ(),sendtag+13,Comm,&req1[13]);
+	MPI_Irecv(&recvCount_Xz, 1,MPI_INT,rank_Xz(),recvtag+13,Comm,&req2[13]);
+	MPI_Isend(&sendCount_yz, 1,MPI_INT,rank_yz(),sendtag+14,Comm,&req1[14]);
+	MPI_Irecv(&recvCount_YZ, 1,MPI_INT,rank_YZ(),recvtag+14,Comm,&req2[14]);
+	MPI_Isend(&sendCount_YZ, 1,MPI_INT,rank_YZ(),sendtag+15,Comm,&req1[15]);
+	MPI_Irecv(&recvCount_yz, 1,MPI_INT,rank_yz(),recvtag+15,Comm,&req2[15]);
+	MPI_Isend(&sendCount_Yz, 1,MPI_INT,rank_Yz(),sendtag+16,Comm,&req1[16]);
+	MPI_Irecv(&recvCount_yZ, 1,MPI_INT,rank_yZ(),recvtag+16,Comm,&req2[16]);
+	MPI_Isend(&sendCount_yZ, 1,MPI_INT,rank_yZ(),sendtag+17,Comm,&req1[17]);
+	MPI_Irecv(&recvCount_Yz, 1,MPI_INT,rank_Yz(),recvtag+17,Comm,&req2[17]);
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
-	MPI_Barrier(Communicator);
+	MPI_Barrier(Comm);
 	//......................................................................................
 	// recv buffers
 	recvList_x = new int [recvCount_x];
@@ -376,42 +380,42 @@ void Domain::CommInit(MPI_Comm Communicator)
 	recvList_YZ = new int [recvCount_YZ];
 	recvList_XZ = new int [recvCount_XZ];
 	//......................................................................................
-	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x(),sendtag,Communicator,&req1[0]);
-	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X(),recvtag,Communicator,&req2[0]);
-	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X(),sendtag,Communicator,&req1[1]);
-	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x(),recvtag,Communicator,&req2[1]);
-	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y(),sendtag,Communicator,&req1[2]);
-	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y(),recvtag,Communicator,&req2[2]);
-	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y(),sendtag,Communicator,&req1[3]);
-	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y(),recvtag,Communicator,&req2[3]);
-	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z(),sendtag,Communicator,&req1[4]);
-	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z(),recvtag,Communicator,&req2[4]);
-	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z(),sendtag,Communicator,&req1[5]);
-	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z(),recvtag,Communicator,&req2[5]);
-	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy(),sendtag,Communicator,&req1[6]);
-	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY(),recvtag,Communicator,&req2[6]);
-	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY(),sendtag,Communicator,&req1[7]);
-	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy(),recvtag,Communicator,&req2[7]);
-	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy(),sendtag,Communicator,&req1[8]);
-	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY(),recvtag,Communicator,&req2[8]);
-	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY(),sendtag,Communicator,&req1[9]);
-	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy(),recvtag,Communicator,&req2[9]);
-	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz(),sendtag,Communicator,&req1[10]);
-	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ(),recvtag,Communicator,&req2[10]);
-	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ(),sendtag,Communicator,&req1[11]);
-	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz(),recvtag,Communicator,&req2[11]);
-	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz(),sendtag,Communicator,&req1[12]);
-	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ(),recvtag,Communicator,&req2[12]);
-	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ(),sendtag,Communicator,&req1[13]);
-	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz(),recvtag,Communicator,&req2[13]);
-	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz(),sendtag,Communicator,&req1[14]);
-	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ(),recvtag,Communicator,&req2[14]);
-	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ(),sendtag,Communicator,&req1[15]);
-	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz(),recvtag,Communicator,&req2[15]);
-	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz(),sendtag,Communicator,&req1[16]);
-	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ(),recvtag,Communicator,&req2[16]);
-	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ(),sendtag,Communicator,&req1[17]);
-	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz(),recvtag,Communicator,&req2[17]);
+	MPI_Isend(sendList_x, sendCount_x,MPI_INT,rank_x(),sendtag,Comm,&req1[0]);
+	MPI_Irecv(recvList_X, recvCount_X,MPI_INT,rank_X(),recvtag,Comm,&req2[0]);
+	MPI_Isend(sendList_X, sendCount_X,MPI_INT,rank_X(),sendtag,Comm,&req1[1]);
+	MPI_Irecv(recvList_x, recvCount_x,MPI_INT,rank_x(),recvtag,Comm,&req2[1]);
+	MPI_Isend(sendList_y, sendCount_y,MPI_INT,rank_y(),sendtag,Comm,&req1[2]);
+	MPI_Irecv(recvList_Y, recvCount_Y,MPI_INT,rank_Y(),recvtag,Comm,&req2[2]);
+	MPI_Isend(sendList_Y, sendCount_Y,MPI_INT,rank_Y(),sendtag,Comm,&req1[3]);
+	MPI_Irecv(recvList_y, recvCount_y,MPI_INT,rank_y(),recvtag,Comm,&req2[3]);
+	MPI_Isend(sendList_z, sendCount_z,MPI_INT,rank_z(),sendtag,Comm,&req1[4]);
+	MPI_Irecv(recvList_Z, recvCount_Z,MPI_INT,rank_Z(),recvtag,Comm,&req2[4]);
+	MPI_Isend(sendList_Z, sendCount_Z,MPI_INT,rank_Z(),sendtag,Comm,&req1[5]);
+	MPI_Irecv(recvList_z, recvCount_z,MPI_INT,rank_z(),recvtag,Comm,&req2[5]);
+	MPI_Isend(sendList_xy, sendCount_xy,MPI_INT,rank_xy(),sendtag,Comm,&req1[6]);
+	MPI_Irecv(recvList_XY, recvCount_XY,MPI_INT,rank_XY(),recvtag,Comm,&req2[6]);
+	MPI_Isend(sendList_XY, sendCount_XY,MPI_INT,rank_XY(),sendtag,Comm,&req1[7]);
+	MPI_Irecv(recvList_xy, recvCount_xy,MPI_INT,rank_xy(),recvtag,Comm,&req2[7]);
+	MPI_Isend(sendList_Xy, sendCount_Xy,MPI_INT,rank_Xy(),sendtag,Comm,&req1[8]);
+	MPI_Irecv(recvList_xY, recvCount_xY,MPI_INT,rank_xY(),recvtag,Comm,&req2[8]);
+	MPI_Isend(sendList_xY, sendCount_xY,MPI_INT,rank_xY(),sendtag,Comm,&req1[9]);
+	MPI_Irecv(recvList_Xy, recvCount_Xy,MPI_INT,rank_Xy(),recvtag,Comm,&req2[9]);
+	MPI_Isend(sendList_xz, sendCount_xz,MPI_INT,rank_xz(),sendtag,Comm,&req1[10]);
+	MPI_Irecv(recvList_XZ, recvCount_XZ,MPI_INT,rank_XZ(),recvtag,Comm,&req2[10]);
+	MPI_Isend(sendList_XZ, sendCount_XZ,MPI_INT,rank_XZ(),sendtag,Comm,&req1[11]);
+	MPI_Irecv(recvList_xz, recvCount_xz,MPI_INT,rank_xz(),recvtag,Comm,&req2[11]);
+	MPI_Isend(sendList_Xz, sendCount_Xz,MPI_INT,rank_Xz(),sendtag,Comm,&req1[12]);
+	MPI_Irecv(recvList_xZ, recvCount_xZ,MPI_INT,rank_xZ(),recvtag,Comm,&req2[12]);
+	MPI_Isend(sendList_xZ, sendCount_xZ,MPI_INT,rank_xZ(),sendtag,Comm,&req1[13]);
+	MPI_Irecv(recvList_Xz, recvCount_Xz,MPI_INT,rank_Xz(),recvtag,Comm,&req2[13]);
+	MPI_Isend(sendList_yz, sendCount_yz,MPI_INT,rank_yz(),sendtag,Comm,&req1[14]);
+	MPI_Irecv(recvList_YZ, recvCount_YZ,MPI_INT,rank_YZ(),recvtag,Comm,&req2[14]);
+	MPI_Isend(sendList_YZ, sendCount_YZ,MPI_INT,rank_YZ(),sendtag,Comm,&req1[15]);
+	MPI_Irecv(recvList_yz, recvCount_yz,MPI_INT,rank_yz(),recvtag,Comm,&req2[15]);
+	MPI_Isend(sendList_Yz, sendCount_Yz,MPI_INT,rank_Yz(),sendtag,Comm,&req1[16]);
+	MPI_Irecv(recvList_yZ, recvCount_yZ,MPI_INT,rank_yZ(),recvtag,Comm,&req2[16]);
+	MPI_Isend(sendList_yZ, sendCount_yZ,MPI_INT,rank_yZ(),sendtag,Comm,&req1[17]);
+	MPI_Irecv(recvList_Yz, recvCount_Yz,MPI_INT,rank_Yz(),recvtag,Comm,&req2[17]);
 	MPI_Waitall(18,req1,stat1);
 	MPI_Waitall(18,req2,stat2);
 	//......................................................................................
@@ -497,98 +501,84 @@ void Domain::CommInit(MPI_Comm Communicator)
 
 }
 
-
-/********************************************************
- * AssignComponentLabels                                 *
- ********************************************************/
-void Domain::AssignComponentLabels(double *phase)
-{
-	int NLABELS=0;
-	char VALUE=0;
-	double AFFINITY=0.f;
-	
-	vector <char> Label;
-	vector <double> Affinity;
-	// Read the labels
-	if (rank()==0){
-		printf("Component labels:\n");
-		ifstream iFILE("ComponentLabels.csv");
-		if (iFILE.good()){
-			int value;
-			while (!iFILE.eof()){
-				iFILE>>value;
-				iFILE>>AFFINITY;
-				VALUE=char(value);
-				Label.push_back(value);
-				Affinity.push_back(AFFINITY);
-				NLABELS++;
-				printf("%i %f\n",VALUE,AFFINITY);
-			}
-		}
-		else{
-			printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
-			// Set default values
-			VALUE=0; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			VALUE=1; AFFINITY=1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-			VALUE=2; AFFINITY=-1.0;
-			Label.push_back(VALUE);
-			Affinity.push_back(AFFINITY);
-			NLABELS++;
-		}
-	}
-	MPI_Barrier(Comm);
-
-	// Broadcast the list
-	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
-	//printf("rank=%i, NLABELS=%i \n ",rank(),NLABELS);
-	
-	// Copy into contiguous buffers
-	char *LabelList;
-	double * AffinityList;
-	LabelList=new char[NLABELS];
-	AffinityList=new double[NLABELS];
-
-	if (rank()==0){
-	for (int idx=0; idx < NLABELS; idx++){
-		VALUE=Label[idx];
-		AFFINITY=Affinity[idx];
-		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank(),idx,VALUE,AFFINITY);
-		LabelList[idx]=VALUE;
-		AffinityList[idx]=AFFINITY;
-	} 
-	}
-	MPI_Barrier(Comm);
-
-	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,Comm);
-	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
-	
-	// Assign the labels
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (int idx=0; idx < NLABELS; idx++){
-					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						AFFINITY=AffinityList[idx];
-						idx = NLABELS;
-					}
-				}
-				phase[n] = AFFINITY;
-			}
-		}
-	}
+void Domain::ReadIDs(){
+	// Read the IDs from input file
+    size_t readID;
+    char LocalRankString[8];
+    char LocalRankFilename[40];
+    //.......................................................................
+    if (rank == 0)    printf("Read input media... \n");
+    //.......................................................................
+    sprintf(LocalRankString,"%05d",Dm->rank());
+    sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+    // .......... READ THE INPUT FILE .......................................
+    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+    sprintf(LocalRankFilename,"ID.%05i",rank);
+    FILE *IDFILE = fopen(LocalRankFilename,"rb");
+    if (IDFILE==NULL) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
+    readID=fread(id,1,N,IDFILE);
+    if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",Dm->rank());
+    fclose(IDFILE);
+    // Compute the porosity
+    double sum;
+    double porosity;
+    double sum_local=0.0;
+    double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+ 	//.........................................................
+ 	// If external boundary conditions are applied remove solid
+ 	if (BoundaryCondition >  0  && Dm->kproc() == 0){
+ 		for (int k=0; k<3; k++){
+ 			for (int j=0;j<Ny;j++){
+ 				for (int i=0;i<Nx;i++){
+ 					int n = k*Nx*Ny+j*Nx+i;
+ 					id[n] = 1;
+ 				}                    
+ 			}
+ 		}
+ 	}
+ 	if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
+ 		for (int k=Nz-3; k<Nz; k++){
+ 			for (int j=0;j<Ny;j++){
+ 				for (int i=0;i<Nx;i++){
+ 					int n = k*Nx*Ny+j*Nx+i;
+ 					id[n] = 2;
+ 				}                    
+ 			}
+ 		}
+ 	}
+    for (int k=1;k<Nz-1;k++){
+        for (int j=1;j<Ny-1;j++){
+            for (int i=1;i<Nx-1;i++){
+                int n = k*Nx*Ny+j*Nx+i;
+                if (id[n] > 0){
+                    sum_local+=1.0;
+                }
+            }
+        }
+    }
+    MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,Comm);
+    porosity = sum*iVol_global;
+    if (rank==0) printf("Media porosity = %f \n",porosity);
+ 	//.........................................................
 }
-
-
+int Domain::PoreCount(){
+	/*
+	 * count the number of nodes occupied by mobile phases
+	 */
+    Npore=0;  // number of local pore nodes
+    for (int k=1;k<Nz-1;k++){
+        for (int j=1;j<Ny-1;j++){
+            for (int i=1;i<Nx-1;i++){
+                int n = k*Nx*Ny+j*Nx+i;
+                if (id[n] > 0){
+                    Npore++;
+                }
+            }
+        }
+    }
+    return Npore;
+}
 
 void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 {

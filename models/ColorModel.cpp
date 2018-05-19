@@ -75,16 +75,16 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 
 void ScaLBL_ColorModel::ReadInput(){
     int rank=Dm->rank();
-    size_t readID;
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+    
     // .......... READ THE INPUT FILE .......................................
     //...........................................................................
-    if (rank == 0) cout << "Reading in domain from signed distance function..." << endl;
+    if (rank == 0) cout << "Reading in signed distance function..." << endl;
     //.......................................................................
     sprintf(LocalRankString,"%05d",rank);
     sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
@@ -92,17 +92,10 @@ void ScaLBL_ColorModel::ReadInput(){
     MPI_Barrier(comm);
     if (rank == 0) cout << "Domain set." << endl;
 
-    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-    sprintf(LocalRankFilename,"ID.%05i",rank);
-    FILE *IDFILE = fopen(LocalRankFilename,"rb");
-    if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: ID.xxxxx");
-    readID=fread(id,1,N,IDFILE);
-    if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading ID (rank=%i) \n",Dm->rank());
-    fclose(IDFILE);
-
     // Read restart file
      if (Restart == true){
        if (Dm->rank()==0){
+    	    size_t readID;
              printf("Reading restart file! \n");
              ifstream restart("Restart.txt");
              if (restart.is_open()){
@@ -124,132 +117,170 @@ void ScaLBL_ColorModel::ReadInput(){
          MPI_Barrier(comm);
      }
 }
+void Domain::AssignComponentLabels(double *phase)
+{
+	int NLABELS=0;
+	char VALUE=0;
+	double AFFINITY=0.f;
+	
+	vector <char> Label;
+	vector <double> Affinity;
+	// Read the labels
+	if (rank()==0){
+		printf("Component labels:\n");
+		ifstream iFILE("ComponentLabels.csv");
+		if (iFILE.good()){
+			int value;
+			while (!iFILE.eof()){
+				iFILE>>value;
+				iFILE>>AFFINITY;
+				VALUE=char(value);
+				Label.push_back(value);
+				Affinity.push_back(AFFINITY);
+				NLABELS++;
+				printf("%i %f\n",VALUE,AFFINITY);
+			}
+		}
+		else{
+			printf("Using default labels: Solid (0 --> -1.0), NWP (1 --> 1.0), WP (2 --> -1.0)\n");
+			// Set default values
+			VALUE=0; AFFINITY=-1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+			VALUE=1; AFFINITY=1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+			VALUE=2; AFFINITY=-1.0;
+			Label.push_back(VALUE);
+			Affinity.push_back(AFFINITY);
+			NLABELS++;
+		}
+	}
+	MPI_Barrier(Comm);
+
+	// Broadcast the list
+	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
+	//printf("rank=%i, NLABELS=%i \n ",rank(),NLABELS);
+	
+	// Copy into contiguous buffers
+	char *LabelList;
+	double * AffinityList;
+	LabelList=new char[NLABELS];
+	AffinityList=new double[NLABELS];
+
+	if (rank()==0){
+	for (int idx=0; idx < NLABELS; idx++){
+		VALUE=Label[idx];
+		AFFINITY=Affinity[idx];
+		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank(),idx,VALUE,AFFINITY);
+		LabelList[idx]=VALUE;
+		AffinityList[idx]=AFFINITY;
+	} 
+	}
+	MPI_Barrier(Comm);
+
+	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,Comm);
+	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
+	
+	// Assign the labels
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=id[n];
+				// Assign the affinity from the paired list
+				for (int idx=0; idx < NLABELS; idx++){
+					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+						idx = NLABELS;
+					}
+				}
+				phase[n] = AFFINITY;
+			}
+		}
+	}
+}
+
+
 void ScaLBL_ColorModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
 	 */
-     //.......................................................................
-     // Compute the media porosity, assign phase labels and solid composition
-     //.......................................................................
-    int nprocs=nprocx*nprocy*nprocz;
-    int rank=Dm->rank();
-    double sum;
-    double porosity;
-    double sum_local=0.0;
-    double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
-     Np=0;  // number of local pore nodes
-     //.......................................................................
-     for (int k=1;k<Nz-1;k++){
-         for (int j=1;j<Ny-1;j++){
-             for (int i=1;i<Nx-1;i++){
-                 int n = k*Nx*Ny+j*Nx+i;
-                 if (id[n] > 0){
-                     sum_local+=1.0;
-                     Np++;
-                 }
-             }
-         }
-     }
-     MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
-     porosity = sum*iVol_global;
-     if (rank==0) printf("Media porosity = %f \n",porosity);
-     //.........................................................
-     // If external boundary conditions are applied remove solid
-     if (BoundaryCondition >  0  && Dm->kproc() == 0){
-         for (int k=0; k<3; k++){
-             for (int j=0;j<Ny;j++){
-                 for (int i=0;i<Nx;i++){
-                     int n = k*Nx*Ny+j*Nx+i;
-                     //id[n] = 1;
-                     Averages->SDs(n) = max(Averages->SDs(n),1.0*(2.5-k));
-                 }                    
-             }
-         }
-     }
-     if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
-         for (int k=Nz-3; k<Nz; k++){
-             for (int j=0;j<Ny;j++){
-                 for (int i=0;i<Nx;i++){
-                     int n = k*Nx*Ny+j*Nx+i;
-                     //id[n] = 2;
-                     Averages->SDs(n) = max(Averages->SDs(n),1.0*(k-Nz+2.5));
-                 }                    
-             }
-         }
-     }
-     //.........................................................
-     // don't perform computations at the eight corners
-     id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
-     id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
-     //.........................................................
+	int nprocs=nprocx*nprocy*nprocz;
+	int rank=Dm->rank();
+	//.........................................................
+	// don't perform computations at the eight corners
+	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
+	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
+	//.........................................................
+	// Initialize communication structures in averaging domain
+	for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+	Mask->CommInit(comm);
 
-     // Initialize communication structures in averaging domain
-     for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
-     Mask->CommInit(comm);
-     double *PhaseLabel;
-     PhaseLabel = new double[N];
-     Mask->AssignComponentLabels(PhaseLabel);
-     
-     //...........................................................................
-        if (rank==0)    printf ("Create ScaLBL_Communicator \n");
-        // Create a communicator for the device (will use optimized layout)
-        // ScaLBL_Communicator ScaLBL_Comm(Mask); // original
-        ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	//...........................................................................
+	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device (will use optimized layout)
+	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
+	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
-        //Create a second communicator based on the regular data layout
-        //ScaLBL_Communicator ScaLBL_Comm_Regular(Mask);
-        
-        int Npad=(Np/16 + 2)*16;
-        if (rank==0)    printf ("Set up memory efficient layout \n");
-    	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
-        auto neighborList= new int[18*Npad];
-        Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
-        MPI_Barrier(comm);
+	int Npad=(Np/16 + 2)*16;
+	if (rank==0)    printf ("Set up memory efficient layout \n");
+	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
+	auto neighborList= new int[18*Npad];
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+	MPI_Barrier(comm);
 
-        //...........................................................................
-        //                MAIN  VARIABLES ALLOCATED HERE
-        //...........................................................................
-        // LBM variables
-        if (rank==0)    printf ("Allocating distributions \n");
-        //......................device distributions.................................
-        int dist_mem_size = Np*sizeof(double);
-        int neighborSize=18*(Np*sizeof(int));
+	//...........................................................................
+	//                MAIN  VARIABLES ALLOCATED HERE
+	//...........................................................................
+	// LBM variables
+	if (rank==0)    printf ("Allocating distributions \n");
+	//......................device distributions.................................
+	int dist_mem_size = Np*sizeof(double);
+	int neighborSize=18*(Np*sizeof(int));
 
-        //...........................................................................
-        ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
-        ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
-        ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
-        ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*dist_mem_size);
-        ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
-        ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-        ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);        
-        ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
-        ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
-        ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
-        ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
-        
-        //...........................................................................
-        // Update GPU data structures
-        if (rank==0)    printf ("Setting up device map and neighbor list \n");
+	//...........................................................................
+	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);        
+	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
+
+	//...........................................................................
+	// Update GPU data structures
+	if (rank==0)    printf ("Setting up device map and neighbor list \n");
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 
-        int *TmpMap;
-        TmpMap=new int[Np];
-        for (int k=1; k<Nz-1; k++){
-            for (int j=1; j<Ny-1; j++){
-                for (int i=1; i<Nx-1; i++){
-                    int idx=Map(i,j,k);
-                    if (!(idx < 0))
-                        TmpMap[idx] = k*Nx*Ny+j*Nx+i;
-                }
-            }
-        }
-        ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-        ScaLBL_DeviceBarrier();
-        delete [] TmpMap;
+	int *TmpMap;
+	TmpMap=new int[Np];
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0))
+					TmpMap[idx] = k*Nx*Ny+j*Nx+i;
+			}
+		}
+	}
+	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
+	ScaLBL_DeviceBarrier();
+	delete [] TmpMap;
 }        
+
+/********************************************************
+ * AssignComponentLabels                                 *
+ ********************************************************/
+
 void ScaLBL_ColorModel::Initialize(){
 	/*
 	 * This function initializes model (includes both mobile and immobile components)

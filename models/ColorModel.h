@@ -24,6 +24,7 @@ public:
 	// functions in they should be run
 	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
+    void AssignComponentLabels(double *phase);
 	void ReadInput();
 	void Create();
 	void Initialize();
