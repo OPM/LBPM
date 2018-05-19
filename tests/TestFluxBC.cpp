@@ -32,13 +32,9 @@ int main (int argc, char **argv)
 	}
 	{
 		int i,j,k,n;
-		int Nx,Ny,Nz,Np;
 		bool pBC=true;
-		int nprocx,nprocy,nprocz;
 		double Lx,Ly,Lz;
-		Nx = Ny = Nz = 16;
 		Lx = Ly = Lz = 1.f;
-		nprocx=nprocy=nprocz=1;
 		double din,dout;
 		int BC=1;
 
