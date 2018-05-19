@@ -3,6 +3,17 @@
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 16, 16, 16 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
 
 int main (int argc, char **argv)
 {
@@ -31,11 +42,18 @@ int main (int argc, char **argv)
 		double din,dout;
 		int BC=1;
 
-		std::shared_ptr<Domain> Dm(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
-
-		Nz += 2;
+	    // Load inputs
+	    auto db = loadInputs( nprocs );
+	    int Nx = db->getVector<int>( "n" )[0];
+	    int Ny = db->getVector<int>( "n" )[1];
+	    int Nz = db->getVector<int>( "n" )[2];
+	    int nprocx = db->getVector<int>( "nproc" )[0];
+	    int nprocy = db->getVector<int>( "nproc" )[1];
+	    int nprocz = db->getVector<int>( "nproc" )[2];
+		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		
+		Nx += 2;   Ny+=2;	Nz += 2;
 		Nx = Ny = Nz;	// Cubic domain
-
 		int N = Nx*Ny*Nz;
 
 		//.......................................................................
@@ -69,20 +87,8 @@ int main (int argc, char **argv)
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = id[i];
 		Dm->CommInit();
-
-		Np=0;  // number of local pore nodes
-		//.......................................................................
-		for (k=1;k<Nz-1;k++){
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					if (Dm->id[n] > 0){
-						Np++;
-					}
-				}
-			}
-		}
-		//...........................................................................
+		Np=Dm->PoreCount();
+		//................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device
 		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
