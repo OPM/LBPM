@@ -35,15 +35,12 @@ int main (int argc, char *argv[])
     int Nx = domain_db->getVector<int>( "n" )[0];
     int Ny = domain_db->getVector<int>( "n" )[1];
     int Nz = domain_db->getVector<int>( "n" )[2];
-    int nprocx = domain_db->getVector<int>( "nproc" )[0];
-    int nprocy = domain_db->getVector<int>( "nproc" )[1];
-    int nprocz = domain_db->getVector<int>( "nproc" )[2];
 
-    std::shared_ptr<Domain> Dm(new Domain(domain_db));
+    std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
 
 	for (i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
 
-	Dm->CommInit(comm);
+	Dm->CommInit();
 
 	std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
 	int timestep=0;

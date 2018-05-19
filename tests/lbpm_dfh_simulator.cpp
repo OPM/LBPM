@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 
 	std::shared_ptr<Domain> Dm (new Domain(domain_db));
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
-        Dm->CommInit(comm);
+        Dm->CommInit();
 	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
         // Mask that excludes the solid phase

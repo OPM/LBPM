@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	*/
 
-	Dm.CommInit(comm);
+	Dm.CommInit();
 	int iproc = Dm.iproc();
 	int jproc = Dm.jproc();
 	int kproc = Dm.kproc();

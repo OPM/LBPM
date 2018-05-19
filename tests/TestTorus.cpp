@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     }
 
     // Get the rank info
-		std::shared_ptr<Domain> Dm(new Domain(db));
+		std::shared_ptr<Domain> Dm(new Domain(db,comm));
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 		std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
 	Nx += 2;
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 		}
 	}
 	//.......................................................................
-    Dm->CommInit(comm); // Initialize communications for domains
+    Dm->CommInit(); // Initialize communications for domains
 	//.......................................................................
 
 	//.......................................................................

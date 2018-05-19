@@ -234,7 +234,7 @@ int main(int argc, char **argv)
 		}
 	}
 	//.......................................................................
-    Dm->CommInit(comm); // Initialize communications for domains
+    Dm->CommInit(); // Initialize communications for domains
 	//.......................................................................
 	// Read in sphere pack (initialize the non-wetting phase as inside of spheres)
         //

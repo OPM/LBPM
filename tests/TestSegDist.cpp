@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
 
     // Get the rank info
-    Domain Dm(db);
+    Domain Dm(db,comm);
     for (int k=0;k<Nz;k++){
         for (int j=0;j<Ny;j++){
             for (int i=0;i<Nx;i++){
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    Dm.CommInit(comm);
+    Dm.CommInit();
 
     int nx = Nx+2;
     int ny = Ny+2;

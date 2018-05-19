@@ -30,18 +30,8 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 		
-		// BGK Model parameters
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double tau,Fx,Fy,Fz,tol;
 		// Domain variables
 		int i,j,k,n;
-		double rlx_setA=1.0;
-		double rlx_setB=1.0;
-
-		Fx = Fy = 0.f;
-		Fz = 1.0e-4;
-
         // Load inputs
 		string FILENAME = argv[1];
         // Load inputs
@@ -76,8 +66,8 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		std::shared_ptr<Domain> Dm (new Domain(domain_db));
-		Dm->CommInit(comm);
+		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
+		Dm->CommInit();
 
 		Nx += 2;
 		Ny += 2;
@@ -92,7 +82,7 @@ int main(int argc, char **argv)
 		char LocalRankFilename[40];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 
-		Dm->CommInit(comm);
+		Dm->CommInit();
 
 		//.......................................................................
 		// Compute the media porosity

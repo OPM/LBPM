@@ -30,8 +30,7 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		int timestepMax, interval;
-		double tau,Fx,Fy,Fz,tol;
+		double tau,Fx,Fy,Fz;
 		// Domain variables
 		int i,j,k,n;
 		int timestep = 0;
@@ -75,7 +74,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		std::shared_ptr<Domain> Dm( new Domain(domain_db));
+		std::shared_ptr<Domain> Dm( new Domain(domain_db,comm));
 
 		Nx += 2;
 		Ny += 2;
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		Dm->CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 
 		//.......................................................................
@@ -226,18 +225,6 @@ int main(int argc, char **argv)
 	//	if (rank==0) printf("CPU time = %f \n", cputime);
 	//	if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
 		MLUPS *= nprocs;
-	//	if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
-	//	if (rank==0) printf("********************************************************\n");
-
-		// Number of memory references from the swap algorithm (per timestep)
-		// 18 reads and 18 writes for each lattice site
-		double MemoryRefs = Np*38;
-		// number of memory references for the swap algorithm - GigaBytes / second
-	//	if (rank==0) printf("DRAM bandwidth (per process)= %f GB/sec \n",MemoryRefs*8*timestep/1e9/cputime);
-		// Report bandwidth in Gigabits per second
-		// communication bandwidth includes both send and recieve
-		//if (rank==0) printf("Communication bandwidth (per process)= %f Gbit/sec \n",ScaLBL_Comm->CommunicationCount*64*timestep/1e9/cputime);
-	//	if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm->CommunicationCount*64*timestep/1e9/cputime);
 
 		double *Vz;
 		Vz= new double [Np];

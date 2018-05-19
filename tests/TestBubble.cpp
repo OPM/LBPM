@@ -157,7 +157,7 @@ int main(int argc, char **argv)
 
     // Full domain used for averaging (do not use mask for analysis)
     Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,pBC);
-    Dm.CommInit(comm);
+    Dm.CommInit();
 
     // Mask that excludes the solid phase
     Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,pBC);

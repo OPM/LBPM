@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 	float porosity=float(totalGlobal)/(nprocx*nprocy*nprocz*(nx-2)*(ny-2)*(nz-2));
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
 
-	Dm.CommInit(comm);
+	Dm.CommInit();
 	int iproc = Dm.iproc();
 	int jproc = Dm.jproc();
 	int kproc = Dm.kproc();

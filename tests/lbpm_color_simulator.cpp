@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 	std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 	// Mask that excludes the solid phase
 	Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);

@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 		fclose(IDFILE);
 
 		MPI_Barrier(comm);
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		//.......................................................................
 		// Compute the media porosity

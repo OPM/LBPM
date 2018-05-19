@@ -67,9 +67,7 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double tau,Fx,Fy,Fz,tol;
+		double tau,Fx,Fy,Fz;
 		// Domain variables
 		int i,j,k,n;
 		int dim = 3; if (rank == 0) printf("dim=%d\n",dim);
@@ -77,7 +75,6 @@ int main(int argc, char **argv)
 		int timesteps = 2;
 
 		tau =1.0;
-		double mu=(tau-0.5)/3.0;
 		double rlx_setA=1.0/tau;
 		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 		Fx = Fy = 1.0;
@@ -115,9 +112,7 @@ int main(int argc, char **argv)
 			printf("\n\n");
 		}
 
-		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-
-		std::shared_ptr<Domain> Dm(new Domain(domain_db));
+		std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
 
 		Nx += 2;
 		Ny += 2;
@@ -147,7 +142,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
@@ -264,43 +259,8 @@ int main(int argc, char **argv)
 		MLUPS *= nprocs;
 		if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
 		if (rank==0) printf("********************************************************\n");
-
-		// Number of memory references from the swap algorithm (per timestep)
-		// 18 reads and 18 writes for each lattice site
-		double MemoryRefs = Np*38;
-
-		int SIZE=Np*sizeof(double);
-		/*
-		double *Vz;
-		Vz= new double [Np];
-		double *Vx;
-		Vx= new double [Np];
-		double *Vy;
-		Vy= new double [Np];
-		ScaLBL_D3Q19_AA_Velocity(dist, &dist[10*Np],Velocity, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-		ScaLBL_CopyToHost(&Vx[0],&Velocity[0],SIZE);
-		ScaLBL_CopyToHost(&Vy[0],&Velocity[Np],SIZE);
-		ScaLBL_CopyToHost(&Vz[0],&Velocity[2*Np],SIZE);
-
-		printf("Force: %f,%f,%f \n",Fx,Fy,Fz);
-		double vz;
-		double W = 1.f*Nx-4;
-		j=Ny/2; k=Nz/2;
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				//printf("%i ",Dm->id[n]);
-				n = Map(i,j,k);
-				//printf("%i,%i,%i; %i :",i,j,k,n);
-				if (n<0) vz =0.f;
-				else vz=Vz[n];
-				printf("%f ",vz);
-			}
-			printf("\n");
-		}
-		*/
 		
+		int SIZE=Np*sizeof(double);
 		double *DIST;
 		DIST= new double [19*Np];
 		ScaLBL_CopyToHost(&DIST[0],&dist[0],19*SIZE);

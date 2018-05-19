@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 	// Initialized domain and averaging framework for Two-Phase Flow
 
         std::shared_ptr<Domain> Dm (new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
-        Dm->CommInit(comm);
+        Dm->CommInit();
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
 	 

@@ -68,7 +68,7 @@ int main (int argc, char **argv)
 		//.........................................................
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = id[i];
-		Dm->CommInit(comm);
+		Dm->CommInit();
 
 		Np=0;  // number of local pore nodes
 		//.......................................................................

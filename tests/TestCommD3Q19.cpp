@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		//.......................................................................
 		// Compute the media porosity

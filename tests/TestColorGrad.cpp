@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm.CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");

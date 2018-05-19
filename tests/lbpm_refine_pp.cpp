@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		DoubleArray SignDist(nx,ny,nz);
 		// Read the signed distance from file

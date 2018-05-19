@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 			//.........................................................
 			// Initialize communication structures in averaging domain
 			for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-			Dm.CommInit(comm);
+			Dm.CommInit();
 
 			//...........................................................................
 			if (rank==0)	printf ("Create ScaLBL_Communicator \n");

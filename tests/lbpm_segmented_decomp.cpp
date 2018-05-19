@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		// number of sites to use for periodic boundary condition transition zone
 		int z_transition_size = (nprocz*nz - (Nz - zStart))/2;

@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 
 	for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 	TwoPhase Averages(Dm);
 	int timestep=0;

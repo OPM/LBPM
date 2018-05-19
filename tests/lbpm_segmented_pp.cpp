@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 
 		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
-		Dm->CommInit(comm);
+		Dm->CommInit();
 		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 		nx+=2; ny+=2; nz+=2;
 

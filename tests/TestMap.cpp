@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit(comm);
+		Dm->CommInit();
 
 		// Create a communicator for the device (will use optimized layout)
 		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));

@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	    }
 
 	    // Get the rank info
-	    std::shared_ptr<Domain> Dm(new Domain(db));
+	    std::shared_ptr<Domain> Dm(new Domain(db,comm));
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");

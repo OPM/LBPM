@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	double Ly=1.f;
 	double Lz=1.f;
         std::shared_ptr<Domain> Dm (new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
-        Dm->CommInit(comm);
+        Dm->CommInit();
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
 	InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,

@@ -420,9 +420,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
-
-		int dist_mem_size = N*sizeof(double);
+		Dm.CommInit();
 
 		if (rank==0) printf("Number of nodes per side = %i \n", Nx);
 		if (rank==0) printf("Total Number of nodes = %i \n", N);
@@ -437,7 +435,6 @@ int main(int argc, char **argv)
 		char LocalRankString[8];
 		char LocalRankFilename[40];
 		char LocalRestartFile[40];
-		char tmpstr[10];
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 		sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);

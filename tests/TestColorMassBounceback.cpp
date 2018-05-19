@@ -118,9 +118,9 @@ int main(int argc, char **argv)
             pBC=false;
 
         // Full domain used for averaging (do not use mask for analysis)
-        std::shared_ptr<Domain> Dm(new Domain(domain_db));
+        std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
-        Dm->CommInit(comm);
+        Dm->CommInit();
         MPI_Barrier(comm);
 
         Nx+=2; Ny+=2; Nz += 2;
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");

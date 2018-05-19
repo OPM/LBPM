@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 		}
 	}
 	*/
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 
 	int xdim,ydim,zdim;
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 	fclose(IDFILE);
 
 
-	Dm.CommInit(comm);
+	Dm.CommInit();
 	int iproc = Dm.iproc();
 	int jproc = Dm.jproc();
 	int kproc = Dm.kproc();

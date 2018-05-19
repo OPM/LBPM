@@ -115,8 +115,8 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 
-		std::shared_ptr<Domain> Dm (new Domain(db));
-		Dm->CommInit(comm);
+		std::shared_ptr<Domain> Dm (new Domain(db,comm));
+		Dm->CommInit();
 
 		Nx += 2;
 		Ny += 2;
@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit(comm);
+		Dm->CommInit();
 
 		//.......................................................................
 		// Compute the media porosity, assign phase labels and solid composition
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 		int Np=0;  // number of local pore nodes
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
-		Dm->AssignComponentLabels(PhaseLabel);
+		//Dm->AssignComponentLabels(PhaseLabel);
 		//.......................................................................
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){

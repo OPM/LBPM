@@ -112,9 +112,6 @@ int main(int argc, char **argv)
         int Nx = size[0];
         int Ny = size[1];
         int Nz = size[2];
-        double Lx = L[0];
-        double Ly = L[1];
-        double Lz = L[2];
         int nprocx = nproc[0];
         int nprocy = nproc[1];
         int nprocz = nproc[2];
@@ -167,14 +164,14 @@ int main(int argc, char **argv)
             pBC=false;
 
         // Full domain used for averaging (do not use mask for analysis)
-        std::shared_ptr<Domain> Dm(new Domain(domain_db));
+        std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
         //   TwoPhase Averages(Dm);
-        Dm->CommInit(comm);
+        Dm->CommInit();
 
         // Mask that excludes the solid phase
-        std::shared_ptr<Domain> Mask(new Domain(domain_db));
+        std::shared_ptr<Domain> Mask(new Domain(domain_db,comm));
         MPI_Barrier(comm);
 
         Nx+=2; Ny+=2; Nz += 2;
@@ -187,7 +184,6 @@ int main(int argc, char **argv)
 		char LocalRankString[8];
 		char LocalRankFilename[40];
 		char LocalRestartFile[40];
-		char tmpstr[10];
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 		sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
@@ -198,9 +194,6 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char[N];
 		double sum, sum_local;
-		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-		if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
-		double porosity, pore_vol;
 		//...........................................................................
 		if (rank == 0) cout << "Setting up bubble..." << endl;
 	    double BubbleRadius = 15.5; // Radius of the capillary tube
@@ -250,7 +243,7 @@ int main(int argc, char **argv)
 
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
-		Mask->CommInit(comm);
+		Mask->CommInit();
 		double *PhaseLabel;
 		PhaseLabel = new double[N];
 		
@@ -407,7 +400,6 @@ int main(int argc, char **argv)
 		//.........................................
 
 		err = 1.0; 	
-		double sat_w_previous = 1.01; // slightly impossible value!
 		if (rank==0) printf("Begin timesteps: error tolerance is %f \n", tol);
 
 		//************ MAIN ITERATION LOOP ***************************************/
@@ -544,7 +536,7 @@ int main(int argc, char **argv)
 			}
 		}
     	FILE *GFILE;
-		sprintf(LocalRankFilename,"Gradient.raw",rank);
+		sprintf(LocalRankFilename,"Gradient.raw");
 		GFILE = fopen(LocalRankFilename,"wb");
     	fwrite(GradNorm.data(),8,N,GFILE);
     	fclose(GFILE);
@@ -554,12 +546,12 @@ int main(int argc, char **argv)
         ScaLBL_Comm->RegularLayout(Map,&Den[0],Rho1);
         ScaLBL_Comm->RegularLayout(Map,&Den[Np],Rho2);
     	FILE *RFILE1;
-		sprintf(LocalRankFilename,"Rho1.raw",rank);
+		sprintf(LocalRankFilename,"Rho1.raw");
 		RFILE1 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho1.data(),8,N,RFILE1);
     	fclose(RFILE1);
     	FILE *RFILE2;
-		sprintf(LocalRankFilename,"Rho2.raw",rank);
+		sprintf(LocalRankFilename,"Rho2.raw");
 		RFILE2 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho2.data(),8,N,RFILE2);
     	fclose(RFILE2);

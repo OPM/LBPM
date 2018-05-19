@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 	}
 	porosity /= (Nx*Ny*Nz*1.0);
 	printf("Media porosity is %f \n",porosity);
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 	/* ****************************************************************
 				IDENTIFY ALL COMPONENTS FOR BOTH PHASES
