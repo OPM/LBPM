@@ -65,7 +65,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     N = Nx*Ny*Nz;
     for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
     Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-    
+
+    // local copy of the ids
     id = new char[N];
 
     MPI_Barrier(comm);
@@ -78,10 +79,12 @@ void ScaLBL_ColorModel::ReadInput(){
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
+    Dm->ReadIds();
+
+    
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
-    
 
     // .......... READ THE INPUT FILE .......................................
     //...........................................................................
@@ -118,7 +121,7 @@ void ScaLBL_ColorModel::ReadInput(){
          MPI_Barrier(comm);
      }
 }
-void Domain::AssignComponentLabels(double *phase)
+void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 {
 	int NLABELS=0;
 	char VALUE=0;
@@ -216,11 +219,12 @@ void ScaLBL_ColorModel::Create(){
 	// don't perform computations at the eight corners
 	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
+	
 	//.........................................................
 	// Initialize communication structures in averaging domain
 	for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
-	Mask->CommInit(comm);
-
+	Mask->CommInit();
+	Np->Mask.PoreCount();
 	//...........................................................................
 	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
 	// Create a communicator for the device (will use optimized layout)
