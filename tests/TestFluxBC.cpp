@@ -31,7 +31,7 @@ int main (int argc, char **argv)
 		ASSERT(nprocs==1);
 	}
 	{
-		int i,j,k,n;
+	  int i,j,k,n,Np;
 		bool pBC=true;
 		double Lx,Ly,Lz;
 		Lx = Ly = Lz = 1.f;
