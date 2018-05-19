@@ -58,8 +58,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
-    Dm  = std::shared_ptr<Domain>(new Domain(domain_db));      // full domain for analysis
-    Mask  = std::shared_ptr<Domain>(new Domain(domain_db));    // mask domain removes immobile phases
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db),comm);      // full domain for analysis
+    Mask  = std::shared_ptr<Domain>(new Domain(domain_db),comm);    // mask domain removes immobile phases
     
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
@@ -69,7 +69,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     id = new char[N];
 
     MPI_Barrier(comm);
-    Dm->CommInit(comm);
+    Dm->CommInit();
     MPI_Barrier(comm);
 }
 
@@ -82,6 +82,7 @@ void ScaLBL_ColorModel::ReadInput(){
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
     
+
     // .......... READ THE INPUT FILE .......................................
     //...........................................................................
     if (rank == 0) cout << "Reading in signed distance function..." << endl;

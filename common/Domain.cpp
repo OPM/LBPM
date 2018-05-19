@@ -61,7 +61,6 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     MPI_Comm_rank( Comm, &myrank );
 	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
 	
-    initialize( db );
 	MPI_Barrier(Comm);
 	
     auto db = std::make_shared<Database>( );
@@ -72,7 +71,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     db->putVector<double>( "L", { lx, ly, lz } );
     initialize( db );
 }
-Domain::Domain( std::shared_ptr<Database> db, MPI_Communicator Communicator):
+Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
@@ -108,9 +107,8 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Communicator Communicator):
     int myrank;
     MPI_Comm_rank( Comm, &myrank );
 	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
-	
-    initialize( db );
 	MPI_Barrier(Comm);
+    initialize( db );
 
 }
 void Domain::initialize( std::shared_ptr<Database> db )
@@ -503,31 +501,32 @@ void Domain::CommInit()
 
 void Domain::ReadIDs(){
 	// Read the IDs from input file
+  int nprocs=nprocx()*nprocy()*nprocz();
     size_t readID;
     char LocalRankString[8];
     char LocalRankFilename[40];
     //.......................................................................
-    if (rank == 0)    printf("Read input media... \n");
+    if (rank() == 0)    printf("Read input media... \n");
     //.......................................................................
-    sprintf(LocalRankString,"%05d",Dm->rank());
+    sprintf(LocalRankString,"%05d",rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     // .......... READ THE INPUT FILE .......................................
-    if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-    sprintf(LocalRankFilename,"ID.%05i",rank);
+    if (rank()==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+    sprintf(LocalRankFilename,"ID.%05i",rank());
     FILE *IDFILE = fopen(LocalRankFilename,"rb");
     if (IDFILE==NULL) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
     readID=fread(id,1,N,IDFILE);
-    if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",Dm->rank());
+    if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",rank());
     fclose(IDFILE);
     // Compute the porosity
     double sum;
     double porosity;
     double sum_local=0.0;
     double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
  	//.........................................................
  	// If external boundary conditions are applied remove solid
- 	if (BoundaryCondition >  0  && Dm->kproc() == 0){
+    if (BoundaryCondition >  0  && kproc() == 0){
  		for (int k=0; k<3; k++){
  			for (int j=0;j<Ny;j++){
  				for (int i=0;i<Nx;i++){
@@ -537,7 +536,7 @@ void Domain::ReadIDs(){
  			}
  		}
  	}
- 	if (BoundaryCondition >  0  && Dm->kproc() == nprocz-1){
+    if (BoundaryCondition >  0  && kproc() == nprocz()-1){
  		for (int k=Nz-3; k<Nz; k++){
  			for (int j=0;j<Ny;j++){
  				for (int i=0;i<Nx;i++){
@@ -559,14 +558,14 @@ void Domain::ReadIDs(){
     }
     MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,Comm);
     porosity = sum*iVol_global;
-    if (rank==0) printf("Media porosity = %f \n",porosity);
+    if (rank()==0) printf("Media porosity = %f \n",porosity);
  	//.........................................................
 }
 int Domain::PoreCount(){
 	/*
 	 * count the number of nodes occupied by mobile phases
 	 */
-    Npore=0;  // number of local pore nodes
+    int Npore=0;  // number of local pore nodes
     for (int k=1;k<Nz-1;k++){
         for (int j=1;j<Ny-1;j++){
             for (int i=1;i<Nx-1;i++){

@@ -64,7 +64,7 @@ private:
 class Domain{
 public:
     //! Default constructor
-    Domain( std::shared_ptr<Database> db, MPI_Communicator Communicator);
+    Domain( std::shared_ptr<Database> db, MPI_Comm Communicator);
 
     //! Obsolete constructor
     Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
@@ -173,7 +173,7 @@ public: // Public variables (need to create accessors instead)
     void ReadIDs();
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
-    int PoreCount()
+    int PoreCount();
 
 private:
 	//......................................................................................
