@@ -11,6 +11,18 @@
 
 using namespace std;
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 5, 5, 5 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
+
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -25,116 +37,35 @@ int main(int argc, char **argv)
 	MPI_Comm_size(comm,&nprocs);
 	int check=0;
 	{
-		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		if (rank == 0){
-			printf("********************************************************\n");
-			printf("Running Color Model: TestMap	\n");
-			printf("********************************************************\n");
-		}
 
-		// BGK Model parameters
-		string FILENAME;
-		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
-		int dim=5;
 		
 		static int D3Q19[18][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
 				{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},
 				{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 				{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=5;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=2; nprocy=1;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				Nx = dim; Ny = dim; Nz = dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
-
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
-
-		if (rank==0){
+		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+			printf("Running unit test: TestMap	\n");
 			printf("********************************************************\n");
 		}
+		
+	    // Load inputs
+	    auto db = loadInputs( nprocs );
+	    int Nx = db->getVector<int>( "n" )[0];
+	    int Ny = db->getVector<int>( "n" )[1];
+	    int Nz = db->getVector<int>( "n" )[2];
+	    int nprocx = db->getVector<int>( "nproc" )[0];
+	    int nprocy = db->getVector<int>( "nproc" )[1];
+	    int nprocz = db->getVector<int>( "nproc" )[2];
 
-		MPI_Barrier(comm);
-		int BoundaryCondition=0;
-
-		std::shared_ptr<Domain> Dm(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition));
+		std::shared_ptr<Domain> Dm(new Domain(db,comm));
 
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
 		int N = Nx*Ny*Nz;
-
 		//.......................................................................
 		int Np = 0;
 		for (k=1;k<Nz-1;k++){
