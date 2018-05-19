@@ -282,7 +282,7 @@ void ScaLBL_ColorModel::Create(){
 /********************************************************
  * AssignComponentLabels                                 *
  ********************************************************/
-void ScaLBL_ColorModel::SolidPotential(){
+void ScaLBL_ColorModel::AssignSolidPotential(){
 	if (rank==0) printf("Computing solid interaction potential \n");
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];

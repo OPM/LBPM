@@ -28,7 +28,7 @@ public:
 	void ReadInput();
 	void Create();
 	void Initialize();
-	void SolidPotential();
+	void AssignSolidPotential();
 	void Run();
 	void WriteDebug();
 	
