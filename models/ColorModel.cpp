@@ -434,11 +434,6 @@ void ScaLBL_ColorModel::Run(){
     starttime = MPI_Wtime();
     //.........................................
     //************ MAIN ITERATION LOOP ***************************************/
-    	// read the input database 
-    auto db = std::make_shared<Database>( "input.db" );
-    auto domain_db = db->getDatabase( "Domain" );
-    auto color_db = db->getDatabase( "Color" );
-    auto analysis_db = db->getDatabase( "Analysis" );
 
     PROFILE_START("Loop");
     //    runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
