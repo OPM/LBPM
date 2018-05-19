@@ -436,7 +436,7 @@ void ScaLBL_ColorModel::Run(){
     //************ MAIN ITERATION LOOP ***************************************/
 
     PROFILE_START("Loop");
-    //    runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
+    runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
     while (timestep < timestepMax ) {
         //if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
         PROFILE_START("Update");
@@ -517,10 +517,9 @@ void ScaLBL_ColorModel::Run(){
         PROFILE_STOP("Update");
 
         // Run the analysis
-	// analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-
+	analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
     }
-    //    analysis.finish();
+    analysis.finish();
     PROFILE_STOP("Loop");
     PROFILE_SAVE("lbpm_color_simulator",1);
     //************************************************************************
