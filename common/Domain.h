@@ -175,8 +175,6 @@ public: // Public variables (need to create accessors instead)
     void CommInit(MPI_Comm comm);
     void TestCommInit(MPI_Comm comm);
 
-    //void MemoryOptimizedLayout(IntArray &Map, int *neighborList, int Np);
-
 private:
 
     int *sendBuf_x, *sendBuf_y, *sendBuf_z, *sendBuf_X, *sendBuf_Y, *sendBuf_Z;
