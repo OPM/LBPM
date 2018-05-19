@@ -4,74 +4,74 @@ color lattice boltzmann model
 #include "models/ColorModel.h"
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
-  rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
-  Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
-  Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
+Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
+Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
 ScaLBL_ColorModel::~ScaLBL_ColorModel(){
-	
+
 }
 
 void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
-    db = std::make_shared<Database>( filename );
-    domain_db = db->getDatabase( "Domain" );
-    color_db = db->getDatabase( "Color" );
-    analysis_db = db->getDatabase( "Analysis" );
-    
-    // Color Model parameters
-    timestepMax = color_db->getScalar<int>( "timestepMax" );
-    tauA = color_db->getScalar<double>( "tauA" );
-    tauB = color_db->getScalar<double>( "tauB" );
-    rhoA = color_db->getScalar<double>( "rhoA" );
-    rhoB = color_db->getScalar<double>( "rhoB" );
-    Fx = color_db->getVector<double>( "F" )[0];
-    Fy = color_db->getVector<double>( "F" )[1];
-    Fz = color_db->getVector<double>( "F" )[2];
-    alpha = color_db->getScalar<double>( "alpha" );
-    beta = color_db->getScalar<double>( "beta" );
-    Restart = color_db->getScalar<bool>( "Restart" );
-    din = color_db->getScalar<double>( "din" );
-    dout = color_db->getScalar<double>( "dout" );
-    flux = color_db->getScalar<double>( "flux" );
-    inletA=1.f;
-    inletB=0.f;
-    outletA=0.f;
-    outletB=1.f;
-        
-    // Read domain parameters
-    auto L = domain_db->getVector<double>( "L" );
-    auto size = domain_db->getVector<int>( "n" );
-    auto nproc = domain_db->getVector<int>( "nproc" );
-    BoundaryCondition = domain_db->getScalar<int>( "BC" );
-    Nx = size[0];
-    Ny = size[1];
-    Nz = size[2];
-    Lx = L[0];
-    Ly = L[1];
-    Lz = L[2];
-    nprocx = nproc[0];
-    nprocy = nproc[1];
-    nprocz = nproc[2];
-    
-    if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
+	db = std::make_shared<Database>( filename );
+	domain_db = db->getDatabase( "Domain" );
+	color_db = db->getDatabase( "Color" );
+	analysis_db = db->getDatabase( "Analysis" );
 
-    Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
-				  Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-    
-    Nx+=2; Ny+=2; Nz += 2;
-    N = Nx*Ny*Nz;
-    for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-    Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+	// Color Model parameters
+	timestepMax = color_db->getScalar<int>( "timestepMax" );
+	tauA = color_db->getScalar<double>( "tauA" );
+	tauB = color_db->getScalar<double>( "tauB" );
+	rhoA = color_db->getScalar<double>( "rhoA" );
+	rhoB = color_db->getScalar<double>( "rhoB" );
+	Fx = color_db->getVector<double>( "F" )[0];
+	Fy = color_db->getVector<double>( "F" )[1];
+	Fz = color_db->getVector<double>( "F" )[2];
+	alpha = color_db->getScalar<double>( "alpha" );
+	beta = color_db->getScalar<double>( "beta" );
+	Restart = color_db->getScalar<bool>( "Restart" );
+	din = color_db->getScalar<double>( "din" );
+	dout = color_db->getScalar<double>( "dout" );
+	flux = color_db->getScalar<double>( "flux" );
+	inletA=1.f;
+	inletB=0.f;
+	outletA=0.f;
+	outletB=1.f;
 
-    // local copy of the ids
-    id = new char[N];
+	// Read domain parameters
+	auto L = domain_db->getVector<double>( "L" );
+	auto size = domain_db->getVector<int>( "n" );
+	auto nproc = domain_db->getVector<int>( "nproc" );
+	BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	Nx = size[0];
+	Ny = size[1];
+	Nz = size[2];
+	Lx = L[0];
+	Ly = L[1];
+	Lz = L[2];
+	nprocx = nproc[0];
+	nprocy = nproc[1];
+	nprocz = nproc[2];
 
-    MPI_Barrier(comm);
-    Dm->CommInit();
-    MPI_Barrier(comm);
+	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
+
+	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
+	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
+
+	Nx+=2; Ny+=2; Nz += 2;
+	N = Nx*Ny*Nz;
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
+	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+
+	// local copy of the ids
+	id = new char[N];
+
+	MPI_Barrier(comm);
+	Dm->CommInit();
+	MPI_Barrier(comm);
 }
 
 void ScaLBL_ColorModel::ReadInput(){
@@ -194,7 +194,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
+				VALUE=Dm->id[n];
 				// Assign the affinity from the paired list
 				for (int idx=0; idx < NLABELS; idx++){
 					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
@@ -222,7 +222,7 @@ void ScaLBL_ColorModel::Create(){
 	
 	//.........................................................
 	// Initialize communication structures in averaging domain
-	for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
+	for (int i=0; i<Nx*Ny*Nz; i++) Mask->id[i] = Dm->id[i];
 	Mask->CommInit();
 	Np=Mask->PoreCount();
 	//...........................................................................
