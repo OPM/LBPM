@@ -106,10 +106,9 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	// set up the neighbor ranks
     int myrank;
     MPI_Comm_rank( Comm, &myrank );
+    initialize( db );
 	rank_info = RankInfoStruct( myrank, rank_info.nx, rank_info.ny, rank_info.nz );
 	MPI_Barrier(Comm);
-    initialize( db );
-
 }
 void Domain::initialize( std::shared_ptr<Database> db )
 {	
