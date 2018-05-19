@@ -58,8 +58,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
     
     if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
-    Dm  = std::shared_ptr<Domain>(new Domain(domain_db),comm);      // full domain for analysis
-    Mask  = std::shared_ptr<Domain>(new Domain(domain_db),comm);    // mask domain removes immobile phases
+    Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
+				  Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
     
     Nx+=2; Ny+=2; Nz += 2;
     N = Nx*Ny*Nz;
@@ -76,11 +76,11 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 
 void ScaLBL_ColorModel::ReadInput(){
     int rank=Dm->rank();
+    size_t readID;
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
-    Dm->ReadIds();
-
+    Dm->ReadIDs();
     
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -113,7 +113,7 @@ void ScaLBL_ColorModel::ReadInput(){
          }
          MPI_Bcast(&timestep,1,MPI_INT,0,comm);
          FILE *RESTART = fopen(LocalRestartFile,"rb");
-         if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
+         if (RESTART==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
          readID=fread(id,1,N,RESTART);
          if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading Restart (rank=%i) \n",rank);
          fclose(RESTART);
@@ -123,6 +123,7 @@ void ScaLBL_ColorModel::ReadInput(){
 }
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 {
+  int rank=Dm->rank();
 	int NLABELS=0;
 	char VALUE=0;
 	double AFFINITY=0.f;
@@ -130,7 +131,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	vector <char> Label;
 	vector <double> Affinity;
 	// Read the labels
-	if (rank()==0){
+	if (rank==0){
 		printf("Component labels:\n");
 		ifstream iFILE("ComponentLabels.csv");
 		if (iFILE.good()){
@@ -162,10 +163,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			NLABELS++;
 		}
 	}
-	MPI_Barrier(Comm);
+	MPI_Barrier(comm);
 
 	// Broadcast the list
-	MPI_Bcast(&NLABELS,1,MPI_INT,0,Comm);
+	MPI_Bcast(&NLABELS,1,MPI_INT,0,comm);
 	//printf("rank=%i, NLABELS=%i \n ",rank(),NLABELS);
 	
 	// Copy into contiguous buffers
@@ -174,19 +175,19 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	LabelList=new char[NLABELS];
 	AffinityList=new double[NLABELS];
 
-	if (rank()==0){
+	if (rank==0){
 	for (int idx=0; idx < NLABELS; idx++){
 		VALUE=Label[idx];
 		AFFINITY=Affinity[idx];
-		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank(),idx,VALUE,AFFINITY);
+		printf("rank=%i, idx=%i, value=%d, affinity=%f \n",rank,idx,VALUE,AFFINITY);
 		LabelList[idx]=VALUE;
 		AffinityList[idx]=AFFINITY;
 	} 
 	}
-	MPI_Barrier(Comm);
+	MPI_Barrier(comm);
 
-	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,Comm);
-	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,Comm);
+	MPI_Bcast(LabelList,NLABELS,MPI_CHAR,0,comm);
+	MPI_Bcast(AffinityList,NLABELS,MPI_DOUBLE,0,comm);
 	
 	// Assign the labels
 	for (int k=0;k<Nz;k++){
@@ -213,7 +214,6 @@ void ScaLBL_ColorModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
 	 */
-	int nprocs=nprocx*nprocy*nprocz;
 	int rank=Dm->rank();
 	//.........................................................
 	// don't perform computations at the eight corners
@@ -224,7 +224,7 @@ void ScaLBL_ColorModel::Create(){
 	// Initialize communication structures in averaging domain
 	for (int i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
 	Mask->CommInit();
-	Np->Mask.PoreCount();
+	Np=Mask->PoreCount();
 	//...........................................................................
 	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
 	// Create a communicator for the device (will use optimized layout)
@@ -295,7 +295,7 @@ void ScaLBL_ColorModel::Initialize(){
 	if (rank==0) printf("Computing solid interaction potential \n");
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];
-	Mask->AssignComponentLabels(PhaseLabel);
+	AssignComponentLabels(PhaseLabel);
 	double *Tmp;
 	Tmp=new double[3*Np];
 	//Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
