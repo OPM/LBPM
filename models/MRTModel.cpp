@@ -22,7 +22,7 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 
 	// Color Model parameters
 	timestepMax = mrt_db->getScalar<int>( "timestepMax" );
-	tauA = mrt_db->getScalar<double>( "tau" );
+	tau = mrt_db->getScalar<double>( "tau" );
 	Fx = mrt_db->getVector<double>( "F" )[0];
 	Fy = mrt_db->getVector<double>( "F" )[1];
 	Fz = mrt_db->getVector<double>( "F" )[2];
@@ -52,6 +52,7 @@ void ScaLBL_MRTModel::SetDomain(){
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
 	Nx+=2; Ny+=2; Nz += 2;
 	N = Nx*Ny*Nz;
+	Distance.resize(Nx,Ny,Nz);
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
@@ -77,7 +78,7 @@ void ScaLBL_MRTModel::ReadInput(){
     //.......................................................................
     sprintf(LocalRankString,"%05d",rank);
     sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-    ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
+    ReadBinaryFile(LocalRankFilename, Distance.data(), N);
     MPI_Barrier(comm);
     if (rank == 0) cout << "Domain set." << endl;
 }
