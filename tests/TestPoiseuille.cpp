@@ -10,6 +10,23 @@
 #include "common/MPI_Helpers.h"
 #include "models/MRTModel.h"
 
+void ParallelPlates(ScaLBL_MRTModel &MRT){
+	// initialize empty domain
+	int Nx = MRT.Nx;
+	int Ny = MRT.Ny;
+	int Nz = MRT.Nz;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny+j*Nx+i;
+				if (i<2) MRT.Mask->id[n] = 0;
+				else if (i>Nx-3) MRT.Mask->id[n] = 0;
+				else MRT.Mask->id[n]=1;
+			}
+		}
+	}
+}
+
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -34,7 +51,9 @@ int main(int argc, char **argv)
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
 		auto filename = argv[1];
 		MRT.ReadParams(filename);
+		Set domain is the problem!!
 		MRT.SetDomain();    // this reads in the domain 
+		ParallelPlates(MRT);
 		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
