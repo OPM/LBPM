@@ -12,6 +12,7 @@
 
 void ParallelPlates(ScaLBL_MRTModel &MRT){
 	// initialize empty domain
+  int i,j,k,n;
 	int Nx = MRT.Nx;
 	int Ny = MRT.Ny;
 	int Nz = MRT.Nz;
@@ -51,7 +52,6 @@ int main(int argc, char **argv)
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
 		auto filename = argv[1];
 		MRT.ReadParams(filename);
-		Set domain is the problem!!
 		MRT.SetDomain();    // this reads in the domain 
 		ParallelPlates(MRT);
 		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables

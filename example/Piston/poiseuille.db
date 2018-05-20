@@ -1,6 +1,6 @@
 MRT {
     tau   = 1.0  
-    F = 0, 0, 1.0e-5
+    F = 0, 0, 1.0e-4
     Restart = false
     pBC = 0
     din = 1.0
