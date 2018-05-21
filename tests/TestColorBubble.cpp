@@ -52,7 +52,7 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 			}
 		}
 	}
-
+	// initialize the phase indicator field
 }
 //***************************************************************************************
 int main(int argc, char **argv)

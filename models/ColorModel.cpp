@@ -214,8 +214,8 @@ void ScaLBL_ColorModel::Create(){
 	int rank=Dm->rank();
 	//.........................................................
 	// don't perform computations at the eight corners
-	id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
-	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
+	//id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
+	//id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	
 	//.........................................................
 	// Initialize communication structures in averaging domain
@@ -386,7 +386,7 @@ void ScaLBL_ColorModel::Initialize(){
 	/*
 	 * This function initializes model
 	 */
-       int rank=Dm->rank();
+	int rank=Dm->rank();
 	double count_wet=0.f;
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];
@@ -411,11 +411,12 @@ void ScaLBL_ColorModel::Initialize(){
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
 	//...........................................................................
 
-    if (rank==0)    printf ("Initializing distributions \n");
-    ScaLBL_D3Q19_Init(fq, Np);
-    if (rank==0)    printf ("Initializing phase field \n");
-    ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->last_interior, Np);
-    
+	if (rank==0)    printf ("Initializing distributions \n");
+	ScaLBL_D3Q19_Init(fq, Np);
+	if (rank==0)    printf ("Initializing phase field \n");
+	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+
 }
 
 void ScaLBL_ColorModel::Run(){
@@ -529,7 +530,6 @@ void ScaLBL_ColorModel::Run(){
     cputime = (stoptime - starttime)/timestep;
     // Performance obtained from each node
     double MLUPS = double(Np)/cputime/1000000;
-
     if (rank==0) printf("********************************************************\n");
     if (rank==0) printf("CPU time = %f \n", cputime);
     if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
