@@ -8,7 +8,7 @@
 #include <fstream>
 #include "common/ScaLBL.h"
 #include "common/MPI_Helpers.h"
-
+#include "models/ColorModel.h"
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
@@ -39,7 +39,18 @@ std::shared_ptr<Database> loadInputs( int nprocs )
     return db;
 }
 
-void InitSquareTube(ScaLBL_ColorModel &ColorModel){
+void InitializeSquareTube(ScaLBL_ColorModel &ColorModel){
+  int i,j,k,n;
+  int rank = ColorModel.Mask->rank();
+  int Nx = ColorModel.Mask->Nx;
+  int Ny = ColorModel.Mask->Ny;
+  int Nz = ColorModel.Mask->Nz;
+  int nprocx = ColorModel.Mask->rank_info.nx;
+  int nprocy = ColorModel.Mask->rank_info.ny;
+  int iproc = ColorModel.Mask->rank_info.ix;
+  int jproc = ColorModel.Mask->rank_info.jy;
+  int kproc = ColorModel.Mask->rank_info.kz;
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -48,10 +59,6 @@ void InitSquareTube(ScaLBL_ColorModel &ColorModel){
 			}
 		}
 	}
-
-	int kproc = rank/(nprocx*nprocy);
-	int jproc = (rank-nprocx*nprocy*kproc)/nprocx;
-	int iproc = rank-nprocx*nprocy*kproc-nprocx*jproc;
 	printf("rank=%i, %i,%i,%i \n",rank,iproc,jproc,kproc);
 	// Initialize a square tube
 	for (k=1;k<Nz-1;k++){
@@ -86,7 +93,7 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		if (rank == 0){
 			printf("********************************************************\n");
