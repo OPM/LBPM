@@ -1,6 +1,6 @@
 Color {
-    tauA   = 1.0;  
-    tauB   = 1.0;  
+    tauA   = 1.0;  // relaxation time for fluid A
+    tauB   = 1.0;  // relaxation time for fluid B
     rhoA   = 1.0;  
     rhoB   = 1.0;  
     alpha = 1e-2;

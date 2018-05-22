@@ -6,15 +6,7 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/ScaLBL.h"
-#include "common/Communication.h"
-#include "analysis/TwoPhase.h"
-#include "common/MPI_Helpers.h"
-
-#include "ProfilerApp.h"
-#include "threadpool/thread_pool.h"
-
-#include "lbpm_color_simulator.h"
+#include "models/ColorModel.h"
 
 //#define WRE_SURFACES
 
@@ -42,18 +34,11 @@ int main(int argc, char **argv)
     std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
-	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
-
-	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
-
 	if (rank == 0){
 		printf("********************************************************\n");
 		printf("Running Color LBM	\n");
 		printf("********************************************************\n");
 	}
-
     PROFILE_ENABLE(1);
     //PROFILE_ENABLE_TRACE();
     //PROFILE_ENABLE_MEMORY();
