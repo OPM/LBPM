@@ -1,0 +1,62 @@
+# Clear all modules (except modules)
+#for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
+
+source $MODULESHOME/init/bash
+# Set the modules and enviornmental variables
+module unload PrgEnv-intel
+module load PrgEnv-gnu/6.0.4
+module unload gcc cmake
+module load gcc/6.3.0
+module load cray-hdf5-parallel/1.10.0.1
+module load cray-netcdf-hdf5parallel
+module load mercurial git
+module load cmake3/3.6.1
+
+export MPICH_RDMA_ENABLED_CUDA=0
+
+echo $GNU_VERSION
+module list
+
+# Remove CMake files from previous configures
+rm -rf CMake*
+
+
+# Configure
+cmake                                        \
+    -D CMAKE_BUILD_TYPE:STRING=Release       \
+    -D CMAKE_C_COMPILER:PATH=cc              \
+    -D CMAKE_CXX_COMPILER:PATH=CC            \
+    -D CMAKE_CXX_COMPILER:PATH=CC            \
+    -D CXX_STD=11 			     \
+    -D USE_TIMER=false			     \
+    -D TIMER_DIRECTORY=${HOME}/timerutility/build/opt  \
+    -D MPI_COMPILER:BOOL=TRUE                \
+       -D MPIEXEC=aprun                      \
+       -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D USE_CUDA=0                            \
+       -D CUDA_FLAGS="-arch sm_35"           \
+       -DBUILD_SHARED_LIBS=OFF		     \
+       -D USE_NETCDF=0	    		     \
+       -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
+       -D HDF5_DIRECTORY=$HDF5_DIR	     \
+       -D CMAKE_SKIP_RPATH=true		     \
+    ~/LBPM-WIA
+
+#    -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \
+
+#-D CUDA_HOST_COMPILER="/usr/bin/gcc"  \
+
+
+# Build the code
+make install -j 8
+
+# Fix permissions
+#chmod -R g+w $PROJWORK/geo106/eos-LBPM-WIA
+
+
+# Run the fast tests
+# ctest -E WEEKLY
+
+
+# Run the slow tests
+# ctest -R WEEKLY -VV

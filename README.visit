@@ -1,0 +1,64 @@
+To compile the visit plug-in and run in parallel on computational back-end:
+
+Checkout code and create a cmake script to compile plug-in.
+Example commands for Rhea:
+
+Load the proper modules
+   module unload intel gcc
+   module load gcc/4.8.2
+   module load cmake
+
+
+Configure cmake to build the plug-in
+    cmake                                       \
+        -D CMAKE_BUILD_TYPE:STRING=Release      \
+        -D CMAKE_C_COMPILER:PATH=gcc            \
+        -D CMAKE_CXX_COMPILER:PATH=g++          \
+        -D USE_MPI=false                        \
+        -D USE_CUDA=false                       \
+        -D USE_VISIT=true                       \
+            -D VISIT_ROOT_DIR=/sw/redhat6/visit \
+        -D USE_TIMER=false                      \
+        ../../LBPM-WIA
+
+
+Build the visit plug-in
+    make install -j 8
+    make visit
+
+Check that the visit plug-in installed in ~/.visit/2.9.0/linux-x86_64/plugins/databases
+where 2.9.0 is the current version of visit on rhea
+It should have created several shared libraries:
+    libELBMDatabase_par.so  libELBMDatabase_ser.so  libILBMDatabase.so  libMLBMDatabase.so
+
+Install visit on local machine (2.9.0)
+
+Start visit on local machine
+
+First time:
+    Go to: Options - Host profiles
+    Click Remote Profiles - Update
+    After list populates, drag host_ornl_rhea.xml to Hosts
+    Select ORNL_Rhea from Hosts, click on Machines
+    Set account username
+    Click on Launch Profiles tab
+    Change profile name and timeout if desired
+    Click on Parallel tab
+    Add Default Bank / Account with project number, set default nodes/processors if desired
+    Click Apply, then close window
+    Go to: Options - Save Settings
+
+Open remote file / launch parallel job
+    Click Open file
+    Change Host to ORNL_Rhea, enter passcode when prompted
+    Open visualization file
+        /lustre/atlas/proj-shared/geo106/vis_test/dumps.LBM
+    New window will open prompting for # of nodes, processors, Bank (project number) and time limit
+        Rhea as 16 physical-cores/node and 64 GB/node
+        for example file above I used 1 node, 16 cores
+    Visit will call qsub and submit a parallel job that will start when ready
+
+Visualize desired quantities
+
+
+

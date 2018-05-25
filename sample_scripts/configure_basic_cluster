@@ -1,0 +1,23 @@
+# load the module for cmake
+module load cmake
+
+# configure
+rm -rf CMake*
+cmake                                    \
+    -D CMAKE_C_COMPILER:PATH=mpicc          \
+    -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
+    -D CMAKE_C_FLAGS=""            \
+    -D CMAKE_CXX_FLAGS=""          \
+    -D MPI_COMPILER:BOOL=TRUE            \
+    -D MPIEXEC=mpirun                     \
+    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D CMAKE_BUILD_TYPE:STRING=Release     \
+    -D CUDA_FLAGS="-arch sm_35"          \
+    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D USE_CUDA=0                        \
+    -D USE_TIMER=0			 \
+    ${HOME}/LBPM-WIA
+
+
+
+

@@ -1,0 +1,51 @@
+# Sample script to configure, build, run, and submit the results
+
+
+# Set some basic properties
+SET( CTEST_CMAKE_COMMAND "./config_titan" )
+SET( CTEST_DASHBOARD "Experimental" )
+SET( CTEST_BUILD_NAME "all_tests" )
+SET( CTEST_OPTIONS  PARALLEL_LEVEL 1 )
+# SET( CTEST_OPTIONS  EXCLUDE WEEKLY   PARALLEL_LEVEL 1 )
+
+
+### Should not need to edit anything below this line
+
+# Set the test properties
+SITE_NAME( HOSTNAME )
+SET( CTEST_PROJECT_NAME "LBPM-WIA" )
+SET( CTEST_SOURCE_DIRECTORY "." )
+SET( CTEST_BINARY_DIRECTORY "." )
+SET( CTEST_TEST_TIMEOUT 300 )
+SET( CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS 500 )
+SET( CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS 500 )
+SET( NIGHTLY_START_TIME "18:00:00 EST" )
+SET( CTEST_NIGHTLY_START_TIME "22:00:00 EST" )
+
+SET ( CTEST_COMMAND "\"${CTEST_EXECUTABLE_NAME}\" -D ${CTEST_DASHBOARD}" )
+SET ( CTEST_CONFIGURE_COMMAND ${CTEST_CMAKE_COMMAND} )
+SET ( CTEST_BUILD_COMMAND "make install -j 8" )
+
+# Clear the binary directory and create an initial cache
+CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
+FILE(WRITE "${CTEST_BINARY_DIRECTORY}/CMakeCache.txt" "CTEST_TEST_CTEST:BOOL=1")
+
+# Configure and run the tests
+SET( CTEST_SITE ${HOSTNAME} )
+CTEST_START("${CTEST_DASHBOARD}")
+CTEST_UPDATE()
+CTEST_CONFIGURE()
+CTEST_BUILD()
+CTEST_TEST( ${CTEST_OPTIONS} )
+
+# Submit the results to oblivion
+SET ( CTEST_DROP_METHOD "http" )
+SET ( CTEST_DROP_SITE "oblivion.engr.colostate.edu" )
+SET ( CTEST_DROP_LOCATION "/CDash/submit.php?project=LBPM-WIA" )
+SET ( CTEST_DROP_SITE_CDASH TRUE )
+SET ( DROP_SITE_CDASH TRUE )
+CTEST_SUBMIT()
+
+# Clean up
+exec_program("make distclean")
+

@@ -1,0 +1,55 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N MorphDrain
+#PBS -j oe
+##PBS -l walltime=02:00:00,nodes=216
+#PBS -l walltime=05:00:00,nodes=18
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+##PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+#LBPM_WIA_INSTALL_DIR=/lustre/atlas/proj-shared/geo106/build-eos-LBPM-WIA
+
+LBPM_WIA_INSTALL_DIR=/ccs/proj/geo106/eos/LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+module swap PrgEnv-intel PrgEnv-gnu
+module load python_anaconda
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+cp ../MEDIA/ID* ./
+
+LABEL=$(basename $PWD)
+
+# List of saturation values to generate
+SW="0.90 0.85 0.80 0.75 0.70 0.65 0.60 0.55 0.5 0.45 0.4 0.35 0.3 0.25 0.2"
+echo "r sw" > morphdrain.csv
+
+# number of processors to use
+NUMPROCS=288
+
+#for r in `cat radius.csv`; do 
+for sw in $SW; do 
+      echo $sw >> sw.log
+      aprun -n $NUMPROCS $LBPM_WIA_INSTALL_DIR/bin/lbpm_morphdrain_pp $sw > morphdrain.log
+      radius=$(grep "Final critical radius"  morphdrain.log | sed 's/Final critical radius=//g') 
+      saturation=$(grep "Final saturation"  morphdrain.log | sed 's/Final saturation=//g')
+      echo "$radius $saturation" >> morphdrain.csv
+      tag="sw_$sw"
+      DIR=$LABEL"_drain_"$tag
+      mkdir -p $DIR
+      cp ID.* $DIR
+      cp SignDist.* $DIR
+      cp Domain.in $DIR
+      cp Color.in $DIR
+done
+
+exit;
+

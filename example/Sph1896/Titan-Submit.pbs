@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -A GEO106
+#PBS -N LB-WIA-Color
+#PBS -j oe
+#PBS -l walltime=0:20:00,nodes=27
+##PBS -l gres=widow2%widow3
+##PBS -q killable
+#PBS -q debug
+
+#cd /tmp/work/$USER
+date
+
+cd $PBS_O_WORKDIR
+
+LBPM_WIA_INSTALL_DIR=/lustre/atlas/scratch/mcclurej/geo106/install-LBPM-WIA
+
+#echo "PBS_O_WORKDIR: `echo $PBS_O_WORKDIR`"
+source $MODULESHOME/init/bash
+#module swap cray-mpich2 cray-mpich2/5.6.3
+module load cudatoolkit
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+export MPICH_RDMA_ENABLED_CUDA=1
+#aprun -n 27 -N 1 /lustre/atlas/scratch/mcclurej/geo106/LBPM-WIA/bin/lb2_Color_wia_mpi
+aprun -n 27 -N 1 $LBPM_WIA_INSTALL_DIR/bin/lb2_Color_wia_mpi

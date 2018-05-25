@@ -1,0 +1,23 @@
+#!/bin/bash
+#BSUB -P geo106
+#BSUB -J nvprof_COLOR
+#BSUB -o nvprof_color_perf.o%J
+#BSUB -W 120
+#BSUB -nnodes 8
+##BSUB -env "all,JOB_FEATURE=NVME"
+ 
+date
+
+module load gcc cuda 
+source $OLCF_SPECTRUM_MPI_ROOT/jsm_pmix/bin/export_smpi_env -gpu
+
+cd /ccs/home/mcclurej/summit-dev/build/ScaLBL/example/Sph1896/
+
+cp Domain.in.8g Domain.in
+
+jsrun -n8 -c1 ../../tests/GenerateSphereTest
+
+jsrun  -n8 -g1 -c2 -l gpu-cpu ../../tests/TestColor
+#jsrun  -n8 -g1 -c2 -l gpu-cpu nvprof --profile-from-start off --analysis-metrics -o color-AA-254x254x254x8gpu-%p.nvprof ../../tests/TestColor
+
+exit;

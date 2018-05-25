@@ -1,0 +1,52 @@
+# ACML suppressions
+{
+   IdentifyCPUCond
+   Memcheck:Cond
+   ...
+   fun:acmlcpuid2
+   ...
+}
+{
+   IdentifyCPUValue
+   Memcheck:Value8
+   ...
+   fun:acmlcpuid_once
+   fun:acmlcpuid2
+   ...
+}
+
+
+# MPI suppressions
+{
+   HYD_pmci_wait_for_completion
+   Memcheck:Leak
+   ...
+   fun:HYD_pmci_wait_for_completion
+   fun:main
+}
+{
+   HYDT_dmxu_poll_wait_for_event
+   Memcheck:Leak
+   ...
+   fun:HYDT_dmxu_poll_wait_for_event
+   fun:main
+}
+{
+   PMPI_Init
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+   fun:main
+}
+
+
+# System suppressions
+{
+   expand_dynamic_string_token
+   Memcheck:Cond
+   fun:index
+   fun:expand_dynamic_string_token
+   ...
+}
+
+
