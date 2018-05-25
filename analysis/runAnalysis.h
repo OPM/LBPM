@@ -23,16 +23,14 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis( int restart_interval, int analysis_interval, int blobid_interval,
-        const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& dm,
-        int Np, int Nx, int Ny, int Nz, double Lx, double Ly, double Lz, bool pBC, double beta, double err,
-        IntArray Map, const std::string& LocalRestartFile );
+    runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
+    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool pBC, double beta, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
 
     //! Run the next analysis
-    void run( int timestep, TwoPhase& Averages, const double *Phi,
+    void run( int timestep, TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
 
     //! Finish all active analysis
@@ -85,10 +83,9 @@ private:
     int d_N[3];
     int d_Np;
     int d_rank;
-    int d_restart_interval, d_analysis_interval, d_blobid_interval;
+    int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
     double d_beta;
     ThreadPool d_tpool;
-    ScaLBL_Communicator d_ScaLBL_Comm;
     RankInfoStruct d_rank_info;
     IntArray d_Map;
     BlobIDstruct d_last_ids;
@@ -100,6 +97,7 @@ private:
     MPI_Comm d_comm;
     MPI_Comm d_comms[1024];
     volatile bool d_comm_used[1024];
+    std::shared_ptr<ScaLBL_Communicator> d_ScaLBL_Comm;
 
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;

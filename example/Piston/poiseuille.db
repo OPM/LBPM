@@ -1,0 +1,20 @@
+MRT {
+    tau   = 1.0  
+    F = 0, 0, 1.0e-4
+    Restart = false
+    pBC = 0
+    din = 1.0
+    dout = 1.0
+    timestepMax = 2000
+    tol = 1e-5
+    flux = 0.0
+}
+
+Domain {
+    nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
+    n = 16, 16, 16      // Size of local domain (Nx,Ny,Nz)
+    n_spheres = 1       // Number of spheres
+    L = 1, 1, 1         // Length of domain (x,y,z)
+    BC = 0              // Boundary condition type
+}
+

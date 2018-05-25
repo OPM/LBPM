@@ -11,6 +11,18 @@
 
 using namespace std;
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 5, 5, 5 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
+
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -23,142 +35,54 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
-		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
 
-
-		if (rank == 0){
-			printf("********************************************************\n");
-			printf("Running Color Model: TestColor	\n");
-			printf("********************************************************\n");
-		}
-
-		// BGK Model parameters
-		string FILENAME;
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double Fx,Fy,Fz,tol;
-		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
-		int dim=5;
 		
 		static int D3Q19[18][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
 				{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},
 				{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 				{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=5;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=2; nprocy=1;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				Nx = dim; Ny = dim; Nz = dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
-
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
-
-		if (rank==0){
+		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+			printf("Running unit test: TestMap	\n");
 			printf("********************************************************\n");
 		}
+		
+	    // Load inputs
+	    auto db = loadInputs( nprocs );
+	    int Nx = db->getVector<int>( "n" )[0];
+	    int Ny = db->getVector<int>( "n" )[1];
+	    int Nz = db->getVector<int>( "n" )[2];
+	    int nprocx = db->getVector<int>( "nproc" )[0];
+	    int nprocy = db->getVector<int>( "nproc" )[1];
+	    int nprocz = db->getVector<int>( "nproc" )[2];
 
-		MPI_Barrier(comm);
-		int BoundaryCondition=0;
-
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		std::shared_ptr<Domain> Dm(new Domain(db,comm));
 
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
 		int N = Nx*Ny*Nz;
-
 		//.......................................................................
 		int Np = 0;
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n] = 1;
+					Dm->id[n] = 1;
 					Np++;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit();
 
 		// Create a communicator for the device (will use optimized layout)
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
-
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular(new ScaLBL_Communicator(Dm));
 
 		if (rank==0){
 			printf("Total domain size = %i \n",N);
@@ -173,16 +97,29 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
+		
+		// Check the neighborlist
+		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm->LastExterior(),ScaLBL_Comm->FirstInterior(),ScaLBL_Comm->LastInterior());
+		for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+			for (int q=0; q<18; q++){
+				int nn = neighborList[q*Np+idx]%Np;
+				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
+		      
+			}
+		}
+		for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
+			for (int q=0; q<18; q++){
+				int nn = neighborList[q*Np+idx]%Np;
+				if (nn>Np) printf("neighborlist error (exterior) at q=%i, idx=%i \n",q,idx);
+		      
+			}
+		}
 
 		//......................device distributions.................................
-		int dist_mem_size = Np*sizeof(double);
-		if (rank==0)	printf ("Allocating distributions \n");
-
 		int *NeighborList;
 		int *dvcMap;
-		
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Npad);
@@ -236,7 +173,7 @@ int main(int argc, char **argv)
 		// Loop over the distributions for interior lattice sites
 		if (rank==0)	printf ("Loop over distributions \n");
 
-		for (int idx=ScaLBL_Comm.first_interior; idx<ScaLBL_Comm.last_interior; idx++){
+		for (int idx=ScaLBL_Comm->first_interior; idx<ScaLBL_Comm->last_interior; idx++){
 			n = TmpMap[idx];
 			k = n/(Nx*Ny);
 			j = (n-Nx*Ny*k)/Nx;

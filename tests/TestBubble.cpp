@@ -16,6 +16,17 @@
 using namespace std;
 
 
+std::shared_ptr<Database> readInput( const std::string& file )
+{
+    if ( exists( file )
+        return std::make_shared<Database>( file );
+    auto db = std::make_shared<Database>();
+    db.putData( "Color", std::make_shared<Database>() );
+    db.putData( "Domain", std::make_shared<Database>() );
+    return db;
+}
+
+
 int main(int argc, char **argv)
 {
   // Initialize MPI
@@ -54,13 +65,6 @@ int main(int argc, char **argv)
     int nspheres;
     double Lx,Ly,Lz;
     // Color Model parameters
-    int timestepMax, interval;
-    double tau,Fx,Fy,Fz,tol;
-    double alpha, beta;
-    double das, dbs, phi_s;
-    double din,dout;
-    double wp_saturation;
-    bool pBC,Restart;
     int i,j,k,n;
 
     // pmmc threshold values
@@ -71,109 +75,43 @@ int main(int argc, char **argv)
     nthreads = 128;
     
     int RESTART_INTERVAL=1000;
-    
-    if (rank==0){
-        //.............................................................
-        //        READ SIMULATION PARMAETERS FROM INPUT FILE
-        //.............................................................
-        ifstream input("Color.in");
-        if (input.good()){
-            input >> tau;            // Viscosity parameter
-            input >> alpha;            // Surface Tension parameter
-            input >> beta;            // Width of the interface
-            input >> phi_s;            // value of phi at the solid surface
-            input >> wp_saturation;
-            input >> Fx;
-            input >> Fy;
-            input >> Fz;
-            input >> Restart;
-            input >> pBC;
-            input >> din;
-            input >> dout;
-            input >> timestepMax;        // max no. of timesteps
-            input >> interval;            // restart interval
-            input >> tol;                // error tolerance
-        }
-        else {
-            printf("WARNING: No valid Color.in file, using hard-coded values \n");
-            tau   = 1.0;  
-            alpha = 1e-3;
-            beta  = 0.95;
-            phi_s = 0.0;
-            wp_saturation=Fx=Fy=Fz=0;
-            Restart = 0;
-            pBC = 0;
-            din=dout = 1.0;
-            timestepMax = 3;
-            interval = 100;
-            tol = 1e-6;
-            das = 0.1; dbs = 0.9;    // hard coded for density initialization
-            // should be OK to remove these parameters
-            // they should have no impact with the 
-            // current boundary condition
-        }
-        //.......................................................................
-        // Reading the domain information file
-        //.......................................................................
-        ifstream domain("Domain.in");
-        if (domain.good()){
-            domain >> nprocx;
-            domain >> nprocy;
-            domain >> nprocz;
-            domain >> Nx;
-            domain >> Ny;
-            domain >> Nz;
-            domain >> nspheres;
-            domain >> Lx;
-            domain >> Ly;
-            domain >> Lz;
-        }
-        else {
-            //.......................................................................
-            // Set the domain for single processor test
-            printf("WARNING: No valid Domain.in file, using hard-coded values \n");
-            nprocx=nprocy=nprocz=1;
-            Nx=Ny=Nz=50;
-            nspheres=1;
-            Lx=Ly=Lz=1;
-        }
 
-    }
-    // **************************************************************
-    // Broadcast simulation parameters from rank 0 to all other procs
-    MPI_Barrier(comm);
-    //.................................................
-    MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&dbs,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
-    MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
-    MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
-    MPI_Bcast(&interval,1,MPI_INT,0,comm);
-    MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
-    // Computational domain
-    MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-    MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-    MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-    // MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
-    // MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
-    MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-    MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-    MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-    MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-    MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-    MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-    //.................................................
+    auto db = readInput( "input.in" );
+
+    // Read variables from Color
+    auto color_db = db->getDatabase( "Color" );
+    auto tau   = color_db->getScalarWithDefault<double>( "tau", 1.0 );  
+    auto alpha = color_db->getScalarWithDefault<double>( "alpha", 1e-3 );
+    auto beta  = color_db->getScalarWithDefault<double>( "beta", 0.95 );
+    auto phi_s = color_db->getScalarWithDefault<double>( "phi_s", 0.0 );
+    auto Fx    = color_db->getVectorWithDefault<double>( "F", { 0, 0, 0 } )[0];
+    auto Fy    = color_db->getScalarWithDefault<double>( "F", { 0, 0, 0 } )[1];
+    auto Fz    = color_db->getScalarWithDefault<double>( "F", { 0, 0, 0 } )[2];
+    auto Restart = color_db->getScalarWithDefault<bool>( "Restart", 0 );
+    auto pBC   = color_db->getScalarWithDefault<double>( "pBC", 0 );
+    auto din   = color_db->getScalarWithDefault<double>( "din", 1.0 );
+    auto dout  = color_db->getScalarWithDefault<double>( "dout", 1.0 );
+    auto timestepMax = color_db->getScalarWithDefault<int>( "timestepMax", 3 );
+    auto interval = color_db->getScalarWithDefault<int>( "interval", 100 );
+    auto tol   = color_db->getScalarWithDefault<double>( "tol", 1e-6 );
+    auto das   = color_db->getScalarWithDefault<double>( "das", 0.1 );
+    auto dbs   = color_db->getScalarWithDefault<double>( "dab", 0.9 );
+
+    // Read variables from Domain
+    auto domain_db = db->getDatabase( "Domain" );
+    auto n = domain_db->getVectorWithDefault<int>( "n", { 50, 50, 50 } );
+    auto L = domain_db->getVectorWithDefault<double>( "L", { 1.0, 1.0, 1.0 } );
+    auto nproc = domain_db->getVectorWithDefault<int>( "nproc", { 1, 1, 1 } );
+    auto nspheres = domain_db->getScalarWithDefault<int>( "nspheres", 1 );
+    int Nx = n[0];
+    int Ny = n[1];
+    int Nz = n[2];
+    int nprocx = nproc[0];
+    int nprocy = nproc[1];
+    int nprocz = nproc[2];
+    double Lx = L[0];
+    double Ly = L[1];
+    double Lz = L[2];
 
     // Get the rank info
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
@@ -219,7 +157,7 @@ int main(int argc, char **argv)
 
     // Full domain used for averaging (do not use mask for analysis)
     Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,pBC);
-    Dm.CommInit(comm);
+    Dm.CommInit();
 
     // Mask that excludes the solid phase
     Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,pBC);
@@ -227,7 +165,6 @@ int main(int argc, char **argv)
      MPI_Barrier(comm);
 
     Nx+=2; Ny+=2; Nz += 2;
-    //Nx = Ny = Nz;    // Cubic domain
 
     int N = Nx*Ny*Nz;
     int dist_mem_size = N*sizeof(double);

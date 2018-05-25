@@ -120,149 +120,26 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double flux, double area, 
 		 int count, int N);
 
-//extern "C" void ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
-
 extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
 
 extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
-// LIST OF DEPRECATED FUNCTIONS (probably delete)
-
-//extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux,
-//		int Nx, int Ny, int Nz);
-
-//extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, double flux,
-//		int Nx, int Ny, int Nz, int outlet);
-
-//extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,
-//		int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz,
-//		int Nx, int Ny, int Nz, int outlet);
-
-//extern "C" void ScaLBL_Color_BC_z(double *Phi, double *Den, double *A_even, double *A_odd,
-//		double *B_even, double *B_odd, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_Color_BC_Z(double *Phi, double *Den, double *A_even, double *A_odd,
-//		double *B_even, double *B_odd, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_AAeven_Compact(char *ID,  double *d_dist, int Np);
-
-//extern "C" void ScaLBL_D3Q19_AAodd_Compact(char *ID,int *d_neighborList,  double *d_dist, int Np);
-
-//extern "C" void ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int N);
-
-//extern "C" void ScaLBL_D3Q7_Init(double *Dist, double *Den, int Np);
-
-//extern "C" void ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q7_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q7_Density(char *ID, double *disteven, double *distodd, double *Den,
-//		int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_AA_Init(double *f_even, double *f_odd, int Np);
-
-//extern "C" void ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, double *distodd, int Np);
-
-
-//extern "C" void ScaLBL_D3Q19_MRT(char *ID, double *f_even, double *f_odd, double rlxA, double rlxB,
-//		double Fx, double Fy, double Fz,int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_Color_Init(char *ID, double *Den, double *Phi, double das, double dbs, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_ColorDistance_Init(char *ID, double *Den, double *Phi, double *Distance,
-//		double das, double dbs, double beta, double xp, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_ColorGradient(char *ID, double *phi, double *ColorGrad, int Nx, int Ny, int Nz);
-
-//extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *distodd, double *phi, double *ColorGrad,
-//		double *Velocity, int Nx, int Ny, int Nz,double rlx_setA, double rlx_setB,
-//		double alpha, double beta, double Fx, double Fy, double Fz);
-
-//extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
-//		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC);
-
-
-//extern "C" void ScaLBL_D3Q19_AAeven_Color(double *dist, double *Aq, double *Bq, double *Den, double *Vel,
-//		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int start, int finish, int Np);
-
-//extern "C" void ScaLBL_D3Q19_AAodd_Color(int *d_neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Vel,
-//		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int start, int finish, int Np);
-
-/*extern "C" void ScaLBL_D3Q19_AAeven_ColorMomentum(double *dist, double *Den, double *Vel,
-		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-		double Fx, double Fy, double Fz, int start, int finish, int Np);
-
-extern "C" void ScaLBL_D3Q19_AAodd_ColorMomentum(int *d_neighborList, double *dist, double *Den, double *Vel,
-		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-		double Fx, double Fy, double Fz, int start, int finish, int Np);
-		
-extern "C" void ScaLBL_D3Q19_AAeven_ColorMass(double *Aq, double *Bq, double *Den, double *Vel,
-		double *ColorGrad, double beta, int start, int finish, int Np);
-
-extern "C" void ScaLBL_D3Q19_AAodd_ColorMass(int *d_neighborList, double *Aq, double *Bq, double *Den, double *Vel,
-		double *ColorGrad, double beta, int start, int finish, int Np);
-*/
-/*
-class ScaLBL_Color{
-public:
-	ScaLBL_Color(Domain &Dm);
-	~ScaLBL_Color();
-
-	int *NeighborList;
-	int *dvcMap;
-	//		double *f_even,*f_odd;
-	double *fq, *Aq, *Bq;
-	double *Den, *Phi;
-	double *ColorGrad;
-	double *Vel;
-	double *Pressure;
-	ScaLBL_Communicator ScaLBL_Comm;
-	//Create a second communicator based on the regular data layout
-	ScaLBL_Communicator ScaLBL_Comm_Regular;
-
-	void Initialize(Domain &Dm);
-	void Run(int &timestep);
-	
-private:
-
-};
-
-void ScaLBL_Color::ScaLBL_Color(Domain &Dm){
-	
-}
-
-void ScaLBL_Color::Initialize(Domain &Dm){
-	
-}
-
-void ScaLBL_Color::Run(int &timestep){
-	
-}
-*/
-
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
-	ScaLBL_Communicator(Domain &Dm);
+	ScaLBL_Communicator(std::shared_ptr <Domain> Dm);
 
 	//ScaLBL_Communicator(Domain &Dm, IntArray &Map);
 	~ScaLBL_Communicator();
 	//......................................................................................
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
+	int BoundaryCondition;
+	
 	int next;
 	int first_interior,last_interior;
-	int BoundaryCondition;
 	//......................................................................................
 	//  Set up for D319 distributions
 	// 		- determines how much memory is allocated
@@ -277,19 +154,23 @@ public:
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
 	//......................................................................................
 
+	int LastExterior();
+	int FirstInterior();
+	int LastInterior();
+	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
-	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
-	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
-	void MemoryDenseLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-	void SendD3Q19(double *f_even, double *f_odd);
-	void RecvD3Q19(double *f_even, double *f_odd);
-	void SendD3Q19AA(double *f_even, double *f_odd);
-	void RecvD3Q19AA(double *f_even, double *f_odd);
+//	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
+//	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
+//	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
+//	void MemoryDenseLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
+//	void SendD3Q19(double *f_even, double *f_odd);
+//	void RecvD3Q19(double *f_even, double *f_odd);
+//	void SendD3Q19AA(double *f_even, double *f_odd);
+//	void RecvD3Q19AA(double *f_even, double *f_odd);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
-	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
-	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
+//	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
+//	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
@@ -297,7 +178,7 @@ public:
 	void SendHalo(double *data);
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
-	void RegularLayout(IntArray map, double *data, DoubleArray &regdata);
+	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -306,8 +187,8 @@ public:
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
 
-	void TestSendD3Q19(double *f_even, double *f_odd);
-	void TestRecvD3Q19(double *f_even, double *f_odd);
+//	void TestSendD3Q19(double *f_even, double *f_odd);
+//	void TestRecvD3Q19(double *f_even, double *f_odd);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();
@@ -319,6 +200,7 @@ private:
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 	// only one set of Send requests can be active at any time (per instance)
 	int i,j,k,n;
+
 	int iproc,jproc,kproc;
 	int nprocx,nprocy,nprocz;
 	int sendtag,recvtag;
@@ -339,12 +221,12 @@ private:
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//......................................................................................
-
 	//......................................................................................
 	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
 	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
 	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
 	//......................................................................................
+
 	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
 	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
 	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;

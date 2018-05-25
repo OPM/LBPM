@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 		//   TwoPhase Averages(Dm);
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		// Mask that excludes the solid phase
 		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.........................................................
 		// If external boundary conditions are applied remove solid
-		if (BoundaryCondition >  0  && Dm.kproc == 0){
+		if (BoundaryCondition >  0  && Dm.kproc() == 0){
 			for (k=0; k<3; k++){
 				for (j=0;j<Ny;j++){
 					for (i=0;i<Nx;i++){
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		if (BoundaryCondition >  0  && Dm.kproc == nprocz-1){
+		if (BoundaryCondition >  0  && Dm.kproc() == nprocz-1){
 			for (k=Nz-3; k<Nz; k++){
 				for (j=0;j<Ny;j++){
 					for (i=0;i<Nx;i++){
@@ -488,12 +488,12 @@ int main(int argc, char **argv)
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np);
 
 		if (BoundaryCondition >0 ){
-			if (Dm.kproc==0){
+			if (Dm.kproc()==0){
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
 			}
-			if (Dm.kproc == nprocz-1){
+			if (Dm.kproc() == nprocz-1){
 				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
 				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
 				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
@@ -550,8 +550,8 @@ int main(int argc, char **argv)
 
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
-        runAnalysis analysis( RESTART_INTERVAL,ANALYSIS_INTERVAL,BLOBID_INTERVAL,
-            rank_info, ScaLBL_Comm, Dm, Np, Nx, Ny, Nz, Lx, Ly, Lz, pBC, beta, err, Map, LocalRestartFile );
+        std::shared_ptr<Database> analysis_db;
+        runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
         analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }

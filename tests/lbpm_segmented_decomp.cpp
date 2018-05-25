@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm.CommInit();
 
 		// number of sites to use for periodic boundary condition transition zone
 		int z_transition_size = (nprocz*nz - (Nz - zStart))/2;
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 		// Set up the sub-domains
 		if (rank==0){
 			printf("Distributing subdomains across %i processors \n",nprocs);
-			printf("Process grid: %i x %i x %i \n",Dm.nprocx,Dm.nprocy,Dm.nprocz);
+			printf("Process grid: %i x %i x %i \n",Dm.nprocx(),Dm.nprocy(),Dm.nprocz());
 			printf("Subdomain size: %i \n",N);
 			printf("Size of transition region: %i \n", z_transition_size);
 			char *tmp;
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 				for (int jp=0; jp<nprocy; jp++){
 					for (int ip=0; ip<nprocx; ip++){
 						// rank of the process that gets this subdomain
-						int rnk = kp*Dm.nprocx*Dm.nprocy + jp*Dm.nprocx + ip;
+						int rnk = kp*Dm.nprocx()*Dm.nprocy() + jp*Dm.nprocx() + ip;
 						// Pack and send the subdomain for rnk
 						for (k=0;k<nz+2;k++){
 							for (j=0;j<ny+2;j++){
@@ -342,8 +342,8 @@ int main(int argc, char **argv)
 			if (rank==0) printf("Writing symmetric domain reflection\n");
 			MPI_Barrier(comm);
 			int symrank,sympz;
-			sympz = 2*nprocz - Dm.kproc -1;
-			symrank = sympz*nprocx*nprocy + Dm.jproc*nprocx + Dm.iproc;
+			sympz = 2*nprocz - Dm.kproc() -1;
+			symrank = sympz*nprocx*nprocy + Dm.jproc()*nprocx + Dm.iproc();
 
 			//    DoubleArray SymDist(nx,ny,nz);
 			char *symid;

@@ -110,9 +110,11 @@ int main(int argc, char **argv)
 	}
 
 	// Initialized domain and averaging framework for Two-Phase Flow
-	Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-	Dm.CommInit(comm);
-	TwoPhase Averages(Dm);
+
+        std::shared_ptr<Domain> Dm (new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+        Dm->CommInit();
+        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+
 	 
 	MPI_Barrier(comm);
 
@@ -149,13 +151,13 @@ int main(int argc, char **argv)
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
 				// Cylindrical capillary tube aligned with the z direction
-				Averages.SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)));
+				Averages->SDs(i,j,k) = TubeRadius-sqrt(1.0*((i-Nx/2)*(i-Nx/2)));
 
 				// Initialize phase positions
-				if (Averages.SDs(i,j,k) < 0.0){
+				if (Averages->SDs(i,j,k) < 0.0){
 					id[n] = 0;
 				}
-				else if (Averages.SDs(i,j,k) < WIDTH){
+				else if (Averages->SDs(i,j,k) < WIDTH){
 					id[n] = 2;
 					sum++;
 				}
@@ -188,7 +190,7 @@ int main(int argc, char **argv)
 
     sprintf(LocalRankFilename,"SignDist.%05i",rank);
     FILE *DIST = fopen(LocalRankFilename,"wb");
-    fwrite(Averages.SDs.data(),8,Averages.SDs.length(),DIST);
+    fwrite(Averages->SDs.data(),8,Averages->SDs.length(),DIST);
     fclose(DIST);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);

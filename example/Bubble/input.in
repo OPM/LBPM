@@ -1,0 +1,37 @@
+Color {
+    tau   = 1.0;  
+    alpha = 1e-2;
+    beta  = 0.95;
+    phi_s = 0.8;
+    wp_saturation = 0.7
+    F = 0, 0, 0
+    Restart = false
+    pBC = 0
+    din = 1.0
+    dout = 1.0
+    timestepMax = 200
+    interval = 1000
+    tol = 1e-5;
+    das = 0.1
+    dbs = 0.9
+}
+
+Domain {
+    nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
+    n = 80, 80, 80      // Size of local domain (Nx,Ny,Nz)
+    n_spheres = 1       // Number of spheres
+    L = 1, 1, 1         // Length of domain (x,y,z)
+    BC = 0              // Boundary condition type
+}
+
+Analysis {
+    blobid_interval = 1000      // Frequency to perform blob identification
+    analysis_interval = 1000    // Frequency to perform analysis
+    restart_interval = 20000    // Frequency to write restart data
+    vis_interval = 20000        // Frequency to write visualization data
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 4            // Number of threads to use
+    load_balance = "independent" // Load balance method to use: "none", "default", "independent"
+}
+
+

@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 		int BC=pBC;
 		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
-		Dm.CommInit(comm);
+		Dm.CommInit();
 		TwoPhase Averages(Dm);
 
 		// Mask that excludes the solid phase

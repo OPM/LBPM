@@ -148,14 +148,14 @@ int main(int argc, char **argv)
 		}
 	}
 	*/
-	Dm.CommInit(comm);
+	Dm.CommInit();
 
 
 	int xdim,ydim,zdim;
 	xdim=Dm.Nx-2;
 	ydim=Dm.Ny-2;
 	zdim=Dm.Nz-2;
-	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,{xdim,ydim,zdim},{1,1,1},0,1);
 
 	DoubleArray SignDist(nx,ny,nz);
 	// Read the signed distance from file
@@ -177,10 +177,10 @@ int main(int argc, char **argv)
 	fclose(IDFILE);
 
 
-	Dm.CommInit(comm);
-	int iproc = Dm.iproc;
-	int jproc = Dm.jproc;
-	int kproc = Dm.kproc;
+	Dm.CommInit();
+	int iproc = Dm.iproc();
+	int jproc = Dm.jproc();
+	int kproc = Dm.kproc();
 
 	// Generate the NWP configuration
 	//if (rank==0) printf("Performing morphological drainage with critical radius %f \n", Rcrit);
@@ -360,42 +360,42 @@ int main(int argc, char **argv)
 			PackID(Dm.sendList_yZ, Dm.sendCount_yZ ,sendID_yZ, id);
 			PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
 			//......................................................................................
-			MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x,sendtag,
-					recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X,sendtag,
-					recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y,sendtag,
-					recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y,sendtag,
-					recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z,sendtag,
-					recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z,sendtag,
-					recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy,sendtag,
-					recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY,sendtag,
-					recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy,sendtag,
-					recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY,sendtag,
-					recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz,sendtag,
-					recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ,sendtag,
-					recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz,sendtag,
-					recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ,sendtag,
-					recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz,sendtag,
-					recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ,sendtag,
-					recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz,sendtag,
-					recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
-			MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ,sendtag,
-					recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x(),sendtag,
+					recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X(),sendtag,
+					recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y(),sendtag,
+					recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y(),sendtag,
+					recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z(),sendtag,
+					recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z(),sendtag,
+					recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy(),sendtag,
+					recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY(),sendtag,
+					recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy(),sendtag,
+					recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY(),sendtag,
+					recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz(),sendtag,
+					recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ(),sendtag,
+					recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz(),sendtag,
+					recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ(),sendtag,
+					recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz(),sendtag,
+					recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ(),sendtag,
+					recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz(),sendtag,
+					recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ(),sendtag,
+					recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz(),recvtag,comm,MPI_STATUS_IGNORE);
 
 			UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
 			UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);

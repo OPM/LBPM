@@ -237,14 +237,14 @@ private:
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
 runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
-    tag(tag_),
     comm(comm_),
+    tag(tag_),
     analysis(analysis_)
 {
 }
 runAnalysis::commWrapper::commWrapper( commWrapper &&rhs ):
-    tag(rhs.tag),
     comm(rhs.comm),
+    tag(rhs.tag),
     analysis(rhs.analysis)
 {
     rhs.tag = -1;
@@ -281,30 +281,35 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis( int restart_interval, int analysis_interval,
-    int blobid_interval, const RankInfoStruct& rank_info, const ScaLBL_Communicator &ScaLBL_Comm, const Domain& Dm,
-    int Np, int Nx, int Ny, int Nz, double Lx, double Ly, double Lz, bool pBC, double beta, double err,
-    IntArray Map, const std::string& LocalRestartFile ):
+runAnalysis::runAnalysis( std::shared_ptr<Database> db,
+    const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+    int Np, bool pBC, double beta, IntArray Map ):
     d_Np( Np ),
-    d_restart_interval( restart_interval ),
-    d_analysis_interval( analysis_interval ),
-    d_blobid_interval( blobid_interval ),
     d_beta( beta ),
-    d_ScaLBL_Comm( ScaLBL_Comm ),
     d_rank_info( rank_info ),
     d_Map( Map ),
-    d_fillData(Dm.Comm,Dm.rank_info,Nx-2,Ny-2,Nz-2,1,1,1,0,1),
-    d_restartFile( LocalRestartFile )
+    d_ScaLBL_Comm( ScaLBL_Comm),
+    d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1)
 {
-    d_N[0] = Nx;
-    d_N[1] = Ny;
-    d_N[2] = Nz;
+    NULL_USE( pBC );
+    INSIST( db, "Input database is empty" );
+	char rankString[20];
+	sprintf(rankString,"%05d",Dm->rank());
+    d_N[0] = Dm->Nx;
+    d_N[1] = Dm->Ny;
+    d_N[2] = Dm->Nz;
+    d_restart_interval = db->getScalar<int>( "restart_interval" );
+    d_analysis_interval = db->getScalar<int>( "analysis_interval" );
+    d_blobid_interval = db->getScalar<int>( "blobid_interval" );
+    d_visualization_interval = db->getScalar<int>( "visualization_interval" );
+    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    d_restartFile = restart_file + "." + rankString;
     d_rank = MPI_WORLD_RANK();
 	writeIDMap(ID_map_struct(),0,id_map_filename);
 	// Create the MeshDataStruct
 	d_meshData.resize(1);
 	d_meshData[0].meshName = "domain";
-	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm.rank_info,Nx-2,Ny-2,Nz-2,Lx,Ly,Lz );
+	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
@@ -312,22 +317,22 @@ runAnalysis::runAnalysis( int restart_interval, int analysis_interval,
 	PhaseVar->name = "phase";
 	PhaseVar->type = IO::VariableType::VolumeVariable;
 	PhaseVar->dim = 1;
-	PhaseVar->data.resize(Nx-2,Ny-2,Nz-2);
+	PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PhaseVar);
 	PressVar->name = "Pressure";
 	PressVar->type = IO::VariableType::VolumeVariable;
 	PressVar->dim = 1;
-	PressVar->data.resize(Nx-2,Ny-2,Nz-2);
+	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PressVar);
 	SignDistVar->name = "SignDist";
 	SignDistVar->type = IO::VariableType::VolumeVariable;
 	SignDistVar->dim = 1;
-	SignDistVar->data.resize(Nx-2,Ny-2,Nz-2);
+	SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(SignDistVar);
 	BlobIDVar->name = "BlobID";
 	BlobIDVar->type = IO::VariableType::VolumeVariable;
 	BlobIDVar->dim = 1;
-	BlobIDVar->data.resize(Nx-2,Ny-2,Nz-2);
+	BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(BlobIDVar);
     // Initialize the comms
     MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
@@ -335,6 +340,10 @@ runAnalysis::runAnalysis( int restart_interval, int analysis_interval,
         d_comms[i] = MPI_COMM_NULL;
         d_comm_used[i] = false;
     }
+    // Initialize the threads
+    int N_threads = db->getWithDefault<int>( "N_threads", 4 );
+    auto method = db->getWithDefault<std::string>( "load_balance", "default" );
+    createThreads( method, N_threads );
 }
 runAnalysis::~runAnalysis( )
 {
@@ -423,6 +432,7 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
     AnalysisType type = AnalysisType::AnalyzeNone;
     if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
         // Copy the phase indicator field for the earlier timestep
+            printf("Copy phase indicator,timestep=%i\n",timestep);
         type |= AnalysisType::CopyPhaseIndicator;
     }
     if ( timestep%d_blobid_interval == 0 ) {
@@ -437,20 +447,22 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
             type |= AnalysisType::IdentifyBlobs;
         }
     #endif */
-    if ( timestep%d_analysis_interval + 4 == 0 ) {
+    if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
         // Copy the averages to the CPU (and identify blobs)
+      printf("Copy sim state, timestep=%i \n",timestep);
         type |= AnalysisType::CopySimState;
         type |= AnalysisType::IdentifyBlobs;
     }
     if ( timestep%d_analysis_interval == 0 ) {
         // Run the analysis
+      printf("Compute averages, timestep=%i \n",timestep);
         type |= AnalysisType::ComputeAverages;
     }
     if (timestep%d_restart_interval == 0) {
         // Write the restart file
         type |= AnalysisType::CreateRestart;
     }
-    if (timestep%d_restart_interval == 0) {
+    if (timestep%d_visualization_interval == 0) {
         // Write the visualization data
         type |= AnalysisType::WriteVis;
         type |= AnalysisType::CopySimState;
@@ -465,7 +477,7 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
  *  Run the analysis                                               *
  ******************************************************************/
 void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
-    double *Pressure, double *Velocity, double *fq, double *Den )
+		       double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
@@ -487,12 +499,35 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
     if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
-         matches(type,AnalysisType::ComputeAverages) ||
-         matches(type,AnalysisType::CopySimState) || 
-         matches(type,AnalysisType::IdentifyBlobs) )
+    		matches(type,AnalysisType::ComputeAverages) ||
+    		matches(type,AnalysisType::CopySimState) || 
+    		matches(type,AnalysisType::IdentifyBlobs) )
     {
-        phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
-        ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
+    	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
+    	//ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
+    	//   try 2 d_ScaLBL_Comm.RegularLayout(d_Map,Phi,Averages.Phase);
+    	//   memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+    	int Nx = d_N[0];
+    	int Ny = d_N[1];
+    	int Nz = d_N[2];
+    	double *TmpDat;
+    	double value;
+    	TmpDat = new double [d_Np];
+    	ScaLBL_CopyToHost(&TmpDat[0],&Phi[0], d_Np*sizeof(double));
+    	for (int k=0; k<Nz; k++){
+    		for (int j=0; j<Ny; j++){
+    			for (int i=0; i<Nx; i++){
+    				int n=k*Nx*Ny+j*Nx+i;
+    				int idx=d_Map(i,j,k);
+    				if (!(idx<0)){
+    					double value=TmpDat[idx];
+    					//regdata(i,j,k)=value;
+    					phase->data()[n]=value;
+    				}
+    			}
+    		}
+    	}
+    	delete [] TmpDat;
     }
     if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
         memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
@@ -513,10 +548,10 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-        d_ScaLBL_Comm.RegularLayout(d_Map,Pressure,Averages.Press);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
-        d_ScaLBL_Comm.RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cDen, cfq;
@@ -551,7 +586,9 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     }
 
     // Spawn threads to do the analysis work
-    if ( matches(type,AnalysisType::ComputeAverages) ) {
+    //if (timestep%d_restart_interval==0){
+       if ( matches(type,AnalysisType::ComputeAverages) ) {
+	 //if ( timestep%d_analysis_interval == 0 ) {
         auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
         work->add_dependency(d_wait_blobID);
         work->add_dependency(d_wait_analysis);

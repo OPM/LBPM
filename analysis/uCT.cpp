@@ -1,6 +1,6 @@
 #include "analysis/uCT.h"
 #include "analysis/analysis.h"
-#include "analysis/eikonal.h"
+#include "analysis/distance.h"
 #include "analysis/filters.h"
 #include "analysis/imfilter.h"
 
@@ -149,7 +149,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     fillFloat.fill( Mean );
     segment( Mean, ID, 0.01 );
     // Compute the distance using the segmented volume
-	Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
+	CalcDist( Dist, ID, Dm );
 	fillFloat.fill(Dist);
     smooth( VOL, Dist, 2.0, MultiScaleSmooth, fillFloat );
     // Compute non-local mean
@@ -210,9 +210,7 @@ void refine( const Array<float>& Dist_coarse,
     //removeDisconnected( ID, Dm );
     // Compute the distance using the segmented volume
     if ( level > 0 ) {
-    	//Eikonal3D( Dist, ID, Dm, ID.size(0)*nprocx );
-        //CalcDist3D( Dist, ID, Dm );
-        CalcDistMultiLevel( Dist, ID, Dm );
+    	CalcDist( Dist, ID, Dm );
 	    fillFloat.fill(Dist);
     }
 }
@@ -232,7 +230,7 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     int Ny = Dm.Ny-2;
     int Nz = Dm.Nz-2;
     // Calculate the distance
-    CalcDistMultiLevel( Dist, ID, Dm );
+	CalcDist( Dist, ID, Dm );
     fillFloat.fill(Dist);
     // Compute the range to shrink the volume based on the L2 norm of the distance
     Array<float> Dist0(Nx,Ny,Nz);
@@ -256,8 +254,8 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     }
     //Array<float> Dist1 = Dist;
     //Array<float> Dist2 = Dist;
-    CalcDistMultiLevel( Dist1, ID1, Dm );
-    CalcDistMultiLevel( Dist2, ID2, Dm );
+	CalcDist( Dist1, ID1, Dm );
+	CalcDist( Dist2, ID2, Dm );
     fillFloat.fill(Dist1);
     fillFloat.fill(Dist2);
     // Keep those regions that are within dx2 of the new volumes
@@ -272,8 +270,8 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
         }
     }
     // Find regions of uncertainty that are entirely contained within another region
-    fillHalo<double> fillDouble(Dm.Comm,Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
-    fillHalo<BlobIDType> fillInt(Dm.Comm,Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+    fillHalo<double> fillDouble(Dm.Comm,Dm.rank_info,{Nx,Ny,Nz},{1,1,1},0,1);
+    fillHalo<BlobIDType> fillInt(Dm.Comm,Dm.rank_info,{Nx,Ny,Nz},{1,1,1},0,1);
     BlobIDArray GlobalBlobID;
     DoubleArray SignDist(ID.size());
     for (size_t i=0; i<ID.length(); i++)
@@ -343,7 +341,7 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     // Perform the final segmentation and update the distance
     fillFloat.fill(Mean);
     segment( Mean, ID, 0.01 );
-    CalcDistMultiLevel( Dist, ID, Dm );
+	CalcDist( Dist, ID, Dm );
     fillFloat.fill(Dist);
 }
 
@@ -356,7 +354,7 @@ void filter_src( const Domain& Dm, Array<float>& src )
     int Nx = Dm.Nx-2;
     int Ny = Dm.Ny-2;
     int Nz = Dm.Nz-2;
-	fillHalo<float> fillFloat(Dm.Comm,Dm.rank_info,Nx,Ny,Nz,1,1,1,0,1);
+	fillHalo<float> fillFloat(Dm.Comm,Dm.rank_info,{Nx,Ny,Nz},{1,1,1},0,1);
     // Perform a hot-spot filter on the data
     std::vector<imfilter::BC> BC = { imfilter::BC::replicate, imfilter::BC::replicate, imfilter::BC::replicate };
     std::function<float(const Array<float>&)> filter_3D = []( const Array<float>& data )

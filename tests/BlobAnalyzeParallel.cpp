@@ -290,7 +290,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    Dm.CommInit(comm); // Initialize communications for domains
+    Dm.CommInit(); // Initialize communications for domains
 
     MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,comm);
     porosity = sum_global/Dm.Volume;

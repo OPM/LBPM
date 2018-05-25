@@ -24,139 +24,110 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
+		int i,j,k,n,Npad;
+        auto filename = argv[1];
+        auto db = std::make_shared<Database>( filename );
+        auto domain_db = db->getDatabase( "Domain" );
+        auto color_db = db->getDatabase( "Color" );
+        auto analysis_db = db->getDatabase( "Analysis" );
 
+        if (rank == 0){
+            printf("********************************************************\n");
+            printf("TestColorMassBounceback \n");
+            printf("********************************************************\n");
+        }
+        // Initialize compute device
+        //        int device=ScaLBL_SetDevice(rank);
+        ScaLBL_DeviceBarrier();
+        MPI_Barrier(comm);
+        Utilities::setErrorHandlers();
 
-		if (rank == 0){
-			printf("********************************************************\n");
-			printf("Running Color Model: TestColor	\n");
-			printf("********************************************************\n");
-		}
+        // Variables that specify the computational domain  
+        string FILENAME;
 
-		// BGK Model parameters
-		string FILENAME;
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double Fx,Fy,Fz,tol;
-		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
-		int i,j,k,n;
-		int dim = 3;
-		//if (rank == 0) printf("dim=%d\n",dim);
-		int timestep = 0;
-		int timesteps = 100;
-		int centralNode = 2;
+        // Color Model parameters
+        double tauA = color_db->getScalar<double>( "tauA" );
+        double tauB = color_db->getScalar<double>( "tauB" );
+        double rhoA = color_db->getScalar<double>( "rhoA" );
+        double rhoB = color_db->getScalar<double>( "rhoB" );
+        double Fx = color_db->getVector<double>( "F" )[0];
+        double Fy = color_db->getVector<double>( "F" )[1];
+        double Fz = color_db->getVector<double>( "F" )[2];
+        double alpha = color_db->getScalar<double>( "alpha" );
+        double beta = color_db->getScalar<double>( "beta" );
+        bool Restart = color_db->getScalar<bool>( "Restart" );
+        double din = color_db->getScalar<double>( "din" );
 
-		double tauA = 1.0;
-		double tauB = 1.0;
-		double rhoA = 1.0;
-		double rhoB = 1.0;
-		double alpha = 0.005;
-		double beta = 0.95;
-		
-		double tau = 1.0;
-		double mu=(tau-0.5)/3.0;
-		double rlx_setA=1.0/tau;
-		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
+        // Read domain values
+        auto size = domain_db->getVector<int>( "n" );
+        auto nproc = domain_db->getVector<int>( "nproc" );
+        int BoundaryCondition = domain_db->getScalar<int>( "BC" );
+        int Nx = size[0];
+        int Ny = size[1];
+        int Nz = size[2];
+        int nprocx = nproc[0];
+        int nprocy = nproc[1];
+        int nprocz = nproc[2];
 
-		Fx = Fy = 0.f;
-		Fz = 0.f;
+        int timestep = 6;
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=3;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=2; nprocy=1;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				Nx = dim; Ny = dim; Nz = dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
+        // Get the rank info
+        const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
+        MPI_Barrier(comm);
 
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-			printf("********************************************************\n");
-		}
+        if (nprocs != nprocx*nprocy*nprocz){
+            printf("nprocx =  %i \n",nprocx);
+            printf("nprocy =  %i \n",nprocy);
+            printf("nprocz =  %i \n",nprocz);
+            INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
+        }
 
-		MPI_Barrier(comm);
+        if (rank==0){
+            printf("********************************************************\n");
+            printf("tau (non-wetting) = %f \n", tauA);
+            printf("tau (wetting) = %f \n", tauB);
+            printf("density (non-wetting) = %f \n", rhoA);
+            printf("density (wetting) = %f \n", rhoB);
+            printf("alpha = %f \n", alpha);        
+            printf("beta = %f \n", beta);
+            printf("gamma_{wn} = %f \n", 5.796*alpha);
+            printf("Force(x) = %f \n", Fx);
+            printf("Force(y) = %f \n", Fy);
+            printf("Force(z) = %f \n", Fz);
+            printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
+            printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
+            if (BoundaryCondition==0) printf("Periodic boundary conditions will applied \n");
+            if (BoundaryCondition==1) printf("Pressure boundary conditions will be applied \n");
+            if (BoundaryCondition==2) printf("Velocity boundary conditions will be applied \n");
+            if (BoundaryCondition==3) printf("Dynamic pressure boundary conditions will be applied \n");
+            if (BoundaryCondition==4) printf("Average flux boundary conditions will be applied \n");
+            if (!Restart) printf("Initial conditions assigned from phase ID file \n");
+            if (Restart) printf("Initial conditions assigned from restart file \n");
+            printf("********************************************************\n");
+        }
 
-		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-		int BoundaryCondition=0;
+        // Initialized domain and averaging framework for Two-Phase Flow
+        bool pBC;
+        if (BoundaryCondition==1 || BoundaryCondition==3 || BoundaryCondition == 4)
+            pBC=true;
+        else
+            pBC=false;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+        // Full domain used for averaging (do not use mask for analysis)
+        std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
+        for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
+        Dm->CommInit();
+        MPI_Barrier(comm);
 
-		Nx += 2;
-		Ny += 2;
-		Nz += 2;
-		int N = Nx*Ny*Nz;
+        Nx+=2; Ny+=2; Nz += 2;
+        int N = Nx*Ny*Nz;
+        //.......................................................................
+        if (rank == 0)    printf("Read input media... \n");
+        //.......................................................................
 
 		int Np=0;  // number of local pore nodes
 		double *PhaseLabel;
@@ -166,7 +137,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=0;
+					Dm->id[n]=0;
 				}
 			}
 		}
@@ -174,21 +145,21 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 					Np++;
 					// constant color
 					PhaseLabel[n]= -1.0;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
 		//Create a second communicator based on the regular data layout
-		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular(new ScaLBL_Communicator(Dm));
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
@@ -196,29 +167,26 @@ int main(int argc, char **argv)
 		int neighborSize=18*Np*sizeof(int);
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
-
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Npad=Np+32;
+		neighborList= new int[18*Npad];
+		Np=ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
-
-
 		int *NeighborList;
 		int *dvcMap;
-		//		double *f_even,*f_odd;
 		double *fq, *Aq, *Bq;
 		double *Den, *Phi;
-		double *ColorGrad;
+		double *Gradient;
+		double *SolidPotential;
 		double *Vel;
 		double *Pressure;
 
 		//...........................................................................
 		ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 		ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
-
 		ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*dist_mem_size);
 		ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
@@ -226,7 +194,8 @@ int main(int argc, char **argv)
 		ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nx*Ny*Nz);		
 		ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 		ScaLBL_AllocateDeviceMemory((void **) &Vel, 3*sizeof(double)*Np);
-		ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
+		ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
 		
 		//...........................................................................
 		// Update GPU data structures
@@ -276,33 +245,35 @@ int main(int argc, char **argv)
 		}
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 
-		if (rank==0)	printf ("Initializing distributions \n");
-		// Initialize the phase field and variables
-		ScaLBL_D3Q19_Init(fq, Np);
-		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
-
+        if (rank==0)    printf ("Initializing distributions \n");
+        ScaLBL_D3Q19_Init(fq, Np);
+        if (rank==0)    printf ("Initializing phase field \n");
+        ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastInterior(), Np);
 		// *************ODD TIMESTEP*************
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+        // Read for Aq, Bq happens in this routine (requires communication)
+        ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+        
+        // compute the gradient 
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_Comm->RecvGrad(Phi,Gradient);
+        
+        // Perform the collision operation
+        ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+        ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
-		
-		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 
 		printf("Check after odd time \n");
@@ -317,7 +288,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -341,29 +312,29 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		// EVEN TIMESTEP
+        // Compute the Phase indicator field
+         ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+         ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+         ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+         
+         // compute the gradient 
+         ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->SendHalo(Phi);
+         ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->LastExterior(), Np);
+         ScaLBL_Comm->RecvGrad(Phi,Gradient);
 
-		// *************EVEN TIMESTEP*************
-		// Compute the Phase indicator field
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
-
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
-
-		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-		timestep++;
-
+         // Perform the collision operation
+         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                 alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                 alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
+         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+         timestep++;
+         //************************************************************************
 		printf("Check after even time \n");
 
 		SIZE=2*Np*sizeof(double);
@@ -377,7 +348,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -415,35 +386,38 @@ int main(int argc, char **argv)
 		}
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 
-		if (rank==0)	printf ("Initializing distributions \n");
-		// Initialize the phase field and variables
-		ScaLBL_D3Q19_Init(fq, Np);
-		if (rank==0)	printf ("Initializing phase field \n");
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm.last_interior, Np);
+
+        if (rank==0)    printf ("Initializing distributions \n");
+        ScaLBL_D3Q19_Init(fq, Np);
+        if (rank==0)    printf ("Initializing phase field \n");
+        ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastInterior(), Np);
 
 		// *************ODD TIMESTEP*************
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
+        // Read for Aq, Bq happens in this routine (requires communication)
+        ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+        
+        // compute the gradient 
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_Comm->RecvGrad(Phi,Gradient);
+        
+        // Perform the collision operation
+        ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+        ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
-		
-		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+        ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
-
 
 		printf("Check after odd time \n");
 		SIZE=2*Np*sizeof(double);
@@ -457,7 +431,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -482,28 +456,29 @@ int main(int argc, char **argv)
 			}
 		}
 
+		// EVEN TIMESTEP
+        // Compute the Phase indicator field
+         ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+         ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+         ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+         
+         // compute the gradient 
+         ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->SendHalo(Phi);
+         ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->LastExterior(), Np);
+         ScaLBL_Comm->RecvGrad(Phi,Gradient);
 
-		// *************EVEN TIMESTEP*************
-		// Compute the Phase indicator field
-		ScaLBL_Comm.BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm.next, Np);
-
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular.SendHalo(Phi);
-		ScaLBL_Comm_Regular.RecvHalo(Phi);
-
-		// Perform the collision operation
-		ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm.next, Np, Np);
-		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm.next, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-		timestep++;
+         // Perform the collision operation
+         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                 alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+         ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+                 alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
+         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+         timestep++;
+         //************************************************************************
 		printf("Check after even time \n");
 
 		SIZE=2*Np*sizeof(double);
@@ -517,7 +492,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						int idx = Map(i,j,k);
     					nA=DENSITY[idx];
     					nB=DENSITY[Np+idx];
@@ -551,7 +526,6 @@ int main(int argc, char **argv)
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
-
 	return check;
 }
 

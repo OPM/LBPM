@@ -308,7 +308,7 @@ int main(int argc, char **argv)
 		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);                    /*    1  */
 		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = 1;
 		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-		Dm.CommInit(comm);																/*   2 */
+		Dm.CommInit();																/*   2 */
 
 		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
 
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 
 		// Initialize communication structures in averaging domain
 		//		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-		//		Dm.CommInit(comm);
+		//		Dm.CommInit();
 		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
 		Mask.CommInit(comm);
 

@@ -133,8 +133,8 @@ void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct
     int ngy = ny+2*abs(sy);
     int ngz = nz+2*abs(sz);
     Array<double> tmp1(nx,ny,nz), tmp2(ngx,ngy,ngz), tmp3(ngx,ngy,ngz);
-    fillHalo<double> fillData1(comm,rank_info,nx,ny,nz,1,1,1,0,1);
-    fillHalo<double> fillData2(comm,rank_info,nx,ny,nz,abs(sx),abs(sy),abs(sz),0,1);
+    fillHalo<double> fillData1(comm,rank_info,{nx,ny,nz},{1,1,1},0,1);
+    fillHalo<double> fillData2(comm,rank_info,{nx,ny,nz},{abs(sx),abs(sy),abs(sz)},0,1);
     fillData1.copy(data,tmp1);
     fillData2.copy(tmp1,tmp2);
     fillData2.fill(tmp2);
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
     fillBubbleData( bubbles, Phase, SignDist, Lx, Ly, Lz, rank_info );
 
     // Communication the halos
-    fillHalo<double> fillData(comm,rank_info,nx,ny,nz,1,1,1,0,1);
+    fillHalo<double> fillData(comm,rank_info,{nx,ny,nz},{1,1,1},0,1);
     fillData.fill(Phase);
     fillData.fill(SignDist);
 
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
     // Create the MeshDataStruct
     std::vector<IO::MeshDataStruct> meshData(1);
     meshData[0].meshName = "domain";
-    meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(rank_info,nx,ny,nz,Lx,Ly,Lz) );
+    meshData[0].mesh = std::make_shared<IO::DomainMesh>(rank_info,nx,ny,nz,Lx,Ly,Lz);
     std::shared_ptr<IO::Variable> PhaseVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> SignDistVar( new IO::Variable() );
     std::shared_ptr<IO::Variable> BlobIDVar( new IO::Variable() );

@@ -170,6 +170,12 @@ void unpack( std::set<TYPE>& data, const char *buffer );
 
 
 // Helper functions
+inline double sumReduce( MPI_Comm comm, double x )
+{
+    double y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_DOUBLE,MPI_SUM,comm);
+    return y;
+}
 inline float sumReduce( MPI_Comm comm, float x )
 {
     float y = 0;
@@ -199,10 +205,22 @@ inline std::vector<int> sumReduce( MPI_Comm comm, const std::vector<int>& x )
 	MPI_Allreduce(x.data(),y.data(),x.size(),MPI_INT,MPI_SUM,comm);
     return y;
 }
+inline double maxReduce( MPI_Comm comm, double x )
+{
+    double y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_DOUBLE,MPI_MAX,comm);
+    return y;
+}
 inline float maxReduce( MPI_Comm comm, float x )
 {
     float y = 0;
 	MPI_Allreduce(&x,&y,1,MPI_FLOAT,MPI_MAX,comm);
+    return y;
+}
+inline int maxReduce( MPI_Comm comm, int x )
+{
+    int y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_INT,MPI_MAX,comm);
     return y;
 }
 

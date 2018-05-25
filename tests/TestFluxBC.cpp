@@ -3,6 +3,17 @@
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+  //auto db = std::make_shared<Database>( "Domain.in" );
+    auto db = std::make_shared<Database>();
+    db->putScalar<int>( "BC", 0 );
+    db->putVector<int>( "nproc", { 1, 1, 1 } );
+    db->putVector<int>( "n", { 16, 16, 16 } );
+    db->putScalar<int>( "nspheres", 1 );
+    db->putVector<double>( "L", { 1, 1, 1 } );
+    return db;
+}
 
 int main (int argc, char **argv)
 {
@@ -20,22 +31,25 @@ int main (int argc, char **argv)
 		ASSERT(nprocs==1);
 	}
 	{
-		int i,j,k,n;
-		int Nx,Ny,Nz,Np;
+	  int i,j,k,n,Np;
 		bool pBC=true;
-		int nprocx,nprocy,nprocz;
 		double Lx,Ly,Lz;
-		Nx = Ny = Nz = 16;
 		Lx = Ly = Lz = 1.f;
-		nprocx=nprocy=nprocz=1;
 		double din,dout;
 		int BC=1;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-
-		Nz += 2;
+	    // Load inputs
+	    auto db = loadInputs( nprocs );
+	    int Nx = db->getVector<int>( "n" )[0];
+	    int Ny = db->getVector<int>( "n" )[1];
+	    int Nz = db->getVector<int>( "n" )[2];
+	    int nprocx = db->getVector<int>( "nproc" )[0];
+	    int nprocy = db->getVector<int>( "nproc" )[1];
+	    int nprocz = db->getVector<int>( "nproc" )[2];
+		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		
+		Nx += 2;   Ny+=2;	Nz += 2;
 		Nx = Ny = Nz;	// Cubic domain
-
 		int N = Nx*Ny*Nz;
 
 		//.......................................................................
@@ -67,25 +81,13 @@ int main (int argc, char **argv)
 		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 		//.........................................................
 		// Initialize communication structures in averaging domain
-		for (i=0; i<Dm.Nx*Dm.Ny*Dm.Nz; i++) Dm.id[i] = id[i];
-		Dm.CommInit(comm);
-
-		Np=0;  // number of local pore nodes
-		//.......................................................................
-		for (k=1;k<Nz-1;k++){
-			for (j=1;j<Ny-1;j++){
-				for (i=1;i<Nx-1;i++){
-					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
-						Np++;
-					}
-				}
-			}
-		}
-		//...........................................................................
+		for (i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = id[i];
+		Dm->CommInit();
+		Np=Dm->PoreCount();
+		//................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Dm));
 
 		if (rank==0)	printf ("Set up the neighborlist \n");
 		int Npad=Np+32;
@@ -94,7 +96,7 @@ int main (int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -142,7 +144,7 @@ int main (int argc, char **argv)
 		double flux = 1.0;
 		int timestep=0; 
 
-		din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+		din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 		
 		printf("Computed pressure for flux = %f\n",din);
 		
@@ -165,7 +167,7 @@ int main (int argc, char **argv)
     	for (j=1;j<Ny-1;j++){
     		for (i=1;i<Nx-1;i++){
     			n = k*Nx*Ny+j*Nx+i;
-    			if (Dm.id[n] > 0){
+    			if (Dm->id[n] > 0){
     				int idx = Map(i,j,k);
     				Q += VEL[2*Np+idx];
     			}
@@ -194,21 +196,21 @@ int main (int argc, char **argv)
 
 		while (timestep < 2000) {
 
-			ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-			din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-			ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
-			ScaLBL_Comm.SendD3Q19AA(fq); //READ FORM NORMAL
-			ScaLBL_D3Q19_AAeven_MRT(fq,  ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-			din = ScaLBL_Comm.D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-			ScaLBL_Comm.D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
-			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+			ScaLBL_D3Q19_AAeven_MRT(fq,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 			//************************************************************************/
@@ -226,7 +228,7 @@ int main (int argc, char **argv)
 		for (k=1;k<Nz-1;k++){
 			for (i=1;i<Nx-1;i++){ 
 				n = k*Nx*Ny+j*Nx+i;
-				if (Dm.id[n] > 0){
+				if (Dm->id[n] > 0){
 					int idx = Map(i,j,k);
 					double vz = VEL[2*Np+idx];
 					printf("%f ",vz);
@@ -242,7 +244,7 @@ int main (int argc, char **argv)
 		for (j=1;j<Ny-1;j++){
 			for (i=1;i<Nx-1;i++){ 
 				n = k*Nx*Ny+j*Nx+i;
-				if (Dm.id[n] > 0){
+				if (Dm->id[n] > 0){
 					int idx = Map(i,j,k);
 					double vz = VEL[2*Np+idx];
 					printf("%f ",vz);
@@ -256,7 +258,7 @@ int main (int argc, char **argv)
     	for (j=1;j<Ny-1;j++){
     		for (i=1;i<Nx-1;i++){
     			n = k*Nx*Ny+j*Nx+i;
-    			if (Dm.id[n] > 0){
+    			if (Dm->id[n] > 0){
     				int idx = Map(i,j,k);
     				Q += VEL[2*Np+idx];
     			}

@@ -11,11 +11,8 @@
 
 using namespace std;
 
-
-
 extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 	if (rank == 0) {
-		int n;
 		int neighbor;
 
 		for (int i = 0; i < Np; i++) {
@@ -30,6 +27,22 @@ extern void PrintNeighborList(int * neighborList, int Np, int rank) {
 	}
 }
 
+
+std::shared_ptr<Database> loadInputs( int nprocs )
+{
+    auto db = std::make_shared<Database>( "Domain.in" );
+
+    db->putScalar<int>( "BC", 0 );
+    if ( nprocs == 1 ){
+        db->putVector<int>( "nproc", { 1, 1, 1 } );
+        db->putVector<int>( "n", { 3, 3, 3 } );
+        db->putScalar<int>( "nspheres", 0 );
+        db->putVector<double>( "L", { 1, 1, 1 } );
+    }
+    return db;
+}
+
+
 //***************************************************************************************
 int main(int argc, char **argv)
 {
@@ -42,12 +55,10 @@ int main(int argc, char **argv)
 	MPI_Comm comm = MPI_COMM_WORLD;
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
-	int check;
+	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
 		int iproc,jproc,kproc;
-
 
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -56,79 +67,31 @@ int main(int argc, char **argv)
 		}
 
 		// BGK Model parameters
-		string FILENAME;
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double tau,Fx,Fy,Fz,tol;
+		double tau,Fx,Fy,Fz;
 		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
-		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int dim = 3; if (rank == 0) printf("dim=%d\n",dim);
 		int timestep = 0;
 		int timesteps = 2;
 
 		tau =1.0;
-		double mu=(tau-0.5)/3.0;
 		double rlx_setA=1.0/tau;
 		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 		Fx = Fy = 1.0;
 		Fz = 1.0;
 
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				printf("domain.good == true \n");
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=3; Ny = 3;
-				Nz = 3;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
-
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
-
+        // Load inputs
+		string FILENAME = argv[1];
+        // Load inputs
+		if (rank==0)	printf("Loading input database \n");
+        auto db = std::make_shared<Database>( FILENAME );
+        auto domain_db = db->getDatabase( "Domain" );
+        int Nx = domain_db->getVector<int>( "n" )[0];
+        int Ny = domain_db->getVector<int>( "n" )[1];
+        int Nz = domain_db->getVector<int>( "n" )[2];
+        int nprocx = domain_db->getVector<int>( "nproc" )[0];
+        int nprocy = domain_db->getVector<int>( "nproc" )[1];
+        int nprocz = domain_db->getVector<int>( "nproc" )[2];
 		if (rank==0){
 			printf("********************************************************\n");
 			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
@@ -149,10 +112,7 @@ int main(int argc, char **argv)
 			printf("\n\n");
 		}
 
-		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
-		int BoundaryCondition=0;
-
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
 
 		Nx += 2;
 		Ny += 2;
@@ -169,7 +129,7 @@ int main(int argc, char **argv)
 		/*
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
 		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-		fread(Dm.id,1,N,IDFILE);
+		fread(Dm->id,1,N,IDFILE);
 		fclose(IDFILE);
 		 */
 
@@ -178,11 +138,11 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 				}
 			}
 		}
-		Dm.CommInit(comm);
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
@@ -191,7 +151,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (Dm.id[n] > 0){
+					if (Dm->id[n] > 0){
 						Np++;
 					}
 				}
@@ -199,16 +159,14 @@ int main(int argc, char **argv)
 		}
 
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
-
-		// Create a communicator for the device
-		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		auto ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Dm));
 
 		//...........device phase ID.................................................
 		if (rank==0)	printf ("Copying phase ID to device \n");
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm.id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id, N);
 		//...........................................................................
 
 		if (rank==0){
@@ -225,7 +183,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 
 		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 
 
 	        if (rank == 0) PrintNeighborList(neighborList,Np, rank);
@@ -259,8 +217,8 @@ int main(int argc, char **argv)
 		starttime = MPI_Wtime();
 
 		/************ MAIN ITERATION LOOP (timing communications)***************************************/
-		//ScaLBL_Comm.SendD3Q19(dist, &dist[10*Np]);
-		//ScaLBL_Comm.RecvD3Q19(dist, &dist[10*Np]);
+		//ScaLBL_Comm->SendD3Q19(dist, &dist[10*Np]);
+		//ScaLBL_Comm->RecvD3Q19(dist, &dist[10*Np]);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		if (rank==0) printf("Beginning AA timesteps...\n");
@@ -269,16 +227,20 @@ int main(int argc, char **argv)
 
 		while (timestep < 2) {
 
-		  ScaLBL_D3Q19_AAeven_MRT(dist, 0, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FROM NORMAL
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
-			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_Comm.SendD3Q19AA(dist); //READ FROM NORMAL
-			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_Comm->SendD3Q19AA(dist); //READ FORM NORMAL
+			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
+			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			timestep++;
+			//************************************************************************/
 			
 			timestep++;
 
@@ -297,43 +259,8 @@ int main(int argc, char **argv)
 		MLUPS *= nprocs;
 		if (rank==0) printf("Lattice update rate (process)= %f MLUPS \n", MLUPS);
 		if (rank==0) printf("********************************************************\n");
-
-		// Number of memory references from the swap algorithm (per timestep)
-		// 18 reads and 18 writes for each lattice site
-		double MemoryRefs = Np*38;
-
-		int SIZE=Np*sizeof(double);
-		/*
-		double *Vz;
-		Vz= new double [Np];
-		double *Vx;
-		Vx= new double [Np];
-		double *Vy;
-		Vy= new double [Np];
-		ScaLBL_D3Q19_AA_Velocity(dist, &dist[10*Np],Velocity, Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-		ScaLBL_CopyToHost(&Vx[0],&Velocity[0],SIZE);
-		ScaLBL_CopyToHost(&Vy[0],&Velocity[Np],SIZE);
-		ScaLBL_CopyToHost(&Vz[0],&Velocity[2*Np],SIZE);
-
-		printf("Force: %f,%f,%f \n",Fx,Fy,Fz);
-		double vz;
-		double W = 1.f*Nx-4;
-		j=Ny/2; k=Nz/2;
-		for (j=1;j<Ny-1;j++){
-			for (i=1;i<Nx-1;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				//printf("%i ",Dm.id[n]);
-				n = Map(i,j,k);
-				//printf("%i,%i,%i; %i :",i,j,k,n);
-				if (n<0) vz =0.f;
-				else vz=Vz[n];
-				printf("%f ",vz);
-			}
-			printf("\n");
-		}
-		*/
 		
+		int SIZE=Np*sizeof(double);
 		double *DIST;
 		DIST= new double [19*Np];
 		ScaLBL_CopyToHost(&DIST[0],&dist[0],19*SIZE);
@@ -348,7 +275,7 @@ int main(int argc, char **argv)
 			for (k=1;k<Nz-1;k++){
 				for (j=1;j<Ny-1;j++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];
@@ -369,7 +296,7 @@ int main(int argc, char **argv)
 			for (k=1;k<Nz-1;k++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];
@@ -389,7 +316,7 @@ int main(int argc, char **argv)
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					//printf("%i ",Dm.id[n]);
+					//printf("%i ",Dm->id[n]);
 					n = Map(i,j,k);
 					double fa = DIST[(2*q+1)*Np+n];
 					double fb = DIST[2*(q+1)*Np+n];

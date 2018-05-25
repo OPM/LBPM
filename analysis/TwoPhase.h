@@ -64,7 +64,7 @@ class TwoPhase{
 
 public:
 	//...........................................................................
-	Domain& Dm;
+	std::shared_ptr <Domain> Dm;
 	int NumberComponents_WP,NumberComponents_NWP;
 	//...........................................................................
 	// Averaging variables
@@ -145,7 +145,7 @@ public:
 	DoubleArray ComponentAverages_WP;
 	DoubleArray ComponentAverages_NWP;
 	//...........................................................................
-	TwoPhase(Domain &dm);
+	TwoPhase(std::shared_ptr <Domain> Dm);
 	~TwoPhase();
 	void Initialize();
 //	void SetupCubes(Domain &Dm);

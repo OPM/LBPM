@@ -8,6 +8,7 @@
 
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
+#include "common/SpherePack.h"
 #include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
@@ -18,7 +19,6 @@
  */
 
 using namespace std;
-
 
 int main(int argc, char **argv)
 {
@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
 	//*****************************************
@@ -52,66 +51,33 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 	}
 
-	// Variables that specify the computational domain  
-	string FILENAME;
-	unsigned int nBlocks, nthreads;
-	int Nx,Ny,Nz;		// local sub-domain size
-	int nspheres;		// number of spheres in the packing
-	double Lx,Ly,Lz;	// Domain length
 	double D = 1.0;		// reference length for non-dimensionalization
-
+    // Load inputs
+	string FILENAME = argv[1];
+    // Load inputs
+	if (rank==0)	printf("Loading input database \n");
+    auto db = std::make_shared<Database>( FILENAME );
+    auto domain_db = db->getDatabase( "Domain" );
+    int Nx = domain_db->getVector<int>( "n" )[0];
+    int Ny = domain_db->getVector<int>( "n" )[1];
+    int Nz = domain_db->getVector<int>( "n" )[2];
+    int nprocx = domain_db->getVector<int>( "nproc" )[0];
+    int nprocy = domain_db->getVector<int>( "nproc" )[1];
+    int nprocz = domain_db->getVector<int>( "nproc" )[2];
+    int nspheres = domain_db->getScalar<int>( "nsphere" );
+    int Lx = domain_db->getVector<double>( "L" )[0];
+    int Ly = domain_db->getVector<double>( "L" )[1];
+    int Lz = domain_db->getVector<double>( "L" )[2];
+    
 	int i,j,k,n;
 
-	if (rank==0){
-		//.......................................................................
-		// Reading the domain information file
-		//.......................................................................
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> Nx;
-		domain >> Ny;
-		domain >> Nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
-		//.......................................................................
-	}
 	// **************************************************************
-	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(comm);
-	//.................................................
-	// Computational domain
-	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-	MPI_Barrier(comm);
-	
-	// **************************************************************
-	
 	if (nprocs != nprocx*nprocy*nprocz){
 		printf("nprocx =  %i \n",nprocx);
 		printf("nprocy =  %i \n",nprocy);
 		printf("nprocz =  %i \n",nprocz);
 		INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
 	}
-
-	 InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc, 
-			 	 	 rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
-			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
-	 
-	 MPI_Barrier(comm);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain

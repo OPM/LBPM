@@ -44,7 +44,6 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
     FILE *fid= fopen(filename.c_str(),"rb");
     if ( fid==NULL )
         ERROR("Error opening file");
-    auto pos = std::min(filename.find_last_of(47),filename.find_last_of(90));
     std::vector<std::string> timesteps;
     char buf[1000];
     while (fgets(buf,sizeof(buf),fid) != NULL) {
@@ -160,7 +159,6 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string& path, const std::strin
 #ifdef USE_SILO
         const DatabaseEntry& database = meshDatabase.domains[domain];
         std::string filename = path + "/" + timestep + "/" + database.file;
-        int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
         auto fid = silo::open( filename, silo::READ );
         if ( meshDatabase.meshClass=="PointList" ) {
             Array<double> coords = silo::readPointMesh<double>( fid, database.name );
@@ -262,7 +260,6 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string& path, const st
         const auto& database = meshDatabase.domains[domain];
         auto variableDatabase = meshDatabase.getVariableDatabase( variable );
         std::string filename = path + "/" + timestep + "/" + database.file;
-        int rank = std::stoi(database.file.substr(0,database.file.find(".silo")).c_str());
         auto fid = silo::open( filename, silo::READ );
         var.reset( new Variable( variableDatabase.dim, variableDatabase.type, variable ) );
         if ( meshDatabase.meshClass=="PointList" ) {
