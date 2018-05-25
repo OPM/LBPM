@@ -38,7 +38,9 @@ int main (int argc, char *argv[])
 
     std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
 
-	for (i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
+    Nx+=2; Ny+=2; Nz+=2;
+
+	for (i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;
 
 	Dm->CommInit();
 
@@ -137,11 +139,11 @@ int main (int argc, char *argv[])
 		toReturn = 5;
 		printf("TestCylinderArea.cpp: error tolerance exceeded for common curve length \n");
 	}
-	if ( fabs(Averages->vawn_global(2)+0.2) > 0.01){
+	if ( fabs(Averages->vawn_global(2)+0.25) > 0.01){
 		printf("TestInterfaceSpeed: Error too high for kinematic velocity of wn interface \n");
 		toReturn = 6;
 	}
-	if ( fabs(Averages->vawns_global(2)+0.2) > 0.01){
+	if ( fabs(Averages->vawns_global(2)+0.25) > 0.01){
 		printf("TestInterfaceSpeed: Error too high for kinematic velocity of common curve \n");
 		toReturn = 7;
 	}

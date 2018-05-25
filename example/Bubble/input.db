@@ -10,6 +10,7 @@ Color {
     pBC = 0
     din = 1.0
     dout = 1.0
+    flux = 1.0e-3
     timestepMax = 200
     interval = 1000
     tol = 1e-5;
