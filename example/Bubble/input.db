@@ -10,6 +10,7 @@ Color {
     pBC = 0
     din = 1.0
     dout = 1.0
+    flux = 1.0e-3
     timestepMax = 200
     interval = 1000
     tol = 1e-5;
@@ -19,7 +20,7 @@ Color {
 
 Domain {
     nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
-    n = 16, 16, 16      // Size of local domain (Nx,Ny,Nz)
+    n = 80, 80, 80      // Size of local domain (Nx,Ny,Nz)
     n_spheres = 1       // Number of spheres
     L = 1, 1, 1         // Length of domain (x,y,z)
     BC = 0              // Boundary condition type
