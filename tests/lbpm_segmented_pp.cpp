@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 
 		int N = (nx+2)*(ny+2)*(nz+2);
 
-		std::shared_ptr<Domain> Dm (new Domain(db,comm));
+		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
  //		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
