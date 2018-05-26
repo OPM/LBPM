@@ -131,63 +131,32 @@ int main(int argc, char **argv)
 		//  char fluidValue,solidValue;
 		int MAXTIME=1000;
 		int READ_FROM_BLOCK=0;
-		if (argc > 1){
-			MAXTIME=atoi(argv[1]);
-		}
-		if (argc > 2){
-			READ_FROM_BLOCK=atoi(argv[2]);			
-		}
 
-		std::vector<char> solidValues;
-		std::vector<char> nwpValues;
-		std::string line;
+		string filename;
+		if (argc > 1) filename=argv[1];
+		else ERROR("No input database provided\n");
+		// read the input database 
+		auto db = std::make_shared<Database>( filename );
+		auto domain_db = db->getDatabase( "Domain" );
 
-		if (rank==0){
-			ifstream domain("Domain.in");
-			domain >> nprocx;
-			domain >> nprocy;
-			domain >> nprocz;
-			domain >> nx;
-			domain >> ny;
-			domain >> nz;
-			domain >> nspheres;
-			domain >> Lx;
-			domain >> Ly;
-			domain >> Lz;
+		// Read domain parameters
+		auto L = domain_db->getVector<double>( "L" );
+		auto size = domain_db->getVector<int>( "n" );
+		auto nproc = domain_db->getVector<int>( "nproc" );
+		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
+		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 
-		}
-		MPI_Barrier(comm);
-		// Computational domain
-		MPI_Bcast(&nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-
-		// Check that the number of processors >= the number of ranks
-		if ( rank==0 ) {
-			printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
-			printf("Number of MPI ranks used: %i \n", nprocs);
-			printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
-			fflush(stdout);
-
-		}
-		if ( nprocs < nprocx*nprocy*nprocz ){
-			ERROR("Insufficient number of processors");
-		}
-
-		char LocalRankFilename[40];
+		nx = size[0];
+		ny = size[1];
+		nz = size[2];
+		nprocx = nproc[0];
+		nprocy = nproc[1];
+		nprocz = nproc[2];
 
 		int N = (nx+2)*(ny+2)*(nz+2);
 
-		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+		std::shared_ptr<Domain> Dm (new Domain(db,comm));
+ //		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 		std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
