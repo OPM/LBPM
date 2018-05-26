@@ -36,11 +36,13 @@ int main(int argc, char **argv)
 			rank_offset=0;
 		}
 		*/
+	string filename;
 		if (argc > 1)
 			filename=argv[1];
 		else{
 			ERROR("lbpm_serial_decomp: no in put database provided \n");
 		}
+		int rank_offset=0;
 		
 		//.......................................................................
 		// Reading the domain information file
@@ -50,37 +52,42 @@ int main(int argc, char **argv)
 		int64_t Nx,Ny,Nz;
 		int64_t i,j,k,n;
 		int BC=0;
-		char Filename[40];
 		int64_t xStart,yStart,zStart;
 		//  char fluidValue,solidValue;
 
+		xStart=yStart=zStart=0;
 		// read the input database 
-		db = std::make_shared<Database>( filename );
-		domain_db = db->getDatabase( "Domain" );
+		auto db = std::make_shared<Database>( filename );
+		auto domain_db = db->getDatabase( "Domain" );
 
 		// Read domain parameters
+		auto Filename = domain_db->getScalar<std::string>( "Filename" );
 		auto L = domain_db->getVector<double>( "L" );
 		auto size = domain_db->getVector<int>( "n" );
+		auto SIZE = domain_db->getVector<int>( "N" );
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 
-		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 		nx = size[0];
 		ny = size[1];
 		nz = size[2];
-		nx = L[0];
-		ny = L[1];
-		nz = L[2];
 		nprocx = nproc[0];
 		nprocy = nproc[1];
 		nprocz = nproc[2];
+		Nx = SIZE[0];
+		Ny = SIZE[1];
+		Nz = SIZE[2];
+		//Nx = nprocx*nx;
+		//Ny = nprocx*ny;
+		//Nz = nprocx*nz;
 		
-		printf("Relabeling %i values\n",ReadValues.size());
+		printf("Input media: %s\n",Filename.c_str());
+		printf("Relabeling %lu values\n",ReadValues.size());
 		for (int idx=0; idx<ReadValues.size(); idx++){
 			char oldvalue=ReadValues[idx];
 			char newvalue=WriteValues[idx];
-			printf("oldvalue=%i, newvalue =%i \n",atoi(oldvalue),atoi(newvalue));
+			printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
 		}
 
 /*		if (rank==0){
@@ -92,7 +99,9 @@ int main(int argc, char **argv)
 			domain >> ny;
 			domain >> nz;
 			domain >> nspheres;
-			domain >> Lx;
+			domain >> Lx;		printf("Domain decomposition completed successfully \n");
+		return 0;
+
 			domain >> Ly;
 			domain >> Lz;
 
@@ -115,13 +124,13 @@ int main(int argc, char **argv)
 			printf("Dimensions of segmented image: %ld x %ld x %ld \n",Nx,Ny,Nz);
 			int64_t SIZE = Nx*Ny*Nz;
 			SegData = new char[SIZE];
-			FILE *SEGDAT = fopen(Filename,"rb");
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
 			if (SEGDAT==NULL) ERROR("Error reading segmented data");
 			size_t ReadSeg;
 			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
 			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
 			fclose(SEGDAT);
-			printf("Read segmented data from %s \n",Filename);
+			printf("Read segmented data from %s \n",Filename.c_str());
 		}
 
 		// Get the rank info
@@ -135,6 +144,7 @@ int main(int argc, char **argv)
 		char *loc_id;
 		loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
 
+		std::vector<int> LabelCount[ReadValues.size(),0];
 		// Set up the sub-domains
 		if (rank==0){
 			printf("Distributing subdomains across %i processors \n",nprocs);
@@ -174,12 +184,13 @@ int main(int argc, char **argv)
 										char newvalue=WriteValues[idx];
 										if (locval == oldvalue){
 											loc_id[n] = newvalue;
+											LabelCount[idx]++;
 											idx = ReadValues.size();
 										}
 									}
-									if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
-									else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
-									else                     loc_id[n] = 2;
+									//if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
+									//else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
+									//else                     loc_id[n] = 2;
 
 								}
 							}
@@ -193,9 +204,12 @@ int main(int argc, char **argv)
 					}
 				}
 			}
+		for (int idx=0; idx<ReadValues.size(); idx++){
+		  char label=ReadValues[idx];
+		  int count=LabelCount[idx];
+		  printf("Label=%d, Count=%d \n",label,count);
 		}
 
-		printf("Domain decomposition completed successfully \n");
-		return 0;
+		}
 
 }
