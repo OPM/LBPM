@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 	
 	int rank=0;
 
-		bool MULTINPUT=false;
+/*		bool MULTINPUT=false;
 
 		int NWP,SOLID,rank_offset;
 		SOLID=atoi(argv[1]);
@@ -35,7 +35,13 @@ int main(int argc, char **argv)
 			MULTINPUT=true;
 			rank_offset=0;
 		}
-
+		*/
+		if (argc > 1)
+			filename=argv[1];
+		else{
+			ERROR("lbpm_serial_decomp: no in put database provided \n");
+		}
+		
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
@@ -48,11 +54,36 @@ int main(int argc, char **argv)
 		int64_t xStart,yStart,zStart;
 		//  char fluidValue,solidValue;
 
-		std::vector<char> solidValues;
-		std::vector<char> nwpValues;
-		std::string line;
+		// read the input database 
+		db = std::make_shared<Database>( filename );
+		domain_db = db->getDatabase( "Domain" );
 
-		if (rank==0){
+		// Read domain parameters
+		auto L = domain_db->getVector<double>( "L" );
+		auto size = domain_db->getVector<int>( "n" );
+		auto nproc = domain_db->getVector<int>( "nproc" );
+		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
+		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
+
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+		nx = size[0];
+		ny = size[1];
+		nz = size[2];
+		nx = L[0];
+		ny = L[1];
+		nz = L[2];
+		nprocx = nproc[0];
+		nprocy = nproc[1];
+		nprocz = nproc[2];
+		
+		printf("Relabeling %i values\n",ReadValues.size());
+		for (int idx=0; idx<ReadValues.size(); idx++){
+			char oldvalue=ReadValues[idx];
+			char newvalue=WriteValues[idx];
+			printf("oldvalue=%i, newvalue =%i \n",atoi(oldvalue),atoi(newvalue));
+		}
+
+/*		if (rank==0){
 			ifstream domain("Domain.in");
 			domain >> nprocx;
 			domain >> nprocy;
@@ -75,6 +106,7 @@ int main(int argc, char **argv)
 			image >> zStart;
 
 		}
+		*/
 		nprocs=nprocx*nprocy*nprocz;
 
 		char *SegData = NULL;
@@ -136,6 +168,15 @@ int main(int argc, char **argv)
 							for (j=0;j<ny+2;j++){
 								for (i=0;i<nx+2;i++){
 									n = k*(nx+2)*(ny+2) + j*(nx+2) + i;;
+									char locval = loc_id[n];
+									for (int idx=0; idx<ReadValues.size(); idx++){
+										char oldvalue=ReadValues[idx];
+										char newvalue=WriteValues[idx];
+										if (locval == oldvalue){
+											loc_id[n] = newvalue;
+											idx = ReadValues.size();
+										}
+									}
 									if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
 									else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
 									else                     loc_id[n] = 2;
