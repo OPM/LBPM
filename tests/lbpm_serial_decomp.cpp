@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 	char *loc_id;
 	loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
 
-	std::vector<int> LabelCount(ReadValues.size(),0]);
+	std::vector<int> LabelCount(ReadValues.size(),0);
 	// Set up the sub-domains
 	if (rank==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
