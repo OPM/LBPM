@@ -132,6 +132,9 @@ int main(int argc, char **argv)
 		int MAXTIME=1000;
 		int READ_FROM_BLOCK=0;
 
+		char LocalRankString[8];
+		char LocalRankFilename[40];
+
 		string filename;
 		if (argc > 1) filename=argv[1];
 		else ERROR("No input database provided\n");
