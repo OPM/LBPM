@@ -73,9 +73,9 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
-    std::shared_ptr<Domain> Dm ();
-    for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
-    Dm->CommInit();
+    //    std::shared_ptr<Domain> Dm ();
+    //for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
+    //Dm->CommInit();
 
 	// Check that the number of processors >= the number of ranks
 	if ( rank==0 ) {
