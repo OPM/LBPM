@@ -40,13 +40,15 @@ int main(int argc, char **argv)
 
 	//std::vector<std::string> filenames;
 	if ( argc<2 ) {
-        if ( rank == 0 )
+        if ( rank == 0 ){
     		printf("At least one filename must be specified\n");
+        }
 		return 1;
 	}
 	std::string filename = std::string(argv[1]);
-    if ( rank == 0 )
+    if ( rank == 0 ){
 		printf("Input data file: %s\n",filename.c_str());
+    }
     
     auto db = std::make_shared<Database>( filename );
     auto domain_db = db->getDatabase( "Domain" );
@@ -58,9 +60,9 @@ int main(int argc, char **argv)
     auto size = domain_db->getVector<int>( "n" );
     auto nproc = domain_db->getVector<int>( "nproc" );
     int BoundaryCondition = domain_db->getScalar<int>( "BC" );
-    int Nx = size[0];
-    int Ny = size[1];
-    int Nz = size[2];
+    int nx = size[0];
+    int ny = size[1];
+    int nz = size[2];
     double Lx = L[0];
     double Ly = L[1];
     double Lz = L[2];
@@ -71,11 +73,9 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
-    std::shared_ptr<Domain> Dm (new Domain(domain_db));
+    std::shared_ptr<Domain> Dm (new Domain(domain_db, comm));
     for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
     Dm->CommInit();
-    std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
-
 
 	// Check that the number of processors >= the number of ranks
 	if ( rank==0 ) {
