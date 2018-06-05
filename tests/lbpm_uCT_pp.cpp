@@ -137,9 +137,8 @@ int main(int argc, char **argv)
         MultiScaleSmooth[i].fill(0);
         Mean[i].fill(0);
         NonLocalMean[i].fill(0);
-	    fillDouble[i].reset(new fillHalo<double>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
-	    fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
-	    fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
+	    fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info) );
+	    fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info) );
 	}
 
     // Read the subvolume of interest on each processor
@@ -179,9 +178,9 @@ int main(int argc, char **argv)
 	for (int k=0;k<Nz[0]+2;k++) {
 		for (int j=0;j<Ny[0]+2;j++) {
 			for (int i=0;i<Nx[0]+2;i++) {
-				int iproc = Dm[0]->iproc;
-				int jproc = Dm[0]->jproc;
-				int kproc = Dm[0]->kproc;
+				int iproc = Dm[0]->iproc();
+				int jproc = Dm[0]->jproc();
+				int kproc = Dm[0]->kproc();
 				
 				int x=iproc*Nx[0]+i-1;
 				int y=jproc*Ny[0]+j-1;
