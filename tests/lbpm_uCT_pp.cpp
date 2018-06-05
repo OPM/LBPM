@@ -20,7 +20,6 @@
 #include "IO/Writer.h"
 #include "IO/netcdf.h"
 #include "analysis/analysis.h"
-#include "analysis/eikonal.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
 
@@ -48,14 +47,34 @@ int main(int argc, char **argv)
 	std::string filename = std::string(argv[1]);
     if ( rank == 0 )
 		printf("Input data file: %s\n",filename.c_str());
+    
+    auto db = std::make_shared<Database>( filename );
+    auto domain_db = db->getDatabase( "Domain" );
+    auto uct_db = db->getDatabase( "uCT" );
+    auto analysis_db = db->getDatabase( "Analysis" );
+    
+    // Read domain values
+    auto L = domain_db->getVector<double>( "L" );
+    auto size = domain_db->getVector<int>( "n" );
+    auto nproc = domain_db->getVector<int>( "nproc" );
+    int BoundaryCondition = domain_db->getScalar<int>( "BC" );
+    int Nx = size[0];
+    int Ny = size[1];
+    int Nz = size[2];
+    double Lx = L[0];
+    double Ly = L[1];
+    double Lz = L[2];
+    int nprocx = nproc[0];
+    int nprocy = nproc[1];
+    int nprocz = nproc[2];
 
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
-	int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-	double Lx, Ly, Lz;
-    read_domain( rank, nprocs, comm, nprocx, nprocy, nprocz, nx, ny, nz, nspheres, Lx, Ly, Lz );
-	int BC=0;
+    std::shared_ptr<Domain> Dm (new Domain(domain_db));
+    for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
+    Dm->CommInit();
+    std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
 
 	// Check that the number of processors >= the number of ranks
@@ -121,7 +140,6 @@ int main(int argc, char **argv)
 	    fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
 	    fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
 	}
-
 
     // Read the subvolume of interest on each processor
 	PROFILE_START("ReadVolume");
