@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
-    std::shared_ptr<Domain> Dm (new Domain(domain_db, comm));
+    std::shared_ptr<Domain> Dm ();
     for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
     Dm->CommInit();
 
@@ -100,15 +100,16 @@ int main(int argc, char **argv)
     }
     int N_levels = Nx.size();
 
-	// Initialize the domain
-	std::vector<std::shared_ptr<Domain>> Dm(N_levels);
+    // Initialize the domain
+    std::vector<std::shared_ptr<Domain>> Dm(N_levels);
     for (int i=0; i<N_levels; i++) {
-        Dm[i].reset( new Domain(Nx[i],Ny[i],Nz[i],rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC) );
-        int N = (Nx[i]+2)*(Ny[i]+2)*(Nz[i]+2);
-    	for (int n=0; n<N; n++)
-			Dm[i]->id[n] = 1;
-    	Dm[i]->CommInit(comm);
-	}
+    	Dm[i].reset( new Domain(domain_db, comm) );
+    	int N = (Nx[i]+2)*(Ny[i]+2)*(Nz[i]+2);
+    	for (int n=0; n<N; n++){
+    		Dm[i]->id[n] = 1;
+    	}
+    	Dm[i]->CommInit();
+    }
 
     // array containing a distance mask
     Array<float> MASK(Nx[0]+2,Ny[0]+2,Nz[0]+2);
