@@ -71,6 +71,10 @@ int main(int argc, char **argv)
 	int nprocz = nproc[2];
 
 	auto InputFile=uct_db->getScalar<std::string>( "InputFile" );    
+	auto rough_cutoff=uct_db->getScalar<float>( "rought_cutoff" );    
+	auto lamda=uct_db->getScalar<float>( "lamda" );    
+	auto nlm_sigsq=uct_db->getScalar<float>( "nlm_sigsq" );    
+	auto nlm_depth=uct_db->getScalar<int>( "nlm_depth" );    
 
 	//.......................................................................
 	// Reading the domain information file
@@ -243,7 +247,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-
 	// Fill the source data for the coarse meshes
 	PROFILE_START("CoarsenMesh");
 	for (int i=1; i<N_levels; i++) {
@@ -269,7 +272,8 @@ int main(int argc, char **argv)
 	if (rank==0)
 		printf("Initialize full mesh\n");
 	solve( LOCVOL[0], Mean[0], ID[0], Dist[0], MultiScaleSmooth[0],
-			NonLocalMean[0], *fillFloat[0], *Dm[0], nprocx );
+			NonLocalMean[0], *fillFloat[0], *Dm[0], nprocx, 
+			rough_cutoff, lamda, nlm_sigsq, nlm_depth);
 	PROFILE_STOP("Solve fill mesh");
 	MPI_Barrier(comm);
 
