@@ -70,8 +70,7 @@ int main(int argc, char **argv)
     int nprocy = nproc[1];
     int nprocz = nproc[2];
     
-    auto InputFile=uct_db->getScalar<std::string>( "InputFile" );
-    
+    auto InputFile=uct_db->getScalar<std::string>( "InputFile" );    
 
 	//.......................................................................
 	// Reading the domain information file
@@ -91,7 +90,7 @@ int main(int argc, char **argv)
 	}
 
     // Determine the maximum number of levels for the desired coarsen ratio
-    int ratio[3] = {4,4,4};
+    int ratio[3] = {2,2,2};
     //std::vector<size_t> ratio = {4,4,4};
     std::vector<int> Nx(1,nx), Ny(1,ny), Nz(1,nz);
     while ( Nx.back()%ratio[0]==0 && Nx.back()>8 &&
@@ -176,7 +175,6 @@ int main(int argc, char **argv)
 
     // Filter the original data
     filter_src( *Dm[0], LOCVOL[0] );
-
 	
 	// Set up the mask to be distance to cylinder (crop outside cylinder)
 	float CylRad=900;
@@ -256,6 +254,13 @@ int main(int argc, char **argv)
         Array<float> coarse = tmp.coarsen( filter );
         fillFloat[i]->copy( coarse, LOCVOL[i] );
         fillFloat[i]->fill( LOCVOL[i] );
+	if (rank==0){
+	   printf("Coarsen level %i \n",i);
+	   printf("   Nx=%i, Ny=%i, Nz=%i \n",int(tmp.size(0)),int(tmp.size(1)),int(tmp.size(2))  );
+	   printf("   filter_x=%i, filter_y=%i, filter_z=%i \n",int(filter.size(0)),int(filter.size(1)),int(filter.size(2))  );
+	   printf("   ratio= %i,%i,%i \n",int(ratio[0]),int(ratio[1]),int(ratio[2])  );
+	}
+	MPI_Barrier(comm);
     }
     PROFILE_STOP("CoarsenMesh");
 
@@ -267,6 +272,7 @@ int main(int argc, char **argv)
     solve( LOCVOL.back(), Mean.back(), ID.back(), Dist.back(), MultiScaleSmooth.back(),
         NonLocalMean.back(), *fillFloat.back(), *Dm.back(), nprocx );
     PROFILE_STOP("Solve coarse mesh");
+    MPI_Barrier(comm);
 
     // Refine the solution
     PROFILE_START("Refine distance");
@@ -279,7 +285,7 @@ int main(int argc, char **argv)
             NonLocalMean[i], *fillFloat[i], *Dm[i], nprocx, i );
     }
     PROFILE_STOP("Refine distance");
-    
+    MPI_Barrier(comm);    
     
         // Perform a final filter
     PROFILE_START("Filtering final domains");
