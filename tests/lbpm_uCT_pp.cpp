@@ -92,6 +92,7 @@ int main(int argc, char **argv)
 
     // Determine the maximum number of levels for the desired coarsen ratio
     int ratio[3] = {4,4,4};
+    //std::vector<size_t> ratio = {4,4,4};
     std::vector<int> Nx(1,nx), Ny(1,ny), Nz(1,nz);
     while ( Nx.back()%ratio[0]==0 && Nx.back()>8 &&
             Ny.back()%ratio[1]==0 && Ny.back()>8 &&
@@ -140,8 +141,8 @@ int main(int argc, char **argv)
         MultiScaleSmooth[i].fill(0);
         Mean[i].fill(0);
         NonLocalMean[i].fill(0);
-	fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
-	fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],1,1,1,0,1) );
+	fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,{Nx[i],Ny[i],Nz[i]},{1,1,1},0,1) );
+	fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,{Nx[i],Ny[i],Nz[i]},{1,1,1},0,1) );
 	}
 
     // Read the subvolume of interest on each processor
