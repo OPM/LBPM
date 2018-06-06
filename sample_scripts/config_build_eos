@@ -36,7 +36,7 @@ cmake                                        \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
        -DBUILD_SHARED_LIBS=OFF		     \
-       -D USE_NETCDF=0	    		     \
+       -D USE_NETCDF=1	    		     \
        -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
        -D HDF5_DIRECTORY=$HDF5_DIR	     \
        -D CMAKE_SKIP_RPATH=true		     \
