@@ -141,7 +141,8 @@ void removeDisconnected( Array<char>& ID, const Domain& Dm )
 // Solve a level (without any coarse level information)
 void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx )
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx,
+    float threshold, float lamda, float sigsq, int depth)
 {
     PROFILE_SCOPED(timer,"solve");
     // Compute the median filter on the sparse array
@@ -164,8 +165,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 void refine( const Array<float>& Dist_coarse, 
     const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level,
-    float threshold, float lamda, float sigsq, int depth)
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level)
 {
     PROFILE_SCOPED(timer,"refine");
     int ratio[3] = { int(Dist.size(0)/Dist_coarse.size(0)),
