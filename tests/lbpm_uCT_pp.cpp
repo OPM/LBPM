@@ -69,6 +69,9 @@ int main(int argc, char **argv)
     int nprocx = nproc[0];
     int nprocy = nproc[1];
     int nprocz = nproc[2];
+    
+    auto InputFile=uct_db->getScalar<std::string>( "InputFile" );
+    
 
 	//.......................................................................
 	// Reading the domain information file
@@ -143,7 +146,7 @@ int main(int argc, char **argv)
 
     // Read the subvolume of interest on each processor
 	PROFILE_START("ReadVolume");
-    int fid = netcdf::open(filename,netcdf::READ);
+    int fid = netcdf::open(InputFile,netcdf::READ);
     std::string varname("VOLUME");
     netcdf::VariableType type = netcdf::getVarType( fid, varname );
     std::vector<size_t> dim = netcdf::getVarDim( fid, varname );
