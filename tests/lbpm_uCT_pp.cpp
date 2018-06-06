@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	int nprocz = nproc[2];
 
 	auto InputFile=uct_db->getScalar<std::string>( "InputFile" );    
-	auto rough_cutoff=uct_db->getScalar<float>( "rought_cutoff" );    
+	auto rough_cutoff=uct_db->getScalar<float>( "rough_cutoff" );    
 	auto lamda=uct_db->getScalar<float>( "lamda" );    
 	auto nlm_sigsq=uct_db->getScalar<float>( "nlm_sigsq" );    
 	auto nlm_depth=uct_db->getScalar<int>( "nlm_depth" );    
