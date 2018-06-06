@@ -141,6 +141,7 @@ int main(int argc, char **argv)
         MultiScaleSmooth[i].fill(0);
         Mean[i].fill(0);
         NonLocalMean[i].fill(0);
+	fillDouble[i].reset(new fillHalo<double>(Dm[i]->Comm,Dm[i]->rank_info,{Nx[i],Ny[i],Nz[i]},{1,1,1},0,1) );
 	fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info,{Nx[i],Ny[i],Nz[i]},{1,1,1},0,1) );
 	fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info,{Nx[i],Ny[i],Nz[i]},{1,1,1},0,1) );
 	}
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
 	if (rank==0) printf("	Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
 
+	MPI_Barrier(comm);
     // Scale the source data to +-1.0
     for (size_t i=0; i<LOCVOL[0].length(); i++) {
     	if (MASK(i) < 0.f){
@@ -245,7 +247,7 @@ int main(int argc, char **argv)
 
 
 	// Fill the source data for the coarse meshes
-    PROFILE_START("CoarsenMesh");
+        PROFILE_START("CoarsenMesh");
     for (int i=1; i<N_levels; i++) {
         Array<float> filter(ratio[0],ratio[1],ratio[2]);
         filter.fill(1.0f/filter.length());
@@ -277,19 +279,20 @@ int main(int argc, char **argv)
             NonLocalMean[i], *fillFloat[i], *Dm[i], nprocx, i );
     }
     PROFILE_STOP("Refine distance");
-
-    // Perform a final filter
+    
+    
+        // Perform a final filter
     PROFILE_START("Filtering final domains");
     if (rank==0)
         printf("Filtering final domains\n");
     Array<float> filter_Mean, filter_Dist1, filter_Dist2;
     filter_final( ID[0], Dist[0], *fillFloat[0], *Dm[0], filter_Mean, filter_Dist1, filter_Dist2 );
     PROFILE_STOP("Filtering final domains");
-
+    
     //removeDisconnected( ID[0], *Dm[0] );
 
-
-    // Write the distance function to a netcdf file
+    /*
+        // Write the distance function to a netcdf file
     const char* netcdf_filename = "Distance.nc";
     {
         RankInfoStruct info( rank, nprocx, nprocy, nprocz );
@@ -301,33 +304,35 @@ int main(int argc, char **argv)
         netcdf::write( fid, "Distance", dims, data, info );
         netcdf::close( fid );
     }
+    */
 
 
     // Write the results to visit
-	if (rank==0) printf("Writing output \n");
-	std::vector<IO::MeshDataStruct> meshData(N_levels);
-    for (size_t i=0; i<Nx.size(); i++) {
+	if (rank==0) printf("Setting up visualization structure \n");
+	//	std::vector<IO::MeshDataStruct> meshData(N_levels);
+	std::vector<IO::MeshDataStruct> meshData(1);
+	//    for (size_t i=0; i<Nx.size(); i++) {
         // Mesh
-    	meshData[i].meshName = "Level " + std::to_string(i+1);
-    	meshData[i].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],Lx,Ly,Lz) );
+    	meshData[0].meshName = "image";
+    	meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[0]->rank_info,Nx[0],Ny[0],Nz[0],Lx,Ly,Lz) );
         // Source data
         std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
 	    OrigData->name = "Source Data";
 	    OrigData->type = IO::VariableType::VolumeVariable;
 	    OrigData->dim = 1;
-	    OrigData->data.resize(Nx[i],Ny[i],Nz[i]);
-	    meshData[i].vars.push_back(OrigData);
-        fillDouble[i]->copy( LOCVOL[i], OrigData->data );
+	    OrigData->data.resize(Nx[0],Ny[0],Nz[0]);
+	    meshData[0].vars.push_back(OrigData);
+        fillDouble[0]->copy( LOCVOL[0], OrigData->data );
         // Non-Local Mean
         std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
 	    NonLocMean->name = "Non-Local Mean";
 	    NonLocMean->type = IO::VariableType::VolumeVariable;
 	    NonLocMean->dim = 1;
-	    NonLocMean->data.resize(Nx[i],Ny[i],Nz[i]);
-	    meshData[i].vars.push_back(NonLocMean);
-        fillDouble[i]->copy( NonLocalMean[i], NonLocMean->data );
-        // Segmented Data
-        std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
+	    NonLocMean->data.resize(Nx[0],Ny[0],Nz[0]);
+	    meshData[0].vars.push_back(NonLocMean);
+        fillDouble[0]->copy( NonLocalMean[0], NonLocMean->data );
+        /*// Segmented Data
+	       std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 	    SegData->name = "Segmented Data";
 	    SegData->type = IO::VariableType::VolumeVariable;
 	    SegData->dim = 1;
@@ -350,8 +355,9 @@ int main(int argc, char **argv)
 	    SmoothData->data.resize(Nx[i],Ny[i],Nz[i]);
 	    meshData[i].vars.push_back(SmoothData);
         fillDouble[i]->copy( MultiScaleSmooth[i], SmoothData->data );
+	
     }
-    #if 0
+      #if 0
         std::shared_ptr<IO::Variable> filter_Mean_var( new IO::Variable() );
 	    filter_Mean_var->name = "Mean";
 	    filter_Mean_var->type = IO::VariableType::VolumeVariable;
@@ -374,7 +380,9 @@ int main(int argc, char **argv)
 	    meshData[0].vars.push_back(filter_Dist2_var);
         fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
     #endif
-
+    */
+	MPI_Barrier(comm);
+	if (rank==0) printf("Writing output \n");
 	// Write visulization data
 	IO::writeData( 0, meshData, comm );
 	if (rank==0) printf("Finished. \n");
