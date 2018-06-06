@@ -344,6 +344,30 @@ int main(int argc, char **argv)
 	NonLocMean->data.resize(Nx[0],Ny[0],Nz[0]);
 	meshData[0].vars.push_back(NonLocMean);
 	fillDouble[0]->copy( NonLocalMean[0], NonLocMean->data );
+	std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
+	SegData->name = "Segmented Data";
+	SegData->type = IO::VariableType::VolumeVariable;
+	SegData->dim = 1;
+	SegData->data.resize(Nx[0],Ny[0],Nz[0]);
+	meshData[0].vars.push_back(SegData);
+	fillDouble[0]->copy( ID[0], SegData->data );
+	// Signed Distance
+	std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+	DistData->name = "Signed Distance";
+	DistData->type = IO::VariableType::VolumeVariable;
+	DistData->dim = 1;
+	DistData->data.resize(Nx[0],Ny[0],Nz[0]);
+	meshData[0].vars.push_back(DistData);
+	fillDouble[0]->copy( Dist[0], DistData->data );
+	// Smoothed Data
+	std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
+	SmoothData->name = "Smoothed Data";
+	SmoothData->type = IO::VariableType::VolumeVariable;
+	SmoothData->dim = 1;
+	SmoothData->data.resize(Nx[0],Ny[0],Nz[0]);
+	meshData[0].vars.push_back(SmoothData);
+	fillDouble[0]->copy( MultiScaleSmooth[0], SmoothData->data );
+	
 	/*// Segmented Data
 	       std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 	    SegData->name = "Segmented Data";
