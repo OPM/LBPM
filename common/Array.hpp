@@ -1064,7 +1064,7 @@ Array<TYPE, FUN> Array<TYPE, FUN>::reverseDim() const
 template<class TYPE, class FUN>
 Array<TYPE, FUN> Array<TYPE, FUN>::coarsen( const Array<TYPE, FUN> &filter ) const
 {
-    auto S2 = size();
+    size_t S2 = size();
     for ( size_t i = 0; i < S2.size(); i++ ) {
         S2[i] /= filter.size( i );
         if ( S2[i] * filter.size( i ) != size( i ) )
