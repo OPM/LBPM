@@ -137,8 +137,8 @@ int main(int argc, char **argv)
         MultiScaleSmooth[i].fill(0);
         Mean[i].fill(0);
         NonLocalMean[i].fill(0);
-	    fillFloat[i].reset(new fillHalo<float>(Dm[i]->Comm,Dm[i]->rank_info) );
-	    fillChar[i].reset(new fillHalo<char>(Dm[i]->Comm,Dm[i]->rank_info) );
+	    fillFloat[i].reset();
+	    fillChar[i].reset();
 	}
 
     // Read the subvolume of interest on each processor

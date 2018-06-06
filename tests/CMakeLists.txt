@@ -67,7 +67,7 @@ ADD_LBPM_TEST( TestWriter )
 IF ( USE_NETCDF )
     ADD_LBPM_TEST_PARALLEL( TestNetcdf 8 )
     ADD_LBPM_EXECUTABLE( lbpm_uCT_pp )
-    ADD_LBPM_EXECUTABLE( lbpm_uCT_maskfilter )
+#    ADD_LBPM_EXECUTABLE( lbpm_uCT_maskfilter )
 ENDIF()
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
