@@ -39,7 +39,8 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 void refine( const Array<float>& Dist_coarse, 
     const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level );
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level,
+    float threshold, float lamda, float sigsq, int depth);
 
 
 // Remove regions that are likely noise by shrinking the volumes by dx,
