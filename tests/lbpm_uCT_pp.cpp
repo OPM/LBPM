@@ -75,6 +75,10 @@ int main(int argc, char **argv)
 	auto lamda=uct_db->getScalar<float>( "lamda" );    
 	auto nlm_sigsq=uct_db->getScalar<float>( "nlm_sigsq" );    
 	auto nlm_depth=uct_db->getScalar<int>( "nlm_depth" );    
+	auto cx=uct_db->getScalar<int>( "center_x" );
+	auto cy=uct_db->getScalar<int>( "center_y" );
+	auto cz=uct_db->getScalar<int>( "center_z" );
+	auto CylRad=uct_db->getScalar<float>( "cylinder_radius" );
 
 	//.......................................................................
 	// Reading the domain information file
@@ -181,7 +185,7 @@ int main(int argc, char **argv)
 	filter_src( *Dm[0], LOCVOL[0] );
 
 	// Set up the mask to be distance to cylinder (crop outside cylinder)
-	float CylRad=900;
+	//	float CylRad=900;
 	for (int k=0;k<Nz[0]+2;k++) {
 		for (int j=0;j<Ny[0]+2;j++) {
 			for (int i=0;i<Nx[0]+2;i++) {
@@ -193,9 +197,9 @@ int main(int argc, char **argv)
 				int y=jproc*Ny[0]+j-1;
 				int z=kproc*Nz[0]+k-1;
 
-				int cx = 0.5*nprocx*Nx[0];
-				int cy = 0.5*nprocy*Ny[0];
-				int cz = 0.5*nprocz*Nz[0];
+				//int cx = 0.5*nprocx*Nx[0];
+				//int cy = 0.5*nprocy*Ny[0];
+				//int cz = 0.5*nprocz*Nz[0];
 
 				// distance from the center line 
 				MASK(i,j,k) = CylRad - sqrt(float((z-cz)*(z-cz) + (y-cy)*(y-cy)) );

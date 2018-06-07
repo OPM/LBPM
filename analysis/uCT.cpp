@@ -154,8 +154,8 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 	fillFloat.fill(Dist);
     smooth( VOL, Dist, 2.0, MultiScaleSmooth, fillFloat );
     // Compute non-local mean
-	int depth = 5;
-	float sigsq=0.1;
+    //	int depth = 5;
+    //	float sigsq=0.1;
 	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
 	fillFloat.fill(NonLocalMean);
 }
