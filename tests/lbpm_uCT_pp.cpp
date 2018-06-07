@@ -116,6 +116,8 @@ int main(int argc, char **argv)
 	// Initialize the domain
 	std::vector<std::shared_ptr<Domain>> Dm(N_levels);
 	for (int i=0; i<N_levels; i++) {
+	  // This line is no good -- will create identical Domain structures instead of
+	  // Need a way to define a coarse structure for the coarse domain
 		Dm[i].reset( new Domain(domain_db, comm) );
 		int N = (Nx[i]+2)*(Ny[i]+2)*(Nz[i]+2);
 		for (int n=0; n<N; n++){
@@ -443,9 +445,9 @@ int main(int argc, char **argv)
 	// Compute the Minkowski functionals
 	std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
 	if (rank==0) printf("Initializing the system \n");
-	for ( int k=1;k<Nz[0]+1;k++){
-		for ( int j=1;j<Ny[0]+1;j++){
-			for ( int i=1;i<Nx[0]+1;i++){
+	for ( int k=1;k<Averages->Nx-1;k++){
+		for ( int j=1;j<Averages->Ny-1;j++){
+			for ( int i=1;i<Averages->Nx-1;i++){
 				Averages->SDn(i,j,k) = Dist[0](i,j,k);
 			}
 		}
