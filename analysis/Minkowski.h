@@ -45,7 +45,7 @@ class Minkowski{
 	char *TempID;
 
 	// CSV / text file where time history of averages is saved
-	FILE *TIMELOG;
+	FILE *LOGFILE;
 
 public:
 	//...........................................................................
@@ -60,7 +60,7 @@ public:
 	double euler,Kn,Jn,An;
 	double euler_global,Kn_global,Jn_global,An_global;
 	//...........................................................................
-        int Nx,Ny,Nz;
+	int Nx,Ny,Nz;
 	IntArray PhaseID;	// Phase ID array (solid=0, non-wetting=1, wetting=2)
 	DoubleArray SDn;
 	DoubleArray MeanCurvature;

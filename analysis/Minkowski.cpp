@@ -16,7 +16,7 @@
 // Constructor
 Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	n_obj_pts(0), n_obj_tris(0), kstart(0), kfinish(0), isovalue(0), Volume(0),
-    TIMELOG(NULL), Dm(dm), vol_n(0), vol_n_global(0)
+    LOGFILE(NULL), Dm(dm), vol_n(0), vol_n_global(0)
 {
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
@@ -43,12 +43,12 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	NormalVector.resize(60);
 	
 	if (Dm->rank()==0){
-		TIMELOG = fopen("minkowski.csv","a+");
-		if (fseek(TIMELOG,0,SEEK_SET) == fseek(TIMELOG,0,SEEK_CUR))
+		LOGFILE = fopen("minkowski.csv","a+");
+		if (fseek(LOGFILE,0,SEEK_SET) == fseek(LOGFILE,0,SEEK_CUR))
 		{
-			// If timelog is empty, write a short header to list the averages
-			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures,
+			// If LOGFILE is empty, write a short header to list the averages
+			//fprintf(LOGFILE,"--------------------------------------------------------------------------------------\n");
+			fprintf(LOGFILE,"Euler Kn Jn An\n"); 			//miknowski measures,
 		}
 	}
 }
@@ -57,7 +57,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 // Destructor
 Minkowski::~Minkowski()
 {
-    if ( TIMELOG!=NULL ) { fclose(TIMELOG); }
+    if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
 }
 
 
@@ -218,8 +218,8 @@ void Minkowski::NonDimensionalize(double D)
 void Minkowski::PrintAll()
 {
 	if (Dm->rank()==0){
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",vol_n_global, An_global, Jn_global, euler_global);			// minkowski measures
-		fflush(TIMELOG);
+		fprintf(LOGFILE,"%.5g %.5g %.5g %.5g\n",vol_n_global, An_global, Jn_global, euler_global);			// minkowski measures
+		fflush(LOGFILE);
 	}
 
 
