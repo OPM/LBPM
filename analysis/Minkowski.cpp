@@ -15,11 +15,8 @@
 
 // Constructor
 Minkowski::Minkowski(std::shared_ptr <Domain> dm):
-	n_obj_pts(0), n_ns_pts(0), n_ws_pts(0), n_nws_pts(0), n_local_sol_pts(0), n_local_nws_pts(0),
-    n_obj_tris(0), n_ns_tris(0), n_ws_tris(0), n_nws_seg(0), n_local_sol_tris(0),
-    nc(0), kstart(0), kfinish(0), fluid_isovalue(0), solid_isovalue(0),	Volume(0),
-    TIMELOG(NULL), NWPLOG(NULL), WPLOG(NULL), 
-    Dm(dm), nwp_volume(0), vol_n_global(0), nwp_volume_global(0)
+	n_obj_pts(0), n_obj_tris(0), kstart(0), kfinish(0), isovalue(0), Volume(0),
+    TIMELOG(NULL), Dm(dm), vol_n(0), vol_n_global(0)
 {
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
@@ -42,7 +39,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	tmp=DTMutableList<Point>(20);
 	//.........................................
 	Values.resize(20);
-	DistanceValues.resize(20);
+	//DistanceValues.resize(20);
 	NormalVector.resize(60);
 	
 	if (Dm->rank()==0){
@@ -66,7 +63,7 @@ Minkowski::~Minkowski()
 
 void Minkowski::Initialize()
 {
-	fluid_isovalue=0.0;
+	isovalue=0.0;
 	vol_n = euler = Jn = An = Kn = 0.0;
 }
 
@@ -137,7 +134,7 @@ void Minkowski::ComputeLocal()
 					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 					if ( Dm->id[n] != 0 ){
 						// 1-D index for this cube corner
-						if ( Phase(i+cube[p][0],j+cube[p][1],k+cube[p][2]) > 0 ){
+						if ( SDn(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < 0 ){
 							vol_n += 0.125;
 						}
 					}
@@ -145,7 +142,7 @@ void Minkowski::ComputeLocal()
 
 				n_obj_pts=n_obj_tris=0;
 				// Compute the non-wetting phase surface and associated area
-				An += geomavg_MarchingCubes(SDn,fluid_isovalue,i,j,k,obj_pts,n_obj_pts,obj_tris,n_obj_tris);
+				An += geomavg_MarchingCubes(SDn,isovalue,i,j,k,obj_pts,n_obj_pts,obj_tris,n_obj_tris);
 
 				Jn += pmmc_CubeSurfaceInterpValue(CubeValues,MeanCurvature,obj_pts,obj_tris,Values,
 										i,j,k,n_obj_pts,n_obj_tris);
@@ -161,10 +158,10 @@ void Minkowski::ComputeLocal()
 	
 }
 
-
+/*
 void Minkowski::AssignComponentLabels()
 {
-	/*
+	
 	int LabelNWP=1;
 	int LabelWP=2;
 	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
@@ -184,10 +181,10 @@ void Minkowski::AssignComponentLabels()
 
 	// Fewer non-wetting phase features are present
 	//NumberComponents_NWP = ComputeGlobalPhaseComponent(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->rank_info,PhaseID,LabelNWP,Label_NWP);
-	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->rank_info,SDs,SDn,solid_isovalue,fluid_isovalue,Label_NWP,Dm->Comm);
-	*/
+	NumberComponents_NWP = ComputeGlobalBlobIDs(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->rank_info,SDs,SDn,solid_isovalue,isovalue,Label_NWP,Dm->Comm);
+	
 }
-
+*/
 void Minkowski::Reduce()
 {
 	int i;

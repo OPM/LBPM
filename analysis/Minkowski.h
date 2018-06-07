@@ -77,7 +77,7 @@ public:
 	void ComputeLocal();
 	void Reduce();
 	void NonDimensionalize(double D);
-	void PrintAll(int timestep);
+	void PrintAll();
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
 };
