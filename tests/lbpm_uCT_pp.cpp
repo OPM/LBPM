@@ -70,7 +70,9 @@ int main(int argc, char **argv)
 	int nprocy = nproc[1];
 	int nprocz = nproc[2];
 
-	auto InputFile=uct_db->getScalar<std::string>( "InputFile" );    
+	auto InputFile=uct_db->getScalar<std::string>( "InputFile" );
+	auto target=uct_db->getScalar<int>("target");
+	auto background=uct_db->getScalar<int>("background");
 	auto rough_cutoff=uct_db->getScalar<float>( "rough_cutoff" );    
 	auto lamda=uct_db->getScalar<float>( "lamda" );    
 	auto nlm_sigsq=uct_db->getScalar<float>( "nlm_sigsq" );    
@@ -210,7 +212,8 @@ int main(int argc, char **argv)
 
 	// Compute the means for the high/low regions
 	// (should use automated mixture model to approximate histograms)
-	float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
+	//float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
+	float THRESHOLD=0.5*float(target+background);
 	float mean_plus=0;
 	float mean_minus=0;
 	int count_plus=0;
@@ -219,7 +222,12 @@ int main(int argc, char **argv)
 		for (int j=1;j<Ny[0]+1;j++) {
 			for (int i=1;i<Nx[0]+1;i++) {
 				if (MASK(i,j,k) > 0.f ){
-					auto tmp = LOCVOL[0](i,j,k);
+				  auto tmp = LOCVOL[0](i,j,k);
+				  if ((tmp-background)*(tmp-target) > 0){
+				    // direction to background / target is the same
+				    if (tmp-target > tmp-background) tmp=target;
+				    else                             tmp=background;
+				  }
 					if ( tmp > THRESHOLD ) {
 						mean_plus += tmp;
 						count_plus++;
