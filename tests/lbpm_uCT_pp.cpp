@@ -22,9 +22,9 @@
 #include "analysis/analysis.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
+#include "analysis/Minkowski.h"
 
 #include "ProfilerApp.h"
-
 
 int main(int argc, char **argv)
 {
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 	solve( LOCVOL[0], Mean[0], ID[0], Dist[0], MultiScaleSmooth[0],
 			NonLocalMean[0], *fillFloat[0], *Dm[0], nprocx, 
 			rough_cutoff, lamda, nlm_sigsq, nlm_depth);
-	PROFILE_STOP("Solve fill mesh");
+	PROFILE_STOP("Solve full mesh");
 	MPI_Barrier(comm);
 
 /*	// Initialize the coarse level
@@ -440,30 +440,24 @@ int main(int argc, char **argv)
 	IO::writeData( 0, meshData, comm );
 	if (rank==0) printf("Finished. \n");
 
-	/* for (k=0;k<nz;k++){
-		for (j=0;j<ny;j++){
-			for (i=0;i<nx;i++){
-			        n = k*nx*ny+j*nx+i;
-			        if (Dm.id[n]==char(SOLID))     Dm.id[n] = 0;
-			       	else if (Dm.id[n]==char(NWP))  Dm.id[n] = 1;
-			       	else                           Dm.id[n] = 2;
-
+	// Compute the Minkowski functionals
+	std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
+	if (rank==0) printf("Initializing the system \n");
+	for ( k=1;k<Nz[0]+1;k++){
+		for ( j=1;j<Ny[0]+1;j++){
+			for ( i=1;i<Nx[0]+1;i++){
+				Minkowski.SDn(i,j,k) = Dist[0](i,j,k);
 			}
 		}
 	}
-	if (rank==0) printf("Domain set \n");
-
-	// Write the local volume files
-	char LocalRankString[8];
-	char LocalRankFilename[40];
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"Seg.%s",LocalRankString);
-	FILE * SEG;
-	SEG=fopen(LocalRankFilename,"wb");
-	fwrite(LOCVOL.get(),4,N,SEG);
-	fclose(SEG);
-	 */
-
+    Dm->CommunicateMeshHalo(Averages->SDn);
+    Averages->Initialize();
+    
+	if (rank==0) printf("Computing Minkowski functionals \n");
+    Averages->ComputeLocal();
+    Averages->Reduce();
+    Averages->PrintAll();
+    
 	PROFILE_STOP("Main");
 	PROFILE_SAVE("lbpm_uCT_pp",true);
 	MPI_Barrier(comm);
