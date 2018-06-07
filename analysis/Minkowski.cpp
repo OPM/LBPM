@@ -48,7 +48,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 		{
 			// If LOGFILE is empty, write a short header to list the averages
 			//fprintf(LOGFILE,"--------------------------------------------------------------------------------------\n");
-			fprintf(LOGFILE,"Euler Kn Jn An\n"); 			//miknowski measures,
+			fprintf(LOGFILE,"Vn An Jn Xn\n"); 			//miknowski measures,
 		}
 	}
 }
@@ -122,6 +122,7 @@ void Minkowski::ComputeLocal()
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
+	vol_n = euler = Jn = An = Kn = 0.0;
 	for (k=kmin; k<kmax; k++){
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
@@ -196,7 +197,6 @@ void Minkowski::Reduce()
 	MPI_Allreduce(&euler,&euler_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	MPI_Allreduce(&An,&An_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	MPI_Allreduce(&Jn,&Jn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-
 	MPI_Barrier(Dm->Comm);
 
 	// normalize to per unit volume basis

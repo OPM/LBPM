@@ -103,6 +103,9 @@ int main(int argc, char **argv)
 		// Determine the maximum number of levels for the desired coarsen ratio
 		int ratio[3] = {2,2,2};
 		//std::vector<size_t> ratio = {4,4,4};
+		// need to set up databases for each level of the mesh
+		std:vector<Database> multidomain_db;
+		
 		std::vector<int> Nx(1,nx), Ny(1,ny), Nz(1,nz);
 		while ( Nx.back()%ratio[0]==0 && Nx.back()>8 &&
 				Ny.back()%ratio[1]==0 && Ny.back()>8 &&
@@ -111,6 +114,8 @@ int main(int argc, char **argv)
 			Nx.push_back( Nx.back()/ratio[0] );
 			Ny.push_back( Ny.back()/ratio[1] );
 			Nz.push_back( Nz.back()/ratio[2] );
+			// clone the domain and create coarse version based on Nx,Ny,Nz
+			//multidomain_db.push_back();
 		}
 		int N_levels = Nx.size();
 
@@ -118,7 +123,7 @@ int main(int argc, char **argv)
 		std::vector<std::shared_ptr<Domain>> Dm(N_levels);
 		for (int i=0; i<N_levels; i++) {
 			// This line is no good -- will create identical Domain structures instead of
-			// Need a way to define a coarse structure for the coarse domain
+			// Need a way to define a coarse structure for the coarse domain (see above)
 			Dm[i].reset( new Domain(domain_db, comm) );
 			int N = (Nx[i]+2)*(Ny[i]+2)*(Nz[i]+2);
 			for (int n=0; n<N; n++){
@@ -340,55 +345,55 @@ int main(int argc, char **argv)
 		 */
 
 		{
-		  // Write the results to visit
-		if (rank==0) printf("Setting up visualization structure \n");
-		//	std::vector<IO::MeshDataStruct> meshData(N_levels);
-		std::vector<IO::MeshDataStruct> meshData(1);
-		//    for (size_t i=0; i<Nx.size(); i++) {
-		// Mesh
-		meshData[0].meshName = "image";
-		meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[0]->rank_info,Nx[0],Ny[0],Nz[0],Lx,Ly,Lz) );
-		// Source data
-		std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
-		OrigData->name = "Source Data";
-		OrigData->type = IO::VariableType::VolumeVariable;
-		OrigData->dim = 1;
-		OrigData->data.resize(Nx[0],Ny[0],Nz[0]);
-		meshData[0].vars.push_back(OrigData);
-		fillDouble[0]->copy( LOCVOL[0], OrigData->data );
-		// Non-Local Mean
-		std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
-		NonLocMean->name = "Non-Local Mean";
-		NonLocMean->type = IO::VariableType::VolumeVariable;
-		NonLocMean->dim = 1;
-		NonLocMean->data.resize(Nx[0],Ny[0],Nz[0]);
-		meshData[0].vars.push_back(NonLocMean);
-		fillDouble[0]->copy( NonLocalMean[0], NonLocMean->data );
-		std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
-		SegData->name = "Segmented Data";
-		SegData->type = IO::VariableType::VolumeVariable;
-		SegData->dim = 1;
-		SegData->data.resize(Nx[0],Ny[0],Nz[0]);
-		meshData[0].vars.push_back(SegData);
-		fillDouble[0]->copy( ID[0], SegData->data );
-		// Signed Distance
-		std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
-		DistData->name = "Signed Distance";
-		DistData->type = IO::VariableType::VolumeVariable;
-		DistData->dim = 1;
-		DistData->data.resize(Nx[0],Ny[0],Nz[0]);
-		meshData[0].vars.push_back(DistData);
-		fillDouble[0]->copy( Dist[0], DistData->data );
-		// Smoothed Data
-		std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
-		SmoothData->name = "Smoothed Data";
-		SmoothData->type = IO::VariableType::VolumeVariable;
-		SmoothData->dim = 1;
-		SmoothData->data.resize(Nx[0],Ny[0],Nz[0]);
-		meshData[0].vars.push_back(SmoothData);
-		fillDouble[0]->copy( MultiScaleSmooth[0], SmoothData->data );
+			// Write the results to visit
+			if (rank==0) printf("Setting up visualization structure \n");
+			//	std::vector<IO::MeshDataStruct> meshData(N_levels);
+			std::vector<IO::MeshDataStruct> meshData(1);
+			//    for (size_t i=0; i<Nx.size(); i++) {
+			// Mesh
+			meshData[0].meshName = "image";
+			meshData[0].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[0]->rank_info,Nx[0],Ny[0],Nz[0],Lx,Ly,Lz) );
+			// Source data
+			std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
+			OrigData->name = "Source Data";
+			OrigData->type = IO::VariableType::VolumeVariable;
+			OrigData->dim = 1;
+			OrigData->data.resize(Nx[0],Ny[0],Nz[0]);
+			meshData[0].vars.push_back(OrigData);
+			fillDouble[0]->copy( LOCVOL[0], OrigData->data );
+			// Non-Local Mean
+			std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
+			NonLocMean->name = "Non-Local Mean";
+			NonLocMean->type = IO::VariableType::VolumeVariable;
+			NonLocMean->dim = 1;
+			NonLocMean->data.resize(Nx[0],Ny[0],Nz[0]);
+			meshData[0].vars.push_back(NonLocMean);
+			fillDouble[0]->copy( NonLocalMean[0], NonLocMean->data );
+			std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
+			SegData->name = "Segmented Data";
+			SegData->type = IO::VariableType::VolumeVariable;
+			SegData->dim = 1;
+			SegData->data.resize(Nx[0],Ny[0],Nz[0]);
+			meshData[0].vars.push_back(SegData);
+			fillDouble[0]->copy( ID[0], SegData->data );
+			// Signed Distance
+			std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+			DistData->name = "Signed Distance";
+			DistData->type = IO::VariableType::VolumeVariable;
+			DistData->dim = 1;
+			DistData->data.resize(Nx[0],Ny[0],Nz[0]);
+			meshData[0].vars.push_back(DistData);
+			fillDouble[0]->copy( Dist[0], DistData->data );
+			// Smoothed Data
+			std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
+			SmoothData->name = "Smoothed Data";
+			SmoothData->type = IO::VariableType::VolumeVariable;
+			SmoothData->dim = 1;
+			SmoothData->data.resize(Nx[0],Ny[0],Nz[0]);
+			meshData[0].vars.push_back(SmoothData);
+			fillDouble[0]->copy( MultiScaleSmooth[0], SmoothData->data );
 
-		/*// Segmented Data
+			/*// Segmented Data
 	       std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
 	    SegData->name = "Segmented Data";
 	    SegData->type = IO::VariableType::VolumeVariable;
@@ -437,12 +442,12 @@ int main(int argc, char **argv)
 	    meshData[0].vars.push_back(filter_Dist2_var);
         fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
     #endif
-		 */
-		MPI_Barrier(comm);
-		if (rank==0) printf("Writing output \n");
-		// Write visulization data
-		IO::writeData( 0, meshData, comm );
-		if (rank==0) printf("Finished. \n");
+			 */
+			MPI_Barrier(comm);
+			if (rank==0) printf("Writing output \n");
+			// Write visulization data
+			IO::writeData( 0, meshData, comm );
+			if (rank==0) printf("Finished. \n");
 		}
 		// Compute the Minkowski functionals
 		MPI_Barrier(comm);
