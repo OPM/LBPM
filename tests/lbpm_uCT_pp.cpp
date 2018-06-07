@@ -443,14 +443,14 @@ int main(int argc, char **argv)
 	// Compute the Minkowski functionals
 	std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
 	if (rank==0) printf("Initializing the system \n");
-	for ( k=1;k<Nz[0]+1;k++){
-		for ( j=1;j<Ny[0]+1;j++){
-			for ( i=1;i<Nx[0]+1;i++){
-				Minkowski.SDn(i,j,k) = Dist[0](i,j,k);
+	for ( int k=1;k<Nz[0]+1;k++){
+		for ( int j=1;j<Ny[0]+1;j++){
+			for ( int i=1;i<Nx[0]+1;i++){
+				Averages->SDn(i,j,k) = Dist[0](i,j,k);
 			}
 		}
 	}
-    Dm->CommunicateMeshHalo(Averages->SDn);
+    Dm[0]->CommunicateMeshHalo(Averages->SDn);
     Averages->Initialize();
     
 	if (rank==0) printf("Computing Minkowski functionals \n");
