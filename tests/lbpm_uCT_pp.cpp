@@ -339,7 +339,8 @@ int main(int argc, char **argv)
     }
 		 */
 
-		// Write the results to visit
+		{
+		  // Write the results to visit
 		if (rank==0) printf("Setting up visualization structure \n");
 		//	std::vector<IO::MeshDataStruct> meshData(N_levels);
 		std::vector<IO::MeshDataStruct> meshData(1);
@@ -442,7 +443,7 @@ int main(int argc, char **argv)
 		// Write visulization data
 		IO::writeData( 0, meshData, comm );
 		if (rank==0) printf("Finished. \n");
-
+		}
 		// Compute the Minkowski functionals
 		MPI_Barrier(comm);
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
@@ -454,9 +455,9 @@ int main(int argc, char **argv)
 					double distance=Dist[0](i,j,k);
 					Averages->SDn(i,j,k) = distance;
 					if (distance > 0)
-						Averages->id[n] = 0;
+						Averages->Dm->id[n] = 0;
 					else
-						Averages->id[n] = 1;
+						Averages->Dm->id[n] = 1;
 				}
 			}
 		}
