@@ -19,7 +19,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
     LOGFILE(NULL), Dm(dm), vol_n(0), vol_n_global(0)
 {
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
-	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
+	Volume=double((Nx-2)*(Ny-2)*(Nz-2))*double(Dm->nprocx()*Dm->nprocy()*Dm->nprocz());
 
 	TempID = new char[Nx*Ny*Nz];
 
