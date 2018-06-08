@@ -231,11 +231,12 @@ int main(int argc, char **argv)
 				for (int i=1;i<Nx[0]+1;i++) {
 					if (MASK(i,j,k) > 0.f ){
 						auto tmp = LOCVOL[0](i,j,k);
-						if ((tmp-background)*(tmp-target) > 0){
+/*						if ((tmp-background)*(tmp-target) > 0){
 							// direction to background / target is the same
-							if (tmp-target > tmp-background) tmp=target;
-							else                             tmp=background;
+							if (fabs(tmp-target) > fabs(tmp-background)) tmp=background; // tmp closer to background
+							else                             			 tmp=target;     // tmp closer to target
 						}
+						*/
 						if ( tmp > THRESHOLD ) {
 							mean_plus += tmp;
 							count_plus++;
