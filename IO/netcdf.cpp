@@ -317,7 +317,7 @@ Array<std::string> getVar<std::string>( int fid, const std::string& var )
 {
     PROFILE_START("getVar<std::string>");
     Array<char> tmp = getVar<char>( fid, var );
-    std::vector<size_t> dim = tmp.size();
+    std::vector<size_t> dim = {tmp.size(0), tmp.size(1), tmp.size(2) };
     if ( dim.size() == 1 )
         dim[0] = 1;
     else
@@ -451,7 +451,7 @@ void write( int fid, const std::string& var, const std::vector<int>& dimids,
     CHECK_NC_ERR( err );
     // parallel write: each process writes its subarray to the file
     auto x = data.reverseDim();
-    std::vector<size_t> count = data.size();
+    std::vector<size_t> count = { data.size(0), data.size(1), data.size(2) };
     std::vector<size_t> start = { info.ix*data.size(0), info.jy*data.size(1), info.kz*data.size(2) };
     nc_put_vara( fid, varid, start.data(), count.data(), x.data() );
 }

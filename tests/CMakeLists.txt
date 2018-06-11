@@ -67,13 +67,13 @@ ADD_LBPM_TEST( TestWriter )
 IF ( USE_NETCDF )
     ADD_LBPM_TEST_PARALLEL( TestNetcdf 8 )
     ADD_LBPM_EXECUTABLE( lbpm_uCT_pp )
-    ADD_LBPM_EXECUTABLE( lbpm_uCT_maskfilter )
+#    ADD_LBPM_EXECUTABLE( lbpm_uCT_maskfilter )
 ENDIF()
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
 ADD_LBPM_TEST_1_2_4( hello_world )
-ADD_LBPM_TEST_1_2_4( TestColorBubble )
-ADD_LBPM_TEST_1_2_4( TestColorSquareTube )
+ADD_LBPM_TEST_1_2_4( TestColorBubble ../example/Bubble/input.db)
+ADD_LBPM_TEST_1_2_4( TestColorSquareTube ../example/Bubble/input.db)
 
 SET_TESTS_PROPERTIES( hello_world        PROPERTIES ENVIRONMENT "MPICH_RDMA_ENABLED_CUDA=0")
 IF ( USE_MPI ) 

@@ -12,6 +12,7 @@ INSTALL_EXAMPLE( Poiseuille )
 INSTALL_EXAMPLE( Juanes )
 INSTALL_EXAMPLE( MicroModel )
 INSTALL_EXAMPLE( Tiff )
+INSTALL_EXAMPLE( uCT )
 
 
 # Create unit tests for each example

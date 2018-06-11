@@ -1,0 +1,24 @@
+Domain {
+    nproc = 5, 8, 8     // Number of processors (Npx,Npy,Npz)
+    n = 240, 240, 240   // Size of local domain (Nx,Ny,Nz)
+    n_spheres = 1       // Number of spheres
+    L = 1, 1, 1         // Length of domain (x,y,z)
+    BC = 0              // Boundary condition type
+}
+uCT {
+    InputFile = "MG_dryrecon.volume"  // this is the name of the data to segment
+    target = -160                      // this is the target value of the phase to segment
+    background = 160                 // this is the background value for all other phases
+    rough_cutoff = 0.0                // step 1 -- rough thresholding 
+    lamda = 0.5                       // step 2 -- apply some smoothing 
+    nlm_sigsq = 0.25                  // step 3 -- apply non-local means 
+    nlm_depth = 3
+    center_x = 600
+    center_y = 960
+    center_z = 960
+    cylinder_radius = 700
+} 
+Analysis {
+}
+
+

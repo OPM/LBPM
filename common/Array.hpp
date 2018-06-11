@@ -1064,15 +1064,15 @@ Array<TYPE, FUN> Array<TYPE, FUN>::reverseDim() const
 template<class TYPE, class FUN>
 Array<TYPE, FUN> Array<TYPE, FUN>::coarsen( const Array<TYPE, FUN> &filter ) const
 {
-    auto S2 = size();
-    for ( size_t i = 0; i < S2.size(); i++ ) {
-        S2[i] /= filter.size( i );
-        if ( S2[i] * filter.size( i ) != size( i ) )
-            throw std::invalid_argument( "Array must be multiple of filter size" );
-    }
-    Array<TYPE, FUN> y( S2 );
-    if ( d_size.ndim() <= 3 )
-        throw std::logic_error( "Function programmed for more than 3 dimensions" );
+  auto S2 = size();
+  for ( size_t i = 0; i < S2.size(); i++ ) {
+    S2.resize( i, S2[i] / filter.size(i) );
+    if ( S2[i] * filter.size( i ) != size( i ) )
+      throw std::invalid_argument( "Array must be multiple of filter size" );
+  }
+  Array<TYPE, FUN> y( S2 );
+  if ( d_size.ndim() <= 3 )
+    throw std::logic_error( "Function programmed for more than 3 dimensions" );
     const auto& Nh = filter.d_size;
     for ( size_t k1 = 0; k1 < y.d_size[2]; k1++ ) {
         for ( size_t j1 = 0; j1 < y.d_size[1]; j1++ ) {
@@ -1096,8 +1096,8 @@ template<class TYPE, class FUN>
 Array<TYPE, FUN> Array<TYPE, FUN>::coarsen(
     const std::vector<size_t> &ratio, std::function<TYPE( const Array<TYPE, FUN> & )> filter ) const
 {
-    if ( ratio.size() != d_size.ndim() )
-        throw std::logic_error( "ratio size does not match ndim" );
+  //if ( ratio.size() != d_size.ndim() )
+  //     throw std::logic_error( "ratio size does not match ndim" );
     auto S2 = size();
     for ( size_t i = 0; i < S2.size(); i++ ) {
         S2.resize( i, S2[i] / ratio[i] );

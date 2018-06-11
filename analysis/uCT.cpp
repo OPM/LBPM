@@ -141,7 +141,8 @@ void removeDisconnected( Array<char>& ID, const Domain& Dm )
 // Solve a level (without any coarse level information)
 void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx )
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx,
+    float threshold, float lamda, float sigsq, int depth)
 {
     PROFILE_SCOPED(timer,"solve");
     // Compute the median filter on the sparse array
@@ -153,8 +154,8 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 	fillFloat.fill(Dist);
     smooth( VOL, Dist, 2.0, MultiScaleSmooth, fillFloat );
     // Compute non-local mean
-	int depth = 5;
-	float sigsq=0.1;
+    //	int depth = 5;
+    //	float sigsq=0.1;
 	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
 	fillFloat.fill(NonLocalMean);
 }
@@ -164,7 +165,8 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
 void refine( const Array<float>& Dist_coarse, 
     const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     Array<float>& Dist, Array<float>& MultiScaleSmooth, Array<float>& NonLocalMean, 
-    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level )
+    fillHalo<float>& fillFloat, const Domain& Dm, int nprocx, int level,
+    float threshold, float lamda, float sigsq, int depth)
 {
     PROFILE_SCOPED(timer,"refine");
     int ratio[3] = { int(Dist.size(0)/Dist_coarse.size(0)),
@@ -175,7 +177,7 @@ void refine( const Array<float>& Dist_coarse,
     // Compute the median filter on the array and segment
     Med3D( VOL, Mean );
     fillFloat.fill( Mean );
-    segment( Mean, ID, 0.01 );
+    segment( Mean, ID, threshold );
     // If the ID has the wrong distance, set the distance to 0 and run a simple filter to set neighbors to 0
     for (size_t i=0; i<ID.length(); i++) {
         char id = Dist(i)>0 ? 1:0;
@@ -193,11 +195,11 @@ void refine( const Array<float>& Dist_coarse,
     Dist = imfilter::imfilter_separable<float>( Dist, {1,1,1}, filter_set, BC );
     fillFloat.fill( Dist );
     // Smooth the volume data
-    float lambda = 2*sqrt(double(ratio[0]*ratio[0]+ratio[1]*ratio[1]+ratio[2]*ratio[2]));
-    smooth( VOL, Dist, lambda, MultiScaleSmooth, fillFloat );
+    float h = 2*lamda*sqrt(double(ratio[0]*ratio[0]+ratio[1]*ratio[1]+ratio[2]*ratio[2]));
+    smooth( VOL, Dist, h, MultiScaleSmooth, fillFloat );
     // Compute non-local mean
-	int depth = 3;
-	float sigsq = 0.1;
+//	int depth = 3;
+//	float sigsq = 0.1;
 	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
 	fillFloat.fill(NonLocalMean);
     segment( NonLocalMean, ID, 0.001 );
