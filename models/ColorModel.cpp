@@ -257,9 +257,9 @@ void ScaLBL_ColorModel::AssignSolidPotential(){
 					double phi_x = 0.f;
 					double phi_y = 0.f;
 					double phi_z = 0.f;
-					for (int kk=0; kk<5; kk++){
-						for (int jj=0; jj<5; jj++){
-							for (int ii=0; ii<5; ii++){
+					for (int kk=1; kk<4; kk++){
+						for (int jj=1; jj<4; jj++){
+							for (int ii=1; ii<4; ii++){
 
 								int index = kk*25+jj*5+ii;
 								double distval= Dst[index];
