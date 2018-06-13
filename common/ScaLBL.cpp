@@ -389,7 +389,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				Map(i,j,k) = -1;
 				// Local index
 				n = k*Nx*Ny+j*Nx+i;
-				if (id[n] != 0){
+				if (id[n] > 0){
 					// Counts for the six faces
 					if (i==1)       Map(n)=idx++;
 					else if (j==1)  Map(n)=idx++;
@@ -415,7 +415,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			for (i=2; i<Nx-2; i++){
 			  // Local index (regular layout)
 			  n = k*Nx*Ny + j*Nx + i;
-			  if (id[n] != 0 ){
+			  if (id[n] > 0 ){
 				Map(n) = idx++;
 				//neighborList[idx++] = n; // index of self in regular layout
 			  }
@@ -425,6 +425,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	last_interior=idx;
 	
 	Np = (last_interior/16 + 1)*16;
+	//printf("    Np=%i \n",Np);
 		
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){
@@ -1529,6 +1530,9 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	int Ny = map.size(1);
 	int Nz = map.size(2);
 
+	// initialize the array
+	regdata.fill(-1.f);
+	
 	double *TmpDat;
 	double value;
 	TmpDat = new double [N];
