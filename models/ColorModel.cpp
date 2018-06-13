@@ -96,7 +96,6 @@ void ScaLBL_ColorModel::ReadInput(){
     // Read restart file
      if (Restart == true){
        if (rank==0){
-    	    size_t readID;
              printf("Reading restart file! \n");
              ifstream restart("Restart.txt");
              if (restart.is_open()){
@@ -120,7 +119,7 @@ void ScaLBL_ColorModel::ReadInput(){
 }
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 {
-	int NLABELS=0;
+	size_t NLABELS=0;
 	char VALUE=0;
 	double AFFINITY=0.f;
 	
@@ -132,6 +131,14 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 	
+	if (rank==0){
+	  printf("Components labels: %lu \n",NLABELS);
+	for (unsigned int idx=0; idx<NLABELS; idx++){
+	  VALUE=LabelList[idx];
+	  AFFINITY=AffinityList[idx];
+	  printf("   label=%i, affinity=%f\n",int(VALUE),AFFINITY); 
+	}
+	}
 	// Assign the labels
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -139,7 +146,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=Mask->id[n];
 				// Assign the affinity from the paired list
-				for (int idx=0; idx < NLABELS; idx++){
+				for (unsigned int idx=0; idx < NLABELS; idx++){
 					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
@@ -331,6 +338,8 @@ void ScaLBL_ColorModel::Initialize(){
 	/*
 	 * This function initializes model
 	 */
+
+  AssignSolidPotential();
 	int rank=Dm->rank();
 	double count_wet=0.f;
 	double *PhaseLabel;
