@@ -16,6 +16,8 @@ Color {
     tol = 1e-5;
     das = 0.1
     dbs = 0.9
+    ComponentLabels = 0, 1, 2
+    ComponentAffinity = -1.0, 1.0, -1.0
 }
 
 Domain {
