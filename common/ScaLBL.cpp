@@ -1530,6 +1530,9 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	int Ny = map.size(1);
 	int Nz = map.size(2);
 
+	// initialize the array
+	regdata.fill(-1.f);
+	
 	double *TmpDat;
 	double value;
 	TmpDat = new double [N];
