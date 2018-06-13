@@ -69,17 +69,17 @@ void ScaLBL_ColorModel::SetDomain(){
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
+	rank = Dm->rank();
 }
 
 void ScaLBL_ColorModel::ReadInput(){
-    int rank=Dm->rank();
     size_t readID;
     //.......................................................................
     if (rank == 0)    printf("Read input media... \n");
     //.......................................................................
     Mask->ReadIDs();
     
-    sprintf(LocalRankString,"%05d",Dm->rank());
+    sprintf(LocalRankString,"%05d",rank);
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 
@@ -95,7 +95,7 @@ void ScaLBL_ColorModel::ReadInput(){
 
     // Read restart file
      if (Restart == true){
-       if (Dm->rank()==0){
+       if (rank==0){
     	    size_t readID;
              printf("Reading restart file! \n");
              ifstream restart("Restart.txt");
@@ -157,7 +157,6 @@ void ScaLBL_ColorModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
 	 */
-	int rank=Dm->rank();
 	//.........................................................
 	// don't perform computations at the eight corners
 	//id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
@@ -175,7 +174,7 @@ void ScaLBL_ColorModel::Create(){
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
 	int Npad=(Np/16 + 2)*16;
-	if (rank==0)    printf ("Set up memory efficient layout \n");
+	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
 	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
@@ -187,8 +186,8 @@ void ScaLBL_ColorModel::Create(){
 	// LBM variables
 	if (rank==0)    printf ("Allocating distributions \n");
 	//......................device distributions.................................
-	int dist_mem_size = Np*sizeof(double);
-	int neighborSize=18*(Np*sizeof(int));
+	dist_mem_size = Np*sizeof(double);
+	neighborSize=18*(Np*sizeof(int));
 
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
@@ -367,7 +366,6 @@ void ScaLBL_ColorModel::Initialize(){
 
 void ScaLBL_ColorModel::Run(){
     int nprocs=nprocx*nprocy*nprocz;
-    int rank=Dm->rank();
     const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
     if (rank==0) printf("********************************************************\n");
