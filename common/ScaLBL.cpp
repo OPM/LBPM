@@ -425,7 +425,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	last_interior=idx;
 	
 	Np = (last_interior/16 + 1)*16;
-	printf("    Np=%i \n",Np);
+	//printf("    Np=%i \n",Np);
 		
 	// Now use Map to determine the neighbors for each lattice direction
 	for (k=1;k<Nz-1;k++){
