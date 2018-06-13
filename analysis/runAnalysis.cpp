@@ -432,7 +432,7 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
     AnalysisType type = AnalysisType::AnalyzeNone;
     if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
         // Copy the phase indicator field for the earlier timestep
-            printf("Copy phase indicator,timestep=%i\n",timestep);
+        // printf("Copy phase indicator,timestep=%i\n",timestep);
         type |= AnalysisType::CopyPhaseIndicator;
     }
     if ( timestep%d_blobid_interval == 0 ) {
@@ -449,13 +449,13 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
     #endif */
     if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
         // Copy the averages to the CPU (and identify blobs)
-      printf("Copy sim state, timestep=%i \n",timestep);
+        //printf("Copy sim state, timestep=%i \n",timestep);
         type |= AnalysisType::CopySimState;
         type |= AnalysisType::IdentifyBlobs;
     }
     if ( timestep%d_analysis_interval == 0 ) {
         // Run the analysis
-      printf("Compute averages, timestep=%i \n",timestep);
+        //printf("Compute averages, timestep=%i \n",timestep);
         type |= AnalysisType::ComputeAverages;
     }
     if (timestep%d_restart_interval == 0) {
