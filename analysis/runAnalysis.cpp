@@ -306,7 +306,9 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_restartFile = restart_file + "." + rankString;
     d_rank = MPI_WORLD_RANK();
 	writeIDMap(ID_map_struct(),0,id_map_filename);
-	// Create the MeshDataStruct
+	// Initialize IO for silo
+	IO::initialize("","silo","false");
+	// Create the MeshDataStruct	
 	d_meshData.resize(1);
 	d_meshData[0].meshName = "domain";
 	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
