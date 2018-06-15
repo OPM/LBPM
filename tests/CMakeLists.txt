@@ -72,8 +72,11 @@ ENDIF()
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
 ADD_LBPM_TEST_1_2_4( hello_world )
-ADD_LBPM_TEST_1_2_4( TestColorBubble ../example/Bubble/input.db)
-ADD_LBPM_TEST_1_2_4( TestColorSquareTube ../example/Bubble/input.db)
+ADD_LBPM_TEST( TestColorBubble ../example/Bubble/input.db)
+ADD_LBPM_TEST( TestColorSquareTube ../example/Bubble/input.db)
+
+#ADD_LBPM_TEST_1_2_4( TestColorBubble ../example/Bubble/input.db)
+#ADD_LBPM_TEST_1_2_4( TestColorSquareTube ../example/Bubble/input.db)
 
 SET_TESTS_PROPERTIES( hello_world        PROPERTIES ENVIRONMENT "MPICH_RDMA_ENABLED_CUDA=0")
 IF ( USE_MPI ) 
@@ -81,12 +84,9 @@ IF ( USE_MPI )
     SET_TESTS_PROPERTIES( hello_world_4procs PROPERTIES ENVIRONMENT "MPICH_RDMA_ENABLED_CUDA=0")
 ENDIF()
 
-
 # Add CPU/GPU specific test
 IF ( USE_CUDA )
     ADD_SUBDIRECTORY( gpu )
 ELSE()
     ADD_SUBDIRECTORY( cpu )
 ENDIF()
-
-
