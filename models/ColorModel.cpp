@@ -286,10 +286,6 @@ void ScaLBL_ColorModel::AssignSolidPotential(){
 									double vec_x = double(ii-2);
 									double vec_y = double(jj-2);
 									double vec_z = double(kk-2);
-									
-									vec_x /= sqrt(vec_x*vec_x+vec_y*vec_y+vec_z*vec_z);
-									vec_y /= sqrt(vec_x*vec_x+vec_y*vec_y+vec_z*vec_z);
-									vec_z /= sqrt(vec_x*vec_x+vec_y*vec_y+vec_z*vec_z);
 
 									double ALPHA=PhaseLabel[nn];
 									double GAMMA=-2.f;
