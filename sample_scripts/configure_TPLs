@@ -1,0 +1,36 @@
+# To build hdf5/silo using my tpl builder (change paths as appropriate):
+
+#clone TPL builder from:  https://bitbucket.org/AdvancedMultiPhysics/tpl-builder
+
+#download zlib, hdf5 and silo from: https://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads/
+
+#set env variables and load modules (modify as needed):
+   export TPL_BUILDER=/home/mcclurej/Source/tpl-builder
+   export TPL_ROOT=/home/mcclurej/Source/TPLs
+   export TPL_WEBPAGE=http://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads
+   export INSTALL_DIR=/home/mcclurej/TPL
+   export TPL_DIR=${INSTALL_DIR}
+
+cmake                                                           \
+    -D CMAKE_BUILD_TYPE=Release                                 \
+    -D C_COMPILER=mpicc                                         \
+    -D CXX_COMPILER=mpic++                                      \
+    -D Fortran_COMPILER=mpif90                                  \
+        -D FFLAGS="-fPIC"                                       \
+        -D CFLAGS="-fPIC"                                       \
+        -D CXXFLAGS="-fPIC"                                     \
+        -D CXX_STD=11                                           \
+        -D LDFLAGS=""                                           \
+    -D ENABLE_STATIC:BOOL=ON                                    \
+    -D ENABLE_SHARED:BOOL=OFF                                   \
+    -D INSTALL_DIR:PATH=${INSTALL_DIR}                          \
+    -D PROCS_INSTALL=8                                          \
+    -D ENABLE_TESTS:BOOL=ON                                     \
+    -D BUILD_TYPE=x86_64                                        \
+    -D TPL_LIST:STRING="ZLIB;HDF5;SILO"                         \
+        -D ZLIB_URL="${TPL_ROOT}/zlib-1.2.11.tar.gz"            \
+        -D HDF5_URL="${TPL_ROOT}/hdf5-1.8.12.tar.gz"            \
+        -D SILO_URL="${TPL_ROOT}/silo-4.10.2.tar.gz"            \
+    -D CUDA_INSTALL=/usr/local/cuda                             \
+    -D CUDA_ARCH="sm_70"                                        \
+    ${TPL_BUILDER}
