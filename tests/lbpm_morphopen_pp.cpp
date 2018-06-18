@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 			filename=argv[1];
 			Rcrit_new=0.f; 
 			SW=strtod(argv[2],NULL);
-			printf("Target saturation %f \n",SW);
+			if (rank==0)	printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
 		// read the input database 
@@ -133,6 +133,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		if (maxdist>50.f) maxdist=50.f;
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 		MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
@@ -140,7 +141,6 @@ int main(int argc, char **argv)
 		double porosity=totalGlobal/volume;
 		if (rank==0) printf("Media Porosity: %f \n",porosity);
 		if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
-
 
 		Dm->CommInit();
 		int iproc = Dm->iproc();
@@ -381,8 +381,6 @@ int main(int argc, char **argv)
 
 			}
 		}
-
-
 
 
 		sprintf(LocalRankFilename,"ID.%05i",rank);
