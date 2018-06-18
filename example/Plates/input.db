@@ -1,38 +1,43 @@
 Color {
-    tauA   = 1.0;  // relaxation time for fluid A
-    tauB   = 1.0;  // relaxation time for fluid B
+    tauA   = 1.0;  
+    tauB   = 1.0;  
     rhoA   = 1.0;  
     rhoB   = 1.0;  
-    alpha = 1e-2;
+    alpha = 5e-3;
     beta  = 0.95;
     F = 0, 0, 0
     Restart = false
     pBC = 0
     din = 1.0
     dout = 1.0
-    flux = 1.0e-3
-    timestepMax = 200
+    timestepMax = 3000
     interval = 1000
     tol = 1e-5;
     das = 0.1
     dbs = 0.9
-    ComponentLabels = 0, 1, 2
-    ComponentAffinity = -1.0, 1.0, -1.0
+    flux = 0.0
+    ComponentLabels = -2, -1
+    ComponentAffinity = -3.0, -2.0
+
 }
 
 Domain {
-    nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
-    n = 80, 80, 80      // Size of local domain (Nx,Ny,Nz)
+    Filename = "ParallelPlates.raw"
+    nproc = 1, 1, 4     // Number of processors (Npx,Npy,Npz)
+    n = 24, 24, 24      // Size of local domain (Nx,Ny,Nz)
+    N = 24, 24, 96      // size of the input image
     n_spheres = 1       // Number of spheres
     L = 1, 1, 1         // Length of domain (x,y,z)
     BC = 0              // Boundary condition type
+    ReadValues = -2, -1, 1, 2
+    WriteValues = -2, -1, 1, 2
 }
 
 Analysis {
     blobid_interval = 1000      // Frequency to perform blob identification
     analysis_interval = 1000    // Frequency to perform analysis
-    restart_interval = 20000    // Frequency to write restart data
-    visualization_interval = 20000        // Frequency to write visualization data
+    restart_interval = 1000    // Frequency to write restart data
+    visualization_interval = 1000        // Frequency to write visualization data
     restart_file = "Restart"    // Filename to use for restart file (will append rank)
     N_threads    = 4            // Number of threads to use
     load_balance = "independent" // Load balance method to use: "none", "default", "independent"
