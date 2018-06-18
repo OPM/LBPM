@@ -1,15 +1,18 @@
-LBPM-WIA
+LBPM
 ========
 
-Lattice Boltzmann Methods for Porous Media with Integrated Averaging
+Lattice Boltzmann Methods for Porous Media
 
 ========
 
 Notes on installation
 
 * example configure scripts for cmake are in the sample_scripts directory
-* required dependencies - MPI, C++ 11
+* required dependencies - MPI, HDF5, SILO, C++11
 * optional dependencies - NetCDF, CUDA, TimerUtility, VisIT
+
+
+Build dependencies (zlib, hdf5, silo) OR point to an existing installation
 
 Configure, build & install procedure
 * create an empty directory to install (do not build in source!)
@@ -28,4 +31,3 @@ Configure, build & install procedure
 
 * run the unit tests to make sure it works
    ctest
-
