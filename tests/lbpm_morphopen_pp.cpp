@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 			filename=argv[1];
 			Rcrit_new=0.f; 
 			SW=strtod(argv[2],NULL);
-			printf("Target saturation %f \n",SW);
+			if (rank==0)	printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
 		// read the input database 
@@ -114,9 +114,10 @@ int main(int argc, char **argv)
 		if (ReadSignDist != size_t(N)) printf("lbpm_morphopen_pp: Error reading signed distance function (rank=%i)\n",rank);
 		fclose(DIST);
 
+		MPI_Barrier(comm);
 		double count,countGlobal,totalGlobal;
 		count = 0.f;
-		double maxdist=0.f;
+		double maxdist=-200.f;
 		double maxdistGlobal;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -133,6 +134,8 @@ int main(int argc, char **argv)
 				}
 			}
 		}
+		if (maxdist>100.f) maxdist=100.f;
+		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 		MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
@@ -140,7 +143,6 @@ int main(int argc, char **argv)
 		double porosity=totalGlobal/volume;
 		if (rank==0) printf("Media Porosity: %f \n",porosity);
 		if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);\
-
 
 		Dm->CommInit();
 		int iproc = Dm->iproc();
@@ -221,10 +223,10 @@ int main(int argc, char **argv)
 		int imin,jmin,kmin,imax,jmax,kmax;
 
 		Rcrit_new = maxdistGlobal;
-		if (argc>2){
-			Rcrit_new = strtod(argv[2],NULL);
-			if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
-		}
+		//if (argc>2){
+		//	Rcrit_new = strtod(argv[2],NULL);
+		//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
+		//}
 		while (sw_new > SW)
 		{
 			sw_diff_old = sw_diff_new;
@@ -381,8 +383,6 @@ int main(int argc, char **argv)
 
 			}
 		}
-
-
 
 
 		sprintf(LocalRankFilename,"ID.%05i",rank);
