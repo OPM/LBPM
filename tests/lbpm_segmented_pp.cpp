@@ -205,8 +205,8 @@ int main(int argc, char **argv)
 				for (i=0;i<nx;i++){
 					n = k*nx*ny+j*nx+i;
 					// Initialize the solid phase
-					if (Dm->id[n] == 0)	id(i,j,k) = 0;
-					else		      	id(i,j,k) = 1;
+					if (Dm->id[n] > 0)	id(i,j,k) = 1;
+					else		      	id(i,j,k) = 0;
 				}
 			}
 		}
