@@ -54,15 +54,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	{
-
-		//double Rcrit_new=1.f; // Hard-coded 'Rcrit' to avoid any calculations under resolutions.
-		double Rcrit_new=0.f; 
-		double SW=strtod(argv[1],NULL);
-		if (rank==0){
-			//printf("Critical radius %f (voxels)\n",Rcrit);
-			printf("Target saturation %f \n",SW);
-		}
-
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
@@ -83,6 +74,7 @@ int main(int argc, char **argv)
 			filename=argv[1];
 			Rcrit_new=0.f; 
 			SW=strtod(argv[2],NULL);
+			printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
 		// read the input database 
