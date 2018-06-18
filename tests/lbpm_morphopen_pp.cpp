@@ -114,9 +114,10 @@ int main(int argc, char **argv)
 		if (ReadSignDist != size_t(N)) printf("lbpm_morphopen_pp: Error reading signed distance function (rank=%i)\n",rank);
 		fclose(DIST);
 
+		MPI_Barrier(comm);
 		double count,countGlobal,totalGlobal;
 		count = 0.f;
-		double maxdist=0.f;
+		double maxdist=-200.f;
 		double maxdistGlobal;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -134,6 +135,7 @@ int main(int argc, char **argv)
 			}
 		}
 		if (maxdist>50.f) maxdist=50.f;
+		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 		MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,comm);
