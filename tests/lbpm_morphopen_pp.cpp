@@ -361,6 +361,10 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 			sw_new = countGlobal/totalGlobal;
 			sw_diff_new = abs(sw_new-SW);
+			if (rank==0){
+				printf("     %f ",sw_new);
+				printf("     %f\n",Rcrit_new);
+			}
 		}
 
 		if (sw_diff_new<sw_diff_old){
