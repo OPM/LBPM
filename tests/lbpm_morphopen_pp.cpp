@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		if (maxdist>100.f) maxdist=100.f;
+		if (maxdist>1.f*nprocx*nz) maxdist=1.f*nprocx*nz;
 		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
