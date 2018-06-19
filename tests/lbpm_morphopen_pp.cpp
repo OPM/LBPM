@@ -397,7 +397,7 @@ int main(int argc, char **argv)
 		}
 
 		sprintf(LocalRankFilename,"ID.%05i",rank);
-		FILE *ID = fopen(LocalRankFilename,"wb");
+		ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
 	}
