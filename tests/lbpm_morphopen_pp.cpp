@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		if (maxdist>1.f*nprocx*nz) maxdist=1.f*nprocx*nz;
+		if (maxdist>1.f*nprocx*nz) maxdist=0.2*nprocx*nz;
 		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
@@ -382,6 +382,7 @@ int main(int argc, char **argv)
 		}
 		
 		if (rank==0) printf("Writing ID file \n");
+		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *ID = fopen(LocalRankFilename,"rb");
 		readID=fread(Dm->id,1,N,ID);
@@ -396,8 +397,6 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-
-		sprintf(LocalRankFilename,"ID.%05i",rank);
 		ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
