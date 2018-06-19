@@ -70,10 +70,10 @@ int main(int argc, char **argv)
 
 		string filename;
 		double Rcrit_new, SW;
-		if (argc > 2){
+		if (argc > 1){
 			filename=argv[1];
 			Rcrit_new=0.f; 
-			SW=strtod(argv[2],NULL);
+			//SW=strtod(argv[2],NULL);
 			if (rank==0)	printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
@@ -87,7 +87,8 @@ int main(int argc, char **argv)
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
-
+		SW = domain_db->getScalar<double>("Sw");
+		
 		nx = size[0];
 		ny = size[1];
 		nz = size[2];
@@ -267,8 +268,6 @@ int main(int argc, char **argv)
 					}
 				}
 			}
-
-
 			// Pack and send the updated ID values
 			PackID(Dm->sendList_x, Dm->sendCount_x ,sendID_x, id);
 			PackID(Dm->sendList_X, Dm->sendCount_X ,sendID_X, id);
@@ -362,28 +361,20 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 			sw_new = countGlobal/totalGlobal;
 			sw_diff_new = abs(sw_new-SW);
-			// for test only
-			if (rank==0){
-				printf("Final saturation=%f\n",sw_new);
-				printf("Final critical radius=%f\n",Rcrit_new);
-			}
 		}
 
 		if (sw_diff_new<sw_diff_old){
 			if (rank==0){
 				printf("Final saturation=%f\n",sw_new);
 				printf("Final critical radius=%f\n",Rcrit_new);
-
 			}
 		}
 		else{
 			if (rank==0){
 				printf("Final saturation=%f\n",sw_old);
 				printf("Final critical radius=%f\n",Rcrit_old);
-
 			}
 		}
-
 
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		FILE *ID = fopen(LocalRankFilename,"wb");
