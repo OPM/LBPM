@@ -106,6 +106,7 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char [N];
 
+		nx+=2; ny+=2; nz+=2;
 		DoubleArray SignDist(nx,ny,nz);
 		// Read the signed distance from file
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
