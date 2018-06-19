@@ -379,6 +379,22 @@ int main(int argc, char **argv)
 				printf("Final critical radius=%f\n",Rcrit_old);
 			}
 		}
+		
+		if (rank==0) printf("Writing ID file \n");
+		size_t readID;
+		FILE *ID = fopen(LocalRankFilename,"rb");
+		readID=fread(Dm->id,1,N,ID);
+		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
+		fclose(ID);
+		// Preserve mineral labels
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n = k*nx*ny+j*nx+i;
+					if (SignDist(i,j,k) < 0.0)  id[n] = Dm->id[n];
+				}
+			}
+		}
 
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		FILE *ID = fopen(LocalRankFilename,"wb");
