@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
-		
+
 		nx = size[0];
 		ny = size[1];
 		nz = size[2];
@@ -99,10 +99,10 @@ int main(int argc, char **argv)
 		int N = (nx+2)*(ny+2)*(nz+2);
 
 		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
- //		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+		//		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
-		
+
 		char *id;
 		id = new char [N];
 
@@ -121,6 +121,15 @@ int main(int argc, char **argv)
 		count = 0.f;
 		double maxdist=-200.f;
 		double maxdistGlobal;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n = k*nx*ny+j*nx+i;
+					// extract maximum distance for critical radius
+					if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
+				}
+			}
+		}
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -130,13 +139,12 @@ int main(int argc, char **argv)
 						// initially saturated with wetting phase
 						id[n] = 2;
 						count+=1.0;
-						// extract maximum distance for critical radius
-						if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 					}
+					// don't let halo be the maximum dist
+					if ( SignDist(i,j,k) > maxdist) SignDist(i,j,k) = maxdist;
 				}
 			}
 		}
-		if (maxdist>1.f*nprocx*nz) maxdist=0.2*nprocx*nz;
 		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
@@ -380,7 +388,7 @@ int main(int argc, char **argv)
 				printf("Final critical radius=%f\n",Rcrit_old);
 			}
 		}
-		
+
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
