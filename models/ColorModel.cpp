@@ -404,11 +404,12 @@ void ScaLBL_ColorModel::Initialize(){
 		double *cPhi = new double[Np];
 		double *cDist = new double[19*Np];
 	    ifstream File(LocalRestartFile,ios::binary);
-	    for (n=0; n<Np; n++){
+	    double value;
+	    for (int n=0; n<Np; n++){
 	        File.read((char*) &value, sizeof(value));
 	        cPhi[n] = value;
 	        // Read the distributions
-	        for (q=0; q<19; q++){
+	        for (int q=0; q<19; q++){
 	            File.read((char*) &value, sizeof(value));
 	            cDist[q*Np+n] = value;
 	        }

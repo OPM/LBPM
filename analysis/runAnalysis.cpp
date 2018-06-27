@@ -44,17 +44,15 @@ public:
         filename(filename_), phase(phase_), dist(dist_), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
-
-        int q,n;
         double value;
         ofstream File(filename,ios::binary);
         for (int n=0; n<N; n++){
             // Write the two density values
-            value = cPhi[n];
+	  value = phase.data()[n];
             File.write((char*) &value, sizeof(value));
             // Write the distributions
             for (int q=0; q<19; q++){
-                value = cfq[q*N+n];
+	      value = dist.data()[q*N+n];
                 File.write((char*) &value, sizeof(value));
             }
         }
