@@ -5,6 +5,8 @@
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
 #include "common/ScaLBL.h"
+#include "models/ColorModel.h"
+
 #include "IO/MeshDatabase.h"
 #include "threadpool/thread_pool.h"
 
@@ -42,21 +44,22 @@ public:
         filename(filename_), phase(phase_), dist(dist_), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
-        char *IDS;
-        IDS = new char [N];
-        char local_id=0;
-        for (int idx=0; idx<N; idx++){
-        	if (dist(idx) < 0.f ) local_id = 0; 
-        	else if (phase(idx) > 0.f) local_id = 1;
-        	else local_id=2;
-        	IDS[idx] = local_id;
+
+        int q,n;
+        double value;
+        ofstream File(filename,ios::binary);
+        for (int n=0; n<N; n++){
+            // Write the two density values
+            value = cPhi[n];
+            File.write((char*) &value, sizeof(value));
+            // Write the distributions
+            for (int q=0; q<19; q++){
+                value = cfq[q*N+n];
+                File.write((char*) &value, sizeof(value));
+            }
         }
-		FILE *RESTART = fopen(filename,"wb");
-		fwrite(IDS,1,N,RESTART);
-		//    fwrite(Distance.get(),8,Distance.length(),ID);
-		fclose(RESTART);
+        File.close();
 		PROFILE_STOP("Save Checkpoint",1);
-	
     };
 private:
     WriteRestartWorkItem();
