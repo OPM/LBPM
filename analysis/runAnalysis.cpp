@@ -501,7 +501,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     ScaLBL_DeviceBarrier();
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
-    if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
+ /*   if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
     		matches(type,AnalysisType::ComputeAverages) ||
     		matches(type,AnalysisType::CopySimState) || 
     		matches(type,AnalysisType::IdentifyBlobs) )
@@ -531,16 +531,19 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	}
     	delete [] TmpDat;
     }
-    if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
-        memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
-        //Averages.ColorToSignedDistance(d_beta,Averages.Phase,Averages.Phase_tplus);
+    */
+    //if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+    if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
+        //memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
     }
-    if ( matches(type,AnalysisType::ComputeAverages) ) {
-        memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
-        //Averages.ColorToSignedDistance(d_beta,Averages.Phase,Averages.Phase_tminus);
+    if ( timestep%d_analysis_interval == 0 ) {
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
+        //memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
     }
-    if ( matches(type,AnalysisType::CopySimState) ) {
-        // Copy the members of Averages to the cpu (phase was copied above)
+    //if ( matches(type,AnalysisType::CopySimState) ) {
+    if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
+       // Copy the members of Averages to the cpu (phase was copied above)
         PROFILE_START("Copy-Pressure",1);
         ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
         ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
@@ -549,7 +552,8 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_START("Copy-Wait",1);
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
-        memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        //memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
@@ -557,7 +561,8 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cfq,cPhi;
-    if ( matches(type,AnalysisType::CreateRestart) ) {
+    //if ( matches(type,AnalysisType::CreateRestart) ) {
+    if (timestep%d_restart_interval==0){
         // Copy restart data to the CPU
         cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
         cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
@@ -568,6 +573,9 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 
     // Spawn threads to do blob identification work
     if ( matches(type,AnalysisType::IdentifyBlobs) ) {
+    	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
+
         BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDList new_list(new std::vector<BlobIDType>());
