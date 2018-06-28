@@ -40,8 +40,8 @@ void DeleteArray( const TYPE *p )
 class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-    WriteRestartWorkItem( const char* filename_, const DoubleArray& phase_, const DoubleArray& dist_, int N_ ):
-        filename(filename_), phase(phase_), dist(dist_), N(N_) {}
+  WriteRestartWorkItem( const char* filename_, const DoubleArray& phase_, std::shared_ptr<double> cfq, int N_ ):
+    filename(filename_), phase(phase_), dist(cfq), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
         double value;
@@ -52,7 +52,7 @@ public:
             File.write((char*) &value, sizeof(value));
             // Write the distributions
             for (int q=0; q<19; q++){
-	      value = dist.data()[q*N+n];
+	      value = dist.get()[q*N+n];
                 File.write((char*) &value, sizeof(value));
             }
         }
@@ -62,9 +62,9 @@ public:
 private:
     WriteRestartWorkItem();
     const char* filename;
-    // std::shared_ptr<double> cPhi, cDist;
+  std::shared_ptr<double> dist;
     const DoubleArray& phase;
-    const DoubleArray& dist;
+  //const DoubleArray& dist;
     const int N;
 };
 
@@ -514,7 +514,6 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	int Ny = d_N[1];
     	int Nz = d_N[2];
     	double *TmpDat;
-    	double value;
     	TmpDat = new double [d_Np];
     	ScaLBL_CopyToHost(&TmpDat[0],&Phi[0], d_Np*sizeof(double));
     	for (int k=0; k<Nz; k++){
@@ -608,7 +607,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)
-        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,*cfq,N);
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,cfq,N);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
     }
