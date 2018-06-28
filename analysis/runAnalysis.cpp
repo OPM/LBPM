@@ -557,13 +557,12 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
-    std::shared_ptr<double> cDen, cfq;
+    std::shared_ptr<double> cfq;
     if ( matches(type,AnalysisType::CreateRestart) ) {
         // Copy restart data to the CPU
-        //cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
-        //cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
-        //ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        //ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+        //cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
+        cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+        ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
         //cPhi = std::shared_ptr<double>(new double[N],DeleteArray<double>);
         //cDist = std::shared_ptr<double>(new double[N],DeleteArray<double>);
         //ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
@@ -590,33 +589,26 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 
     // Spawn threads to do the analysis work
     //if (timestep%d_restart_interval==0){
-       if ( matches(type,AnalysisType::ComputeAverages) ) {
-	 //if ( timestep%d_analysis_interval == 0 ) {
-        auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
-        work->add_dependency(d_wait_blobID);
-        work->add_dependency(d_wait_analysis);
-        work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
-        d_wait_analysis = d_tpool.add_work(work);
+    // if ( matches(type,AnalysisType::ComputeAverages) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+    	auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
+    	work->add_dependency(d_wait_blobID);
+    	work->add_dependency(d_wait_analysis);
+    	work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
+    	d_wait_analysis = d_tpool.add_work(work);
     }
 
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-        /* if (pBC) {
-            err = fabs(sat_w - sat_w_previous);
-            sat_w_previous = sat_w;
-            if (rank==0){
-               printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
-           }
-        } */
-        // Retain the timestep associated with the restart files
+
         if (d_rank==0) {
             FILE *Rst = fopen("Restart.txt","w");
             fprintf(Rst,"%i\n",timestep+4);
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)
-        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,Averages.SDs,N);
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,*cfq,N);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
     }
