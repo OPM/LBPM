@@ -40,19 +40,19 @@ void DeleteArray( const TYPE *p )
 class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-  WriteRestartWorkItem( const char* filename_, const DoubleArray& phase_, std::shared_ptr<double> cfq, int N_ ):
-    filename(filename_), phase(phase_), dist(cfq), N(N_) {}
+  WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cphi_, std::shared_ptr<double> cfq_, int N_ ):
+    filename(filename_), cphi(cphi_), cfq(cfq_), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
         double value;
         ofstream File(filename,ios::binary);
         for (int n=0; n<N; n++){
             // Write the two density values
-	  value = phase.data()[n];
+	    value = cphi.get()[n];
             File.write((char*) &value, sizeof(value));
             // Write the distributions
             for (int q=0; q<19; q++){
-	      value = dist.get()[q*N+n];
+	      value = cfq.get()[q*N+n];
                 File.write((char*) &value, sizeof(value));
             }
         }
@@ -62,8 +62,8 @@ public:
 private:
     WriteRestartWorkItem();
     const char* filename;
-  std::shared_ptr<double> dist;
-    const DoubleArray& phase;
+    std::shared_ptr<double> cfq,cphi;
+  // const DoubleArray& phase;
   //const DoubleArray& dist;
     const int N;
 };
@@ -556,16 +556,13 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
-    std::shared_ptr<double> cfq;
+    std::shared_ptr<double> cfq,cPhi;
     if ( matches(type,AnalysisType::CreateRestart) ) {
         // Copy restart data to the CPU
-        //cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
+        cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
         cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
         ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        //cPhi = std::shared_ptr<double>(new double[N],DeleteArray<double>);
-        //cDist = std::shared_ptr<double>(new double[N],DeleteArray<double>);
-        //ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        //ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+        ScaLBL_CopyToHost(cPhi.get(),Phi,d_Np*sizeof(double));
     }
     PROFILE_STOP("Copy data to host",1);
 
@@ -607,7 +604,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)
-        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,cfq,N);
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cPhi,cfq,N);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
     }
