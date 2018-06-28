@@ -604,7 +604,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)
-        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cPhi,cfq,N);
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cPhi,cfq,d_Np);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
     }
