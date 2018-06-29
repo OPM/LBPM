@@ -70,10 +70,10 @@ int main(int argc, char **argv)
 
 		string filename;
 		double Rcrit_new, SW;
-		if (argc > 2){
+		if (argc > 1){
 			filename=argv[1];
 			Rcrit_new=0.f; 
-			SW=strtod(argv[2],NULL);
+			//SW=strtod(argv[2],NULL);
 			if (rank==0)	printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
@@ -87,6 +87,7 @@ int main(int argc, char **argv)
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
+		SW = domain_db->getScalar<double>("Sw");
 
 		nx = size[0];
 		ny = size[1];
@@ -98,13 +99,14 @@ int main(int argc, char **argv)
 		int N = (nx+2)*(ny+2)*(nz+2);
 
 		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
- //		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
+		//		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
-		
+
 		char *id;
 		id = new char [N];
 
+		nx+=2; ny+=2; nz+=2;
 		DoubleArray SignDist(nx,ny,nz);
 		// Read the signed distance from file
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
@@ -119,6 +121,15 @@ int main(int argc, char **argv)
 		count = 0.f;
 		double maxdist=-200.f;
 		double maxdistGlobal;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n = k*nx*ny+j*nx+i;
+					// extract maximum distance for critical radius
+					if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
+				}
+			}
+		}
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -128,13 +139,12 @@ int main(int argc, char **argv)
 						// initially saturated with wetting phase
 						id[n] = 2;
 						count+=1.0;
-						// extract maximum distance for critical radius
-						if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 					}
+					// don't let halo be the maximum dist
+					if ( SignDist(i,j,k) > maxdist) SignDist(i,j,k) = maxdist;
 				}
 			}
 		}
-		if (maxdist>100.f) maxdist=100.f;
 		MPI_Barrier(comm);
 		// total Global is the number of nodes in the pore-space
 		MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
@@ -267,8 +277,6 @@ int main(int argc, char **argv)
 					}
 				}
 			}
-
-
 			// Pack and send the updated ID values
 			PackID(Dm->sendList_x, Dm->sendCount_x ,sendID_x, id);
 			PackID(Dm->sendList_X, Dm->sendCount_X ,sendID_X, id);
@@ -362,10 +370,9 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,comm);
 			sw_new = countGlobal/totalGlobal;
 			sw_diff_new = abs(sw_new-SW);
-			// for test only
 			if (rank==0){
-				printf("Final saturation=%f\n",sw_new);
-				printf("Final critical radius=%f\n",Rcrit_new);
+				printf("     %f ",sw_new);
+				printf("     %f\n",Rcrit_new);
 			}
 		}
 
@@ -373,20 +380,32 @@ int main(int argc, char **argv)
 			if (rank==0){
 				printf("Final saturation=%f\n",sw_new);
 				printf("Final critical radius=%f\n",Rcrit_new);
-
 			}
 		}
 		else{
 			if (rank==0){
 				printf("Final saturation=%f\n",sw_old);
 				printf("Final critical radius=%f\n",Rcrit_old);
-
 			}
 		}
 
-
+		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
-		FILE *ID = fopen(LocalRankFilename,"wb");
+		size_t readID;
+		FILE *ID = fopen(LocalRankFilename,"rb");
+		readID=fread(Dm->id,1,N,ID);
+		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
+		fclose(ID);
+		// Preserve mineral labels
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n = k*nx*ny+j*nx+i;
+					if (SignDist(i,j,k) < 0.0)  id[n] = Dm->id[n];
+				}
+			}
+		}
+		ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
 	}

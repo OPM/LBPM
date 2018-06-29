@@ -29,6 +29,44 @@ ScaLBL_ColorModel::~ScaLBL_ColorModel(){
 
 }
 
+/*void ScaLBL_ColorModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
+{
+    int q,n;
+    double value;
+    ofstream File(FILENAME,ios::binary);
+    for (n=0; n<Np; n++){
+        // Write the two density values
+        value = cPhi[n];
+        File.write((char*) &value, sizeof(value));
+        // Write the even distributions
+        for (q=0; q<19; q++){
+            value = cfq[q*Np+n];
+            File.write((char*) &value, sizeof(value));
+        }
+    }
+    File.close();
+
+}
+
+void ScaLBL_ColorModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
+{
+    int q=0, n=0;
+    double value=0;
+    ifstream File(FILENAME,ios::binary);
+    for (n=0; n<Np; n++){
+        File.read((char*) &value, sizeof(value));
+        cPhi[n] = value;
+        // Read the distributions
+        for (q=0; q<19; q++){
+            File.read((char*) &value, sizeof(value));
+            cfq[q*Np+n] = value;
+        }
+    }
+    File.close();
+}
+*/
+
+
 void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
@@ -107,31 +145,8 @@ void ScaLBL_ColorModel::ReadInput(){
     ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
     MPI_Barrier(comm);
     if (rank == 0) cout << "Domain set." << endl;
-
-    // Read restart file
-     if (Restart == true){
-       if (rank==0){
-             printf("Reading restart file! \n");
-             ifstream restart("Restart.txt");
-             if (restart.is_open()){
-                 restart  >> timestep;
-                 printf("Restarting from timestep =%i \n",timestep);
-             }
-             else{
-                 printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-                 timestep=0;
-             }
-         }
-         MPI_Bcast(&timestep,1,MPI_INT,0,comm);
-         FILE *RESTART = fopen(LocalRestartFile,"rb");
-         if (RESTART==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
-         readID=fread(id,1,N,RESTART);
-         if (readID != size_t(N)) printf("lbpm_color_simulator: Error reading Restart (rank=%i) \n",rank);
-         fclose(RESTART);
-
-         MPI_Barrier(comm);
-     }
 }
+
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 {
 	size_t NLABELS=0;
@@ -335,6 +350,7 @@ void ScaLBL_ColorModel::AssignSolidPotential(){
 	delete [] Tmp;
 	delete [] Dst;
 
+	/*
 	DoubleArray Psx(Nx,Ny,Nz);
 	DoubleArray Psy(Nx,Ny,Nz);
 	DoubleArray Psz(Nx,Ny,Nz);
@@ -342,12 +358,14 @@ void ScaLBL_ColorModel::AssignSolidPotential(){
 	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[0],Psx);
 	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[Np],Psy);
 	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[2*Np],Psz);
+	
 	for (int n=0; n<N; n++) Psnorm(n) = Psx(n)*Psx(n)+Psy(n)*Psy(n)+Psz(n)*Psz(n);
 	FILE *PFILE;
 	sprintf(LocalRankFilename,"Potential.%05i.raw",rank);
 	PFILE = fopen(LocalRankFilename,"wb");
 	fwrite(Psnorm.data(),8,N,PFILE);
 	fclose(PFILE);
+	*/
 }
 void ScaLBL_ColorModel::Initialize(){
 	/*
@@ -382,6 +400,45 @@ void ScaLBL_ColorModel::Initialize(){
 
 	if (rank==0)    printf ("Initializing distributions \n");
 	ScaLBL_D3Q19_Init(fq, Np);
+	
+	if (Restart == true){
+		if (rank==0){
+			printf("Reading restart file! \n");
+			ifstream restart("Restart.txt");
+			if (restart.is_open()){
+				restart  >> timestep;
+				printf("Restarting from timestep =%i \n",timestep);
+			}
+			else{
+				printf("WARNING:No Restart.txt file, setting timestep=0 \n");
+				timestep=0;
+			}
+		}
+		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+		// Read in the restart file to CPU buffers
+		double *cPhi = new double[Np];
+		double *cDist = new double[19*Np];
+	    ifstream File(LocalRestartFile,ios::binary);
+	    double value;
+	    for (int n=0; n<Np; n++){
+	        File.read((char*) &value, sizeof(value));
+	        cPhi[n] = value;
+	        // Read the distributions
+	        for (int q=0; q<19; q++){
+	            File.read((char*) &value, sizeof(value));
+	            cDist[q*Np+n] = value;
+	        }
+	    }
+	    File.close();
+		// Copy the restart data to the GPU
+		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
+		ScaLBL_CopyToDevice(Phi,cPhi,Np*sizeof(double));
+		ScaLBL_DeviceBarrier();
+		delete [] cPhi;
+		delete [] cDist;
+		MPI_Barrier(comm);
+	}
+	
 	if (rank==0)    printf ("Initializing phase field \n");
 	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);

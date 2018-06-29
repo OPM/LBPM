@@ -20,6 +20,8 @@
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
 #include "common/ScaLBL.h"
+#include "models/ColorModel.h"
+
 #include "IO/MeshDatabase.h"
 #include "threadpool/thread_pool.h"
 
@@ -53,32 +55,31 @@ void DeleteArray( const TYPE *p )
 class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-    WriteRestartWorkItem( const char* filename_, const DoubleArray& phase_, const DoubleArray& dist_, int N_ ):
-        filename(filename_), phase(phase_), dist(dist_), N(N_) {}
+  WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cphi_, std::shared_ptr<double> cfq_, int N_ ):
+    filename(filename_), cphi(cphi_), cfq(cfq_), N(N_) {}
     virtual void run() {
         PROFILE_START("Save Checkpoint",1);
-        char *IDS;
-        IDS = new char [N];
-        char local_id=0;
-        for (int idx=0; idx<N; idx++){
-        	if (dist(idx) < 0.f ) local_id = 0; 
-        	else if (phase(idx) > 0.f) local_id = 1;
-        	else local_id=2;
-        	IDS[idx] = local_id;
+        double value;
+        ofstream File(filename,ios::binary);
+        for (int n=0; n<N; n++){
+            // Write the two density values
+	    value = cphi.get()[n];
+            File.write((char*) &value, sizeof(value));
+            // Write the distributions
+            for (int q=0; q<19; q++){
+	      value = cfq.get()[q*N+n];
+                File.write((char*) &value, sizeof(value));
+            }
         }
-		FILE *RESTART = fopen(filename,"wb");
-		fwrite(IDS,1,N,RESTART);
-		//    fwrite(Distance.get(),8,Distance.length(),ID);
-		fclose(RESTART);
+        File.close();
 		PROFILE_STOP("Save Checkpoint",1);
-	
     };
 private:
     WriteRestartWorkItem();
     const char* filename;
-    // std::shared_ptr<double> cPhi, cDist;
-    const DoubleArray& phase;
-    const DoubleArray& dist;
+    std::shared_ptr<double> cfq,cphi;
+  // const DoubleArray& phase;
+  //const DoubleArray& dist;
     const int N;
 };
 
@@ -515,7 +516,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     ScaLBL_DeviceBarrier();
     PROFILE_START("Copy data to host",1);
     std::shared_ptr<DoubleArray> phase;
-    if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
+ /*   if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
     		matches(type,AnalysisType::ComputeAverages) ||
     		matches(type,AnalysisType::CopySimState) || 
     		matches(type,AnalysisType::IdentifyBlobs) )
@@ -528,7 +529,6 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	int Ny = d_N[1];
     	int Nz = d_N[2];
     	double *TmpDat;
-    	double value;
     	TmpDat = new double [d_Np];
     	ScaLBL_CopyToHost(&TmpDat[0],&Phi[0], d_Np*sizeof(double));
     	for (int k=0; k<Nz; k++){
@@ -546,16 +546,19 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	}
     	delete [] TmpDat;
     }
-    if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
-        memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
-        //Averages.ColorToSignedDistance(d_beta,Averages.Phase,Averages.Phase_tplus);
+    */
+    //if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+    if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
+        //memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
     }
-    if ( matches(type,AnalysisType::ComputeAverages) ) {
-        memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
-        //Averages.ColorToSignedDistance(d_beta,Averages.Phase,Averages.Phase_tminus);
+    if ( timestep%d_analysis_interval == 0 ) {
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
+        //memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
     }
-    if ( matches(type,AnalysisType::CopySimState) ) {
-        // Copy the members of Averages to the cpu (phase was copied above)
+    //if ( matches(type,AnalysisType::CopySimState) ) {
+    if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
+       // Copy the members of Averages to the cpu (phase was copied above)
         PROFILE_START("Copy-Pressure",1);
         ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
         ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
@@ -564,29 +567,30 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_START("Copy-Wait",1);
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
-        memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        //memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
         PROFILE_STOP("Copy-State",1);
     }
-    std::shared_ptr<double> cDen, cfq;
-    if ( matches(type,AnalysisType::CreateRestart) ) {
+    std::shared_ptr<double> cfq,cPhi;
+    //if ( matches(type,AnalysisType::CreateRestart) ) {
+    if (timestep%d_restart_interval==0){
         // Copy restart data to the CPU
-        //cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
-        //cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
-        //ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        //ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
-        //cPhi = std::shared_ptr<double>(new double[N],DeleteArray<double>);
-        //cDist = std::shared_ptr<double>(new double[N],DeleteArray<double>);
-        //ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        //ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+        cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
+        cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+        ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
+        ScaLBL_CopyToHost(cPhi.get(),Phi,d_Np*sizeof(double));
     }
     PROFILE_STOP("Copy data to host",1);
 
     // Spawn threads to do blob identification work
     if ( matches(type,AnalysisType::IdentifyBlobs) ) {
+    	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
+
         BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDList new_list(new std::vector<BlobIDType>());
@@ -604,33 +608,26 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 
     // Spawn threads to do the analysis work
     //if (timestep%d_restart_interval==0){
-       if ( matches(type,AnalysisType::ComputeAverages) ) {
-	 //if ( timestep%d_analysis_interval == 0 ) {
-        auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
-        work->add_dependency(d_wait_blobID);
-        work->add_dependency(d_wait_analysis);
-        work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
-        d_wait_analysis = d_tpool.add_work(work);
+    // if ( matches(type,AnalysisType::ComputeAverages) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+    	auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
+    	work->add_dependency(d_wait_blobID);
+    	work->add_dependency(d_wait_analysis);
+    	work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
+    	d_wait_analysis = d_tpool.add_work(work);
     }
 
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-        /* if (pBC) {
-            err = fabs(sat_w - sat_w_previous);
-            sat_w_previous = sat_w;
-            if (rank==0){
-               printf("Timestep %i: change in saturation since last checkpoint is %f \n",timestep,err);
-           }
-        } */
-        // Retain the timestep associated with the restart files
+
         if (d_rank==0) {
             FILE *Rst = fopen("Restart.txt","w");
             fprintf(Rst,"%i\n",timestep+4);
             fclose(Rst);
         }
         // Write the restart file (using a seperate thread)
-        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),*phase,Averages.SDs,N);
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cPhi,cfq,d_Np);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
     }
