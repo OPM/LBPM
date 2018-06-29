@@ -356,10 +356,11 @@ void ScaLBL_ColorModel::Initialize(){
 	/*
 	 * This function initializes model
 	 */
-
-  AssignSolidPotential();
+ 
+	AssignSolidPotential();
 	int rank=Dm->rank();
 	double count_wet=0.f;
+	double count_wet_global;
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];
 	for (int k=1; k<Nz-1; k++){
@@ -378,14 +379,15 @@ void ScaLBL_ColorModel::Initialize(){
 			}
 		}
 	}
-	//printf("sw=%f \n",count_wet/double(Np));
+	MPI_Allreduce(&count_wet,&count_wet_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	if (rank==0)	printf("Wetting phase volume fraction =%f \n",count_wet_global/double(Nx*Ny*Nz*nprocs));
 	// initialize phi based on PhaseLabel (include solid component labels)
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
 	//...........................................................................
 
 	if (rank==0)    printf ("Initializing distributions \n");
 	ScaLBL_D3Q19_Init(fq, Np);
-	
+
 	if (Restart == true){
 		if (rank==0){
 			printf("Reading restart file! \n");
@@ -403,18 +405,18 @@ void ScaLBL_ColorModel::Initialize(){
 		// Read in the restart file to CPU buffers
 		double *cPhi = new double[Np];
 		double *cDist = new double[19*Np];
-	    ifstream File(LocalRestartFile,ios::binary);
-	    double value;
-	    for (int n=0; n<Np; n++){
-	        File.read((char*) &value, sizeof(value));
-	        cPhi[n] = value;
-	        // Read the distributions
-	        for (int q=0; q<19; q++){
-	            File.read((char*) &value, sizeof(value));
-	            cDist[q*Np+n] = value;
-	        }
-	    }
-	    File.close();
+		ifstream File(LocalRestartFile,ios::binary);
+		double value;
+		for (int n=0; n<Np; n++){
+			File.read((char*) &value, sizeof(value));
+			cPhi[n] = value;
+			// Read the distributions
+			for (int q=0; q<19; q++){
+				File.read((char*) &value, sizeof(value));
+				cDist[q*Np+n] = value;
+			}
+		}
+		File.close();
 		// Copy the restart data to the GPU
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,Np*sizeof(double));
@@ -423,7 +425,7 @@ void ScaLBL_ColorModel::Initialize(){
 		delete [] cDist;
 		MPI_Barrier(comm);
 	}
-	
+
 	if (rank==0)    printf ("Initializing phase field \n");
 	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
