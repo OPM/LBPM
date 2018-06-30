@@ -755,41 +755,41 @@ void Domain::CommHaloIDs(){
 	PackID(sendList_YZ, sendCount_YZ ,sendID_YZ, id);
 	//......................................................................................
 	MPI_Sendrecv(sendID_x,sendCount_x,MPI_CHAR,rank_x(),sendtag,
-			recvID_X,recvCount_X,MPI_CHAR,rank_X(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_X,recvCount_X,MPI_CHAR,rank_X(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_X,sendCount_X,MPI_CHAR,rank_X(),sendtag,
-			recvID_x,recvCount_x,MPI_CHAR,rank_x(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_x,recvCount_x,MPI_CHAR,rank_x(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_y,sendCount_y,MPI_CHAR,rank_y(),sendtag,
-			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Y,sendCount_Y,MPI_CHAR,rank_Y(),sendtag,
-			recvID_y,recvCount_y,MPI_CHAR,rank_y(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_y,recvCount_y,MPI_CHAR,rank_y(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_z,sendCount_z,MPI_CHAR,rank_z(),sendtag,
-			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Z,sendCount_Z,MPI_CHAR,rank_Z(),sendtag,
-			recvID_z,recvCount_z,MPI_CHAR,rank_z(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_z,recvCount_z,MPI_CHAR,rank_z(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xy,sendCount_xy,MPI_CHAR,rank_xy(),sendtag,
-			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XY,sendCount_XY,MPI_CHAR,rank_XY(),sendtag,
-			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xy,sendCount_Xy,MPI_CHAR,rank_Xy(),sendtag,
-			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xY,sendCount_xY,MPI_CHAR,rank_xY(),sendtag,
-			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xz,sendCount_xz,MPI_CHAR,rank_xz(),sendtag,
-			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_XZ,sendCount_XZ,MPI_CHAR,rank_XZ(),sendtag,
-			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Xz,sendCount_Xz,MPI_CHAR,rank_Xz(),sendtag,
-			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_xZ,sendCount_xZ,MPI_CHAR,rank_xZ(),sendtag,
-			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yz,sendCount_yz,MPI_CHAR,rank_yz(),sendtag,
-			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_YZ,sendCount_YZ,MPI_CHAR,rank_YZ(),sendtag,
-			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_Yz,sendCount_Yz,MPI_CHAR,rank_Yz(),sendtag,
-			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ(),recvtag,Comm,MPI_STATUS_IGNORE);
 	MPI_Sendrecv(sendID_yZ,sendCount_yZ,MPI_CHAR,rank_yZ(),sendtag,
-			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz(),recvtag,comm,MPI_STATUS_IGNORE);
+			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	//......................................................................................
 	UnpackID(recvList_x, recvCount_x ,recvID_x, id);
 	UnpackID(recvList_X, recvCount_X ,recvID_X, id);
