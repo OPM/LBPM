@@ -691,124 +691,167 @@ void Domain::CommHaloIDs(){
 	char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
 	char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
 	char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
+    //......................................................................................
+    int sendCountID_x, sendCountID_y, sendCountID_z, sendCountID_X, sendCountID_Y, sendCountID_Z;
+    int sendCountID_xy, sendCountID_yz, sendCountID_xz, sendCountID_Xy, sendCountID_Yz, sendCountID_xZ;
+    int sendCountID_xY, sendCountID_yZ, sendCountID_Xz, sendCountID_XY, sendCountID_YZ, sendCountID_XZ;
+    //......................................................................................
+    int recvCountID_x, recvCountID_y, recvCountID_z, recvCountID_X, recvCountID_Y, recvCountID_Z;
+    int recvCountID_xy, recvCountID_yz, recvCountID_xz, recvCountID_Xy, recvCountID_Yz, recvCountID_xZ;
+    int recvCountID_xY, recvCountID_yZ, recvCountID_Xz, recvCountID_XY, recvCountID_YZ, recvCountID_XZ;
+    //......................................................................................
+	//......................................................................................
+	sendCountID_x = sendCountID_y = sendCountID_z = sendCountID_X = sendCountID_Y = sendCountID_Z = 0;
+	sendCountID_xy = sendCountID_yz = sendCountID_xz = sendCountID_Xy = sendCountID_Yz = sendCountID_xZ = 0;
+	sendCountID_xY = sendCountID_yZ = sendCountID_Xz = sendCountID_XY = sendCountID_YZ = sendCountID_XZ = 0;
+	//......................................................................................
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				// Check the phase ID
+				// CountIDs for the six faces
+				if (i==1)    sendCountID_x++;
+				if (j==1)    sendCountID_y++;
+				if (k==1)    sendCountID_z++;
+				if (i==Nx-2)    sendCountID_X++;
+				if (j==Ny-2)    sendCountID_Y++;
+				if (k==Nz-2)    sendCountID_Z++;
+				// CountIDs for the twelve edges
+				if (i==1 && j==1)    sendCountID_xy++;
+				if (i==1 && j==Ny-2)    sendCountID_xY++;
+				if (i==Nx-2 && j==1)    sendCountID_Xy++;
+				if (i==Nx-2 && j==Ny-2)    sendCountID_XY++;
+
+				if (i==1 && k==1)    sendCountID_xz++;
+				if (i==1 && k==Nz-2)    sendCountID_xZ++;
+				if (i==Nx-2 && k==1)    sendCountID_Xz++;
+				if (i==Nx-2 && k==Nz-2)    sendCountID_XZ++;
+
+				if (j==1 && k==1)    sendCountID_yz++;
+				if (j==1 && k==Nz-2)    sendCountID_yZ++;
+				if (j==Ny-2 && k==1)    sendCountID_Yz++;
+				if (j==Ny-2 && k==Nz-2)    sendCountID_YZ++;
+			}
+		}
+	}
 	// send buffers
-	sendID_x = new char [sendCount_x];
-	sendID_y = new char [sendCount_y];
-	sendID_z = new char [sendCount_z];
-	sendID_X = new char [sendCount_X];
-	sendID_Y = new char [sendCount_Y];
-	sendID_Z = new char [sendCount_Z];
-	sendID_xy = new char [sendCount_xy];
-	sendID_yz = new char [sendCount_yz];
-	sendID_xz = new char [sendCount_xz];
-	sendID_Xy = new char [sendCount_Xy];
-	sendID_Yz = new char [sendCount_Yz];
-	sendID_xZ = new char [sendCount_xZ];
-	sendID_xY = new char [sendCount_xY];
-	sendID_yZ = new char [sendCount_yZ];
-	sendID_Xz = new char [sendCount_Xz];
-	sendID_XY = new char [sendCount_XY];
-	sendID_YZ = new char [sendCount_YZ];
-	sendID_XZ = new char [sendCount_XZ];
+	sendID_x = new char [sendCountID_x];
+	sendID_y = new char [sendCountID_y];
+	sendID_z = new char [sendCountID_z];
+	sendID_X = new char [sendCountID_X];
+	sendID_Y = new char [sendCountID_Y];
+	sendID_Z = new char [sendCountID_Z];
+	sendID_xy = new char [sendCountID_xy];
+	sendID_yz = new char [sendCountID_yz];
+	sendID_xz = new char [sendCountID_xz];
+	sendID_Xy = new char [sendCountID_Xy];
+	sendID_Yz = new char [sendCountID_Yz];
+	sendID_xZ = new char [sendCountID_xZ];
+	sendID_xY = new char [sendCountID_xY];
+	sendID_yZ = new char [sendCountID_yZ];
+	sendID_Xz = new char [sendCountID_Xz];
+	sendID_XY = new char [sendCountID_XY];
+	sendID_YZ = new char [sendCountID_YZ];
+	sendID_XZ = new char [sendCountID_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new char [recvCount_x];
-	recvID_y = new char [recvCount_y];
-	recvID_z = new char [recvCount_z];
-	recvID_X = new char [recvCount_X];
-	recvID_Y = new char [recvCount_Y];
-	recvID_Z = new char [recvCount_Z];
-	recvID_xy = new char [recvCount_xy];
-	recvID_yz = new char [recvCount_yz];
-	recvID_xz = new char [recvCount_xz];
-	recvID_Xy = new char [recvCount_Xy];
-	recvID_xZ = new char [recvCount_xZ];
-	recvID_xY = new char [recvCount_xY];
-	recvID_yZ = new char [recvCount_yZ];
-	recvID_Yz = new char [recvCount_Yz];
-	recvID_Xz = new char [recvCount_Xz];
-	recvID_XY = new char [recvCount_XY];
-	recvID_YZ = new char [recvCount_YZ];
-	recvID_XZ = new char [recvCount_XZ];
+	recvID_x = new char [recvCountID_x];
+	recvID_y = new char [recvCountID_y];
+	recvID_z = new char [recvCountID_z];
+	recvID_X = new char [recvCountID_X];
+	recvID_Y = new char [recvCountID_Y];
+	recvID_Z = new char [recvCountID_Z];
+	recvID_xy = new char [recvCountID_xy];
+	recvID_yz = new char [recvCountID_yz];
+	recvID_xz = new char [recvCountID_xz];
+	recvID_Xy = new char [recvCountID_Xy];
+	recvID_xZ = new char [recvCountID_xZ];
+	recvID_xY = new char [recvCountID_xY];
+	recvID_yZ = new char [recvCountID_yZ];
+	recvID_Yz = new char [recvCountID_Yz];
+	recvID_Xz = new char [recvCountID_Xz];
+	recvID_XY = new char [recvCountID_XY];
+	recvID_YZ = new char [recvCountID_YZ];
+	recvID_XZ = new char [recvCountID_XZ];
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 
 	// Pack and send the updated ID values
-	PackID(sendList_x, sendCount_x ,sendID_x, id);
-	PackID(sendList_X, sendCount_X ,sendID_X, id);
-	PackID(sendList_y, sendCount_y ,sendID_y, id);
-	PackID(sendList_Y, sendCount_Y ,sendID_Y, id);
-	PackID(sendList_z, sendCount_z ,sendID_z, id);
-	PackID(sendList_Z, sendCount_Z ,sendID_Z, id);
-	PackID(sendList_xy, sendCount_xy ,sendID_xy, id);
-	PackID(sendList_Xy, sendCount_Xy ,sendID_Xy, id);
-	PackID(sendList_xY, sendCount_xY ,sendID_xY, id);
-	PackID(sendList_XY, sendCount_XY ,sendID_XY, id);
-	PackID(sendList_xz, sendCount_xz ,sendID_xz, id);
-	PackID(sendList_Xz, sendCount_Xz ,sendID_Xz, id);
-	PackID(sendList_xZ, sendCount_xZ ,sendID_xZ, id);
-	PackID(sendList_XZ, sendCount_XZ ,sendID_XZ, id);
-	PackID(sendList_yz, sendCount_yz ,sendID_yz, id);
-	PackID(sendList_Yz, sendCount_Yz ,sendID_Yz, id);
-	PackID(sendList_yZ, sendCount_yZ ,sendID_yZ, id);
-	PackID(sendList_YZ, sendCount_YZ ,sendID_YZ, id);
+	PackID(sendList_x, sendCountID_x ,sendID_x, id);
+	PackID(sendList_X, sendCountID_X ,sendID_X, id);
+	PackID(sendList_y, sendCountID_y ,sendID_y, id);
+	PackID(sendList_Y, sendCountID_Y ,sendID_Y, id);
+	PackID(sendList_z, sendCountID_z ,sendID_z, id);
+	PackID(sendList_Z, sendCountID_Z ,sendID_Z, id);
+	PackID(sendList_xy, sendCountID_xy ,sendID_xy, id);
+	PackID(sendList_Xy, sendCountID_Xy ,sendID_Xy, id);
+	PackID(sendList_xY, sendCountID_xY ,sendID_xY, id);
+	PackID(sendList_XY, sendCountID_XY ,sendID_XY, id);
+	PackID(sendList_xz, sendCountID_xz ,sendID_xz, id);
+	PackID(sendList_Xz, sendCountID_Xz ,sendID_Xz, id);
+	PackID(sendList_xZ, sendCountID_xZ ,sendID_xZ, id);
+	PackID(sendList_XZ, sendCountID_XZ ,sendID_XZ, id);
+	PackID(sendList_yz, sendCountID_yz ,sendID_yz, id);
+	PackID(sendList_Yz, sendCountID_Yz ,sendID_Yz, id);
+	PackID(sendList_yZ, sendCountID_yZ ,sendID_yZ, id);
+	PackID(sendList_YZ, sendCountID_YZ ,sendID_YZ, id);
 	//......................................................................................
-	MPI_Sendrecv(sendID_x,sendCount_x,MPI_CHAR,rank_x(),sendtag,
-			recvID_X,recvCount_X,MPI_CHAR,rank_X(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_X,sendCount_X,MPI_CHAR,rank_X(),sendtag,
-			recvID_x,recvCount_x,MPI_CHAR,rank_x(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_y,sendCount_y,MPI_CHAR,rank_y(),sendtag,
-			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Y,sendCount_Y,MPI_CHAR,rank_Y(),sendtag,
-			recvID_y,recvCount_y,MPI_CHAR,rank_y(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_z,sendCount_z,MPI_CHAR,rank_z(),sendtag,
-			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Z,sendCount_Z,MPI_CHAR,rank_Z(),sendtag,
-			recvID_z,recvCount_z,MPI_CHAR,rank_z(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xy,sendCount_xy,MPI_CHAR,rank_xy(),sendtag,
-			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_XY,sendCount_XY,MPI_CHAR,rank_XY(),sendtag,
-			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Xy,sendCount_Xy,MPI_CHAR,rank_Xy(),sendtag,
-			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xY,sendCount_xY,MPI_CHAR,rank_xY(),sendtag,
-			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xz,sendCount_xz,MPI_CHAR,rank_xz(),sendtag,
-			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_XZ,sendCount_XZ,MPI_CHAR,rank_XZ(),sendtag,
-			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Xz,sendCount_Xz,MPI_CHAR,rank_Xz(),sendtag,
-			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_xZ,sendCount_xZ,MPI_CHAR,rank_xZ(),sendtag,
-			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_yz,sendCount_yz,MPI_CHAR,rank_yz(),sendtag,
-			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_YZ,sendCount_YZ,MPI_CHAR,rank_YZ(),sendtag,
-			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_Yz,sendCount_Yz,MPI_CHAR,rank_Yz(),sendtag,
-			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ(),recvtag,Comm,MPI_STATUS_IGNORE);
-	MPI_Sendrecv(sendID_yZ,sendCount_yZ,MPI_CHAR,rank_yZ(),sendtag,
-			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_x,sendCountID_x,MPI_CHAR,rank_x(),sendtag,
+			recvID_X,recvCountID_X,MPI_CHAR,rank_X(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_X,sendCountID_X,MPI_CHAR,rank_X(),sendtag,
+			recvID_x,recvCountID_x,MPI_CHAR,rank_x(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_y,sendCountID_y,MPI_CHAR,rank_y(),sendtag,
+			recvID_Y,recvCountID_Y,MPI_CHAR,rank_Y(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Y,sendCountID_Y,MPI_CHAR,rank_Y(),sendtag,
+			recvID_y,recvCountID_y,MPI_CHAR,rank_y(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_z,sendCountID_z,MPI_CHAR,rank_z(),sendtag,
+			recvID_Z,recvCountID_Z,MPI_CHAR,rank_Z(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Z,sendCountID_Z,MPI_CHAR,rank_Z(),sendtag,
+			recvID_z,recvCountID_z,MPI_CHAR,rank_z(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xy,sendCountID_xy,MPI_CHAR,rank_xy(),sendtag,
+			recvID_XY,recvCountID_XY,MPI_CHAR,rank_XY(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XY,sendCountID_XY,MPI_CHAR,rank_XY(),sendtag,
+			recvID_xy,recvCountID_xy,MPI_CHAR,rank_xy(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xy,sendCountID_Xy,MPI_CHAR,rank_Xy(),sendtag,
+			recvID_xY,recvCountID_xY,MPI_CHAR,rank_xY(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xY,sendCountID_xY,MPI_CHAR,rank_xY(),sendtag,
+			recvID_Xy,recvCountID_Xy,MPI_CHAR,rank_Xy(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xz,sendCountID_xz,MPI_CHAR,rank_xz(),sendtag,
+			recvID_XZ,recvCountID_XZ,MPI_CHAR,rank_XZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XZ,sendCountID_XZ,MPI_CHAR,rank_XZ(),sendtag,
+			recvID_xz,recvCountID_xz,MPI_CHAR,rank_xz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xz,sendCountID_Xz,MPI_CHAR,rank_Xz(),sendtag,
+			recvID_xZ,recvCountID_xZ,MPI_CHAR,rank_xZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xZ,sendCountID_xZ,MPI_CHAR,rank_xZ(),sendtag,
+			recvID_Xz,recvCountID_Xz,MPI_CHAR,rank_Xz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yz,sendCountID_yz,MPI_CHAR,rank_yz(),sendtag,
+			recvID_YZ,recvCountID_YZ,MPI_CHAR,rank_YZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_YZ,sendCountID_YZ,MPI_CHAR,rank_YZ(),sendtag,
+			recvID_yz,recvCountID_yz,MPI_CHAR,rank_yz(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Yz,sendCountID_Yz,MPI_CHAR,rank_Yz(),sendtag,
+			recvID_yZ,recvCountID_yZ,MPI_CHAR,rank_yZ(),recvtag,Comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yZ,sendCountID_yZ,MPI_CHAR,rank_yZ(),sendtag,
+			recvID_Yz,recvCountID_Yz,MPI_CHAR,rank_Yz(),recvtag,Comm,MPI_STATUS_IGNORE);
 	//......................................................................................
-	UnpackID(recvList_x, recvCount_x ,recvID_x, id);
-	UnpackID(recvList_X, recvCount_X ,recvID_X, id);
-	UnpackID(recvList_y, recvCount_y ,recvID_y, id);
-	UnpackID(recvList_Y, recvCount_Y ,recvID_Y, id);
-	UnpackID(recvList_z, recvCount_z ,recvID_z, id);
-	UnpackID(recvList_Z, recvCount_Z ,recvID_Z, id);
-	UnpackID(recvList_xy, recvCount_xy ,recvID_xy, id);
-	UnpackID(recvList_Xy, recvCount_Xy ,recvID_Xy, id);
-	UnpackID(recvList_xY, recvCount_xY ,recvID_xY, id);
-	UnpackID(recvList_XY, recvCount_XY ,recvID_XY, id);
-	UnpackID(recvList_xz, recvCount_xz ,recvID_xz, id);
-	UnpackID(recvList_Xz, recvCount_Xz ,recvID_Xz, id);
-	UnpackID(recvList_xZ, recvCount_xZ ,recvID_xZ, id);
-	UnpackID(recvList_XZ, recvCount_XZ ,recvID_XZ, id);
-	UnpackID(recvList_yz, recvCount_yz ,recvID_yz, id);
-	UnpackID(recvList_Yz, recvCount_Yz ,recvID_Yz, id);
-	UnpackID(recvList_yZ, recvCount_yZ ,recvID_yZ, id);
-	UnpackID(recvList_YZ, recvCount_YZ ,recvID_YZ, id);
+	UnpackID(recvList_x, recvCountID_x ,recvID_x, id);
+	UnpackID(recvList_X, recvCountID_X ,recvID_X, id);
+	UnpackID(recvList_y, recvCountID_y ,recvID_y, id);
+	UnpackID(recvList_Y, recvCountID_Y ,recvID_Y, id);
+	UnpackID(recvList_z, recvCountID_z ,recvID_z, id);
+	UnpackID(recvList_Z, recvCountID_Z ,recvID_Z, id);
+	UnpackID(recvList_xy, recvCountID_xy ,recvID_xy, id);
+	UnpackID(recvList_Xy, recvCountID_Xy ,recvID_Xy, id);
+	UnpackID(recvList_xY, recvCountID_xY ,recvID_xY, id);
+	UnpackID(recvList_XY, recvCountID_XY ,recvID_XY, id);
+	UnpackID(recvList_xz, recvCountID_xz ,recvID_xz, id);
+	UnpackID(recvList_Xz, recvCountID_Xz ,recvID_Xz, id);
+	UnpackID(recvList_xZ, recvCountID_xZ ,recvID_xZ, id);
+	UnpackID(recvList_XZ, recvCountID_XZ ,recvID_XZ, id);
+	UnpackID(recvList_yz, recvCountID_yz ,recvID_yz, id);
+	UnpackID(recvList_Yz, recvCountID_Yz ,recvID_Yz, id);
+	UnpackID(recvList_yZ, recvCountID_yZ ,recvID_yZ, id);
+	UnpackID(recvList_YZ, recvCountID_YZ ,recvID_YZ, id);
 	//......................................................................................
 }
 
