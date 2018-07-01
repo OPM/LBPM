@@ -213,7 +213,7 @@ void Domain::CommInit()
 		for (j=1; j<Ny-1; j++){
 			for (i=1; i<Nx-1; i++){
 				// Check the phase ID
-				if (id[k*Nx*Ny+j*Nx+i] != 0){
+				if (id[k*Nx*Ny+j*Nx+i] > 0){
 					// Counts for the six faces
 					if (i==1)    sendCount_x++;
 					if (j==1)    sendCount_y++;
