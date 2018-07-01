@@ -734,6 +734,24 @@ void Domain::CommHaloIDs(){
 			}
 		}
 	}
+	recvCountID_x =	sendCountID_x;
+	recvCountID_X =	sendCountID_X;
+	recvCountID_y =	sendCountID_y;
+	recvCountID_Y =	sendCountID_Y;
+	recvCountID_z =	sendCountID_z;
+	recvCountID_Z =	sendCountID_Z;
+	recvCountID_xy =	sendCountID_xy;
+	recvCountID_xY =	sendCountID_xY;
+	recvCountID_Xy =	sendCountID_Xy;
+	recvCountID_XY =	sendCountID_XY;
+	recvCountID_xz =	sendCountID_xz;
+	recvCountID_xZ =	sendCountID_xZ;
+	recvCountID_Xz =	sendCountID_Xz;
+	recvCountID_XZ =	sendCountID_XZ;
+	recvCountID_yz =	sendCountID_yz;
+	recvCountID_yZ =	sendCountID_yZ;
+	recvCountID_Yz =	sendCountID_Yz;
+	recvCountID_YZ =	sendCountID_YZ;
 	// send buffers
 	sendID_x = new char [sendCountID_x];
 	sendID_y = new char [sendCountID_y];
