@@ -269,7 +269,7 @@ void Domain::CommInit()
 			for (i=1; i<Nx-1; i++){
 				// Local value to send
 				n = k*Nx*Ny+j*Nx+i;
-				if (id[n] != 0){
+				if (id[n] > 0){
 					// Counts for the six faces
 					if (i==1)        sendList_x[sendCount_x++]=n;
 					if (j==1)        sendList_y[sendCount_y++]=n;
