@@ -705,9 +705,9 @@ void Domain::CommHaloIDs(){
 	sendCountID_xy = sendCountID_yz = sendCountID_xz = sendCountID_Xy = sendCountID_Yz = sendCountID_xZ = 0;
 	sendCountID_xY = sendCountID_yZ = sendCountID_Xz = sendCountID_XY = sendCountID_YZ = sendCountID_XZ = 0;
 	//......................................................................................
-	for (k=1; k<Nz-1; k++){
-		for (j=1; j<Ny-1; j++){
-			for (i=1; i<Nx-1; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				// Check the phase ID
 				// CountIDs for the six faces
 				if (i==1)    sendCountID_x++;
