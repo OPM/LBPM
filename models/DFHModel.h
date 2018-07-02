@@ -16,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_ColorModel{
+class ScaLBL_DFHModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_ColorModel();	
+	ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_DFHModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -28,6 +28,7 @@ public:
 	void ReadInput();
 	void Create();
 	void Initialize();
+	void AssignSolidPotential();
 	void Run();
 	void WriteDebug();
 	
@@ -45,7 +46,6 @@ public:
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
-	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
     std::shared_ptr<TwoPhase> Averages;
     
     // input database
@@ -55,14 +55,15 @@ public:
     std::shared_ptr<Database> analysis_db;
 
     IntArray Map;
-    char *id;    
-	int *NeighborList;
-	int *dvcMap;
-	double *fq, *Aq, *Bq;
-	double *Den, *Phi;
-	double *ColorGrad;
-	double *Velocity;
-	double *Pressure;
+    char *id;
+    int *NeighborList;
+    int *dvcMap;
+    double *fq, *Aq, *Bq;
+    double *Den, *Phi;
+    double *SolidPotential;
+    double *Velocity;
+    double *Gradient;
+    double *Pressure;
 		
 private:
 	MPI_Comm comm;

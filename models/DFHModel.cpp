@@ -1,20 +1,20 @@
 /*
 color lattice boltzmann model
  */
-#include "models/ColorModel.h"
+#include "models/DFHModel.h"
 
-ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_DFHModel::ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
-ScaLBL_ColorModel::~ScaLBL_ColorModel(){
+ScaLBL_DFHModel::~ScaLBL_DFHModel(){
 
 }
 
-/*void ScaLBL_ColorModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
+/*void ScaLBL_DFHModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
 {
     int q,n;
     double value;
@@ -33,7 +33,7 @@ ScaLBL_ColorModel::~ScaLBL_ColorModel(){
 
 }
 
-void ScaLBL_ColorModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
+void ScaLBL_DFHModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
 {
     int q=0, n=0;
     double value=0;
@@ -52,7 +52,7 @@ void ScaLBL_ColorModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq
  */
 
 
-void ScaLBL_ColorModel::ReadParams(string filename){
+void ScaLBL_DFHModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
@@ -97,7 +97,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	nprocz = nproc[2];
 
 }
-void ScaLBL_ColorModel::SetDomain(){
+void ScaLBL_DFHModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
 	Nx+=2; Ny+=2; Nz += 2;
@@ -111,7 +111,7 @@ void ScaLBL_ColorModel::SetDomain(){
 	rank = Dm->rank();
 }
 
-void ScaLBL_ColorModel::ReadInput(){
+void ScaLBL_DFHModel::ReadInput(){
 	size_t readID;
 	//.......................................................................
 	if (rank == 0)    printf("Read input media... \n");
@@ -134,7 +134,7 @@ void ScaLBL_ColorModel::ReadInput(){
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
-void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
+void ScaLBL_DFHModel::AssignComponentLabels(double *phase)
 {
 	size_t NLABELS=0;
 	char VALUE=0;
@@ -171,9 +171,6 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 						Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
-				// fluid labels are reserved
-				if (VALUE == 1) AFFINITY=1.0;
-				else if (VALUE == 2) AFFINITY=-1.0;
 				phase[n] = AFFINITY;
 			}
 		}
@@ -183,7 +180,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 }
 
 
-void ScaLBL_ColorModel::Create(){
+void ScaLBL_DFHModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
 	 */
@@ -202,7 +199,6 @@ void ScaLBL_ColorModel::Create(){
 	// Create a communicator for the device (will use optimized layout)
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
-	ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
 	int Npad=(Np/16 + 2)*16;
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
@@ -219,6 +215,7 @@ void ScaLBL_ColorModel::Create(){
 	//......................device distributions.................................
 	dist_mem_size = Np*sizeof(double);
 	neighborSize=18*(Np*sizeof(int));
+
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
@@ -226,14 +223,18 @@ void ScaLBL_ColorModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nx*Ny*Nz);		
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);        
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Gradient, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &SolidPotential, 3*sizeof(double)*Np);
+
 	//...........................................................................
 	// Update GPU data structures
-	if (rank==0)	printf ("Setting up device map and neighbor list \n");
-	fflush(stdout);
+	if (rank==0)    printf ("Setting up device map and neighbor list \n");
+	// copy the neighbor list 
+	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+
 	int *TmpMap;
 	TmpMap=new int[Np];
 	for (int k=1; k<Nz-1; k++){
@@ -245,36 +246,153 @@ void ScaLBL_ColorModel::Create(){
 			}
 		}
 	}
-	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->last_interior; idx++){
-		if (idx == ScaLBL_Comm->next) idx = ScaLBL_Comm->first_interior;
-		int n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
-			printf("Bad value! idx=%i \n");
-			TmpMap[idx] = Nx*Ny*Nz-1;
-		}
-	}
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
 	ScaLBL_DeviceBarrier();
 	delete [] TmpMap;
-	
-	// copy the neighbor list 
-	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
-	// initialize phi based on PhaseLabel (include solid component labels)
-	double *PhaseLabel;
-	PhaseLabel = new double[N];
-	AssignComponentLabels(PhaseLabel);
-	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 }        
 
 /********************************************************
  * AssignComponentLabels                                 *
  ********************************************************/
+void ScaLBL_DFHModel::AssignSolidPotential(){
+	if (rank==0) printf("Computing solid interaction potential \n");
+	double *PhaseLabel;
+	PhaseLabel=new double [Nx*Ny*Nz];
+	AssignComponentLabels(PhaseLabel);
+	double *Tmp;
+	Tmp=new double[3*Np];
+	//Averages->UpdateMeshValues(); // this computes the gradient of distance field (among other things)
+	// Create the distance stencil
+	// Compute solid forces based on mean field approximation
+	double *Dst;
+	Dst = new double [5*5*5];
+	for (int kk=0; kk<5; kk++){
+		for (int jj=0; jj<5; jj++){
+			for (int ii=0; ii<5; ii++){
+				int index = kk*25+jj*5+ii;
+				Dst[index] = sqrt(double(ii-2)*double(ii-2) + double(jj-2)*double(jj-2)+ double(kk-2)*double(kk-2));
+			}
+		}
+	}
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0)){
 
-void ScaLBL_ColorModel::Initialize(){
+					double phi_x = 0.f;
+					double phi_y = 0.f;
+					double phi_z = 0.f;
+					for (int kk=1; kk<4; kk++){
+						for (int jj=1; jj<4; jj++){
+							for (int ii=1; ii<4; ii++){
+
+								int index = kk*25+jj*5+ii;
+								double distval= Dst[index];
+
+								int idi=i+ii-2;
+								int idj=j+jj-2;
+								int idk=k+kk-2;
+
+								if (idi < 0) idi=0;
+								if (idj < 0) idj=0;
+								if (idk < 0) idk=0;
+								if (!(idi < Nx)) idi=Nx-1;
+								if (!(idj < Ny)) idj=Ny-1;
+								if (!(idk < Nz)) idk=Nz-1;
+
+								int nn = idk*Nx*Ny + idj*Nx + idi;
+								if (!(Mask->id[nn] > 0)){
+									double vec_x = double(ii-2);
+									double vec_y = double(jj-2);
+									double vec_z = double(kk-2);
+
+									double ALPHA=PhaseLabel[nn];
+									double GAMMA=-2.f;
+									if (distval > 2.f) ALPHA=0.f; // symmetric cutoff distance                                    
+									phi_x += ALPHA*exp(GAMMA*distval)*vec_x/distval;
+									phi_y += ALPHA*exp(GAMMA*distval)*vec_y/distval;
+									phi_z += ALPHA*exp(GAMMA*distval)*vec_z/distval;
+								}
+							}
+						}
+					}
+					Tmp[idx] = phi_x;
+					Tmp[idx+Np] = phi_y;
+					Tmp[idx+2*Np] = phi_z;
+
+					/*                        double d = Averages->SDs(n);
+                                         double dx = Averages->SDs_x(n);
+                                         double dy = Averages->SDs_y(n);
+                                         double dz = Averages->SDs_z(n);
+                                         double value=cns*exp(-bns*fabs(d))-cws*exp(-bns*fabs(d));
+
+                 Tmp[idx] = value*dx;
+                 Tmp[idx+Np] = value*dy;
+                 Tmp[idx+2*Np] = value*dz;
+					 */
+				}
+			}
+		}
+	}
+	ScaLBL_CopyToDevice(SolidPotential, Tmp, 3*sizeof(double)*Np);
+	ScaLBL_DeviceBarrier();
+	delete [] Tmp;
+	delete [] Dst;
+
+	/*
+	DoubleArray Psx(Nx,Ny,Nz);
+	DoubleArray Psy(Nx,Ny,Nz);
+	DoubleArray Psz(Nx,Ny,Nz);
+	DoubleArray Psnorm(Nx,Ny,Nz);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[0],Psx);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[Np],Psy);
+	ScaLBL_Comm->RegularLayout(Map,&SolidPotential[2*Np],Psz);
+
+	for (int n=0; n<N; n++) Psnorm(n) = Psx(n)*Psx(n)+Psy(n)*Psy(n)+Psz(n)*Psz(n);
+	FILE *PFILE;
+	sprintf(LocalRankFilename,"Potential.%05i.raw",rank);
+	PFILE = fopen(LocalRankFilename,"wb");
+	fwrite(Psnorm.data(),8,N,PFILE);
+	fclose(PFILE);
+	 */
+}
+void ScaLBL_DFHModel::Initialize(){
 	/*
 	 * This function initializes model
 	 */
+
+	AssignSolidPotential();
+	int rank=Dm->rank();
+	double count_wet=0.f;
+	double count_wet_global;
+	double *PhaseLabel;
+	PhaseLabel=new double [Nx*Ny*Nz];
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				int n = k*Nx*Ny+j*Nx+i;
+				if (!(idx < 0)){
+					if (Mask->id[n] == 1)
+						PhaseLabel[idx] = 1.0;
+					else {
+						PhaseLabel[idx] = -1.0;
+						count_wet+=1.f;
+					}
+				}
+			}
+		}
+	}
+	MPI_Allreduce(&count_wet,&count_wet_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	if (rank==0)	printf("Wetting phase volume fraction =%f \n",count_wet_global/double(Nx*Ny*Nz*nprocs));
+	// initialize phi based on PhaseLabel (include solid component labels)
+	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
+	//...........................................................................
+
+	if (rank==0)    printf ("Initializing distributions \n");
+	ScaLBL_D3Q19_Init(fq, Np);
+
 	if (Restart == true){
 		if (rank==0){
 			printf("Reading restart file! \n");
@@ -313,49 +431,28 @@ void ScaLBL_ColorModel::Initialize(){
 		MPI_Barrier(comm);
 	}
 
-	if (rank==0)	printf ("Initializing distributions \n");
-	ScaLBL_D3Q19_Init(fq, Np);
-	if (rank==0)	printf ("Initializing phase field \n");
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->next, Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
-
-	if (BoundaryCondition >0 ){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
+	if (rank==0)    printf ("Initializing phase field \n");
+	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_DFH_Init(Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 }
 
-void ScaLBL_ColorModel::Run(){
+void ScaLBL_DFHModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-	if (rank==0){
-		printf("********************************************************\n");
-		printf("No. of timesteps: %i \n", timestepMax);
-		fflush(stdout);
-	}
-
+	if (rank==0) printf("********************************************************\n");
+	if (rank==0)    printf("No. of timesteps: %i \n", timestepMax);
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-
 	//************ MAIN ITERATION LOOP ***************************************/
+
 	PROFILE_START("Loop");
-    //std::shared_ptr<Database> analysis_db;
-    //runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
-    //analysis.createThreads( analysis_method, 4 );
+	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
@@ -364,18 +461,20 @@ void ScaLBL_ColorModel::Run(){
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
-		
+		ScaLBL_D3Q7_AAodd_DFH(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
+
+		// compute the gradient 
+		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_Comm->SendHalo(Phi);
+		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_Comm->RecvGrad(Phi,Gradient);
+
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular->SendHalo(Phi);
-
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
-		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set BCs
 		if (BoundaryCondition > 0){
@@ -390,25 +489,28 @@ void ScaLBL_ColorModel::Run(){
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->next, Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_D3Q7_AAeven_DFH(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
+
+		// compute the gradient 
+		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_Comm->SendHalo(Phi);
+		ScaLBL_D3Q19_Gradient_DFH(NeighborList, Phi, Gradient, SolidPotential, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_Comm->RecvGrad(Phi,Gradient);
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		// Halo exchange for phase field
-		ScaLBL_Comm_Regular->SendHalo(Phi);
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
-		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		if (BoundaryCondition > 0){
@@ -423,19 +525,17 @@ void ScaLBL_ColorModel::Run(){
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->next, Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************
-		
 		MPI_Barrier(comm);
 		PROFILE_STOP("Update");
 
 		// Run the analysis
-        //analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-
+		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 	}
-    //analysis.finish();
+	analysis.finish();
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
@@ -447,7 +547,6 @@ void ScaLBL_ColorModel::Run(){
 	cputime = (stoptime - starttime)/timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
-
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0) printf("CPU time = %f \n", cputime);
 	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
@@ -458,12 +557,10 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_ColorModel::WriteDebug(){
+void ScaLBL_DFHModel::WriteDebug(){
 	// Copy back final phase indicator field and convert to regular layout
 	DoubleArray PhaseField(Nx,Ny,Nz);
-	//ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
-	ScaLBL_CopyToHost(PhaseField.data(), Phi, sizeof(double)*N);
-
+	ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
 	FILE *OUTFILE;
 	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
 	OUTFILE = fopen(LocalRankFilename,"wb");
