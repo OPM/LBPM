@@ -255,7 +255,7 @@ void ScaLBL_DFHModel::Create(){
  * AssignComponentLabels                                 *
  ********************************************************/
 void ScaLBL_DFHModel::AssignSolidPotential(){
-	if (rank==0) printf("Computing solid interaction potential \n");
+	if (rank==0) printf("Computing solid interaction potential (Shan-Chen type) \n");
 	double *PhaseLabel;
 	PhaseLabel=new double [Nx*Ny*Nz];
 	AssignComponentLabels(PhaseLabel);
@@ -265,15 +265,50 @@ void ScaLBL_DFHModel::AssignSolidPotential(){
 	// Create the distance stencil
 	// Compute solid forces based on mean field approximation
 	double *Dst;
-	Dst = new double [5*5*5];
-	for (int kk=0; kk<5; kk++){
-		for (int jj=0; jj<5; jj++){
-			for (int ii=0; ii<5; ii++){
-				int index = kk*25+jj*5+ii;
-				Dst[index] = sqrt(double(ii-2)*double(ii-2) + double(jj-2)*double(jj-2)+ double(kk-2)*double(kk-2));
+	Dst = new double [3*3*3];
+	for (int kk=0; kk<3; kk++){
+		for (int jj=0; jj<3; jj++){
+			for (int ii=0; ii<3; ii++){
+				int index = kk*9+jj*3+ii;
+				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
 			}
 		}
 	}
+	double w_face = 1.0; //1.f/18.f;
+	double w_edge = 0.5; //1.f/36.f;
+	double w_corner = 0.f;
+	//local 
+	Dst[13] = 0.f;
+	//faces
+	Dst[4] = w_face;
+	Dst[10] = w_face;
+	Dst[12] = w_face;
+	Dst[14] = w_face;
+	Dst[16] = w_face;
+	Dst[22] = w_face;
+	// corners
+	Dst[0] = w_corner;
+	Dst[2] = w_corner;
+	Dst[6] = w_corner;
+	Dst[8] = w_corner;
+	Dst[18] = w_corner;
+	Dst[20] = w_corner;
+	Dst[24] = w_corner;
+	Dst[26] = w_corner;
+	// edges
+	Dst[1] = w_edge;
+	Dst[3] = w_edge;
+	Dst[5] = w_edge;
+	Dst[7] = w_edge;
+	Dst[9] = w_edge;
+	Dst[11] = w_edge;
+	Dst[15] = w_edge;
+	Dst[17] = w_edge;
+	Dst[19] = w_edge;
+	Dst[21] = w_edge;
+	Dst[23] = w_edge;
+	Dst[25] = w_edge;
+
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
@@ -283,16 +318,16 @@ void ScaLBL_DFHModel::AssignSolidPotential(){
 					double phi_x = 0.f;
 					double phi_y = 0.f;
 					double phi_z = 0.f;
-					for (int kk=1; kk<4; kk++){
-						for (int jj=1; jj<4; jj++){
-							for (int ii=1; ii<4; ii++){
+					for (int kk=0; kk<3; kk++){
+						for (int jj=0; jj<3; jj++){
+							for (int ii=0; ii<3; ii++){
 
-								int index = kk*25+jj*5+ii;
-								double distval= Dst[index];
+								int index = kk*9+jj*3+ii;
+								double weight= Dst[index];
 
-								int idi=i+ii-2;
-								int idj=j+jj-2;
-								int idk=k+kk-2;
+								int idi=i+ii-1;
+								int idj=j+jj-1;
+								int idk=k+kk-1;
 
 								if (idi < 0) idi=0;
 								if (idj < 0) idj=0;
@@ -303,16 +338,20 @@ void ScaLBL_DFHModel::AssignSolidPotential(){
 
 								int nn = idk*Nx*Ny + idj*Nx + idi;
 								if (!(Mask->id[nn] > 0)){
-									double vec_x = double(ii-2);
-									double vec_y = double(jj-2);
-									double vec_z = double(kk-2);
-
-									double ALPHA=PhaseLabel[nn];
+									double vec_x = double(ii-1);
+									double vec_y = double(jj-1);
+									double vec_z = double(kk-1);
+									double GWNS=PhaseLabel[nn];
+									phi_x += GWNS*weight*vec_x;
+									phi_y += GWNS*weight*vec_y;
+									phi_z += GWNS*weight*vec_z;
+									/*
 									double GAMMA=-2.f;
 									if (distval > 2.f) ALPHA=0.f; // symmetric cutoff distance                                    
 									phi_x += ALPHA*exp(GAMMA*distval)*vec_x/distval;
 									phi_y += ALPHA*exp(GAMMA*distval)*vec_y/distval;
 									phi_z += ALPHA*exp(GAMMA*distval)*vec_z/distval;
+									*/
 								}
 							}
 						}
