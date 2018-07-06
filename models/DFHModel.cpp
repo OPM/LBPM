@@ -451,8 +451,9 @@ void ScaLBL_DFHModel::Run(){
 	//.........................................
 	//************ MAIN ITERATION LOOP ***************************************/
 
+	bool Regular = true;
 	PROFILE_START("Loop");
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, beta, Map );
+	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, beta, Map );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
