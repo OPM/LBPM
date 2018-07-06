@@ -537,14 +537,14 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
       if (d_regular)
         d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
       else 
-	ScaLBL_CopyToHost(Averages->Phase_tplus.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
         //memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
     }
     if ( timestep%d_analysis_interval == 0 ) {
       if (d_regular)
         d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
       else 
-	ScaLBL_CopyToHost(Averages->Phase_minus.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
         //memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
     }
     //if ( matches(type,AnalysisType::CopySimState) ) {
@@ -562,7 +562,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 	if (d_regular)
 	  d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
 	else
-	  ScaLBL_CopyToHost(Averages->Phase.data(),Phi,N*sizeof(double));
+	  ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
 	// copy other variables
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);

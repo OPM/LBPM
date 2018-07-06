@@ -447,7 +447,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 					//	       {0,1,1},{0,-1,-1},
 					//         {0,1,-1},{0,-1,1}};
 					int neighbor;    // cycle through the neighbors of lattice site idx
-					otoneighbor=Map(i-1,j,k);
+					neighbor=Map(i-1,j,k);
 					if (neighbor<0)	   neighborList[idx]=idx + 2*Np;
 					else		       neighborList[idx]=neighbor + 1*Np;
 

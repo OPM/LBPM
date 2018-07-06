@@ -356,7 +356,7 @@ void ScaLBL_ColorModel::Run(){
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
 	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, beta, Map );
-	analysis.createThreads( analysis_method, 4 );
+	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
