@@ -299,16 +299,16 @@ runAnalysis::commWrapper runAnalysis::getComm( )
  ******************************************************************/
 runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
-    int Np, bool pBC, double beta, IntArray Map ):
+    int Np, bool Regular, double beta, IntArray Map ):
     d_Np( Np ),
     d_beta( beta ),
+    d_regular ( Regular),
     d_rank_info( rank_info ),
     d_Map( Map ),
     d_ScaLBL_Comm( ScaLBL_Comm),
     d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1)
 {
-    NULL_USE( pBC );
-    INSIST( db, "Input database is empty" );
+
 	char rankString[20];
 	sprintf(rankString,"%05d",Dm->rank());
     d_N[0] = Dm->Nx;
@@ -523,7 +523,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     {
     	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
     	//ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
-    	//   try 2 d_ScaLBL_Comm.RegularLayout(d_Map,Phi,Averages.Phase);
+    	//   try 2 d_ScaLBL_Comm.RegulLayout(d_Map,Phi,Averages.Phase);
     	//   memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
     	int Nx = d_N[0];
     	int Ny = d_N[1];
@@ -549,11 +549,17 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     */
     //if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
     if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
+      if (d_regular)
         d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
+      else 
+	ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
         //memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
     }
     if ( timestep%d_analysis_interval == 0 ) {
+      if (d_regular)
         d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
+      else 
+	ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
         //memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
     }
     //if ( matches(type,AnalysisType::CopySimState) ) {
@@ -568,7 +574,11 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
         //memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
+	if (d_regular)
+	  d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
+	else
+	  ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+	// copy other variables
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);

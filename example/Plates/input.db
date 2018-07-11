@@ -1,9 +1,9 @@
 Color {
-    tauA   = 1.0;  
-    tauB   = 1.0;  
+    tauA   = 0.7;  
+    tauB   = 0.7;  
     rhoA   = 1.0;  
     rhoB   = 1.0;  
-    alpha = 5e-3;
+    alpha = 1e-3;
     beta  = 0.95;
     F = 0, 0, 0
     Restart = false
@@ -17,8 +17,7 @@ Color {
     dbs = 0.9
     flux = 0.0
     ComponentLabels = -2, -1
-    ComponentAffinity = -3.0, -2.0
-
+    ComponentAffinity = -1.0, -0.5;
 }
 
 Domain {

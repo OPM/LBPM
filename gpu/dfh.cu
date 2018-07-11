@@ -105,7 +105,7 @@ __global__ void dvc_ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double
 
 // LBM based on density functional hydrodynamics
 __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
-			double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+			double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 			double Fx, double Fy, double Fz, int start, int finish, int Np){
 	int nn,n;
 	double fq;
@@ -119,6 +119,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, dou
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	double force_x,force_y,force_z;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -138,495 +139,498 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, dou
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-
 			// read the component number densities
-				nA = Den[n];
-				nB = Den[Np + n];
+			nA = Den[n];
+			nB = Den[Np + n];
 
-				// compute phase indicator field
-				phi=(nA-nB)/(nA+nB);
+			// compute phase indicator field
+			phi=(nA-nB)/(nA+nB);
 
-				// local density
-				rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
-				// local relaxation time
-				tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
-				rlx_setA = 1.f/tau;
-				rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
+			// local density
+			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+			// local relaxation time
+			tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+			rlx_setA = 1.f/tau;
+			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 
-				//...........Read the Color Gradient.................................
-				nx = Gradient[n];
-				ny = Gradient[n+Np];
-				nz = Gradient[n+2*Np];
-				C = sqrt(nx*nx+ny*ny+nz*nz);
-				if (C==0.0) C=1.0;
-				nx = nx/C;
-				ny = ny/C;
-				nz = nz/C;		
+			//...........Read the Color Gradient.................................
+			nx = Gradient[n];
+			ny = Gradient[n+Np];
+			nz = Gradient[n+2*Np];
+			C = sqrt(nx*nx+ny*ny+nz*nz);
+			if (C==0.0) C=1.0;
+			nx = nx/C;
+			ny = ny/C;
+			nz = nz/C;		
 
-				// q=0
-				fq = dist[n];
-				rho = fq;
-				m1  = -30.0*fq;
-				m2  = 12.0*fq;
+			// q=0
+			fq = dist[n];
+			rho = fq;
+			m1  = -30.0*fq;
+			m2  = 12.0*fq;
 
-				// q=1
-				fq = dist[2*Np+n];
-				rho += fq;
-				m1 -= 11.0*fq;
-				m2 -= 4.0*fq;
-				jx = fq;
-				m4 = -4.0*fq;
-				m9 = 2.0*fq;
-				m10 = -4.0*fq;
+			// q=1
+			fq = dist[2*Np+n];
+			rho += fq;
+			m1 -= 11.0*fq;
+			m2 -= 4.0*fq;
+			jx = fq;
+			m4 = -4.0*fq;
+			m9 = 2.0*fq;
+			m10 = -4.0*fq;
 
-				// f2 = dist[10*Np+n];
-				fq = dist[1*Np+n];
-				rho += fq;
-				m1 -= 11.0*(fq);
-				m2 -= 4.0*(fq);
-				jx -= fq;
-				m4 += 4.0*(fq);
-				m9 += 2.0*(fq);
-				m10 -= 4.0*(fq);
+			// f2 = dist[10*Np+n];
+			fq = dist[1*Np+n];
+			rho += fq;
+			m1 -= 11.0*(fq);
+			m2 -= 4.0*(fq);
+			jx -= fq;
+			m4 += 4.0*(fq);
+			m9 += 2.0*(fq);
+			m10 -= 4.0*(fq);
 
-				// q=3
-				fq = dist[4*Np+n];
-				rho += fq;
-				m1 -= 11.0*fq;
-				m2 -= 4.0*fq;
-				jy = fq;
-				m6 = -4.0*fq;
-				m9 -= fq;
-				m10 += 2.0*fq;
-				m11 = fq;
-				m12 = -2.0*fq;
+			// q=3
+			fq = dist[4*Np+n];
+			rho += fq;
+			m1 -= 11.0*fq;
+			m2 -= 4.0*fq;
+			jy = fq;
+			m6 = -4.0*fq;
+			m9 -= fq;
+			m10 += 2.0*fq;
+			m11 = fq;
+			m12 = -2.0*fq;
 
-				// q = 4
-				fq = dist[3*Np+n];
-				rho+= fq;
-				m1 -= 11.0*fq;
-				m2 -= 4.0*fq;
-				jy -= fq;
-				m6 += 4.0*fq;
-				m9 -= fq;
-				m10 += 2.0*fq;
-				m11 += fq;
-				m12 -= 2.0*fq;
+			// q = 4
+			fq = dist[3*Np+n];
+			rho+= fq;
+			m1 -= 11.0*fq;
+			m2 -= 4.0*fq;
+			jy -= fq;
+			m6 += 4.0*fq;
+			m9 -= fq;
+			m10 += 2.0*fq;
+			m11 += fq;
+			m12 -= 2.0*fq;
 
-				// q=5
-				fq = dist[6*Np+n];
-				rho += fq;
-				m1 -= 11.0*fq;
-				m2 -= 4.0*fq;
-				jz = fq;
-				m8 = -4.0*fq;
-				m9 -= fq;
-				m10 += 2.0*fq;
-				m11 -= fq;
-				m12 += 2.0*fq;
+			// q=5
+			fq = dist[6*Np+n];
+			rho += fq;
+			m1 -= 11.0*fq;
+			m2 -= 4.0*fq;
+			jz = fq;
+			m8 = -4.0*fq;
+			m9 -= fq;
+			m10 += 2.0*fq;
+			m11 -= fq;
+			m12 += 2.0*fq;
 
-				// q = 6
-				fq = dist[5*Np+n];
-				rho+= fq;
-				m1 -= 11.0*fq;
-				m2 -= 4.0*fq;
-				jz -= fq;
-				m8 += 4.0*fq;
-				m9 -= fq;
-				m10 += 2.0*fq;
-				m11 -= fq;
-				m12 += 2.0*fq;
+			// q = 6
+			fq = dist[5*Np+n];
+			rho+= fq;
+			m1 -= 11.0*fq;
+			m2 -= 4.0*fq;
+			jz -= fq;
+			m8 += 4.0*fq;
+			m9 -= fq;
+			m10 += 2.0*fq;
+			m11 -= fq;
+			m12 += 2.0*fq;
 
-				// q=7
-				fq = dist[8*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx += fq;
-				m4 += fq;
-				jy += fq;
-				m6 += fq;
-				m9  += fq;
-				m10 += fq;
-				m11 += fq;
-				m12 += fq;
-				m13 = fq;
-				m16 = fq;
-				m17 = -fq;
+			// q=7
+			fq = dist[8*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx += fq;
+			m4 += fq;
+			jy += fq;
+			m6 += fq;
+			m9  += fq;
+			m10 += fq;
+			m11 += fq;
+			m12 += fq;
+			m13 = fq;
+			m16 = fq;
+			m17 = -fq;
 
-				// q = 8
-				fq = dist[7*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx -= fq;
-				m4 -= fq;
-				jy -= fq;
-				m6 -= fq;
-				m9 += fq;
-				m10 += fq;
-				m11 += fq;
-				m12 += fq;
-				m13 += fq;
-				m16 -= fq;
-				m17 += fq;
+			// q = 8
+			fq = dist[7*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx -= fq;
+			m4 -= fq;
+			jy -= fq;
+			m6 -= fq;
+			m9 += fq;
+			m10 += fq;
+			m11 += fq;
+			m12 += fq;
+			m13 += fq;
+			m16 -= fq;
+			m17 += fq;
 
-				// q=9
-				fq = dist[10*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx += fq;
-				m4 += fq;
-				jy -= fq;
-				m6 -= fq;
-				m9 += fq;
-				m10 += fq;
-				m11 += fq;
-				m12 += fq;
-				m13 -= fq;
-				m16 += fq;
-				m17 += fq;
+			// q=9
+			fq = dist[10*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx += fq;
+			m4 += fq;
+			jy -= fq;
+			m6 -= fq;
+			m9 += fq;
+			m10 += fq;
+			m11 += fq;
+			m12 += fq;
+			m13 -= fq;
+			m16 += fq;
+			m17 += fq;
 
-				// q = 10
-				fq = dist[9*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx -= fq;
-				m4 -= fq;
-				jy += fq;
-				m6 += fq;
-				m9 += fq;
-				m10 += fq;
-				m11 += fq;
-				m12 += fq;
-				m13 -= fq;
-				m16 -= fq;
-				m17 -= fq;
+			// q = 10
+			fq = dist[9*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx -= fq;
+			m4 -= fq;
+			jy += fq;
+			m6 += fq;
+			m9 += fq;
+			m10 += fq;
+			m11 += fq;
+			m12 += fq;
+			m13 -= fq;
+			m16 -= fq;
+			m17 -= fq;
 
-				// q=11
-				fq = dist[12*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx += fq;
-				m4 += fq;
-				jz += fq;
-				m8 += fq;
-				m9 += fq;
-				m10 += fq;
-				m11 -= fq;
-				m12 -= fq;
-				m15 = fq;
-				m16 -= fq;
-				m18 = fq;
+			// q=11
+			fq = dist[12*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx += fq;
+			m4 += fq;
+			jz += fq;
+			m8 += fq;
+			m9 += fq;
+			m10 += fq;
+			m11 -= fq;
+			m12 -= fq;
+			m15 = fq;
+			m16 -= fq;
+			m18 = fq;
 
-				// q=12
-				fq = dist[11*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx -= fq;
-				m4 -= fq;
-				jz -= fq;
-				m8 -= fq;
-				m9 += fq;
-				m10 += fq;
-				m11 -= fq;
-				m12 -= fq;
-				m15 += fq;
-				m16 += fq;
-				m18 -= fq;
+			// q=12
+			fq = dist[11*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx -= fq;
+			m4 -= fq;
+			jz -= fq;
+			m8 -= fq;
+			m9 += fq;
+			m10 += fq;
+			m11 -= fq;
+			m12 -= fq;
+			m15 += fq;
+			m16 += fq;
+			m18 -= fq;
 
-				// q=13
-				fq = dist[14*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx += fq;
-				m4 += fq;
-				jz -= fq;
-				m8 -= fq;
-				m9 += fq;
-				m10 += fq;
-				m11 -= fq;
-				m12 -= fq;
-				m15 -= fq;
-				m16 -= fq;
-				m18 -= fq;
+			// q=13
+			fq = dist[14*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx += fq;
+			m4 += fq;
+			jz -= fq;
+			m8 -= fq;
+			m9 += fq;
+			m10 += fq;
+			m11 -= fq;
+			m12 -= fq;
+			m15 -= fq;
+			m16 -= fq;
+			m18 -= fq;
 
-				// q=14
-				fq = dist[13*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jx -= fq;
-				m4 -= fq;
-				jz += fq;
-				m8 += fq;
-				m9 += fq;
-				m10 += fq;
-				m11 -= fq;
-				m12 -= fq;
-				m15 -= fq;
-				m16 += fq;
-				m18 += fq;
+			// q=14
+			fq = dist[13*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jx -= fq;
+			m4 -= fq;
+			jz += fq;
+			m8 += fq;
+			m9 += fq;
+			m10 += fq;
+			m11 -= fq;
+			m12 -= fq;
+			m15 -= fq;
+			m16 += fq;
+			m18 += fq;
 
-				// q=15
-				fq = dist[16*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jy += fq;
-				m6 += fq;
-				jz += fq;
-				m8 += fq;
-				m9 -= 2.0*fq;
-				m10 -= 2.0*fq;
-				m14 = fq;
-				m17 += fq;
-				m18 -= fq;
+			// q=15
+			fq = dist[16*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jy += fq;
+			m6 += fq;
+			jz += fq;
+			m8 += fq;
+			m9 -= 2.0*fq;
+			m10 -= 2.0*fq;
+			m14 = fq;
+			m17 += fq;
+			m18 -= fq;
 
-				// q=16
-				fq = dist[15*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jy -= fq;
-				m6 -= fq;
-				jz -= fq;
-				m8 -= fq;
-				m9 -= 2.0*fq;
-				m10 -= 2.0*fq;
-				m14 += fq;
-				m17 -= fq;
-				m18 += fq;
+			// q=16
+			fq = dist[15*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jy -= fq;
+			m6 -= fq;
+			jz -= fq;
+			m8 -= fq;
+			m9 -= 2.0*fq;
+			m10 -= 2.0*fq;
+			m14 += fq;
+			m17 -= fq;
+			m18 += fq;
 
-				// q=17
-				fq = dist[18*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jy += fq;
-				m6 += fq;
-				jz -= fq;
-				m8 -= fq;
-				m9 -= 2.0*fq;
-				m10 -= 2.0*fq;
-				m14 -= fq;
-				m17 += fq;
-				m18 += fq;
+			// q=17
+			fq = dist[18*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jy += fq;
+			m6 += fq;
+			jz -= fq;
+			m8 -= fq;
+			m9 -= 2.0*fq;
+			m10 -= 2.0*fq;
+			m14 -= fq;
+			m17 += fq;
+			m18 += fq;
 
-				// q=18
-				fq = dist[17*Np+n];
-				rho += fq;
-				m1 += 8.0*fq;
-				m2 += fq;
-				jy -= fq;
-				m6 -= fq;
-				jz += fq;
-				m8 += fq;
-				m9 -= 2.0*fq;
-				m10 -= 2.0*fq;
-				m14 -= fq;
-				m17 -= fq;
-				m18 -= fq;
+			// q=18
+			fq = dist[17*Np+n];
+			rho += fq;
+			m1 += 8.0*fq;
+			m2 += fq;
+			jy -= fq;
+			m6 -= fq;
+			jz += fq;
+			m8 += fq;
+			m9 -= 2.0*fq;
+			m10 -= 2.0*fq;
+			m14 -= fq;
+			m17 -= fq;
+			m18 -= fq;
 
-				//........................................................................
-				//..............carry out relaxation process..............................
-				//..........Toelke, Fruediger et. al. 2006................................
-				if (C == 0.0)	nx = ny = nz = 0.0;
-				m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -alpha*C - m1);
-				m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
-				m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
-				m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
-				m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
-				m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
-				m10 = m10 + rlx_setA*( - m10);
-				m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
-				m12 = m12 + rlx_setA*( - m12);
-				m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
-				m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
-				m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
-				m16 = m16 + rlx_setB*( - m16);
-				m17 = m17 + rlx_setB*( - m17);
-				m18 = m18 + rlx_setB*( - m18);
+			//........................................................................
+			//..............carry out relaxation process..............................
+			//..........Toelke, Fruediger et. al. 2006................................
+			if (C == 0.0)	nx = ny = nz = 0.0;
+			m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) -alpha*C - m1);
+			m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0)- m2);
+			m4 = m4 + rlx_setB*((-0.6666666666666666*jx)- m4);
+			m6 = m6 + rlx_setB*((-0.6666666666666666*jy)- m6);
+			m8 = m8 + rlx_setB*((-0.6666666666666666*jz)- m8);
+			m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
+			m10 = m10 + rlx_setA*( - m10);
+			m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
+			m12 = m12 + rlx_setA*( - m12);
+			m13 = m13 + rlx_setA*( (jx*jy/rho0) + 0.5*alpha*C*nx*ny - m13);
+			m14 = m14 + rlx_setA*( (jy*jz/rho0) + 0.5*alpha*C*ny*nz - m14);
+			m15 = m15 + rlx_setA*( (jx*jz/rho0) + 0.5*alpha*C*nx*nz - m15);
+			m16 = m16 + rlx_setB*( - m16);
+			m17 = m17 + rlx_setB*( - m17);
+			m18 = m18 + rlx_setB*( - m18);
 
-				//.......................................................................................................
-				//.................inverse transformation......................................................
+			
+			//.......................................................................................................
+			// assign force with wetting BC
+			force_x = alpha*(nA-nB)*SolidForce[n] + Fx;
+			force_y = alpha*(nA-nB)*SolidForce[n+Np] + Fy;
+			force_z = alpha*(nA-nB)*SolidForce[n+2*Np] + Fz;
+			//.................inverse transformation......................................................
+			
+			// q=0
+			fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
+			dist[n] = fq;
 
-				// q=0
-				fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
-				dist[n] = fq;
+			// q = 1
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*force_x;
+			dist[1*Np+n] = fq;
 
-				// q = 1
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*Fx;
-				dist[1*Np+n] = fq;
+			// q=2
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*force_x;
+			dist[2*Np+n] = fq;
 
-				// q=2
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
-				dist[2*Np+n] = fq;
+			// q = 3
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*force_y;
+			dist[3*Np+n] = fq;
 
-				// q = 3
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
-				dist[3*Np+n] = fq;
+			// q = 4
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*force_y;
+			dist[4*Np+n] = fq;
 
-				// q = 4
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
-				dist[4*Np+n] = fq;
+			// q = 5
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*force_z;
+			dist[5*Np+n] = fq;
 
-				// q = 5
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
-				dist[5*Np+n] = fq;
+			// q = 6
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*force_z;
+			dist[6*Np+n] = fq;
 
-				// q = 6
-				fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
-				dist[6*Np+n] = fq;
-
-				// q = 7
-				fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+
-						mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
-				dist[7*Np+n] = fq;
-
-
-				// q = 8
-				fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11
-						+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
-				dist[8*Np+n] = fq;
-
-				// q = 9
-				fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+
-						mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
-				dist[9*Np+n] = fq;
-
-				// q = 10
-				fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+
-						mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
-				dist[10*Np+n] = fq;
+			// q = 7
+			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(force_x+force_y);
+			dist[7*Np+n] = fq;
 
 
-				// q = 11
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)
-						+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-						-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
-				dist[11*Np+n] = fq;
+			// q = 8
+			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11
+					+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(force_x+force_y);
+			dist[8*Np+n] = fq;
 
-				// q = 12
-				fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+
-						mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)-0.08333333333*(Fx+Fz);
-				dist[12*Np+n] = fq;
+			// q = 9
+			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(force_x-force_y);
+			dist[9*Np+n] = fq;
 
-				// q = 13
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)
-						+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-						-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
-				dist[13*Np+n] = fq;
-
-				// q= 14
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)
-						+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-						-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
-
-				dist[14*Np+n] = fq;
-
-				// q = 15
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)
-						-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
-				dist[15*Np+n] = fq;
-
-				// q = 16
-				fq =  mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)
-						-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
-				dist[16*Np+n] = fq;
+			// q = 10
+			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(force_x-force_y);
+			dist[10*Np+n] = fq;
 
 
-				// q = 17
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)
-						-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
-				dist[17*Np+n] = fq;
+			// q = 11
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)
+					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
+					-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(force_x+force_z);
+			dist[11*Np+n] = fq;
 
-				// q = 18
-				fq = mrt_V1*rho+mrt_V9*m1
-						+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)
-						-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
-				dist[18*Np+n] = fq;
+			// q = 12
+			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+
+					mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)-0.08333333333*(force_x+force_z);
+			dist[12*Np+n] = fq;
 
-				//........................................................................
+			// q = 13
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)
+					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
+					-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(force_x-force_z);
+			dist[13*Np+n] = fq;
 
-				// write the velocity 
-				ux = jx / rho0;
-				uy = jy / rho0;
-				uz = jz / rho0;
-				//Velocity[n] = ux;
-				//Velocity[Np+n] = uy;
-				//Velocity[2*Np+n] = uz;
+			// q= 14
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)
+					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
+					-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(force_x-force_z);
 
-				// Instantiate mass transport distributions
-				// Stationary value - distribution 0
+			dist[14*Np+n] = fq;
 
-				nAB = 1.0/(nA+nB);
-				Aq[n] = 0.3333333333333333*nA;
-				Bq[n] = 0.3333333333333333*nB;
+			// q = 15
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)
+					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(force_y+force_z);
+			dist[15*Np+n] = fq;
 
-				//...............................................
-				// q = 0,2,4
-				// Cq = {1,0,0}, {0,1,0}, {0,0,1}
-				delta = beta*nA*nB*nAB*0.1111111111111111*nx;
-				if (!(nA*nB*nAB>0)) delta=0;
-				a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
-				b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
-				a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
-				b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+			// q = 16
+			fq =  mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)
+					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(force_y+force_z);
+			dist[16*Np+n] = fq;
 
-				Aq[1*Np+n] = a1;
-				Bq[1*Np+n] = b1;
-				Aq[2*Np+n] = a2;
-				Bq[2*Np+n] = b2;
 
-				//...............................................
-				// q = 2
-				// Cq = {0,1,0}
-				delta = beta*nA*nB*nAB*0.1111111111111111*ny;
-				if (!(nA*nB*nAB>0)) delta=0;
-				a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
-				b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
-				a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
-				b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+			// q = 17
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)
+					-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(force_y-force_z);
+			dist[17*Np+n] = fq;
 
-				Aq[3*Np+n] = a1;
-				Bq[3*Np+n] = b1;
-				Aq[4*Np+n] = a2;
-				Bq[4*Np+n] = b2;
-				//...............................................
-				// q = 4
-				// Cq = {0,0,1}
-				delta = beta*nA*nB*nAB*0.1111111111111111*nz;
-				if (!(nA*nB*nAB>0)) delta=0;
-				a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
-				b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
-				a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
-				b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+			// q = 18
+			fq = mrt_V1*rho+mrt_V9*m1
+					+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)
+					-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(force_y-force_z);
+			dist[18*Np+n] = fq;
 
-				Aq[5*Np+n] = a1;
-				Bq[5*Np+n] = b1;
-				Aq[6*Np+n] = a2;
-				Bq[6*Np+n] = b2;
-				//...............................................
+			//........................................................................
 
+			// write the velocity 
+			ux = jx / rho0;
+			uy = jy / rho0;
+			uz = jz / rho0;
+			//Velocity[n] = ux;
+			//Velocity[Np+n] = uy;
+			//Velocity[2*Np+n] = uz;
+
+			// Instantiate mass transport distributions
+			// Stationary value - distribution 0
+
+			nAB = 1.0/(nA+nB);
+			Aq[n] = 0.3333333333333333*nA;
+			Bq[n] = 0.3333333333333333*nB;
+
+			//...............................................
+			// q = 0,2,4
+			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
+			if (!(nA*nB*nAB>0)) delta=0;
+			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
+			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
+			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
+			b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+
+			Aq[1*Np+n] = a1;
+			Bq[1*Np+n] = b1;
+			Aq[2*Np+n] = a2;
+			Bq[2*Np+n] = b2;
+
+			//...............................................
+			// q = 2
+			// Cq = {0,1,0}
+			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
+			if (!(nA*nB*nAB>0)) delta=0;
+			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
+			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
+			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
+			b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+
+			Aq[3*Np+n] = a1;
+			Bq[3*Np+n] = b1;
+			Aq[4*Np+n] = a2;
+			Bq[4*Np+n] = b2;
+			//...............................................
+			// q = 4
+			// Cq = {0,0,1}
+			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
+			if (!(nA*nB*nAB>0)) delta=0;
+			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
+			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
+			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
+			b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+
+			Aq[5*Np+n] = a1;
+			Bq[5*Np+n] = b1;
+			Aq[6*Np+n] = a2;
+			Bq[6*Np+n] = b2;
+			//...............................................
 		}
 	}
 }
 
 
 __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Phi, double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	int n,nn,nread;
@@ -645,6 +649,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	double force_x,force_y,force_z;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -686,7 +691,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			if (C==0.0) C=1.0;
 			nx = nx/C;
 			ny = ny/C;
-			nz = nz/C;		
+			nz = nz/C;			
 
 			// q=0
 			fq = dist[n];
@@ -1028,63 +1033,68 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
-			//.................inverse transformation......................................................
 
+			// assign force with wetting BC
+			force_x = alpha*(nA-nB)*SolidForce[n] + Fx;
+			force_y = alpha*(nA-nB)*SolidForce[n+Np] + Fy;
+			force_z = alpha*(nA-nB)*SolidForce[n+2*Np] + Fz;
+			
+			//.................inverse transformation......................................................
 			// q=0
 			fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
 			dist[n] = fq;
 
 			// q = 1
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10)+0.16666666*Fx;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10)+0.16666666*force_x;
 			//nread = neighborList[n+Np];
 			dist[nr2] = fq;
 
 			// q=2
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*force_x;
 			//nread = neighborList[n];
 			dist[nr1] = fq;
 
 			// q = 3
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*force_y;
 			//nread = neighborList[n+3*Np];
 			dist[nr4] = fq;
 
 			// q = 4
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*force_y;
 			//nread = neighborList[n+2*Np];
 			dist[nr3] = fq;
 
 			// q = 5
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*force_z;
 			//nread = neighborList[n+5*Np];
 			dist[nr6] = fq;
 
 			// q = 6
-			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
+			fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*force_z;
 			//nread = neighborList[n+4*Np];
 			dist[nr5] = fq;
 
 			// q = 7
 			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+
-					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(force_x+force_y);
 			//nread = neighborList[n+7*Np];
 			dist[nr8] = fq;
 
 			// q = 8
 			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11
-					+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
+					+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(force_x+force_y);
 			//nread = neighborList[n+6*Np];
 			dist[nr7] = fq;
 
 			// q = 9
 			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+
-					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(force_x-force_y);
 			//nread = neighborList[n+9*Np];
 			dist[nr10] = fq;
 
 			// q = 10
 			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+
-					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
+					mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(force_x-force_y);
 			//nread = neighborList[n+8*Np];
 			dist[nr9] = fq;
 
@@ -1092,13 +1102,13 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)
 					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-					-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
+					-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(force_x+force_z);
 			//nread = neighborList[n+11*Np];
 			dist[nr12] = fq;
 
 			// q = 12
 			fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+
-					mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(Fx+Fz);
+					mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(force_x+force_z);
 			//nread = neighborList[n+10*Np];
 			dist[nr11]= fq;
 
@@ -1106,7 +1116,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)
 					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-					-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
+					-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(force_x-force_z);
 			//nread = neighborList[n+13*Np];
 			dist[nr14] = fq;
 
@@ -1114,7 +1124,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)
 					+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-					-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
+					-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(force_x-force_z);
 			//nread = neighborList[n+12*Np];
 			dist[nr13] = fq;
 
@@ -1122,14 +1132,14 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			// q = 15
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)
-					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
+					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(force_y+force_z);
 			nread = neighborList[n+15*Np];
 			dist[nread] = fq;
 
 			// q = 16
 			fq =  mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)
-					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
+					-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(force_y+force_z);
 			nread = neighborList[n+14*Np];
 			dist[nread] = fq;
 
@@ -1137,14 +1147,14 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, doub
 			// q = 17
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)
-					-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
+					-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(force_y-force_z);
 			nread = neighborList[n+17*Np];
 			dist[nread] = fq;
 
 			// q = 18
 			fq = mrt_V1*rho+mrt_V9*m1
 					+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)
-					-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
+					-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(force_y-force_z);
 			nread = neighborList[n+16*Np];
 			dist[nread] = fq;
 
@@ -1356,7 +1366,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den,
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, double *SolidPotential, int start, int finish, int Np){
+__global__ void dvc_ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
 
 	int n,nn;
 	// distributions
@@ -1405,11 +1415,26 @@ __global__ void dvc_ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, do
 			m17 = Phi[nn];
 			nn = neighborList[n+16*Np]%Np;
 			m18 = Phi[nn];					
+			
+			//............Compute the Color Gradient...................................
 			//............Compute the wn fluid Gradient...................................
 			nx = (m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
 			ny = (m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
 			nz = (m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-			//...............................................
+			
+	/*		// .... read the solid potential gradient.....................
+			m1 = SolidPotential[n];
+			m2 = SolidPotential[n+Np];
+			m3 = SolidPotential[n+2*Np];
+			nx += m1;
+			ny += m2;
+			nz += m3;
+		*/	
+			//...........Normalize the Color Gradient.................................
+			//	C = sqrt(nx*nx+ny*ny+nz*nz);
+			//	nx = nx/C;
+			//	ny = ny/C;
+			//	nz = nz/C;
 			//...Store the Color Gradient....................
 			ColorGrad[n] = nx;
 			ColorGrad[Np+n] = ny;
@@ -1438,13 +1463,13 @@ extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
-		double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_DFH, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB, 
+	dvc_ScaLBL_D3Q19_AAeven_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, Phi, Gradient, SolidForce, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1454,14 +1479,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Phi, double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	cudaProfilerStart();
 	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_DFH, cudaFuncCachePreferL1);
 	
 	dvc_ScaLBL_D3Q19_AAodd_DFH<<<NBLOCKS,NTHREADS >>>(neighborList,dist, Aq, Bq, Den, Phi, Gradient, 
-			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz,  start, finish, Np);
+			SolidForce, rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz,  start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1496,9 +1521,9 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 
 }
 
-extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, double *SolidPotential, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_Gradient_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, Phi, ColorGrad, SolidPotential, start, finish, Np);
+	dvc_ScaLBL_D3Q19_Gradient_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, Phi, ColorGrad, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Gradient_DFH: %s \n",cudaGetErrorString(err));

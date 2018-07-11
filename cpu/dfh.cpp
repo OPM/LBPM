@@ -89,7 +89,7 @@ extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq
 
 // LBM based on density functional hydrodynamics
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
-		double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
 	int ijk,nn,n;
@@ -104,6 +104,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	double force_x,force_y,force_z;
 	
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -435,56 +436,61 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
 
+		
 		//.......................................................................................................
+		// assign force with wetting BC
+		force_x = alpha*(nA-nB)*SolidForce[n] + Fx;
+		force_y = alpha*(nA-nB)*SolidForce[n+Np] + Fy;
+		force_z = alpha*(nA-nB)*SolidForce[n+2*Np] + Fz;
 		//.................inverse transformation......................................................
-
+		
 		// q=0
 		fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
 		dist[n] = fq;
 
 		// q = 1
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*Fx;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*force_x;
 		dist[1*Np+n] = fq;
 
 		// q=2
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*force_x;
 		dist[2*Np+n] = fq;
 
 		// q = 3
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*force_y;
 		dist[3*Np+n] = fq;
 
 		// q = 4
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*force_y;
 		dist[4*Np+n] = fq;
 
 		// q = 5
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*force_z;
 		dist[5*Np+n] = fq;
 
 		// q = 6
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*force_z;
 		dist[6*Np+n] = fq;
 
 		// q = 7
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(force_x+force_y);
 		dist[7*Np+n] = fq;
 
 
 		// q = 8
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11
-				+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
+				+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(force_x+force_y);
 		dist[8*Np+n] = fq;
 
 		// q = 9
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(force_x-force_y);
 		dist[9*Np+n] = fq;
 
 		// q = 10
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(force_x-force_y);
 		dist[10*Np+n] = fq;
 
 
@@ -492,52 +498,52 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
+				-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(force_x+force_z);
 		dist[11*Np+n] = fq;
 
 		// q = 12
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+
-				mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)-0.08333333333*(Fx+Fz);
+				mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)-0.08333333333*(force_x+force_z);
 		dist[12*Np+n] = fq;
 
 		// q = 13
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
+				-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(force_x-force_z);
 		dist[13*Np+n] = fq;
 
 		// q= 14
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
+				-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(force_x-force_z);
 
 		dist[14*Np+n] = fq;
 
 		// q = 15
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)
-				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
+				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(force_y+force_z);
 		dist[15*Np+n] = fq;
 
 		// q = 16
 		fq =  mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)
-				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
+				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(force_y+force_z);
 		dist[16*Np+n] = fq;
 
 
 		// q = 17
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)
-				-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
+				-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(force_y-force_z);
 		dist[17*Np+n] = fq;
 
 		// q = 18
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)
-				-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
+				-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(force_y-force_z);
 		dist[18*Np+n] = fq;
 
 		//........................................................................
@@ -607,7 +613,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *Gradient, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Phi, double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 	
 	int n,nn,ijk,nread;
@@ -626,6 +632,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
 	double phi,tau,rho0,rlx_setA,rlx_setB;
+	double force_x,force_y,force_z;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1006,63 +1013,68 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		m16 = m16 + rlx_setB*( - m16);
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
-		//.................inverse transformation......................................................
 
+		// assign force with wetting BC
+		force_x = alpha*(nA-nB)*SolidForce[n] + Fx;
+		force_y = alpha*(nA-nB)*SolidForce[n+Np] + Fy;
+		force_z = alpha*(nA-nB)*SolidForce[n+2*Np] + Fz;
+		
+		//.................inverse transformation......................................................
 		// q=0
 		fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
 		dist[n] = fq;
 
 		// q = 1
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10)+0.16666666*Fx;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10)+0.16666666*force_x;
 		//nread = neighborList[n+Np];
 		dist[nr2] = fq;
 
 		// q=2
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*force_x;
 		//nread = neighborList[n];
 		dist[nr1] = fq;
 
 		// q = 3
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*force_y;
 		//nread = neighborList[n+3*Np];
 		dist[nr4] = fq;
 
 		// q = 4
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*force_y;
 		//nread = neighborList[n+2*Np];
 		dist[nr3] = fq;
 
 		// q = 5
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*force_z;
 		//nread = neighborList[n+5*Np];
 		dist[nr6] = fq;
 
 		// q = 6
-		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
+		fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*force_z;
 		//nread = neighborList[n+4*Np];
 		dist[nr5] = fq;
 
 		// q = 7
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(force_x+force_y);
 		//nread = neighborList[n+7*Np];
 		dist[nr8] = fq;
 
 		// q = 8
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11
-				+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
+				+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(force_x+force_y);
 		//nread = neighborList[n+6*Np];
 		dist[nr7] = fq;
 
 		// q = 9
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(force_x-force_y);
 		//nread = neighborList[n+9*Np];
 		dist[nr10] = fq;
 
 		// q = 10
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+
-				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
+				mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(force_x-force_y);
 		//nread = neighborList[n+8*Np];
 		dist[nr9] = fq;
 
@@ -1070,13 +1082,13 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
+				-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(force_x+force_z);
 		//nread = neighborList[n+11*Np];
 		dist[nr12] = fq;
 
 		// q = 12
 		fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+
-				mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(Fx+Fz);
+				mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(force_x+force_z);
 		//nread = neighborList[n+10*Np];
 		dist[nr11]= fq;
 
@@ -1084,7 +1096,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
+				-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(force_x-force_z);
 		//nread = neighborList[n+13*Np];
 		dist[nr14] = fq;
 
@@ -1092,7 +1104,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)
 				+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11
-				-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
+				-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(force_x-force_z);
 		//nread = neighborList[n+12*Np];
 		dist[nr13] = fq;
 
@@ -1100,14 +1112,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		// q = 15
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)
-				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
+				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(force_y+force_z);
 		nread = neighborList[n+15*Np];
 		dist[nread] = fq;
 
 		// q = 16
 		fq =  mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)
-				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
+				-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(force_y+force_z);
 		nread = neighborList[n+14*Np];
 		dist[nread] = fq;
 
@@ -1115,14 +1127,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		// q = 17
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)
-				-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
+				-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(force_y-force_z);
 		nread = neighborList[n+17*Np];
 		dist[nread] = fq;
 
 		// q = 18
 		fq = mrt_V1*rho+mrt_V9*m1
 				+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)
-				-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
+				-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(force_y-force_z);
 		nread = neighborList[n+16*Np];
 		dist[nread] = fq;
 
@@ -1361,7 +1373,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, doub
 	}	
 }
 
-extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, double *SolidPotential, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double *ColorGrad, int start, int finish, int Np){
 	
 	int n,nn;
 	// distributions
@@ -1416,14 +1428,14 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *neighborList, double *Phi, double
 		ny = (m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
 		nz = (m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 		
-		// .... read the solid potential gradient.....................
+/*		// .... read the solid potential gradient.....................
 		m1 = SolidPotential[n];
 		m2 = SolidPotential[n+Np];
 		m3 = SolidPotential[n+2*Np];
 		nx += m1;
 		ny += m2;
 		nz += m3;
-		
+	*/	
 		//...........Normalize the Color Gradient.................................
 		//	C = sqrt(nx*nx+ny*ny+nz*nz);
 		//	nx = nx/C;

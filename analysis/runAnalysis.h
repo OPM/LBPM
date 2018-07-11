@@ -39,7 +39,7 @@ public:
 
     //! Constructor
     runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
-    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool pBC, double beta, IntArray Map );
+    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool Regular, double beta, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
@@ -100,6 +100,7 @@ private:
     int d_rank;
     int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
     double d_beta;
+    bool d_regular;
     ThreadPool d_tpool;
     RankInfoStruct d_rank_info;
     IntArray d_Map;

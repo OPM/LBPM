@@ -191,6 +191,11 @@ public: // Public variables (need to create accessors instead)
     int PoreCount();
 
 private:
+
+    void PackID(int *list, int count, char *sendbuf, char *ID);
+    void UnpackID(int *list, int count, char *recvbuf, char *ID);
+    void CommHaloIDs();
+    
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
 	MPI_Status stat1[18],stat2[18];
@@ -210,7 +215,6 @@ private:
     double *recvData_xy, *recvData_yz, *recvData_xz, *recvData_Xy, *recvData_Yz, *recvData_xZ;
     double *recvData_xY, *recvData_yZ, *recvData_Xz, *recvData_XY, *recvData_YZ, *recvData_XZ;
 };
-
 
 
 // Class to hold data on a patch
@@ -244,6 +248,7 @@ private:
     const Patch *d_patch;
     TYPE *d_data;
     TYPE *d_gcw;
+
 };
 
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np);

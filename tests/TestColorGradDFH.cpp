@@ -45,32 +45,8 @@ int main(int argc, char **argv)
 
 		// BGK Model parameters
 		string FILENAME;
-		int timestepMax, interval;
-		double Fx,Fy,Fz,tol;
 		// Domain variables
-		double Lx,Ly,Lz;
-		int nspheres;
 		int i,j,k,n;
-		int dim = 3;
-		//if (rank == 0) printf("dim=%d\n",dim);
-		int timestep = 0;
-		int timesteps = 100;
-		int centralNode = 2;
-
-		double tauA = 1.0;
-		double tauB = 1.0;
-		double rhoA = 1.0;
-		double rhoB = 1.0;
-		double alpha = 0.005;
-		double beta = 0.95;
-		
-		double tau = 1.0;
-		double mu=(tau-0.5)/3.0;
-		double rlx_setA=1.0/tau;
-		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
-
-		Fx = Fy = 0.f;
-		Fz = 0.f;
 		
 	    // Load inputs
 	    auto db = loadInputs( nprocs );
@@ -188,9 +164,9 @@ int main(int argc, char **argv)
 		//...........................................................................
 
 		// compute the gradient 
-		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
 		ScaLBL_Comm->SendHalo(Phi);
-		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, Potential, 0, ScaLBL_Comm->first_interior, Np);
+		ScaLBL_D3Q19_Gradient_DFH(neighborList, Phi, ColorGrad, 0, ScaLBL_Comm->first_interior, Np);
 		ScaLBL_Comm->RecvGrad(Phi,ColorGrad);
 		
     	double *COLORGRAD;

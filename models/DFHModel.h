@@ -1,19 +1,4 @@
 /*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/*
 Implementation of color lattice boltzmann model
  */
 #include <stdio.h>
@@ -31,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_ColorModel{
+class ScaLBL_DFHModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_ColorModel();	
+	ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_DFHModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -43,6 +28,7 @@ public:
 	void ReadInput();
 	void Create();
 	void Initialize();
+	void AssignSolidPotential();
 	void Run();
 	void WriteDebug();
 	
@@ -60,7 +46,6 @@ public:
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
-	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
     std::shared_ptr<TwoPhase> Averages;
     
     // input database
@@ -70,14 +55,15 @@ public:
     std::shared_ptr<Database> analysis_db;
 
     IntArray Map;
-    char *id;    
-	int *NeighborList;
-	int *dvcMap;
-	double *fq, *Aq, *Bq;
-	double *Den, *Phi;
-	double *ColorGrad;
-	double *Velocity;
-	double *Pressure;
+    char *id;
+    int *NeighborList;
+    int *dvcMap;
+    double *fq, *Aq, *Bq;
+    double *Den, *Phi;
+    double *SolidPotential;
+    double *Velocity;
+    double *Gradient;
+    double *Pressure;
 		
 private:
 	MPI_Comm comm;
