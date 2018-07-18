@@ -519,9 +519,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		//........................................................................
 
 		// write the velocity 
-		ux = jx / rho0;
-		uy = jy / rho0;
-		uz = jz / rho0;
+		ux = (jx + force_x) / rho0;
+		uy = (jy + force_y) / rho0;
+		uz = (jz + force_z) / rho0;
 		//Velocity[n] = ux;
 		//Velocity[Np+n] = uy;
 		//Velocity[2*Np+n] = uz;
@@ -1109,9 +1109,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		dist[nread] = fq;
 
 		// write the velocity 
-		ux = jx / rho0;
-		uy = jy / rho0;
-		uz = jz / rho0;
+		ux = (jx + force_x) / rho0;
+		uy = (jy + force_y) / rho0;
+		uz = (jz + force_z) / rho0;
 		//Velocity[n] = ux;
 		//Velocity[Np+n] = uy;
 		//Velocity[2*Np+n] = uz;
