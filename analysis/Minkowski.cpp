@@ -221,7 +221,5 @@ void Minkowski::PrintAll()
 		fprintf(LOGFILE,"%.5g %.5g %.5g %.5g\n",vol_n_global, An_global, Jn_global, euler_global);			// minkowski measures
 		fflush(LOGFILE);
 	}
-
-
 }
 
