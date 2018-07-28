@@ -124,6 +124,8 @@ void ScaLBL_MRTModel::Create(){
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	MPI_Barrier(comm);
+	
+	Morphology = new Minkowski(Mask);
 }        
 
 void ScaLBL_MRTModel::Initialize(){
@@ -162,21 +164,56 @@ void ScaLBL_MRTModel::Run(){
 	}
 	//************************************************************************/
 	stoptime = MPI_Wtime();
-	//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
-	cputime = stoptime - starttime;
-	//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
-	double MLUPS = double(Np*timestep)/cputime/1000000;
-//	if (rank==0) printf("********************************************************\n");
-//	if (rank==0) printf("CPU time = %f \n", cputime);
-//	if (rank==0) printf("Lattice update rate (per process)= %f MLUPS \n", MLUPS);
+	if (rank==0) printf("-------------------------------------------------------------------\n");
+	// Compute the walltime per timestep
+	cputime = (stoptime - starttime)/timestep;
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+
+	if (rank==0) printf("********************************************************\n");
+	if (rank==0) printf("CPU time = %f \n", cputime);
+	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
 	MLUPS *= nprocs;
+	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	if (rank==0) printf("********************************************************\n");
+
 }
 
-void ScaLBL_MRTModel::VelocityField(double *Vz){
+void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-	ScaLBL_CopyToHost(&Vz[0],&Velocity[2*Np],SIZE);
+	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],SIZE);
+	
+	memcpy(Morphology.SDn.data(), Distance.data(), N*sizeof(double));
+	Morphology.Initialize();
+	Morphology.UpdateMeshValues();
+	Morphology.ComputeLocal();
+	Morphology.Reduce();
+	
+	unsigned long int count_loc=0;
+	unsigned long int count;
+	double vax,vay,vaz;
+	double vax_loc,vay_loc,vaz_loc;
+	vax_loc = vay_loc = vaz_loc = 0.f;
+	for (int n=ScaLBL_Comm->0; n<ScaLBL_Comm->LastExterior(); n++){
+		vax_loc += VELOCITY[n];
+		vay_loc += VELOCITY[Np+n];
+		vaz_loc += VELOCITY[2*Np+n];
+	}
+	
+	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
+		vax_loc += VELOCITY[n];
+		vay_loc += VELOCITY[Np+n];
+		vaz_loc += VELOCITY[2*Np+n];
+	}
+	MPI_Allreduce(vax_loc,vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(vay_loc,vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(vaz_loc,vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	
+	if (rank==0) printf("Vs As Js Xs vx vy vz\n");
+	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
+
 	
 }
