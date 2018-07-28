@@ -56,7 +56,7 @@ public:
     double *Velocity;
     double *Pressure;
     
-    Minkowski Morphology;
+    //Minkowski Morphology;
 		
 private:
 	MPI_Comm comm;

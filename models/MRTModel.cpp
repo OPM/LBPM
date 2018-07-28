@@ -125,7 +125,6 @@ void ScaLBL_MRTModel::Create(){
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	MPI_Barrier(comm);
 	
-	Morphology = new Minkowski(Mask);
 }        
 
 void ScaLBL_MRTModel::Initialize(){
@@ -181,6 +180,7 @@ void ScaLBL_MRTModel::Run(){
 
 void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 
+        Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -197,7 +197,7 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	double vax,vay,vaz;
 	double vax_loc,vay_loc,vaz_loc;
 	vax_loc = vay_loc = vaz_loc = 0.f;
-	for (int n=ScaLBL_Comm->0; n<ScaLBL_Comm->LastExterior(); n++){
+	for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
 		vax_loc += VELOCITY[n];
 		vay_loc += VELOCITY[Np+n];
 		vaz_loc += VELOCITY[2*Np+n];
@@ -208,9 +208,9 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 		vay_loc += VELOCITY[Np+n];
 		vaz_loc += VELOCITY[2*Np+n];
 	}
-	MPI_Allreduce(vax_loc,vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(vay_loc,vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(vaz_loc,vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 	
 	if (rank==0) printf("Vs As Js Xs vx vy vz\n");
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
