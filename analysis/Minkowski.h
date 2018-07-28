@@ -69,6 +69,11 @@ public:
 	DoubleArray SDn_y;
 	DoubleArray SDn_z;
 
+	double V();
+	double A();
+	double J();
+	double X();
+	
 	//...........................................................................
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
@@ -80,6 +85,7 @@ public:
 	void PrintAll();
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
+	
 };
 
 

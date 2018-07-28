@@ -67,6 +67,22 @@ void Minkowski::Initialize()
 	vol_n = euler = Jn = An = Kn = 0.0;
 }
 
+double Minkowski::V(){
+	return vol_n_global;
+}
+
+double Minkowski::A(){
+	return An_global;
+}
+
+double Minkowski::J(){
+	return Jn_global;
+}
+
+double Minkowski::X(){
+	return euler_global_global;
+}
+
 
 void Minkowski::UpdateMeshValues()
 {
