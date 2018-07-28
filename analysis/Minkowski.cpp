@@ -80,7 +80,7 @@ double Minkowski::J(){
 }
 
 double Minkowski::X(){
-	return euler_global_global;
+	return euler_global;
 }
 
 
