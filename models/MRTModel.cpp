@@ -192,8 +192,8 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	Morphology.ComputeLocal();
 	Morphology.Reduce();
 	
-	unsigned long int count_loc=0;
-	unsigned long int count;
+	double count_loc=0;
+	double count;
 	double vax,vay,vaz;
 	double vax_loc,vay_loc,vaz_loc;
 	vax_loc = vay_loc = vaz_loc = 0.f;
@@ -201,16 +201,23 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 		vax_loc += VELOCITY[n];
 		vay_loc += VELOCITY[Np+n];
 		vaz_loc += VELOCITY[2*Np+n];
+		count_loc+=1.0;
 	}
 	
 	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
 		vax_loc += VELOCITY[n];
 		vay_loc += VELOCITY[Np+n];
 		vaz_loc += VELOCITY[2*Np+n];
+		count_loc+=1.0;
 	}
 	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	
+	vax /= count;
+	vay /= count;
+	vaz /= count;
 	
 	if (rank==0) printf("Vs As Js Xs vx vy vz\n");
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
