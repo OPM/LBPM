@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
-		double *Vz;  	Vz= new double [MRT.Np];
+		double *Vz;  	Vz= new double [3*MRT.Np];
 		MRT.VelocityField(Vz);
 
 		if (rank == 0) printf("Force: %f,%f,%f \n",MRT.Fx,MRT.Fy,MRT.Fz);
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 				n = MRT.Map(i,j,k);
 				//printf("%i,%i,%i; %i :",i,j,k,n);
 				if (n<0) {vz =0.f; printf(" b    "); }
-				else { vz=Vz[n]; printf(" a    "); }
+				else { vz=Vz[n+2*MRT.Np]; printf(" a    "); }
 				printf("%f ",vz);
 				//Analytical solution
 				double x=1.f*i-1.5;
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 				n = MRT.Map(i,j,k);
 				//printf("%i,%i,%i; %i :",i,j,k,n);
 				if (n<0) {vz =0.f; printf(" b    "); }
-				else { vz=Vz[n]; printf(" a    "); }
+				else { vz=Vz[n+2*MRT.Np]; printf(" a    "); }
 				printf("%f ",vz);
 				//Analytical solution
 				double x=1.f*i-1.5;
