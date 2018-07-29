@@ -10,7 +10,7 @@
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
-
+#include "models/MRTModel.h"
 //#define WRITE_SURFACES
 
 /*

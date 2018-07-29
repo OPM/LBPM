@@ -184,7 +184,7 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],SIZE);
+	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
 	
 	memcpy(Morphology.SDn.data(), Distance.data(), N*sizeof(double));
 	Morphology.Initialize();
