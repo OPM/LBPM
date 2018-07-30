@@ -67,6 +67,22 @@ void Minkowski::Initialize()
 	vol_n = euler = Jn = An = Kn = 0.0;
 }
 
+double Minkowski::V(){
+	return vol_n_global;
+}
+
+double Minkowski::A(){
+	return An_global;
+}
+
+double Minkowski::J(){
+	return Jn_global;
+}
+
+double Minkowski::X(){
+	return euler_global;
+}
+
 
 void Minkowski::UpdateMeshValues()
 {
@@ -133,11 +149,9 @@ void Minkowski::ComputeLocal()
 				// Compute volume averages
 				for (int p=0;p<8;p++){
 					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
-					if ( Dm->id[n] != 0 ){
-						// 1-D index for this cube corner
-						if ( SDn(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < 0 ){
-							vol_n += 0.125;
-						}
+					// 1-D index for this cube corner
+					if ( SDn(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < 0 ){
+						vol_n += 0.125;
 					}
 				}
 
