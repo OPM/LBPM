@@ -494,7 +494,7 @@ int main(int argc, char **argv)
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 		FILE *DIST = fopen(LocalRankFilename,"wb");
 		if (DIST==NULL) ERROR("Error opening file: ID.xxxxx");
-		fwrite(SignDist.data(),1,N,DIST);
+		fwrite(SignDist.data(),1,N*sizeof(double),DIST);
 		fclose(DIST);
 		//......................................................................
 
