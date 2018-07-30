@@ -31,9 +31,9 @@ public:
 	unsigned long int face(unsigned long int edge);
 	unsigned long int next(unsigned long int edge);
 	unsigned long int prev(unsigned long int edge);
-	
+
+	Array<unsigned long int> data;
 private:
-	Array<unsigned long int> HalfEdge;
 };
 
 // DECL
@@ -45,12 +45,12 @@ public:
 	unsigned long int face();
 	Vertex vertex;
 	Halfedge halfedge;
-	void AddCube(); // need a function to add new faces based on marching cubes surface
+	void LocalIsosurface(const DoubleArray A, double value, int i, int j, int k);
 	
 	double origin(int edge);
 	double EdgeAngle(int edge);
 	Point TriNormal(int edge);
-	
+
 private:
 	unsigned long int *face_data;
 };
