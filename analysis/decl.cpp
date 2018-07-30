@@ -267,11 +267,11 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		P = cellvertices(V1);
 		Q = cellvertices(V2);
 		if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=0 face
-		if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for x=1 face
-		if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for y=0 face
-		if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx_edge) = -4;  // ghost twin for y=1 face
-		if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx_edge) = -5;  // ghost twin for z=0 face
-		if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -6;  // ghost twin for z=1 face
+		if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=1 face
+		if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=0 face
+		if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=1 face
+		if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=0 face
+		if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=1 face
 	}
 	// Map vertices to global coordinates
 	for (int idx=0;idx<NewVertexCount;idx++) {
@@ -281,6 +281,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		P.z  += k;
 		cellvertices(idx) = P;
 	}
+
 }
 
 Point DECL::TriNormal(int edge)
