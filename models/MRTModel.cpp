@@ -220,7 +220,7 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	vaz /= count;
 	
 	double mu = (tau-0.5)/3.f;
-	if (rank==0) printf("mu Fx Fy Fz Vs As Js Xs vx vy vz\n");
+	if (rank==0) printf("Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
 						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
 
