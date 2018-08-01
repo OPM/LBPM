@@ -324,6 +324,11 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
+
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
+
 	auto SignDistVar = std::make_shared<IO::Variable>();
 	auto BlobIDVar = std::make_shared<IO::Variable>();
 	PhaseVar->name = "phase";
@@ -337,21 +342,21 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PressVar);
 	
-	PressVar->name = "Velocity_x";
-	PressVar->type = IO::VariableType::VolumeVariable;
-	PressVar->dim = 1;
-	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-	d_meshData[0].vars.push_back(Velocity_x);
-	PressVar->name = "Velocity_y";
-	PressVar->type = IO::VariableType::VolumeVariable;
-	PressVar->dim = 1;
-	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-	d_meshData[0].vars.push_back(Velocity_y);
-	PressVar->name = "Velocity_z";
-	PressVar->type = IO::VariableType::VolumeVariable;
-	PressVar->dim = 1;
-	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-	d_meshData[0].vars.push_back(Velocity_z);
+	VxVar->name = "Velocity_x";
+	VxVar->type = IO::VariableType::VolumeVariable;
+	VxVar->dim = 1;
+	VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VxVar);
+	VyVar->name = "Velocity_y";
+	VyVar->type = IO::VariableType::VolumeVariable;
+	VyVar->dim = 1;
+	VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VyVar);
+	VzVar->name = "Velocity_z";
+	VzVar->type = IO::VariableType::VolumeVariable;
+	VzVar->dim = 1;
+	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VzVar);
 	
 	SignDistVar->name = "SignDist";
 	SignDistVar->type = IO::VariableType::VolumeVariable;
