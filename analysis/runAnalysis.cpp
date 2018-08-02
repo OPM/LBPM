@@ -13,7 +13,6 @@
 #include "ProfilerApp.h"
 
 
-
 AnalysisType& operator |=(AnalysisType &lhs, AnalysisType rhs)  
 {
     lhs = static_cast<AnalysisType>(

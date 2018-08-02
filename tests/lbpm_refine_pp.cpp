@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		FILE *LABELS = fopen(LocalRankFilename,"rb");
 		size_t ReadLabels;
-		ReadSignLABELS=fread(Labels,1,N,LABELS);
+		ReadLabels=fread(Labels,1,N,LABELS);
 		if (ReadLabels != size_t(N)) printf("lbpm_refine_pp: Error reading ID  (rank=%i)\n",rank);
 		fclose(LABELS);
 
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
 					pt.y=0.5*(rj-1)+1.f;
 					pt.z=0.5*(rk-1)+1.f;
 					RefinedSignDist(ri,rj,rk) = LocalApprox.eval(pt);
-					RefineLabel(ri,rj,rk) = Label[k*nx*ny+j*nx+i]; 
+					RefineLabel(ri,rj,rk) = Labels[k*nx*ny+j*nx+i]; 
 				}
 			}
 		}
