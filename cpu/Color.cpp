@@ -1770,9 +1770,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 		ux = jx / rho0;
 		uy = jy / rho0;
 		uz = jz / rho0;
-		//Velocity[n] = ux;
-		//Velocity[Np+n] = uy;
-		//Velocity[2*Np+n] = uz;
+		Velocity[n] = ux;
+		Velocity[Np+n] = uy;
+		Velocity[2*Np+n] = uz;
 
 		// Instantiate mass transport distributions
 		// Stationary value - distribution 0
@@ -2418,9 +2418,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 		ux = jx / rho0;
 		uy = jy / rho0;
 		uz = jz / rho0;
-		//Velocity[n] = ux;
-		//Velocity[Np+n] = uy;
-		//Velocity[2*Np+n] = uz;
+		Velocity[n] = ux;
+		Velocity[Np+n] = uy;
+		Velocity[2*Np+n] = uz;
 
 		// Instantiate mass transport distributions
 		// Stationary value - distribution 0

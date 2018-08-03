@@ -582,7 +582,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	// Copy the members of Averages to the cpu (phase was copied above)
     	PROFILE_START("Copy-Pressure",1);
     	ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
-    	ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
+    	//ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
     	ScaLBL_DeviceBarrier();
     	PROFILE_STOP("Copy-Pressure",1);
     	PROFILE_START("Copy-Wait",1);
