@@ -606,4 +606,19 @@ void ScaLBL_DFHModel::WriteDebug(){
 	OUTFILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+	FILE *AFILE;
+	sprintf(LocalRankFilename,"A.%05i.raw",rank);
+	AFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,AFILE);
+	fclose(AFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	FILE *BFILE;
+	sprintf(LocalRankFilename,"B.%05i.raw",rank);
+	BFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,BFILE);
+	fclose(BFILE);
+
 }

@@ -168,7 +168,7 @@ void CalcVecDist( Array<Vec> &d, const Array<int> &ID0, const Domain &Dm,
     for (int i=0; i<N[0]; i++) {
         for (int j=0; j<N[1]; j++) {
             ID(i,j,0) = ID(i,j,1);
-            ID(i,j,N[1]-1) = ID(i,j,N[2]-2);
+            ID(i,j,N[2]-1) = ID(i,j,N[2]-2);
         }
     }
     // Communicate ghosts

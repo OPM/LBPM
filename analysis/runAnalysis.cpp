@@ -28,7 +28,6 @@
 #include "ProfilerApp.h"
 
 
-
 AnalysisType& operator |=(AnalysisType &lhs, AnalysisType rhs)  
 {
     lhs = static_cast<AnalysisType>(
@@ -178,15 +177,24 @@ public:
         PROFILE_START("Save Vis",1);
         ASSERT(visData[0].vars[0]->name=="phase");
         ASSERT(visData[0].vars[1]->name=="Pressure");
-        ASSERT(visData[0].vars[2]->name=="SignDist");
-        ASSERT(visData[0].vars[3]->name=="BlobID");
+        ASSERT(visData[0].vars[2]->name=="Velocity_x");
+        ASSERT(visData[0].vars[3]->name=="Velocity_y");
+        ASSERT(visData[0].vars[4]->name=="Velocity_z");
+        ASSERT(visData[0].vars[5]->name=="SignDist");
+        ASSERT(visData[0].vars[6]->name=="BlobID");
         Array<double>& PhaseData = visData[0].vars[0]->data;
         Array<double>& PressData = visData[0].vars[1]->data;
-        Array<double>& SignData  = visData[0].vars[2]->data;
-        Array<double>& BlobData  = visData[0].vars[3]->data;
+        Array<double>& VelxData = visData[0].vars[2]->data;
+        Array<double>& VelyData = visData[0].vars[3]->data;
+        Array<double>& VelzData = visData[0].vars[4]->data;
+        Array<double>& SignData  = visData[0].vars[5]->data;
+        Array<double>& BlobData  = visData[0].vars[6]->data;
         fillData.copy(Averages.SDn,PhaseData);
         fillData.copy(Averages.Press,PressData);
         fillData.copy(Averages.SDs,SignData);
+        fillData.copy(Averages.Vel_x,VelxData);
+        fillData.copy(Averages.Vel_y,VelyData);
+        fillData.copy(Averages.Vel_z,VelzData);
         fillData.copy(Averages.Label_NWP,BlobData);
         IO::writeData( timestep, visData, comm.comm );
         PROFILE_STOP("Save Vis",1);
@@ -330,6 +338,11 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
+
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
+
 	auto SignDistVar = std::make_shared<IO::Variable>();
 	auto BlobIDVar = std::make_shared<IO::Variable>();
 	PhaseVar->name = "phase";
@@ -342,6 +355,23 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	PressVar->dim = 1;
 	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PressVar);
+	
+	VxVar->name = "Velocity_x";
+	VxVar->type = IO::VariableType::VolumeVariable;
+	VxVar->dim = 1;
+	VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VxVar);
+	VyVar->name = "Velocity_y";
+	VyVar->type = IO::VariableType::VolumeVariable;
+	VyVar->dim = 1;
+	VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VyVar);
+	VzVar->name = "Velocity_z";
+	VzVar->type = IO::VariableType::VolumeVariable;
+	VzVar->dim = 1;
+	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VzVar);
+	
 	SignDistVar->name = "SignDist";
 	SignDistVar->type = IO::VariableType::VolumeVariable;
 	SignDistVar->dim = 1;
@@ -564,35 +594,35 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     }
     //if ( matches(type,AnalysisType::CopySimState) ) {
     if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
-       // Copy the members of Averages to the cpu (phase was copied above)
-        PROFILE_START("Copy-Pressure",1);
-        ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
-        ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
-        ScaLBL_DeviceBarrier();
-        PROFILE_STOP("Copy-Pressure",1);
-        PROFILE_START("Copy-Wait",1);
-        PROFILE_STOP("Copy-Wait",1);
-        PROFILE_START("Copy-State",1);
-        //memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-	if (d_regular)
-	  d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
-	else
-	  ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-	// copy other variables
-        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
-        PROFILE_STOP("Copy-State",1);
+    	// Copy the members of Averages to the cpu (phase was copied above)
+    	PROFILE_START("Copy-Pressure",1);
+    	ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
+    	//ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
+    	ScaLBL_DeviceBarrier();
+    	PROFILE_STOP("Copy-Pressure",1);
+    	PROFILE_START("Copy-Wait",1);
+    	PROFILE_STOP("Copy-Wait",1);
+    	PROFILE_START("Copy-State",1);
+    	//memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+    	if (d_regular)
+    		d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
+    	else
+    		ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+    	// copy other variables
+    	d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+    	PROFILE_STOP("Copy-State",1);
     }
     std::shared_ptr<double> cfq,cPhi;
     //if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-        // Copy restart data to the CPU
-        cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
-        cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
-        ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-        ScaLBL_CopyToHost(cPhi.get(),Phi,d_Np*sizeof(double));
+    	// Copy restart data to the CPU
+    	cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
+    	cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+    	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
+    	ScaLBL_CopyToHost(cPhi.get(),Phi,d_Np*sizeof(double));
     }
     PROFILE_STOP("Copy data to host",1);
 

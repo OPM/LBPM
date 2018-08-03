@@ -261,8 +261,8 @@ void ScaLBL_ColorModel::Create(){
 		}
 	}
 	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->last_interior; idx++){
-		if (idx == ScaLBL_Comm->next) idx = ScaLBL_Comm->first_interior;
+	for (int idx=0; idx<ScaLBL_Comm->LastInterior(); idx++){
+		if (idx == ScaLBL_Comm->LastExterior()) idx = ScaLBL_Comm->FirstInterior();
 		int n = TmpMap[idx];
 		if (n > Nx*Ny*Nz){
 			printf("Bad value! idx=%i \n");
@@ -331,8 +331,8 @@ void ScaLBL_ColorModel::Initialize(){
 	if (rank==0)	printf ("Initializing distributions \n");
 	ScaLBL_D3Q19_Init(fq, Np);
 	if (rank==0)	printf ("Initializing phase field \n");
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->next, Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 	if (BoundaryCondition >0 ){
 		if (Dm->kproc()==0){
@@ -380,9 +380,9 @@ void ScaLBL_ColorModel::Run(){
 		// Compute the Phase indicator field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 		
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -390,7 +390,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm_Regular->SendHalo(Phi);
 
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set BCs
@@ -407,23 +407,23 @@ void ScaLBL_ColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->next, Np);
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np);
+				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
@@ -440,7 +440,7 @@ void ScaLBL_ColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->next, Np);
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************
 		

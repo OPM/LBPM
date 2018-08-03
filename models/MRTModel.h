@@ -27,6 +27,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "common/MPI_Helpers.h"
+#include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
 class ScaLBL_MRTModel{
@@ -69,6 +70,8 @@ public:
     double *fq;
     double *Velocity;
     double *Pressure;
+    
+    //Minkowski Morphology;
 		
 private:
 	MPI_Comm comm;
