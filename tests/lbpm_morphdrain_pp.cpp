@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
 	auto nproc = domain_db->getVector<int>( "nproc" );
-	double SW = domain_db->getScalar<double>( "Sw" )
+	double SW = domain_db->getScalar<double>( "Sw" );
 	
 	nx = size[0];
 	ny = size[1];
