@@ -74,7 +74,6 @@ int main(int argc, char **argv)
 			filename=argv[1];
 			Rcrit_new=0.f; 
 			//SW=strtod(argv[2],NULL);
-			if (rank==0)	printf("Target saturation %f \n",SW);
 		}
 		else ERROR("No input database provided\n");
 		// read the input database 
@@ -88,6 +87,8 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
+
+		if (rank==0)	printf("Target saturation %f \n",SW);
 
 		nx = size[0];
 		ny = size[1];
