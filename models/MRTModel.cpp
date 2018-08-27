@@ -53,6 +53,10 @@ void ScaLBL_MRTModel::SetDomain(){
 	Nx+=2; Ny+=2; Nz += 2;
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
+	Velocity_x.resize(Nx,Ny,Nz);
+	Velocity_y.resize(Nx,Ny,Nz);
+	Velocity_z.resize(Nx,Ny,Nz);
+	
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
@@ -141,8 +145,6 @@ void ScaLBL_MRTModel::Run(){
 	
 	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
-	double *VELOCITY;
-	VELOCITY = new double [3*Np];
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
 	if (rank==0) printf("time Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
@@ -173,8 +175,10 @@ void ScaLBL_MRTModel::Run(){
 		if (timestep%1000==0){
 			ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
 			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-			ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
-			
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
+
 			Morphology.Initialize();
 			Morphology.UpdateMeshValues();
 			Morphology.ComputeLocal();
@@ -185,18 +189,17 @@ void ScaLBL_MRTModel::Run(){
 			double vax,vay,vaz;
 			double vax_loc,vay_loc,vaz_loc;
 			vax_loc = vay_loc = vaz_loc = 0.f;
-			for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
-				vax_loc += VELOCITY[n];
-				vay_loc += VELOCITY[Np+n];
-				vaz_loc += VELOCITY[2*Np+n];
-				count_loc+=1.0;
-			}
-			
-			for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
-				vax_loc += VELOCITY[n];
-				vay_loc += VELOCITY[Np+n];
-				vaz_loc += VELOCITY[2*Np+n];
-				count_loc+=1.0;
+			for (int k=1; k<Nz-1; k++){
+				for (int j=1; j<Ny-1; j++){
+					for (int i=1; i<Nx-1; i++){
+						if (Distance(i,j,k) > 0){
+							vax_loc += Velocity_x(i,j,k);
+							vay_loc += Velocity_y(i,j,k);
+							vaz_loc += Velocity_z(i,j,k);
+							count_loc+=1.0;
+						}
+					}
+				}
 			}
 			MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 			MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
@@ -229,7 +232,7 @@ void ScaLBL_MRTModel::Run(){
 
 }
 
-void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
+void ScaLBL_MRTModel::VelocityField(){
 
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
@@ -275,9 +278,14 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
 						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
 						*/
+	
 	std::vector<IO::MeshDataStruct> visData;
-	fillHalo<double> d_fillData;
-	fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
+	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
+
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
+	auto SignDistVar = std::make_shared<IO::Variable>();
 
 	IO::initialize("","silo","false");
 	// Create the MeshDataStruct	
@@ -306,16 +314,21 @@ void ScaLBL_MRTModel::VelocityField(double *VELOCITY){
 	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	visData[0].vars.push_back(VzVar);
 	
+	Array<double>& SignData  = visData[0].vars[0]->data;
+	Array<double>& VelxData = visData[0].vars[1]->data;
+	Array<double>& VelyData = visData[0].vars[2]->data;
+	Array<double>& VelzData = visData[0].vars[3]->data;
+	
     ASSERT(visData[0].vars[0]->name=="SignDist");
     ASSERT(visData[0].vars[1]->name=="Velocity_x");
     ASSERT(visData[0].vars[2]->name=="Velocity_y");
     ASSERT(visData[0].vars[3]->name=="Velocity_z");
 	
-    fillData.copy(SignDist,SignData);
-    fillData.copy(Averages.Vel_x,VelxData);
-    fillData.copy(Averages.Vel_y,VelyData);
-    fillData.copy(Averages.Vel_z,VelzData);
+    fillData.copy(Distance,SignData);
+    fillData.copy(Velocity_x,VelxData);
+    fillData.copy(Velocity_y,VelyData);
+    fillData.copy(Velocity_z,VelzData);
 	
-    IO::writeData( timestep, visData, comm.comm );
+    IO::writeData( timestep, visData, Dm->Comm );
 
 }
