@@ -51,8 +51,7 @@ int main(int argc, char **argv)
 		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
-		double *Velocity;  	Velocity= new double [3*MRT.Np];
-		MRT.VelocityField(Velocity);
+		MRT.VelocityField();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);
