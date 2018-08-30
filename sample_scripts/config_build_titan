@@ -1,10 +1,12 @@
 # Set the modules and enviornmental variables
 source $MODULESHOME/init/bash
-module load cudatoolkit
-module load cmake
+module load cmake3/3.9.0
 export MPICH_RDMA_ENABLED_CUDA=1
 #module swap cray-mpich2 cray-mpich2/5.6.3
 module swap PrgEnv-pgi PrgEnv-gnu
+#module load PrgEnv-pgi
+#module swap gcc gcc/4.8.2
+module load cudatoolkit
 module load cray-hdf5 silo
 
 # Remove CMake files from previous configures
@@ -17,10 +19,11 @@ cmake                                       \
     -D CMAKE_C_COMPILER:PATH=cc             \
     -D CMAKE_CXX_COMPILER:PATH=CC           \
     -D CMAKE_CXX_COMPILER:PATH=CC           \
+    -D CMAKE_CXX_FLAGS=""	    \
     -D CXX_STD=11			                \
     -D USE_CUDA=1                           \
         -D CMAKE_CUDA_FLAGS="-arch sm_35"   \
-        -D CMAKE_CUDA_HOST_COMPILER="/usr/bin/gcc" \
+        -D CMAKE_CUDA_HOST_COMPILER="/opt/gcc/6.3.0/bin/gcc" \
     -D USE_MPI=1                            \
         -D MPI_COMPILER:BOOL=TRUE           \
         -D MPIEXEC=aprun                    \
@@ -31,6 +34,9 @@ cmake                                       \
     -D USE_TIMER=0                          \
     ${HOME}/LBPM-WIA
 
+
+#        -D SILO_DIRECTORY=/ccs/proj/geo106/titan/TPLS/silo \
+#        -D HDF5_DIRECTORY=/ccs/proj/geo106/titan/TPLS/hdf5 \
 
 
 # Build the code

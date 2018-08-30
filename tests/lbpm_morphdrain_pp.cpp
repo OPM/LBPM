@@ -53,14 +53,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
- 	//double Rcrit;
-	double SW=strtod(argv[1],NULL);
-	if (rank==0){
-		//printf("Critical radius %f (voxels)\n",Rcrit);
-		printf("Target saturation %f \n",SW);
-	}
-	//	}
-
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
@@ -69,34 +61,27 @@ int main(int argc, char **argv)
 	int i,j,k,n;
 	int BC=0;
 
-	if (rank==0){
-		ifstream domain("Domain.in");
-		domain >> nprocx;
-		domain >> nprocy;
-		domain >> nprocz;
-		domain >> nx;
-		domain >> ny;
-		domain >> nz;
-		domain >> nspheres;
-		domain >> Lx;
-		domain >> Ly;
-		domain >> Lz;
-
+	string filename;
+	if (argc > 1){
+		filename=argv[1];
 	}
-	MPI_Barrier(comm);
-	// Computational domain
-	MPI_Bcast(&nx,1,MPI_INT,0,comm);
-	MPI_Bcast(&ny,1,MPI_INT,0,comm);
-	MPI_Bcast(&nz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-	//.................................................
-	MPI_Barrier(comm);
+	else ERROR("No input database provided\n");
+	// read the input database 
+	auto db = std::make_shared<Database>( filename );
+	auto domain_db = db->getDatabase( "Domain" );
+
+	// Read domain parameters
+	auto L = domain_db->getVector<double>( "L" );
+	auto size = domain_db->getVector<int>( "n" );
+	auto nproc = domain_db->getVector<int>( "nproc" );
+	double SW = domain_db->getScalar<double>( "Sw" );
+	
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nprocx = nproc[0];
+	nprocy = nproc[1];
+	nprocz = nproc[2];
 
 	// Check that the number of processors >= the number of ranks
 	if ( rank==0 ) {
@@ -128,28 +113,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	/*// Exclude the maximum / minimum z rows
-	if (rank/(nprocx*nprocy)==0){
-		int k=0;
-		for (int j=0; j<ny; j++){
-			for (int i=0; i<nx; i++){
-				n = k*nx*ny+j*nx+i;
-				Dm.id[n] = 0;
-			}
-		}
-	}
-	if (rank/(nprocx*nprocy)==nprocz-1){
-		int k=nz-1;
-		for (int j=0; j<ny; j++){
-			for (int i=0; i<nx; i++){
-				n = k*nx*ny+j*nx+i;
-				Dm.id[n] = 0;
-			}
-		}
-	}
-	*/
-	Dm.CommInit();
 
+	Dm.CommInit();
 
 	int xdim,ydim,zdim;
 	xdim=Dm.Nx-2;
@@ -176,7 +141,7 @@ int main(int argc, char **argv)
 	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
 	fclose(IDFILE);
 
-
+	
 	Dm.CommInit();
 	int iproc = Dm.iproc();
 	int jproc = Dm.jproc();
@@ -478,12 +443,6 @@ int main(int argc, char **argv)
 
         }
     }
-
-//        if (rank==0){
-//            printf("Final saturation=%f\n",sw);
-//            printf("Final critical radius=%f\n",Rcrit);
-//
-//        }
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
 	FILE *ID = fopen(LocalRankFilename,"wb");

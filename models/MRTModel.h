@@ -43,7 +43,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run();
-	void VelocityField(double *Vz);
+	void VelocityField();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -73,9 +73,12 @@ public:
     
     //Minkowski Morphology;
 		
+    DoubleArray Velocity_x;
+    DoubleArray Velocity_y;
+    DoubleArray Velocity_z;
 private:
 	MPI_Comm comm;
-    
+	
 	// filenames
     char LocalRankString[8];
     char LocalRankFilename[40];

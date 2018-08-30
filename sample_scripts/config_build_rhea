@@ -1,0 +1,60 @@
+# Clear all modules (except modules)
+#for var in ${LOADEDMODULES//:/ }; do  if [ " ${var///*/}" != " modules" ];  then  module unload " ${var///*/}" > /dev/null 2>&1;  fi; done
+
+source $MODULESHOME/init/bash
+module unload PE-intel
+module load PE-gnu/6.2.0-2.0.1
+#module load gcc/6.2.0
+module load cmake3/3.5.2
+module load openmpi netcdf hdf5
+
+export MPICH_RDMA_ENABLED_CUDA=0
+
+
+echo $GNU_VERSION
+module list
+       
+# Remove CMake files from previous configures
+rm -rf CMake*
+
+
+# Configure
+cmake                                        \
+    -D CMAKE_BUILD_TYPE:STRING=Release       \
+    -D CMAKE_C_COMPILER:PATH=mpicc              \
+    -D CMAKE_CXX_COMPILER:PATH=mpicxx            \
+    -D CMAKE_CXX_COMPILER:PATH=mpicxx            \
+    -D CMAKE_CXX_STD=11 			     \
+    -D USE_TIMER=false			     \
+    -D TIMER_DIRECTORY=${HOME}/timerutility/build/opt  \
+    -D MPI_COMPILER:BOOL=TRUE                \
+       -D MPIEXEC=aprun                      \
+       -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D USE_CUDA=0                            \
+       -D CUDA_FLAGS="-arch sm_35"           \
+       -D USE_HDF5=1 \
+       -D USE_SILO=1 \
+       -D HDF5_DIRECTORY=/sw/rhea/hdf5/1.8.11/rhel6.6_gnu4.8.2/	     \
+       -D HDF5_LIB=/sw/rhea/hdf5/1.8.11/rhel6.6_gnu4.8.2/lib/libhdf5.so \
+       -D SILO_DIRECTORY=/lustre/atlas1/geo106/proj-shared/rhea/silo\
+    ~/LBPM-WIA
+
+
+#    -D PREFIX=$MEMBERWORK/geo106/eos-LBPM-WIA  \
+
+#-D CUDA_HOST_COMPILER="/usr/bin/gcc"  \
+
+
+# Build the code
+make install -j 8
+
+# Fix permissions
+#chmod -R g+w $PROJWORK/geo106/eos-LBPM-WIA
+
+
+# Run the fast tests
+# ctest -E WEEKLY
+
+
+# Run the slow tests
+# ctest -R WEEKLY -VV
