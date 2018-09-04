@@ -272,6 +272,9 @@ void ScaLBL_ColorModel::Create(){
  ********************************************************/
 
 void ScaLBL_ColorModel::Initialize(){
+	
+	if (rank==0)	printf ("Initializing distributions \n");
+	ScaLBL_D3Q19_Init(fq, Np);
 	/*
 	 * This function initializes model
 	 */
@@ -313,8 +316,6 @@ void ScaLBL_ColorModel::Initialize(){
 		MPI_Barrier(comm);
 	}
 
-	if (rank==0)	printf ("Initializing distributions \n");
-	ScaLBL_D3Q19_Init(fq, Np);
 	if (rank==0)	printf ("Initializing phase field \n");
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
