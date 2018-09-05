@@ -308,7 +308,7 @@ void ScaLBL_ColorModel::Initialize(){
 			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
 			idx = TmpMap[n];
-			cPhi[n] = value;
+			cPhi[idx] = value;
 		}
 		for (int n=0; n<Np; n++){
 			// Read the distributions
