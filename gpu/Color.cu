@@ -3909,7 +3909,7 @@ __global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, d
                     nB = 1.0; nA = 0.f;
             }
             else{
-                    nA=0.5*(phi-1.f);
+                    nA=0.5*(phi+1.f);
                     nB=0.5*(1.f-phi);
             }
 			Den[idx] = nA;
