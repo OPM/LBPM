@@ -621,7 +621,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	if (d_regular)
             d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
     	else
-    		ScaLBL_CopyToHost(*phase,Phi,N*sizeof(double));
+	  ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
 
         BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
