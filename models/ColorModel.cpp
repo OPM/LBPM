@@ -298,8 +298,8 @@ void ScaLBL_ColorModel::Initialize(){
 		ifstream File(LocalRestartFile,ios::binary);
 		double value,va,vb;
 		for (int n=0; n<Np; n++){
-			File.read((char*) &value, sizeof(va));
-			File.read((char*) &value, sizeof(vb));
+			File.read((char*) &va, sizeof(va));
+			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
 			cPhi[n] = value;
 		}
