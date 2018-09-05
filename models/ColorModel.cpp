@@ -295,12 +295,19 @@ void ScaLBL_ColorModel::Initialize(){
 		// Read in the restart file to CPU buffers
 		double *cPhi = new double[Np];
 		double *cDist = new double[19*Np];
+		int *TmpMap = new int[Np];
+		
 		ifstream File(LocalRestartFile,ios::binary);
+		int idx;
 		double value,va,vb;
+		
+		ScaLBL_CopyToHost(TmpMap, dvcMap, sizeof(int)*Np);
+
 		for (int n=0; n<Np; n++){
 			File.read((char*) &va, sizeof(va));
 			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
+			idx = TmpMap[n];
 			cPhi[n] = value;
 		}
 		for (int n=0; n<Np; n++){
@@ -317,6 +324,8 @@ void ScaLBL_ColorModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 		delete [] cPhi;
 		delete [] cDist;
+		delete [] TmpMap;
+
 		MPI_Barrier(comm);
 	}
 
