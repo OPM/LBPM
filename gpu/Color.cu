@@ -3897,7 +3897,7 @@ __global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, d
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
-		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (idx<finish) {
 
 			n = Map[idx];
@@ -4057,7 +4057,7 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 	dvc_ScaLBL_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, Aq, Bq, start, finish, Np); 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_ColorGrad: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_PhaseField_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 
