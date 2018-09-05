@@ -297,7 +297,7 @@ void ScaLBL_ColorModel::Initialize(){
 		TmpMap = new int[Np];
 		
 		double *cPhi, *cDist;
-		cPhi = new double[Np];
+		cPhi = new double[N];
 		cDist = new double[19*Np];
 		
 		ifstream File(LocalRestartFile,ios::binary);
@@ -325,7 +325,7 @@ void ScaLBL_ColorModel::Initialize(){
 		File.close();
 		// Copy the restart data to the GPU
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
-		ScaLBL_CopyToDevice(Phi,cPhi,Np*sizeof(double));
+		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
 		MPI_Barrier(comm);
