@@ -618,11 +618,10 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     // Spawn threads to do blob identification work
     if ( matches(type,AnalysisType::IdentifyBlobs) ) {
     	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
-        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
     	if (d_regular)
             d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
     	else
-    		ScaLBL_CopyToHost(phase.get(),Phi,N*sizeof(double));
+    		ScaLBL_CopyToHost(*phase,Phi,N*sizeof(double));
 
         BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
         BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
