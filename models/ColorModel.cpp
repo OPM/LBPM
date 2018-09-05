@@ -303,15 +303,16 @@ void ScaLBL_ColorModel::Initialize(){
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
 		double value,va,vb;
-		
-    	ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
+
+		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
+    	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
 
 		for (int n=0; n<Np; n++){
 			File.read((char*) &va, sizeof(va));
 			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
 			idx = TmpMap[n];
-			if (idx > 0 && idx<N)
+			if (!(idx < 0) && idx<N)
 				cPhi[idx] = value;
 		}
 		for (int n=0; n<Np; n++){
@@ -326,9 +327,6 @@ void ScaLBL_ColorModel::Initialize(){
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,Np*sizeof(double));
 		ScaLBL_DeviceBarrier();
-		delete [] cPhi;
-		delete [] cDist;
-		delete [] TmpMap;
 
 		MPI_Barrier(comm);
 	}
