@@ -39,25 +39,27 @@ void DeleteArray( const TYPE *p )
 class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-  WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cphi_, std::shared_ptr<double> cfq_, int N_ ):
-    filename(filename_), cphi(cphi_), cfq(cfq_), N(N_) {}
-    virtual void run() {
-        PROFILE_START("Save Checkpoint",1);
-        double value;
-        ofstream File(filename,ios::binary);
-        for (int n=0; n<N; n++){
-            // Write the two density values
-	    value = cphi.get()[n];
-            File.write((char*) &value, sizeof(value));
-            // Write the distributions
-            for (int q=0; q<19; q++){
-	      value = cfq.get()[q*N+n];
-                File.write((char*) &value, sizeof(value));
-            }
-        }
-        File.close();
+	WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cphi_, std::shared_ptr<double> cfq_, int N_ ):
+		filename(filename_), cphi(cphi_), cfq(cfq_), N(N_) {}
+	virtual void run() {
+		PROFILE_START("Save Checkpoint",1);
+		double value;
+		ofstream File(filename,ios::binary);
+		for (int n=0; n<N; n++){
+			// Write the two density values
+			value = cphi.get()[n];
+			File.write((char*) &value, sizeof(value));
+		}
+		for (int n=0; n<d_Np; n++){
+			// Write the distributions
+			for (int q=0; q<19; q++){
+				value = cfq.get()[q*d_Np+n];
+				File.write((char*) &value, sizeof(value));
+			}
+		}
+		File.close();
 		PROFILE_STOP("Save Checkpoint",1);
-    };
+	};
 private:
     WriteRestartWorkItem();
     const char* filename;
@@ -323,13 +325,12 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
-
 	auto VxVar = std::make_shared<IO::Variable>();
 	auto VyVar = std::make_shared<IO::Variable>();
 	auto VzVar = std::make_shared<IO::Variable>();
-
 	auto SignDistVar = std::make_shared<IO::Variable>();
 	auto BlobIDVar = std::make_shared<IO::Variable>();
+	
 	PhaseVar->name = "phase";
 	PhaseVar->type = IO::VariableType::VolumeVariable;
 	PhaseVar->dim = 1;
