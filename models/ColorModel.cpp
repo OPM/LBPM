@@ -293,22 +293,26 @@ void ScaLBL_ColorModel::Initialize(){
 		}
 		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 		// Read in the restart file to CPU buffers
-		double *cPhi = new double[Np];
-		double *cDist = new double[19*Np];
-		int *TmpMap = new int[Np];
+		int *TmpMap;
+		TmpMap = new int[Np];
+		
+		double *cPhi, *cDist;
+		cPhi = new double[Np];
+		cDist = new double[19*Np];
 		
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
 		double value,va,vb;
 		
-		ScaLBL_CopyToHost(TmpMap, dvcMap, sizeof(int)*Np);
+    	ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
 
 		for (int n=0; n<Np; n++){
 			File.read((char*) &va, sizeof(va));
 			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
 			idx = TmpMap[n];
-			cPhi[idx] = value;
+			if (idx > 0 && idx<N)
+				cPhi[idx] = value;
 		}
 		for (int n=0; n<Np; n++){
 			// Read the distributions
