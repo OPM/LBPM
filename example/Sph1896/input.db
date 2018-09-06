@@ -26,7 +26,7 @@ Color {
 }
 
 Domain {
-    nproc = 1, 1, 1        // Number of processors (Npx,Npy,Npz)
+    nproc = 2, 2, 2        // Number of processors (Npx,Npy,Npz)
     n = 120, 120, 120      // Size of local domain (Nx,Ny,Nz)
     nspheres = 1896        // Number of spheres (only needed if using a sphere packing)
     L = 1, 1, 1            // Length of domain (x,y,z)
