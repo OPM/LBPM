@@ -380,10 +380,6 @@ int main(int argc, char **argv)
 		Dm->CommInit();
 
 		//.......................................................................
-		if (rank == 0)	printf("Read input media... \n");
-		//.......................................................................
-
-		//.......................................................................
 		// Filenames used
 		char LocalRankString[8];
 		char LocalRankFilename[40];
@@ -485,7 +481,7 @@ int main(int argc, char **argv)
 		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 		//.........................................................
 
-		//.......................................................................
+		/*		//.......................................................................
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 		FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -493,7 +489,7 @@ int main(int argc, char **argv)
 		fwrite(SignDist.data(),1,N*sizeof(double),DIST);
 		fclose(DIST);
 		//......................................................................
-
+		*/
 		//.......................................................................
 		sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);	
 		FILE *IDFILE = fopen(LocalRankFilename,"wb");

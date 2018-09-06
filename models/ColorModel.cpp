@@ -114,9 +114,6 @@ void ScaLBL_ColorModel::SetDomain(){
 
 void ScaLBL_ColorModel::ReadInput(){
 	size_t readID;
-	//.......................................................................
-	if (rank == 0)    printf("Read input media... \n");
-	//.......................................................................
 	Mask->ReadIDs();
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 
