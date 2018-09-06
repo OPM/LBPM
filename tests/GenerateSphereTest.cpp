@@ -360,9 +360,9 @@ int main(int argc, char **argv)
 		nprocx = Dm->nprocx();
 		nprocy = Dm->nprocy();
 		nprocz = Dm->nprocz();
-	    nspheres = domain_db->getScalar<int>( "nspheres");
+	        nspheres = domain_db->getScalar<int>( "nspheres");
 
-		printf("Set domain \n");
+		//printf("Set domain \n");
 		int BoundaryCondition=1;
 		//Nz += 2;
 		//Nx = Ny = Nz;	// Cubic domain
@@ -378,10 +378,6 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-
-		if (rank==0) printf("Number of nodes per side = %i \n", Nx);
-		if (rank==0) printf("Total Number of nodes = %i \n", N);
-		if (rank==0) printf("********************************************************\n");
 
 		//.......................................................................
 		if (rank == 0)	printf("Read input media... \n");
@@ -410,7 +406,7 @@ int main(int argc, char **argv)
 		//.......................................................................
 
 		// Read in sphere pack
-		if (rank==1) printf("nspheres =%i \n",nspheres);
+		//if (rank==1) printf("nspheres =%i \n",nspheres);
 		//.......................................................................
 		double *cx,*cy,*cz,*rad;
 		cx = new double[nspheres];
