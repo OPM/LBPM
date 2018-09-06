@@ -2,6 +2,7 @@
 color lattice boltzmann model
  */
 #include "models/ColorModel.h"
+#include "analysis/distance.h"
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
@@ -122,15 +123,36 @@ void ScaLBL_ColorModel::ReadInput(){
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
-
-	// .......... READ THE INPUT FILE .......................................
-	//...........................................................................
-	if (rank == 0) cout << "Reading in signed distance function..." << endl;
-	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-	MPI_Barrier(comm);
+	
+	// Generate the signed distance map
+	// Initialize the domain and communication
+	Array<char> id_solid(Nx,Ny,Nz);
+	int count = 0;
+	// Solve for the position of the solid phase
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				// Initialize the solid phase
+				if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
+				else	     	      	id_solid(i,j,k) = 0;
+			}
+		}
+	}
+	// Initialize the signed distance function
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n=k*Nx*Ny+j*Nx+i;
+				// Initialize distance to +/- 1
+				Averages->SDs(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+			}
+		}
+	}
+//	MeanFilter(Averages->SDs);
+	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	CalcDist(Averages->SDs,id_solid,*Mask);
+	
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
