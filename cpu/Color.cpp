@@ -1252,7 +1252,7 @@ extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int
 //		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 //		double Fx, double Fy, double Fz, int start, int finish, int Np){
 extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
-		double *Velocity, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
+		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	int ijk,nn,n;
@@ -1770,9 +1770,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 		ux = jx / rho0;
 		uy = jy / rho0;
 		uz = jz / rho0;
-		//Velocity[n] = ux;
-		//Velocity[Np+n] = uy;
-		//Velocity[2*Np+n] = uz;
+		Vel[n] = ux;
+		Vel[Np+n] = uy;
+		Vel[2*Np+n] = uz;
 
 		// Instantiate mass transport distributions
 		// Stationary value - distribution 0
@@ -2418,9 +2418,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 		ux = jx / rho0;
 		uy = jy / rho0;
 		uz = jz / rho0;
-		//Velocity[n] = ux;
-		//Velocity[Np+n] = uy;
-		//Velocity[2*Np+n] = uz;
+		Vel[n] = ux;
+		Vel[Np+n] = uy;
+		Vel[2*Np+n] = uz;
 
 		// Instantiate mass transport distributions
 		// Stationary value - distribution 0
@@ -2777,11 +2777,15 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 
 		n = Map[idx];
 		phi = Phi[n];
-		if (phi > 0.f){
-			nA = 1.0; nB = 0.f;
+		if (phi > 1.f){
+		  nA = 1.0; nB = 0.f;
+		}
+		else if (phi < -1.f){
+		  nB = 1.0; nA = 0.f;
 		}
 		else{
-			nB = 1.0; nA = 0.f;
+		  nA=0.5*(phi+1.f);
+		  nB=0.5*(1.f-phi);
 		}
 		Den[idx] = nA;
 		Den[Np+idx] = nB;

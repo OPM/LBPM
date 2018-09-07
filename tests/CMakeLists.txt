@@ -33,6 +33,7 @@ ADD_LBPM_EXECUTABLE( BlobIdentifyParallel )
 ADD_LBPM_EXECUTABLE( convertIO )
 ADD_LBPM_EXECUTABLE( DataAggregator )
 #ADD_LBPM_EXECUTABLE( BlobAnalyzeParallel )
+ADD_LBPM_EXECUTABLE( TestMinkowski )
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 

@@ -1529,7 +1529,7 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	int Nz = map.size(2);
 
 	// initialize the array
-	regdata.fill(-1.f);
+	regdata.fill(0.f);
 	
 	double *TmpDat;
 	double value;

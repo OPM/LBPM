@@ -360,9 +360,9 @@ int main(int argc, char **argv)
 		nprocx = Dm->nprocx();
 		nprocy = Dm->nprocy();
 		nprocz = Dm->nprocz();
-	    nspheres = domain_db->getScalar<int>( "nspheres");
+	        nspheres = domain_db->getScalar<int>( "nspheres");
 
-		printf("Set domain \n");
+		//printf("Set domain \n");
 		int BoundaryCondition=1;
 		//Nz += 2;
 		//Nx = Ny = Nz;	// Cubic domain
@@ -378,14 +378,6 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-
-		if (rank==0) printf("Number of nodes per side = %i \n", Nx);
-		if (rank==0) printf("Total Number of nodes = %i \n", N);
-		if (rank==0) printf("********************************************************\n");
-
-		//.......................................................................
-		if (rank == 0)	printf("Read input media... \n");
-		//.......................................................................
 
 		//.......................................................................
 		// Filenames used
@@ -410,7 +402,7 @@ int main(int argc, char **argv)
 		//.......................................................................
 
 		// Read in sphere pack
-		if (rank==1) printf("nspheres =%i \n",nspheres);
+		//if (rank==1) printf("nspheres =%i \n",nspheres);
 		//.......................................................................
 		double *cx,*cy,*cz,*rad;
 		cx = new double[nspheres];
@@ -489,7 +481,7 @@ int main(int argc, char **argv)
 		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 		//.........................................................
 
-		//.......................................................................
+		/*		//.......................................................................
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 		FILE *DIST = fopen(LocalRankFilename,"wb");
@@ -497,7 +489,7 @@ int main(int argc, char **argv)
 		fwrite(SignDist.data(),1,N*sizeof(double),DIST);
 		fclose(DIST);
 		//......................................................................
-
+		*/
 		//.......................................................................
 		sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);	
 		FILE *IDFILE = fopen(LocalRankFilename,"wb");
