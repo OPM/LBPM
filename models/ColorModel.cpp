@@ -17,6 +17,7 @@
 color lattice boltzmann model
  */
 #include "models/ColorModel.h"
+#include "analysis/distance.h"
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
@@ -128,24 +129,42 @@ void ScaLBL_ColorModel::SetDomain(){
 
 void ScaLBL_ColorModel::ReadInput(){
 	size_t readID;
-	//.......................................................................
-	if (rank == 0)    printf("Read input media... \n");
-	//.......................................................................
 	Mask->ReadIDs();
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
-
-	// .......... READ THE INPUT FILE .......................................
-	//...........................................................................
-	if (rank == 0) cout << "Reading in signed distance function..." << endl;
-	//.......................................................................
-	sprintf(LocalRankString,"%05d",rank);
-	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
-	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-	MPI_Barrier(comm);
+	
+	// Generate the signed distance map
+	// Initialize the domain and communication
+	Array<char> id_solid(Nx,Ny,Nz);
+	int count = 0;
+	// Solve for the position of the solid phase
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				// Initialize the solid phase
+				if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
+				else	     	      	id_solid(i,j,k) = 0;
+			}
+		}
+	}
+	// Initialize the signed distance function
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n=k*Nx*Ny+j*Nx+i;
+				// Initialize distance to +/- 1
+				Averages->SDs(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+			}
+		}
+	}
+//	MeanFilter(Averages->SDs);
+	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	CalcDist(Averages->SDs,id_solid,*Mask);
+	
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
@@ -287,6 +306,9 @@ void ScaLBL_ColorModel::Create(){
  ********************************************************/
 
 void ScaLBL_ColorModel::Initialize(){
+	
+	if (rank==0)	printf ("Initializing distributions \n");
+	ScaLBL_D3Q19_Init(fq, Np);
 	/*
 	 * This function initializes model
 	 */
@@ -305,13 +327,29 @@ void ScaLBL_ColorModel::Initialize(){
 		}
 		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 		// Read in the restart file to CPU buffers
-		double *cPhi = new double[Np];
-		double *cDist = new double[19*Np];
+		int *TmpMap;
+		TmpMap = new int[Np];
+		
+		double *cPhi, *cDist;
+		cPhi = new double[N];
+		cDist = new double[19*Np];
+		
 		ifstream File(LocalRestartFile,ios::binary);
-		double value;
+		int idx;
+		double value,va,vb;
+
+		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
+    	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+
 		for (int n=0; n<Np; n++){
-			File.read((char*) &value, sizeof(value));
-			cPhi[n] = value;
+			File.read((char*) &va, sizeof(va));
+			File.read((char*) &vb, sizeof(vb));
+			value = (va-vb)/(va+vb);
+			idx = TmpMap[n];
+			if (!(idx < 0) && idx<N)
+				cPhi[idx] = value;
+		}
+		for (int n=0; n<Np; n++){
 			// Read the distributions
 			for (int q=0; q<19; q++){
 				File.read((char*) &value, sizeof(value));
@@ -321,15 +359,12 @@ void ScaLBL_ColorModel::Initialize(){
 		File.close();
 		// Copy the restart data to the GPU
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
-		ScaLBL_CopyToDevice(Phi,cPhi,Np*sizeof(double));
+		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_DeviceBarrier();
-		delete [] cPhi;
-		delete [] cDist;
+
 		MPI_Barrier(comm);
 	}
 
-	if (rank==0)	printf ("Initializing distributions \n");
-	ScaLBL_D3Q19_Init(fq, Np);
 	if (rank==0)	printf ("Initializing phase field \n");
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
