@@ -1,42 +1,33 @@
 # Set the modules and enviornmental variables
 source $MODULESHOME/init/bash
-module load cudatoolkit
-module load cmake
+module load cmake3/3.9.0
 export MPICH_RDMA_ENABLED_CUDA=1
 #module swap cray-mpich2 cray-mpich2/5.6.3
 module swap PrgEnv-pgi PrgEnv-gnu
+#module load PrgEnv-pgi
+#module swap gcc gcc/4.8.2
+module load cudatoolkit
 module load cray-hdf5 silo
 
-# Remove CMake files from previous configures
 rm -rf CMake*
 
-
-# Configure
-cmake                                    \
-    -D CMAKE_C_COMPILER:PATH=cc          \
-    -D CMAKE_CXX_COMPILER:PATH=CC        \
-    -D CMAKE_CXX_FLAGS=""       \
-    -D MPI_COMPILER:BOOL=TRUE            \
-    -D MPIEXEC=aprun                     \
-    -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-    -D CMAKE_BUILD_TYPE:STRING=Release     \
-    -D CXX_STD=11			  \
-    -D CUDA_FLAGS="-arch sm_35"          \
-    -D USE_SILO=1			 \
-    -D SILO_DIRECTORY=/sw/xk6/silo/4.8/sles11.1_gnu4.5.3 \
-    -D HDF5_DIRECTORY=/opt/cray/hdf5/1.8.16/GNU/4.9 \
-    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
-    -D USE_CUDA=1                        \
-    -D USE_TIMER=0                        \
-    ${HOME}/LBPM-WIA
-
-
-# Build the code
-make install -j 8
-
-# Run the fast tests
-#ctest -E WEEKLY
-
-
-# Run the slow tests
-# ctest -R WEEKLY -VV
+cmake                                       \
+    -D CMAKE_BUILD_TYPE:STRING=Release      \
+    -D CMAKE_C_COMPILER:PATH=cc             \
+    -D CMAKE_CXX_COMPILER:PATH=CC           \
+    -D CMAKE_CXX_STANDARD=11                \
+    -D USE_CUDA=1                           \
+        -D CMAKE_CUDA_FLAGS="-arch sm_35"   \
+        -D CMAKE_CUDA_HOST_COMPILER="/opt/gcc/6.3.0/bin/gcc" \
+    -D USE_MPI=1                            \
+        -D MPI_COMPILER:BOOL=TRUE           \
+        -D MPIEXEC=aprun                    \
+        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
+    -D USE_NETCDF=0                         \
+    -D USE_SILO=1                           \
+        -D SILO_DIRECTORY=/sw/xk6/silo/4.8/sles11.1_gnu4.5.3 \
+        -D HDF5_DIRECTORY=/sw/xk6/hdf5/1.8.7/cle4.1_gnu4.7.2 \
+    -D USE_DOXYGEN=0                        \
+    -D EXTERNAL_LIBS="/sw/xk6/szip/2.1/sles11.1_gnu4.7.2/lib/libsz.a"  \
+    -D USE_TIMER=0 \
+    ${HOME}/master_LBPM-WIA/LBPM-WIA/
