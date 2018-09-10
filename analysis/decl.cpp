@@ -15,7 +15,7 @@ void Vertex::add(Point P){
 	vertex_data.push_back(P.x);
 	vertex_data.push_back(P.y);
 	vertex_data.push_back(P.z);
-	count++;
+	size_++;
 }
 
 void Vertex::assign(unsigned long int idx, Point P){
@@ -77,7 +77,7 @@ DECL::DECL(){
 }
 
 DECL::~DECL(){
-=	TriangleCount=0;
+	TriangleCount=0;
 	VertexCount=0;
 	
 }
@@ -260,8 +260,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	}
 	int EdgeCount=idx_edge;
 	for (int idx=0; idx<EdgeCount; idx++){
-		int V1=halfedge.data(0,idx);
-		int V2=halfedge.data(1,idx);
+		unsigned long int V1=halfedge.data(0,idx);
+		unsigned long int V2=halfedge.data(1,idx);
 		// Find all the twins within the cube
 		for (int jdx=0; idx<EdgeCount; jdx++){
 			if (halfedge.data(1,jdx) == V1 && halfedge.data(0,jdx) == V2){
@@ -559,7 +559,9 @@ void Isosurface(DoubleArray &A, const double &v)
 					int V2=HalfEdge(1,idx);
 					int T1= HalfEdge(2,idx_edge);
 					int twin=HalfEdge(3,idx_edge); 
-					if (twin == -1) ;
+					if (twin == -1){
+						
+					}
 				}
 
 				// Map vertices to global coordinates
