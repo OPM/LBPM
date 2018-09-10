@@ -82,7 +82,7 @@ DECL::~DECL(){
 	
 }
 
-void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int k){
+void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const int j, const int k){
 	Point P,Q;
 	Point PlaceHolder;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
