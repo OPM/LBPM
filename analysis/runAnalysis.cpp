@@ -13,7 +13,6 @@
 #include "ProfilerApp.h"
 
 
-
 AnalysisType& operator |=(AnalysisType &lhs, AnalysisType rhs)  
 {
 	lhs = static_cast<AnalysisType>(
@@ -40,16 +39,21 @@ void DeleteArray( const TYPE *p )
 class WriteRestartWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cphi_, std::shared_ptr<double> cfq_, int N_ ):
-		filename(filename_), cphi(cphi_), cfq(cfq_), N(N_) {}
+	WriteRestartWorkItem( const char* filename_, std::shared_ptr<double> cDen_, std::shared_ptr<double> cfq_, int N_ ):
+		filename(filename_), cDen(cDen_), cfq(cfq_), N(N_) {}
 	virtual void run() {
 		PROFILE_START("Save Checkpoint",1);
 		double value;
 		ofstream File(filename,ios::binary);
 		for (int n=0; n<N; n++){
 			// Write the two density values
-			value = cphi.get()[n];
+			value = cDen.get()[n];
 			File.write((char*) &value, sizeof(value));
+			value = cDen.get()[N+n];
+			File.write((char*) &value, sizeof(value));
+			
+		}
+		for (int n=0; n<N; n++){
 			// Write the distributions
 			for (int q=0; q<19; q++){
 				value = cfq.get()[q*N+n];
@@ -60,12 +64,12 @@ public:
 		PROFILE_STOP("Save Checkpoint",1);
 	};
 private:
-	WriteRestartWorkItem();
-	const char* filename;
-	std::shared_ptr<double> cfq,cphi;
-	// const DoubleArray& phase;
-	//const DoubleArray& dist;
-	const int N;
+    WriteRestartWorkItem();
+    const char* filename;
+    std::shared_ptr<double> cfq,cDen;
+  // const DoubleArray& phase;
+  //const DoubleArray& dist;
+    const int N;
 };
 
 
@@ -153,29 +157,38 @@ private:
 class WriteVisWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	WriteVisWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
-			TwoPhase& Avgerages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
-				timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_), comm(std::move(comm_))
-{
-}
-	~WriteVisWorkItem() { }
-	virtual void run() {
-		PROFILE_START("Save Vis",1);
-		ASSERT(visData[0].vars[0]->name=="phase");
-		ASSERT(visData[0].vars[1]->name=="Pressure");
-		ASSERT(visData[0].vars[2]->name=="SignDist");
-		ASSERT(visData[0].vars[3]->name=="BlobID");
-		Array<double>& PhaseData = visData[0].vars[0]->data;
-		Array<double>& PressData = visData[0].vars[1]->data;
-		Array<double>& SignData  = visData[0].vars[2]->data;
-		Array<double>& BlobData  = visData[0].vars[3]->data;
-		fillData.copy(Averages.SDn,PhaseData);
-		fillData.copy(Averages.Press,PressData);
-		fillData.copy(Averages.SDs,SignData);
-		fillData.copy(Averages.Label_NWP,BlobData);
-		IO::writeData( timestep, visData, comm.comm );
-		PROFILE_STOP("Save Vis",1);
-	};
+    WriteVisWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
+        TwoPhase& Avgerages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
+        timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_), comm(std::move(comm_))
+        {
+        }
+    ~WriteVisWorkItem() { }
+    virtual void run() {
+        PROFILE_START("Save Vis",1);
+        ASSERT(visData[0].vars[0]->name=="phase");
+        ASSERT(visData[0].vars[1]->name=="Pressure");
+        ASSERT(visData[0].vars[2]->name=="Velocity_x");
+        ASSERT(visData[0].vars[3]->name=="Velocity_y");
+        ASSERT(visData[0].vars[4]->name=="Velocity_z");
+        ASSERT(visData[0].vars[5]->name=="SignDist");
+        ASSERT(visData[0].vars[6]->name=="BlobID");
+        Array<double>& PhaseData = visData[0].vars[0]->data;
+        Array<double>& PressData = visData[0].vars[1]->data;
+        Array<double>& VelxData = visData[0].vars[2]->data;
+        Array<double>& VelyData = visData[0].vars[3]->data;
+        Array<double>& VelzData = visData[0].vars[4]->data;
+        Array<double>& SignData  = visData[0].vars[5]->data;
+        Array<double>& BlobData  = visData[0].vars[6]->data;
+        fillData.copy(Averages.SDn,PhaseData);
+        fillData.copy(Averages.Press,PressData);
+        fillData.copy(Averages.SDs,SignData);
+        fillData.copy(Averages.Vel_x,VelxData);
+        fillData.copy(Averages.Vel_y,VelyData);
+        fillData.copy(Averages.Vel_z,VelzData);
+        fillData.copy(Averages.Label_NWP,BlobData);
+        IO::writeData( timestep, visData, comm.comm );
+        PROFILE_STOP("Save Vis",1);
+    };
 private:
 	WriteVisWorkItem();
 	int timestep;
@@ -315,8 +328,12 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
 	auto PhaseVar = std::make_shared<IO::Variable>();
 	auto PressVar = std::make_shared<IO::Variable>();
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
 	auto BlobIDVar = std::make_shared<IO::Variable>();
+	
 	PhaseVar->name = "phase";
 	PhaseVar->type = IO::VariableType::VolumeVariable;
 	PhaseVar->dim = 1;
@@ -327,6 +344,23 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	PressVar->dim = 1;
 	PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(PressVar);
+	
+	VxVar->name = "Velocity_x";
+	VxVar->type = IO::VariableType::VolumeVariable;
+	VxVar->dim = 1;
+	VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VxVar);
+	VyVar->name = "Velocity_y";
+	VyVar->type = IO::VariableType::VolumeVariable;
+	VyVar->dim = 1;
+	VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VyVar);
+	VzVar->name = "Velocity_z";
+	VzVar->type = IO::VariableType::VolumeVariable;
+	VzVar->dim = 1;
+	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	d_meshData[0].vars.push_back(VzVar);
+	
 	SignDistVar->name = "SignDist";
 	SignDistVar->type = IO::VariableType::VolumeVariable;
 	SignDistVar->dim = 1;
@@ -531,113 +565,116 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     	}
     	delete [] TmpDat;
     }
-	 */
-	//if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
-	if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
-		if (d_regular)
-			d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
-		else 
-			ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
-		//memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
-	}
-	if ( timestep%d_analysis_interval == 0 ) {
-		if (d_regular)
-			d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
-		else 
-			ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
-		//memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
-	}
-	//if ( matches(type,AnalysisType::CopySimState) ) {
-	if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
-		// Copy the members of Averages to the cpu (phase was copied above)
-		PROFILE_START("Copy-Pressure",1);
-		ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
-		ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
-		ScaLBL_DeviceBarrier();
-		PROFILE_STOP("Copy-Pressure",1);
-		PROFILE_START("Copy-Wait",1);
-		PROFILE_STOP("Copy-Wait",1);
-		PROFILE_START("Copy-State",1);
-		//memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
-		if (d_regular)
-			d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
-		else
-			ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
-		// copy other variables
-		d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
-		d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
-		d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
-		d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
-		PROFILE_STOP("Copy-State",1);
-	}
-	std::shared_ptr<double> cfq,cPhi;
-	//if ( matches(type,AnalysisType::CreateRestart) ) {
-	if (timestep%d_restart_interval==0){
-		// Copy restart data to the CPU
-		cPhi = std::shared_ptr<double>(new double[d_Np],DeleteArray<double>);
-		cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
-		ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-		ScaLBL_CopyToHost(cPhi.get(),Phi,d_Np*sizeof(double));
-	}
-	PROFILE_STOP("Copy data to host",1);
+    */
+    //if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+    if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
+      if (d_regular)
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tplus);
+      else 
+	ScaLBL_CopyToHost(Averages.Phase_tplus.data(),Phi,N*sizeof(double));
+        //memcpy(Averages.Phase_tplus.data(),phase->data(),N*sizeof(double));
+    }
+    if ( timestep%d_analysis_interval == 0 ) {
+      if (d_regular)
+        d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase_tminus);
+      else 
+	ScaLBL_CopyToHost(Averages.Phase_tminus.data(),Phi,N*sizeof(double));
+        //memcpy(Averages.Phase_tminus.data(),phase->data(),N*sizeof(double));
+    }
+    //if ( matches(type,AnalysisType::CopySimState) ) {
+    if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
+    	// Copy the members of Averages to the cpu (phase was copied above)
+    	PROFILE_START("Copy-Pressure",1);
+    	ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
+    	//ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
+    	ScaLBL_DeviceBarrier();
+    	PROFILE_STOP("Copy-Pressure",1);
+    	PROFILE_START("Copy-Wait",1);
+    	PROFILE_STOP("Copy-Wait",1);
+    	PROFILE_START("Copy-State",1);
+    	//memcpy(Averages.Phase.data(),phase->data(),N*sizeof(double));
+    	if (d_regular)
+    		d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phase);
+    	else
+    		ScaLBL_CopyToHost(Averages.Phase.data(),Phi,N*sizeof(double));
+    	// copy other variables
+    	d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Press);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+    	d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+    	PROFILE_STOP("Copy-State",1);
+    }
+    std::shared_ptr<double> cfq,cDen;
+    //if ( matches(type,AnalysisType::CreateRestart) ) {
+    if (timestep%d_restart_interval==0){
+    	// Copy restart data to the CPU
+    	cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
+    	cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+    	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
+    	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+    }
+    PROFILE_STOP("Copy data to host",1);
 
-	// Spawn threads to do blob identification work
-	if ( matches(type,AnalysisType::IdentifyBlobs) ) {
-		phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
-		d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
+    // Spawn threads to do blob identification work
+    if ( matches(type,AnalysisType::IdentifyBlobs) ) {
+    	phase = std::shared_ptr<DoubleArray>(new DoubleArray(d_N[0],d_N[1],d_N[2]));
+    	if (d_regular)
+            d_ScaLBL_Comm->RegularLayout(d_Map,Phi,*phase);
+    	else
+	  ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
 
-		BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
-		BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
-		BlobIDList new_list(new std::vector<BlobIDType>());
-		auto work1 = new BlobIdentificationWorkItem1(timestep,d_N[0],d_N[1],d_N[2],d_rank_info,
-				phase,Averages.SDs,d_last_ids,new_index,new_ids,new_list,getComm());
-		auto work2 = new BlobIdentificationWorkItem2(timestep,d_N[0],d_N[1],d_N[2],d_rank_info,
-				phase,Averages.SDs,d_last_ids,new_index,new_ids,new_list,getComm());
-		work1->add_dependency(d_wait_blobID);
-		work2->add_dependency(d_tpool.add_work(work1));
-		d_wait_blobID = d_tpool.add_work(work2);
-		d_last_index = new_index;
-		d_last_ids = new_ids;
-		d_last_id_map = new_list;
-	}
+        BlobIDstruct new_index(new std::pair<int,IntArray>(0,IntArray()));
+        BlobIDstruct new_ids(new std::pair<int,IntArray>(0,IntArray()));
+        BlobIDList new_list(new std::vector<BlobIDType>());
+        auto work1 = new BlobIdentificationWorkItem1(timestep,d_N[0],d_N[1],d_N[2],d_rank_info,
+            phase,Averages.SDs,d_last_ids,new_index,new_ids,new_list,getComm());
+        auto work2 = new BlobIdentificationWorkItem2(timestep,d_N[0],d_N[1],d_N[2],d_rank_info,
+            phase,Averages.SDs,d_last_ids,new_index,new_ids,new_list,getComm());
+        work1->add_dependency(d_wait_blobID);
+        work2->add_dependency(d_tpool.add_work(work1));
+        d_wait_blobID = d_tpool.add_work(work2);
+        d_last_index = new_index;
+        d_last_ids = new_ids;
+        d_last_id_map = new_list;
+    }
 
-	// Spawn threads to do the analysis work
-	//if (timestep%d_restart_interval==0){
-	// if ( matches(type,AnalysisType::ComputeAverages) ) {
-	if ( timestep%d_analysis_interval == 0 ) {
-		auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
-		work->add_dependency(d_wait_blobID);
-		work->add_dependency(d_wait_analysis);
-		work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
-		d_wait_analysis = d_tpool.add_work(work);
-	}
+    // Spawn threads to do the analysis work
+    //if (timestep%d_restart_interval==0){
+    // if ( matches(type,AnalysisType::ComputeAverages) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+    	auto work = new AnalysisWorkItem(type,timestep,Averages,d_last_index,d_last_id_map,d_beta);
+    	work->add_dependency(d_wait_blobID);
+    	work->add_dependency(d_wait_analysis);
+    	work->add_dependency(d_wait_vis);     // Make sure we are done using analysis before modifying
+    	d_wait_analysis = d_tpool.add_work(work);
+    }
 
-	// Spawn a thread to write the restart file
-	//    if ( matches(type,AnalysisType::CreateRestart) ) {
-	if (timestep%d_restart_interval==0){
+    // Spawn a thread to write the restart file
+    //    if ( matches(type,AnalysisType::CreateRestart) ) {
+    if (timestep%d_restart_interval==0){
 
-		if (d_rank==0) {
-			FILE *Rst = fopen("Restart.txt","w");
-			fprintf(Rst,"%i\n",timestep+4);
-			fclose(Rst);
-		}
-		// Write the restart file (using a seperate thread)
-		auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cPhi,cfq,d_Np);
-		work->add_dependency(d_wait_restart);
-		d_wait_restart = d_tpool.add_work(work);
-	}
+        if (d_rank==0) {
+            FILE *Rst = fopen("Restart.txt","w");
+            fprintf(Rst,"%i\n",timestep+4);
+            fclose(Rst);
+        }
+        // Write the restart file (using a seperate thread)
+        auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
+        work->add_dependency(d_wait_restart);
+        d_wait_restart = d_tpool.add_work(work);
+    }
 
-	// Save the results for visualization
-	//    if ( matches(type,AnalysisType::CreateRestart) ) {
-	if (timestep%d_restart_interval==0){
-		// Write the vis files
-		auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
-		work->add_dependency(d_wait_blobID);
-		work->add_dependency(d_wait_analysis);
-		work->add_dependency(d_wait_vis);
-		d_wait_vis = d_tpool.add_work(work);
-	}
-	PROFILE_STOP("run");
+    // Save the results for visualization
+    //    if ( matches(type,AnalysisType::CreateRestart) ) {
+    if (timestep%d_restart_interval==0){
+        // Write the vis files
+        auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        work->add_dependency(d_wait_blobID);
+        work->add_dependency(d_wait_analysis);
+        work->add_dependency(d_wait_vis);
+        d_wait_vis = d_tpool.add_work(work);
+    }
+    PROFILE_STOP("run");
 }
 
 

@@ -58,8 +58,12 @@ int main(int argc, char **argv)
 		MRT.Initialize();   // initializing the model will set initial conditions for variables
 		MRT.Run();	 
 		double *Vz;  	Vz= new double [3*MRT.Np];
-		MRT.VelocityField(Vz);
 
+		int SIZE=MRT.Np*sizeof(double);
+		ScaLBL_D3Q19_Momentum(MRT.fq,MRT.Velocity, MRT.Np);
+		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_CopyToHost(&Vz[0],&MRT.Velocity[0],3*SIZE);
+		
 		if (rank == 0) printf("Force: %f,%f,%f \n",MRT.Fx,MRT.Fy,MRT.Fz);
 		double mu = MRT.mu;
 		int Nx = MRT.Nx;

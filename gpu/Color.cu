@@ -1762,9 +1762,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *A
 			ux = jx / rho0;
 			uy = jy / rho0;
 			uz = jz / rho0;
-			//Velocity[n] = ux;
-			//Velocity[Np+n] = uy;
-			//Velocity[2*Np+n] = uz;
+			Velocity[n] = ux;
+			Velocity[Np+n] = uy;
+			Velocity[2*Np+n] = uz;
 
 			// Instantiate mass transport distributions
 			// Stationary value - distribution 0
@@ -2411,9 +2411,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double
 			ux = jx / rho0;
 			uy = jy / rho0;
 			uz = jz / rho0;
-			//Velocity[n] = ux;
-			//Velocity[Np+n] = uy;
-			//Velocity[2*Np+n] = uz;
+			Velocity[n] = ux;
+			Velocity[Np+n] = uy;
+			Velocity[2*Np+n] = uz;
 
 			// Instantiate mass transport distributions
 			// Stationary value - distribution 0
@@ -3897,17 +3897,21 @@ __global__ void dvc_ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, d
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
-		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (idx<finish) {
 
 			n = Map[idx];
 			phi = Phi[n];
-			if (phi > 0.f){
-				nA = 1.0; nB = 0.f;
-			}
-			else{
-				nB = 1.0; nA = 0.f;
-			}
+            if (phi > 1.f){
+                    nA = 1.0; nB = 0.f;
+            }
+            else if (phi < -1.f){
+                    nB = 1.0; nA = 0.f;
+            }
+            else{
+                    nA=0.5*(phi+1.f);
+                    nB=0.5*(1.f-phi);
+            }
 			Den[idx] = nA;
 			Den[Np+idx] = nB;
 
@@ -4057,7 +4061,7 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 	dvc_ScaLBL_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, Aq, Bq, start, finish, Np); 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_ColorGrad: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_PhaseField_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 
