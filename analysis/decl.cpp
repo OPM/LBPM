@@ -119,8 +119,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 	CubeValues[5] = A(i+1,j,k+1) - value;
 	CubeValues[6] = A(i+1,j+1,k+1) - value;
 	CubeValues[7] = A(i,j+1,k+1) -value;
-	printf("Set cube values: %i, %i, %i \n",i,j,k);
-	
+	//printf("Set cube values: %i, %i, %i \n",i,j,k);
 	
 	//Determine the index into the edge table which
 	//tells us which vertices are inside of the surface
@@ -229,7 +228,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 		TriangleCount++;
 	}
 	nTris = TriangleCount;
-	printf("Construct %i triangles \n",nTris);
+	//if printf("Construct %i triangles \n",nTris);
 
 	// Now add the local values to the DECL data structure
 	if (nTris>0){
