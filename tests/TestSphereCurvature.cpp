@@ -24,6 +24,7 @@ int main(int argc, char **argv)
 	DoubleArray Phase(Nx,Ny,Nz);
 	DoubleArray CubeValues(2,2,2);
 	
+	printf("Set distance map \n");
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
 	double wn_curvature_sum = 0.0;
 	double wn_area_sum = 0.0;
 	
+	printf("Construct local isosurface \n");
 	DECL sphere;
 	for (k=0; k<Nz-1; k++){
 		for (j=0; j<Ny-1; j++){
