@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	
 	printf("Construct local isosurface \n");
 	DECL sphere;
-	point V1,V2,V3;
+	Point V1,V2,V3;
 	unsigned long int e1,e2,e3;
 	double s,s1,s2,s3;
 	double area = 0.f;
@@ -47,9 +47,9 @@ int main(int argc, char **argv)
 					e1 = sphere.Face(idx); 
 					e2 = sphere.halfedge.next(e1);
 					e3 = sphere.halfedge.next(e2);
-					V1 = vertex(sphere.halfedge.v1(e1));
-					V2 = vertex(sphere.halfedge.v1(e2));
-					V3 = vertex(sphere.halfedge.v1(e3));
+					V1 = sphere.vertex.coords(sphere.halfedge.v1(e1));
+					V2 = sphere.vertex.coords(sphere.halfedge.v1(e2));
+					V3 = sphere.vertex.coords(sphere.halfedge.v1(e3));
 					s1 = sqrt((V1.x-V2.x)*(V1.x-V2.x)+(V1.y-V2.y)*(V1.y-V2.y)+(V1.z-V2.z)*(V1.z-V2.z));
 					s2 = sqrt((V1.x-V3.x)*(V1.x-V3.x)+(V1.y-V3.y)*(V1.y-V3.y)+(V1.z-V3.z)*(V1.z-V3.z));
 					s3 = sqrt((V2.x-V3.x)*(V2.x-V3.x)+(V2.y-V3.y)*(V2.y-V3.y)+(V2.z-V3.z)*(V2.z-V3.z));
