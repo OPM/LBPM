@@ -1,6 +1,6 @@
 #include <iostream>
 #include <math.h>
-#include "analysis/pmmc.h"
+#include "analysis/Minkowski.h"
 #include "common/Domain.h"
 #include "common/SpherePack.h"
 
@@ -22,7 +22,6 @@ int main(int argc, char **argv)
 	Lx = Ly = Lz = 1.0;
 	Nx = Ny = Nz = 102;
 	DoubleArray Phase(Nx,Ny,Nz);
-	
 	DoubleArray CubeValues(2,2,2);
 	
 	for (k=0; k<Nz; k++){
