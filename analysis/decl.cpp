@@ -76,7 +76,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
 	int CubeIndex;
-	int nTris, nVert;
+	int nTris = 0;
+	int nVert =0;
 
 	Point VertexList[12];
 	Point NewVertexList[12];
