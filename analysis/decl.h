@@ -1,4 +1,5 @@
 #include <vector>
+#include "analysis/pmmc.h"
 
 /* 
 Doubly-connected edge list (DECL) 
