@@ -281,7 +281,6 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		P.z  += k;
 		cellvertices(idx) = P;
 	}
-
 }
 
 Point DECL::TriNormal(int edge)

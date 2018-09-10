@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include "analysis/pmmc.h"
+#include "analysis/decl.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
