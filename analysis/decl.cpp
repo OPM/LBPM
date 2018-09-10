@@ -76,8 +76,6 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	Point PlaceHolder;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
-	int TriangleCount;
-	int NewVertexCount;
 	int CubeIndex;
 	int nTris, nVert;
 
@@ -184,7 +182,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		Q = C3;
 	}
 
-	NewVertexCount=0;
+	VertexCount=0;
 	for (int idx=0;idx<12;idx++)
 		LocalRemap[idx] = -1;
 
@@ -192,20 +190,20 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	{
 		if(LocalRemap[triTable[CubeIndex][idx]] == -1)
 		{
-			NewVertexList[NewVertexCount] = VertexList[triTable[CubeIndex][idx]];
-			LocalRemap[triTable[CubeIndex][idx]] = NewVertexCount;
-			NewVertexCount++;
+			NewVertexList[VertexCount] = VertexList[triTable[CubeIndex][idx]];
+			LocalRemap[triTable[CubeIndex][idx]] = VertexCount;
+			VertexCount++;
 		}
 	}
 
-	for (int idx=0;idx<NewVertexCount;idx++) {
+	for (int idx=0;idx<VertexCount;idx++) {
 		P = NewVertexList[idx];
 		//P.x  += i;
 		//P.y  += j;
 		//P.z  += k;
 		cellvertices(idx) = P;
 	}
-	nVert = NewVertexCount;
+	nVert = VertexCount;
 
 	TriangleCount = 0;
 	for (int idx=0;triTable[CubeIndex][idx]!=-1;idx+=3) {
@@ -274,7 +272,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=1 face
 	}
 	// Map vertices to global coordinates
-	for (int idx=0;idx<NewVertexCount;idx++) {
+	for (int idx=0;idx<VertexCount;idx++) {
 		P = cellvertices(idx);
 		P.x  += i;
 		P.y  += j;
@@ -338,7 +336,7 @@ void Isosurface(DoubleArray &A, const double &v)
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
 	int TriangleCount;
-	int NewVertexCount;
+	int VertexCount;
 	int CubeIndex;
 	int nTris, nVert;
 
@@ -453,7 +451,7 @@ void Isosurface(DoubleArray &A, const double &v)
 					Q = C3;
 				}
 
-				NewVertexCount=0;
+				VertexCount=0;
 				for (int idx=0;idx<12;idx++)
 					LocalRemap[idx] = -1;
 
@@ -461,20 +459,20 @@ void Isosurface(DoubleArray &A, const double &v)
 				{
 					if(LocalRemap[triTable[CubeIndex][idx]] == -1)
 					{
-						NewVertexList[NewVertexCount] = VertexList[triTable[CubeIndex][idx]];
-						LocalRemap[triTable[CubeIndex][idx]] = NewVertexCount;
-						NewVertexCount++;
+						NewVertexList[VertexCount] = VertexList[triTable[CubeIndex][idx]];
+						LocalRemap[triTable[CubeIndex][idx]] = VertexCount;
+						VertexCount++;
 					}
 				}
 
-				for (int idx=0;idx<NewVertexCount;idx++) {
+				for (int idx=0;idx<VertexCount;idx++) {
 					P = NewVertexList[idx];
 					//P.x  += i;
 					//P.y  += j;
 					//P.z  += k;
 					cellvertices(idx) = P;
 				}
-				nVert = NewVertexCount;
+				nVert = VertexCount;
 
 				TriangleCount = 0;
 				for (int idx=0;triTable[CubeIndex][idx]!=-1;idx+=3) {
@@ -553,7 +551,7 @@ void Isosurface(DoubleArray &A, const double &v)
 				}
 
 				// Map vertices to global coordinates
-				for (int idx=0;idx<NewVertexCount;idx++) {
+				for (int idx=0;idx<VertexCount;idx++) {
 					P = cellvertices(idx);
 					P.x  += i;
 					P.y  += j;

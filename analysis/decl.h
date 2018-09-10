@@ -51,6 +51,9 @@ public:
 	double EdgeAngle(int edge);
 	Point TriNormal(int edge);
 
+	int TriangleCount;
+	int VertexCount;
 private:
 	unsigned long int *face_data;
+
 };
