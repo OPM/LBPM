@@ -209,7 +209,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 		}
 	}
 	
-	printf("Found %i vertices \n",VertexCount);
+	//printf("Found %i vertices \n",VertexCount);
 
 	for (int idx=0;idx<VertexCount;idx++) {
 		P = NewVertexList[idx];
