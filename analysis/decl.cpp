@@ -6,11 +6,13 @@ Double connected edge list (DECL)
 
 Vertex::Vertex(){
 	size_ = 0;
+	vertex_data.resize(24);
 }
 
 Vertex::~Vertex(){
-	
+
 }
+
 void Vertex::add(Point P){
 	vertex_data.push_back(P.x);
 	vertex_data.push_back(P.y);
@@ -80,6 +82,10 @@ DECL::~DECL(){
 	TriangleCount=0;
 	VertexCount=0;
 	
+}
+
+unsigned long int DECL::Face(unsigned long int index){
+	return FaceData(index);
 }
 
 void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const int j, const int k){
@@ -231,14 +237,16 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 
 	// Now add the local values to the DECL data structure
 	if (nTris>0){
-	  //printf("Construct halfedge structure... \n");
-	  // printf("   Construct %i triangles \n",nTris);
+		FaceData.resize(TriangleCount);
+	    //printf("Construct halfedge structure... \n");
+	    //printf("   Construct %i triangles \n",nTris);
 		halfedge.data.resize(6,nTris*3);
 		int idx_edge=0;
 		for (int idx=0; idx<TriangleCount; idx++){
 			int V1 = Triangles(0,idx);
 			int V2 = Triangles(1,idx);
 			int V3 = Triangles(2,idx);
+			FaceData(idx) = idx_edge;
 			// first edge: V1->V2 
 			halfedge.data(0,idx_edge) = V1;  // first vertex
 			halfedge.data(1,idx_edge) = V2;  // second vertex
@@ -263,7 +271,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 			halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
 			halfedge.data(5,idx_edge) = idx_edge-2;  // next edge
 			idx_edge++;
-			//	printf("   ***tri %i ***edge %i *** \n",idx, idx_edge);
+			//printf("   ***tri %i ***edge %i *** \n",idx, idx_edge);
 		}
 		//printf("  parsing halfedge structure\n");
 		int EdgeCount=idx_edge;
@@ -299,7 +307,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 		P.x  += i;
 		P.y  += j;
 		P.z  += k;
-		cellvertices(idx) = P;
+		vertex.assign(idx,P);
 	}
 }
 

@@ -42,6 +42,10 @@ int main(int argc, char **argv)
 		for (j=0; j<Ny-1; j++){
 			for (i=0; i<Nx-1; i++){
 				sphere.LocalIsosurface(Phase,0.f,i,j,k);
+				for (unsigned long int idx=0; idx<sphere.TriangleCount; idx++){
+					unsigned long int edge = sphere.Face(idx); 
+					
+				}
 			}
 		}
 	}

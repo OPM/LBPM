@@ -50,6 +50,7 @@ public:
 	Vertex vertex;
 	Halfedge halfedge;
 	void LocalIsosurface(const DoubleArray A, double value, int i, int j, int k);
+	unsigned long int Face(unsigned long int index);
 	
 	double origin(int edge);
 	double EdgeAngle(int edge);
@@ -58,7 +59,6 @@ public:
 	unsigned long int VertexCount;	
 
 private:
-	unsigned long int *face_data;
-
+	Array <unsigned long int> FaceData;
 
 };
