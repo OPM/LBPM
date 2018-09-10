@@ -5,7 +5,7 @@ Double connected edge list (DECL)
 */
 
 Vertex::Vertex(){
-	count = 0;
+	size_ = 0;
 }
 
 Vertex::~Vertex(){
@@ -24,6 +24,10 @@ void Vertex::assign(unsigned long int idx, Point P){
 	vertex_data[3*idx+2] = P.z;
 }
 
+unsigned long int Vertex::size(){
+	return size_;
+}
+
 Point Vertex::coords(unsigned long int idx){
 	Point P;
 	P.x = vertex_data[3*idx];
@@ -34,6 +38,7 @@ Point Vertex::coords(unsigned long int idx){
 
 
 Halfedge::Halfedge(){
+	size_=0;
 }
 
 Halfedge::~Halfedge(){
@@ -63,10 +68,17 @@ unsigned long int Halfedge::next(unsigned long int edge){
 	return data(5,edge);
 }
 
+unsigned long int Halfedge::size(){
+	return size_;
+}
+
+
 DECL::DECL(){
 }
 
 DECL::~DECL(){
+=	TriangleCount=0;
+	VertexCount=0;
 	
 }
 
@@ -76,8 +88,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
 	int CubeIndex;
-	int nTris = 0;
-	int nVert =0;
+	unsigned long int nTris = 0;
+	unsigned long int nVert =0;
 
 	Point VertexList[12];
 	Point NewVertexList[12];

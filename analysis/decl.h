@@ -12,11 +12,12 @@ public:
 	~Vertex();
 	void add(Point P);
 	void assign(unsigned long int idx, Point P);
+	unsigned long int size();
 	Point coords(unsigned long int idx);
 	unsigned long int IncidentEdge();
-	unsigned long int count;
 private:
 	std::vector<double> vertex_data;
+	unsigned long int size_;
 };
 
 // Halfedge structure
@@ -32,9 +33,11 @@ public:
 	unsigned long int face(unsigned long int edge);
 	unsigned long int next(unsigned long int edge);
 	unsigned long int prev(unsigned long int edge);
+	unsigned long int size();
 
 	Array<unsigned long int> data;
 private:
+	unsigned long int size_;
 };
 
 // DECL
@@ -51,10 +54,11 @@ public:
 	double origin(int edge);
 	double EdgeAngle(int edge);
 	Point TriNormal(int edge);
+	unsigned long int TriangleCount;
+	unsigned long int VertexCount;	
 
-	int TriangleCount;
-	int VertexCount;
 private:
 	unsigned long int *face_data;
+
 
 };
