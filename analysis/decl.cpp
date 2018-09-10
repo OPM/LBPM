@@ -119,7 +119,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 	CubeValues[5] = A(i+1,j,k+1) - value;
 	CubeValues[6] = A(i+1,j+1,k+1) - value;
 	CubeValues[7] = A(i,j+1,k+1) -value;
-	printf("Set cube values: %i, %i, %i \n",i,j,k);
+	//printf("Set cube values: %i, %i, %i \n",i,j,k);
 	
 	//Determine the index into the edge table which
 	//tells us which vertices are inside of the surface
@@ -228,11 +228,11 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 		TriangleCount++;
 	}
 	nTris = TriangleCount;
-	//if printf("Construct %i triangles \n",nTris);
 
 	// Now add the local values to the DECL data structure
 	if (nTris>0){
-		printf("Construct halfedge structure... \n");
+	  //printf("Construct halfedge structure... \n");
+	  // printf("   Construct %i triangles \n",nTris);
 		halfedge.data.resize(6,nTris*3);
 		int idx_edge=0;
 		for (int idx=0; idx<TriangleCount; idx++){
@@ -263,13 +263,15 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 			halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
 			halfedge.data(5,idx_edge) = idx_edge-2;  // next edge
 			idx_edge++;
+			//	printf("   ***tri %i ***edge %i *** \n",idx, idx_edge);
 		}
+		//printf("  parsing halfedge structure\n");
 		int EdgeCount=idx_edge;
 		for (int idx=0; idx<EdgeCount; idx++){
 			unsigned long int V1=halfedge.data(0,idx);
 			unsigned long int V2=halfedge.data(1,idx);
 			// Find all the twins within the cube
-			for (int jdx=0; idx<EdgeCount; jdx++){
+			for (int jdx=0; jdx<EdgeCount; jdx++){
 				if (halfedge.data(1,jdx) == V1 && halfedge.data(0,jdx) == V2){
 					// this is the pair
 					halfedge.data(3,idx) = jdx;
@@ -282,12 +284,12 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 			// Use "ghost" twins if edge is on a cube face
 			P = cellvertices(V1);
 			Q = cellvertices(V2);
-			if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=0 face
-			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=1 face
-			if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=0 face
-			if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=1 face
-			if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=0 face
-			if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=1 face
+			if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx) = -1;  // ghost twin for x=0 face
+			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx) = -1;  // ghost twin for x=1 face
+			if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx) = -2;  // ghost twin for y=0 face
+			if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx) = -2;  // ghost twin for y=1 face
+			if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx) = -3;  // ghost twin for z=0 face
+			if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx) = -3;  // ghost twin for z=1 face
 		}
 	}
 

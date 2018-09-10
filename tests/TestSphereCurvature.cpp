@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	double solid_isovalue=0.0;
 
 	Lx = Ly = Lz = 1.0;
-	Nx = Ny = Nz = 102;
+	Nx = Ny = Nz = 64;
 	DoubleArray Phase(Nx,Ny,Nz);
 	DoubleArray CubeValues(2,2,2);
 	
