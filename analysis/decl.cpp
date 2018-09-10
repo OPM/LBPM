@@ -119,7 +119,9 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 	CubeValues[5] = A(i+1,j,k+1) - value;
 	CubeValues[6] = A(i+1,j+1,k+1) - value;
 	CubeValues[7] = A(i,j+1,k+1) -value;
-
+	printf("Set cube values: %i, %i, %i \n",i,j,k);
+	
+	
 	//Determine the index into the edge table which
 	//tells us which vertices are inside of the surface
 	CubeIndex = 0;
@@ -207,6 +209,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 			VertexCount++;
 		}
 	}
+	
+	printf("Found %i vertices \n",VertexCount);
 
 	for (int idx=0;idx<VertexCount;idx++) {
 		P = NewVertexList[idx];
@@ -225,64 +229,69 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, int i, int j, int 
 		TriangleCount++;
 	}
 	nTris = TriangleCount;
+	printf("Construct %i triangles \n",nTris);
 
 	// Now add the local values to the DECL data structure
-	halfedge.data.resize(6,nTris*3);
-	int idx_edge=0;
-	for (int idx=0; idx<TriangleCount; idx++){
-		int V1 = Triangles(0,idx);
-		int V2 = Triangles(1,idx);
-		int V3 = Triangles(2,idx);
-		// first edge: V1->V2 
-		halfedge.data(0,idx_edge) = V1;  // first vertex
-		halfedge.data(1,idx_edge) = V2;  // second vertex
-		halfedge.data(2,idx_edge) = idx; // triangle
-		halfedge.data(3,idx_edge) = -1;  // twin
-		halfedge.data(4,idx_edge) = idx_edge+2;  // previous edge
-		halfedge.data(5,idx_edge) = idx_edge+1;  // next edge
-		idx_edge++;
-		// second edge: V2->V3
-		halfedge.data(0,idx_edge) = V2;  // first vertex
-		halfedge.data(1,idx_edge) = V3;  // second vertex
-		halfedge.data(2,idx_edge) = idx; // triangle
-		halfedge.data(3,idx_edge) = -1;  // twin
-		halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
-		halfedge.data(5,idx_edge) = idx_edge+1;  // next edge
-		idx_edge++;
-		// third edge: V3->V1
-		halfedge.data(0,idx_edge) = V3;  // first vertex
-		halfedge.data(1,idx_edge) = V1;  // second vertex
-		halfedge.data(2,idx_edge) = idx; // triangle
-		halfedge.data(3,idx_edge) = -1;  // twin
-		halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
-		halfedge.data(5,idx_edge) = idx_edge-2;  // next edge
-		idx_edge++;
+	if (nTris>0){
+		printf("Construct halfedge structure... \n");
+		halfedge.data.resize(6,nTris*3);
+		int idx_edge=0;
+		for (int idx=0; idx<TriangleCount; idx++){
+			int V1 = Triangles(0,idx);
+			int V2 = Triangles(1,idx);
+			int V3 = Triangles(2,idx);
+			// first edge: V1->V2 
+			halfedge.data(0,idx_edge) = V1;  // first vertex
+			halfedge.data(1,idx_edge) = V2;  // second vertex
+			halfedge.data(2,idx_edge) = idx; // triangle
+			halfedge.data(3,idx_edge) = -1;  // twin
+			halfedge.data(4,idx_edge) = idx_edge+2;  // previous edge
+			halfedge.data(5,idx_edge) = idx_edge+1;  // next edge
+			idx_edge++;
+			// second edge: V2->V3
+			halfedge.data(0,idx_edge) = V2;  // first vertex
+			halfedge.data(1,idx_edge) = V3;  // second vertex
+			halfedge.data(2,idx_edge) = idx; // triangle
+			halfedge.data(3,idx_edge) = -1;  // twin
+			halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
+			halfedge.data(5,idx_edge) = idx_edge+1;  // next edge
+			idx_edge++;
+			// third edge: V3->V1
+			halfedge.data(0,idx_edge) = V3;  // first vertex
+			halfedge.data(1,idx_edge) = V1;  // second vertex
+			halfedge.data(2,idx_edge) = idx; // triangle
+			halfedge.data(3,idx_edge) = -1;  // twin
+			halfedge.data(4,idx_edge) = idx_edge-1;  // previous edge
+			halfedge.data(5,idx_edge) = idx_edge-2;  // next edge
+			idx_edge++;
+		}
+		int EdgeCount=idx_edge;
+		for (int idx=0; idx<EdgeCount; idx++){
+			unsigned long int V1=halfedge.data(0,idx);
+			unsigned long int V2=halfedge.data(1,idx);
+			// Find all the twins within the cube
+			for (int jdx=0; idx<EdgeCount; jdx++){
+				if (halfedge.data(1,jdx) == V1 && halfedge.data(0,jdx) == V2){
+					// this is the pair
+					halfedge.data(3,idx) = jdx;
+					halfedge.data(3,jdx) = idx;
+				}
+				if (halfedge.data(1,jdx) == V2 && halfedge.data(0,jdx) == V1 && !(idx==jdx)){
+					std::printf("WARNING: half edges with identical orientation! \n");
+				}
+			}	
+			// Use "ghost" twins if edge is on a cube face
+			P = cellvertices(V1);
+			Q = cellvertices(V2);
+			if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=0 face
+			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=1 face
+			if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=0 face
+			if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=1 face
+			if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=0 face
+			if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=1 face
+		}
 	}
-	int EdgeCount=idx_edge;
-	for (int idx=0; idx<EdgeCount; idx++){
-		unsigned long int V1=halfedge.data(0,idx);
-		unsigned long int V2=halfedge.data(1,idx);
-		// Find all the twins within the cube
-		for (int jdx=0; idx<EdgeCount; jdx++){
-			if (halfedge.data(1,jdx) == V1 && halfedge.data(0,jdx) == V2){
-				// this is the pair
-				halfedge.data(3,idx) = jdx;
-				halfedge.data(3,jdx) = idx;
-			}
-			if (halfedge.data(1,jdx) == V2 && halfedge.data(0,jdx) == V1 && !(idx==jdx)){
-				std::printf("WARNING: half edges with identical orientation! \n");
-			}
-		}	
-		// Use "ghost" twins if edge is on a cube face
-		P = cellvertices(V1);
-		Q = cellvertices(V2);
-		if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=0 face
-		if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx_edge) = -1;  // ghost twin for x=1 face
-		if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=0 face
-		if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx_edge) = -2;  // ghost twin for y=1 face
-		if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=0 face
-		if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx_edge) = -3;  // ghost twin for z=1 face
-	}
+
 	// Map vertices to global coordinates
 	for (int idx=0;idx<VertexCount;idx++) {
 		P = cellvertices(idx);
