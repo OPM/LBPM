@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	double s,s1,s2,s3;
 	double area = 0.f;
 	double Xi = 0.f;
-	double Vx,Vy,Vz,Wx,Wy,Wz,Nx,Ny,Nz,norm;
+	double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
 	for (k=0; k<Nz-1; k++){
 		for (j=0; j<Ny-1; j++){
 			for (i=0; i<Nx-1; i++){
@@ -65,13 +65,13 @@ int main(int argc, char **argv)
 					Wx=P3.x-P2.x;
 					Wy=P3.y-P2.y;
 					Wz=P3.z-P2.z;
-					Nx = Vy*Wz-Vz*Wy;
-					Ny = Vz*Wx-Vx*Wz;
-					Nz = Vx*Wy-Vy*Wx;
-					norm = 1.f/sqrt(Nx*Nx+Ny*Ny+Nz*Nz);
-					Nx *= norm;
-					Ny *= norm;
-					Nz *= norm;
+					nx = Vy*Wz-Vz*Wy;
+					ny = Vz*Wx-Vx*Wz;
+					N_z = Vx*Wy-Vy*Wx;
+					norm = 1.f/sqrt(nx*nx+ny*ny+nz*nz);
+					nx *= norm;
+					ny *= norm;
+					nz *= norm;
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
 					Xi -= 0.5;
 				}
