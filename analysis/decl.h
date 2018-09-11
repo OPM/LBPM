@@ -11,13 +11,13 @@ public:
 	Vertex();
 	~Vertex();
 	void add(Point P);
-	void assign(unsigned long int idx, Point P);
-	unsigned long int size();
-	Point coords(unsigned long int idx);
-	unsigned long int IncidentEdge();
+	void assign( int idx, Point P);
+	int size();
+	Point coords(int idx);
+	int IncidentEdge();
 private:
 	std::vector<double> vertex_data;
-	unsigned long int size_;
+	int size_;
 };
 
 // Halfedge structure
@@ -27,17 +27,17 @@ public:
 	Halfedge();
 	~Halfedge();
 
-	unsigned long int v1(unsigned long int edge);
-	unsigned long int v2(unsigned long int edge);
-	unsigned long int twin(unsigned long int edge);
-	unsigned long int face(unsigned long int edge);
-	unsigned long int next(unsigned long int edge);
-	unsigned long int prev(unsigned long int edge);
-	unsigned long int size();
+    long int v1(int edge);
+	long int v2(int edge);
+	int twin(int edge);
+	int face(int edge);
+	int next(int edge);
+	int prev(int edge);
+	int size();
 
-	Array<unsigned long int> data;
+	Array<int> data;
 private:
-	unsigned long int size_;
+	int size_;
 };
 
 // DECL
@@ -46,18 +46,18 @@ public:
 	DECL();
 	~DECL();
 	
-	unsigned long int face();
+	int face();
 	Vertex vertex;
 	Halfedge halfedge;
 	void LocalIsosurface(const DoubleArray A, double value, int i, int j, int k);
-	unsigned long int Face(unsigned long int index);
+	int Face(int index);
 	
 	double origin(int edge);
 	double EdgeAngle(int edge);
 	Point TriNormal(int edge);
-	unsigned long int TriangleCount;
-	unsigned long int VertexCount;	
+	int TriangleCount;
+	int VertexCount;	
 
 private:
-	Array <unsigned long int> FaceData;
+	Array <int> FaceData;
 };

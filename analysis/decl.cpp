@@ -20,17 +20,17 @@ void Vertex::add(Point P){
 	size_++;
 }
 
-void Vertex::assign(unsigned long int idx, Point P){
+void Vertex::assign(int idx, Point P){
 	vertex_data[3*idx] = P.x;
 	vertex_data[3*idx+1] = P.y;
 	vertex_data[3*idx+2] = P.z;
 }
 
-unsigned long int Vertex::size(){
+int Vertex::size(){
 	return size_;
 }
 
-Point Vertex::coords(unsigned long int idx){
+Point Vertex::coords(int idx){
 	Point P;
 	P.x = vertex_data[3*idx];
 	P.y = vertex_data[3*idx+1];
@@ -46,31 +46,31 @@ Halfedge::Halfedge(){
 Halfedge::~Halfedge(){
 	
 }
-unsigned long int Halfedge::v1(unsigned long int edge){
+int Halfedge::v1(int edge){
 	return data(0,edge);
 }
 
-unsigned long int Halfedge::v2(unsigned long int edge){
+int Halfedge::v2(int edge){
 	return data(1,edge);
 }
 
-unsigned long int Halfedge::face(unsigned long int edge){
+int Halfedge::face(int edge){
 	return data(2,edge);
 }
 
-unsigned long int Halfedge::twin(unsigned long int edge){
+int Halfedge::twin(int edge){
 	return data(3,edge);
 }
 
-unsigned long int Halfedge::prev(unsigned long int edge){
+int Halfedge::prev(int edge){
 	return data(4,edge);
 }
 
-unsigned long int Halfedge::next(unsigned long int edge){
+int Halfedge::next(int edge){
 	return data(5,edge);
 }
 
-unsigned long int Halfedge::size(){
+int Halfedge::size(){
 	return size_;
 }
 
@@ -84,7 +84,7 @@ DECL::~DECL(){
 	
 }
 
-unsigned long int DECL::Face(unsigned long int index){
+int DECL::Face(int index){
 	return FaceData(index);
 }
 
@@ -94,8 +94,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
 	int CubeIndex;
-	unsigned long int nTris = 0;
-	unsigned long int nVert =0;
+	int nTris = 0;
+	int nVert =0;
 
 	Point VertexList[12];
 	Point NewVertexList[12];
@@ -276,8 +276,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 		//printf("  parsing halfedge structure\n");
 		int EdgeCount=idx_edge;
 		for (int idx=0; idx<EdgeCount; idx++){
-			unsigned long int V1=halfedge.data(0,idx);
-			unsigned long int V2=halfedge.data(1,idx);
+			int V1=halfedge.data(0,idx);
+			int V2=halfedge.data(1,idx);
 			// Find all the twins within the cube
 			for (int jdx=0; jdx<EdgeCount; jdx++){
 				if (halfedge.data(1,jdx) == V1 && halfedge.data(0,jdx) == V2){
@@ -293,11 +293,11 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 			P = cellvertices(V1);
 			Q = cellvertices(V2);
 			if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx) = -1;  // ghost twin for x=0 face
-			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx) = -1;  // ghost twin for x=1 face
+			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx) = -4;  // ghost twin for x=1 face
 			if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx) = -2;  // ghost twin for y=0 face
-			if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx) = -2;  // ghost twin for y=1 face
+			if (P.y == 1.0 && Q.y == 1.0) halfedge.data(3,idx) = -5;  // ghost twin for y=1 face
 			if (P.z == 0.0 && Q.z == 0.0) halfedge.data(3,idx) = -3;  // ghost twin for z=0 face
-			if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx) = -3;  // ghost twin for z=1 face
+			if (P.z == 1.0 && Q.z == 1.0) halfedge.data(3,idx) = -6;  // ghost twin for z=1 face
 		}
 	}
 
@@ -324,6 +324,15 @@ Point DECL::TriNormal(int edge)
 	}
 	else if (edge == -3){
 		P.x = 0.0; P.y = 0.0; P.z = 1.0; // z cube face
+	}
+	if (edge == -4){
+		P.x = -1.0; P.y = 0.0; P.z = 0.0; // x cube face
+	}
+	else if (edge == -5){
+		P.x = 0.0; P.y = -1.0; P.z = 0.0; // y cube face
+	}
+	else if (edge == -6){
+		P.x = 0.0; P.y = 0.0; P.z = -1.0; // z cube face
 	}
 	else{
 		// coordinates for first edge
@@ -354,7 +363,7 @@ double DECL::EdgeAngle(int edge)
 	Point U,V; // triangle normal vectors
 	U = TriNormal(edge);
 	V = TriNormal(halfedge.twin(edge));
-	angle = acos(U.x*V.x + U.y*V.y + U.z*V.z);
+	angle = 1.570796326794897 + acos(U.x*V.x + U.y*V.y + U.z*V.z);
 	return angle;
 }
 
