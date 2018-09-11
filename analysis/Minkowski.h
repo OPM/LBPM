@@ -60,6 +60,8 @@ public:
 	double euler,Kn,Jn,An;
 	double euler_global,Kn_global,Jn_global,An_global;
 	double Ai,Ji,Xi,Vi;
+	double Ai_global,Ji_global,Xi_global,Vi_global;
+
 	//...........................................................................
 	int Nx,Ny,Nz;
 	IntArray PhaseID;	// Phase ID array (solid=0, non-wetting=1, wetting=2)

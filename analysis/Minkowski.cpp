@@ -234,6 +234,14 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 			}
 		}
 	}
+	MPI_Barrier(Dm->Comm);
+	// Phase averages
+	MPI_Allreduce(&Vi,&Vi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Xi,&Xi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Ai,&Ai_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Ji,&Ji_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Barrier(Dm->Comm);
+
 }
 
 /*
