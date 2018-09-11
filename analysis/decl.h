@@ -60,5 +60,4 @@ public:
 
 private:
 	Array <unsigned long int> FaceData;
-
 };
