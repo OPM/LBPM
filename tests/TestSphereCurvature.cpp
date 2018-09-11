@@ -11,7 +11,7 @@ using namespace std;
  *
  */
 
-std::shared_ptr<Database> loadInputs( int nprocs )
+std::shared_ptr<Database> loadInputs( )
 {
   //auto db = std::make_shared<Database>( "Domain.in" );
     auto db = std::make_shared<Database>();
@@ -34,13 +34,10 @@ int main(int argc, char **argv)
 		int i,j,k;
 
 		// Load inputs
-		auto db = loadInputs( nprocs );
+		auto db = loadInputs( );
 		int Nx = db->getVector<int>( "n" )[0];
 		int Ny = db->getVector<int>( "n" )[1];
 		int Nz = db->getVector<int>( "n" )[2];
-		int nprocx = db->getVector<int>( "nproc" )[0];
-		int nprocy = db->getVector<int>( "nproc" )[1];
-		int nprocz = db->getVector<int>( "nproc" )[2];
 		std::shared_ptr<Domain> Dm = std::shared_ptr<Domain>(new Domain(db,comm));
 		
 		Nx+=2; Ny+=2; Nz+=2;
