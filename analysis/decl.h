@@ -27,8 +27,8 @@ public:
 	Halfedge();
 	~Halfedge();
 
-    long int v1(int edge);
-	long int v2(int edge);
+	int v1(int edge);
+	int v2(int edge);
 	int twin(int edge);
 	int face(int edge);
 	int next(int edge);
