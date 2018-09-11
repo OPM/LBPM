@@ -41,11 +41,11 @@ int main(int argc, char **argv)
 		int nprocx = db->getVector<int>( "nproc" )[0];
 		int nprocy = db->getVector<int>( "nproc" )[1];
 		int nprocz = db->getVector<int>( "nproc" )[2];
-		std::shared_ptr<Domain> Dm(db,comm);
-
+		std::shared_ptr<Domain> Dm = std::shared_ptr<Domain>(new Domain(db,comm));
+		Nx+=2; Ny+=2; Ny+=2;
 		DoubleArray Phase(Nx,Ny,Nz);
 		
-        Minkowski sphere(new Minkowski(Dm));
+		Minkowski sphere(Dm);
 
 		printf("Set distance map \n");
 		for (k=0; k<Nz; k++){
