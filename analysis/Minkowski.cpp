@@ -173,6 +173,66 @@ void Minkowski::ComputeLocal()
 	
 }
 
+void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
+{
+	Xi = Ji = Ai = 0.0;
+	DECL object;
+	Point P1,P2,P3;
+	unsigned long int e1,e2,e3;
+	double s,s1,s2,s3;
+	double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				object.LocalIsosurface(Field,isovalue,i,j,k);
+				for (unsigned long int idx=0; idx<object.TriangleCount; idx++){
+					e1 = object.Face(idx); 
+					e2 = object.halfedge.next(e1);
+					e3 = object.halfedge.next(e2);
+					P1 = object.vertex.coords(object.halfedge.v1(e1));
+					P2 = object.vertex.coords(object.halfedge.v1(e2));
+					P3 = object.vertex.coords(object.halfedge.v1(e3));
+					// compute the area
+					s1 = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y)+(P1.z-P2.z)*(P1.z-P2.z));
+					s2 = sqrt((P1.x-P3.x)*(P1.x-P3.x)+(P1.y-P3.y)*(P1.y-P3.y)+(P1.z-P3.z)*(P1.z-P3.z));
+					s3 = sqrt((P2.x-P3.x)*(P2.x-P3.x)+(P2.y-P3.y)*(P2.y-P3.y)+(P2.z-P3.z)*(P2.z-P3.z));
+					s = 0.5*(s1+s2+s3);
+					Ai += sqrt(s*(s-s1)*(s-s2)*(s-s3));
+					// compute the normal vector
+					Vx=P2.x-P1.x;
+					Vy=P2.y-P1.y;
+					Vz=P2.z-P1.z;
+					Wx=P3.x-P2.x;
+					Wy=P3.y-P2.y;
+					Wz=P3.z-P2.z;
+					nx = Vy*Wz-Vz*Wy;
+					ny = Vz*Wx-Vx*Wz;
+					nz = Vx*Wy-Vy*Wx;
+					norm = 1.f/sqrt(nx*nx+ny*ny+nz*nz);
+					nx *= norm;
+					ny *= norm;
+					nz *= norm;
+					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
+					Xi -= 0.5;
+				}
+				// Euler characteristic -- each vertex shared by four cubes
+				Xi += 0.25*double(object.VertexCount);
+			}
+		}
+	}
+	// Voxel counting for volume fraction
+	Vi = 0.f;
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+				if (Field(i,j,k) < isovalue){
+					Vi += 1.0;
+				}
+			}
+		}
+	}
+}
+
 /*
 void Minkowski::AssignComponentLabels()
 {
