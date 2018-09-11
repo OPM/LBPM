@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 					Wz=P3.z-P2.z;
 					nx = Vy*Wz-Vz*Wy;
 					ny = Vz*Wx-Vx*Wz;
-					N_z = Vx*Wy-Vy*Wx;
+					nz = Vx*Wy-Vy*Wx;
 					norm = 1.f/sqrt(nx*nx+ny*ny+nz*nz);
 					nx *= norm;
 					ny *= norm;
