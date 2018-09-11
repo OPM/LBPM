@@ -222,9 +222,9 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 	}
 	// Voxel counting for volume fraction
 	Vi = 0.f;
-	for (k=1; k<Nz-1; k++){
-		for (j=1; j<Ny-1; j++){
-			for (i=1; i<Nx-1; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				if (Field(i,j,k) < isovalue){
 					Vi += 1.0;
 				}
