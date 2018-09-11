@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 		int nprocx = db->getVector<int>( "nproc" )[0];
 		int nprocy = db->getVector<int>( "nproc" )[1];
 		int nprocz = db->getVector<int>( "nproc" )[2];
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		std::shared_ptr<Domain> Dm(db,comm);
 
 		DoubleArray Phase(Nx,Ny,Nz);
 		
