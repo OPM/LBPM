@@ -6,7 +6,7 @@ Double connected edge list (DECL)
 
 Vertex::Vertex(){
 	size_ = 0;
-	vertex_data.resize(24);
+	vertex_data.resize(36);
 }
 
 Vertex::~Vertex(){

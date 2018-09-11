@@ -181,6 +181,9 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 	unsigned long int e1,e2,e3;
 	double s,s1,s2,s3;
 	double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
+	//int Nx = Field.size(0);
+	//int Ny = Field.size(1);
+	//int Nz = Field.size(2);
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){

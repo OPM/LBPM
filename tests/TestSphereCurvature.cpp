@@ -42,7 +42,8 @@ int main(int argc, char **argv)
 		int nprocy = db->getVector<int>( "nproc" )[1];
 		int nprocz = db->getVector<int>( "nproc" )[2];
 		std::shared_ptr<Domain> Dm = std::shared_ptr<Domain>(new Domain(db,comm));
-		Nx+=2; Ny+=2; Ny+=2;
+		
+		Nx+=2; Ny+=2; Nz+=2;
 		DoubleArray Phase(Nx,Ny,Nz);
 		
 		Minkowski sphere(Dm);
