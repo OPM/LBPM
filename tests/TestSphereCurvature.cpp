@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 		sphere.ComputeScalar(Phase,0.f);
 
 		printf("Surface area  = %f (analytical = %f) \n", sphere.Ai,4*3.14159*0.3*0.3*double(Nx*Nx));
-		printf("Mean curvature  = %f (analytical = %f) \n", sphere.Ji/sphere.Ai,2.f/(0.3*double(Nx)));
+		printf("Mean curvature  = %f (analytical = %f) \n", sphere.Ji,sphere.Ai*2.f/(0.3*double(Nx)));
 		printf("Euler characteristic  = %f (analytical = 2.0) \n",sphere.Xi);
 
 
