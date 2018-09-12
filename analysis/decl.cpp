@@ -325,7 +325,7 @@ Point DECL::TriNormal(int edge)
 	else if (edge == -3){
 		P.x = 0.0; P.y = 0.0; P.z = 1.0; // z cube face
 	}
-	if (edge == -4){
+	else if (edge == -4){
 		P.x = -1.0; P.y = 0.0; P.z = 0.0; // x cube face
 	}
 	else if (edge == -5){
