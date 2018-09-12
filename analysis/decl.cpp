@@ -363,7 +363,11 @@ double DECL::EdgeAngle(int edge)
 	Point U,V; // triangle normal vectors
 	U = TriNormal(edge);
 	V = TriNormal(halfedge.twin(edge));
-	angle = 1.570796326794897 + acos(U.x*V.x + U.y*V.y + U.z*V.z);
+	double dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
+	if (dotprod > 1.f) dotprod=1.f;
+	angle =  acos(dotprod);
+	//1.570796326794897
+	//printf("  %f, %f: U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,U.y,U.z,V.x,V.y,V.z);
 	return angle;
 }
 
