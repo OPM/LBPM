@@ -366,6 +366,7 @@ double DECL::EdgeAngle(int edge)
 	double dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
 	if (dotprod > 1.f) dotprod=1.f;
 	angle =  acos(dotprod);
+	if (!(edge<0)) angle *= 0.5; // half edge value
 	//1.570796326794897
 	//printf("  %f, %f: U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,U.y,U.z,V.x,V.y,V.z);
 	return angle;
