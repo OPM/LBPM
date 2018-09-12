@@ -180,6 +180,7 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 	Point P1,P2,P3;
 	unsigned long int e1,e2,e3;
 	double s,s1,s2,s3;
+	double a1,a2,a3;
 	double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
 	//int Nx = Field.size(0);
 	//int Ny = Field.size(1);
@@ -195,26 +196,17 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					P1 = object.vertex.coords(object.halfedge.v1(e1));
 					P2 = object.vertex.coords(object.halfedge.v1(e2));
 					P3 = object.vertex.coords(object.halfedge.v1(e3));
-					// compute the area
+					// Surface area
 					s1 = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y)+(P1.z-P2.z)*(P1.z-P2.z));
 					s2 = sqrt((P1.x-P3.x)*(P1.x-P3.x)+(P1.y-P3.y)*(P1.y-P3.y)+(P1.z-P3.z)*(P1.z-P3.z));
 					s3 = sqrt((P2.x-P3.x)*(P2.x-P3.x)+(P2.y-P3.y)*(P2.y-P3.y)+(P2.z-P3.z)*(P2.z-P3.z));
 					s = 0.5*(s1+s2+s3);
 					Ai += sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					// compute the normal vector
-					Vx=P2.x-P1.x;
-					Vy=P2.y-P1.y;
-					Vz=P2.z-P1.z;
-					Wx=P3.x-P2.x;
-					Wy=P3.y-P2.y;
-					Wz=P3.z-P2.z;
-					nx = Vy*Wz-Vz*Wy;
-					ny = Vz*Wx-Vx*Wz;
-					nz = Vx*Wy-Vy*Wx;
-					norm = 1.f/sqrt(nx*nx+ny*ny+nz*nz);
-					nx *= norm;
-					ny *= norm;
-					nz *= norm;
+					// Mean curvature based on half edge angle
+					a1 = object.EdgeAngle(e1);
+					a2 = object.EdgeAngle(e2);
+					a3 = object.EdgeAngle(e3);
+					Ji += 0.08333333333333*(a1*s1+a2*s2+a3*s3);
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
 					Xi -= 0.5;
 				}
