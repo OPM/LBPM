@@ -368,25 +368,25 @@ double DECL::EdgeAngle(int edge)
 	double dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
 	if (dotprod > 1.f) dotprod=1.f;
 	angle =  acos(dotprod);
-	// triangle corners
-	int e2 = halfedge.next(edge);
-	int e3 = halfedge.next(edge);
-	P=vertex.coords(halfedge.v1(edge));
-	Q=vertex.coords(halfedge.v1(e2));
-	R=vertex.coords(halfedge.v1(e3));
-	// determine if angle is concave or convex based on edge normal
-	W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
-	double hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
-	double length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
-	if (length > hypotenuse){
-		// concave
-		angle = -angle;
-	}
 	if (edge < 0 ){
 		// turn in outward normal at cube face is pi/2 from each side of the cube
 		angle-=1.570796326794897;
 	}
 	else{
+		// triangle corners
+		int e2 = halfedge.next(edge);
+		int e3 = halfedge.next(edge);
+		P=vertex.coords(halfedge.v1(edge));
+		Q=vertex.coords(halfedge.v1(e2));
+		R=vertex.coords(halfedge.v1(e3));
+		// determine if angle is concave or convex based on edge normal
+		W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
+		double hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
+		double length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
+		if (length > hypotenuse){
+			// concave
+			angle = -angle;
+		}
 		angle *= 0.5; // half edge value
 	}
 	//1.570796326794897
