@@ -60,6 +60,24 @@ int main(int argc, char **argv)
 		printf("Surface area  = %f (analytical = %f) \n", sphere.Ai,4*3.14159*0.3*0.3*double(Nx*Nx));
 		printf("Mean curvature  = %f (analytical = %f) \n", sphere.Ji,8*3.14159*0.3*double(Nx));
 		printf("Euler characteristic  = %f (analytical = 2.0) \n",sphere.Xi);
+		
+		Minkowski plane(Dm);
+
+		printf("Set distance map \n");
+		for (k=0; k<Nz; k++){
+			for (j=0; j<Ny; j++){
+				for (i=0; i<Nx; i++){
+				  Phase(i,j,k) = k-0.5*double(Nz+1);
+				}
+			}
+		}
+
+		printf("Construct local isosurface \n");
+		plane.ComputeScalar(Phase,0.f);
+
+		printf("Surface area  = %f (analytical = %f) \n", plane.Ai,double((Nx-2)*(Ny-2)));
+		printf("Mean curvature  = %f (analytical =0) \n", plane.Ji);
+		printf("Euler characteristic  = %f (analytical = 2.0) \n",plane.Xi);
 
 
 	}
