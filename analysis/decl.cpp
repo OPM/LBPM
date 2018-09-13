@@ -388,11 +388,11 @@ double DECL::EdgeAngle(int edge)
 		angle *= 0.5; // half edge value
 	}
 	//1.570796326794897
-	/*	if (fabs(angle) > 0.f){
+	if (fabs(angle) > 0.f){
 	  printf("%f, %f (Edge=%i, twin=%i): U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),U.x,U.y,U.z,V.x,V.y,V.z);
 	  printf("   P={%f, %f, %f}, Q={%f, %f, %f}, R={%f, %f, %f} \n",P.x,P.y,P.z,Q.x,Q.y,Q.z,R.x,R.y,R.z);
 	}
-	*/
+	
 	return angle;
 }
 
