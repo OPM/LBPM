@@ -198,8 +198,8 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					P3 = object.vertex.coords(object.halfedge.v1(e3));
 					// Surface area
 					s1 = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y)+(P1.z-P2.z)*(P1.z-P2.z));
-					s2 = sqrt((P1.x-P3.x)*(P1.x-P3.x)+(P1.y-P3.y)*(P1.y-P3.y)+(P1.z-P3.z)*(P1.z-P3.z));
-					s3 = sqrt((P2.x-P3.x)*(P2.x-P3.x)+(P2.y-P3.y)*(P2.y-P3.y)+(P2.z-P3.z)*(P2.z-P3.z));
+					s2 = sqrt((P2.x-P3.x)*(P2.x-P3.x)+(P2.y-P3.y)*(P2.y-P3.y)+(P2.z-P3.z)*(P2.z-P3.z));
+					s3 = sqrt((P1.x-P3.x)*(P1.x-P3.x)+(P1.y-P3.y)*(P1.y-P3.y)+(P1.z-P3.z)*(P1.z-P3.z));
 					s = 0.5*(s1+s2+s3);
 					Ai += sqrt(s*(s-s1)*(s-s2)*(s-s3));
 					// Mean curvature based on half edge angle
