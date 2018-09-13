@@ -378,7 +378,7 @@ double DECL::EdgeAngle(int edge)
 	double length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
 	if (length > hypotenuse){
 		// concave
-		angle = -angle;
+		//angle = -angle;
 	}
 	if (edge < 0 ){
 		// turn in outward normal at cube face is pi/2 from each side of the cube
