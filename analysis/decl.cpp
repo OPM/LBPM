@@ -390,7 +390,7 @@ double DECL::EdgeAngle(int edge)
 		angle *= 0.5; // half edge value
 	}
 	//1.570796326794897
-	//printf("  %f, %f: U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,U.y,U.z,V.x,V.y,V.z);
+	if (angle > 0.f) printf("  %f, %f: U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,U.y,U.z,V.x,V.y,V.z);
 	return angle;
 }
 
