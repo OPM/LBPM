@@ -360,7 +360,7 @@ Point DECL::TriNormal(int edge)
 double DECL::EdgeAngle(int edge)
 {
 	double angle;
-	point P,Q,R; // triangle corners
+	Point P,Q,R; // triangle corners
 	Point U,V,W; // triangle normal vectors
 	U = TriNormal(edge);
 	V = TriNormal(halfedge.twin(edge));
@@ -368,9 +368,9 @@ double DECL::EdgeAngle(int edge)
 	if (dotprod > 1.f) dotprod=1.f;
 	angle =  acos(dotprod);
 	// triangle corners
-	P=halfedge.v1(edge);
-	Q=halfedge.v2(edge);
-	R=halfedge.v2(halfedge.next(edge));
+	P=vertex.coords(halfedge.v1(edge));
+	Q=vertex.coords(halfedge.v2(edge));
+	R=vertex.coords(halfedge.v2(halfedge.next(edge)));
 	// determine if angle is concave or convex based on edge normal
 	W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
 	double hypotenuse = sqrt(W.x*V.x+W.y*V.y+W.z*V.z); // hypotenuse of right triangle
