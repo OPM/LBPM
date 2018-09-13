@@ -378,13 +378,15 @@ double DECL::EdgeAngle(int edge)
 	double length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
 	if (length > hypotenuse){
 		// concave
-		//angle = -angle;
+		angle = -angle;
 	}
 	if (edge < 0 ){
 		// turn in outward normal at cube face is pi/2 from each side of the cube
 		angle-=1.570796326794897;
 	}
-	if (!(edge<0)) angle *= 0.5; // half edge value
+	else{
+		angle *= 0.5; // half edge value
+	}
 	//1.570796326794897
 	//printf("  %f, %f: U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,U.y,U.z,V.x,V.y,V.z);
 	return angle;
