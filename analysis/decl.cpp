@@ -313,49 +313,47 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 
 Point DECL::TriNormal(int edge)
 {
-	Point P,Q;
+	Point P,Q,R;
+	Point U,V,W;
 	double ux,uy,uz,vx,vy,vz;
 	double nx,ny,nz,len;
 	// at cube faces define outward normal to cube
 	if (edge == -1){
-		P.x = -1.0; P.y = 0.0; P.z = 0.0; // x cube face
+		W.x = -1.0; W.y = 0.0; W.z = 0.0; // x cube face
 	}
 	else if (edge == -2){
-		P.x = 0.0; P.y = -1.0; P.z = 0.0; // y cube face
+		W.x = 0.0; W.y = -1.0; W.z = 0.0; // y cube face
 	}
 	else if (edge == -3){
-		P.x = 0.0; P.y = 0.0; P.z = -1.0; // z cube face
+		W.x = 0.0; W.y = 0.0; W.z = -1.0; // z cube face
 	}
 	else if (edge == -4){
-		P.x = 1.0; P.y = 0.0; P.z = 0.0; // x cube face
+		W.x = 1.0; W.y = 0.0; W.z = 0.0; // x cube face
 	}
 	else if (edge == -5){
-		P.x = 0.0; P.y = 1.0; P.z = 0.0; // y cube face
+		W.x = 0.0; W.y = 1.0; W.z = 0.0; // y cube face
 	}
 	else if (edge == -6){
-		P.x = 0.0; P.y = 0.0; P.z = 1.0; // z cube face
+		W.x = 0.0; W.y = 0.0; W.z = 1.0; // z cube face
 	}
 	else{
-		// vertices for first edge
-		P = vertex.coords(halfedge.v1(edge));
-		Q = vertex.coords(halfedge.v2(edge));
-		ux = Q.x-P.x;
-		uy = Q.y-P.y;
-		uz = Q.z-P.z;
-		// vertices for second edge
-		P = vertex.coords(halfedge.v1(halfedge.next(edge)));
-		Q = vertex.coords(halfedge.v2(halfedge.next(edge)));
-		vx = Q.x-P.x;
-		vy = Q.y-P.y;
-		vz = Q.z-P.z;
+		// vertices for triange
+		int e2 = halfedge.next(edge);
+		int e3 = halfedge.next(e2);
+		P=vertex.coords(halfedge.v1(edge));
+		Q=vertex.coords(halfedge.v1(e2));
+		R=vertex.coords(halfedge.v1(e3));
+		// edge vectors
+		U = Q-P;
+		V = R-Q;
 		// normal vector
-		nx = uy*vz - uz*vy;
-		ny = uz*vx - ux*vz;
-		nz = ux*vy - uy*vx;
+		nx = U.y*V.z - U.z*V.y;
+		ny = U.z*V.x - U.x*V.z;
+		nz = U.x*V.y - U.y*V.x;
 		len = sqrt(nx*nx+ny*ny+nz*nz);
-		P.x = nx/len; P.y = ny/len; P.z = nz/len;
+		W.x = nx/len; W.y = ny/len; W.z = nz/len;
 	}
-	return P;
+	return W;
 }
 
 double DECL::EdgeAngle(int edge)
@@ -375,7 +373,7 @@ double DECL::EdgeAngle(int edge)
 	else{
 		// triangle corners
 		int e2 = halfedge.next(edge);
-		int e3 = halfedge.next(edge);
+		int e3 = halfedge.next(e2);
 		P=vertex.coords(halfedge.v1(edge));
 		Q=vertex.coords(halfedge.v1(e2));
 		R=vertex.coords(halfedge.v1(e3));
