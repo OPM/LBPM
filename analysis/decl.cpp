@@ -316,32 +316,33 @@ Point DECL::TriNormal(int edge)
 	Point P,Q;
 	double ux,uy,uz,vx,vy,vz;
 	double nx,ny,nz,len;
+	// at cube faces define outward normal to cube
 	if (edge == -1){
-		P.x = 1.0; P.y = 0.0; P.z = 0.0; // x cube face
-	}
-	else if (edge == -2){
-		P.x = 0.0; P.y = 1.0; P.z = 0.0; // y cube face
-	}
-	else if (edge == -3){
-		P.x = 0.0; P.y = 0.0; P.z = 1.0; // z cube face
-	}
-	else if (edge == -4){
 		P.x = -1.0; P.y = 0.0; P.z = 0.0; // x cube face
 	}
-	else if (edge == -5){
+	else if (edge == -2){
 		P.x = 0.0; P.y = -1.0; P.z = 0.0; // y cube face
 	}
-	else if (edge == -6){
+	else if (edge == -3){
 		P.x = 0.0; P.y = 0.0; P.z = -1.0; // z cube face
 	}
+	else if (edge == -4){
+		P.x = 1.0; P.y = 0.0; P.z = 0.0; // x cube face
+	}
+	else if (edge == -5){
+		P.x = 0.0; P.y = 1.0; P.z = 0.0; // y cube face
+	}
+	else if (edge == -6){
+		P.x = 0.0; P.y = 0.0; P.z = 1.0; // z cube face
+	}
 	else{
-		// coordinates for first edge
+		// vertices for first edge
 		P = vertex.coords(halfedge.v1(edge));
 		Q = vertex.coords(halfedge.v2(edge));
 		ux = Q.x-P.x;
 		uy = Q.y-P.y;
 		uz = Q.z-P.z;
-		// coordinates for second edge
+		// vertices for second edge
 		P = vertex.coords(halfedge.v1(halfedge.next(edge)));
 		Q = vertex.coords(halfedge.v2(halfedge.next(edge)));
 		vx = Q.x-P.x;
@@ -378,6 +379,10 @@ double DECL::EdgeAngle(int edge)
 	if (length > hypotenuse){
 		// concave
 		angle = -angle;
+	}
+	if (edge < 0 ){
+		// turn in outward normal at cube face is pi/2 from each side of the cube
+		angle-=1.570796326794897;
 	}
 	if (!(edge<0)) angle *= 0.5; // half edge value
 	//1.570796326794897
