@@ -369,8 +369,8 @@ double DECL::EdgeAngle(int edge)
 	if (dotprod > 1.f) dotprod=1.f;
 	angle =  acos(dotprod);
 	// triangle corners
-	int e2 = object.halfedge.next(edge);
-	int e3 = object.halfedge.next(edge);
+	int e2 = halfedge.next(edge);
+	int e3 = halfedge.next(edge);
 	P=vertex.coords(halfedge.v1(edge));
 	Q=vertex.coords(halfedge.v1(e2));
 	R=vertex.coords(halfedge.v1(e3));
