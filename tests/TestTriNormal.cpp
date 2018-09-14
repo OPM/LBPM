@@ -58,11 +58,9 @@ int main(int argc, char **argv)
 
 		DECL object;
 		Point P1,P2,P3;
-		Point U,V,W;
-		unsigned long int e1,e2,e3;
-		double s,s1,s2,s3;
-		double a1,a2,a3;
-		double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
+		Point U;
+		unsigned long int e1;
+		double nx,ny,nz;
 		double isovalue = 0.f;
 		int count_plus=0; int count_minus=0;
 		for (int k=1; k<Nz-1; k++){
