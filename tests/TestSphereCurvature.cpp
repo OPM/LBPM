@@ -17,7 +17,7 @@ std::shared_ptr<Database> loadInputs( )
     auto db = std::make_shared<Database>();
     db->putScalar<int>( "BC", 0 );
     db->putVector<int>( "nproc", { 1, 1, 1 } );
-    db->putVector<int>( "n", { 32, 32, 32 } );
+    db->putVector<int>( "n", { 16, 16, 16 } );
     db->putScalar<int>( "nspheres", 1 );
     db->putVector<double>( "L", { 1, 1, 1 } );
     return db;
@@ -60,13 +60,34 @@ int main(int argc, char **argv)
 		printf("Mean curvature  = %f (analytical =0) \n", plane.Ji);
 		printf("Euler characteristic  = %f (analytical = 2.0) \n",plane.Xi);
 		
+		Minkowski cylinder(Dm);
+
+		printf("Set distance map \n");
+		for (k=0; k<Nz; k++){
+			for (j=0; j<Ny; j++){
+				for (i=0; i<Nx; i++){
+				  //Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*j-0.5*Ny)*(1.0*j-0.5*Ny))-0.3*Nx;
+					Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*k-0.5*Nz)*(1.0*k-0.5*Nz))-0.3*Nx;
+				}
+			}
+		}
+
+		printf("Construct local isosurface \n");
+		cylinder.ComputeScalar(Phase,0.f);
+
+		printf("Surface area  = %f (analytical = %f) \n", cylinder.Ai,2*3.14159*0.3*double((Nx-2)*Nx));
+		printf("Mean curvature  = %f (analytical = %f) \n", cylinder.Ji,2*3.14159*double((Nx-2)));
+		printf("Euler characteristic  = %f (analytical = 2.0) \n",cylinder.Xi);
+
+		/*
 		Minkowski sphere(Dm);
 
 		printf("Set distance map \n");
 		for (k=0; k<Nz; k++){
 			for (j=0; j<Ny; j++){
 				for (i=0; i<Nx; i++){
-					Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*j-0.5*Ny)*(1.0*j-0.5*Ny)+(1.0*k-0.5*Nz)*(1.0*k-0.5*Nz))-0.3*Nx;
+				  //					Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*j-0.5*Ny)*(1.0*j-0.5*Ny)+(1.0*k-0.5*Nz)*(1.0*k-0.5*Nz))-0.3*Nx;
+					Phase(i,j,k) = sqrt((1.0*i-0.5*Nx)*(1.0*i-0.5*Nx)+(1.0*j-0.5*Ny)*(1.0*j-0.5*Ny))-0.3*Nx;
 				}
 			}
 		}
@@ -77,7 +98,7 @@ int main(int argc, char **argv)
 		printf("Surface area  = %f (analytical = %f) \n", sphere.Ai,4*3.14159*0.3*0.3*double(Nx*Nx));
 		printf("Mean curvature  = %f (analytical = %f) \n", sphere.Ji,8*3.14159*0.3*double(Nx));
 		printf("Euler characteristic  = %f (analytical = 2.0) \n",sphere.Xi);
-		
+		*/
 	}
 	MPI_Barrier(comm);
 	MPI_Finalize();
