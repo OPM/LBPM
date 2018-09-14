@@ -371,9 +371,8 @@ double DECL::EdgeAngle(int edge)
 	if (halfedge.twin(edge) < 0 ){
 		// compute projection onto plane
 		W = U - dotprod*V;
-		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z);
-		W /= length; // normalize
-		dotprod = U.x*W.x + U.y*W.y + U.z*W.z;
+		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z); // for normalization
+		dotprod = (U.x*W.x + U.y*W.y + U.z*W.z)/length;
 		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
