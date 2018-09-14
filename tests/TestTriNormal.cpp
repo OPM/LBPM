@@ -27,8 +27,6 @@ int main(int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
 	MPI_Comm comm = MPI_COMM_WORLD;
-	int rank = MPI_WORLD_RANK();
-	int nprocs = MPI_WORLD_SIZE();
 	int toReturn = 0;
 	{
 		int i,j,k;
@@ -67,7 +65,7 @@ int main(int argc, char **argv)
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					object.LocalIsosurface(SDs,isovalue,i,j,k);
-					for (unsigned long int idx=0; idx<object.TriangleCount; idx++){
+					for (int idx=0; idx<object.TriangleCount; idx++){
 						e1 = object.Face(idx); 
 						U = object.TriNormal(e1);
 						// normal from gradient
