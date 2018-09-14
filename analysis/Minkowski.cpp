@@ -207,6 +207,14 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					a2 = object.EdgeAngle(e2);
 					a3 = object.EdgeAngle(e3);
 					Ji += 0.08333333333333*(a1*s1+a2*s2+a3*s3);
+					if (0.08333333333333*(a1*s1+a2*s2+a3*s3) < 0.f){
+					  double intcurv=0.08333333333333*(a1*s1+a2*s2+a3*s3);
+					  double surfarea=sqrt(s*(s-s1)*(s-s2)*(s-s3));
+					  printf("%f, %f: s1=%f,s2=%f,s3=%f, a1=%f,a2=%f,a3=%f\n",surfarea,intcurv,s1,s2,s3,a1,a2,a3);
+					  printf("   P={%f,%f,%f}\n",P1.x,P1.y,P1.z);
+					  printf("   Q={%f,%f,%f}\n",P2.x,P2.y,P2.z);
+					  printf("   R={%f,%f,%f}\n",P3.x,P3.y,P3.z);
+					}
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
 					Xi -= 0.5;
 				}
