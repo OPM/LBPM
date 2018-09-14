@@ -359,6 +359,7 @@ Point DECL::TriNormal(int edge)
 double DECL::EdgeAngle(int edge)
 {
 	double angle;
+	double length,hypotenuse;
 	Point P,Q,R; // triangle corners
 	Point U,V,W; // triangle normal vectors
 	U = TriNormal(edge);
@@ -366,10 +367,18 @@ double DECL::EdgeAngle(int edge)
 	double dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
 	if (dotprod > 1.f) dotprod=1.f;
 	if (dotprod < -1.f) dotprod=-1.f;
-	angle =  acos(dotprod);
+	angle = acos(dotprod);
 	if (halfedge.twin(edge) < 0 ){
+		// compute projection onto plane
+		W = U - dotprod*V;
+		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z);
+		W /= length; // normalize
+		dotprod = U.x*W.x + U.y*W.y + U.z*W.z;
+		if (dotprod > 1.f) dotprod=1.f;
+		if (dotprod < -1.f) dotprod=-1.f;
+		angle = acos(dotprod);
 		// turn in outward normal at cube face is pi/2 from each side of the cube
-		angle-=1.570796326794897;
+		//angle-=1.570796326794897;
 	}
 	else{
 		// triangle corners
@@ -380,8 +389,8 @@ double DECL::EdgeAngle(int edge)
 		R=vertex.coords(halfedge.v1(e3));
 		// determine if angle is concave or convex based on edge normal
 		W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
-		double hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
-		double length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
+		hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
+		length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
 		if (length > hypotenuse){
 			// concave
 			angle = -angle;
