@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 		double a1,a2,a3;
 		double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
 		double isovalue = 0.f;
+		int count_plus=0; int count_minus=0;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
@@ -78,14 +79,17 @@ int main(int argc, char **argv)
 						double dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
 							printf("negative %f \n",dotprod);
+							count_minus++;
 						}
 						else{
 							printf("positive %f \n",dotprod);
+							count_plus++;
 						}
 					}
 				}
 			}
 		}
+		if (count_minus > 0 && count_plus>0) toReturn=1;
 	}
 	MPI_Barrier(comm);
 	MPI_Finalize();
