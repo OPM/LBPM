@@ -385,7 +385,7 @@ double DECL::EdgeAngle(int edge)
 		V.x = nx/len; V.y = ny/len; V.z = nz/len;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
-		if (dotprod < -1.f) dotprod=-1.f;
+		if (dotprod < 0.f) dotprod=-dotprod;
 		angle = acos(dotprod);
 		/*W = U - dotprod*V;
 		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z); // for normalization
