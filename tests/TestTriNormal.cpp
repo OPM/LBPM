@@ -78,11 +78,11 @@ int main(int argc, char **argv)
 						nz = SDs_z(i,j,k);
 						double dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
-							printf("negative %f \n",dotprod);
+							//printf("negative %f \n",dotprod);
 							count_minus++;
 						}
 						else{
-							printf("positive %f \n",dotprod);
+							//printf("positive %f \n",dotprod);
 							count_plus++;
 						}
 					}
