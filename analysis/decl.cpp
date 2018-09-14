@@ -371,7 +371,7 @@ double DECL::EdgeAngle(int edge)
 	V = TriNormal(halfedge.twin(edge));
 	if (halfedge.twin(edge) < 0 ){
 		// compute edge normal in plane of cube face
-		W = Q - P; // edge tangent vector
+		W = P - Q; // edge tangent vector
 		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z);
 		W.x /= length;
 		W.y /= length;
