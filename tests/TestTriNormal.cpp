@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 		DoubleArray SDs(Nx,Ny,Nz);
 		DoubleArray SDs_x(Nx,Ny,Nz);
 		DoubleArray SDs_y(Nx,Ny,Nz);
-		DoubleArray SDs_y(Nx,Ny,Nz);
+		DoubleArray SDs_z(Nx,Ny,Nz);
 
 		printf("Set distance map \n");
 		for (k=0; k<Nz; k++){
@@ -63,13 +63,14 @@ int main(int argc, char **argv)
 		double s,s1,s2,s3;
 		double a1,a2,a3;
 		double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
+		double isovalue = 0.f;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					object.LocalIsosurface(SDs,isovalue,i,j,k);
 					for (unsigned long int idx=0; idx<object.TriangleCount; idx++){
 						e1 = object.Face(idx); 
-						U = TriNormal(e1);
+						U = object.TriNormal(e1);
 						// normal from gradient
 						nx = SDs_x(i,j,k);
 						ny = SDs_y(i,j,k);
