@@ -130,7 +130,7 @@ void Minkowski::UpdateMeshValues()
 }
 void Minkowski::ComputeLocal()
 {
-	int i,j,k,n,kmin,kmax;
+	int i,j,k,kmin,kmax;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	// If external boundary conditions are set, do not average over the inlet
@@ -148,7 +148,7 @@ void Minkowski::ComputeLocal()
 				//...........................................................................
 				// Compute volume averages
 				for (int p=0;p<8;p++){
-					n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
+					//n = i+cube[p][0] + (j+cube[p][1])*Nx + (k+cube[p][2])*Nx*Ny;
 					// 1-D index for this cube corner
 					if ( SDn(i+cube[p][0],j+cube[p][1],k+cube[p][2]) < 0 ){
 						vol_n += 0.125;
@@ -178,10 +178,10 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 	Xi = Ji = Ai = 0.0;
 	DECL object;
 	Point P1,P2,P3;
-	unsigned long int e1,e2,e3;
+	int e1,e2,e3;
 	double s,s1,s2,s3;
 	double a1,a2,a3;
-	double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
+	//double Vx,Vy,Vz,Wx,Wy,Wz,nx,ny,nz,norm;
 	//int Nx = Field.size(0);
 	//int Ny = Field.size(1);
 	//int Nz = Field.size(2);
@@ -189,7 +189,7 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				object.LocalIsosurface(Field,isovalue,i,j,k);
-				for (unsigned long int idx=0; idx<object.TriangleCount; idx++){
+				for (int idx=0; idx<object.TriangleCount; idx++){
 					e1 = object.Face(idx); 
 					e2 = object.halfedge.next(e1);
 					e3 = object.halfedge.next(e2);
@@ -210,10 +210,10 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					//if (0.08333333333333*(a1*s1+a2*s2+a3*s3) < 0.f){
 					  double intcurv=0.08333333333333*(a1*s1+a2*s2+a3*s3);
 					  double surfarea=sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					  printf("%f, %f: s1=%f,s2=%f,s3=%f, a1=%f,a2=%f,a3=%f\n",surfarea,intcurv,s1,s2,s3,a1,a2,a3);
-					  printf("   P={%f,%f,%f}\n",P1.x,P1.y,P1.z);
-					  printf("   Q={%f,%f,%f}\n",P2.x,P2.y,P2.z);
-					  printf("   R={%f,%f,%f}\n",P3.x,P3.y,P3.z);
+					  //printf("%f, %f: s1=%f,s2=%f,s3=%f, a1=%f,a2=%f,a3=%f\n",surfarea,intcurv,s1,s2,s3,a1,a2,a3);
+					  printf("   (%i,%i,%i) PQ(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e1,object.halfedge.twin(e1),P1.x,P1.y,P1.z,P2.x,P2.y,P2.z,a1,s1);
+					  printf("   (%i,%i,%i) QR(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e2,object.halfedge.twin(e2),P2.x,P2.y,P2.z,P3.x,P3.y,P3.z,a2,s2);
+					  printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
 					  //}
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
 					Xi -= 0.5;
@@ -273,8 +273,6 @@ void Minkowski::AssignComponentLabels()
 */
 void Minkowski::Reduce()
 {
-	int i;
-	double iVol_global=1.0/Volume;
 	//...........................................................................
 	MPI_Barrier(Dm->Comm);
 	// Phase averages
