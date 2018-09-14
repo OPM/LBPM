@@ -383,7 +383,7 @@ double DECL::EdgeAngle(int edge)
 		double len = sqrt(nx*nx+ny*ny+nz*nz);
 		// new value for V is this normal vector
 		V.x = nx/len; V.y = ny/len; V.z = nz/len;
-		dotprod = dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
+		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
@@ -396,7 +396,7 @@ double DECL::EdgeAngle(int edge)
 		*/
 	}
 	else{
-		dotprod=U.x*V.x + U.y*V.y + U.z*V.z
+	  dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
