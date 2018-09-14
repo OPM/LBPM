@@ -88,6 +88,7 @@ int main(int argc, char **argv)
 			}
 		}
 		if (count_minus > 0 && count_plus>0) toReturn=1;
+		else printf("Succeeded. \n");
 	}
 	MPI_Barrier(comm);
 	MPI_Finalize();
