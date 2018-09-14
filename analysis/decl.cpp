@@ -365,9 +365,6 @@ double DECL::EdgeAngle(int edge)
 	U = TriNormal(edge);
 	V = TriNormal(halfedge.twin(edge));
 	double dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
-	if (dotprod > 1.f) dotprod=1.f;
-	if (dotprod < -1.f) dotprod=-1.f;
-	angle = acos(dotprod);
 	if (halfedge.twin(edge) < 0 ){
 		// compute projection onto plane
 		W = U - dotprod*V;
@@ -380,6 +377,9 @@ double DECL::EdgeAngle(int edge)
 		//angle-=1.570796326794897;
 	}
 	else{
+		if (dotprod > 1.f) dotprod=1.f;
+		if (dotprod < -1.f) dotprod=-1.f;
+		angle = acos(dotprod);
 		// triangle corners
 		int e2 = halfedge.next(edge);
 		int e3 = halfedge.next(e2);
