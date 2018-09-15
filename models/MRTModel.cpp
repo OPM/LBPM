@@ -146,7 +146,6 @@ void ScaLBL_MRTModel::Run(){
 	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 
-	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
 	if (rank==0) printf("time Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
 	
 	//.......create and start timer............
@@ -178,11 +177,6 @@ void ScaLBL_MRTModel::Run(){
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
-
-			Morphology.Initialize();
-			Morphology.UpdateMeshValues();
-			Morphology.ComputeLocal();
-			Morphology.Reduce();
 			
 			double count_loc=0;
 			double count;
@@ -209,6 +203,10 @@ void ScaLBL_MRTModel::Run(){
 			vax /= count;
 			vay /= count;
 			vaz /= count;
+			
+			if (rank==0) printf("Computing Minkowski functionals \n");
+			Morphology.ComputeScalar(Distance,0.f);
+			Morphology.PrintAll();
 			
 			double mu = (tau-0.5)/3.f;
 			if (rank==0) printf("%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
