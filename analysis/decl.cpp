@@ -384,11 +384,11 @@ double DECL::EdgeAngle(int edge)
 		// new value for V is this normal vector
 		V.x = nx/len; V.y = ny/len; V.z = nz/len;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
-		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < 0.f){
 			dotprod=-dotprod;
 			V.x = -V.x; V.y = -V.y; V.z = -V.z;
 		}
+		if (dotprod > 1.f) dotprod=1.f;
 		angle = acos(dotprod);
 		/* project onto plane of cube face also works
 		W = U - dotprod*V;
