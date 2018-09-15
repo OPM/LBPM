@@ -57,35 +57,68 @@ int main(int argc, char **argv)
 		DECL object;
 		Point P1,P2,P3;
 		Point U;
-		unsigned long int e1;
+		int e1,e2,e3;
 		double nx,ny,nz;
 		double isovalue = 0.f;
 		int count_plus=0; int count_minus=0;
+		int count_check=0;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					object.LocalIsosurface(SDs,isovalue,i,j,k);
 					for (int idx=0; idx<object.TriangleCount; idx++){
-						e1 = object.Face(idx); 
-						U = object.TriNormal(e1);
 						// normal from gradient
 						nx = SDs_x(i,j,k);
 						ny = SDs_y(i,j,k);
 						nz = SDs_z(i,j,k);
+						// triangle normals
+						e1 = object.Face(idx); 
+						U = object.TriNormal(e1);
+						double dotprod=U.x*nx + U.y*ny + U.z*nz;
+						if (dotprod < 0){
+							//printf("edge 1: negative %f \n",dotprod);
+							count_minus++;
+						}
+						else{
+							//printf("edge 1: positive %f \n",dotprod);
+							count_plus++;
+						}
+						// test that normal is independent of the edge
+						e2 = object.next(e1);
+						U = object.TriNormal(e2);
 						double dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
 							//printf("negative %f \n",dotprod);
 							count_minus++;
 						}
 						else{
-							//printf("positive %f \n",dotprod);
+							//printf("edge 2: positive %f \n",dotprod);
 							count_plus++;
 						}
+						// check third edge
+						e3 = object.next(e2);
+						U = object.TriNormal(e3);
+						double dotprod=U.x*nx + U.y*ny + U.z*nz;
+						if (dotprod < 0){
+							//printf("edge 3: negative %f \n",dotprod);
+							count_minus++;
+						}
+						else{
+							//printf("edge 3: positive %f \n",dotprod);
+							count_plus++;
+						}
+						if (object.next(e3) != e1){
+							printf("Error in object.next \n");
+							count_check++;
+						}
+						
+
 					}
 				}
 			}
 		}
 		if (count_minus > 0 && count_plus>0) toReturn=1;
+		if (count_check > 0)  toReturn=2;
 		else printf("Succeeded. \n");
 	}
 	MPI_Barrier(comm);
