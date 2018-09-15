@@ -153,9 +153,9 @@ __global__  void dvc_ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double 
 		Den[Np+n] = vB;
 		//double valB = Den[Np+n]; // mass that reaches inlet is conserved
 
-		//nm = Map[n];
-		//Phi[nm] = (vA-vB)/(vA+vB);
-		Phi[n] = (vA-vB)/(vA+vB);
+		nm = Map[n];
+		Phi[nm] = (vA-vB)/(vA+vB);
+		//Phi[n] = (vA-vB)/(vA+vB);
 	}
 }
 
@@ -170,9 +170,9 @@ __global__  void dvc_ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double 
 		Den[n] = vA;
 		Den[Np+n] = vB;
 		
-		//nm = Map[n];
-		//Phi[nm] = (vA-vB)/(vA+vB);
-		Phi[n] = (vA-vB)/(vA+vB);
+		nm = Map[n];
+		Phi[nm] = (vA-vB)/(vA+vB);
+		//Phi[n] = (vA-vB)/(vA+vB);
 
 	}
 }
