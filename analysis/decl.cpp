@@ -315,7 +315,6 @@ Point DECL::TriNormal(int edge)
 {
 	Point P,Q,R;
 	Point U,V,W;
-	double ux,uy,uz,vx,vy,vz;
 	double nx,ny,nz,len;
 	// at cube faces define outward normal to cube
 	if (edge == -1){
