@@ -414,7 +414,7 @@ double DECL::EdgeAngle(int edge)
 	//length = sqrt(nx*nx+ny*ny+nz*nz);
 	Point w=0.5*(P+Q)-R;
 	if (W.x*w.x + W.y*w.y + W.z*w.z < 0.f){
-		printf("flip edge normal \n");
+	  //printf("flip edge normal \n");
 		W.x = -W.x;
 		W.y = -W.y;
 		W.z = -W.z;
