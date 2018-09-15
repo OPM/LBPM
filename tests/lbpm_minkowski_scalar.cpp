@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 		CalcDist(Distance,id,*Dm);
 
 		if (rank==0) printf("Computing Minkowski functionals \n");
-		Averages->ComputeScalar(Dist[0],0.f);
+		Averages->ComputeScalar(Distance,0.f);
 		Averages->PrintAll();
 	}
 	PROFILE_STOP("Main");
