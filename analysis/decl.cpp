@@ -386,7 +386,7 @@ double DECL::EdgeAngle(int edge)
 		V.x = nx/length; V.y = ny/length; V.z = nz/length;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod < 0.f){
-		  //printf("negative dot product on face\n");
+			//printf("negative dot product on face\n");
 			dotprod=-dotprod;
 			V.x = -V.x; V.y = -V.y; V.z = -V.z;
 		}
@@ -399,7 +399,7 @@ double DECL::EdgeAngle(int edge)
 		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
-		*/
+		 */
 	}
 	else{
 		dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
@@ -411,8 +411,13 @@ double DECL::EdgeAngle(int edge)
 	W.x = (P.y-Q.y)*U.z - (P.z-Q.z)*U.y;
 	W.y = (P.z-Q.z)*U.x - (P.x-Q.x)*U.z;
 	W.z = (P.x-Q.x)*U.y - (P.y-Q.y)*U.x;
-        //length = sqrt(nx*nx+ny*ny+nz*nz);
-
+	//length = sqrt(nx*nx+ny*ny+nz*nz);
+	Point w=0.5*(P+Q)-R;
+	if (W.x*w.x + W.y*w.y + W.z*w.z < 0.f){
+		W.x = -W.x;
+		W.y = -W.y;
+		W.z = -W.z;
+	}
 	if (W.x*V.x + W.y*V.y + W.z*V.z < 0.f){
 		// concave
 		angle = -angle;
