@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
 		DECL object;
 		Point P1,P2,P3;
-		Point U;
+		Point U,V,W;
 		int e1,e2,e3;
 		double nx,ny,nz;
 		double isovalue = 0.f;
@@ -86,8 +86,8 @@ int main(int argc, char **argv)
 						}
 						// test that normal is independent of the edge
 						e2 = object.halfedge.next(e1);
-						U = object.TriNormal(e2);
-						dotprod=U.x*nx + U.y*ny + U.z*nz;
+						V = object.TriNormal(e2);
+						dotprod=V.x*nx + V.y*ny + V.z*nz;
 						if (dotprod < 0){
 							//printf("negative %f \n",dotprod);
 							count_minus++;
@@ -98,8 +98,8 @@ int main(int argc, char **argv)
 						}
 						// check third edge
 						e3 = object.halfedge.next(e2);
-						U = object.TriNormal(e3);
-						dotprod=U.x*nx + U.y*ny + U.z*nz;
+						W = object.TriNormal(e3);
+						dotprod=W.x*nx + W.y*ny + W.z*nz;
 						if (dotprod < 0){
 							//printf("edge 3: negative %f \n",dotprod);
 							count_minus++;
@@ -113,7 +113,21 @@ int main(int argc, char **argv)
 							count_check++;
 						}
 						
-
+						dotprod=U.x*V.x+U.y*V.y+U.z*V.z;
+						if (dotprod < 0 ){
+							printf("normal for edge 1 / 2 disagree \n");
+							count_check++;
+						}
+						dotprod=U.x*W.x+U.y*W.y+U.z*W.z;
+						if (dotprod < 0 ){
+							printf("normal for edge 1 / 3 disagree \n");
+							count_check++;
+						}
+						dotprod=W.x*V.x+W.y*V.y+W.z*V.z;
+						if (dotprod < 0 ){
+							printf("normal for edge 2 / 3 disagree \n");
+							count_check++;
+						}
 					}
 				}
 			}
