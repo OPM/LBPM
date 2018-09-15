@@ -206,7 +206,7 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					a1 = object.EdgeAngle(e1);
 					a2 = object.EdgeAngle(e2);
 					a3 = object.EdgeAngle(e3);
-					Ji += 0.16666666666666*(a1*s1+a2*s2+a3*s3);
+					Ji += (a1*s1+a2*s2+a3*s3);
 					//if (0.08333333333333*(a1*s1+a2*s2+a3*s3) < 0.f){
 					//double intcurv=0.08333333333333*(a1*s1+a2*s2+a3*s3);
 					//double surfarea=sqrt(s*(s-s1)*(s-s2)*(s-s3));

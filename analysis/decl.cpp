@@ -385,7 +385,7 @@ double DECL::EdgeAngle(int edge)
 		V.x = nx/length; V.y = ny/length; V.z = nz/length;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod < 0.f){
-			printf("negative dot product on face\n");
+			//printf("negative dot product on face\n");
 			dotprod=-dotprod;
 			V.x = -V.x; V.y = -V.y; V.z = -V.z;
 		}
@@ -423,8 +423,7 @@ double DECL::EdgeAngle(int edge)
 		// concave
 		angle = -angle;
 	}
-
-	printf("angle=%f,dot=%f (Edge=%i, twin=%i): P={%f, %f, %f}, Q={%f, %f, %f} U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),P.x,P.y,P.z,Q.x,Q.y,Q.z,U.x,U.y,U.z,V.x,V.y,V.z);
+	//printf("angle=%f,dot=%f (Edge=%i, twin=%i): P={%f, %f, %f}, Q={%f, %f, %f} U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),P.x,P.y,P.z,Q.x,Q.y,Q.z,U.x,U.y,U.z,V.x,V.y,V.z);
 	return angle;
 }
 
