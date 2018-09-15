@@ -359,6 +359,7 @@ Point DECL::TriNormal(int edge)
 double DECL::EdgeAngle(int edge)
 {
 	double angle;
+	double nx,ny,nz;
 	double dotprod,length,hypotenuse;
 	Point P,Q,R; // triangle vertices
 	Point U,V,W; // normal vectors
@@ -377,14 +378,15 @@ double DECL::EdgeAngle(int edge)
 		W.y /= length;
 		W.z /= length;
 		// edge normal within the plane of the cube face
-		double nx = W.y*V.z - W.z*V.y;
-		double ny = W.z*V.x - W.x*V.z;
-		double nz = W.x*V.y - W.y*V.x;
-		double len = sqrt(nx*nx+ny*ny+nz*nz);
+		nx = W.y*V.z - W.z*V.y;
+		ny = W.z*V.x - W.x*V.z;
+		nz = W.x*V.y - W.y*V.x;
+		length = sqrt(nx*nx+ny*ny+nz*nz);
 		// new value for V is this normal vector
-		V.x = nx/len; V.y = ny/len; V.z = nz/len;
+		V.x = nx/length; V.y = ny/length; V.z = nz/length;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod < 0.f){
+		  //printf("negative dot product on face\n");
 			dotprod=-dotprod;
 			V.x = -V.x; V.y = -V.y; V.z = -V.z;
 		}
@@ -406,10 +408,11 @@ double DECL::EdgeAngle(int edge)
 		angle = 0.5*acos(dotprod);
 	}
 	// determine if angle is concave or convex based on edge normal
-	W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
-	//hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
-	//length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
-	//if (length > hypotenuse){
+	W.x = (P.y-Q.y)*U.z - (P.z-Q.z)*U.y;
+	W.y = (P.z-Q.z)*U.x - (P.x-Q.x)*U.z;
+	W.z = (P.x-Q.x)*U.y - (P.y-Q.y)*U.x;
+        //length = sqrt(nx*nx+ny*ny+nz*nz);
+
 	if (W.x*V.x + W.y*V.y + W.z*V.z < 0.f){
 		// concave
 		angle = -angle;

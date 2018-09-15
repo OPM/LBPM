@@ -210,9 +210,9 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					//if (0.08333333333333*(a1*s1+a2*s2+a3*s3) < 0.f){
 					//double intcurv=0.08333333333333*(a1*s1+a2*s2+a3*s3);
 					//double surfarea=sqrt(s*(s-s1)*(s-s2)*(s-s3));
-					  //printf("   (%i,%i,%i) PQ(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e1,object.halfedge.twin(e1),P1.x,P1.y,P1.z,P2.x,P2.y,P2.z,a1,s1);
-					  //printf("   (%i,%i,%i) QR(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e2,object.halfedge.twin(e2),P2.x,P2.y,P2.z,P3.x,P3.y,P3.z,a2,s2);
-					  //printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
+					//printf("   (%i,%i,%i) PQ(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e1,object.halfedge.twin(e1),P1.x,P1.y,P1.z,P2.x,P2.y,P2.z,a1,s1);
+					// printf("   (%i,%i,%i) QR(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e2,object.halfedge.twin(e2),P2.x,P2.y,P2.z,P3.x,P3.y,P3.z,a2,s2);
+					// printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
 					  //}
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
 					Xi -= 0.5;
