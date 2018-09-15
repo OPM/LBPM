@@ -385,7 +385,7 @@ double DECL::EdgeAngle(int edge)
 		V.x = nx/len; V.y = ny/len; V.z = nz/len;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
-		if (dotprod < 0.f) dotprod=-dotprod;
+		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
 		/* project onto plane of cube face also works
 		W = U - dotprod*V;
@@ -404,9 +404,10 @@ double DECL::EdgeAngle(int edge)
 	}
 	// determine if angle is concave or convex based on edge normal
 	W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
-	hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
-	length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
-	if (length > hypotenuse){
+	//hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
+	//length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
+	//if (length > hypotenuse){
+	if (W.x*V.x + W.y*V.y + W.z*V.z < 0.f){
 		// concave
 		angle = -angle;
 	}
