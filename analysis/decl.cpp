@@ -400,16 +400,15 @@ double DECL::EdgeAngle(int edge)
 		dotprod=U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
 		if (dotprod < -1.f) dotprod=-1.f;
-		angle = acos(dotprod);
-		// determine if angle is concave or convex based on edge normal
-		W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
-		hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
-		length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
-		if (length > hypotenuse){
-			// concave
-			angle = -angle;
-		}
-		angle *= 0.5; // half edge value
+		angle = 0.5*acos(dotprod);
+	}
+	// determine if angle is concave or convex based on edge normal
+	W = 0.5*(P+Q)-R; // vector that lies in plane of triangle
+	hypotenuse = sqrt(W.x*W.x+W.y*W.y+W.z*W.z + V.x*V.x+V.y*V.y+V.z*V.z); // hypotenuse of right triangle
+	length = sqrt((W.x+V.x)*(W.x+V.x) + (W.y+V.y)*(W.y+V.y) + (W.z+V.z)*(W.z+V.z));
+	if (length > hypotenuse){
+		// concave
+		angle = -angle;
 	}
 	//printf("     %f, %f (Edge=%i, twin=%i)\n       U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),U.x,U.y,U.z,V.x,V.y,V.z);
 	return angle;
