@@ -385,7 +385,7 @@ double DECL::EdgeAngle(int edge)
 		V.x = nx/len; V.y = ny/len; V.z = nz/len;
 		dotprod = U.x*V.x + U.y*V.y + U.z*V.z;
 		if (dotprod > 1.f) dotprod=1.f;
-		if (dotprod < -1.f) dotprod=-1.f;
+		if (dotprod < 0.f) dotprod=-dotprod;
 		angle = acos(dotprod);
 		/* project onto plane of cube face also works
 		W = U - dotprod*V;
@@ -411,7 +411,7 @@ double DECL::EdgeAngle(int edge)
 		// concave
 		angle = -angle;
 	}
-	//printf("     %f, %f (Edge=%i, twin=%i)\n       U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),U.x,U.y,U.z,V.x,V.y,V.z);
+	//printf("angle=%f,dot=%f (Edge=%i, twin=%i): P={%f, %f, %f}, Q={%f, %f, %f} U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),P.x,P.y,P.z,Q.x,Q.y,Q.z,U.x,U.y,U.z,V.x,V.y,V.z);
 	return angle;
 }
 
