@@ -62,6 +62,7 @@ int main(int argc, char **argv)
 		double isovalue = 0.f;
 		int count_plus=0; int count_minus=0;
 		int count_check=0;
+		double dotprod;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
 						// triangle normals
 						e1 = object.Face(idx); 
 						U = object.TriNormal(e1);
-						double dotprod=U.x*nx + U.y*ny + U.z*nz;
+						dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
 							//printf("edge 1: negative %f \n",dotprod);
 							count_minus++;
@@ -84,9 +85,9 @@ int main(int argc, char **argv)
 							count_plus++;
 						}
 						// test that normal is independent of the edge
-						e2 = object.next(e1);
+						e2 = object.halfedge.next(e1);
 						U = object.TriNormal(e2);
-						double dotprod=U.x*nx + U.y*ny + U.z*nz;
+						dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
 							//printf("negative %f \n",dotprod);
 							count_minus++;
@@ -96,9 +97,9 @@ int main(int argc, char **argv)
 							count_plus++;
 						}
 						// check third edge
-						e3 = object.next(e2);
+						e3 = object.halfedge.next(e2);
 						U = object.TriNormal(e3);
-						double dotprod=U.x*nx + U.y*ny + U.z*nz;
+						dotprod=U.x*nx + U.y*ny + U.z*nz;
 						if (dotprod < 0){
 							//printf("edge 3: negative %f \n",dotprod);
 							count_minus++;
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
 							//printf("edge 3: positive %f \n",dotprod);
 							count_plus++;
 						}
-						if (object.next(e3) != e1){
+						if (object.halfedge.next(e3) != e1){
 							printf("Error in object.next \n");
 							count_check++;
 						}
