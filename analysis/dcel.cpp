@@ -1,4 +1,4 @@
-#include "analysis/decl.h"
+#include "analysis/dcel.h"
 
 /* 
 Double connected edge list (DECL) 
