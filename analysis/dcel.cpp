@@ -76,6 +76,8 @@ int Halfedge::size(){
 
 
 DECL::DECL(){
+	cellvertices=DTMutableList<Point>(20);
+	Triangles.resize(3,20);
 }
 
 DECL::~DECL(){
@@ -95,17 +97,7 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 
 	int CubeIndex;
 	int nTris = 0;
-	int nVert =0;
-
-	Point VertexList[12];
-	Point NewVertexList[12];
-	int LocalRemap[12];
-
-	DTMutableList<Point> cellvertices = DTMutableList<Point>(20);
-	IntArray Triangles = IntArray(3,20);
-
-	// Values from array 'A' at the cube corners
-	double CubeValues[8];
+	int nVert = 0;
 
 	// Points corresponding to cube corners
 	C0.x = 0.0; C0.y = 0.0; C0.z = 0.0;

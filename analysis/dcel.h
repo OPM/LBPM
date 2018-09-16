@@ -60,4 +60,13 @@ public:
 
 private:
 	Array <int> FaceData;
+
+	Point VertexList[12];
+	Point NewVertexList[12];
+	int LocalRemap[12];
+	double CubeValues[8];	
+
+	DTMutableList<Point> cellvertices;// = DTMutableList<Point>(20);
+	IntArray Triangles;// = IntArray(3,20);
+
 };
