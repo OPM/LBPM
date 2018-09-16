@@ -98,8 +98,8 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
 	
-	wet_morph = Minkowski(Dm);
-	nonwet_morph = Minkowski(Dm);
+	wet_morph = new Minkowski(dm));
+	nonwet_morph = new Minkowski(dm));
 
 	//.........................................
 	// Allocate cube storage space
@@ -558,7 +558,7 @@ void TwoPhase::ComputeLocal()
 				n = k*Nx*Ny+j*Nx+i;
 				if (!(Dm->id[n] > 0)){
 					// Solid phase
-					phase_label(i,j,k) = 0;
+					phase_labels(i,j,k) = 0;
 				}
 				else if (SDn(i,j,k) < 0.0){
 					// wetting phase
@@ -566,9 +566,9 @@ void TwoPhase::ComputeLocal()
 				}
 				else {
 					// non-wetting phase
-					phase_label(i,j,k) = 0;
+					phase_labels(i,j,k) = 0;
 				}
-				phase_distance(Nx,Ny,Nz) =2.0*double(phase_label(i,j,k))-1.0;
+				phase_distance(Nx,Ny,Nz) =2.0*double(phase_labels(i,j,k))-1.0;
 			}
 		}
 	}	
@@ -582,7 +582,7 @@ void TwoPhase::ComputeLocal()
 				n = k*Nx*Ny+j*Nx+i;
 				if (!(Dm->id[n] > 0)){
 					// Solid phase
-					phase_label(i,j,k) = 0;
+					phase_labels(i,j,k) = 0;
 				}
 				else if (SDn(i,j,k) < 0.0){
 					// wetting phase
@@ -590,9 +590,9 @@ void TwoPhase::ComputeLocal()
 				}
 				else {
 					// non-wetting phase
-					phase_label(i,j,k) = 1;
+					phase_labels(i,j,k) = 1;
 				}
-				phase_distance(Nx,Ny,Nz) =2.0*double(phase_label(i,j,k))-1.0;
+				phase_distance(Nx,Ny,Nz) =2.0*double(phase_labels(i,j,k))-1.0;
 			}
 		}
 	}	
