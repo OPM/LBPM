@@ -76,8 +76,10 @@ int Halfedge::size(){
 
 
 DECL::DECL(){
-	cellvertices=DTMutableList<Point>(20);
-	Triangles.resize(3,20);
+	cellvertices=DTMutableList<Point>(16);
+	FaceData.resize(16);
+	Triangles.resize(3,16);
+	halfedge.data.resize(6,48);
 }
 
 DECL::~DECL(){
@@ -229,10 +231,8 @@ void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const
 
 	// Now add the local values to the DECL data structure
 	if (nTris>0){
-		FaceData.resize(TriangleCount);
-	    //printf("Construct halfedge structure... \n");
-	    //printf("   Construct %i triangles \n",nTris);
-		halfedge.data.resize(6,nTris*3);
+	        //FaceData.resize(TriangleCount);
+		//halfedge.data.resize(6,nTris*3);
 		int idx_edge=0;
 		for (int idx=0; idx<TriangleCount; idx++){
 			int V1 = Triangles(0,idx);
