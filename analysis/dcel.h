@@ -46,12 +46,11 @@ public:
 	DECL();
 	~DECL();
 	
-	int face();
+	int Face();
 	Vertex vertex;
 	Halfedge halfedge;
-	void LocalIsosurface(const DoubleArray A, double value, int i, int j, int k);
+        void LocalIsosurface(const DoubleArray A, double value, int i, int j, int k);
 	int Face(int index);
-	
 	double origin(int edge);
 	double EdgeAngle(int edge);
 	Point TriNormal(int edge);
