@@ -568,7 +568,7 @@ void TwoPhase::ComputeLocal()
 					// non-wetting phase
 					phase_label(i,j,k) = 0;
 				}
-				phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
+				phase_distance(Nx,Ny,Nz) =2.0*double(phase_label(i,j,k))-1.0;
 			}
 		}
 	}	
@@ -592,7 +592,7 @@ void TwoPhase::ComputeLocal()
 					// non-wetting phase
 					phase_label(i,j,k) = 1;
 				}
-				phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
+				phase_distance(Nx,Ny,Nz) =2.0*double(phase_label(i,j,k))-1.0;
 			}
 		}
 	}	
