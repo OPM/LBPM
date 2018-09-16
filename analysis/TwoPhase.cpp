@@ -97,10 +97,6 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
-	
-	wet_morph = new Minkowski(dm));
-	nonwet_morph = new Minkowski(dm));
-
 	//.........................................
 	// Allocate cube storage space
 	CubeValues.resize(2,2,2);
@@ -154,8 +150,7 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 			fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
 			fprintf(TIMELOG,"trawn trJwn trRwn ");			//trimmed curvature,
 			fprintf(TIMELOG,"wwndnw wwnsdnwn Jwnwwndnw "); 	//kinematic quantities,
-			fprintf(TIMELOG,"Vw Jw Aw Xw "); 			//miknowski measures,
-			fprintf(TIMELOG,"Vn Jn An Xn\n"); 			//miknowski measures,
+			fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures,
 		}
 
 		NWPLOG = fopen("components.NWP.tcat","a+");
@@ -184,9 +179,8 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 		fprintf(TIMELOG,"Gnsxx Gnsyy Gnszz Gnsxy Gnsxz Gnsyz ");
 		fprintf(TIMELOG,"trawn trJwn trRwn ");			//trimmed curvature,
 		fprintf(TIMELOG,"wwndnw wwnsdnwn Jwnwwndnw "); 	//kinematic quantities,
-		fprintf(TIMELOG,"Vw Jw Aw Xw "); 			//miknowski measures,
-		fprintf(TIMELOG,"Vn Jn An Xn\n"); 			//miknowski measures,
-		}
+		fprintf(TIMELOG,"Euler Kn Jn An\n"); 			//miknowski measures,
+	}
 }
 
 
@@ -548,56 +542,6 @@ void TwoPhase::ComputeLocal()
 			}
 		}
 	}
-
-	Array <char> phase_label(Nx,Ny,Nz);
-	Array <double> phase_distance(Nx,Ny,Nz);
-	// Analyze the wetting fluid
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				n = k*Nx*Ny+j*Nx+i;
-				if (!(Dm->id[n] > 0)){
-					// Solid phase
-					phase_labels(i,j,k) = 0;
-				}
-				else if (SDn(i,j,k) < 0.0){
-					// wetting phase
-					phase_label(i,j,k) = 1;
-				}
-				else {
-					// non-wetting phase
-					phase_labels(i,j,k) = 0;
-				}
-				phase_distance(Nx,Ny,Nz) =2.0*double(phase_labels(i,j,k))-1.0;
-			}
-		}
-	}	
-	CalcDist(phase_distance,phase_label,*Dm);
-	wet_morph.ComputeScalar(phase_distance,0.f);
-
-	// Analyze the wetting fluid
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				n = k*Nx*Ny+j*Nx+i;
-				if (!(Dm->id[n] > 0)){
-					// Solid phase
-					phase_labels(i,j,k) = 0;
-				}
-				else if (SDn(i,j,k) < 0.0){
-					// wetting phase
-					phase_label(i,j,k) = 0;
-				}
-				else {
-					// non-wetting phase
-					phase_labels(i,j,k) = 1;
-				}
-				phase_distance(Nx,Ny,Nz) =2.0*double(phase_labels(i,j,k))-1.0;
-			}
-		}
-	}	
-	CalcDist(phase_distance,phase_label,*Dm);
-	nonwet_morph.ComputeScalar(phase_distance,0.f);
 	
 }
 
@@ -1300,10 +1244,7 @@ void TwoPhase::PrintAll(int timestep)
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw_global, wwnsdnwn_global, Jwnwwndnw_global);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ", wet_morph.Vi_global, wet_morph.Ji_global, wet_morph.Ai_global, wet_morph.Xi_global);			// minkowski measures
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n", nonwet_morph.Vi_global, nonwet_morph.Ji_global, nonwet_morph.Ai_global, nonwet_morph.Xi_global);			// minkowski measures
-
-
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
 	else{
@@ -1328,9 +1269,7 @@ void TwoPhase::PrintAll(int timestep)
 				Gws(0),Gws(1),Gws(2),Gws(3),Gws(4),Gws(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn, trJwn, trRwn);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw, wwnsdnwn, Jwnwwndnw);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ", wet_morph.Vi, wet_morph.Ji, wet_morph.Ai, wet_morph.Xi);			// minkowski measures
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n", nonwet_morph.Vi, nonwet_morph.Ji, nonwet_morph.Ai, nonwet_morph.Xi);			// minkowski measures
-
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler, Kn, Jn, An);			// minkowski measures
 		fflush(TIMELOG);
 	}
 
