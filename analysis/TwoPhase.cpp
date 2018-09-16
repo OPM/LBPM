@@ -552,7 +552,7 @@ void TwoPhase::ComputeLocal()
 	Array <char> phase_label(Nx,Ny,Nz);
 	Array <double> phase_distance(Nx,Ny,Nz);
 	// Analyze the wetting fluid
-	for (k=0; k<Nz; k++){
+	/*	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n = k*Nx*Ny+j*Nx+i;
@@ -574,7 +574,8 @@ void TwoPhase::ComputeLocal()
 	}	
 	CalcDist(phase_distance,phase_label,*Dm);
 	wet_morph.ComputeScalar(phase_distance,0.f);
-
+	*/
+	printf("generating distance at rank=%i \n",Dm->rank());
 	// Analyze the wetting fluid
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -596,8 +597,11 @@ void TwoPhase::ComputeLocal()
 			}
 		}
 	}	
+	printf("calculate distance at rank=%i \n",Dm->rank());
 	CalcDist(phase_distance,phase_label,*Dm);
+	printf("morphological analysis at rank=%i \n",Dm->rank());
 	nonwet_morph.ComputeScalar(phase_distance,0.f);
+	printf("rank=%i completed \n",Dm->rank());
 	
 }
 
