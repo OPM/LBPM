@@ -13,8 +13,8 @@ using namespace std;
 
 std::shared_ptr<Database> loadInputs( int nprocs )
 {
-    auto db = std::make_shared<Database>( "Domain.in" );
-    const int dim = 50;
+    auto db = std::make_shared<Database>();
+    const int dim = 8;
     db->putScalar<int>( "BC", 0 );
     if ( nprocs == 1 ){
         db->putVector<int>( "nproc", { 1, 1, 1 } );
@@ -180,17 +180,6 @@ int main(int argc, char **argv)
 	int check;
 
 	{
-		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-		//*****************************************
-		// MPI ranks for all 18 neighbors
-		//**********************************
-		int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-		int rank_xy,rank_XY,rank_xY,rank_Xy;
-		int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-		int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-		//**********************************
 		MPI_Request req1[18],req2[18];
 		MPI_Status stat1[18],stat2[18];
 
@@ -210,30 +199,15 @@ int main(int argc, char **argv)
 
         // Load inputs
         auto db = loadInputs( nprocs );
+	/*		auto filename = argv[1];
+		auto input_db = std::make_shared<Database>( filename );
+		auto db = input_db->getDatabase( "Domain" );
+	*/
         int Nx = db->getVector<int>( "n" )[0];
         int Ny = db->getVector<int>( "n" )[1];
         int Nz = db->getVector<int>( "n" )[2];
-
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
-			printf("Parallel domain size = %i x %i x %i\n",nprocx,nprocy,nprocz);
-			printf("********************************************************\n");
-		}
-
-		MPI_Barrier(comm);
-		kproc = rank/(nprocx*nprocy);
-		jproc = (rank-nprocx*nprocy*kproc)/nprocx;
-		iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
-
-		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		
-		Dm  = std::shared_ptr<Domain>(new Domain(db,comm));      // full domain for analysis
-
-		InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
-				rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
-				rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
-				rank_yz, rank_YZ, rank_yZ, rank_Yz );
+		auto Dm  = std::shared_ptr<Domain>(new Domain(db,comm));      // full domain for analysis
 
 		Nx += 2;
 		Ny += 2;
@@ -252,24 +226,39 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char[Nx*Ny*Nz];
 
-		if (rank==0) printf("Assigning phase ID from file \n");
+		/*		if (rank==0) printf("Assigning phase ID from file \n");
 		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
 		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 		fread(id,1,N,IDFILE);
 		fclose(IDFILE);
-		 
+		*/
 		// Setup the domain
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					//id[n] = 1;
+					id[n] = 1;
 					Dm->id[n] = id[n];
 				}
 			}
 		}
 		Dm->CommInit();
+		int iproc,jproc,kproc;
+		int nprocx,nprocy,nprocz;
+		iproc = Dm->iproc();
+		jproc = Dm->jproc();
+		kproc = Dm->kproc();
+		nprocx = Dm->nprocx();
+		nprocy = Dm->nprocy();
+		nprocz = Dm->nprocz();
+
+		if (rank==0){
+			printf("********************************************************\n");
+			printf("Sub-domain size = %i x %i x %i\n",Nz,Nz,Nz);
+			printf("Parallel domain size = %i x %i x %i\n",Dm->nprocx(),Dm->nprocy(),Dm->nprocz());
+			printf("********************************************************\n");
+		}
 
 		//.......................................................................
 		// Compute the media porosity
@@ -290,7 +279,8 @@ int main(int argc, char **argv)
 			}
 		}
 		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
-		porosity = 1.0-sum*iVol_global;
+		double iVol_global=1.f/double((Nx-2)*(Ny-2)*(Nz-2)*nprocx*nprocy*nprocz);
+	    	porosity = 1.0-sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.......................................................................
 
@@ -304,14 +294,14 @@ int main(int argc, char **argv)
 		// Create a communicator for the device (will use optimized layout)
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
 		
-		if (rank==0)	printf ("Set up memory efficient layout \n");
-		int neighborSize=18*Np*sizeof(int);
-		int *neighborList;
+		int Npad=(Np/16 + 2)*16;
+		if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
+		auto neighborList= new int[18*Npad];
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
+		Map.fill(-2);		
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
-		
+		int neighborSize=18*Np*sizeof(int);
 		//......................device distributions.................................
 		dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
@@ -377,7 +367,7 @@ int main(int argc, char **argv)
 		 */
 		if (rank==0)	printf("Setting the distributions, size = : %i\n", Np);
 		//...........................................................................
-		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2,iproc,jproc,kproc,nprocx,nprocy,nprocz);
+		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2, iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
