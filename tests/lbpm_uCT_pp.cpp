@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 		//std::vector<size_t> ratio = {4,4,4};
 		// need to set up databases for each level of the mesh
 		std:vector<Database> multidomain_db;
-		
+
 		std::vector<int> Nx(1,nx), Ny(1,ny), Nz(1,nz);
 		while ( Nx.back()%ratio[0]==0 && Nx.back()>8 &&
 				Ny.back()%ratio[1]==0 && Ny.back()>8 &&
@@ -231,12 +231,12 @@ int main(int argc, char **argv)
 				for (int i=1;i<Nx[0]+1;i++) {
 					if (MASK(i,j,k) > 0.f ){
 						auto tmp = LOCVOL[0](i,j,k);
-/*						if ((tmp-background)*(tmp-target) > 0){
+						/*						if ((tmp-background)*(tmp-target) > 0){
 							// direction to background / target is the same
 							if (fabs(tmp-target) > fabs(tmp-background)) tmp=background; // tmp closer to background
 							else                             			 tmp=target;     // tmp closer to target
 						}
-						*/
+						 */
 						if ( tmp > THRESHOLD ) {
 							mean_plus += tmp;
 							count_plus++;

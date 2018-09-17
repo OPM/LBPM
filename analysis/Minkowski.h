@@ -19,7 +19,7 @@
 
 #include <vector>
 
-#include "analysis/pmmc.h"
+#include "analysis/dcel.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
@@ -33,31 +33,11 @@
 
 
 class Minkowski{
-
 	//...........................................................................
-	int n_obj_pts;
-	int n_obj_tris;
-	//...........................................................................
-	int nc;
 	int kstart,kfinish;
 
 	double isovalue;
 	double Volume;
-	// initialize lists for vertices for surfaces, common line
-	DTMutableList<Point> obj_pts;
-	DTMutableList<Point> tmp;
-
-	// initialize triangle lists for surfaces
-	IntArray obj_tris;
-
-	// Temporary storage arrays
-	DoubleArray CubeValues;
-	DoubleArray Values;
-	DoubleArray NormalVector;
-
-	DoubleArray RecvBuffer;
-
-	char *TempID;
 
 	// CSV / text file where time history of averages is saved
 	FILE *LOGFILE;
@@ -69,21 +49,12 @@ public:
 	// Averaging variables
 	//...........................................................................
 	// local averages (to each MPI process)
-	double vol_n;						// volumes the exclude the interfacial region
+	double Ai,Ji,Xi,Vi;
 	// Global averages (all processes)
-	double vol_n_global;			// volumes the exclude the interfacial region
-	double euler,Kn,Jn,An;
-	double euler_global,Kn_global,Jn_global,An_global;
+	double Ai_global,Ji_global,Xi_global,Vi_global;
+
 	//...........................................................................
 	int Nx,Ny,Nz;
-	IntArray PhaseID;	// Phase ID array (solid=0, non-wetting=1, wetting=2)
-	DoubleArray SDn;
-	DoubleArray MeanCurvature;
-	DoubleArray GaussCurvature;
-	DoubleArray SDn_x;		// Gradient of the signed distance
-	DoubleArray SDn_y;
-	DoubleArray SDn_z;
-
 	double V();
 	double A();
 	double J();
@@ -92,17 +63,10 @@ public:
 	//...........................................................................
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
-	void Initialize();
-	void UpdateMeshValues();
-	void ComputeLocal();
-	void Reduce();
-	void NonDimensionalize(double D);
+	void ComputeScalar(const DoubleArray Field, const double isovalue);
 	void PrintAll();
-	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
-	void SortBlobs();
-	
-};
 
+};
 
 #endif
 

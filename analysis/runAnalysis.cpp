@@ -30,23 +30,23 @@
 
 AnalysisType& operator |=(AnalysisType &lhs, AnalysisType rhs)  
 {
-    lhs = static_cast<AnalysisType>(
-        static_cast<std::underlying_type<AnalysisType>::type>(lhs) |
-        static_cast<std::underlying_type<AnalysisType>::type>(rhs)
-    );
-    return lhs;
+	lhs = static_cast<AnalysisType>(
+			static_cast<std::underlying_type<AnalysisType>::type>(lhs) |
+			static_cast<std::underlying_type<AnalysisType>::type>(rhs)
+	);
+	return lhs;
 }
 bool matches( AnalysisType x, AnalysisType y )
 {
-    return static_cast<std::underlying_type<AnalysisType>::type>(x) &
-        static_cast<std::underlying_type<AnalysisType>::type>(y) != 0;
+	return static_cast<std::underlying_type<AnalysisType>::type>(x) &
+			static_cast<std::underlying_type<AnalysisType>::type>(y) != 0;
 }
 
 
 template<class TYPE>
 void DeleteArray( const TYPE *p )
 {
-    delete [] p;
+	delete [] p;
 }
 
 
@@ -93,78 +93,78 @@ static const std::string id_map_filename = "lbpm_id_map.txt";
 class BlobIdentificationWorkItem1: public ThreadPool::WorkItemRet<void>
 {
 public:
-    BlobIdentificationWorkItem1( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
-        std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
-        BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_, runAnalysis::commWrapper&& comm_ ):
-        timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
-        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_), comm(std::move(comm_))
-        {
-        }
-    ~BlobIdentificationWorkItem1() { }
-    virtual void run() {
-        // Compute the global blob id and compare to the previous version
-        PROFILE_START("Identify blobs",1);
-        double vF = 0.0;
-        double vS = -1.0; // one voxel buffer region around solid
-        IntArray& ids = new_index->second;
-        new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,comm.comm);
-        PROFILE_STOP("Identify blobs",1);
-    }
+	BlobIdentificationWorkItem1( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
+			std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
+			BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_, runAnalysis::commWrapper&& comm_ ):
+				timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
+				phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_), comm(std::move(comm_))
+{
+}
+	~BlobIdentificationWorkItem1() { }
+	virtual void run() {
+		// Compute the global blob id and compare to the previous version
+		PROFILE_START("Identify blobs",1);
+		double vF = 0.0;
+		double vS = -1.0; // one voxel buffer region around solid
+		IntArray& ids = new_index->second;
+		new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,*phase,dist,vF,vS,ids,comm.comm);
+		PROFILE_STOP("Identify blobs",1);
+	}
 private:
-    BlobIdentificationWorkItem1();
-    int timestep;
-    int Nx, Ny, Nz;
-    const RankInfoStruct& rank_info;
-    std::shared_ptr<const DoubleArray> phase;
-    const DoubleArray& dist;
-    BlobIDstruct last_id, new_index, new_id;
-    BlobIDList new_list;
-    runAnalysis::commWrapper comm;
+	BlobIdentificationWorkItem1();
+	int timestep;
+	int Nx, Ny, Nz;
+	const RankInfoStruct& rank_info;
+	std::shared_ptr<const DoubleArray> phase;
+	const DoubleArray& dist;
+	BlobIDstruct last_id, new_index, new_id;
+	BlobIDList new_list;
+	runAnalysis::commWrapper comm;
 };
 class BlobIdentificationWorkItem2: public ThreadPool::WorkItemRet<void>
 {
 public:
-    BlobIdentificationWorkItem2( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
-        std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
-        BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_ , runAnalysis::commWrapper&& comm_ ):
-        timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
-        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_), comm(std::move(comm_))
-        {
-        }
-    ~BlobIdentificationWorkItem2() { }
-    virtual void run() {
-        // Compute the global blob id and compare to the previous version
-        PROFILE_START("Identify blobs maps",1);
-        const IntArray& ids = new_index->second;
-        static int max_id = -1;
-        new_id->first = new_index->first;
-        new_id->second = new_index->second;
-        if ( last_id.get()!=NULL ) {
-            // Compute the timestep-timestep map
-            const IntArray& old_ids = last_id->second;
-            ID_map_struct map = computeIDMap(Nx,Ny,Nz,old_ids,ids,comm.comm);
-            // Renumber the current timestep's ids
-            getNewIDs(map,max_id,*new_list);
-            renumberIDs(*new_list,new_id->second);
-            writeIDMap(map,timestep,id_map_filename);
-        } else {
-            max_id = -1;
-            ID_map_struct map(new_id->first);
-            getNewIDs(map,max_id,*new_list);
-            writeIDMap(map,timestep,id_map_filename);
-        }
-        PROFILE_STOP("Identify blobs maps",1);
-    }
+	BlobIdentificationWorkItem2( int timestep_, int Nx_, int Ny_, int Nz_, const RankInfoStruct& rank_info_, 
+			std::shared_ptr<const DoubleArray> phase_, const DoubleArray& dist_,
+			BlobIDstruct last_id_, BlobIDstruct new_index_, BlobIDstruct new_id_, BlobIDList new_list_ , runAnalysis::commWrapper&& comm_ ):
+				timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
+				phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_), comm(std::move(comm_))
+{
+}
+	~BlobIdentificationWorkItem2() { }
+	virtual void run() {
+		// Compute the global blob id and compare to the previous version
+		PROFILE_START("Identify blobs maps",1);
+		const IntArray& ids = new_index->second;
+		static int max_id = -1;
+		new_id->first = new_index->first;
+		new_id->second = new_index->second;
+		if ( last_id.get()!=NULL ) {
+			// Compute the timestep-timestep map
+			const IntArray& old_ids = last_id->second;
+			ID_map_struct map = computeIDMap(Nx,Ny,Nz,old_ids,ids,comm.comm);
+			// Renumber the current timestep's ids
+			getNewIDs(map,max_id,*new_list);
+			renumberIDs(*new_list,new_id->second);
+			writeIDMap(map,timestep,id_map_filename);
+		} else {
+			max_id = -1;
+			ID_map_struct map(new_id->first);
+			getNewIDs(map,max_id,*new_list);
+			writeIDMap(map,timestep,id_map_filename);
+		}
+		PROFILE_STOP("Identify blobs maps",1);
+	}
 private:
-    BlobIdentificationWorkItem2();
-    int timestep;
-    int Nx, Ny, Nz;
-    const RankInfoStruct& rank_info;
-    std::shared_ptr<const DoubleArray> phase;
-    const DoubleArray& dist;
-    BlobIDstruct last_id, new_index, new_id;
-    BlobIDList new_list;
-    runAnalysis::commWrapper comm;
+	BlobIdentificationWorkItem2();
+	int timestep;
+	int Nx, Ny, Nz;
+	const RankInfoStruct& rank_info;
+	std::shared_ptr<const DoubleArray> phase;
+	const DoubleArray& dist;
+	BlobIDstruct last_id, new_index, new_id;
+	BlobIDList new_list;
+	runAnalysis::commWrapper comm;
 };
 
 
@@ -205,12 +205,12 @@ public:
         PROFILE_STOP("Save Vis",1);
     };
 private:
-    WriteVisWorkItem();
-    int timestep;
-    std::vector<IO::MeshDataStruct>& visData;
-    TwoPhase& Averages;
-    fillHalo<double>& fillData;
-    runAnalysis::commWrapper comm;
+	WriteVisWorkItem();
+	int timestep;
+	std::vector<IO::MeshDataStruct>& visData;
+	TwoPhase& Averages;
+	fillHalo<double>& fillData;
+	runAnalysis::commWrapper comm;
 };
 
 
@@ -219,46 +219,46 @@ private:
 class AnalysisWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-    AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
-        BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
-        type(type_), timestep(timestep_), Averages(Averages_), 
-        blob_ids(ids), id_list(id_list_), beta(beta_) { }
-    ~AnalysisWorkItem() { }
-    virtual void run() {
-        Averages.NumberComponents_NWP = blob_ids->first;
-        Averages.Label_NWP = blob_ids->second;
-        Averages.Label_NWP_map = *id_list;
-        Averages.NumberComponents_WP = 1;
-        Averages.Label_WP.fill(0.0);
-        if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
-            // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
-        }
-        if ( matches(type,AnalysisType::ComputeAverages) ) {
-            PROFILE_START("Compute dist",1);
-            Averages.Initialize();
-            Averages.ComputeDelPhi();
-            Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
-            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
-            Averages.UpdateMeshValues();
-            Averages.ComputeLocal();
-            Averages.Reduce();
-            Averages.PrintAll(timestep);
-            Averages.Initialize();
-            Averages.ComponentAverages();
-            Averages.SortBlobs();
-            Averages.PrintComponents(timestep);
-            PROFILE_STOP("Compute dist",1);
-        }
-    }
+	AnalysisWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
+			BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
+				type(type_), timestep(timestep_), Averages(Averages_), 
+				blob_ids(ids), id_list(id_list_), beta(beta_) { }
+	~AnalysisWorkItem() { }
+	virtual void run() {
+		Averages.NumberComponents_NWP = blob_ids->first;
+		Averages.Label_NWP = blob_ids->second;
+		Averages.Label_NWP_map = *id_list;
+		Averages.NumberComponents_WP = 1;
+		Averages.Label_WP.fill(0.0);
+		if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+			// Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+		}
+		if ( matches(type,AnalysisType::ComputeAverages) ) {
+			PROFILE_START("Compute dist",1);
+			Averages.Initialize();
+			Averages.ComputeDelPhi();
+			Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+			Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+			Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
+			Averages.UpdateMeshValues();
+			Averages.ComputeLocal();
+			Averages.Reduce();
+			Averages.PrintAll(timestep);
+			Averages.Initialize();
+			Averages.ComponentAverages();
+			Averages.SortBlobs();
+			Averages.PrintComponents(timestep);
+			PROFILE_STOP("Compute dist",1);
+		}
+	}
 private:
-    AnalysisWorkItem();
-    AnalysisType type;
-    int timestep;
-    TwoPhase& Averages;
-    BlobIDstruct blob_ids;
-    BlobIDList id_list;
-    double beta;
+	AnalysisWorkItem();
+	AnalysisType type;
+	int timestep;
+	TwoPhase& Averages;
+	BlobIDstruct blob_ids;
+	BlobIDList id_list;
+	double beta;
 };
 
 
@@ -266,44 +266,44 @@ private:
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
 runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
-    comm(comm_),
-    tag(tag_),
-    analysis(analysis_)
+    		comm(comm_),
+    		tag(tag_),
+    		analysis(analysis_)
 {
 }
 runAnalysis::commWrapper::commWrapper( commWrapper &&rhs ):
-    comm(rhs.comm),
-    tag(rhs.tag),
-    analysis(rhs.analysis)
+    		comm(rhs.comm),
+    		tag(rhs.tag),
+    		analysis(rhs.analysis)
 {
-    rhs.tag = -1;
+	rhs.tag = -1;
 }
 runAnalysis::commWrapper::~commWrapper()
 {
-    if ( tag == -1 )
-        return;
-    MPI_Barrier( comm );
-    analysis->d_comm_used[tag] = false;
+	if ( tag == -1 )
+		return;
+	MPI_Barrier( comm );
+	analysis->d_comm_used[tag] = false;
 }
 runAnalysis::commWrapper runAnalysis::getComm( )
 {
-    // Get a tag from root
-    int tag = -1;
-    if ( d_rank == 0 ) {
-        for (int i=0; i<1024; i++) {
-            if ( !d_comm_used[i] ) {
-                tag = i;
-                break;
-            }
-        }
-        if ( tag == -1 )
-            ERROR("Unable to get comm");
-    }
-    MPI_Bcast( &tag, 1, MPI_INT, 0, d_comm );
-    d_comm_used[tag] = true;
-    if ( d_comms[tag] == MPI_COMM_NULL )
-        MPI_Comm_dup( MPI_COMM_WORLD, &d_comms[tag] );
-    return commWrapper(tag,d_comms[tag],this);
+	// Get a tag from root
+	int tag = -1;
+	if ( d_rank == 0 ) {
+		for (int i=0; i<1024; i++) {
+			if ( !d_comm_used[i] ) {
+				tag = i;
+				break;
+			}
+		}
+		if ( tag == -1 )
+			ERROR("Unable to get comm");
+	}
+	MPI_Bcast( &tag, 1, MPI_INT, 0, d_comm );
+	d_comm_used[tag] = true;
+	if ( d_comms[tag] == MPI_COMM_NULL )
+		MPI_Comm_dup( MPI_COMM_WORLD, &d_comms[tag] );
+	return commWrapper(tag,d_comms[tag],this);
 }
 
 
@@ -311,29 +311,29 @@ runAnalysis::commWrapper runAnalysis::getComm( )
  *  Constructor/Destructors                                        *
  ******************************************************************/
 runAnalysis::runAnalysis( std::shared_ptr<Database> db,
-    const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
-    int Np, bool Regular, double beta, IntArray Map ):
-    d_Np( Np ),
-    d_beta( beta ),
-    d_regular ( Regular),
-    d_rank_info( rank_info ),
-    d_Map( Map ),
-    d_ScaLBL_Comm( ScaLBL_Comm),
-    d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1)
+		const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+		int Np, bool Regular, double beta, IntArray Map ):
+    		d_Np( Np ),
+    		d_beta( beta ),
+    		d_regular ( Regular),
+    		d_rank_info( rank_info ),
+    		d_Map( Map ),
+    		d_ScaLBL_Comm( ScaLBL_Comm),
+    		d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1)
 {
 
 	char rankString[20];
 	sprintf(rankString,"%05d",Dm->rank());
-    d_N[0] = Dm->Nx;
-    d_N[1] = Dm->Ny;
-    d_N[2] = Dm->Nz;
-    d_restart_interval = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval = db->getScalar<int>( "analysis_interval" );
-    d_blobid_interval = db->getScalar<int>( "blobid_interval" );
-    d_visualization_interval = db->getScalar<int>( "visualization_interval" );
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
-    d_restartFile = restart_file + "." + rankString;
-    d_rank = MPI_WORLD_RANK();
+	d_N[0] = Dm->Nx;
+	d_N[1] = Dm->Ny;
+	d_N[2] = Dm->Nz;
+	d_restart_interval = db->getScalar<int>( "restart_interval" );
+	d_analysis_interval = db->getScalar<int>( "analysis_interval" );
+	d_blobid_interval = db->getScalar<int>( "blobid_interval" );
+	d_visualization_interval = db->getScalar<int>( "visualization_interval" );
+	auto restart_file = db->getScalar<std::string>( "restart_file" );
+	d_restartFile = restart_file + "." + rankString;
+	d_rank = MPI_WORLD_RANK();
 	writeIDMap(ID_map_struct(),0,id_map_filename);
 	// Initialize IO for silo
 	IO::initialize("","silo","false");
@@ -386,41 +386,41 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	BlobIDVar->dim = 1;
 	BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	d_meshData[0].vars.push_back(BlobIDVar);
-    // Initialize the comms
-    MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
-    for (int i=0; i<1024; i++) {
-        d_comms[i] = MPI_COMM_NULL;
-        d_comm_used[i] = false;
-    }
-    // Initialize the threads
-    int N_threads = db->getWithDefault<int>( "N_threads", 4 );
-    auto method = db->getWithDefault<std::string>( "load_balance", "default" );
-    createThreads( method, N_threads );
+	// Initialize the comms
+	MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
+	for (int i=0; i<1024; i++) {
+		d_comms[i] = MPI_COMM_NULL;
+		d_comm_used[i] = false;
+	}
+	// Initialize the threads
+	int N_threads = db->getWithDefault<int>( "N_threads", 4 );
+	auto method = db->getWithDefault<std::string>( "load_balance", "default" );
+	createThreads( method, N_threads );
 }
 runAnalysis::~runAnalysis( )
 {
-    // Finish processing analysis
-    finish();
-    // Clear internal data
-    MPI_Comm_free( &d_comm );
-    for (int i=0; i<1024; i++) {
-        if ( d_comms[i] != MPI_COMM_NULL )
-            MPI_Comm_free(&d_comms[i]);
-    }
+	// Finish processing analysis
+	finish();
+	// Clear internal data
+	MPI_Comm_free( &d_comm );
+	for (int i=0; i<1024; i++) {
+		if ( d_comms[i] != MPI_COMM_NULL )
+			MPI_Comm_free(&d_comms[i]);
+	}
 }
 void runAnalysis::finish( )
 {
-    PROFILE_START("finish");
-    // Wait for the work items to finish
+	PROFILE_START("finish");
+	// Wait for the work items to finish
 	d_tpool.wait_pool_finished();
-    // Clear the wait ids
-    d_wait_blobID.reset();
-    d_wait_analysis.reset();
-    d_wait_vis.reset();
-    d_wait_restart.reset();
-    // Syncronize
-    MPI_Barrier( d_comm );
-    PROFILE_STOP("finish");
+	// Clear the wait ids
+	d_wait_blobID.reset();
+	d_wait_analysis.reset();
+	d_wait_vis.reset();
+	d_wait_restart.reset();
+	// Syncronize
+	MPI_Barrier( d_comm );
+	PROFILE_STOP("finish");
 }
 
 
@@ -429,50 +429,50 @@ void runAnalysis::finish( )
  ******************************************************************/
 void print( const std::vector<int>& ids )
 {
-    if ( ids.empty() )
-        return;
-    printf("%i",ids[0]);
-    for (size_t i=1; i<ids.size(); i++)
-        printf(", %i",ids[i]);
-    printf("\n");
+	if ( ids.empty() )
+		return;
+	printf("%i",ids[0]);
+	for (size_t i=1; i<ids.size(); i++)
+		printf(", %i",ids[i]);
+	printf("\n");
 }
 void runAnalysis::createThreads( const std::string& method, int N_threads )
 {
-    // Check if we are not using analysis threads
+	// Check if we are not using analysis threads
 	if ( method == "none" )
-        return;
-    // Check if we have thread support
-    int thread_support;
-    MPI_Query_thread( &thread_support );
+		return;
+	// Check if we have thread support
+	int thread_support;
+	MPI_Query_thread( &thread_support );
 	if ( thread_support < MPI_THREAD_MULTIPLE ) {
 		std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
-        return;
-    }
-    // Create the threads
-    const auto cores = d_tpool.getProcessAffinity();
-    if ( cores.empty() ) {
-        // We were not able to get the cores for the process
-        d_tpool.setNumThreads( N_threads );
-    } else if ( method == "default" ) {
-        // Create the given number of threads, but let the OS manage affinities
-        d_tpool.setNumThreads( N_threads );
-    } else if ( method == "independent" ) {
-        int N = cores.size() - 1;
-        d_tpool.setNumThreads( N );
-        d_tpool.setThreadAffinity( { cores[0] } );
-        for ( int i=0; i<N; i++)
-            d_tpool.setThreadAffinity( i, { cores[i+1] } );
-    }
-    // Print the current affinities
-    if ( d_rank == 0 ) {
-        printf("Affinities - rank 0:\n");
-        printf("Main: ");
-        print(d_tpool.getProcessAffinity());
-        for (int i=0; i<d_tpool.getNumThreads(); i++) {
-            printf("Thread %i: ",i+1);
-            print(d_tpool.getThreadAffinity(i));
-        }
-    }
+		return;
+	}
+	// Create the threads
+	const auto cores = d_tpool.getProcessAffinity();
+	if ( cores.empty() ) {
+		// We were not able to get the cores for the process
+		d_tpool.setNumThreads( N_threads );
+	} else if ( method == "default" ) {
+		// Create the given number of threads, but let the OS manage affinities
+		d_tpool.setNumThreads( N_threads );
+	} else if ( method == "independent" ) {
+		int N = cores.size() - 1;
+		d_tpool.setNumThreads( N );
+		d_tpool.setThreadAffinity( { cores[0] } );
+		for ( int i=0; i<N; i++)
+			d_tpool.setThreadAffinity( i, { cores[i+1] } );
+	}
+	// Print the current affinities
+	if ( d_rank == 0 ) {
+		printf("Affinities - rank 0:\n");
+		printf("Main: ");
+		print(d_tpool.getProcessAffinity());
+		for (int i=0; i<d_tpool.getNumThreads(); i++) {
+			printf("Thread %i: ",i+1);
+			print(d_tpool.getThreadAffinity(i));
+		}
+	}
 }
 
 
@@ -481,17 +481,17 @@ void runAnalysis::createThreads( const std::string& method, int N_threads )
  ******************************************************************/
 AnalysisType runAnalysis::computeAnalysisType( int timestep )
 {
-    AnalysisType type = AnalysisType::AnalyzeNone;
-    if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
-        // Copy the phase indicator field for the earlier timestep
-        // printf("Copy phase indicator,timestep=%i\n",timestep);
-        type |= AnalysisType::CopyPhaseIndicator;
-    }
-    if ( timestep%d_blobid_interval == 0 ) {
-        // Identify blobs and update global ids in time
-        type |= AnalysisType::IdentifyBlobs;
-    }
-    /*#ifdef USE_CUDA
+	AnalysisType type = AnalysisType::AnalyzeNone;
+	if ( timestep%d_analysis_interval + 8 == d_analysis_interval ) {
+		// Copy the phase indicator field for the earlier timestep
+		// printf("Copy phase indicator,timestep=%i\n",timestep);
+		type |= AnalysisType::CopyPhaseIndicator;
+	}
+	if ( timestep%d_blobid_interval == 0 ) {
+		// Identify blobs and update global ids in time
+		type |= AnalysisType::IdentifyBlobs;
+	}
+	/*#ifdef USE_CUDA
         if ( tpool.getQueueSize()<=3 && tpool.getNumThreads()>0 && timestep%50==0 ) {
             // Keep a few blob identifications queued up to keep the processors busy,
             // allowing us to track the blobs as fast as possible
@@ -499,28 +499,28 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
             type |= AnalysisType::IdentifyBlobs;
         }
     #endif */
-    if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
-        // Copy the averages to the CPU (and identify blobs)
-        //printf("Copy sim state, timestep=%i \n",timestep);
-        type |= AnalysisType::CopySimState;
-        type |= AnalysisType::IdentifyBlobs;
-    }
-    if ( timestep%d_analysis_interval == 0 ) {
-        // Run the analysis
-        //printf("Compute averages, timestep=%i \n",timestep);
-        type |= AnalysisType::ComputeAverages;
-    }
-    if (timestep%d_restart_interval == 0) {
-        // Write the restart file
-        type |= AnalysisType::CreateRestart;
-    }
-    if (timestep%d_visualization_interval == 0) {
-        // Write the visualization data
-        type |= AnalysisType::WriteVis;
-        type |= AnalysisType::CopySimState;
-        type |= AnalysisType::IdentifyBlobs;
-    }
-    return type;
+	if ( timestep%d_analysis_interval + 4 == d_analysis_interval ) {
+		// Copy the averages to the CPU (and identify blobs)
+		//printf("Copy sim state, timestep=%i \n",timestep);
+		type |= AnalysisType::CopySimState;
+		type |= AnalysisType::IdentifyBlobs;
+	}
+	if ( timestep%d_analysis_interval == 0 ) {
+		// Run the analysis
+		//printf("Compute averages, timestep=%i \n",timestep);
+		type |= AnalysisType::ComputeAverages;
+	}
+	if (timestep%d_restart_interval == 0) {
+		// Write the restart file
+		type |= AnalysisType::CreateRestart;
+	}
+	if (timestep%d_visualization_interval == 0) {
+		// Write the visualization data
+		type |= AnalysisType::WriteVis;
+		type |= AnalysisType::CopySimState;
+		type |= AnalysisType::IdentifyBlobs;
+	}
+	return type;
 }
 
 
@@ -529,28 +529,28 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
  *  Run the analysis                                               *
  ******************************************************************/
 void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
-		       double *Pressure, double *Velocity, double *fq, double *Den)
+		double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
+	int N = d_N[0]*d_N[1]*d_N[2];
 
-    // Check which analysis steps we need to perform
-    auto type = computeAnalysisType( timestep );
-    if ( type == AnalysisType::AnalyzeNone )
-        return;
+	// Check which analysis steps we need to perform
+	auto type = computeAnalysisType( timestep );
+	if ( type == AnalysisType::AnalyzeNone )
+		return;
 
-    // Check how may queued items we have
-    if ( d_tpool.N_queued() > 20 ) {
-        std::cerr << "Analysis queue is getting behind, waiting ...\n";
-        finish();
-    }
+	// Check how may queued items we have
+	if ( d_tpool.N_queued() > 20 ) {
+		std::cerr << "Analysis queue is getting behind, waiting ...\n";
+		finish();
+	}
 
-    PROFILE_START("run");
+	PROFILE_START("run");
 
-    // Copy the appropriate variables to the host (so we can spawn new threads)
-    ScaLBL_DeviceBarrier();
-    PROFILE_START("Copy data to host",1);
-    std::shared_ptr<DoubleArray> phase;
- /*   if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
+	// Copy the appropriate variables to the host (so we can spawn new threads)
+	ScaLBL_DeviceBarrier();
+	PROFILE_START("Copy data to host",1);
+	std::shared_ptr<DoubleArray> phase;
+	/*   if ( matches(type,AnalysisType::CopyPhaseIndicator) ||
     		matches(type,AnalysisType::ComputeAverages) ||
     		matches(type,AnalysisType::CopySimState) || 
     		matches(type,AnalysisType::IdentifyBlobs) )

@@ -173,6 +173,7 @@ int main(int argc, char **argv)
 		// Initialize the domain and communication
 		nx+=2; ny+=2; nz+=2;
 		Array<char> id(nx,ny,nz);
+		DoubleArray Distance(nx,ny,nz);
 		
 		//if (rank==0){
 		//printf("ID: %i, %i, %i \n",Dm->Nx, Dm->Ny, Dm->Nz);
@@ -196,21 +197,17 @@ int main(int argc, char **argv)
 				for (i=0;i<nx;i++){
 					n=k*nx*ny+j*nx+i;
 					// Initialize distance to +/- 1
-					Averages->SDn(i,j,k) = 2.0*double(id(i,j,k))-1.0;
+					Distance(i,j,k) = 2.0*double(id(i,j,k))-1.0;
 				}
 			}
 		}
-		//MeanFilter(Averages->SDn);
 
 		//std::array<bool> bc(3)={1,1,1};
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		CalcDist(Averages->SDn,id,*Dm);
+		CalcDist(Distance,id,*Dm);
 
 		if (rank==0) printf("Computing Minkowski functionals \n");
-		Averages->Initialize();
-		Averages->UpdateMeshValues();
-		Averages->ComputeLocal();
-		Averages->Reduce();
+		Averages->ComputeScalar(Distance,0.f);
 		Averages->PrintAll();
 	}
 	PROFILE_STOP("Main");

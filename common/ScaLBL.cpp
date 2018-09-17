@@ -1299,10 +1299,16 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 	//...................................................................................
 	
 	if (BoundaryCondition > 0 && kproc == 0){
-		// don't unpack
+		// don't unpack little z
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,Aq,N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,Bq,N);
 	}
 	else if (BoundaryCondition > 0 && kproc == nprocz-1){
-		// don't unpack
+		// don't unpack big z
+		//...Packing for z face(6,12,13,16,17)................................
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,Aq,N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,Bq,N);
 	}
 	else {
 		//...Packing for z face(6,12,13,16,17)................................
@@ -1410,10 +1416,18 @@ void ScaLBL_Communicator::TriRecvD3Q7AA(double *Aq, double *Bq, double *Cq){
 	//...................................................................................
 	
 	if (BoundaryCondition > 0 && kproc == 0){
-		// don't unpack
+		// don't unpack little z
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,Aq,N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,Bq,N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,2*recvCount_Z,recvCount_Z,recvbuf_Z,Cq,N);
 	}
 	else if (BoundaryCondition > 0 && kproc == nprocz-1){
-		// don't unpack
+		// don't unpack big z
+		//...Packing for z face(6,12,13,16,17)................................
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,Aq,N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,recvCount_z,recvCount_z,recvbuf_z,Bq,N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,2*recvCount_z,recvCount_z,recvbuf_z,Cq,N);
 	}
 	else {
 		//...Packing for z face(6,12,13,16,17)................................
