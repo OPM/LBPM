@@ -4,13 +4,13 @@
 #include "common/Domain.h"
 #include "common/SpherePack.h"
 
-using namespace std;
+#include "ProfilerApp.h"
+
 
 /*
  *  Compare the measured and analytical curvature for a sphere
  *
  */
-
 std::shared_ptr<Database> loadInputs( )
 {
   //auto db = std::make_shared<Database>( "Domain.in" );
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 		int Nx = db->getVector<int>( "n" )[0];
 		int Ny = db->getVector<int>( "n" )[1];
 		int Nz = db->getVector<int>( "n" )[2];
-		std::shared_ptr<Domain> Dm = std::shared_ptr<Domain>(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>( db, comm );
 		
 		Nx+=2; Ny+=2; Nz+=2;
 		DoubleArray Phase(Nx,Ny,Nz);
@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 		printf("   Euler characteristic  = %f (analytical = 2.0) \n",sphere.Xi);
 		
 	}
+    PROFILE_SAVE("test_dcel_minkowski");
 	MPI_Barrier(comm);
 	MPI_Finalize();
 	return toReturn;

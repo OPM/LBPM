@@ -1,247 +1,20 @@
 #ifndef included_ArrayClass
 #define included_ArrayClass
 
+#include "common/ArraySize.h"
+
 #include <array>
-#include <cstring>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <vector>
 
-#include "Utilities.h"
-
-
-#if defined( __CUDA_ARCH__ )
-#include <cuda.h>
-#define HOST_DEVICE __host__ __device__
-#else
-#define HOST_DEVICE
-#endif
-#if defined( USING_GCC ) || defined( USING_CLANG )
-#define ATTRIBUTE_INLINE __attribute__( ( always_inline ) )
-#else
-#define ATTRIBUTE_INLINE
-#endif
-
-
-#if ( defined( DEBUG ) || defined( _DEBUG ) ) && !defined( NDEBUG )
-#define CHECK_ARRAY_LENGTH( i )                                      \
-    do {                                                             \
-        if ( i >= d_length )                                         \
-            throw std::length_error( "Index exceeds array bounds" ); \
-    } while ( 0 )
-#else
-#define CHECK_ARRAY_LENGTH( i ) \
-    do {                        \
-    } while ( 0 )
-#endif
-
-
-// Forward decleration
-class FunctionTable;
-
-
-//! Simple range class
-template<class TYPE = size_t>
-class Range final
-{
-public:
-    //! Empty constructor
-    Range() : i( 0 ), j( -1 ), k( 1 ) {}
-
-    /*!
-     * Create a range i:k:j (or i:j)
-     * @param i_            Starting value
-     * @param j_            Ending value
-     * @param k_            Increment value
-     */
-    Range( TYPE i_, TYPE j_, TYPE k_ = 1 ) : i( i_ ), j( j_ ), k( k_ ) {}
-
-    TYPE i, j, k;
-};
-
-
-//! Simple class to store the array dimensions
-class ArraySize final
-{
-public:
-    //! Empty constructor
-    inline ArraySize();
-
-    /*!
-     * Create the vector size
-     * @param N1            Number of elements in the first dimension
-     */
-    inline ArraySize( size_t N1 );
-
-    /*!
-     * Create the vector size
-     * @param N1            Number of elements in the first dimension
-     * @param N2            Number of elements in the second dimension
-     */
-    inline ArraySize( size_t N1, size_t N2 );
-
-    /*!
-     * Create the vector size
-     * @param N1            Number of elements in the first dimension
-     * @param N2            Number of elements in the second dimension
-     * @param N3            Number of elements in the third dimension
-     */
-    inline ArraySize( size_t N1, size_t N2, size_t N3 );
-
-    /*!
-     * Create the vector size
-     * @param N1            Number of elements in the first dimension
-     * @param N2            Number of elements in the second dimension
-     * @param N3            Number of elements in the third dimension
-     * @param N4            Number of elements in the fourth dimension
-     */
-    inline ArraySize( size_t N1, size_t N2, size_t N3, size_t N4 );
-
-    /*!
-     * Create the vector size
-     * @param N1            Number of elements in the first dimension
-     * @param N2            Number of elements in the second dimension
-     * @param N3            Number of elements in the third dimension
-     * @param N4            Number of elements in the fourth dimension
-     * @param N5            Number of elements in the fifth dimension
-     */
-    inline ArraySize( size_t N1, size_t N2, size_t N3, size_t N4, size_t N5 );
-
-    /*!
-     * Create from initializer list
-     * @param N             Size of the array
-     */
-    inline ArraySize( std::initializer_list<size_t> N );
-
-    /*!
-     * Create from raw pointer
-     * @param ndim          Number of dimensions
-     * @param ndim          Dimensions
-     */
-    inline ArraySize( size_t ndim, const size_t *dims );
-
-    /*!
-     * Create from std::vector
-     * @param N             Size of the array
-     */
-    inline ArraySize( const std::vector<size_t> &N );
-
-    /*!
-     * Copy constructor
-     * @param rhs           Array to copy
-     */
-    inline ArraySize( const ArraySize &rhs );
-
-    /*!
-     * Move constructor
-     * @param rhs           Array to copy
-     */
-    inline ArraySize( ArraySize &&rhs );
-
-    /*!
-     * Assignment operator
-     * @param rhs           Array to copy
-     */
-    inline ArraySize &operator=( const ArraySize &rhs );
-
-    /*!
-     * Move assignment operator
-     * @param rhs           Array to copy
-     */
-    inline ArraySize &operator=( ArraySize &&rhs );
-
-    /*!
-     * Access the ith dimension
-     * @param i             Index to access
-     */
-    inline size_t operator[]( size_t i ) const { return d_N[i]; }
-
-    //! Sum the elements
-    inline uint8_t ndim() const ATTRIBUTE_INLINE { return d_ndim; }
-
-    //! Sum the elements
-    inline size_t size() const ATTRIBUTE_INLINE { return d_ndim; }
-
-    //! Sum the elements
-    inline size_t length() const ATTRIBUTE_INLINE { return d_length; }
-
-    //! Sum the elements
-    inline void resize( uint8_t dim, size_t N );
-
-    //! Returns an iterator to the beginning
-    inline const size_t *begin() const ATTRIBUTE_INLINE { return d_N; }
-
-    //! Returns an iterator to the end
-    inline const size_t *end() const ATTRIBUTE_INLINE { return d_N + d_ndim; }
-
-    // Check if two matrices are equal
-    inline bool operator==( const ArraySize &rhs ) const ATTRIBUTE_INLINE
-    {
-        return d_ndim == rhs.d_ndim && memcmp( d_N, rhs.d_N, sizeof( d_N ) ) == 0;
-    }
-
-    //! Check if two matrices are not equal
-    inline bool operator!=( const ArraySize &rhs ) const ATTRIBUTE_INLINE
-    {
-        return d_ndim != rhs.d_ndim || memcmp( d_N, rhs.d_N, sizeof( d_N ) ) != 0;
-    }
-
-    //! Maximum supported dimension
-    constexpr static uint8_t maxDim() ATTRIBUTE_INLINE { return 5u; }
-
-    //! Get the index
-    inline size_t index( size_t i ) const ATTRIBUTE_INLINE
-    {
-        CHECK_ARRAY_LENGTH( i );
-        return i;
-    }
-
-    //! Get the index
-    inline size_t index( size_t i1, size_t i2 ) const ATTRIBUTE_INLINE
-    {
-        size_t index = i1 + i2 * d_N[0];
-        CHECK_ARRAY_LENGTH( index );
-        return index;
-    }
-
-    //! Get the index
-    inline size_t index( size_t i1, size_t i2, size_t i3 ) const ATTRIBUTE_INLINE
-    {
-        size_t index = i1 + d_N[0] * ( i2 + d_N[1] * i3 );
-        CHECK_ARRAY_LENGTH( index );
-        return index;
-    }
-
-    //! Get the index
-    inline size_t index( size_t i1, size_t i2, size_t i3, size_t i4 ) const ATTRIBUTE_INLINE
-    {
-        size_t index = i1 + d_N[0] * ( i2 + d_N[1] * ( i3 + d_N[2] * i4 ) );
-        CHECK_ARRAY_LENGTH( index );
-        return index;
-    }
-
-    //! Get the index
-    inline size_t index(
-        size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) const ATTRIBUTE_INLINE
-    {
-        size_t index = i1 + d_N[0] * ( i2 + d_N[1] * ( i3 + d_N[2] * ( i4 + d_N[3] * i5 ) ) );
-        CHECK_ARRAY_LENGTH( index );
-        return index;
-    }
-
-private:
-    uint8_t d_ndim;
-    size_t d_length;
-    size_t d_N[5];
-};
-
 
 /*!
  * Class Array is a multi-dimensional array class written by Mark Berrill
  */
-template<class TYPE, class FUN = FunctionTable>
+template<class TYPE, class FUN, class Allocator>
 class Array final
 {
 public: // Constructors / assignment operators
@@ -310,6 +83,12 @@ public: // Constructors / assignment operators
     explicit Array( const Range<TYPE> &range );
 
     /*!
+     * Create a 1D Array using a string that mimic's MATLAB
+     * @param range         Range of the data
+     */
+    explicit Array( std::string range );
+
+    /*!
      * Create a 1D Array with the given initializer list
      * @param data          Input data
      */
@@ -346,74 +125,34 @@ public: // Constructors / assignment operators
      */
     Array &operator=( const std::vector<TYPE> &rhs );
 
+    //! Is copyable?
+    inline bool isCopyable() const { return d_isCopyable; }
+
+    //! Set is copyable
+    inline void setCopyable( bool flag ) { d_isCopyable = flag; }
+
+    //! Is fixed size?
+    inline bool isFixedSize() const { return d_isFixedSize; }
+
+    //! Set is copyable
+    inline void setFixedSize( bool flag ) { d_isFixedSize = flag; }
+
+
 public: // Views/copies/subset
     /*!
-     * Create a 1D Array view to a raw block of data
-     * @param N             Number of elements in the array
+     * Create a multi-dimensional Array view to a raw block of data
+     * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
      */
-    static std::shared_ptr<Array> view( size_t N, std::shared_ptr<TYPE> const &data );
+    static std::unique_ptr<Array> view( const ArraySize &N, std::shared_ptr<TYPE> &data );
 
-    /*!
-     * Create a new 2D Array with the given number of rows and columns
-     * @param N_rows        Number of rows
-     * @param N_columns     Number of columns
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<Array> view(
-        size_t N_rows, size_t N_columns, std::shared_ptr<TYPE> const &data );
-
-    /*!
-     * Create a new 3D Array view to a raw block of data
-     * @param N1            Number of rows
-     * @param N2            Number of columns
-     * @param N3            Number of elements in the third dimension
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<Array> view(
-        size_t N1, size_t N2, size_t N3, std::shared_ptr<TYPE> const &data );
 
     /*!
      * Create a multi-dimensional Array view to a raw block of data
      * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
      */
-    static std::shared_ptr<Array> view( const ArraySize &N, std::shared_ptr<TYPE> const &data );
-
-
-    /*!
-     * Create a 1D Array view to a raw block of data
-     * @param N             Number of elements in the array
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<const Array> constView(
-        size_t N, std::shared_ptr<const TYPE> const &data );
-
-    /*!
-     * Create a new 2D Array with the given number of rows and columns
-     * @param N_rows        Number of rows
-     * @param N_columns     Number of columns
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<const Array> constView(
-        size_t N_rows, size_t N_columns, std::shared_ptr<const TYPE> const &data );
-
-    /*!
-     * Create a new 3D Array view to a raw block of data
-     * @param N1            Number of rows
-     * @param N2            Number of columns
-     * @param N3            Number of elements in the third dimension
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<const Array> constView(
-        size_t N1, size_t N2, size_t N3, std::shared_ptr<const TYPE> const &data );
-
-    /*!
-     * Create a multi-dimensional Array view to a raw block of data
-     * @param N             Number of elements in each dimension
-     * @param data          Pointer to the data
-     */
-    static std::shared_ptr<const Array> constView(
+    static std::unique_ptr<const Array> constView(
         const ArraySize &N, std::shared_ptr<const TYPE> const &data );
 
 
@@ -432,7 +171,7 @@ public: // Views/copies/subset
 
     /*!
      * Make this object a view of the raw data (expert use only).
-     * Use view2( N, std::shared_ptr(data,[](TYPE*){}) ) instead.
+     * Use view2( N, shared_ptr(data,[](TYPE*){}) ) instead.
      *   Note: this interface is not recommended as it does not protect from
      *   the src data being deleted while still being used by the Array.
      *   Additionally for maximum performance it does not set the internal shared_ptr
@@ -440,27 +179,28 @@ public: // Views/copies/subset
      * @param ndim          Number of dimensions
      * @param dims          Number of elements in each dimension
      * @param data          Pointer to the data
+     * @param isCopyable    Once the view is created, can the array be copied
+     * @param isFixedSize   Once the view is created, is the array size fixed
      */
-    void viewRaw( int ndim, const size_t *dims, TYPE *data );
+    inline void viewRaw(
+        int ndim, const size_t *dims, TYPE *data, bool isCopyable = true, bool isFixedSize = true )
+    {
+        viewRaw( ArraySize( ndim, dims ), data, isCopyable, isFixedSize );
+    }
 
     /*!
      * Make this object a view of the raw data (expert use only).
-     * Use view2( N, std::shared_ptr(data,[](TYPE*){}) ) instead.
+     * Use view2( N, shared_ptr(data,[](TYPE*){}) ) instead.
      *   Note: this interface is not recommended as it does not protect from
      *   the src data being deleted while still being used by the Array.
      *   Additionally for maximum performance it does not set the internal shared_ptr
      *   so functions like getPtr and resize will not work correctly.
      * @param N             Number of elements in each dimension
      * @param data          Pointer to the data
+     * @param isCopyable    Once the view is created, can the array be copied
+     * @param isFixedSize   Once the view is created, is the array size fixed
      */
-    void viewRaw( const ArraySize &N, TYPE *data );
-
-    /*!
-     * Convert an array of one type to another.  This may or may not allocate new memory.
-     * @param array         Input array
-     */
-    template<class TYPE2>
-    static std::shared_ptr<Array<TYPE2>> convert( std::shared_ptr<Array<TYPE, FUN>> array );
+    void viewRaw( const ArraySize &N, TYPE *data, bool isCopyable = true, bool isFixedSize = true );
 
 
     /*!
@@ -468,8 +208,27 @@ public: // Views/copies/subset
      * @param array         Input array
      */
     template<class TYPE2>
-    static std::shared_ptr<const Array<TYPE2>> convert(
-        std::shared_ptr<const Array<TYPE, FUN>> array );
+    static inline std::unique_ptr<Array<TYPE2, FUN, Allocator>> convert(
+        std::shared_ptr<Array<TYPE, FUN, Allocator>> array )
+    {
+        auto array2 = std::make_unique<Array<TYPE2>>( array->size() );
+        array2.copy( *array );
+        return array2;
+    }
+
+
+    /*!
+     * Convert an array of one type to another.  This may or may not allocate new memory.
+     * @param array         Input array
+     */
+    template<class TYPE2>
+    static inline std::unique_ptr<const Array<TYPE2, FUN, Allocator>> convert(
+        std::shared_ptr<const Array<TYPE, FUN, Allocator>> array )
+    {
+        auto array2 = std::make_unique<Array<TYPE2>>( array->size() );
+        array2.copy( *array );
+        return array2;
+    }
 
 
     /*!
@@ -477,7 +236,11 @@ public: // Views/copies/subset
      * @param array         Source array
      */
     template<class TYPE2>
-    void copy( const Array<TYPE2> &array );
+    void inline copy( const Array<TYPE2, FUN, Allocator> &array )
+    {
+        resize( array.size() );
+        copy( array.data() );
+    }
 
     /*!
      * Copy and convert data from a raw vector to this array.
@@ -485,22 +248,36 @@ public: // Views/copies/subset
      * @param array         Source array
      */
     template<class TYPE2>
-    void copy( const TYPE2 *array );
+    void inline copy( const TYPE2 *data )
+    {
+        for ( size_t i = 0; i < d_size.length(); i++ )
+            d_data[i] = static_cast<TYPE>( data[i] );
+    }
 
     /*!
      * Copy and convert data from this array to a raw vector.
      * @param array         Source array
      */
     template<class TYPE2>
-    void copyTo( TYPE2 *array ) const;
+    void inline copyTo( TYPE2 *data ) const
+    {
+        for ( size_t i = 0; i < d_size.length(); i++ )
+            data[i] = static_cast<TYPE2>( d_data[i] );
+    }
 
     /*!
-     * Copy and convert data from this array to a raw vector.
-     * @param array         Source array
+     * Copy and convert data from this array to a new array
      */
     template<class TYPE2>
-    Array<TYPE2, FUN> cloneTo() const;
+    Array<TYPE2, FUN, Allocator> inline cloneTo() const
+    {
+        Array<TYPE2, FUN> dst( this->size() );
+        copyTo( dst.data() );
+        return dst;
+    }
 
+    /*! swap the raw data pointers for the Arrays after checking for compatibility */
+    void swap( Array &other );
 
     /*!
      * Fill the array with the given value
@@ -519,7 +296,7 @@ public: // Views/copies/subset
      * @param base        Base array
      * @param exp         Exponent value
      */
-    void pow( const Array<TYPE, FUN> &base, const TYPE &exp );
+    void pow( const Array &base, const TYPE &exp );
 
     //! Destructor
     ~Array();
@@ -534,11 +311,7 @@ public: // Views/copies/subset
 
 
     //! Return the size of the Array
-    inline ArraySize &size() { return d_size; }
-
-
-    //! Return the size of the Array
-    inline ArraySize size() const { return d_size; }
+    inline const ArraySize &size() const { return d_size; }
 
 
     //! Return the size of the Array
@@ -557,14 +330,15 @@ public: // Views/copies/subset
      * Resize the Array
      * @param N             NUmber of elements
      */
-    void resize( size_t N );
+    inline void resize( size_t N ) { resize( ArraySize( N ) ); }
+
 
     /*!
      * Resize the Array
-     * @param N_rows        Number of rows
-     * @param N_columns     Number of columns
+     * @param N_row         Number of rows
+     * @param N_col         Number of columns
      */
-    void resize( size_t N_rows, size_t N_columns );
+    inline void resize( size_t N_row, size_t N_col ) { resize( ArraySize( N_row, N_col ) ); }
 
     /*!
      * Resize the Array
@@ -572,7 +346,7 @@ public: // Views/copies/subset
      * @param N2            Number of columns
      * @param N3            Number of elements in the third dimension
      */
-    void resize( size_t N1, size_t N2, size_t N3 );
+    inline void resize( size_t N1, size_t N2, size_t N3 ) { resize( ArraySize( N1, N2, N3 ) ); }
 
     /*!
      * Resize the Array
@@ -598,19 +372,25 @@ public: // Views/copies/subset
 
 
     /*!
-     * Subset the Array (total size of array will not change)
+     * Reshape the Array so that the number of dimensions is the
+     *    max of ndim and the largest dim>1.
+     * @param ndim          Desired number of dimensions
+     */
+    inline void setNdim( int ndim ) { d_size.setNdim( ndim ); }
+
+
+    /*!
+     * Subset the Array
      * @param index         Index to subset (imin,imax,jmin,jmax,kmin,kmax,...)
      */
-    template<class TYPE2 = TYPE>
-    Array<TYPE2, FUN> subset( const std::vector<size_t> &index ) const;
+    Array subset( const std::vector<size_t> &index ) const;
 
 
     /*!
-     * Subset the Array (total size of array will not change)
+     * Subset the Array
      * @param index         Index to subset (ix:kx:jx,iy:ky:jy,...)
      */
-    template<class TYPE2 = TYPE>
-    Array<TYPE2, FUN> subset( const std::vector<Range<size_t>> &index ) const;
+    Array subset( const std::vector<Range<size_t>> &index ) const;
 
 
     /*!
@@ -618,30 +398,28 @@ public: // Views/copies/subset
      * @param index         Index of the subset (imin,imax,jmin,jmax,kmin,kmax,...)
      * @param subset        The subset array to copy from
      */
-    template<class TYPE2>
-    void copySubset( const std::vector<size_t> &index, const Array<TYPE2, FUN> &subset );
+    void copySubset( const std::vector<size_t> &index, const Array &subset );
 
     /*!
      * Copy data from an array into a subset of this array
      * @param index         Index of the subset
      * @param subset        The subset array to copy from
      */
-    template<class TYPE2>
-    void copySubset( const std::vector<Range<size_t>> &index, const Array<TYPE2, FUN> &subset );
+    void copySubset( const std::vector<Range<size_t>> &index, const Array &subset );
 
     /*!
      * Add data from an array into a subset of this array
      * @param index         Index of the subset (imin,imax,jmin,jmax,kmin,kmax,...)
      * @param subset        The subset array to add from
      */
-    void addSubset( const std::vector<size_t> &index, const Array<TYPE, FUN> &subset );
+    void addSubset( const std::vector<size_t> &index, const Array &subset );
 
     /*!
      * Add data from an array into a subset of this array
      * @param index         Index of the subset
      * @param subset        The subset array to add from
      */
-    void addSubset( const std::vector<Range<size_t>> &index, const Array<TYPE, FUN> &subset );
+    void addSubset( const std::vector<Range<size_t>> &index, const Array &subset );
 
 
 public: // Accessors
@@ -649,16 +427,13 @@ public: // Accessors
      * Access the desired element
      * @param i             The row index
      */
-    HOST_DEVICE inline TYPE &operator()( size_t i ) ATTRIBUTE_INLINE
-    {
-        return d_data[d_size.index( i )];
-    }
+    ARRAY_ATTRIBUTE inline TYPE &operator()( size_t i ) { return d_data[d_size.index( i )]; }
 
     /*!
      * Access the desired element
      * @param i             The row index
      */
-    HOST_DEVICE inline const TYPE &operator()( size_t i ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE &operator()( size_t i ) const
     {
         return d_data[d_size.index( i )];
     }
@@ -668,7 +443,7 @@ public: // Accessors
      * @param i             The row index
      * @param j             The column index
      */
-    HOST_DEVICE inline TYPE &operator()( size_t i, size_t j ) ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline TYPE &operator()( size_t i, size_t j )
     {
         return d_data[d_size.index( i, j )];
     }
@@ -678,7 +453,7 @@ public: // Accessors
      * @param i             The row index
      * @param j             The column index
      */
-    HOST_DEVICE inline const TYPE &operator()( size_t i, size_t j ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE &operator()( size_t i, size_t j ) const
     {
         return d_data[d_size.index( i, j )];
     }
@@ -689,7 +464,7 @@ public: // Accessors
      * @param j             The column index
      * @param k             The third index
      */
-    HOST_DEVICE inline TYPE &operator()( size_t i, size_t j, size_t k ) ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline TYPE &operator()( size_t i, size_t j, size_t k )
     {
         return d_data[d_size.index( i, j, k )];
     }
@@ -700,7 +475,7 @@ public: // Accessors
      * @param j             The column index
      * @param k             The third index
      */
-    HOST_DEVICE inline const TYPE &operator()( size_t i, size_t j, size_t k ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE &operator()( size_t i, size_t j, size_t k ) const
     {
         return d_data[d_size.index( i, j, k )];
     }
@@ -712,8 +487,7 @@ public: // Accessors
      * @param i3            The third index
      * @param i4            The fourth index
      */
-    HOST_DEVICE inline TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4 ) ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline TYPE &operator()( size_t i1, size_t i2, size_t i3, size_t i4 )
     {
         return d_data[d_size.index( i1, i2, i3, i4 )];
     }
@@ -725,8 +499,8 @@ public: // Accessors
      * @param i3            The third index
      * @param i4            The fourth index
      */
-    HOST_DEVICE inline const TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4 ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE &operator()(
+        size_t i1, size_t i2, size_t i3, size_t i4 ) const
     {
         return d_data[d_size.index( i1, i2, i3, i4 )];
     }
@@ -739,8 +513,7 @@ public: // Accessors
      * @param i4            The fourth index
      * @param i5            The fifth index
      */
-    HOST_DEVICE inline TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline TYPE &operator()( size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 )
     {
         return d_data[d_size.index( i1, i2, i3, i4, i5 )];
     }
@@ -753,8 +526,8 @@ public: // Accessors
      * @param i4            The fourth index
      * @param i5            The fifth index
      */
-    HOST_DEVICE inline const TYPE &operator()(
-        size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE &operator()(
+        size_t i1, size_t i2, size_t i3, size_t i4, size_t i5 ) const
     {
         return d_data[d_size.index( i1, i2, i3, i4, i5 )];
     }
@@ -763,7 +536,7 @@ public: // Accessors
      * Access the desired element as a raw pointer
      * @param i             The global index
      */
-    HOST_DEVICE inline TYPE *ptr( size_t i ) ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline TYPE *ptr( size_t i )
     {
         return i >= d_size.length() ? nullptr : &d_data[i];
     }
@@ -772,34 +545,34 @@ public: // Accessors
      * Access the desired element as a raw pointer
      * @param i             The global index
      */
-    HOST_DEVICE inline const TYPE *ptr( size_t i ) const ATTRIBUTE_INLINE
+    ARRAY_ATTRIBUTE inline const TYPE *ptr( size_t i ) const
     {
         return i >= d_size.length() ? nullptr : &d_data[i];
     }
 
     //! Get iterator to beginning of data
-    inline TYPE *begin() ATTRIBUTE_INLINE { return d_data; }
+    inline TYPE *begin() { return d_data; }
 
     //! Get iterator to beginning of data
-    inline const TYPE *begin() const ATTRIBUTE_INLINE { return d_data; }
+    inline const TYPE *begin() const { return d_data; }
 
     //! Get iterator to beginning of data
-    inline TYPE *end() ATTRIBUTE_INLINE { return d_data + d_size.length(); }
+    inline TYPE *end() { return d_data + d_size.length(); }
 
     //! Get iterator to beginning of data
-    inline const TYPE *end() const ATTRIBUTE_INLINE { return d_data + d_size.length(); }
+    inline const TYPE *end() const { return d_data + d_size.length(); }
 
     //! Return the pointer to the raw data
-    inline std::shared_ptr<TYPE> getPtr() ATTRIBUTE_INLINE { return d_ptr; }
+    inline std::shared_ptr<TYPE> getPtr() { return d_ptr; }
 
     //! Return the pointer to the raw data
-    inline std::shared_ptr<const TYPE> getPtr() const ATTRIBUTE_INLINE { return d_ptr; }
+    inline std::shared_ptr<const TYPE> getPtr() const { return d_ptr; }
 
     //! Return the pointer to the raw data
-    HOST_DEVICE inline TYPE *data() ATTRIBUTE_INLINE { return d_data; }
+    ARRAY_ATTRIBUTE inline TYPE *data() { return d_data; }
 
     //! Return the pointer to the raw data
-    HOST_DEVICE inline const TYPE *data() const ATTRIBUTE_INLINE { return d_data; }
+    ARRAY_ATTRIBUTE inline const TYPE *data() const { return d_data; }
 
 
 public: // Operator overloading
@@ -834,52 +607,52 @@ public: // Math operations
     void rand();
 
     //! Return true if NaNs are present
-    inline bool NaNs() const;
+    bool NaNs() const;
 
     //! Return the smallest value
-    inline TYPE min() const;
+    TYPE min() const;
 
     //! Return the largest value
-    inline TYPE max() const;
+    TYPE max() const;
 
     //! Return the sum of all elements
-    inline TYPE sum() const;
+    TYPE sum() const;
 
     //! Return the mean of all elements
-    inline TYPE mean() const;
+    TYPE mean() const;
 
     //! Return the min of all elements in a given direction
-    Array<TYPE, FUN> min( int dir ) const;
+    Array min( int dir ) const;
 
     //! Return the max of all elements in a given direction
-    Array<TYPE, FUN> max( int dir ) const;
+    Array max( int dir ) const;
 
     //! Return the sum of all elements in a given direction
-    Array<TYPE, FUN> sum( int dir ) const;
+    Array sum( int dir ) const;
 
     //! Return the smallest value
-    inline TYPE min( const std::vector<size_t> &index ) const;
+    TYPE min( const std::vector<size_t> &index ) const;
 
     //! Return the largest value
-    inline TYPE max( const std::vector<size_t> &index ) const;
+    TYPE max( const std::vector<size_t> &index ) const;
 
     //! Return the sum of all elements
-    inline TYPE sum( const std::vector<size_t> &index ) const;
+    TYPE sum( const std::vector<size_t> &index ) const;
 
     //! Return the mean of all elements
-    inline TYPE mean( const std::vector<size_t> &index ) const;
+    TYPE mean( const std::vector<size_t> &index ) const;
 
     //! Return the smallest value
-    inline TYPE min( const std::vector<Range<size_t>> &index ) const;
+    TYPE min( const std::vector<Range<size_t>> &index ) const;
 
     //! Return the largest value
-    inline TYPE max( const std::vector<Range<size_t>> &index ) const;
+    TYPE max( const std::vector<Range<size_t>> &index ) const;
 
     //! Return the sum of all elements
-    inline TYPE sum( const std::vector<Range<size_t>> &index ) const;
+    TYPE sum( const std::vector<Range<size_t>> &index ) const;
 
     //! Return the mean of all elements
-    inline TYPE mean( const std::vector<Range<size_t>> &index ) const;
+    TYPE mean( const std::vector<Range<size_t>> &index ) const;
 
     //! Find all elements that match the operator
     std::vector<size_t> find(
@@ -894,17 +667,17 @@ public: // Math operations
     static Array multiply( const Array &a, const Array &b );
 
     //! Transpose an array
-    Array<TYPE, FUN> reverseDim() const;
+    Array reverseDim() const;
 
     //! Replicate an array a given number of times in each direction
-    Array<TYPE, FUN> repmat( const std::vector<size_t> &N ) const;
+    Array repmat( const std::vector<size_t> &N ) const;
 
     //! Coarsen an array using the given filter
-    Array<TYPE, FUN> coarsen( const Array<TYPE, FUN> &filter ) const;
+    Array coarsen( const Array &filter ) const;
 
     //! Coarsen an array using the given filter
-    Array<TYPE, FUN> coarsen( const std::vector<size_t> &ratio,
-        std::function<TYPE( const Array<TYPE, FUN> & )> filter ) const;
+    Array coarsen(
+        const std::vector<size_t> &ratio, std::function<TYPE( const Array & )> filter ) const;
 
     /*!
      * Perform a element-wise operation y = f(x)
@@ -928,20 +701,30 @@ public: // Math operations
      * @param[in] x             x
      * @param[in] beta          beta
      */
-    void axpby( const TYPE &alpha, const Array<TYPE, FUN> &x, const TYPE &beta );
+    void axpby( const TYPE &alpha, const Array &x, const TYPE &beta );
+
+    /*!
+     * Linear interpolation
+     * @param[in] x             Position as a decimal index
+     */
+    TYPE interp( const std::vector<double> &x ) const;
+
+    /**
+     * \fn equals (Array & const rhs, TYPE tol )
+     * \brief  Determine if two Arrays are equal using an absolute tolerance
+     * \param[in] rhs Vector to compare to
+     * \param[in] tol Tolerance of comparison
+     * \return  True iff \f$||\mathit{rhs} - x||_\infty < \mathit{tol}\f$
+     */
+    bool equals( const Array &rhs, TYPE tol = 0.000001 ) const;
 
 private:
+    bool d_isCopyable;           // Can the array be copied
+    bool d_isFixedSize;          // Can the array be resized
     ArraySize d_size;            // Size of each dimension
     TYPE *d_data;                // Raw pointer to data in array
     std::shared_ptr<TYPE> d_ptr; // Shared pointer to data in array
     void allocate( const ArraySize &N );
-
-public:
-    template<class TYPE2, class FUN2>
-    inline bool sizeMatch( const Array<TYPE2, FUN2> &rhs ) const
-    {
-        return d_size == rhs.d_size;
-    }
 
 private:
     inline void checkSubsetIndex( const std::vector<Range<size_t>> &range ) const;
@@ -952,11 +735,60 @@ private:
 };
 
 
+/********************************************************
+ *  ostream operator                                     *
+ ********************************************************/
+inline std::ostream &operator<<( std::ostream &out, const ArraySize &s )
+{
+    out << "[" << s[0];
+    for ( size_t i = 1; i < s.ndim(); i++ )
+        out << "," << s[i];
+    out << "]";
+    return out;
+}
+
+
+/********************************************************
+ *  Math operations                                      *
+ ********************************************************/
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator+(
+    const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
+{
+    Array<TYPE, FUN, Allocator> c;
+    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a + b; };
+    FUN::transform( fun, a, b, c );
+    return c;
+}
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator-(
+    const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
+{
+    Array<TYPE, FUN, Allocator> c;
+    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a - b; };
+    FUN::transform( fun, a, b, c );
+    return c;
+}
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator*(
+    const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
+{
+    return Array<TYPE, FUN, Allocator>::multiply( a, b );
+}
+template<class TYPE, class FUN, class Allocator>
+inline Array<TYPE, FUN, Allocator> operator*(
+    const Array<TYPE, FUN, Allocator> &a, const std::vector<TYPE> &b )
+{
+    Array<TYPE, FUN, Allocator> b2;
+    b2.viewRaw( { b.size() }, const_cast<TYPE *>( b.data() ) );
+    return Array<TYPE, FUN, Allocator>::multiply( a, b2 );
+}
+
+
+/********************************************************
+ *  Convience typedefs                                   *
+ ********************************************************/
 typedef Array<double> DoubleArray;
-typedef Array<float> FloatArray;
 typedef Array<int> IntArray;
-
-
-#include "common/Array.hpp"
 
 #endif

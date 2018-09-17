@@ -35,10 +35,6 @@ IF ( NOT CMAKE_CXX_STANDARD )
 ENDIF()
 
 
-# Disable Link Time Optimization until we have a chance to test
-SET( DISABLE_LTO )
-
-
 # Set source/install paths
 SET( ${PROJ}_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" )
 SET( ${PROJ}_BUILD_DIR  "${CMAKE_CURRENT_BINARY_DIR}" )
