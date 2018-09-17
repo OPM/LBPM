@@ -228,8 +228,7 @@ int main(int argc, char **argv)
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		
-		Domain Dm(db);
-
+		Dm  = std::shared_ptr<Domain>(new Domain(db,comm));      // full domain for analysis
 
 		InitializeRanks( rank, nprocx, nprocy, nprocz, iproc, jproc, kproc,
 				rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z,
@@ -253,7 +252,6 @@ int main(int argc, char **argv)
 		char *id;
 		id = new char[Nx*Ny*Nz];
 
-
 		if (rank==0) printf("Assigning phase ID from file \n");
 		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
@@ -267,11 +265,11 @@ int main(int argc, char **argv)
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
 					//id[n] = 1;
-					Dm.id[n] = id[n];
+					Dm->id[n] = id[n];
 				}
 			}
 		}
-		Dm.CommInit();
+		Dm->CommInit();
 
 		//.......................................................................
 		// Compute the media porosity
@@ -301,7 +299,6 @@ int main(int argc, char **argv)
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
 
-		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
@@ -312,7 +309,7 @@ int main(int argc, char **argv)
 		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 		
 		//......................device distributions.................................
@@ -394,7 +391,6 @@ int main(int argc, char **argv)
 		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
 		
 		ScaLBL_Comm.RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		
 		
 		//...........................................................................
 		ScaLBL_CopyToHost(fq_host,fq,19*Np*sizeof(double));
