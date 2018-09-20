@@ -265,8 +265,14 @@ void ScaLBL_ColorModel::Create(){
 		}
 	}
 	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->LastInterior(); idx++){
-		if (idx == ScaLBL_Comm->LastExterior()) idx = ScaLBL_Comm->FirstInterior();
+	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+		int n = TmpMap[idx];
+		if (n > Nx*Ny*Nz){
+			printf("Bad value! idx=%i \n");
+			TmpMap[idx] = Nx*Ny*Nz-1;
+		}
+	}
+	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
 		int n = TmpMap[idx];
 		if (n > Nx*Ny*Nz){
 			printf("Bad value! idx=%i \n");
