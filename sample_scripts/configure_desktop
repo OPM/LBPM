@@ -6,7 +6,7 @@ cmake                                    \
     -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
     -D CMAKE_C_FLAGS="-g "         \
     -D CMAKE_CXX_FLAGS="-g "      \
-    -D CXX_STD=11 	   \
+    -D CMAKE_CXX_STANDARD=14 	   \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
@@ -14,10 +14,10 @@ cmake                                    \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_NETCDF=0 			 \
-    -D HDF5_DIRECTORY="/home/mcclurej/TPL/hdf5/"	 \
-    -D HDF5_LIB="/home/mcclurej/TPL/hdf5/lib/libhdf5.a"	\
-    -D SILO_LIB="/home/mcclurej/TPL/silo/lib/libsiloh5.a"	 \
-    -D SILO_DIRECTORY="/home/mcclurej/TPL/silo/"	 \
+    -D HDF5_DIRECTORY="/opt/apps/hdf5/"	 \
+    -D HDF5_LIB="/opt/apps/hdf5/lib/libhdf5.a"	\
+    -D SILO_LIB="/opt/apps/silo/lib/libsiloh5.a"	 \
+    -D SILO_DIRECTORY="/opt/apps/silo/"	 \
     -D NETCDF_DIRECTORY="/apps/netcdf/"	 \
     -D USE_SILO=1			 \
     -D USE_CUDA=0                        \
