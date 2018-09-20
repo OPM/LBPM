@@ -8,6 +8,8 @@
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
+#include "analysis/distance.h"
+#include "analysis/Minkowski.h"
 
 #include "shared_ptr.h"
 #include "common/Utilities.h"
@@ -141,6 +143,11 @@ public:
 	DoubleArray Vel_x;		// Velocity
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
+	DoubleArray PhaseDistance;
+
+	Minkowski wet_morph;
+	Minkowski nonwet_morph;
+	
 	//	Container for averages;
 	DoubleArray ComponentAverages_WP;
 	DoubleArray ComponentAverages_NWP;
