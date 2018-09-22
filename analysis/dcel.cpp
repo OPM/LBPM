@@ -1,5 +1,78 @@
 #include "analysis/dcel.h"
 
+/* 
+Double connected edge list (DECL) 
+*/
+
+Vertex::Vertex(){
+	size_ = 0;
+	vertex_data.resize(36);
+}
+
+Vertex::~Vertex(){
+
+}
+
+void Vertex::add(Point P){
+	vertex_data.push_back(P.x);
+	vertex_data.push_back(P.y);
+	vertex_data.push_back(P.z);
+	size_++;
+}
+
+void Vertex::assign(int idx, Point P){
+	vertex_data[3*idx] = P.x;
+	vertex_data[3*idx+1] = P.y;
+	vertex_data[3*idx+2] = P.z;
+}
+
+int Vertex::size(){
+	return size_;
+}
+
+Point Vertex::coords(int idx){
+	Point P;
+	P.x = vertex_data[3*idx];
+	P.y = vertex_data[3*idx+1];
+	P.z = vertex_data[3*idx+2];
+	return P;
+}
+
+
+Halfedge::Halfedge(){
+	size_=0;
+}
+
+Halfedge::~Halfedge(){
+	
+}
+int Halfedge::v1(int edge){
+	return data(0,edge);
+}
+
+int Halfedge::v2(int edge){
+	return data(1,edge);
+}
+
+int Halfedge::face(int edge){
+	return data(2,edge);
+}
+
+int Halfedge::twin(int edge){
+	return data(3,edge);
+}
+
+int Halfedge::prev(int edge){
+	return data(4,edge);
+}
+
+int Halfedge::next(int edge){
+	return data(5,edge);
+}
+
+int Halfedge::size(){
+	return size_;
+}
 
 
 DECL::DECL(){
@@ -12,20 +85,24 @@ DECL::~DECL(){
 }
 
 int DECL::Face(int index){
-	return FaceData[index];
+	return FaceData(index);
 }
 
-void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, const int j, const int k){
+void DECL::LocalIsosurface(const DoubleArray A, double value, const int i, const int j, const int k){
 	Point P,Q;
 	Point PlaceHolder;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
+
+	int CubeIndex;
+	int nTris = 0;
+	int nVert =0;
 
 	Point VertexList[12];
 	Point NewVertexList[12];
 	int LocalRemap[12];
 
-	Point cellvertices[20];
-    std::array<std::array<int,3>,20> Triangles;
+	DTMutableList<Point> cellvertices = DTMutableList<Point>(20);
+	IntArray Triangles = IntArray(3,20);
 
 	// Values from array 'A' at the cube corners
 	double CubeValues[8];
@@ -52,7 +129,7 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 	
 	//Determine the index into the edge table which
 	//tells us which vertices are inside of the surface
-	int CubeIndex = 0;
+	CubeIndex = 0;
 	if (CubeValues[0] < 0.0f) CubeIndex |= 1;
 	if (CubeValues[1] < 0.0f) CubeIndex |= 2;
 	if (CubeValues[2] < 0.0f) CubeIndex |= 4;
@@ -145,30 +222,31 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 		//P.x  += i;
 		//P.y  += j;
 		//P.z  += k;
-		cellvertices[idx] = P;
+		cellvertices(idx) = P;
 	}
+	nVert = VertexCount;
 
 	TriangleCount = 0;
 	for (int idx=0;triTable[CubeIndex][idx]!=-1;idx+=3) {
-		Triangles[TriangleCount][0] = LocalRemap[triTable[CubeIndex][idx+0]];
-		Triangles[TriangleCount][1] = LocalRemap[triTable[CubeIndex][idx+1]];
-		Triangles[TriangleCount][2] = LocalRemap[triTable[CubeIndex][idx+2]];
+		Triangles(0,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+0]];
+		Triangles(1,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+1]];
+		Triangles(2,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+2]];
 		TriangleCount++;
 	}
-	int nTris = TriangleCount;
+	nTris = TriangleCount;
 
 	// Now add the local values to the DECL data structure
 	if (nTris>0){
 		FaceData.resize(TriangleCount);
 	    //printf("Construct halfedge structure... \n");
 	    //printf("   Construct %i triangles \n",nTris);
-		halfedge.resize(nTris*3);
+		halfedge.data.resize(6,nTris*3);
 		int idx_edge=0;
 		for (int idx=0; idx<TriangleCount; idx++){
-			int V1 = Triangles[idx][0];
-			int V2 = Triangles[idx][1];
-			int V3 = Triangles[idx][2];
-			FaceData[idx] = idx_edge;
+			int V1 = Triangles(0,idx);
+			int V2 = Triangles(1,idx);
+			int V3 = Triangles(2,idx);
+			FaceData(idx) = idx_edge;
 			// first edge: V1->V2 
 			halfedge.data(0,idx_edge) = V1;  // first vertex
 			halfedge.data(1,idx_edge) = V2;  // second vertex
@@ -212,8 +290,8 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 				}
 			}	
 			// Use "ghost" twins if edge is on a cube face
-			P = cellvertices[V1];
-			Q = cellvertices[V2];
+			P = cellvertices(V1);
+			Q = cellvertices(V2);
 			if (P.x == 0.0 && Q.x == 0.0) halfedge.data(3,idx) = -1;  // ghost twin for x=0 face
 			if (P.x == 1.0 && Q.x == 1.0) halfedge.data(3,idx) = -4;  // ghost twin for x=1 face
 			if (P.y == 0.0 && Q.y == 0.0) halfedge.data(3,idx) = -2;  // ghost twin for y=0 face
@@ -225,7 +303,7 @@ void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, cons
 
 	// Map vertices to global coordinates
 	for (int idx=0;idx<VertexCount;idx++) {
-		P = cellvertices[idx];
+		P = cellvertices(idx);
 		P.x  += i;
 		P.y  += j;
 		P.z  += k;
@@ -280,7 +358,8 @@ Point DECL::TriNormal(int edge)
 double DECL::EdgeAngle(int edge)
 {
 	double angle;
-	double dotprod;
+	double nx,ny,nz;
+	double dotprod,length,hypotenuse;
 	Point P,Q,R; // triangle vertices
 	Point U,V,W; // normal vectors
 	int e2 = halfedge.next(edge);
@@ -293,14 +372,14 @@ double DECL::EdgeAngle(int edge)
 	if (halfedge.twin(edge) < 0 ){
 		// compute edge normal in plane of cube face
 		W = P - Q; // edge tangent vector
-		double length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z);
+		length = sqrt(W.x*W.x+W.y*W.y+W.z*W.z);
 		W.x /= length;
 		W.y /= length;
 		W.z /= length;
 		// edge normal within the plane of the cube face
-		double nx = W.y*V.z - W.z*V.y;
-		double ny = W.z*V.x - W.x*V.z;
-		double nz = W.x*V.y - W.y*V.x;
+		nx = W.y*V.z - W.z*V.y;
+		ny = W.z*V.x - W.x*V.z;
+		nz = W.x*V.y - W.y*V.x;
 		length = sqrt(nx*nx+ny*ny+nz*nz);
 		// new value for V is this normal vector
 		V.x = nx/length; V.y = ny/length; V.z = nz/length;
@@ -352,19 +431,20 @@ void Isosurface(DoubleArray &A, const double &v)
 {
 	Point P,Q;
 	Point PlaceHolder;
+	double temp;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
 
 	int TriangleCount;
 	int VertexCount;
 	int CubeIndex;
+	int nTris, nVert;
 
 	Point VertexList[12];
 	Point NewVertexList[12];
 	int LocalRemap[12];
 
-	Point cellvertices[20];
-    std::array<std::array<int,3>,20> Triangles;
-    Triangles.fill( { 0 } );
+	DTMutableList<Point> cellvertices = DTMutableList<Point>(20);
+	IntArray Triangles = IntArray(3,20);
 
 	// Values from array 'A' at the cube corners
 	double CubeValues[8];
@@ -383,7 +463,6 @@ void Isosurface(DoubleArray &A, const double &v)
 	C6.x = 1.0; C6.y = 1.0; C6.z = 1.0;
 	C7.x = 0.0; C7.y = 1.0; C7.z = 1.0;							
 
-	std::vector<std::array<int,6>> HalfEdge;
 	for (int k=1; k<Nz-1; k++){		
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
@@ -490,81 +569,83 @@ void Isosurface(DoubleArray &A, const double &v)
 					//P.x  += i;
 					//P.y  += j;
 					//P.z  += k;
-					cellvertices[idx] = P;
+					cellvertices(idx) = P;
 				}
+				nVert = VertexCount;
 
 				TriangleCount = 0;
 				for (int idx=0;triTable[CubeIndex][idx]!=-1;idx+=3) {
-					Triangles[TriangleCount][0] = LocalRemap[triTable[CubeIndex][idx+0]];
-					Triangles[TriangleCount][1] = LocalRemap[triTable[CubeIndex][idx+1]];
-					Triangles[TriangleCount][2] = LocalRemap[triTable[CubeIndex][idx+2]];
+					Triangles(0,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+0]];
+					Triangles(1,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+1]];
+					Triangles(2,TriangleCount) = LocalRemap[triTable[CubeIndex][idx+2]];
 					TriangleCount++;
 				}
-				int nTris = TriangleCount;
+				nTris = TriangleCount;
 
 				// Now add the local values to the DECL data structure
-				HalfEdge.resize(nTris*3);
+				IntArray HalfEdge(6,nTris*3);
+				DoubleArray EdgeAngles(nTris*3);
 				int idx_edge=0;
 				for (int idx=0; idx<TriangleCount; idx++){
-					int V1 = Triangles[idx][0];
-					int V2 = Triangles[idx][1];
-					int V3 = Triangles[idx][2];
+					int V1 = Triangles(0,idx);
+					int V2 = Triangles(1,idx);
+					int V3 = Triangles(2,idx);
 					// first edge: V1->V2 
-					HalfEdge[idx_edge][0] = V1;  // first vertex
-					HalfEdge[idx_edge][1] = V2;  // second vertex
-					HalfEdge[idx_edge][2] = idx; // triangle
-					HalfEdge[idx_edge][3] = -1;  // twin
-					HalfEdge[idx_edge][4] = idx_edge+2;  // previous edge
-					HalfEdge[idx_edge][5] = idx_edge+1;  // next edge
+					HalfEdge(0,idx_edge) = V1;  // first vertex
+					HalfEdge(1,idx_edge) = V2;  // second vertex
+					HalfEdge(2,idx_edge) = idx; // triangle
+					HalfEdge(3,idx_edge) = -1;  // twin
+					HalfEdge(4,idx_edge) = idx_edge+2;  // previous edge
+					HalfEdge(5,idx_edge) = idx_edge+1;  // next edge
 					idx_edge++;
 					// second edge: V2->V3
-					HalfEdge[idx_edge][0] = V2;  // first vertex
-					HalfEdge[idx_edge][1] = V3;  // second vertex
-					HalfEdge[idx_edge][2] = idx; // triangle
-					HalfEdge[idx_edge][3] = -1;  // twin
-					HalfEdge[idx_edge][4] = idx_edge-1;  // previous edge
-					HalfEdge[idx_edge][5] = idx_edge+1;  // next edge
+					HalfEdge(0,idx_edge) = V2;  // first vertex
+					HalfEdge(1,idx_edge) = V3;  // second vertex
+					HalfEdge(2,idx_edge) = idx; // triangle
+					HalfEdge(3,idx_edge) = -1;  // twin
+					HalfEdge(4,idx_edge) = idx_edge-1;  // previous edge
+					HalfEdge(5,idx_edge) = idx_edge+1;  // next edge
 					idx_edge++;
 					// third edge: V3->V1
-					HalfEdge[idx_edge][0] = V3;  // first vertex
-					HalfEdge[idx_edge][1] = V1;  // second vertex
-					HalfEdge[idx_edge][2] = idx; // triangle
-					HalfEdge[idx_edge][3] = -1;  // twin
-					HalfEdge[idx_edge][4] = idx_edge-1;  // previous edge
-					HalfEdge[idx_edge][5] = idx_edge-2;  // next edge
+					HalfEdge(0,idx_edge) = V3;  // first vertex
+					HalfEdge(1,idx_edge) = V1;  // second vertex
+					HalfEdge(2,idx_edge) = idx; // triangle
+					HalfEdge(3,idx_edge) = -1;  // twin
+					HalfEdge(4,idx_edge) = idx_edge-1;  // previous edge
+					HalfEdge(5,idx_edge) = idx_edge-2;  // next edge
 					idx_edge++;
 				}
 				int EdgeCount=idx_edge;
 				for (int idx=0; idx<EdgeCount; idx++){
-					int V1=HalfEdge[idx][0];
-					int V2=HalfEdge[idx][1];
+					int V1=HalfEdge(0,idx);
+					int V2=HalfEdge(1,idx);
 					// Find all the twins within the cube
 					for (int jdx=0; idx<EdgeCount; jdx++){
-						if (HalfEdge[jdx][1] == V1 && HalfEdge[jdx][0] == V2){
+						if (HalfEdge(1,jdx) == V1 && HalfEdge(0,jdx) == V2){
 							// this is the pair
-							HalfEdge[idx][3] = jdx;
-							HalfEdge[jdx][3] = idx;
+							HalfEdge(3,idx) = jdx;
+							HalfEdge(3,jdx) = idx;
 						}
-						if (HalfEdge[jdx][1] == V2 && HalfEdge[jdx][0] == V1 && !(idx==jdx)){
+						if (HalfEdge(1,jdx) == V2 && HalfEdge(0,jdx) == V1 && !(idx==jdx)){
 							std::printf("WARNING: half edges with identical orientation! \n");
 						}
 					}	
 					// Use "ghost" twins if edge is on a cube face
-					P = cellvertices[V1];
-					Q = cellvertices[V2];
-					if (P.x == 0.0 && Q.x == 0.0) HalfEdge[idx_edge][3] = -1;  // ghost twin for x=0 face
-					if (P.x == 1.0 && Q.x == 1.0) HalfEdge[idx_edge][3] = -2;  // ghost twin for x=1 face
-					if (P.y == 0.0 && Q.y == 0.0) HalfEdge[idx_edge][3] = -3;  // ghost twin for y=0 face
-					if (P.y == 1.0 && Q.y == 1.0) HalfEdge[idx_edge][3] = -4;  // ghost twin for y=1 face
-					if (P.z == 0.0 && Q.z == 0.0) HalfEdge[idx_edge][3] = -5;  // ghost twin for z=0 face
-					if (P.z == 1.0 && Q.z == 1.0) HalfEdge[idx_edge][3] = -6;  // ghost twin for z=1 face
+					P = cellvertices(V1);
+					Q = cellvertices(V2);
+					if (P.x == 0.0 && Q.x == 0.0) HalfEdge(3,idx_edge) = -1;  // ghost twin for x=0 face
+					if (P.x == 1.0 && Q.x == 1.0) HalfEdge(3,idx_edge) = -2;  // ghost twin for x=1 face
+					if (P.y == 0.0 && Q.y == 0.0) HalfEdge(3,idx_edge) = -3;  // ghost twin for y=0 face
+					if (P.y == 1.0 && Q.y == 1.0) HalfEdge(3,idx_edge) = -4;  // ghost twin for y=1 face
+					if (P.z == 0.0 && Q.z == 0.0) HalfEdge(3,idx_edge) = -5;  // ghost twin for z=0 face
+					if (P.z == 1.0 && Q.z == 1.0) HalfEdge(3,idx_edge) = -6;  // ghost twin for z=1 face
 				}
 				// Find all the angles
 				for (int idx=0; idx<EdgeCount; idx++){
-					int V1=HalfEdge[idx][0];
-					int V2=HalfEdge[idx][1];
-					int T1= HalfEdge[idx_edge][2];
-					int twin=HalfEdge[idx_edge][3];
+					int V1=HalfEdge(0,idx);
+					int V2=HalfEdge(1,idx);
+					int T1= HalfEdge(2,idx_edge);
+					int twin=HalfEdge(3,idx_edge); 
 					if (twin == -1){
 						
 					}
@@ -572,11 +653,11 @@ void Isosurface(DoubleArray &A, const double &v)
 
 				// Map vertices to global coordinates
 				for (int idx=0;idx<VertexCount;idx++) {
-					P = cellvertices[idx];
+					P = cellvertices(idx);
 					P.x  += i;
 					P.y  += j;
 					P.z  += k;
-					cellvertices[idx] = P;
+					cellvertices(idx) = P;
 				}
 			}
 		}

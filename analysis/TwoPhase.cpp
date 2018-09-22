@@ -548,7 +548,6 @@ void TwoPhase::ComputeLocal()
 			}
 		}
 	}
-
 	Array <char> phase_label(Nx,Ny,Nz);
 	Array <double> phase_distance(Nx,Ny,Nz);
 	// Analyze the wetting fluid
@@ -598,7 +597,6 @@ void TwoPhase::ComputeLocal()
 	}	
 	CalcDist(phase_distance,phase_label,*Dm);
 	nonwet_morph.ComputeScalar(phase_distance,0.f);
-	
 }
 
 
