@@ -408,6 +408,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 		
 		// Perform the collision operation
@@ -423,6 +424,7 @@ void ScaLBL_ColorModel::Run(){
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
@@ -442,6 +444,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -456,6 +459,7 @@ void ScaLBL_ColorModel::Run(){
 				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		// Set boundary conditions
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);

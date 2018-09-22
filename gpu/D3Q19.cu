@@ -127,7 +127,7 @@ __global__ void deviceReduceKernel(double *in, double* out, int N) {
 		out[blockIdx.x]=sum;
 }
 
-__global__  void dvc_ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
+__global__ void dvc_ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	//....................................................................................
 	// Pack distribution q into the send buffer for the listed lattice sites
 	// dist may be even or odd distributions stored by stream layout
@@ -161,36 +161,6 @@ __global__ void dvc_ScaLBL_D3Q19_Unpack(int q,  int *list,  int start, int count
 		}
 	}
 }
-/*
-__global__ void dvc_ScaLBL_D3Q19_MapRecv(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
-						   int *d3q19_recvlist, int Nx, int Ny, int Nz){
-	//....................................................................................
-	// Unack distribution from the recv buffer
-	// Distribution q matche Cqx, Cqy, Cqz
-	// swap rule means that the distributions in recvbuf are OPPOSITE of q
-	// dist may be even or odd distributions stored by stream layout
-	//....................................................................................
-	int i,j,k,n,nn,idx;
-	int N = Nx*Ny*Nz;
-	idx = blockIdx.x*blockDim.x + threadIdx.x;
-	if (idx<count){
-		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = list[idx];
-		// Get the 3-D indices
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
-		// Streaming for the non-local distribution
-		i += Cqx;
-		j += Cqy;
-		k += Cqz;
-		nn = k*Nx*Ny+j*Nx+i;
-		// unpack the distribution to the proper location
-		d3q19_recvlist[start+idx]=nn;
-	}
-}
- */
-
 
 __global__ void dvc_ScaLBL_D3Q19_Init(char *ID, double *f_even, double *f_odd, int Nx, int Ny, int Nz)
 {
