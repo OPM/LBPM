@@ -15,6 +15,8 @@
 */
 #include "analysis/analysis.h"
 #include "ProfilerApp.h"
+
+#include <algorithm>
 #include <iostream>
 
 

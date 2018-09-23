@@ -17,6 +17,7 @@
 #define Distance_H_INC
 
 #include "common/Domain.h"
+#include "common/Array.hpp"
 
 
 struct Vec {

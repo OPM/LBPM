@@ -428,12 +428,12 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	for (k=2; k<Nz-2; k++){
 		for (j=2; j<Ny-2; j++){
 			for (i=2; i<Nx-2; i++){
-			  // Local index (regular layout)
-			  n = k*Nx*Ny + j*Nx + i;
-			  if (id[n] > 0 ){
-				Map(n) = idx++;
-				//neighborList[idx++] = n; // index of self in regular layout
-			  }
+				// Local index (regular layout)
+				n = k*Nx*Ny + j*Nx + i;
+				if (id[n] > 0 ){
+					Map(n) = idx++;
+					//neighborList[idx++] = n; // index of self in regular layout
+				}
 			}
 		}
 	}
@@ -558,14 +558,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	}
 	ScaLBL_CopyToDevice(dvcSendList_x,TempBuffer,sendCount_x*sizeof(int));
 
-
-
-
-
-
-
-
-
 	ScaLBL_CopyToHost(TempBuffer,dvcSendList_y,sendCount_y*sizeof(int));
 	for (i=0; i<sendCount_y; i++){
 		n = TempBuffer[i];
@@ -583,12 +575,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	ScaLBL_CopyToDevice(dvcSendList_z,TempBuffer,sendCount_z*sizeof(int));
 
 
-
-
-
-
-
-
 	ScaLBL_CopyToHost(TempBuffer,dvcSendList_X,sendCount_X*sizeof(int));
 	for (i=0; i<sendCount_X; i++){
 		n = TempBuffer[i];
@@ -598,11 +584,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		TempBuffer[i]=idx;
 	}
 	ScaLBL_CopyToDevice(dvcSendList_X,TempBuffer,sendCount_X*sizeof(int));
-
-
-
-
-
 
 
 	ScaLBL_CopyToHost(TempBuffer,dvcSendList_Y,sendCount_Y*sizeof(int));
@@ -731,19 +712,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	ScaLBL_CopyToDevice(dvcRecvDist_x,TempBuffer,5*recvCount_x*sizeof(int));
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_y,5*recvCount_y*sizeof(int));
 	for (i=0; i<5*recvCount_y; i++){
 		n = TempBuffer[i];
@@ -763,15 +731,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	ScaLBL_CopyToDevice(dvcRecvDist_z,TempBuffer,5*recvCount_z*sizeof(int));
 
 
-
-
-
-
-
-
-
-
-
 	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_X,5*recvCount_X*sizeof(int));
 	for (i=0; i<5*recvCount_X; i++){
 		n = TempBuffer[i];
@@ -781,22 +740,6 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 		TempBuffer[i]=idx;
 	}
 	ScaLBL_CopyToDevice(dvcRecvDist_X,TempBuffer,5*recvCount_X*sizeof(int));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	ScaLBL_CopyToHost(TempBuffer,dvcRecvDist_Y,5*recvCount_Y*sizeof(int));

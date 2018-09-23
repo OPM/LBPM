@@ -280,8 +280,14 @@ void ScaLBL_ColorModel::Create(){
 		}
 	}
 	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->LastInterior(); idx++){
-		if (idx == ScaLBL_Comm->LastExterior()) idx = ScaLBL_Comm->FirstInterior();
+	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+		int n = TmpMap[idx];
+		if (n > Nx*Ny*Nz){
+			printf("Bad value! idx=%i \n");
+			TmpMap[idx] = Nx*Ny*Nz-1;
+		}
+	}
+	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
 		int n = TmpMap[idx];
 		if (n > Nx*Ny*Nz){
 			printf("Bad value! idx=%i \n");
@@ -417,10 +423,15 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 		
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		if (BoundaryCondition > 0){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
 
@@ -428,11 +439,8 @@ void ScaLBL_ColorModel::Run(){
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		// Set BCs
-		if (BoundaryCondition > 0){
-			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
-		}
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
@@ -451,21 +459,23 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		// Halo exchange for phase field
+		if (BoundaryCondition > 0){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
 		// Set boundary conditions
-		if (BoundaryCondition > 0){
-			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
-			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
-		}
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);

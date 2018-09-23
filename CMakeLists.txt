@@ -31,12 +31,8 @@ IF ( NOT CMAKE_CXX_STANDARD )
         MESSAGE( WARNING "CXX_STD is obsolete, please set CMAKE_CXX_STANDARD" )
         SET( CMAKE_CXX_STANDARD ${CXX_STD} )
     ENDIF()
-    SET( CMAKE_CXX_STANDARD 11 )
+    SET( CMAKE_CXX_STANDARD 14 )
 ENDIF()
-
-
-# Disable Link Time Optimization until we have a chance to test
-SET( DISABLE_LTO )
 
 
 # Set source/install paths

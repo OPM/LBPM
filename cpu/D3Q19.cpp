@@ -27,36 +27,6 @@ extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double
 	}
 }
 
-/*extern "C" void ScaLBL_D3Q19_Unpack(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
-					   double *recvbuf, double *dist, int Nx, int Ny, int Nz){
-	//....................................................................................
-	// Unack distribution from the recv buffer
-	// Distribution q matche Cqx, Cqy, Cqz
-	// swap rule means that the distributions in recvbuf are OPPOSITE of q
-	// dist may be even or odd distributions stored by stream layout
-	//....................................................................................
-	int i,j,k,n,nn,idx;
-	int N = Nx*Ny*Nz;
-	for (idx=0; idx<count; idx++){
-		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = list[idx];
-		// Get the 3-D indices
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
-		// Streaming for the non-local distribution
-		i += Cqx;
-		j += Cqy;
-		k += Cqz;
-
-		nn = k*Nx*Ny+j*Nx+i;
-
-		// unpack the distribution to the proper location
-		dist[q*N+nn] = recvbuf[start+idx];
-	}
-}*/
-
-
 extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list,  int start, int count,
 		double *recvbuf, double *dist, int N){
 	//....................................................................................
@@ -76,36 +46,6 @@ extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list,  int start, int count,
 	}
 }
 
-/*
-extern "C" void ScaLBL_D3Q19_MapRecv(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
-					   int *d3q19_recvlist, int Nx, int Ny, int Nz){
-	//....................................................................................
-	// Map the recieve distributions to
-	// Distribution q matche Cqx, Cqy, Cqz
-	// swap rule means that the distributions in recvbuf are OPPOSITE of q
-	// dist may be even or odd distributions stored by stream layout
-	//....................................................................................
-
-	int i,j,k,n,nn,idx;
-	int N = Nx*Ny*Nz;
-	for (idx=0; idx<count; idx++){
-		// Get the value from the list -- note that n is the index is from the send (non-local) process
-		n = list[idx];
-		// Get the 3-D indices
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
-		// Streaming for the non-local distribution
-		i += Cqx;
-		j += Cqy;
-		k += Cqz;
-		// compute 1D index for the neighbor and save
-		nn = k*Nx*Ny+j*Nx+i;
-		d3q19_recvlist[start+idx] = nn;
-	}
-}
-
- */
 extern "C" void ScaLBL_D3Q19_AA_Init(double *f_even, double *f_odd, int Np)
 {
 	int n;

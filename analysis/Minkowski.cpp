@@ -26,9 +26,19 @@
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 
+#include "ProfilerApp.h"
+
+
 #define PI 3.14159265359
 
 // Constructor
+
+Minkowski::Minkowski():
+	kstart(0), kfinish(0), isovalue(0), Volume(0),
+    LOGFILE(NULL), Dm(NULL), Vi(0), Vi_global(0)
+{
+}
+
 Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	kstart(0), kfinish(0), isovalue(0), Volume(0),
     LOGFILE(NULL), Dm(dm), Vi(0), Vi_global(0)
@@ -51,7 +61,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 // Destructor
 Minkowski::~Minkowski()
 {
-    if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
+  //    if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
 }
 
 double Minkowski::V(){
@@ -70,11 +80,11 @@ double Minkowski::X(){
 	return Xi_global;
 }
 
-void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
+void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 {
+    PROFILE_START("ComputeScalar");
 	Xi = Ji = Ai = 0.0;
 	DECL object;
-	Point P1,P2,P3;
 	int e1,e2,e3;
 	double s,s1,s2,s3;
 	double a1,a2,a3;
@@ -90,13 +100,13 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 					e1 = object.Face(idx); 
 					e2 = object.halfedge.next(e1);
 					e3 = object.halfedge.next(e2);
-					P1 = object.vertex.coords(object.halfedge.v1(e1));
-					P2 = object.vertex.coords(object.halfedge.v1(e2));
-					P3 = object.vertex.coords(object.halfedge.v1(e3));
+					auto P1 = object.vertex.coords(object.halfedge.v1(e1));
+					auto P2 = object.vertex.coords(object.halfedge.v1(e2));
+					auto P3 = object.vertex.coords(object.halfedge.v1(e3));
 					// Surface area
-					s1 = sqrt((P1.x-P2.x)*(P1.x-P2.x)+(P1.y-P2.y)*(P1.y-P2.y)+(P1.z-P2.z)*(P1.z-P2.z));
-					s2 = sqrt((P2.x-P3.x)*(P2.x-P3.x)+(P2.y-P3.y)*(P2.y-P3.y)+(P2.z-P3.z)*(P2.z-P3.z));
-					s3 = sqrt((P1.x-P3.x)*(P1.x-P3.x)+(P1.y-P3.y)*(P1.y-P3.y)+(P1.z-P3.z)*(P1.z-P3.z));
+					s1 = Distance( P1, P2 );
+					s2 = Distance( P2, P3 );
+					s3 = Distance( P1, P3 );
 					s = 0.5*(s1+s2+s3);
 					Ai += sqrt(s*(s-s1)*(s-s2)*(s-s3));
 					// Mean curvature based on half edge angle
@@ -137,7 +147,7 @@ void Minkowski::ComputeScalar(const DoubleArray Field, const double isovalue)
 	MPI_Allreduce(&Ai,&Ai_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	MPI_Allreduce(&Ji,&Ji_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	MPI_Barrier(Dm->Comm);
-
+    PROFILE_STOP("ComputeScalar");
 }
 
 void Minkowski::PrintAll()
