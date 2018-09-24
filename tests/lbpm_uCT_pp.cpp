@@ -455,7 +455,6 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
 		
-		/*
 		Array <char> phase_label(Nx,Ny,Nz);
 		Array <double> phase_distance(Nx,Ny,Nz);
 		// Analyze the wetting fluid
@@ -480,8 +479,7 @@ int main(int argc, char **argv)
 			}
 		}	
 		CalcDist(phase_distance,phase_label,*Dm[0]);
-		*/
-		Averages->ComputeScalar(Dist[0],0.f);
+		Averages->ComputeScalar(phase_distance,0.f);
 		Averages->PrintAll();
 	}
 	PROFILE_STOP("Main");
