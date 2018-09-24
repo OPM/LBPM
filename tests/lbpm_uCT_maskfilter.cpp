@@ -319,15 +319,15 @@ int main(int argc, char **argv)
     }
 
 
-    // Write the results to visit
+    // Write the results
 	if (rank==0) printf("Writing output \n");
 	std::vector<IO::MeshDataStruct> meshData(N_levels);
     for (size_t i=0; i<Nx.size(); i++) {
         // Mesh
     	meshData[i].meshName = "Level " + std::to_string(i+1);
-    	meshData[i].mesh = std::shared_ptr<IO::DomainMesh>( new IO::DomainMesh(Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],Lx,Ly,Lz) );
+    	meshData[i].mesh = std::make_shared<IO::DomainMesh>( Dm[i]->rank_info,Nx[i],Ny[i],Nz[i],Lx,Ly,Lz );
         // Source data
-        std::shared_ptr<IO::Variable> OrigData( new IO::Variable() );
+        auto OrigData = std::make_shared<IO::Variable>();
 	    OrigData->name = "Source Data";
 	    OrigData->type = IO::VariableType::VolumeVariable;
 	    OrigData->dim = 1;
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 	    meshData[i].vars.push_back(OrigData);
         fillDouble[i]->copy( LOCVOL[i], OrigData->data );
         // Non-Local Mean
-        std::shared_ptr<IO::Variable> NonLocMean( new IO::Variable() );
+        auto NonLocMean = std::make_shared<IO::Variable>();
 	    NonLocMean->name = "Non-Local Mean";
 	    NonLocMean->type = IO::VariableType::VolumeVariable;
 	    NonLocMean->dim = 1;
@@ -343,7 +343,7 @@ int main(int argc, char **argv)
 	    meshData[i].vars.push_back(NonLocMean);
         fillDouble[i]->copy( NonLocalMean[i], NonLocMean->data );
         // Segmented Data
-        std::shared_ptr<IO::Variable> SegData( new IO::Variable() );
+        auto SegData = std::make_shared<IO::Variable>();
 	    SegData->name = "Segmented Data";
 	    SegData->type = IO::VariableType::VolumeVariable;
 	    SegData->dim = 1;
@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 	    meshData[i].vars.push_back(SegData);
         fillDouble[i]->copy( ID[i], SegData->data );
         // Signed Distance
-        std::shared_ptr<IO::Variable> DistData( new IO::Variable() );
+        auto DistData = std::make_shared<IO::Variable>();
 	    DistData->name = "Signed Distance";
 	    DistData->type = IO::VariableType::VolumeVariable;
 	    DistData->dim = 1;
@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	    meshData[i].vars.push_back(DistData);
         fillDouble[i]->copy( Dist[i], DistData->data );
         // Smoothed Data
-        std::shared_ptr<IO::Variable> SmoothData( new IO::Variable() );
+        auto SmoothData = std::make_shared<IO::Variable>();
 	    SmoothData->name = "Smoothed Data";
 	    SmoothData->type = IO::VariableType::VolumeVariable;
 	    SmoothData->dim = 1;

@@ -225,12 +225,6 @@ MACRO( CONFIGURE_SYSTEM )
     IF( NOT CMAKE_BUILD_TYPE )
         MESSAGE(FATAL_ERROR "CMAKE_BUILD_TYPE is not set")
     ENDIF()
-    # Disable gxx debug flags if we are building the visit plugin
-    # This is necessary to prvent segfaults caused by inconsistent object sizes
-    #    caused by std::vector<std::string> in the avtMeshMetaData class
-    IF ( USE_VISIT )
-        SET( DISABLE_GXX_DEBUG 1 )
-    ENDIF()
     # Remove extra library links
     # Get the compiler
     SET_COMPILER_FLAGS()

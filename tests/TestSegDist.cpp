@@ -121,7 +121,7 @@ int main(int argc, char **argv)
     if (rank==0)
         printf("Mean error %0.4f \n", err);
 
-    // Write the results to visit
+    // Write the results
     Array<int> ID0(id.size());
     ID0.copy( id );
     Array<double> ID(Nx,Ny,Nz);
