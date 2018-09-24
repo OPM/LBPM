@@ -8,8 +8,8 @@ Lattice Boltzmann Methods for Porous Media
 Notes on installation
 
 * example configure scripts for cmake are in the sample_scripts directory
-* required dependencies - MPI, HDF5, SILO, C++11
-* optional dependencies - NetCDF, CUDA, TimerUtility, VisIT
+* required dependencies - MPI, HDF5, SILO, C++14
+* optional dependencies - NetCDF, CUDA, TimerUtility
 
 
 Build dependencies (zlib, hdf5, silo) OR point to an existing installation
