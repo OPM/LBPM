@@ -455,13 +455,13 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
 		
-		Array <char> phase_label(Nx,Ny,Nz);
-		Array <double> phase_distance(Nx,Ny,Nz);
+		Array <char> phase_label(Nx[0],Ny[0],Nz[0]);
+		Array <double> phase_distance(Nx[0],Ny[0],Nz[0]);
 		// Analyze the wetting fluid
-		for (k=0; k<Nz; k++){
-			for (j=0; j<Ny; j++){
-				for (i=0; i<Nx; i++){
-					n = k*Nx*Ny+j*Nx+i;
+		for (int k=1;k<Nz[0]+1;k++) {
+			for (int j=1;j<Ny[0]+1;j++) {
+				for (int i=1;i<Nx[0]+1;i++) {
+					int n = k*Nx[0]*Ny[0]+j*Nx[0]+i;
 					if (!(Dm[0]->id[n] > 0)){
 						// Solid phase
 						phase_label(i,j,k) = 0;
