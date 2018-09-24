@@ -479,7 +479,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}	
-		CalcDist(phase_distance,phase_label,*Dm[0]);
+		CalcDist(phase_distance,phase_label,Dm[0]);
 		Averages->ComputeScalar(phase_distance,0.f);
 		Averages->PrintAll();
 	}
