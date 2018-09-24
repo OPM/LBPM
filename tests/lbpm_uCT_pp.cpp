@@ -22,6 +22,7 @@
 #include "analysis/analysis.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
+#include "analysis/distance.h"
 #include "analysis/Minkowski.h"
 
 #include "ProfilerApp.h"
