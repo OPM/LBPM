@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 						// Solid phase
 						phase_label(i,j,k) = 0;
 					}
-					else if (SDn(i,j,k) < 0.0){
+					else if (Dist[0](i,j,k) < 0.0){
 						// wetting phase
 						phase_label(i,j,k) = 1;
 					}
