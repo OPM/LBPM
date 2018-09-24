@@ -22,6 +22,7 @@
 #include "analysis/analysis.h"
 #include "analysis/filters.h"
 #include "analysis/uCT.h"
+#include "analysis/distance.h"
 #include "analysis/Minkowski.h"
 
 #include "ProfilerApp.h"
@@ -346,7 +347,7 @@ int main(int argc, char **argv)
 		 */
 
 		{
-			// Write the results to visit
+			// Write the results
 			if (rank==0) printf("Setting up visualization structure \n");
 			//	std::vector<IO::MeshDataStruct> meshData(N_levels);
 			std::vector<IO::MeshDataStruct> meshData(1);
@@ -450,29 +451,36 @@ int main(int argc, char **argv)
 			IO::writeData( 0, meshData, comm );
 			if (rank==0) printf("Finished. \n");
 		}
+	
 		// Compute the Minkowski functionals
 		MPI_Barrier(comm);
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
-		if (rank==0) printf("Initializing the system: Nx=%i, Ny=%i, Nz=%i \n",Averages->Nx,Averages->Ny,Averages->Nz);
-		for ( int k=1;k<Averages->Nx-1;k++){
-			for ( int j=1;j<Averages->Ny-1;j++){
-				for ( int i=1;i<Averages->Nx-1;i++){
-					int n = k*(Averages->Nx)*(Averages->Ny)+j*(Averages->Nx)+i;
-					double distance=Dist[0](i,j,k);
-					Averages->SDn(i,j,k) = distance;
-					if (distance > 0)
-						Averages->Dm->id[n] = 0;
-					else
-						Averages->Dm->id[n] = 1;
+		
+		Array <char> phase_label(Nx[0],Ny[0],Nz[0]);
+		Array <double> phase_distance(Nx[0],Ny[0],Nz[0]);
+		// Analyze the wetting fluid
+		for (int k=1;k<Nz[0]+1;k++) {
+			for (int j=1;j<Ny[0]+1;j++) {
+				for (int i=1;i<Nx[0]+1;i++) {
+					int n = k*Nx[0]*Ny[0]+j*Nx[0]+i;
+					if (!(Dm[0]->id[n] > 0)){
+						// Solid phase
+						phase_label(i,j,k) = 0;
+					}
+					else if (Dist[0](i,j,k) < 0.0){
+						// wetting phase
+						phase_label(i,j,k) = 1;
+					}
+					else {
+						// non-wetting phase
+						phase_label(i,j,k) = 0;
+					}
+					phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
 				}
 			}
-		}
-
-		if (rank==0) printf("Computing Minkowski functionals \n");
-		Averages->Initialize();
-		Averages->UpdateMeshValues();
-		Averages->ComputeLocal();
-		Averages->Reduce();
+		}	
+		CalcDist(phase_distance,phase_label,*Dm[0]);
+		Averages->ComputeScalar(phase_distance,0.f);
 		Averages->PrintAll();
 	}
 	PROFILE_STOP("Main");

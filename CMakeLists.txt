@@ -28,10 +28,12 @@ ENDIF()
 SET( CMAKE_CXX_EXTENSIONS OFF )
 IF ( NOT CMAKE_CXX_STANDARD )
     IF ( CXX_STD )
-        MESSAGE( WARNING "CXX_STD is obsolete, please set CMAKE_CXX_STANDARD" )
-        SET( CMAKE_CXX_STANDARD ${CXX_STD} )
+        MESSAGE( FATAL_ERROR "CXX_STD is obsolete, please set CMAKE_CXX_STANDARD" )
     ENDIF()
     SET( CMAKE_CXX_STANDARD 14 )
+ENDIF()
+IF ( ( "${CMAKE_CXX_STANDARD}" GREATER "90" ) OR ( "${CMAKE_CXX_STANDARD}" LESS "14" ) )
+    MESSAGE( FATAL_ERROR "C++14 or newer required" )
 ENDIF()
 
 
@@ -110,7 +112,7 @@ ENDIF()
 ADD_CUSTOM_TARGET( build-test )
 ADD_CUSTOM_TARGET( build-examples )
 ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common visit IO threadpool )
+ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common IO threadpool )
 
 
 # Check for CUDA
@@ -167,12 +169,4 @@ IF ( NOT ONLY_BUILD_DOCS )
     #ADD_SUBDIRECTORY( workflows )
     INSTALL_PROJ_LIB()
 ENDIF()
-
-
-# Create the visit plugin
-IF ( USE_VISIT )
-    INCLUDE( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindVisIt.cmake )
-    VISIT_PLUGIN( visit LBM )
-ENDIF()
-
 

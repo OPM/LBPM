@@ -25,9 +25,7 @@ i    -D CMAKE_CXX_COMPILER:PATH=/home/christopher/openmpi/install_dir/bin/mpicxx
     -D CUDA_HOST_COMPILER="/usr/bin/gcc-4.9" \
     -D USE_CUDA=1                        \
     -D USE_TIMER=0                        \
-    -D USE_VISIT=true \
-    -D VISIT_ROOT_DIR=/home/christopher/visit2_12_2.linux-x86_64/bin \
     /home/christopher/repos/LBPM-WIA
 
 make -j8 install
-#make visit
+
