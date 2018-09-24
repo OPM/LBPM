@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 			for (j=0; j<Ny; j++){
 				for (i=0; i<Nx; i++){
 					n = k*Nx*Ny+j*Nx+i;
-					if (!(Dm->id[n] > 0)){
+					if (!(Dm[0]->id[n] > 0)){
 						// Solid phase
 						phase_label(i,j,k) = 0;
 					}
