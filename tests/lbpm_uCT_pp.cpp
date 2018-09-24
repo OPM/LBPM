@@ -450,29 +450,38 @@ int main(int argc, char **argv)
 			IO::writeData( 0, meshData, comm );
 			if (rank==0) printf("Finished. \n");
 		}
+	
 		// Compute the Minkowski functionals
 		MPI_Barrier(comm);
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm[0]));
-		if (rank==0) printf("Initializing the system: Nx=%i, Ny=%i, Nz=%i \n",Averages->Nx,Averages->Ny,Averages->Nz);
-		for ( int k=1;k<Averages->Nx-1;k++){
-			for ( int j=1;j<Averages->Ny-1;j++){
-				for ( int i=1;i<Averages->Nx-1;i++){
-					int n = k*(Averages->Nx)*(Averages->Ny)+j*(Averages->Nx)+i;
-					double distance=Dist[0](i,j,k);
-					Averages->SDn(i,j,k) = distance;
-					if (distance > 0)
-						Averages->Dm->id[n] = 0;
-					else
-						Averages->Dm->id[n] = 1;
+		
+		/*
+		Array <char> phase_label(Nx,Ny,Nz);
+		Array <double> phase_distance(Nx,Ny,Nz);
+		// Analyze the wetting fluid
+		for (k=0; k<Nz; k++){
+			for (j=0; j<Ny; j++){
+				for (i=0; i<Nx; i++){
+					n = k*Nx*Ny+j*Nx+i;
+					if (!(Dm->id[n] > 0)){
+						// Solid phase
+						phase_label(i,j,k) = 0;
+					}
+					else if (SDn(i,j,k) < 0.0){
+						// wetting phase
+						phase_label(i,j,k) = 1;
+					}
+					else {
+						// non-wetting phase
+						phase_label(i,j,k) = 0;
+					}
+					phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
 				}
 			}
-		}
-
-		if (rank==0) printf("Computing Minkowski functionals \n");
-		Averages->Initialize();
-		Averages->UpdateMeshValues();
-		Averages->ComputeLocal();
-		Averages->Reduce();
+		}	
+		CalcDist(phase_distance,phase_label,*Dm[0]);
+		*/
+		Averages->ComputeScalar(Dist[0],0.f);
 		Averages->PrintAll();
 	}
 	PROFILE_STOP("Main");
