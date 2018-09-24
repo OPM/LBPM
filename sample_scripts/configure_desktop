@@ -24,8 +24,5 @@ cmake                                    \
     -D USE_TIMER=0			 \
     ${HOME}/Programs/LBPM-WIA
 
-#    -D SILO_LIB="/usr/local/visit/2.9.2/linux-x86_64/lib/libsiloh5.a"	 \
-#    -D SILO_DIRECTORY="/usr/local/visit/2.9.2/linux-x86_64/include/silo"	 \
-
 
 

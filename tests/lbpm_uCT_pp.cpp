@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 		 */
 
 		{
-			// Write the results to visit
+			// Write the results
 			if (rank==0) printf("Setting up visualization structure \n");
 			//	std::vector<IO::MeshDataStruct> meshData(N_levels);
 			std::vector<IO::MeshDataStruct> meshData(1);
