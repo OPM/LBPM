@@ -45,7 +45,8 @@ public:
 	double J();
 	double X();
 	
-	//...........................................................................
+	//..........................................................................
+	Minkowski(){};//NULL CONSTRUCTOR
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
