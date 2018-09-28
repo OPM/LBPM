@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	auto nproc = domain_db->getVector<int>( "nproc" );
 	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
-	auto ReadType = domain_db->getVector<char>( "ReadType" );
+	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
 	if (ReadType == "8bit"){
 	}
 	else if (ReadType == "16bit"){
