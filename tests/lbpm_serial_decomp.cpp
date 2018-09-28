@@ -68,6 +68,15 @@ int main(int argc, char **argv)
 	auto nproc = domain_db->getVector<int>( "nproc" );
 	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
+	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
+	if (ReadType == "8bit"){
+	}
+	else if (ReadType == "16bit"){
+	}
+	else{
+		printf("INPUT ERROR: Valid ReadType are 8bit, 16bit \n");
+		ReadType = "8bit";
+	}
 
 	nx = size[0];
 	ny = size[1];
@@ -78,9 +87,6 @@ int main(int argc, char **argv)
 	Nx = SIZE[0];
 	Ny = SIZE[1];
 	Nz = SIZE[2];
-	//Nx = nprocx*nx;
-	//Ny = nprocx*ny;
-	//Nz = nprocx*nz;
 
 	printf("Input media: %s\n",Filename.c_str());
 	printf("Relabeling %lu values\n",ReadValues.size());
@@ -90,32 +96,6 @@ int main(int argc, char **argv)
 		printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
 	}
 
-	/*		if (rank==0){
-			ifstream domain("Domain.in");
-			domain >> nprocx;
-			domain >> nprocy;
-			domain >> nprocz;
-			domain >> nx;
-			domain >> ny;
-			domain >> nz;
-			domain >> nspheres;
-			domain >> Lx;		printf("Domain decomposition completed successfully \n");
-		return 0;
-
-			domain >> Ly;
-			domain >> Lz;
-
-			ifstream image("Segmented.in");
-			image >> Filename; 	// Name of data file containing segmented data
-			image >> Nx;   		// size of the binary file
-			image >> Ny;
-			image >> Nz;
-			image >> xStart;	// offset for the starting voxel
-			image >> yStart;
-			image >> zStart;
-
-		}
-	 */
 	nprocs=nprocx*nprocy*nprocz;
 
 	char *SegData = NULL;
@@ -124,12 +104,29 @@ int main(int argc, char **argv)
 		printf("Dimensions of segmented image: %ld x %ld x %ld \n",Nx,Ny,Nz);
 		int64_t SIZE = Nx*Ny*Nz;
 		SegData = new char[SIZE];
-		FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-		if (SEGDAT==NULL) ERROR("Error reading segmented data");
-		size_t ReadSeg;
-		ReadSeg=fread(SegData,1,SIZE,SEGDAT);
-		if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
-		fclose(SEGDAT);
+		if (ReadType == "8bit"){
+			printf("Reading 8-bit input data \n");
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Error reading segmented data");
+			size_t ReadSeg;
+			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+			fclose(SEGDAT);
+		}
+		else if (ReadType == "16bit"){
+			printf("Reading 16-bit input data \n");
+			short int *InputData;
+			InputData = new short int[SIZE];
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Error reading segmented data");
+			size_t ReadSeg;
+			ReadSeg=fread(InputData,2,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+			fclose(SEGDAT);
+			for (int n=0; n<SIZE; n++){
+				SegData[n] = char(InputData[n]);
+			}
+		}
 		printf("Read segmented data from %s \n",Filename.c_str());
 	}
 
