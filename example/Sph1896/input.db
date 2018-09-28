@@ -33,9 +33,9 @@ Domain {
     BC = 0                 // Boundary condition type 
                            //     BC = 0  for periodic BC
                            //     BC = 1  for pressure BC (applied in z direction)
-                           //     BC = 4  for flux BC (applied in z direction)
-
+                           //     BC = 4  for flux BC (applied in z direction
     Filename = "mineralmodel.raw"                    // name of raw binary file to read digital image from 
+    ReadType = "8bit"
     ReadValues = 0, 1, 2, 3, 4, 5, 6, 7, 8           // list of labels within the binary file (read)
     WriteValues = 1, -1, -2, -2, -3, -3, -4, -4, -4  // list of labels within the output files (write)
 

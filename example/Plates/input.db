@@ -28,6 +28,7 @@ Domain {
     n_spheres = 1       // Number of spheres
     L = 1, 1, 1         // Length of domain (x,y,z)
     BC = 0              // Boundary condition type
+    ReadType = "8bit"
     ReadValues = -2, -1, 1, 2
     WriteValues = -2, -1, 1, 2
 }
