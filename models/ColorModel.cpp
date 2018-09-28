@@ -332,7 +332,15 @@ void ScaLBL_ColorModel::Initialize(){
 		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
     	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
 
-		for (int n=0; n<Np; n++){
+		for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
+			File.read((char*) &va, sizeof(va));
+			File.read((char*) &vb, sizeof(vb));
+			value = (va-vb)/(va+vb);
+			idx = TmpMap[n];
+			if (!(idx < 0) && idx<N)
+				cPhi[idx] = value;
+		}
+		for (int n=ScaLBL_Comm->FirstInterior(); ScaLBL_Comm->LastInterior(); n++){
 			File.read((char*) &va, sizeof(va));
 			File.read((char*) &vb, sizeof(vb));
 			value = (va-vb)/(va+vb);
