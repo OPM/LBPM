@@ -164,7 +164,6 @@ public:
 	void AssignComponentLabels();
 	void ComponentAverages();
 	void Reduce();
-	void WriteSurfaces(int logcount);
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
