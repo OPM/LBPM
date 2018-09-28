@@ -326,7 +326,7 @@ void ScaLBL_ColorModel::Initialize(){
 		cDen = new double[2*Np];
 		cDist = new double[19*Np];
 		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-    	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+         	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
     	
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
@@ -354,13 +354,13 @@ void ScaLBL_ColorModel::Initialize(){
 			if (!(idx < 0) && idx<N)
 				cPhi[idx] = value;
 		}
-		for (int n=ScaLBL_Comm->FirstInterior(); ScaLBL_Comm->LastInterior(); n++){
-			va = cDen[n];
-			vb = cDen[Np + n];
-			value = (va-vb)/(va+vb);
-			idx = TmpMap[n];
-			if (!(idx < 0) && idx<N)
-				cPhi[idx] = value;
+		for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
+		  va = cDen[n];
+		  vb = cDen[Np + n];
+		  	value = (va-vb)/(va+vb);
+		  	idx = TmpMap[n];
+		  	if (!(idx < 0) && idx<N)
+		  		cPhi[idx] = value;
 		}
 		
 		// Copy the restart data to the GPU
