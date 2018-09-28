@@ -73,6 +73,9 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
 
 	TempID = new char[Nx*Ny*Nz];
+	
+	wet_morph = std::shared_ptr<Minkowski>(new Minkowski(Dm));
+	nonwet_morph = std::shared_ptr<Minkowski>(new Minkowski(Dm));
 
 	// Global arrays
 	PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
@@ -571,7 +574,7 @@ void TwoPhase::ComputeLocal()
 		}
 	}	
 	CalcDist(phase_distance,phase_label,*Dm);
-	wet_morph.ComputeScalar(phase_distance,0.f);
+	wet_morph->ComputeScalar(phase_distance,0.f);
 	//printf("generating distance at rank=%i \n",Dm->rank());
 	// Analyze the wetting fluid
 	for (k=0; k<Nz; k++){
@@ -597,7 +600,7 @@ void TwoPhase::ComputeLocal()
 	//printf("calculate distance at rank=%i \n",Dm->rank());
 	CalcDist(phase_distance,phase_label,*Dm);
 	//printf("morphological analysis at rank=%i \n",Dm->rank());
-	nonwet_morph.ComputeScalar(phase_distance,0.f);
+	nonwet_morph->ComputeScalar(phase_distance,0.f);
 	//printf("rank=%i completed \n",Dm->rank());
 
 }
@@ -1178,8 +1181,8 @@ void TwoPhase::PrintAll(int timestep)
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw_global, wwnsdnwn_global, Jwnwwndnw_global);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph.Vi_global, wet_morph.Ai_global, wet_morph.Ji_global, wet_morph.Xi_global);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph.Vi_global, nonwet_morph.Ai_global, nonwet_morph.Ji_global, nonwet_morph.Xi_global);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->V(), wet_morph->A(), wet_morph->J(), wet_morph->X());
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->V(), nonwet_morph->A(), nonwet_morph->J(), nonwet_morph->X());
 //		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}
@@ -1205,8 +1208,8 @@ void TwoPhase::PrintAll(int timestep)
 				Gws(0),Gws(1),Gws(2),Gws(3),Gws(4),Gws(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn, trJwn, trRwn);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw, wwnsdnwn, Jwnwwndnw);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph.Vi_global, wet_morph.Ai_global, wet_morph.Ji_global, wet_morph.Xi_global);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph.Vi_global, nonwet_morph.Ai_global, nonwet_morph.Ji_global, nonwet_morph.Xi_global);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->Vi, wet_morph->Ai, wet_morph->Ji, wet_morph->Xi);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->Vi, nonwet_morph->Ai, nonwet_morph->Ji, nonwet_morph->Xi);
 //		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler, Kn, Jn, An);			// minkowski measures
 		fflush(TIMELOG);
 	}
