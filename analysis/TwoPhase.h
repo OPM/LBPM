@@ -145,8 +145,8 @@ public:
 	DoubleArray Vel_z;
 	DoubleArray PhaseDistance;
 
-	Minkowski wet_morph;
-	Minkowski nonwet_morph;
+	//Minkowski wet_morph;
+	//Minkowski nonwet_morph;
 	
 	//	Container for averages;
 	DoubleArray ComponentAverages_WP;
