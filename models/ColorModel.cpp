@@ -321,32 +321,21 @@ void ScaLBL_ColorModel::Initialize(){
 		int *TmpMap;
 		TmpMap = new int[Np];
 		
-		double *cPhi, *cDist;
+		double *cPhi, *cDist, *cDen;
 		cPhi = new double[N];
+		cDen = new double[2*Np];
 		cDist = new double[19*Np];
-		
+		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
+    	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+    	
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
 		double value,va,vb;
-
-		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-    	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
-
-		for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
+		for (int n=0; n<Np; n++){
 			File.read((char*) &va, sizeof(va));
 			File.read((char*) &vb, sizeof(vb));
-			value = (va-vb)/(va+vb);
-			idx = TmpMap[n];
-			if (!(idx < 0) && idx<N)
-				cPhi[idx] = value;
-		}
-		for (int n=ScaLBL_Comm->FirstInterior(); ScaLBL_Comm->LastInterior(); n++){
-			File.read((char*) &va, sizeof(va));
-			File.read((char*) &vb, sizeof(vb));
-			value = (va-vb)/(va+vb);
-			idx = TmpMap[n];
-			if (!(idx < 0) && idx<N)
-				cPhi[idx] = value;
+			cDen[n]    = va;
+			cDen[Np+n] = vb;
 		}
 		for (int n=0; n<Np; n++){
 			// Read the distributions
@@ -356,7 +345,26 @@ void ScaLBL_ColorModel::Initialize(){
 			}
 		}
 		File.close();
+		
+		for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
+			va = cDen[n];
+			vb = cDen[Np + n];
+			value = (va-vb)/(va+vb);
+			idx = TmpMap[n];
+			if (!(idx < 0) && idx<N)
+				cPhi[idx] = value;
+		}
+		for (int n=ScaLBL_Comm->FirstInterior(); ScaLBL_Comm->LastInterior(); n++){
+			va = cDen[n];
+			vb = cDen[Np + n];
+			value = (va-vb)/(va+vb);
+			idx = TmpMap[n];
+			if (!(idx < 0) && idx<N)
+				cPhi[idx] = value;
+		}
+		
 		// Copy the restart data to the GPU
+		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_DeviceBarrier();
