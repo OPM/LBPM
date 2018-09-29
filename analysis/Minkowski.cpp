@@ -32,13 +32,6 @@
 #define PI 3.14159265359
 
 // Constructor
-
-Minkowski::Minkowski():
-	kstart(0), kfinish(0), isovalue(0), Volume(0),
-    LOGFILE(NULL), Dm(NULL), Vi(0), Vi_global(0)
-{
-}
-
 Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	kstart(0), kfinish(0), isovalue(0), Volume(0),
     LOGFILE(NULL), Dm(dm), Vi(0), Vi_global(0)
@@ -61,7 +54,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 // Destructor
 Minkowski::~Minkowski()
 {
-  //    if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
+    if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
 }
 
 double Minkowski::V(){

@@ -160,8 +160,8 @@ public:
 	DoubleArray Vel_z;
 	DoubleArray PhaseDistance;
 
-	Minkowski wet_morph;
-	Minkowski nonwet_morph;
+	std::shared_ptr<Minkowski> wet_morph;
+	std::shared_ptr<Minkowski> nonwet_morph;
 	
 	//	Container for averages;
 	DoubleArray ComponentAverages_WP;
@@ -179,7 +179,6 @@ public:
 	void AssignComponentLabels();
 	void ComponentAverages();
 	void Reduce();
-	void WriteSurfaces(int logcount);
 	void NonDimensionalize(double D, double viscosity, double IFT);
 	void PrintAll(int timestep);
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
