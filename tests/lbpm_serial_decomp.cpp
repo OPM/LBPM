@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	auto size = domain_db->getVector<int>( "n" );
 	auto SIZE = domain_db->getVector<int>( "N" );
 	auto nproc = domain_db->getVector<int>( "nproc" );
-	if domain_db->keyExists( "offset" ){
+	if (domain_db->keyExists( "offset" )){
 		auto offset = domain_db->getVector<int>( "offset" );
 		xStart = offset[0];
 		yStart = offset[1];
