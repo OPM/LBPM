@@ -80,7 +80,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
 
-	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
+	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
