@@ -10,7 +10,7 @@ cmake                                    \
     -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-    -D CMAKE_BUILD_TYPE:STRING=Debug     \
+    -D CMAKE_BUILD_TYPE:STRING=Release     \
     -D CUDA_FLAGS="-arch sm_35"          \
     -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_NETCDF=0 			 \
