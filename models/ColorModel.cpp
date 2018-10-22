@@ -553,8 +553,8 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				int label = phase_label(i,j,k);
-				if (label == 0 )     phase_id(i,j,k) = 1;
-				else 		     phase_id(i,j,k) = 0;
+				if (label == 0 )     phase_id(i,j,k) = 0;
+				else 		     phase_id(i,j,k) = 1;
 			}
 		}
 	}	
@@ -568,14 +568,17 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				value = phase(i,j,k);
+				if (value > 1.f)   value=1.f;
+				if (value < -1.f)  value=-1.f;
 				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
-				temp = factor*log((1.0+value)/(1.0-value));
+				temp = -factor*log((1.0+value)/(1.0-value));
 				/// use this approximation close to the object
-				if (phase_distance(i,j,k) < 1.f)	phase_distance(i,j,k) = temp;
+				if (Averages->SDs(i,j,k) < 0.f )         phase_distance(i,j,k) = (-1.f)*Averages->SDs(i,j,k);
+				else if (fabs(phase_distance(i,j,k)) < 2.f )	phase_distance(i,j,k) = temp;
 			}
 		}
 	}
-
+	
 	// 4. Apply erosion / dilation operation to phase_distance
 	if (rank==0)  printf("MorphInit: morphological operation  \n");
 	for (int k=0; k<Nz; k++){
@@ -595,13 +598,26 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 				double d = phase_distance(i,j,k);
 				if (Averages->SDs(i,j,k) > 0.f){
 					// only update phase field in immediate proximity of largest component
-					if (d < 3.f){
-						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d)) - 1.f);
-					}
+				  if (d < 3.f){
+				    phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
+				}
 				}
 			} 
 		}
 	}
+
+	FILE *OUTFILE;
+	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(phase.data(),8,N,OUTFILE);
+	fclose(OUTFILE);
+
+
+	FILE *DISTFILE;
+	sprintf(LocalRankFilename,"Distance.%05i.raw",rank);
+	DISTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(phase_distance.data(),8,N,DISTFILE);
+	fclose(DISTFILE);
 
 	// 6. copy back to the device
 	if (rank==0)  printf("MorphInit: copy data  back to device\n");
