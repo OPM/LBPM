@@ -520,7 +520,7 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-void ColorModel::MorphInit(double beta, double morph_delta){
+void ScaLBL_ColorModel::MorphInit(double beta, double morph_delta){
 	
 	double vF = 0.f;
 	double vS = 0.f;
@@ -528,28 +528,30 @@ void ColorModel::MorphInit(double beta, double morph_delta){
 	DoubleArray phase(Nx,Ny,Nz);
 	IntArray phase_label(Nx,Ny,Nz);;
 	DoubleArray phase_distance(Nx,Ny,Nz);
+	Array<char> phase_id(Nx,Ny,Nz);
 
 	// Basic algorithm to 
 	// 1. Copy phase field to CPU
-    ScaLBL_CopyToHost(phase, Phi, N*sizeof(double));
+	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
 
 	// 2. Identify connected components of phase field -> phase_label
     BlobIDstruct new_index;
-    new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
+    new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
 	// only operate on component "0"
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				int label = phase_label(i,j,k);
-				if (label == 0 )	phase_label(i,j,k) = 1;
-				else 				phase_label(i,j,k) = 0;
+				if (label == 0 )     phase_id(i,j,k) = 1;
+				else 		     phase_id(i,j,k) = 0;
 			}
 		}
 	}	
 	// 3. Generate a distance map to the largest object -> phase_distance
-	CalcDist(phase_distance,phase_label,*Dm);
+	CalcDist(phase_distance,phase_id,*Dm);
 	
-	double factor=0.5/Beta;
+	double temp,value;
+	double factor=0.5/beta;
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -587,7 +589,7 @@ void ColorModel::MorphInit(double beta, double morph_delta){
 		}
 	}
 	// 6. copy back to the device
-	ScaLBL_CopyToDevice(Phi,phase,N*sizeof(double));
+	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 	
 	// 7. Re-initialize phase field and density
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
