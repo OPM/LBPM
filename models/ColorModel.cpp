@@ -527,11 +527,11 @@ void ScaLBL_ColorModel::Run(){
 }
 
 void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
-  const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
 	double vF = 0.f;
 	double vS = 0.f;
-	
+
 	DoubleArray phase(Nx,Ny,Nz);
 	IntArray phase_label(Nx,Ny,Nz);;
 	DoubleArray phase_distance(Nx,Ny,Nz);
@@ -544,9 +544,9 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 
 	if (rank==0)  printf("MorphInit: get blob ids  \n");
 	// 2. Identify connected components of phase field -> phase_label
-    BlobIDstruct new_index;
-    ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-    MPI_Barrier(comm);
+	BlobIDstruct new_index;
+	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
+	MPI_Barrier(comm);
 	if (rank==0)  printf("MorphInit: label largest feature  \n");
 	// only operate on component "0"
 	for (int k=0; k<Nz; k++){
@@ -561,7 +561,7 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 	if (rank==0)  printf("MorphInit: generate distance map  \n");
 	// 3. Generate a distance map to the largest object -> phase_distance
 	CalcDist(phase_distance,phase_id,*Dm);
-	
+
 	double temp,value;
 	double factor=0.5/beta;
 	for (int k=0; k<Nz; k++){
@@ -578,7 +578,7 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 			}
 		}
 	}
-	
+
 	// 4. Apply erosion / dilation operation to phase_distance
 	if (rank==0)  printf("MorphInit: morphological operation  \n");
 	for (int k=0; k<Nz; k++){
@@ -598,9 +598,9 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 				double d = phase_distance(i,j,k);
 				if (Averages->SDs(i,j,k) > 0.f){
 					// only update phase field in immediate proximity of largest component
-				  if (d < 3.f){
-				    phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
-				}
+					if (d < 3.f){
+						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
+					}
 				}
 			} 
 		}
@@ -622,7 +622,7 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 	// 6. copy back to the device
 	if (rank==0)  printf("MorphInit: copy data  back to device\n");
 	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
-	
+
 	// 7. Re-initialize phase field and density
 	if (rank==0)  printf("MorphInit: re-initialize LBM  \n");
 
