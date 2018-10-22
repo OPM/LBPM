@@ -326,7 +326,7 @@ void ScaLBL_ColorModel::Initialize(){
 		cDen = new double[2*Np];
 		cDist = new double[19*Np];
 		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-         	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+        ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
     	
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
@@ -518,6 +518,93 @@ void ScaLBL_ColorModel::Run(){
 	if (rank==0) printf("********************************************************\n");
 
 	// ************************************************************************
+}
+
+void ColorModel::MorphInit(double beta, double morph_delta){
+	
+	double vF = 0.f;
+	double vS = 0.f;
+	
+	DoubleArray phase(Nx,Ny,Nz);
+	IntArray phase_label(Nx,Ny,Nz);;
+	DoubleArray phase_distance(Nx,Ny,Nz);
+
+	// Basic algorithm to 
+	// 1. Copy phase field to CPU
+    ScaLBL_CopyToHost(phase, Phi, N*sizeof(double));
+
+	// 2. Identify connected components of phase field -> phase_label
+    BlobIDstruct new_index;
+    new_index->first = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
+	// only operate on component "0"
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int label = phase_label(i,j,k);
+				if (label == 0 )	phase_label(i,j,k) = 1;
+				else 				phase_label(i,j,k) = 0;
+			}
+		}
+	}	
+	// 3. Generate a distance map to the largest object -> phase_distance
+	CalcDist(phase_distance,phase_label,*Dm);
+	
+	double factor=0.5/Beta;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				value = phase(i,j,k);
+				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
+				temp = factor*log((1.0+value)/(1.0-value));
+				/// use this approximation close to the object
+				if (phase_distance(i,j,k) < 1.f)	phase_distance(i,j,k) = temp;
+			}
+		}
+	}
+
+	// 4. Apply erosion / dilation operation to phase_distance
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				phase_distance(i,j,k) += morph_delta;
+			}
+		}
+	}
+
+	// 5. Update phase indicator field based on new distnace
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int n = k*Nx*Ny + j*Nx + i;
+				double d = phase_distance(i,j,k);
+				if (Averages->SDs(i,j,k) > 0.f){
+					// only update phase field in immediate proximity of largest component
+					if (d < 3.f){
+						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d)) - 1.f);
+					}
+				}
+			} 
+		}
+	}
+	// 6. copy back to the device
+	ScaLBL_CopyToDevice(Phi,phase,N*sizeof(double));
+	
+	// 7. Re-initialize phase field and density
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	if (BoundaryCondition >0 ){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+
 }
 
 void ScaLBL_ColorModel::WriteDebug(){

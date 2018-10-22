@@ -77,6 +77,7 @@ private:
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
     void AssignComponentLabels(double *phase);
+    void MorphInit(double beta, double morph_delta);
     	
 };
 
