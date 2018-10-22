@@ -495,6 +495,12 @@ void ScaLBL_ColorModel::Run(){
 
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		
+		if (timestep%2000 == 0){
+			double morph_delta=0.5;
+			MorphInit(beta,morph_delta);
+			MPI_Barrier(comm);
+		}
 
 	}
 	analysis.finish();
@@ -520,7 +526,7 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_ColorModel::MorphInit(double beta, double morph_delta){
+void ScaLBL_ColorModel::MorphInit(const double beta, const 2,double morph_delta){
 	
 	double vF = 0.f;
 	double vS = 0.f;
