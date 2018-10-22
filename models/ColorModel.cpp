@@ -526,7 +526,7 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_ColorModel::MorphInit(const double beta, const 2,double morph_delta){
+void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 	
 	double vF = 0.f;
 	double vS = 0.f;
