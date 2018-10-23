@@ -573,8 +573,12 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
 				temp = -factor*log((1.0+value)/(1.0-value));
 				/// use this approximation close to the object
-				if (Averages->SDs(i,j,k) < 0.f )         phase_distance(i,j,k) = (-1.f)*Averages->SDs(i,j,k);
-				else if (fabs(phase_distance(i,j,k)) < 2.f )	phase_distance(i,j,k) = temp;
+				if (fabs(phase_distance(i,j,k)) < 2.f ){
+					if (Averages->SDs(i,j,k) < 0.f )
+						phase_distance(i,j,k) = (-1.f)*Averages->SDs(i,j,k);
+					else 
+						phase_distance(i,j,k) = temp;
+				}
 			}
 		}
 	}
