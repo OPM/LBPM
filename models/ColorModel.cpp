@@ -574,7 +574,7 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 				temp = -factor*log((1.0+value)/(1.0-value));
 				/// use this approximation close to the object
 				if (fabs(phase_distance(i,j,k)) < 2.f ){
-					if (Averages->SDs(i,j,k) < 0.f )
+					if (Averages->SDs(i,j,k) < 0.f && fabs(Averages->SDs(i,j,k)) > phase_distance(i,j,k) )
 						phase_distance(i,j,k) = (-1.f)*Averages->SDs(i,j,k);
 					else 
 						phase_distance(i,j,k) = temp;
