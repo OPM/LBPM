@@ -539,15 +539,34 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 
 	// Basic algorithm to 
 	// 1. Copy phase field to CPU
-	if (rank==0)  printf("MorphInit: copy data  \n");
+	//if (rank==0)  printf("MorphInit: copy data  \n");
 	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
 
-	if (rank==0)  printf("MorphInit: get blob ids  \n");
+	double count,count_global,volume_initial,volume_final;
+	count = 0.f;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+			  if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
+			}
+		}
+	}
+	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	volume_initial = count_global;
+
+	//if (rank==0)  printf("MorphInit: get blob ids  \n");
 	// 2. Identify connected components of phase field -> phase_label
 	BlobIDstruct new_index;
 	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
 	MPI_Barrier(comm);
-	if (rank==0)  printf("MorphInit: label largest feature  \n");
+
+	/*	FILE *IDFILE;
+	sprintf(LocalRankFilename,"Label.%05i.raw",rank);
+	IDFILE = fopen(LocalRankFilename,"wb");
+	fwrite(phase_label.data(),4,N,IDFILE);
+	fclose(IDFILE);
+	*/
+	//if (rank==0)  printf("MorphInit: label largest feature  \n");
 	// only operate on component "0"
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
@@ -558,42 +577,43 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 			}
 		}
 	}	
-	if (rank==0)  printf("MorphInit: generate distance map  \n");
+	//if (rank==0)  printf("MorphInit: generate distance map  \n");
 	// 3. Generate a distance map to the largest object -> phase_distance
 	CalcDist(phase_distance,phase_id,*Dm);
-
+	
 	double temp,value;
 	double factor=0.5/beta;
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
+			  if (phase_distance(i,j,k) < 3.f ){
 				value = phase(i,j,k);
 				if (value > 1.f)   value=1.f;
 				if (value < -1.f)  value=-1.f;
 				// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
 				temp = -factor*log((1.0+value)/(1.0-value));
 				/// use this approximation close to the object
-				if (fabs(phase_distance(i,j,k)) < 2.f ){
-					if (Averages->SDs(i,j,k) < 0.f && fabs(Averages->SDs(i,j,k)) > phase_distance(i,j,k) )
-						phase_distance(i,j,k) = (-1.f)*Averages->SDs(i,j,k);
-					else 
-						phase_distance(i,j,k) = temp;
+				if (fabs(value) < 0.8 && Averages->SDs(i,j,k) > 1.f ){
+				       phase_distance(i,j,k) = temp;
 				}
+			  }
 			}
 		}
 	}
-
+	
 	// 4. Apply erosion / dilation operation to phase_distance
-	if (rank==0)  printf("MorphInit: morphological operation  \n");
+	//if (rank==0)  printf("MorphInit: morphological operation  \n");
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				phase_distance(i,j,k) += morph_delta;
+			  double walldist=Averages->SDs(i,j,k);
+			  double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
+				  phase_distance(i,j,k) -= wallweight*morph_delta;
 			}
 		}
 	}
 
-	if (rank==0)  printf("MorphInit: reinitialize phase field  \n");
+	//if (rank==0)  printf("MorphInit: reinitialize phase field  \n");
 	// 5. Update phase indicator field based on new distnace
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
@@ -610,21 +630,34 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 		}
 	}
 
-	FILE *OUTFILE;
+	count = 0.f;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+			  if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
+			}
+		}
+	}
+	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	volume_final=count_global;
+
+	if (rank == 0)  printf("Morphological operation change volume fraction by %f \n", (volume_final-volume_initial)/volume_initial);
+	
+
+	/*	FILE *OUTFILE;
 	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
 	OUTFILE = fopen(LocalRankFilename,"wb");
 	fwrite(phase.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
-
 
 	FILE *DISTFILE;
 	sprintf(LocalRankFilename,"Distance.%05i.raw",rank);
 	DISTFILE = fopen(LocalRankFilename,"wb");
 	fwrite(phase_distance.data(),8,N,DISTFILE);
 	fclose(DISTFILE);
-
+	*/
 	// 6. copy back to the device
-	if (rank==0)  printf("MorphInit: copy data  back to device\n");
+	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
 	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 
 	// 7. Re-initialize phase field and density
