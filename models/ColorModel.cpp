@@ -394,20 +394,35 @@ void ScaLBL_ColorModel::Initialize(){
 void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	
+	int morph_interval;
+	double morph_delta;
+	if (analysis_db->keyExists( "morph_delta" )){
+		morph_delta = domain_db->getVector<double>( "morph_delta" );
+	}
+	else{
+		morph_delta=0.5;
+	}
+	if (analysis_db->keyExists( "morph_interval" )){
+		morph_interval = domain_db->getVector<int>( "morph_interval" );
+	}
+	else{
+		morph_interval=100000;
+	}
+
 
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
 	}
-
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-
+	
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
@@ -496,8 +511,7 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		if (timestep%100 == 0){
-			double morph_delta=0.5;
+		if (timestep%morph_interval == 0){
 			MorphInit(beta,morph_delta);
 			MPI_Barrier(comm);
 		}
