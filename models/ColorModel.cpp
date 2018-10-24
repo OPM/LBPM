@@ -529,30 +529,32 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		if (timestep%morph_interval == 0 || tolerance < 0.01){
-			MorphInit(beta,morph_delta);
-			MPI_Barrier(comm);
-			lead_timesteps = 0;
-			tolerance = 1.f;
-		}
-		if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20){
-			lead_timesteps += analysis_interval;
-			double vA_z = Averages->van_global(2); 
-			double vB_z = Averages->vaw_global(2); 
-			double volB = Averages->wet_morph->V(); 
-			double volA = Averages->nonwet_morph->V(); 
-			double muA = rhoA*(tauA-0.5)/3.f; 
-			double muB = rhoB*(tauB-0.5)/3.f;
-			double Ca = fabs(volA*muA*vA_z + volB*muB*vB_z)/(5.796*alpha*double(Nx*Ny*Nz));
-			if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
-			if (lead_timesteps > 5000){
-				Fz *= capillary_number / Ca;
-				if (Fz > 1e-3)   Fz = 1e-3;   // impose ceiling for stability
-				tolerance = fabs(capillary_number - Ca) / capillary_number ;
-				if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
+		if (timestep > 50000){
+			// allow initial ramp-up to get closer to steady state
+			if (timestep%morph_interval == 0 || tolerance < 0.01){
+				MorphInit(beta,morph_delta);
+				MPI_Barrier(comm);
+				lead_timesteps = 0;
+				tolerance = 1.f;
+			}
+			if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20 ){
+				lead_timesteps += analysis_interval;
+				double vA_z = Averages->van_global(2); 
+				double vB_z = Averages->vaw_global(2); 
+				double volB = Averages->wet_morph->V(); 
+				double volA = Averages->nonwet_morph->V(); 
+				double muA = rhoA*(tauA-0.5)/3.f; 
+				double muB = rhoB*(tauB-0.5)/3.f;
+				double Ca = fabs(volA*muA*vA_z + volB*muB*vB_z)/(5.796*alpha*double(Nx*Ny*Nz));
+				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+				if (lead_timesteps > 5000){
+					Fz *= capillary_number / Ca;
+					if (Fz > 1e-3)   Fz = 1e-3;   // impose ceiling for stability
+					tolerance = fabs(capillary_number - Ca) / capillary_number ;
+					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
+				}
 			}
 		}
-
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
