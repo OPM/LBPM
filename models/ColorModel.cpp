@@ -395,6 +395,23 @@ void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
+	int lead_timesteps = 0;
+	double tolerance = 1.f;
+	
+	double capillary_number;
+	bool SET_CAPILLARY_NUMBER=false;
+	if (color_db->keyExists( "capillary_number" )){
+		capillary_number = color_db->getScalar<double>( "capillary_number" );
+		SET_CAPILLARY_NUMBER=true;
+	}
+	else{
+		capillary_number=0;
+	}
+	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
+		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
+		SET_CAPILLARY_NUMBER=false;
+	}
+
 	int morph_interval;
 	double morph_delta;
 	if (analysis_db->keyExists( "morph_delta" )){
@@ -409,7 +426,8 @@ void ScaLBL_ColorModel::Run(){
 	else{
 		morph_interval=100000;
 	}
-
+	int analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
+	
 
 	if (rank==0){
 		printf("********************************************************\n");
@@ -511,9 +529,28 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		if (timestep%morph_interval == 0){
+		if (timestep%morph_interval == 0 || tolerance < 0.01){
 			MorphInit(beta,morph_delta);
 			MPI_Barrier(comm);
+			lead_timesteps = 0;
+			tolerance = 1.f;
+		}
+		if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20){
+			lead_timesteps += analysis_interval;
+			double vA_z = Averages->van_global(2); 
+			double vB_z = Averages->vaw_global(2); 
+			double volB = Averages->wet_morph->V(); 
+			double volA = Averages->nonwet_morph->V(); 
+			double muA = rhoA*(tauA-0.5)/3.f; 
+			double muB = rhoB*(tauB-0.5)/3.f;
+			double Ca = fabs(volA*muA*vA_z + volB*muB*vB_z)/(5.796*alpha*double(Nx*Ny*Nz));
+			if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+			if (lead_timesteps > 5000){
+				Fz *= capillary_number / Ca;
+				if (Fz > 1e-3)   Fz = 1e-3;   // impose ceiling for stability
+				tolerance = fabs(capillary_number - Ca) / capillary_number ;
+				if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
+			}
 		}
 
 	}
