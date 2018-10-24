@@ -151,6 +151,8 @@ void ScaLBL_ColorModel::ReadInput(){
 	CalcDist(Averages->SDs,id_solid,*Mask);
 	
 	if (rank == 0) cout << "Domain set." << endl;
+	
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 }
 
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
@@ -553,6 +555,7 @@ void ScaLBL_ColorModel::Run(){
 					tolerance = fabs(capillary_number - Ca) / capillary_number ;
 					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
 				}
+				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 			}
 		}
 	}

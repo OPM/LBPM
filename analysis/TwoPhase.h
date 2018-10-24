@@ -88,6 +88,11 @@ public:
 	double efawns,efawns_global;				// averaged contact angle
 	double euler,Kn,Jn,An;
 	double euler_global,Kn_global,Jn_global,An_global;
+	
+	double rho_n, rho_w;
+	double nu_n, nu_w;
+	double gamma_wn;
+	double Fx, Fy, Fz;
 
 	double Jwn,Jwn_global;						// average mean curavture - wn interface
 	double Kwn,Kwn_global;						// average Gaussian curavture - wn interface
@@ -169,6 +174,7 @@ public:
 	int GetCubeLabel(int i, int j, int k, IntArray &BlobLabel);
 	void SortBlobs();
 	void PrintComponents(int timestep);
+	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha);
 };
 
 

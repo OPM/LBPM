@@ -144,7 +144,7 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"time dEs ");								// Timestep, Change in Surface Energy
+			fprintf(TIMELOG,"time rn rw nun nuw Fx Fy Fz iftwn ");								// Timestep, Change in Surface Energy
 			fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns cwns KNwns KGwns ");	// Scalar averages
 			fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
 			fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");
@@ -175,7 +175,7 @@ TwoPhase::TwoPhase(std::shared_ptr <Domain> dm):
 		sprintf(LocalRankFilename,"%s%s","timelog.tcat.",LocalRankString);
 		TIMELOG = fopen(LocalRankFilename,"a+");
 		//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-		fprintf(TIMELOG,"time ");								// Timestep, Change in Surface Energy
+		fprintf(TIMELOG,"time rn rw nun nuw Fx Fy Fz iftwn ");;								// Timestep, 
 		fprintf(TIMELOG,"sw pw pn awn ans aws Jwn Kwn lwns cwns KNwns KGwns ");	// Scalar averages
 		fprintf(TIMELOG,"vawx vawy vawz vanx vany vanz ");			// Velocity averages
 		fprintf(TIMELOG,"vawnx vawny vawnz vawnsx vawnsy vawnsz ");
@@ -306,6 +306,19 @@ void TwoPhase::Initialize()
 	trJwn = trawn = trRwn = 0.0;
 	euler = Jn = An = Kn = 0.0;
 	wwndnw = 0.0; wwnsdnwn = 0.0; Jwnwwndnw=0.0;
+}
+
+void TwoPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha)
+{
+	Fx = force_x;
+	Fy = force_y;
+	Fz = force_z;
+	rho_n = rhoA;
+	rho_w = rhoB;
+	nu_n = (tauA-0.5)/3.f;
+	nu_w = (tauB-0.5)/3.f;
+	gamma_wn = 5.796*alpha;
+	
 }
 
 /*
@@ -1162,7 +1175,7 @@ void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT)
 void TwoPhase::PrintAll(int timestep)
 {
 	if (Dm->rank()==0){
-		fprintf(TIMELOG,"%i %.5g ",timestep,dEs);										// change in surface energy
+		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw_global,pan_global);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn_global,ans_global,aws_global);				// interfacial areas
 		fprintf(TIMELOG,"%.5g %.5g ",Jwn_global, Kwn_global);								// curvature of wn interface
@@ -1189,7 +1202,7 @@ void TwoPhase::PrintAll(int timestep)
 	else{
 		sat_w = 1.0 - nwp_volume/(nwp_volume+wp_volume);
 
-		fprintf(TIMELOG,"%i ",timestep);										// change in surface energy
+		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",sat_w,paw,pan);					// saturation and pressure
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",awn,ans,aws);				// interfacial areas
 		fprintf(TIMELOG,"%.5g %.5g ",Jwn, Kwn);								// curvature of wn interface
