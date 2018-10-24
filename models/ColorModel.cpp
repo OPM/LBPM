@@ -398,13 +398,13 @@ void ScaLBL_ColorModel::Run(){
 	int morph_interval;
 	double morph_delta;
 	if (analysis_db->keyExists( "morph_delta" )){
-		morph_delta = domain_db->getVector<double>( "morph_delta" );
+		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
 	}
 	else{
 		morph_delta=0.5;
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
-		morph_interval = domain_db->getVector<int>( "morph_interval" );
+		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
 	}
 	else{
 		morph_interval=100000;
