@@ -552,7 +552,7 @@ void ScaLBL_ColorModel::Run(){
 				if (lead_timesteps > 5000){
 					Fz *= capillary_number / Ca;
 					if (Fz > 1e-3)   Fz = 1e-3;   // impose ceiling for stability
-					if (Fz < 1e-7)   Fz = 1e-6;   // impose floor so we don't do something super dumb
+					if (Fz < 1e-7)   Fz = 1e-7;   // impose floor so we don't do something super dumb
 					if (Fz*vA_z < 0.f || Fz*vB_z < 0.f)
 						Fz *= 2.f;                // bigger forces are needed if flow rate is "too small"
 					tolerance = fabs(capillary_number - Ca) / capillary_number ;
