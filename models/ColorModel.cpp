@@ -541,20 +541,47 @@ void ScaLBL_ColorModel::Run(){
 			}
 			if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20 ){
 				lead_timesteps += analysis_interval;
+				double vA_x = Averages->van_global(0); 
+				double vA_y = Averages->van_global(1); 
 				double vA_z = Averages->van_global(2); 
-				double vB_z = Averages->vaw_global(2); 
+				
+				double vB_x = Averages->vaw_global(0); 
+				double vB_y = Averages->vaw_global(1); 
+				double vB_z = Averages->vaw_global(2);
+				
 				double volB = Averages->wet_morph->V(); 
 				double volA = Averages->nonwet_morph->V(); 
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;
-				double Ca = fabs(volA*muA*vA_z + volB*muB*vB_z)/(5.796*alpha*double(Nx*Ny*Nz));
+				
+				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
+				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				
+				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz));
+				
 				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
 				if (lead_timesteps > 5000){
+					Fx *= capillary_number / Ca;
+					Fy *= capillary_number / Ca;
 					Fz *= capillary_number / Ca;
-					if (Fz > 1e-3)   Fz = 1e-3;   // impose ceiling for stability
-					if (Fz < 1e-7)   Fz = 1e-7;   // impose floor so we don't do something super dumb
-					if (Fz*vA_z < 0.f || Fz*vB_z < 0.f)
-						Fz *= 2.f;                // bigger forces are needed if flow rate is "too small"
+
+					double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+
+					if (force_magnitude > 1e-3){
+						Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
+						Fy *= 1e-3/force_magnitude;   
+						Fz *= 1e-3/force_magnitude;   
+					}
+					if (force_magnitude < 1e-7){
+						Fx *= 1e-7/force_magnitude;   // impose floor
+						Fy *= 1e-7/force_magnitude;   
+						Fz *= 1e-7/force_magnitude;   
+					}
+					if (Fx*vA_x + Fy*vA_y + Fz*vA_z < 0.f || Fx*vB_x + Fy*vB_y +Fz*vB_z < 0.f){
+						Fx *= 2.f;                // bigger forces are needed if flow rate is "too small"
+						Fy *= 2.f;                
+						Fz *= 2.f;                
+					}
 					tolerance = fabs(capillary_number - Ca) / capillary_number ;
 					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
 				}
