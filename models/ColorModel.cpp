@@ -80,8 +80,6 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
 
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
-
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
@@ -96,6 +94,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	nprocx = nproc[0];
 	nprocy = nproc[1];
 	nprocz = nproc[2];
+	
+	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
 void ScaLBL_ColorModel::SetDomain(){
@@ -397,11 +397,20 @@ void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
+	bool SET_CAPILLARY_NUMBER = false;
+	bool MORPH_ADAPT = false;
 	int lead_timesteps = 0;
+	int ramp_timesteps = 50000;
 	double tolerance = 1.f;
 	
+	int target_saturation_index=0;
+	std::vector<double> target_saturation;
+	double TARGET_SATURATION = 0.f;
+	if (domain_db->keyExists( "Sw" )){
+		target_saturation = domain_db->getVector<double>( "Sw" );
+	}
+	
 	double capillary_number;
-	bool SET_CAPILLARY_NUMBER=false;
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -531,10 +540,35 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		if (timestep > 50000){
+		if (timestep > ramp_timesteps){
 			// allow initial ramp-up to get closer to steady state
 			if (timestep%morph_interval == 0 || tolerance < 0.01){
-				MorphInit(beta,morph_delta);
+				tolerance = 1.f;
+				MORPH_ADAPT = true;
+				TARGET_SATURATION = target_saturation[target_saturation_index++];
+				double volB = Averages->wet_morph->V(); 
+				double volA = Averages->nonwet_morph->V(); 
+				double current_saturation = volB/(volA+volB);
+				if (morph_delta > 0.f){
+					// wetting phase saturation will decrease
+					while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
+				}
+				else{
+					// wetting phase saturation will increase
+					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
+				}
+			}
+			if (MORPH_ADAPT){
+				double volB = Averages->wet_morph->V(); 
+				double volA = Averages->nonwet_morph->V(); 
+				double delta_volume = MorphInit(beta,morph_delta);
+				if ((1.f+delta_volume)*volA/(volA + volB) > 1.f - TARGET_SATURATION){
+					MORPH_ADAPT = false;
+				}
 				MPI_Barrier(comm);
 				lead_timesteps = 0;
 				tolerance = 1.f;
@@ -612,7 +646,7 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
+double ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
 	double vF = 0.f;
@@ -714,7 +748,8 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
 	volume_final=count_global;
 
-	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", (volume_final-volume_initial)/volume_initial);
+	double delta_volume = (volume_final-volume_initial)/volume_initial;
+	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume);
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
@@ -735,7 +770,7 @@ void ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 		}
 	}
-
+	return delta_volume;
 }
 
 void ScaLBL_ColorModel::WriteDebug(){
