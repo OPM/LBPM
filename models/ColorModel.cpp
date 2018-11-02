@@ -546,8 +546,8 @@ void ScaLBL_ColorModel::Run(){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
 				TARGET_SATURATION = target_saturation[target_saturation_index++];
-				double volB = Averages->wet_morph->V(); 
-				double volA = Averages->nonwet_morph->V(); 
+				double volB = Averages->Volume_w(); 
+				double volA = Averages->Volume_n(); 
 				double current_saturation = volB/(volA+volB);
 				if (morph_delta > 0.f){
 					// wetting phase saturation will decrease
@@ -565,8 +565,8 @@ void ScaLBL_ColorModel::Run(){
 			}
 			if (MORPH_ADAPT && timestep%analysis_interval == analysis_interval-20 ){
 				if (rank==0) printf("***Morphological step***\n");
-				double volB = Averages->wet_morph->V(); 
-				double volA = Averages->nonwet_morph->V(); 
+				double volB = Averages->Volume_w(); 
+				double volA = Averages->Volume_n(); 
 				double delta_volume = MorphInit(beta,morph_delta);
 				volA += delta_volume;
 				volB -= delta_volume;
@@ -587,8 +587,8 @@ void ScaLBL_ColorModel::Run(){
 				double vB_y = Averages->vaw_global(1); 
 				double vB_z = Averages->vaw_global(2);
 				
-				double volB = Averages->wet_morph->V(); 
-				double volA = Averages->nonwet_morph->V(); 
+				double volB = Averages->Volume_w(); 
+				double volA = Averages->Volume_n(); 
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;
 				

@@ -175,6 +175,12 @@ public:
 	void SortBlobs();
 	void PrintComponents(int timestep);
 	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha);
+	double Volume_w(){
+		return wp_volume_global;
+	}
+	double Volume_n(){
+		return nwp_volume_global;
+	}
 };
 
 
