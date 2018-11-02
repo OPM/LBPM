@@ -572,15 +572,15 @@ void TwoPhase::ComputeLocal()
 				n = k*Nx*Ny+j*Nx+i;
 				if (!(Dm->id[n] > 0)){
 					// Solid phase
-					phase_label(i,j,k) = 0;
+					phase_label(i,j,k) = 1;
 				}
 				else if (SDn(i,j,k) < 0.0){
 					// wetting phase
-					phase_label(i,j,k) = 1;
+					phase_label(i,j,k) = 0;
 				}
 				else {
 					// non-wetting phase
-					phase_label(i,j,k) = 0;
+					phase_label(i,j,k) = 1;
 				}
 				phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
 			}
@@ -596,15 +596,15 @@ void TwoPhase::ComputeLocal()
 				n = k*Nx*Ny+j*Nx+i;
 				if (!(Dm->id[n] > 0)){
 					// Solid phase
-					phase_label(i,j,k) = 0;
+					phase_label(i,j,k) = 1;
 				}
 				else if (SDn(i,j,k) < 0.0){
 					// wetting phase
-					phase_label(i,j,k) = 0;
+					phase_label(i,j,k) = 1;
 				}
 				else {
 					// non-wetting phase
-					phase_label(i,j,k) = 1;
+					phase_label(i,j,k) = 0;
 				}
 				phase_distance(i,j,k) =2.0*double(phase_label(i,j,k))-1.0;
 			}
