@@ -570,6 +570,7 @@ void ScaLBL_ColorModel::Run(){
 				double delta_volume = MorphInit(beta,morph_delta);
 				volA += delta_volume;
 				volB -= delta_volume;
+				MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
 				}
