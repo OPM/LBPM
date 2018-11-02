@@ -165,7 +165,9 @@ int main(int argc, char **argv)
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
 					n = k*nx*ny+j*nx+i;
-					if (SignDist(i,j,k) < 0.0)  id[n] = 0;
+					if (SignDist(i,j,k) < 0.f){
+					  // don't do anything
+					}
 					else{
 						// initially saturated with wetting phase
 						id[n] = 2;
@@ -423,15 +425,6 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 
-		// Preserve mineral labels
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					n = k*nx*ny+j*nx+i;
-					if (SignDist(i,j,k) < 0.0)  id[n] = Dm->id[n];
-				}
-			}
-		}
 		FILE *ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
