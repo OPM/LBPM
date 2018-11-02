@@ -542,7 +542,7 @@ void ScaLBL_ColorModel::Run(){
 		
 		if (timestep > ramp_timesteps){
 			// allow initial ramp-up to get closer to steady state
-			if (timestep%morph_interval == 0 || tolerance < 0.01){
+			if (timestep%morph_interval-20 == 0 || tolerance < 0.01){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
 				TARGET_SATURATION = target_saturation[target_saturation_index++];
@@ -563,7 +563,7 @@ void ScaLBL_ColorModel::Run(){
 					}
 				}
 			}
-			if (MORPH_ADAPT){
+			if (MORPH_ADAPT && timestep%analysis_interval == analysis_interval-20 ){
 				if (rank==0) printf("***Morphological step***\n");
 				double volB = Averages->wet_morph->V(); 
 				double volA = Averages->nonwet_morph->V(); 
