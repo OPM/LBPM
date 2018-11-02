@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 	char LocalRankFilename[40];
 
 	int BoundaryCondition=1;
-	Domain(domain_db,comm);
+	Domain Dm(domain_db,comm);
 	
 	nx+=2; ny+=2; nz+=2;
 	int N = nx*ny*nz;
