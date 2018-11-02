@@ -559,10 +559,12 @@ void ScaLBL_ColorModel::Run(){
 					// wetting phase saturation will increase
 					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
+						if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
 					}
 				}
 			}
 			if (MORPH_ADAPT){
+				if (rank==0) printf("***Morphological step***\n");
 				double volB = Averages->wet_morph->V(); 
 				double volA = Averages->nonwet_morph->V(); 
 				double delta_volume = MorphInit(beta,morph_delta);
@@ -591,7 +593,7 @@ void ScaLBL_ColorModel::Run(){
 				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
 				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				
-				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz));
+				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 				
 				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
 				if (lead_timesteps > 5000){
