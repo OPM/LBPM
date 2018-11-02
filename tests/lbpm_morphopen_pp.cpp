@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		ID = fopen(LocalRankFilename,"wb");
+		FILE *ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
 	}
