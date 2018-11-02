@@ -551,13 +551,13 @@ void ScaLBL_ColorModel::Run(){
 				double current_saturation = volB/(volA+volB);
 				if (morph_delta > 0.f){
 					// wetting phase saturation will decrease
-					while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
 					}
 				}
 				else{
 					// wetting phase saturation will increase
-					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+					while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
 						if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
 					}
@@ -570,7 +570,7 @@ void ScaLBL_ColorModel::Run(){
 				double delta_volume = MorphInit(beta,morph_delta);
 				volA += delta_volume;
 				volB -= delta_volume;
-				MORPH_ADAPT = false;
+				//MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
 				}
