@@ -408,6 +408,7 @@ void ScaLBL_ColorModel::Run(){
 	double TARGET_SATURATION = 0.f;
 	if (color_db->keyExists( "target_saturation" )){
 		target_saturation = color_db->getVector<double>( "target_saturation" );
+		TARGET_SATURATION = target_saturation[0];
 	}
 	
 	double capillary_number;
