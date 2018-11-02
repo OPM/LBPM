@@ -565,7 +565,7 @@ void ScaLBL_ColorModel::Run(){
 				}
 			}
 			if (MORPH_ADAPT && timestep%analysis_interval == analysis_interval-20 ){
-				if (rank==0) printf("***Morphological step***\n");
+				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
 				double delta_volume = MorphInit(beta,morph_delta);
