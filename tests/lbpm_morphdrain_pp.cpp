@@ -121,16 +121,46 @@ int main(int argc, char **argv)
 	ydim=Dm.Ny-2;
 	zdim=Dm.Nz-2;
 	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,{xdim,ydim,zdim},{1,1,1},0,1);
+	
+	// Generate the signed distance map
+	// Initialize the domain and communication
+	Array<char> id_solid(Nx,Ny,Nz);
+	DoubleArray SignDist(Nx,Ny,Nz);
 
-	DoubleArray SignDist(nx,ny,nz);
-	// Read the signed distance from file
+	int count = 0;
+	// Solve for the position of the solid phase
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				// Initialize the solid phase
+				if (Dm->id[n] > 0)	id_solid(i,j,k) = 1;
+				else	     	    id_solid(i,j,k) = 0;
+			}
+		}
+	}
+	// Initialize the signed distance function
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n=k*Nx*Ny+j*Nx+i;
+				// Initialize distance to +/- 1
+				SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+			}
+		}
+	}
+
+	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	CalcDist(SignDist,id_solid,Dm);
+
+/*	// Read the signed distance from file
 	sprintf(LocalRankFilename,"SignDist.%05i",rank);
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
 	ReadSignDist=fread(SignDist.data(),8,N,DIST);
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
-
+*/
 	fillData.fill(SignDist);
 
 	sprintf(LocalRankFilename,"ID.%05i",rank);
