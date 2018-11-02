@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 		}
 
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		CalcDist(SignDist,id_solid,Dm);
+		CalcDist(SignDist,id_solid,*Dm);
 
 		MPI_Barrier(comm);
 		double count,countGlobal,totalGlobal;
@@ -422,11 +422,7 @@ int main(int argc, char **argv)
 
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
-		size_t readID;
-		FILE *ID = fopen(LocalRankFilename,"rb");
-		readID=fread(Dm->id,1,N,ID);
-		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
-		fclose(ID);
+
 		// Preserve mineral labels
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
