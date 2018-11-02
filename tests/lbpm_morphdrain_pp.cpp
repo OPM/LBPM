@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
 	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 	readID=fread(id,1,N,IDFILE);
-	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
+	if (readID != size_t(N)) printf("lbpm_morphdrain_pp: Error reading ID (rank=%i) \n",rank);
 	fclose(IDFILE);
 
 	int xdim,ydim,zdim;
