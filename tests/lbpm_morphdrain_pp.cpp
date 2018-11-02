@@ -124,26 +124,25 @@ int main(int argc, char **argv)
 	
 	// Generate the signed distance map
 	// Initialize the domain and communication
-	Array<char> id_solid(Nx,Ny,Nz);
-	DoubleArray SignDist(Nx,Ny,Nz);
+	Array<char> id_solid(nx,ny,nz);
+	DoubleArray SignDist(nx,ny,nz);
 
-	int count = 0;
 	// Solve for the position of the solid phase
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
+				int n = k*nx*ny+j*nx+i;
 				// Initialize the solid phase
-				if (Dm->id[n] > 0)	id_solid(i,j,k) = 1;
+				if (Dm.id[n] > 0)	id_solid(i,j,k) = 1;
 				else	     	    id_solid(i,j,k) = 0;
 			}
 		}
 	}
 	// Initialize the signed distance function
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n=k*Nx*Ny+j*Nx+i;
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
+				int n = k*nx*ny+j*nx+i;
 				// Initialize distance to +/- 1
 				SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 			}
