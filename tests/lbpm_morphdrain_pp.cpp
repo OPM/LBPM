@@ -116,6 +116,14 @@ int main(int argc, char **argv)
 
 	Dm.CommInit();
 
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	size_t readID;
+	FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	readID=fread(id,1,N,IDFILE);
+	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
+	fclose(IDFILE);
+
 	int xdim,ydim,zdim;
 	xdim=Dm.Nx-2;
 	ydim=Dm.Ny-2;
@@ -133,8 +141,8 @@ int main(int argc, char **argv)
 			for (int i=0;i<nx;i++){
 				int n = k*nx*ny+j*nx+i;
 				// Initialize the solid phase
-				if (Dm.id[n] > 0)	id_solid(i,j,k) = 1;
-				else	     	    id_solid(i,j,k) = 0;
+				if (id[n] > 0)	id_solid(i,j,k) = 1;
+				else	     	id_solid(i,j,k) = 0;
 			}
 		}
 	}
@@ -161,15 +169,6 @@ int main(int argc, char **argv)
 	fclose(DIST);
 */
 	fillData.fill(SignDist);
-
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	size_t readID;
-	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	readID=fread(id,1,N,IDFILE);
-	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
-	fclose(IDFILE);
-
 	
 	Dm.CommInit();
 	int iproc = Dm.iproc();
