@@ -11,6 +11,7 @@
 #include <sstream>
 #include "common/Array.h"
 #include "common/Domain.h"
+#include "analysis/distance.h"
 
 
 //*************************************************************************
