@@ -568,7 +568,9 @@ void ScaLBL_ColorModel::Run(){
 				double volB = Averages->wet_morph->V(); 
 				double volA = Averages->nonwet_morph->V(); 
 				double delta_volume = MorphInit(beta,morph_delta);
-				if ((1.f+delta_volume)*volA/(volA + volB) > 1.f - TARGET_SATURATION){
+				volA += delta_volume;
+				volB -= delta_volume;
+				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
 				}
 				MPI_Barrier(comm);
@@ -750,8 +752,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta)
 	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
 	volume_final=count_global;
 
-	double delta_volume = (volume_final-volume_initial)/volume_initial;
-	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume);
+	double delta_volume = (volume_final-volume_initial);
+	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
