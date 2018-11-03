@@ -543,7 +543,7 @@ void ScaLBL_ColorModel::Run(){
 		
 		if (timestep > ramp_timesteps){
 			// allow initial ramp-up to get closer to steady state
-			if (timestep%morph_interval-20 == 0 || tolerance < 0.01){
+			if (!MORPH_ADAPT && (timestep%morph_interval-20 == 0 || tolerance < 0.01)){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
 				TARGET_SATURATION = target_saturation[target_saturation_index++];
