@@ -399,7 +399,7 @@ void ScaLBL_ColorModel::Run(){
 	
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
-	int lead_timesteps = 0;
+	int morph_timesteps = 0;
 	int ramp_timesteps = 50000;
 	double tolerance = 1.f;
 	
@@ -543,7 +543,7 @@ void ScaLBL_ColorModel::Run(){
 		
 		if (timestep > ramp_timesteps){
 			// allow initial ramp-up to get closer to steady state
-			if (!MORPH_ADAPT && (timestep%morph_interval-20 == 0 || tolerance < 0.01)){
+			if (!MORPH_ADAPT && (morph_timesteps%morph_interval == 0 || tolerance < 0.01)){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
 				TARGET_SATURATION = target_saturation[target_saturation_index++];
@@ -576,11 +576,11 @@ void ScaLBL_ColorModel::Run(){
 					MORPH_ADAPT = false;
 				}
 				MPI_Barrier(comm);
-				lead_timesteps = 0;
+				morph_timesteps = 0;
 				tolerance = 1.f;
 			}
 			if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20 ){
-				lead_timesteps += analysis_interval;
+				morph_timesteps += analysis_interval;
 				double vA_x = Averages->van_global(0); 
 				double vA_y = Averages->van_global(1); 
 				double vA_z = Averages->van_global(2); 
@@ -600,7 +600,7 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 				
 				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
-				if (lead_timesteps > 5000){
+				if (morph_timesteps > 5000){
 					Fx *= capillary_number / Ca;
 					Fy *= capillary_number / Ca;
 					Fz *= capillary_number / Ca;
