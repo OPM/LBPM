@@ -541,12 +541,11 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		if (timestep > ramp_timesteps){
-			// allow initial ramp-up to get closer to steady state
-			if (!MORPH_ADAPT && (morph_timesteps%morph_interval == 0 || tolerance < 0.01)){
+		// allow initial ramp-up to get closer to steady state
+		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 ){
+			if ( morph_timesteps > morph_interval ){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
-				TARGET_SATURATION = target_saturation[target_saturation_index++];
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
 				double current_saturation = volB/(volA+volB);
@@ -564,7 +563,7 @@ void ScaLBL_ColorModel::Run(){
 					}
 				}
 			}
-			if (MORPH_ADAPT && timestep%analysis_interval == analysis_interval-20 ){
+			if (MORPH_ADAPT ){
 				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
@@ -574,12 +573,13 @@ void ScaLBL_ColorModel::Run(){
 				//MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
+					TARGET_SATURATION = target_saturation[target_saturation_index++];
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
 				tolerance = 1.f;
 			}
-			if (SET_CAPILLARY_NUMBER && timestep%analysis_interval == analysis_interval-20 ){
+			if (SET_CAPILLARY_NUMBER ){
 				morph_timesteps += analysis_interval;
 				double vA_x = Averages->van_global(0); 
 				double vA_y = Averages->van_global(1); 
