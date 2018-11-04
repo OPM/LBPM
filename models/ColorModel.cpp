@@ -601,9 +601,9 @@ void ScaLBL_ColorModel::Run(){
 				
 				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
 				if (morph_timesteps > 5000){
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
+					Fx *= (0.95 + 0.05*capillary_number / Ca);
+					Fy *= (0.95 + 0.05*capillary_number / Ca);
+					Fz *= (0.95 + 0.05*capillary_number / Ca);
 
 					double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
 
@@ -622,7 +622,7 @@ void ScaLBL_ColorModel::Run(){
 						Fy *= 2.f;                
 						Fz *= 2.f;                
 					}
-					tolerance = fabs(capillary_number - Ca) / capillary_number ;
+					tolerance = fabs(1.f - (0.95 + 0.05*capillary_number / Ca));
 					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
 				}
 				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
