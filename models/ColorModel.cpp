@@ -612,16 +612,17 @@ void ScaLBL_ColorModel::Run(){
 						Fy *= 1e-3/force_magnitude;   
 						Fz *= 1e-3/force_magnitude;   
 					}
-					if (force_magnitude < 1e-7){
-						Fx *= 1e-7/force_magnitude;   // impose floor
-						Fy *= 1e-7/force_magnitude;   
-						Fz *= 1e-7/force_magnitude;   
+					if (force_magnitude < 1e-6){
+						Fx *= 1e-6/force_magnitude;   // impose floor
+						Fy *= 1e-6/force_magnitude;   
+						Fz *= 1e-6/force_magnitude;   
 					}
-					if (Fx*vA_x + Fy*vA_y + Fz*vA_z < 0.f || Fx*vB_x + Fy*vB_y +Fz*vB_z < 0.f){
+				/*	if (Fx*vA_x + Fy*vA_y + Fz*vA_z < 0.f || Fx*vB_x + Fy*vB_y +Fz*vB_z < 0.f){
 						Fx *= 2.f;                // bigger forces are needed if flow rate is "too small"
 						Fy *= 2.f;                
 						Fz *= 2.f;                
 					}
+					*/
 					tolerance = fabs(1.f - (0.95 + 0.05*capillary_number / Ca));
 					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
 				}
