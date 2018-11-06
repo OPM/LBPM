@@ -546,9 +546,48 @@ void ScaLBL_ColorModel::Run(){
 			if ( morph_timesteps > morph_interval ){
 				tolerance = 1.f;
 				MORPH_ADAPT = true;
+				
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
+				double vA_x = Averages->van_global(0); 
+				double vA_y = Averages->van_global(1); 
+				double vA_z = Averages->van_global(2); 
+				double vB_x = Averages->vaw_global(0); 
+				double vB_y = Averages->vaw_global(1); 
+				double vB_z = Averages->vaw_global(2);
+				double muA = rhoA*(tauA-0.5)/3.f; 
+				double muB = rhoB*(tauB-0.5)/3.f;				
+				
+				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
+				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				double current_saturation = volB/(volA+volB);
+				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
+
+				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+				
+				if (SET_CAPILLARY_NUMBER ){
+					Fx *= capillary_number / Ca;
+					Fy *= capillary_number / Ca;
+					Fz *= capillary_number / Ca;
+
+					double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+
+					if (force_magnitude > 1e-3){
+						Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
+						Fy *= 1e-3/force_magnitude;   
+						Fz *= 1e-3/force_magnitude;   
+					}
+					if (force_magnitude < 1e-6){
+						Fx *= 1e-6/force_magnitude;   // impose floor
+						Fy *= 1e-6/force_magnitude;   
+						Fz *= 1e-6/force_magnitude;   
+					}
+					tolerance = fabs(Ca-capillary_number)/ Ca ;
+					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
+
+					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+				}
+
 				if (morph_delta > 0.f){
 					// wetting phase saturation will decrease
 					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
@@ -562,6 +601,7 @@ void ScaLBL_ColorModel::Run(){
 						if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
 					}
 				}
+				
 			}
 			if (MORPH_ADAPT ){
 				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
@@ -579,50 +619,7 @@ void ScaLBL_ColorModel::Run(){
 				morph_timesteps = 0;
 				tolerance = 1.f;
 			}
-			if (SET_CAPILLARY_NUMBER ){
-				morph_timesteps += analysis_interval;
-				double vA_x = Averages->van_global(0); 
-				double vA_y = Averages->van_global(1); 
-				double vA_z = Averages->van_global(2); 
-				
-				double vB_x = Averages->vaw_global(0); 
-				double vB_y = Averages->vaw_global(1); 
-				double vB_z = Averages->vaw_global(2);
-				
-				double volB = Averages->Volume_w(); 
-				double volA = Averages->Volume_n(); 
-				double muA = rhoA*(tauA-0.5)/3.f; 
-				double muB = rhoB*(tauB-0.5)/3.f;
-				
-				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
-				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
-				
-				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
-				
-				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
-				/*if (morph_timesteps > 5000){
-					Fx *= (0.95 + 0.05*capillary_number / Ca);
-					Fy *= (0.95 + 0.05*capillary_number / Ca);
-					Fz *= (0.95 + 0.05*capillary_number / Ca);
-
-					double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
-
-					if (force_magnitude > 1e-3){
-						Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
-						Fy *= 1e-3/force_magnitude;   
-						Fz *= 1e-3/force_magnitude;   
-					}
-					if (force_magnitude < 1e-6){
-						Fx *= 1e-6/force_magnitude;   // impose floor
-						Fy *= 1e-6/force_magnitude;   
-						Fz *= 1e-6/force_magnitude;   
-					}
-					tolerance = fabs(1.f - (0.95 + 0.05*capillary_number / Ca));
-					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
-				}
-				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
-				*/
-			}
+			morph_timesteps += analysis_interval;
 		}
 	}
 	analysis.finish();
