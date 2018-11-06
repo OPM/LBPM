@@ -600,7 +600,7 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 				
 				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
-				if (morph_timesteps > 5000){
+				/*if (morph_timesteps > 5000){
 					Fx *= (0.95 + 0.05*capillary_number / Ca);
 					Fy *= (0.95 + 0.05*capillary_number / Ca);
 					Fz *= (0.95 + 0.05*capillary_number / Ca);
@@ -617,16 +617,11 @@ void ScaLBL_ColorModel::Run(){
 						Fy *= 1e-6/force_magnitude;   
 						Fz *= 1e-6/force_magnitude;   
 					}
-				/*	if (Fx*vA_x + Fy*vA_y + Fz*vA_z < 0.f || Fx*vB_x + Fy*vB_y +Fz*vB_z < 0.f){
-						Fx *= 2.f;                // bigger forces are needed if flow rate is "too small"
-						Fy *= 2.f;                
-						Fz *= 2.f;                
-					}
-					*/
 					tolerance = fabs(1.f - (0.95 + 0.05*capillary_number / Ca));
 					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
 				}
 				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+				*/
 			}
 		}
 	}
