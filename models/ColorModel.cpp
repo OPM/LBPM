@@ -569,8 +569,8 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
-				double krA = muA*volA*flow_rate_A/force_magnitude;
-				double krB = muB*volB*flow_rate_B/force_magnitude;
+				double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
+				double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs(krA - krA_previous) < tolerance && fabs(krB - krB_previous) < tolerance ){
 					if (rank==0) printf("** WRITE STEADY POINT *** ");
