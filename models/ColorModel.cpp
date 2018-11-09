@@ -573,7 +573,7 @@ void ScaLBL_ColorModel::Run(){
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					if (rank==0) printf("** WRITE STEADY POINT *** ");
-					tolerance = 1.f;
+					printf("Ca = %f, (previous = %f), tolerance = %f \n",Ca,Ca_previous);
 					MORPH_ADAPT = true;
 
 					FILE * kr_log_file = fopen("relperm.csv","a");
