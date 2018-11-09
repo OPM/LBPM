@@ -399,10 +399,16 @@ void ScaLBL_ColorModel::Run(){
 	
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
+	bool USE_MORPH = false;
+	int morph_interval;
+	double morph_delta;
 	int morph_timesteps = 0;
 	int ramp_timesteps = 50000;
+	double capillary_number;
 	double tolerance = 1.f;
-	
+	double krA_previous = 0.f;
+	double krB_previous = 0.f;
+
 	int target_saturation_index=0;
 	std::vector<double> target_saturation;
 	double TARGET_SATURATION = 0.f;
@@ -410,8 +416,6 @@ void ScaLBL_ColorModel::Run(){
 		target_saturation = color_db->getVector<double>( "target_saturation" );
 		TARGET_SATURATION = target_saturation[0];
 	}
-	
-	double capillary_number;
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -423,11 +427,9 @@ void ScaLBL_ColorModel::Run(){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
 		SET_CAPILLARY_NUMBER=false;
 	}
-
-	int morph_interval;
-	double morph_delta;
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
+		USE_MORPH = true;
 	}
 	else{
 		morph_delta=0.5;
@@ -436,11 +438,16 @@ void ScaLBL_ColorModel::Run(){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
 	}
 	else{
-		morph_interval=100000;
+		morph_interval=10000;
+	}
+	if (analysis_db->keyExists( "tolerance" )){
+		tolerance = analysis_db->getScalar<double>( "tolerance" );
+	}
+	else{
+		tolerance = 0.02;
 	}
 	int analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	
-
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("No. of timesteps: %i \n", timestepMax);
@@ -542,11 +549,9 @@ void ScaLBL_ColorModel::Run(){
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
 		// allow initial ramp-up to get closer to steady state
-		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 ){
+		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 && USE_MORPH){
 			if ( morph_timesteps > morph_interval ){
-				tolerance = 1.f;
-				MORPH_ADAPT = true;
-				
+
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
 				double vA_x = Averages->van_global(0); 
@@ -563,48 +568,63 @@ void ScaLBL_ColorModel::Run(){
 				double current_saturation = volB/(volA+volB);
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 
-				FILE * kr_log_file = fopen("relperm.csv","a");
-				fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
-				fclose(kr_log_file);
-				
-				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
-				if (SET_CAPILLARY_NUMBER ){
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
+				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+				double krA = muA*volA*flow_rate_A/force_magnitude;
+				double krB = muB*volB*flow_rate_B/force_magnitude;
 
-					double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+				if (fabs(krA - krA_previous) < tolerance && fabs(krB - krB_previous) < tolerance ){
+					if (rank==0) printf("** WRITE STEADY POINT *** ");
+					tolerance = 1.f;
+					MORPH_ADAPT = true;
 
-					if (force_magnitude > 1e-3){
-						Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
-						Fy *= 1e-3/force_magnitude;   
-						Fz *= 1e-3/force_magnitude;   
+					FILE * kr_log_file = fopen("relperm.csv","a");
+					fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+					fclose(kr_log_file);
+
+					if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+					if (SET_CAPILLARY_NUMBER ){
+						Fx *= capillary_number / Ca;
+						Fy *= capillary_number / Ca;
+						Fz *= capillary_number / Ca;
+
+						if (force_magnitude > 1e-3){
+							Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
+							Fy *= 1e-3/force_magnitude;   
+							Fz *= 1e-3/force_magnitude;   
+						}
+						if (force_magnitude < 1e-6){
+							Fx *= 1e-6/force_magnitude;   // impose floor
+							Fy *= 1e-6/force_magnitude;   
+							Fz *= 1e-6/force_magnitude;   
+						}
+						tolerance = fabs(Ca-capillary_number)/ Ca ;
+						if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
+
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 					}
-					if (force_magnitude < 1e-6){
-						Fx *= 1e-6/force_magnitude;   // impose floor
-						Fy *= 1e-6/force_magnitude;   
-						Fz *= 1e-6/force_magnitude;   
+
+					if (morph_delta > 0.f){
+						// wetting phase saturation will decrease
+						while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+							TARGET_SATURATION = target_saturation[target_saturation_index++];
+						}
 					}
-					tolerance = fabs(Ca-capillary_number)/ Ca ;
-					if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
-
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
-				}
-
-				if (morph_delta > 0.f){
-					// wetting phase saturation will decrease
-					while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					else{
+						// wetting phase saturation will increase
+						while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+							TARGET_SATURATION = target_saturation[target_saturation_index++];
+							if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
+						}
 					}
 				}
 				else{
-					// wetting phase saturation will increase
-					while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
-						if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
+					if (rank==0){
+						printf("** Continue to simulate steady *** \n ");
+						printf("krA = %f, krB = %f, (previous = %f, %f) \n",krA,krB,krA_previous,krB_previous);
 					}
+					krA_previous = krA;
+					krB_previous = krB;
 				}
-				
 			}
 			if (MORPH_ADAPT ){
 				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
