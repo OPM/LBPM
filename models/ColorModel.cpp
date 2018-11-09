@@ -621,8 +621,8 @@ void ScaLBL_ColorModel::Run(){
 						printf("** Continue to simulate steady *** \n ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
-					Ca_previous = Ca;
 				}
+				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
 				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
