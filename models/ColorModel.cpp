@@ -406,8 +406,7 @@ void ScaLBL_ColorModel::Run(){
 	int ramp_timesteps = 50000;
 	double capillary_number;
 	double tolerance = 1.f;
-	double krA_previous = 0.f;
-	double krB_previous = 0.f;
+	double Ca_previous = 0.f;
 
 	int target_saturation_index=0;
 	std::vector<double> target_saturation;
@@ -569,10 +568,10 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
-				double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
-				double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
+				//double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
+				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
-				if (fabs(krA - krA_previous) < tolerance && fabs(krB - krB_previous) < tolerance ){
+				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					if (rank==0) printf("** WRITE STEADY POINT *** ");
 					tolerance = 1.f;
 					MORPH_ADAPT = true;
@@ -620,10 +619,9 @@ void ScaLBL_ColorModel::Run(){
 				else{
 					if (rank==0){
 						printf("** Continue to simulate steady *** \n ");
-						printf("krA = %f, krB = %f, (previous = %f, %f) \n",krA,krB,krA_previous,krB_previous);
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
-					krA_previous = krA;
-					krB_previous = krB;
+					Ca_previous = Ca;
 				}
 			}
 			if (MORPH_ADAPT ){
