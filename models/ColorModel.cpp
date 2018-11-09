@@ -563,8 +563,11 @@ void ScaLBL_ColorModel::Run(){
 				double current_saturation = volB/(volA+volB);
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
 
-				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+				FILE * kr_log_file = fopen("relperm.csv","a");
+				fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+				fclose(kr_log_file);
 				
+				if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
 				if (SET_CAPILLARY_NUMBER ){
 					Fx *= capillary_number / Ca;
 					Fy *= capillary_number / Ca;
