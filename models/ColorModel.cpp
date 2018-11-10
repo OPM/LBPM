@@ -598,9 +598,7 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-6/force_magnitude;   
 							Fz *= 1e-6/force_magnitude;   
 						}
-						tolerance = fabs(Ca-capillary_number)/ Ca ;
-						if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
-
+						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 					}
 
@@ -641,7 +639,6 @@ void ScaLBL_ColorModel::Run(){
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
-				tolerance = 1.f;
 			}
 			morph_timesteps += analysis_interval;
 		}
