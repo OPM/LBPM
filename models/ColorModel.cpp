@@ -572,17 +572,18 @@ void ScaLBL_ColorModel::Run(){
 				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
+					MORPH_ADAPT = true;
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+
+						FILE * kr_log_file = fopen("relperm.csv","a");
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						fclose(kr_log_file);
+
+						printf("  Measured capillary number %f \n ",Ca);
 					}
-					MORPH_ADAPT = true;
 
-					FILE * kr_log_file = fopen("relperm.csv","a");
-					fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
-					fclose(kr_log_file);
-
-					if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
