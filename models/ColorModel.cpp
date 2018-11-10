@@ -572,8 +572,10 @@ void ScaLBL_ColorModel::Run(){
 				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
-					if (rank==0) printf("** WRITE STEADY POINT *** ");
-					printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+					if (rank==0){
+						printf("** WRITE STEADY POINT *** ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+					}
 					MORPH_ADAPT = true;
 
 					FILE * kr_log_file = fopen("relperm.csv","a");
