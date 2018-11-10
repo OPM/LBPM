@@ -573,7 +573,7 @@ void ScaLBL_ColorModel::Run(){
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					if (rank==0) printf("** WRITE STEADY POINT *** ");
-					printf("Ca = %f, (previous = %f), tolerance = %f \n",Ca,Ca_previous);
+					printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					MORPH_ADAPT = true;
 
 					FILE * kr_log_file = fopen("relperm.csv","a");
@@ -621,6 +621,7 @@ void ScaLBL_ColorModel::Run(){
 						printf("** Continue to simulate steady *** \n ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
+					morph_timesteps=0;
 				}
 				Ca_previous = Ca;
 			}
