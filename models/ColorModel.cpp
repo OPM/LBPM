@@ -578,7 +578,7 @@ void ScaLBL_ColorModel::Run(){
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 
 						FILE * kr_log_file = fopen("relperm.csv","a");
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
