@@ -73,8 +73,8 @@ int main(int argc, char **argv)
         int nprocz = nproc[2];
 
         auto InputFile    = uct_db->getScalar<std::string>( "InputFile" );
-        auto target       = uct_db->getScalar<int>("target");
-        auto background   = uct_db->getScalar<int>("background");
+        auto target       = uct_db->getScalar<float>("target");
+        auto background   = uct_db->getScalar<float>("background");
         auto rough_cutoff = uct_db->getScalar<float>( "rough_cutoff" );    
         auto lamda        = uct_db->getScalar<float>( "lamda" );    
         auto nlm_sigsq    = uct_db->getScalar<float>( "nlm_sigsq" );    
@@ -91,6 +91,10 @@ int main(int argc, char **argv)
             printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
             printf("Number of MPI ranks used: %i \n", nprocs);
             printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
+	    printf("target value = %f \n",target);
+	    printf("background value = %f \n",background);
+	    printf("cylinder center = %i, %i, %i \n",center[0],center[1],center[2]);
+	    printf("cylinder radius = %f \n",CylRad);
         }
         if ( nprocs < nprocx*nprocy*nprocz ){
             ERROR("Insufficient number of processors");
@@ -188,22 +192,23 @@ int main(int argc, char **argv)
         PROFILE_STOP("ReadVolume");
         if (rank==0) printf("Read complete\n");
 
-
         // Filter the original data
         filter_src( *Dm[0], LOCVOL[0] );
 
         // Set up the mask to be distance to cylinder (crop outside cylinder)
+	if (rank==0) printf("Cropping with cylinder: %i, %i, %i, radius=%f \n",Dm[0]->nprocx()*Nx[0],Dm[0]->nprocy()*Ny[0],Dm[0]->nprocz()*Nz[0],CylRad);
         for (int k=0;k<Nz[0]+2;k++) {
             for (int j=0;j<Ny[0]+2;j++) {
                 for (int i=0;i<Nx[0]+2;i++) {
-                    int x=Dm[0]->iproc()*Nx[0]+i-1;
-                    int y=Dm[0]->jproc()*Ny[0]+j-1;
-                    int z=Dm[0]->kproc()*Nz[0]+k-1;
-                    int cx = center[0] - offset[0];
-                    int cy = center[1] - offset[1];
-                    int cz = center[2] - offset[2];
+		  float x= float(Dm[0]->iproc()*Nx[0]+i-1);
+		  float y= float (Dm[0]->jproc()*Ny[0]+j-1);
+		  float z= float(Dm[0]->kproc()*Nz[0]+k-1);
+		  float cx = float(center[0] - offset[0]);
+		  float cy = float(center[1] - offset[1]);
+		  float cz = float(center[2] - offset[2]);
                     // distance from the center line 
-                    MASK(i,j,k) = CylRad - sqrt(float((z-cz)*(z-cz) + (y-cy)*(y-cy)) );
+                    MASK(i,j,k) = sqrt((z-cz)*(z-cz) + (y-cy)*(y-cy));
+		    //if (sqrt(((z-cz)*(z-cz) + (y-cy)*(y-cy)) ) > CylRad) LOCVOL[0](i,j,k)=background;
                 }
             }
         }
@@ -211,16 +216,21 @@ int main(int argc, char **argv)
         // Compute the means for the high/low regions
         // (should use automated mixture model to approximate histograms)
         //float THRESHOLD = 0.05*maxReduce( Dm[0]->Comm, std::max( LOCVOL[0].max(), fabs(LOCVOL[0].min()) ) );
-        double THRESHOLD=0.5*(target+background);
-        double mean_plus=0;
-        double mean_minus=0;
+        float THRESHOLD=0.5*(target+background);
+        float mean_plus=0;
+        float mean_minus=0;
+	float min_value = LOCVOL[0](0);
+	float max_value = LOCVOL[0](0);
         int count_plus=0;
         int count_minus=0;
         for (int k=1;k<Nz[0]+1;k++) {
             for (int j=1;j<Ny[0]+1;j++) {
                 for (int i=1;i<Nx[0]+1;i++) {
-                    if (MASK(i,j,k) > 0.f ){
-                        auto tmp = LOCVOL[0](i,j,k);
+
+		  
+		  //LOCVOL[0](i,j,k) = MASK(i,j,k);
+                 if (MASK(i,j,k) < CylRad ){
+		      auto tmp = LOCVOL[0](i,j,k);
                         /*                        if ((tmp-background)*(tmp-target) > 0){
                             // direction to background / target is the same
                             if (fabs(tmp-target) > fabs(tmp-background)) tmp=background; // tmp closer to background
@@ -230,37 +240,47 @@ int main(int argc, char **argv)
                         if ( tmp > THRESHOLD ) {
                             mean_plus += tmp;
                             count_plus++;
-                        } else if ( tmp < -THRESHOLD ) {
+                        } 
+			else {
                             mean_minus += tmp;
                             count_minus++;
                         }
-                    }
+			if (tmp < min_value) min_value = tmp;
+			if (tmp > max_value) max_value = tmp;
+		    }
                 }
             }
         }
+	count_plus=sumReduce( Dm[0]->Comm, count_plus);
+	count_minus=sumReduce( Dm[0]->Comm, count_minus);
+      	if (rank==0) printf("minimum value=%f, max value=%f \n",min_value,max_value);
+	if (rank==0) printf("plus=%i, minus=%i \n",count_plus,count_minus);
         ASSERT( count_plus > 0 && count_minus > 0 );
-        mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / sumReduce( Dm[0]->Comm, count_plus );
-        mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / sumReduce( Dm[0]->Comm, count_minus );
+        MPI_Barrier(comm);
+        mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / count_plus;
+        mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / count_minus;
+        MPI_Barrier(comm);
         if (rank==0) printf("    Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
-
-        MPI_Barrier(comm);
-        // Scale the source data to +-1.0
+	//if (rank==0) printf("Scale the input data (size = %i) \n",LOCVOL[0].length());
         for (size_t i=0; i<LOCVOL[0].length(); i++) {
-            if (MASK(i) < 0.f){
-                LOCVOL[0](i) = 1.0;
+	    if ( MASK(i) > CylRad ){
+	      LOCVOL[0](i)=background;
             }
-            else if ( LOCVOL[0](i) >= 0 ) {
-                LOCVOL[0](i) /= mean_plus;
-                LOCVOL[0](i) = std::min( LOCVOL[0](i), 1.0f );
-            } else {
-                LOCVOL[0](i) /= -mean_minus;
-                LOCVOL[0](i) = std::max( LOCVOL[0](i), -1.0f );
+            if ( LOCVOL[0](i) >= THRESHOLD ) {
+                auto tmp = LOCVOL[0](i)/ mean_plus;
+                LOCVOL[0](i) = std::min( tmp, 1.0f );
+            } 
+	    else {
+                auto tmp = -LOCVOL[0](i)/mean_minus;
+                LOCVOL[0](i) = std::max( tmp, -1.0f );
             }
+	    //LOCVOL[0](i) = MASK(i);
         }
 
-
         // Fill the source data for the coarse meshes
+	if (rank==0) printf("Coarsen the mesh for N_levels=%i \n",N_levels);
+	MPI_Barrier(comm); 
         PROFILE_START("CoarsenMesh");
         for (int i=1; i<N_levels; i++) {
             Array<float> filter(ratio[0],ratio[1],ratio[2]);
