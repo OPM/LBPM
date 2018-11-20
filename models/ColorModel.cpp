@@ -629,8 +629,14 @@ void ScaLBL_ColorModel::Run(){
 				double volB = Averages->Volume_w(); 
 				double volA = Averages->Volume_n(); 
 				double delta_volume = MorphInit(beta,morph_delta);
+				double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+				// update the volume
 				volA += delta_volume;
 				volB -= delta_volume;
+				//update size of morphological operation
+				morph_delta *= delta_volume_target / delta_volume;
+				if (morph_delta > 1.f) morph_delta = 1.f;
+				if (morph_delta < -1.f) morph_delta = -1.f;
 				//MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
