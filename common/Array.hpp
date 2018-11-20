@@ -1002,8 +1002,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen(
             throw std::invalid_argument( "Array must be multiple of filter size" );
     }
     Array<TYPE, FUN, Allocator> y( S2 );
-    if ( d_size.ndim() <= 3 )
-        throw std::logic_error( "Function programmed for more than 3 dimensions" );
+    if ( d_size.ndim() > 3 )
+        throw std::logic_error( "Function not programmed for more than 3 dimensions" );
     const auto &Nh = filter.d_size;
     for ( size_t k1 = 0; k1 < y.d_size[2]; k1++ ) {
         for ( size_t j1 = 0; j1 < y.d_size[1]; j1++ ) {
@@ -1037,8 +1037,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen( const std::vec
     }
     Array<TYPE, FUN, Allocator> tmp( ratio );
     Array<TYPE, FUN, Allocator> y( S2 );
-    if ( d_size.ndim() <= 3 )
-        throw std::logic_error( "Function programmed for more than 3 dimensions" );
+    if ( d_size.ndim() > 3 )
+        throw std::logic_error( "Function not programmed for more than 3 dimensions" );
     for ( size_t k1 = 0; k1 < y.d_size[2]; k1++ ) {
         for ( size_t j1 = 0; j1 < y.d_size[1]; j1++ ) {
             for ( size_t i1 = 0; i1 < y.d_size[0]; i1++ ) {
