@@ -572,15 +572,18 @@ void ScaLBL_ColorModel::Run(){
 				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
-					if (rank==0) printf("** WRITE STEADY POINT *** ");
-					tolerance = 1.f;
 					MORPH_ADAPT = true;
+					if (rank==0){
+						printf("** WRITE STEADY POINT *** ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 
-					FILE * kr_log_file = fopen("relperm.csv","a");
-					fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g .5g %.5g %.5g\n",timestep,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
-					fclose(kr_log_file);
+						FILE * kr_log_file = fopen("relperm.csv","a");
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						fclose(kr_log_file);
 
-					if (rank == 0) printf("  Measured capillary number %f \n ",Ca);
+						printf("  Measured capillary number %f \n ",Ca);
+					}
+
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
@@ -596,9 +599,7 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-6/force_magnitude;   
 							Fz *= 1e-6/force_magnitude;   
 						}
-						tolerance = fabs(Ca-capillary_number)/ Ca ;
-						if (rank == 0) printf("    -- adjust force by %f \n ",tolerance);
-
+						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 					}
 
@@ -621,6 +622,7 @@ void ScaLBL_ColorModel::Run(){
 						printf("** Continue to simulate steady *** \n ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
+					morph_timesteps=0;
 				}
 				Ca_previous = Ca;
 			}
@@ -644,7 +646,6 @@ void ScaLBL_ColorModel::Run(){
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
-				tolerance = 1.f;
 			}
 			morph_timesteps += analysis_interval;
 		}
