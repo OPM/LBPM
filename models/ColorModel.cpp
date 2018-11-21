@@ -636,7 +636,7 @@ void ScaLBL_ColorModel::Run(){
 				volA += delta_volume;
 				volB -= delta_volume;
 				if (delta_volume_target / delta_volume > 0.f){
-					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.f);
+					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
 					if (morph_delta > 1.f) morph_delta = 1.f;
 					if (morph_delta < -1.f) morph_delta = -1.f;
 					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
