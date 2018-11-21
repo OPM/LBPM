@@ -640,6 +640,7 @@ void ScaLBL_ColorModel::Run(){
 					morph_delta *= 0.2*delta_volume_target / delta_volume;
 				if (morph_delta > 1.f) morph_delta = 1.f;
 				if (morph_delta < -1.f) morph_delta = -1.f;
+				if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
 				if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
 				//MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
