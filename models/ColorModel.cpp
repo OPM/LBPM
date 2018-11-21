@@ -635,13 +635,13 @@ void ScaLBL_ColorModel::Run(){
 				// update the volume
 				volA += delta_volume;
 				volB -= delta_volume;
-				//update size of morphological operation -- don't change sign of morph_delta
-				if (delta_volume_target / delta_volume > 0.f)
-					morph_delta *= 0.2*delta_volume_target / delta_volume;
-				if (morph_delta > 1.f) morph_delta = 1.f;
-				if (morph_delta < -1.f) morph_delta = -1.f;
-				if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
-				if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
+				if (delta_volume_target / delta_volume > 0.f){
+					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.f);
+					if (morph_delta > 1.f) morph_delta = 1.f;
+					if (morph_delta < -1.f) morph_delta = -1.f;
+					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
+					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
+				}
 				//MORPH_ADAPT = false;
 				if (volB/(volA + volB) > TARGET_SATURATION){
 					MORPH_ADAPT = false;
