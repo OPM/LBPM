@@ -428,16 +428,17 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
-		USE_MORPH = true;
 	}
 	else{
 		morph_delta=0.5;
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
+		USE_MORPH = true;
 	}
 	else{
-		morph_interval=10000;
+		morph_interval=1000000;
+		USE_MORPH = false;
 	}
 	if (analysis_db->keyExists( "tolerance" )){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
