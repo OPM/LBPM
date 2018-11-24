@@ -577,9 +577,11 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-
+						volA /= double(Nx*Ny*Nz*nprocs);
+						volB /= double(Nx*Ny*Nz*nprocs);
 						FILE * kr_log_file = fopen("relperm.csv","a");
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz,volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
+						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
