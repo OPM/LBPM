@@ -213,6 +213,9 @@ void ScaLBL_MRTModel::Run(){
 			//Morphology.PrintAll();
 			double mu = (tau-0.5)/3.f;
 			if (rank==0) {
+				double h = Lz/double(Nz);
+				double absperm = h*h*mu*sqrt(vax*vax+vay*vay+vaz*vaz)/sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
 						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
