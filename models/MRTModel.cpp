@@ -148,7 +148,7 @@ void ScaLBL_MRTModel::Run(){
 
 	if (rank==0){
 		FILE * log_file = fopen("Permeability.csv","a");
-		fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
+		fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz k\n");
 		fclose(log_file);
 	}
 
@@ -217,8 +217,8 @@ void ScaLBL_MRTModel::Run(){
 				double absperm = h*h*mu*sqrt(vax*vax+vay*vay+vaz*vaz)/sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
-				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
+				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
+						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz, absperm);
 				fclose(log_file);
 			}
 		}
