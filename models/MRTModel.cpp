@@ -204,7 +204,7 @@ void ScaLBL_MRTModel::Run(){
 			vay /= count;
 			vaz /= count;
 			
-			if (rank==0) printf("Computing Minkowski functionals \n");
+			//if (rank==0) printf("Computing Minkowski functionals \n");
 			Morphology.ComputeScalar(Distance,0.f);
 			Morphology.PrintAll();
 			
