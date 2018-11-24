@@ -146,8 +146,12 @@ void ScaLBL_MRTModel::Run(){
 	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 
-	if (rank==0) printf("time Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
-	
+	if (rank==0){
+		FILE * log_file = fopen("Permeability.csv","a");
+		fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
+		fclose(log_file);
+	}
+
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -206,11 +210,14 @@ void ScaLBL_MRTModel::Run(){
 			
 			//if (rank==0) printf("Computing Minkowski functionals \n");
 			Morphology.ComputeScalar(Distance,0.f);
-			Morphology.PrintAll();
-			
+			//Morphology.PrintAll();
 			double mu = (tau-0.5)/3.f;
-			if (rank==0) printf("%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-								Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
+			if (rank==0) {
+				FILE * log_file = fopen("Permeability.csv","a");
+				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
+						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
+				fclose(log_file);
+			}
 		}
 	}
 	//************************************************************************/
