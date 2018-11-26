@@ -95,8 +95,6 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
 
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
-
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
@@ -111,6 +109,8 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	nprocx = nproc[0];
 	nprocy = nproc[1];
 	nprocz = nproc[2];
+	
+	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
 void ScaLBL_ColorModel::SetDomain(){
@@ -166,6 +166,8 @@ void ScaLBL_ColorModel::ReadInput(){
 	CalcDist(Averages->SDs,id_solid,*Mask);
 	
 	if (rank == 0) cout << "Domain set." << endl;
+	
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 }
 
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
@@ -341,7 +343,7 @@ void ScaLBL_ColorModel::Initialize(){
 		cDen = new double[2*Np];
 		cDist = new double[19*Np];
 		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-         	ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+        ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
     	
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
@@ -409,20 +411,70 @@ void ScaLBL_ColorModel::Initialize(){
 void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	
+	bool SET_CAPILLARY_NUMBER = false;
+	bool MORPH_ADAPT = false;
+	bool USE_MORPH = false;
+	int morph_interval;
+	double morph_delta;
+	int morph_timesteps = 0;
+	int ramp_timesteps = 50000;
+	double capillary_number;
+	double tolerance = 1.f;
+	double Ca_previous = 0.f;
 
+	int target_saturation_index=0;
+	std::vector<double> target_saturation;
+	double TARGET_SATURATION = 0.f;
+	if (color_db->keyExists( "target_saturation" )){
+		target_saturation = color_db->getVector<double>( "target_saturation" );
+		TARGET_SATURATION = target_saturation[0];
+	}
+	if (color_db->keyExists( "capillary_number" )){
+		capillary_number = color_db->getScalar<double>( "capillary_number" );
+		SET_CAPILLARY_NUMBER=true;
+	}
+	else{
+		capillary_number=0;
+	}
+	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
+		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
+		SET_CAPILLARY_NUMBER=false;
+	}
+	if (analysis_db->keyExists( "morph_delta" )){
+		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
+	}
+	else{
+		morph_delta=0.5;
+	}
+	if (analysis_db->keyExists( "morph_interval" )){
+		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
+		USE_MORPH = true;
+	}
+	else{
+		morph_interval=1000000;
+		USE_MORPH = false;
+	}
+	if (analysis_db->keyExists( "tolerance" )){
+		tolerance = analysis_db->getScalar<double>( "tolerance" );
+	}
+	else{
+		tolerance = 0.02;
+	}
+	int analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
+	
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
 	}
-
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-
+	
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
@@ -510,7 +562,114 @@ void ScaLBL_ColorModel::Run(){
 
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		
+		// allow initial ramp-up to get closer to steady state
+		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 && USE_MORPH){
+			if ( morph_timesteps > morph_interval ){
 
+				double volB = Averages->Volume_w(); 
+				double volA = Averages->Volume_n(); 
+				double vA_x = Averages->van_global(0); 
+				double vA_y = Averages->van_global(1); 
+				double vA_z = Averages->van_global(2); 
+				double vB_x = Averages->vaw_global(0); 
+				double vB_y = Averages->vaw_global(1); 
+				double vB_z = Averages->vaw_global(2);
+				double muA = rhoA*(tauA-0.5)/3.f; 
+				double muB = rhoB*(tauB-0.5)/3.f;				
+				
+				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
+				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				double current_saturation = volB/(volA+volB);
+				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
+
+				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+				//double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
+				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
+
+				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
+					MORPH_ADAPT = true;
+					if (rank==0){
+						printf("** WRITE STEADY POINT *** ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						volA /= double(Nx*Ny*Nz*nprocs);
+						volB /= double(Nx*Ny*Nz*nprocs);
+						FILE * kr_log_file = fopen("relperm.csv","a");
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
+						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						fclose(kr_log_file);
+
+						printf("  Measured capillary number %f \n ",Ca);
+					}
+
+					if (SET_CAPILLARY_NUMBER ){
+						Fx *= capillary_number / Ca;
+						Fy *= capillary_number / Ca;
+						Fz *= capillary_number / Ca;
+
+						if (force_magnitude > 1e-3){
+							Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
+							Fy *= 1e-3/force_magnitude;   
+							Fz *= 1e-3/force_magnitude;   
+						}
+						if (force_magnitude < 1e-6){
+							Fx *= 1e-6/force_magnitude;   // impose floor
+							Fy *= 1e-6/force_magnitude;   
+							Fz *= 1e-6/force_magnitude;   
+						}
+						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+					}
+
+					if (morph_delta > 0.f){
+						// wetting phase saturation will decrease
+						while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+							TARGET_SATURATION = target_saturation[target_saturation_index++];
+						}
+					}
+					else{
+						// wetting phase saturation will increase
+						while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
+							TARGET_SATURATION = target_saturation[target_saturation_index++];
+							if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
+						}
+					}
+				}
+				else{
+					if (rank==0){
+						printf("** Continue to simulate steady *** \n ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+					}
+					morph_timesteps=0;
+				}
+				Ca_previous = Ca;
+			}
+			if (MORPH_ADAPT ){
+				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
+				double volB = Averages->Volume_w(); 
+				double volA = Averages->Volume_n(); 
+				double delta_volume = MorphInit(beta,morph_delta);
+				double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+				// update the volume
+				volA += delta_volume;
+				volB -= delta_volume;
+				if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
+					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
+					if (morph_delta > 1.f) morph_delta = 1.f;
+					if (morph_delta < -1.f) morph_delta = -1.f;
+					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
+					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
+				}
+				//MORPH_ADAPT = false;
+				if (volB/(volA + volB) > TARGET_SATURATION){
+					MORPH_ADAPT = false;
+					TARGET_SATURATION = target_saturation[target_saturation_index++];
+				}
+				MPI_Barrier(comm);
+				morph_timesteps = 0;
+			}
+			morph_timesteps += analysis_interval;
+		}
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
@@ -533,6 +692,133 @@ void ScaLBL_ColorModel::Run(){
 	if (rank==0) printf("********************************************************\n");
 
 	// ************************************************************************
+}
+
+double ScaLBL_ColorModel::MorphInit(const double beta, const double morph_delta){
+	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+
+	double vF = 0.f;
+	double vS = 0.f;
+
+	DoubleArray phase(Nx,Ny,Nz);
+	IntArray phase_label(Nx,Ny,Nz);;
+	DoubleArray phase_distance(Nx,Ny,Nz);
+	Array<char> phase_id(Nx,Ny,Nz);
+
+	// Basic algorithm to 
+	// 1. Copy phase field to CPU
+	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
+
+	double count,count_global,volume_initial,volume_final;
+	count = 0.f;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
+			}
+		}
+	}
+	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	volume_initial = count_global;
+
+	// 2. Identify connected components of phase field -> phase_label
+	BlobIDstruct new_index;
+	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
+	MPI_Barrier(comm);
+	// only operate on component "0"
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int label = phase_label(i,j,k);
+				if (label == 0 )     phase_id(i,j,k) = 0;
+				else 		     phase_id(i,j,k) = 1;
+			}
+		}
+	}	
+	// 3. Generate a distance map to the largest object -> phase_distance
+	CalcDist(phase_distance,phase_id,*Dm);
+
+	double temp,value;
+	double factor=0.5/beta;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase_distance(i,j,k) < 3.f ){
+					value = phase(i,j,k);
+					if (value > 1.f)   value=1.f;
+					if (value < -1.f)  value=-1.f;
+					// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
+					temp = -factor*log((1.0+value)/(1.0-value));
+					/// use this approximation close to the object
+					if (fabs(value) < 0.8 && Averages->SDs(i,j,k) > 1.f ){
+						phase_distance(i,j,k) = temp;
+					}
+				}
+			}
+		}
+	}
+
+	// 4. Apply erosion / dilation operation to phase_distance
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double walldist=Averages->SDs(i,j,k);
+				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
+				phase_distance(i,j,k) -= wallweight*morph_delta;
+			}
+		}
+	}
+
+	// 5. Update phase indicator field based on new distnace
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int n = k*Nx*Ny + j*Nx + i;
+				double d = phase_distance(i,j,k);
+				if (Averages->SDs(i,j,k) > 0.f){
+					// only update phase field in immediate proximity of largest component
+					if (d < 3.f){
+						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
+					}
+				}
+			} 
+		}
+	}
+
+	count = 0.f;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
+			}
+		}
+	}
+	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	volume_final=count_global;
+
+	double delta_volume = (volume_final-volume_initial);
+	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
+
+	// 6. copy back to the device
+	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
+	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
+
+	// 7. Re-initialize phase field and density
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	if (BoundaryCondition >0 ){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+	return delta_volume;
 }
 
 void ScaLBL_ColorModel::WriteDebug(){

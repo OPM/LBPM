@@ -11,6 +11,7 @@
 #include <sstream>
 #include "common/Array.h"
 #include "common/Domain.h"
+#include "analysis/distance.h"
 
 
 //*************************************************************************
@@ -106,16 +107,45 @@ int main(int argc, char **argv)
 
 		char *id;
 		id = new char [N];
+		sprintf(LocalRankFilename,"ID.%05i",rank);
+		size_t readID;
+		FILE *IDFILE = fopen(LocalRankFilename,"rb");
+		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+		readID=fread(id,1,N,IDFILE);
+		if (readID != size_t(N)) printf("lbpm_morphopen_pp: Error reading ID (rank=%i) \n",rank);
+		fclose(IDFILE);
+
 
 		nx+=2; ny+=2; nz+=2;
+		// Generate the signed distance map
+		// Initialize the domain and communication
+		Array<char> id_solid(nx,ny,nz);
 		DoubleArray SignDist(nx,ny,nz);
-		// Read the signed distance from file
-		sprintf(LocalRankFilename,"SignDist.%05i",rank);
-		FILE *DIST = fopen(LocalRankFilename,"rb");
-		size_t ReadSignDist;
-		ReadSignDist=fread(SignDist.data(),8,N,DIST);
-		if (ReadSignDist != size_t(N)) printf("lbpm_morphopen_pp: Error reading signed distance function (rank=%i)\n",rank);
-		fclose(DIST);
+
+		// Solve for the position of the solid phase
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){
+				for (int i=0;i<nx;i++){
+					int n = k*nx*ny+j*nx+i;
+					// Initialize the solid phase
+					if (id[n] > 0)	id_solid(i,j,k) = 1;
+					else	     	id_solid(i,j,k) = 0;
+				}
+			}
+		}
+		// Initialize the signed distance function
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){
+				for (int i=0;i<nx;i++){
+					int n = k*nx*ny+j*nx+i;
+					// Initialize distance to +/- 1
+					SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+				}
+			}
+		}
+
+		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+		CalcDist(SignDist,id_solid,*Dm);
 
 		MPI_Barrier(comm);
 		double count,countGlobal,totalGlobal;
@@ -135,7 +165,9 @@ int main(int argc, char **argv)
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
 					n = k*nx*ny+j*nx+i;
-					if (SignDist(i,j,k) < 0.0)  id[n] = 0;
+					if (SignDist(i,j,k) < 0.f){
+					  // don't do anything
+					}
 					else{
 						// initially saturated with wetting phase
 						id[n] = 2;
@@ -392,21 +424,8 @@ int main(int argc, char **argv)
 
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
-		size_t readID;
-		FILE *ID = fopen(LocalRankFilename,"rb");
-		readID=fread(Dm->id,1,N,ID);
-		if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID \n");
-		fclose(ID);
-		// Preserve mineral labels
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					n = k*nx*ny+j*nx+i;
-					if (SignDist(i,j,k) < 0.0)  id[n] = Dm->id[n];
-				}
-			}
-		}
-		ID = fopen(LocalRankFilename,"wb");
+
+		FILE *ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
 	}

@@ -11,7 +11,7 @@
 #include <sstream>
 #include "common/Array.h"
 #include "common/Domain.h"
-
+#include "analysis/distance.h"
 
 //*************************************************************************
 // Morpohological drainage pre-processor 
@@ -96,8 +96,8 @@ int main(int argc, char **argv)
 	char LocalRankFilename[40];
 
 	int BoundaryCondition=1;
-	Domain Dm(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-
+	Domain Dm(domain_db,comm);
+	
 	nx+=2; ny+=2; nz+=2;
 	int N = nx*ny*nz;
 	char *id;
@@ -116,31 +116,59 @@ int main(int argc, char **argv)
 
 	Dm.CommInit();
 
+	sprintf(LocalRankFilename,"ID.%05i",rank);
+	size_t readID;
+	FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
+	readID=fread(id,1,N,IDFILE);
+	if (readID != size_t(N)) printf("lbpm_morphdrain_pp: Error reading ID (rank=%i) \n",rank);
+	fclose(IDFILE);
+
 	int xdim,ydim,zdim;
 	xdim=Dm.Nx-2;
 	ydim=Dm.Ny-2;
 	zdim=Dm.Nz-2;
 	fillHalo<double> fillData(Dm.Comm, Dm.rank_info,{xdim,ydim,zdim},{1,1,1},0,1);
-
+	
+	// Generate the signed distance map
+	// Initialize the domain and communication
+	Array<char> id_solid(nx,ny,nz);
 	DoubleArray SignDist(nx,ny,nz);
-	// Read the signed distance from file
+
+	// Solve for the position of the solid phase
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
+				int n = k*nx*ny+j*nx+i;
+				// Initialize the solid phase
+				if (id[n] > 0)	id_solid(i,j,k) = 1;
+				else	     	id_solid(i,j,k) = 0;
+			}
+		}
+	}
+	// Initialize the signed distance function
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){
+			for (int i=0;i<nx;i++){
+				int n = k*nx*ny+j*nx+i;
+				// Initialize distance to +/- 1
+				SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+			}
+		}
+	}
+
+	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	CalcDist(SignDist,id_solid,Dm);
+
+/*	// Read the signed distance from file
 	sprintf(LocalRankFilename,"SignDist.%05i",rank);
 	FILE *DIST = fopen(LocalRankFilename,"rb");
 	size_t ReadSignDist;
 	ReadSignDist=fread(SignDist.data(),8,N,DIST);
 	if (ReadSignDist != size_t(N)) printf("lbpm_morphdrain_pp: Error reading signed distance function (rank=%i)\n",rank);
 	fclose(DIST);
-
+*/
 	fillData.fill(SignDist);
-
-	sprintf(LocalRankFilename,"ID.%05i",rank);
-	size_t readID;
-	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-	readID=fread(id,1,N,IDFILE);
-	if (readID != size_t(N)) printf("lbpm_segmented_pp: Error reading ID (rank=%i) \n",rank);
-	fclose(IDFILE);
-
 	
 	Dm.CommInit();
 	int iproc = Dm.iproc();

@@ -7,10 +7,12 @@ module unload PrgEnv-intel
 module load PrgEnv-gnu/6.0.4
 module unload gcc cmake
 module load gcc/6.3.0
-module load cray-hdf5-parallel/1.10.0.1
+module load cray-hdf5-parallel/1.10.2.0
 module load cray-netcdf-hdf5parallel
 module load mercurial git
 module load cmake3/3.6.1
+
+export LD_LIBRARY_PATH=/usr/lib64:/lustre/atlas/proj-shared/geo106/eos/netcdf/lib:/lustre/atlas/proj-shared/geo106/eos/zlib/lib:/lustre/atlas/proj-shared/geo106/eos/hdf5/lib:$LD_LIBRARY_PATH
 
 export MPICH_RDMA_ENABLED_CUDA=0
 
@@ -27,7 +29,8 @@ cmake                                        \
     -D CMAKE_C_COMPILER:PATH=cc              \
     -D CMAKE_CXX_COMPILER:PATH=CC            \
     -D CMAKE_CXX_COMPILER:PATH=CC            \
-    -D CXX_STD=11 			     \
+    -D CMAKE_CXX_FLAGS="-fPIC"		         \
+    -D CMAKE_CXX_STANDARD=14					                \
     -D USE_TIMER=false			     \
     -D TIMER_DIRECTORY=${HOME}/timerutility/build/opt  \
     -D MPI_COMPILER:BOOL=TRUE                \
@@ -35,10 +38,12 @@ cmake                                        \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \
        -D CUDA_FLAGS="-arch sm_35"           \
-       -DBUILD_SHARED_LIBS=OFF		     \
-       -D USE_NETCDF=1	    		     \
-       -D NETCDF_DIRECTORY=$NETCDF_DIR 	     \
-       -D HDF5_DIRECTORY=$HDF5_DIR	     \
+    -D USE_SILO=1					                \
+        -D SILO_DIRECTORY=/lustre/atlas/proj-shared/geo106/eos/silo \
+        -D HDF5_DIRECTORY=/lustre/atlas/proj-shared/geo106/eos/hdf5 \
+        -D HDF5_LIB=/lustre/atlas/proj-shared/geo106/eos/hdf5/lib/libhdf5.a \
+    -D USE_NETCDF=1						    \
+       -D NETCDF_DIRECTORY=/lustre/atlas/proj-shared/geo106/eos/netcdf \
        -D CMAKE_SKIP_RPATH=true		     \
     ~/LBPM-WIA
 

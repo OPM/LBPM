@@ -163,7 +163,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     // Compute the median filter on the sparse array
     Med3D( VOL, Mean );
     fillFloat.fill( Mean );
-    segment( Mean, ID, 0.01 );
+    segment( Mean, ID, threshold );
     // Compute the distance using the segmented volume
 	CalcDist( Dist, ID, Dm );
 	fillFloat.fill(Dist);

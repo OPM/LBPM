@@ -39,7 +39,7 @@ namespace IO {
  *                          silo - Silo
  * @param[in] append        Append any existing data (default is false)
  */
-void initialize( const std::string& path="", const std::string& format="new", bool append=false );
+void initialize( const std::string& path="", const std::string& format="silo", bool append=false );
 
 
 /*!
