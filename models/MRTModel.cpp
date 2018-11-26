@@ -2,6 +2,7 @@
  * Multi-relaxation time LBM Model
  */
 #include "models/MRTModel.h"
+#include "analysis/distance.h"
 
 ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
