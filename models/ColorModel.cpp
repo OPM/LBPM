@@ -645,10 +645,17 @@ void ScaLBL_ColorModel::Run(){
 					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
 					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
 				}
-				//MORPH_ADAPT = false;
-				if (volB/(volA + volB) > TARGET_SATURATION){
-					MORPH_ADAPT = false;
-					TARGET_SATURATION = target_saturation[target_saturation_index++];
+				if (morph_delta < 0.f){
+					if (volB/(volA + volB) > TARGET_SATURATION){
+						MORPH_ADAPT = false;
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
+				}
+				else{
+					if (volB/(volA + volB) < TARGET_SATURATION){
+						MORPH_ADAPT = false;
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
