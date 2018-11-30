@@ -103,20 +103,15 @@ int main(int argc, char **argv)
 	auto filename = argv[1];
 	ScaLBL_ColorModel CM(rank,nprocs,comm);
 	CM.ReadParams(filename);
-	CM.SetDomain();    
-	
+	CM.SetDomain();    	
 	int i,j,k,n;
 	int Nx,Ny,Nz,N,Np;
 	Nx = CM.Nx;
 	Ny = CM.Ny;
 	Nz = CM.Nz;
-	Np = CM.Np;
 	N = Nx*Ny*Nz;
 	int dist_mem_size = N*sizeof(double);
-	double *DenOriginal, *DenFinal;
-	DenOriginal = new double [2*Np];
-	DenFinal = new double [2*Np];
-	
+
 	//CM.ReadInput(); 
 	double radius=0.4*double(Nx);
 	InitializeBubble(CM,radius);
@@ -125,56 +120,77 @@ int main(int argc, char **argv)
 	//CM.Run();	       
 	CM.WriteDebug();
 
+	Np = CM.Np;
+	double *DenOriginal, *DenFinal;
+	DenOriginal = new double [2*Np];
+	DenFinal = new double [2*Np];
+
 	// Run the odd timestep 
  	ScaLBL_CopyToHost(DenOriginal,CM.Den,2*Np*sizeof(double));
-
+	/*
 	CM.ScaLBL_Comm->BiSendD3Q7AA(CM.Aq,CM.Bq); //READ FROM NORMAL
 	ScaLBL_D3Q7_AAodd_PhaseField(CM.NeighborList, CM.dvcMap, CM.Aq, CM.Bq, CM.Den, CM.Phi, CM.ScaLBL_Comm->FirstInterior(), CM.ScaLBL_Comm->LastInterior(), CM.Np);
 	CM.ScaLBL_Comm->BiRecvD3Q7AA(CM.Aq,CM.Bq); //WRITE INTO OPPOSITE
 	ScaLBL_DeviceBarrier();
 	ScaLBL_D3Q7_AAodd_PhaseField(CM.NeighborList, CM.dvcMap, CM.Aq, CM.Bq, CM.Den, CM.Phi, 0, CM.ScaLBL_Comm->LastExterior(), CM.Np);
+	*/
 
-	FILE *OUTFILE;
-	OUTFILE = fopen("phi-out.raw","wb");
-	fwrite(CM.Phi,8,N,OUTFILE);
-	fclose(OUTFILE);	
-
+	CM.timestepMax = 2;
+	CM.Run();
 	// Compare and make sure mass is conserved at every lattice site
 	double *Error;
 	Error = new double [N];
 	bool CleanCheck = true;
 	double original,final;
+	double total_mass_A_0 = 0.0;
+	double total_mass_B_0= 0.0;
+	double total_mass_A_1 = 0.0;
+	double total_mass_B_1= 0.0;
 	ScaLBL_CopyToHost(DenFinal,CM.Den,2*Np*sizeof(double));
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
-
+				Error[n] = 0.0;
 				int idx = CM.Map(i,j,k);
-				printf("idx=%i\n",idx);
-				if (idx < Np && !(idx<0)){
-					if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){
+				if (idx < Np && idx>0){
+				  //printf("idx=%i\n",idx);
 						final = DenFinal[idx];
 						original = DenOriginal[idx];
+						total_mass_A_0 += original;
+						total_mass_A_1 += final;
+					       /*if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){		      
 						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
 						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
 						//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");							
 						printf("Mass not conserved: WP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 						CleanCheck=false;
-					}
-					if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
+						Error[n] += final-original;
+						}*/
+						final = DenFinal[Np+idx];
+						original = DenOriginal[Np+idx];
+						total_mass_B_0 += original;
+						total_mass_B_1 += final;
+						/*if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
 						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
 						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
 						//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");
-						final = DenFinal[Np+idx];
-						original = DenOriginal[Np+idx];
 						printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 						CleanCheck=false;
-					}
+						Error[n] += final-original;
+						}*/
 				}
 			}
 		}
 	}
+	printf("Global mass difference A = %.5g\n",total_mass_A_1-total_mass_A_0);
+	printf("Global mass difference B = %.5g\n",total_mass_B_1-total_mass_B_0);
+
+	FILE *OUTFILE;
+	OUTFILE = fopen("error.raw","wb");
+	fwrite(Error,8,N,OUTFILE);
+	fclose(OUTFILE);	
+
 	/*	if (rank==0) printf("Checking that the correct velocity is retained \n");
 	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
