@@ -42,19 +42,19 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 				int kglobal= k+(Nz-2)*ColorModel.Mask->kproc();
 				// Initialize phase position field for parallel bubble test
 				if (jglobal < 40){
-				     ColorModel.Mask->id[n] = 0;
+					ColorModel.Mask->id[n] = 0;
 				}
 				else if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
 						+(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
 						+(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
 					ColorModel.Mask->id[n] = 2;
 					ColorModel.Mask->id[n] = 2;
- 					count_in_bubble++;
+					count_in_bubble++;
 				}
 				else{
 					ColorModel.Mask->id[n]=1;
 					ColorModel.Mask->id[n]=1;
- 					count_out_bubble++;
+					count_out_bubble++;
 				}
 				ColorModel.id[n] = ColorModel.Mask->id[n];
 			}
@@ -151,31 +151,31 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 
 				int idx = CM.Map(i,j,k);
+				printf("idx=%i\n",idx);
 				if (idx < Np && !(idx<0)){
-				  printf("idx=%i\n",idx);
-				if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){
-					final = DenFinal[idx];
-					original = DenOriginal[idx];
-					//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
-					//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
-					//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");							
-					printf("Mass not conserved: WP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
-					CleanCheck=false;
-				}
-				if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
-					//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
-					//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
-					//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");
-					final = DenFinal[Np+idx];
-					original = DenOriginal[Np+idx];
-					printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
-					CleanCheck=false;
-				}
+					if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){
+						final = DenFinal[idx];
+						original = DenOriginal[idx];
+						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
+						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
+						//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");							
+						printf("Mass not conserved: WP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
+						CleanCheck=false;
+					}
+					if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
+						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
+						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
+						//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");
+						final = DenFinal[Np+idx];
+						original = DenOriginal[Np+idx];
+						printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
+						CleanCheck=false;
+					}
 				}
 			}
 		}
 	}
-/*	if (rank==0) printf("Checking that the correct velocity is retained \n");
+	/*	if (rank==0) printf("Checking that the correct velocity is retained \n");
 	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
