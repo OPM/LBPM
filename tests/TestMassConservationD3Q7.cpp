@@ -8,9 +8,61 @@
 #include <fstream>
 
 #include "common/ScaLBL.h"
-#include "common/Communication.h"
-#include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
+#include "models/ColorModel.h"
+
+inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){
+	// initialize a bubble
+	int i,j,k,n;
+	int rank = ColorModel.Mask->rank();
+	int nprocx = ColorModel.Mask->nprocx();
+	int nprocy = ColorModel.Mask->nprocy();
+	int nprocz = ColorModel.Mask->nprocz();
+	int Nx = ColorModel.Mask->Nx;
+	int Ny = ColorModel.Mask->Ny;
+	int Nz = ColorModel.Mask->Nz;
+	if (rank == 0) cout << "Setting up bubble..." << endl;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny + j*Nz + i;
+				ColorModel.Averages->SDs(i,j,k) = 100.f;
+			}
+		}
+	}
+	// Initialize the bubble
+	int count_in_bubble=0;
+	int count_out_bubble=0;
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny + j*Nz + i;
+				int iglobal= i+(Nx-2)*ColorModel.Mask->iproc();
+				int jglobal= j+(Ny-2)*ColorModel.Mask->jproc();
+				int kglobal= k+(Nz-2)*ColorModel.Mask->kproc();
+				// Initialize phase position field for parallel bubble test
+				if (jglobal < 40){
+				     ColorModel.Mask->id[n] = 0;
+				}
+				else if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
+						+(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
+						+(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
+					ColorModel.Mask->id[n] = 2;
+					ColorModel.Mask->id[n] = 2;
+ 					count_in_bubble++;
+				}
+				else{
+					ColorModel.Mask->id[n]=1;
+					ColorModel.Mask->id[n]=1;
+ 					count_out_bubble++;
+				}
+				ColorModel.id[n] = ColorModel.Mask->id[n];
+			}
+		}
+	}
+	printf("Count in %i, out %i\n",count_in_bubble,count_out_bubble);
+	// initialize the phase indicator field
+}
 
 int main(int argc, char **argv)
 {
@@ -42,130 +94,88 @@ int main(int argc, char **argv)
 		printf("********************************************************\n");
 		printf("Running Unit Test for D3Q7 Mass Conservation	\n");
 		printf("********************************************************\n");
-	}
-	
-	double das=0.0;
-	double dbs=1.0;
-	double beta=0.95;
-	bool pBC=false;
-	int i,j,k,n;
-	int Nx,Ny,Nz,N;
-	Nx=Nz=Ny=100;
-	N = Nx*Ny*Nz;
-	int dist_mem_size = N*sizeof(double);
-	
-	double *DenOriginal, *DenFinal;
-	DenOriginal = new double [2*N];
-	DenFinal = new double [2*N];
-	
-	double *Vel;
-	Vel = new double [3*N];
-	char *id;
-	id = new char [N];
-	
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny+j*Nx+i;
-				if (k<10)		id[n] = 0;
-				else if (k>80)	id[n] = 0;
-				else if (i<50){
-					id[n]=1;
-					Vel[n]=0.1;
-					Vel[N+n]=0.1;
-					Vel[2*N+n]=0.1;
-				}
-				else {
-					id[n]=2;
-					Vel[n]=0.1;
-					Vel[N+n]=0.1;
-					Vel[2*N+n]=0.1;
-				}
-			}
+		if ( argc < 2 ) {
+			std::cerr << "Invalid number of arguments, no input file specified\n";
+			return -1;
 		}
 	}
+	{		
+	auto filename = argv[1];
+	ScaLBL_ColorModel CM(rank,nprocs,comm);
+	CM.ReadParams(filename);
+	CM.SetDomain();    
 	
+	int i,j,k,n;
+	int Nx,Ny,Nz,N,Np;
+	Nx = CM.Nx;
+	Ny = CM.Ny;
+	Nz = CM.Nz;
+	Np = CM.Np;
+	N = Nx*Ny*Nz;
+	int dist_mem_size = N*sizeof(double);
+	double *DenOriginal, *DenFinal;
+	DenOriginal = new double [2*Np];
+	DenFinal = new double [2*Np];
+	
+	//CM.ReadInput(); 
+	double radius=0.4*double(Nx);
+	InitializeBubble(CM,radius);
+ 	CM.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+	CM.Initialize();   // initializing the model will set initial conditions for variables
+	//CM.Run();	       
+	CM.WriteDebug();
 
-	
-	//......................device distributions.................................
-	double *A_even,*A_odd,*B_even,*B_odd;
-	//...........................................................................
-	ScaLBL_AllocateDeviceMemory((void **) &A_even, 4*dist_mem_size);	// Allocate device memory
-	ScaLBL_AllocateDeviceMemory((void **) &A_odd, 3*dist_mem_size);	// Allocate device memory
-	ScaLBL_AllocateDeviceMemory((void **) &B_even, 4*dist_mem_size);	// Allocate device memory
-	ScaLBL_AllocateDeviceMemory((void **) &B_odd, 3*dist_mem_size);	// Allocate device memory
-	//...........................................................................
-	double *Phi,*Den;
-	double *ColorGrad, *Velocity;
-	//...........................................................................
-	ScaLBL_AllocateDeviceMemory((void **) &Phi, dist_mem_size);
-	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*dist_mem_size);
-	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*dist_mem_size);
-	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
-	//...........device phase ID.................................................
-	if (rank==0)	printf ("Copying phase ID to device \n");
-	char *ID;
-	ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
-	// Copy to the device
-	ScaLBL_CopyToDevice(ID, id, N);
-	ScaLBL_CopyToDevice(Velocity, Vel, 3*N*sizeof(double));
-	//...........................................................................
-	
-	ScaLBL_Color_Init(ID, Den, Phi, das, dbs, Nx, Ny, Nz);
-	ScaLBL_CopyToHost(DenOriginal,Den,2*N*sizeof(double));
+	// Run the odd timestep 
+ 	ScaLBL_CopyToHost(DenOriginal,CM.Den,2*Np*sizeof(double));
 
-	//......................................................................
-	ScaLBL_D3Q7_Init(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	ScaLBL_D3Q7_Init(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
-	ScaLBL_D3Q19_ColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
-	//..................................................................................
+	CM.ScaLBL_Comm->BiSendD3Q7AA(CM.Aq,CM.Bq); //READ FROM NORMAL
+	ScaLBL_D3Q7_AAodd_PhaseField(CM.NeighborList, CM.dvcMap, CM.Aq, CM.Bq, CM.Den, CM.Phi, CM.ScaLBL_Comm->FirstInterior(), CM.ScaLBL_Comm->LastInterior(), CM.Np);
+	CM.ScaLBL_Comm->BiRecvD3Q7AA(CM.Aq,CM.Bq); //WRITE INTO OPPOSITE
+	ScaLBL_DeviceBarrier();
+	ScaLBL_D3Q7_AAodd_PhaseField(CM.NeighborList, CM.dvcMap, CM.Aq, CM.Bq, CM.Den, CM.Phi, 0, CM.ScaLBL_Comm->LastExterior(), CM.Np);
 
-	//*************************************************************************
-	// 		Carry out the density streaming step for mass transport
-	//*************************************************************************
-	ScaLBL_D3Q7_ColorCollideMass(ID, A_even, A_odd, B_even, B_odd, Den, Phi,
-							ColorGrad, Velocity, beta, N, pBC);
-	//*************************************************************************
-	
-	//..................................................................................
-	ScaLBL_D3Q7_Density(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
-	ScaLBL_D3Q7_Density(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
-	//..................................................................................
-	ScaLBL_ComputePhaseField(ID, Phi, Den, N);
-	ScaLBL_D3Q19_ColorGradient(ID,Phi,ColorGrad,Nx,Ny,Nz);
-	//..................................................................................
+	FILE *OUTFILE;
+	OUTFILE = fopen("phi-out.raw","wb");
+	fwrite(CM.Phi,8,N,OUTFILE);
+	fclose(OUTFILE);	
 
 	// Compare and make sure mass is conserved at every lattice site
+	double *Error;
+	Error = new double [N];
 	bool CleanCheck = true;
 	double original,final;
-	ScaLBL_CopyToHost(DenFinal,Den,2*N*sizeof(double));
+	ScaLBL_CopyToHost(DenFinal,CM.Den,2*Np*sizeof(double));
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				if (fabs(DenFinal[n] - DenOriginal[n]) > 1e-15){
-					final = DenFinal[n];
-					original = DenOriginal[n];
-					if (id[n] == 0) printf("Solid phase! \n");
-					if (id[n] == 1) printf("Wetting phase! \n");
-					if (id[n] == 2) printf("Non-wetting phase! \n");							
+
+				int idx = CM.Map(i,j,k);
+				if (idx < Np && !(idx<0)){
+				  printf("idx=%i\n",idx);
+				if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){
+					final = DenFinal[idx];
+					original = DenOriginal[idx];
+					//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
+					//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
+					//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");							
 					printf("Mass not conserved: WP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 					CleanCheck=false;
 				}
-				if (fabs(DenFinal[N+n] - DenOriginal[N+n]) > 1e-15){
-					if (id[n] == 0) printf("Solid phase! \n");
-					if (id[n] == 1) printf("Wetting phase! \n");
-					if (id[n] == 2) printf("Non-wetting phase! \n");
-					final = DenFinal[N+n];
-					original = DenOriginal[N+n];
+				if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
+					//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
+					//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
+					//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");
+					final = DenFinal[Np+idx];
+					original = DenOriginal[Np+idx];
 					printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 					CleanCheck=false;
+				}
 				}
 			}
 		}
 	}
-	if (rank==0) printf("Checking that the correct velocity is retained \n");
+/*	if (rank==0) printf("Checking that the correct velocity is retained \n");
 	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
@@ -213,7 +223,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+*/
 	if (CleanCheck){
 		if (rank==0) printf("Test passed: mass conservation for D3Q7 \n");
 	}
@@ -221,7 +231,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Test failed!: mass conservation for D3Q7 \n");
 
 	}
-	
+}
 	// ****************************************************
 	MPI_Barrier(comm);
 	MPI_Finalize();
