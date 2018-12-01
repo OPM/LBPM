@@ -153,6 +153,8 @@ int main(int argc, char **argv)
 	double total_mass_B_0= 0.0;
 	double total_mass_A_1 = 0.0;
 	double total_mass_B_1= 0.0;
+	int count_negative_A = 0;
+	int count_negative_B = 0;
 	ScaLBL_CopyToHost(DenFinal,CM.Den,2*Np*sizeof(double));
 	ScaLBL_CopyToHost(A_q,CM.Aq,7*Np*sizeof(double));
 	for (i=0; i<N; i++) Error[i]=0.0;
@@ -164,6 +166,7 @@ int main(int argc, char **argv)
 				if (idx < Np && idx>-1){
 				  //printf("idx=%i\n",idx);
 						final = DenFinal[idx];
+						if (final < 0.0) count_negative_A++;
 						original = DenOriginal[idx];
 						total_mass_A_0 += original;
 						total_mass_A_1 += final;
@@ -194,6 +197,7 @@ int main(int argc, char **argv)
 						Error[n] += final-original;
 						}*/
 						final = DenFinal[Np+idx];
+						if (final < 0.0) count_negative_B++;
 						original = DenOriginal[Np+idx];
 						total_mass_B_0 += original;
 						total_mass_B_1 += final;
@@ -209,6 +213,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	printf("Negative density values for A = %i \n",count_negative_A);
+	printf("Negative density values for B = %i \n",count_negative_B);
 	printf("Global mass difference A = %.5g\n",total_mass_A_1-total_mass_A_0);
 	printf("Global mass difference B = %.5g\n",total_mass_B_1-total_mass_B_0);
 
