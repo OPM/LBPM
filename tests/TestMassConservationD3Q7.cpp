@@ -118,7 +118,10 @@ int main(int argc, char **argv)
  	CM.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 	CM.Initialize();   // initializing the model will set initial conditions for variables
 	//CM.Run();	       
-	CM.WriteDebug();
+	//CM.WriteDebug();
+
+	CM.timestepMax = 1000;
+	CM.Run();
 
 	Np = CM.Np;
 	double *DenOriginal, *DenFinal;
@@ -141,18 +144,22 @@ int main(int argc, char **argv)
 	// Compare and make sure mass is conserved at every lattice site
 	double *Error;
 	Error = new double [N];
+	double *A_q, *B_q;
+	A_q = new double [7*Np];
+	B_q = new double [7*Np];
 	bool CleanCheck = true;
-	double original,final;
+	double original,final, sum_q;
 	double total_mass_A_0 = 0.0;
 	double total_mass_B_0= 0.0;
 	double total_mass_A_1 = 0.0;
 	double total_mass_B_1= 0.0;
 	ScaLBL_CopyToHost(DenFinal,CM.Den,2*Np*sizeof(double));
-	for (k=0;k<Nz;k++){
-		for (j=0;j<Ny;j++){
-			for (i=0;i<Nx;i++){
+	ScaLBL_CopyToHost(A_q,CM.Aq,7*Np*sizeof(double));
+	for (i=0; i<N; i++) Error[i]=0.0;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
 				n = k*Nx*Ny+j*Nx+i;
-				Error[n] = 0.0;
 				int idx = CM.Map(i,j,k);
 				if (idx < Np && idx>-1){
 				  //printf("idx=%i\n",idx);
@@ -160,9 +167,24 @@ int main(int argc, char **argv)
 						original = DenOriginal[idx];
 						total_mass_A_0 += original;
 						total_mass_A_1 += final;
-						for (int q=0; q<7; q++){
-							
+						sum_q = A_q[idx];
+						for (int q=1; q<7; q++){
+						  int Cqx = D3Q7[q][0]; 
+						  int Cqy = D3Q7[q][1]; 
+						  int Cqz = D3Q7[q][2];
+						  int iq = CM.Map(i-Cqx,j-Cqy,k-Cqz);
+						  if (iq < Np && iq > -1){
+						    sum_q += A_q[q*Np+iq]; 
+						  }
+						  else if (q%2==0){
+						    sum_q += A_q[(q-1)*Np+idx]; 
+						  }
+						  else{
+						    sum_q += A_q[(q+1)*Np+idx]; 
+						  }
 						}
+						Error[n] = sum_q - original;
+						
 					       /*if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){		      
 						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
 						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
