@@ -137,6 +137,7 @@ int main(int argc, char **argv)
 
 	CM.timestepMax = 2;
 	CM.Run();
+	int D3Q7[7][3]={{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
 	// Compare and make sure mass is conserved at every lattice site
 	double *Error;
 	Error = new double [N];
@@ -153,12 +154,15 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 				Error[n] = 0.0;
 				int idx = CM.Map(i,j,k);
-				if (idx < Np && idx>0){
+				if (idx < Np && idx>-1){
 				  //printf("idx=%i\n",idx);
 						final = DenFinal[idx];
 						original = DenOriginal[idx];
 						total_mass_A_0 += original;
 						total_mass_A_1 += final;
+						for (int q=0; q<7; q++){
+							
+						}
 					       /*if (fabs(DenFinal[idx] - DenOriginal[idx]) > 1e-15){		      
 						//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
 						//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
