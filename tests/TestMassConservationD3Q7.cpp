@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 	//CM.Run();	       
 	//CM.WriteDebug();
 
-	CM.timestepMax = 1000;
+	CM.timestepMax = 10;
 	CM.Run();
 
 	Np = CM.Np;
