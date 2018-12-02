@@ -218,12 +218,16 @@ int main(int argc, char **argv)
 	printf("Global mass difference A = %.5g\n",total_mass_A_1-total_mass_A_0);
 	printf("Global mass difference B = %.5g\n",total_mass_B_1-total_mass_B_0);
 
-	FILE *OUTFILE;
+	if (count_negative_A > 0 ||count_negative_B > 0) CleanCheck=1;
+	if (fabs(total_mass_A_1-total_mass_A_0) > 1.0e-15||fabs(total_mass_B_1-total_mass_B_0) > 1.0e-15 ) CleanCheck=2;
+
+	/*	
+	 	FILE *OUTFILE;
 	OUTFILE = fopen("error.raw","wb");
 	fwrite(Error,8,N,OUTFILE);
 	fclose(OUTFILE);	
 
-	/*	if (rank==0) printf("Checking that the correct velocity is retained \n");
+	if (rank==0) printf("Checking that the correct velocity is retained \n");
 	// Swap convention is observed -- velocity is negative
 	double *Aeven,*Aodd,*Beven,*Bodd;
 	Aeven = new double[4*N];
