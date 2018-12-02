@@ -184,15 +184,12 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 
-	if (rank==0){
-		printf("Components labels: %lu \n",NLABELS);
-		for (unsigned int idx=0; idx<NLABELS; idx++){
-			VALUE=LabelList[idx];
-			AFFINITY=AffinityList[idx];
-			printf("   label=%i, affinity=%f\n",int(VALUE),AFFINITY); 
-		}
-	}
+	int label_count[NLABELS];
+	int label_count_global[NLABELS];
 	// Assign the labels
+
+	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
@@ -200,9 +197,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 				VALUE=id[n];
 				// Assign the affinity from the paired list
 				for (unsigned int idx=0; idx < NLABELS; idx++){
-					//printf("rank=%i, idx=%i, value=%i, %i, \n",rank(),idx, VALUE,LabelList[idx]);
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
+						label_count[idx]++;
 						idx = NLABELS;
 						Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
@@ -216,6 +214,19 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	}
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
+
+	MPI_Allreduce(&label_count[0],&label_count_global[0],NLABELS,MPI_INT,MPI_SUM,Dm->Comm);
+
+	if (rank==0){
+		printf("Components labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
+			printf("   label=%i, affinity=%f, volume fraction==%f\n",int(VALUE),AFFINITY,volume_fraction); 
+		}
+	}
+
 }
 
 
@@ -592,8 +603,8 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-						volA /= double(Nx*Ny*Nz*nprocs);
-						volB /= double(Nx*Ny*Nz*nprocs);
+						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
+						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
 						FILE * kr_log_file = fopen("relperm.csv","a");
 						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
@@ -660,10 +671,17 @@ void ScaLBL_ColorModel::Run(){
 					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
 					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
 				}
-				//MORPH_ADAPT = false;
-				if (volB/(volA + volB) > TARGET_SATURATION){
-					MORPH_ADAPT = false;
-					TARGET_SATURATION = target_saturation[target_saturation_index++];
+				if (morph_delta < 0.f){
+					if (volB/(volA + volB) > TARGET_SATURATION){
+						MORPH_ADAPT = false;
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
+				}
+				else{
+					if (volB/(volA + volB) < TARGET_SATURATION){
+						MORPH_ADAPT = false;
+						TARGET_SATURATION = target_saturation[target_saturation_index++];
+					}
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
