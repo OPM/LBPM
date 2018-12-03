@@ -26,7 +26,7 @@
     #define USE_WINDOWS
 #elif defined( __APPLE__ )
     #define USE_MAC
-#elif defined( __linux ) || defined( __unix ) || defined( __posix )
+#elif defined( __linux ) || defined( __linux__ ) || defined( __unix ) || defined( __posix )
     #define USE_LINUX
 #else
     #error Unknown OS
