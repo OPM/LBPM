@@ -779,7 +779,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
 	}
 	else{
-		double target_void_fraction = (volume_initial+target_delta_volume)/volume_initial;
+		double target_void_fraction = 1.0 - (volume_initial+target_delta_volume)/volume_initial;
 		double void_fraction = MorphOpen(phase_distance,phase_id.data(),Averages->Dm,target_void_fraction);
 		CalcDist(phase_distance,phase_id,*Dm);
 	}
