@@ -781,6 +781,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	else{
 		double target_void_fraction = (volume_initial+target_delta_volume)/volume_initial;
 		double void_fraction = MorphOpen(phase_distance,phase_id.data(),Averages->Dm,target_void_fraction);
+		CalcDist(phase_distance,phase_id,*Dm);
 	}
 
 	// 5. Update phase indicator field based on new distnace
