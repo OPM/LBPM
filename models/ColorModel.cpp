@@ -781,6 +781,15 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	else{
 		double target_void_fraction = 1.0 - (volume_initial+target_delta_volume)/volume_initial;
 		double void_fraction = MorphOpen(phase_distance,phase_id.data(),Averages->Dm,target_void_fraction);
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					int label = phase_id(i,j,k);
+					if (label == 1 )     phase_id(i,j,k) = 0;
+					else 		     phase_id(i,j,k) = 1;
+				}
+			}
+		}	
 		CalcDist(phase_distance,phase_id,*Dm);
 	}
 
