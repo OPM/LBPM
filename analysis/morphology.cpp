@@ -25,7 +25,7 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 }
 
 //***************************************************************************************
-void MorphOpen(DoubleArray SignDist, char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
+double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
@@ -43,6 +43,7 @@ void MorphOpen(DoubleArray SignDist, char *id, std::shared_ptr<Domain> Dm, doubl
 	int rank = Dm->rank();
 
 	int n;
+	double final_void_fraction;
 	double count,countGlobal,totalGlobal;
 	count = 0.f;
 	double maxdist=-200.f;
@@ -284,20 +285,81 @@ void MorphOpen(DoubleArray SignDist, char *id, std::shared_ptr<Domain> Dm, doubl
 	}
 
 	if (void_fraction_diff_new<void_fraction_diff_old){
+		final_void_fraction=void_fraction_new;
 		if (rank==0){
 			printf("Final void fraction =%f\n",void_fraction_new);
 			printf("Final critical radius=%f\n",Rcrit_new);
 		}
 	}
 	else{
+		final_void_fraction=void_fraction_old;
 		if (rank==0){
 			printf("Final void fraction=%f\n",void_fraction_old);
 			printf("Final critical radius=%f\n",Rcrit_old);
 		}
 	}
+	return final_void_fraction;
 }
 
-void GrowObject(){
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth){
+	
+	int Nx = Dm->Nx;
+	int Ny = Dm->Ny;
+	int Nz = Dm->Nz;
+	int iproc = Dm->iproc();
+	int jproc = Dm->jproc();
+	int kproc = Dm->kproc();
+	int nprocx = Dm->nprocx();
+	int nprocy = Dm->nprocy();
+	int nprocz = Dm->nprocz();
+	int rank = Dm->rank();
+	
+	double count=0.0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (Dist(i,j,k) > 0.0){
+					count+=1.0;
+				}
+			}
+		}
+	}
+	double count_original=sumReduce( Dm->Comm, count);
 
+	// Figure out a good guess to morph_delta
+	double morph_delta = 0.5;
+	count = 0.0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double walldist=BoundaryDist(i,j,k);
+				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
+				if (Dist(i,j,k) - wallweight*morph_delta > 0.0){
+					count+=1.0;
+				}
+			}
+		}
+	}
+	count=sumReduce( Dm->Comm, count);
+
+	// Now adjust morph_delta
+	morph_delta = 0.5*TargetGrowth/(count_original-count);
+	if (morph_delta > 3.0 ) morph_delta=3.0;
+	
+	count = 0.0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double walldist=BoundaryDist(i,j,k);
+				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
+				Dist(i,j,k) -= wallweight*morph_delta;
+				count+=1.0;
+			}
+		}
+	}
+	count=sumReduce( Dm->Comm, count);
+
+	return Count;
+	
 }
 
