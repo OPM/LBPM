@@ -359,7 +359,6 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	}
 	count=sumReduce( Dm->Comm, count);
 
-	return Count;
-	
+	return count;
 }
 
