@@ -776,10 +776,12 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	*/
 	
 	if (target_delta_volume > 0.0){
+		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
 	}
 	else{
 		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
+		if (rank==0) printf("MorphOpen with volume fraction %f \n", target_void_fraction);
 		// flip sign on distance to match morphopen convention
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
@@ -793,19 +795,12 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			for (int j=0; j<Ny; j++){
 				for (int i=0; i<Nx; i++){
 					int label = phase_id(i,j,k);
-					if (label == 1 )     phase_id(i,j,k) = 0;
+					if (label == 1 ) phase_id(i,j,k) = 0;
 					else 		     phase_id(i,j,k) = 1;
 				}
 			}
 		}	
-		CalcDist(phase_distance,phase_id,*Dm);
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					phase_distance(i,j,k) *= -1.0;
-				}
-			}
-		}
+		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
 	}
 
 	// 5. Update phase indicator field based on new distnace
