@@ -795,8 +795,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			for (int j=0; j<Ny; j++){
 				for (int i=0; i<Nx; i++){
 					int label = phase_id(i,j,k);
-					if (label == 1 ) phase_id(i,j,k) = 0;
-					else 		     phase_id(i,j,k) = 1;
+					if (label == 1 ) phase_id(i,j,k) = 1;
+					else 		     phase_id(i,j,k) = 0;
 				}
 			}
 		}	
@@ -832,6 +832,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
+	
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
