@@ -799,6 +799,13 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}	
 		CalcDist(phase_distance,phase_id,*Dm);
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					phase_distance(i,j,k) *= -1.0;
+				}
+			}
+		}
 	}
 
 	// 5. Update phase indicator field based on new distnace
