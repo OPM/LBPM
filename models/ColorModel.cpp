@@ -170,8 +170,8 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 
-	int label_count[NLABELS];
-	int label_count_global[NLABELS];
+	double label_count[NLABELS];
+	double label_count_global[NLABELS];
 	// Assign the labels
 
 	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -186,7 +186,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
-						label_count[idx]++;
+						label_count[idx] += 1.0;
 						idx = NLABELS;
 						Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
@@ -201,7 +201,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 
-	MPI_Allreduce(&label_count[0],&label_count_global[0],NLABELS,MPI_INT,MPI_SUM,Dm->Comm);
+	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
 		printf("Components labels: %lu \n",NLABELS);
