@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		// Run the morphological opening
-		MorphOpen(SignDist, id, Dm, SW, 0.05);
+		MorphOpen(SignDist, id, Dm, SW);
 		
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
