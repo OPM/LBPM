@@ -139,8 +139,8 @@ int main(int argc, char **argv)
 					for (int i=0;i<nx;i++){
 						int n = k*nx*ny+j*nx+i;
 						// Initialize the solid phase
-						if (id[n] == 1)	id_solid(i,j,k) = 1;
-						else	     	id_solid(i,j,k) = 0;
+						if (id[n] == 1)	id_solid(i,j,k) = 0;
+						else	     	id_solid(i,j,k) = 1;
 					}
 				}
 			}
