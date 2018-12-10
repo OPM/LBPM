@@ -82,8 +82,8 @@ int main(int argc, char **argv)
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
-		signed char *id;
-		id = new signed char [N];
+		char *id;
+		id = new char [N];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
@@ -136,8 +136,8 @@ int main(int argc, char **argv)
 			size_t NLABELS=LabelList.size();
 			if (rank==0){
 				for (unsigned int idx=0; idx < NLABELS; idx++){
-					signed char VALUE = LabelList[idx];
-					signed char NEWVAL = HistoryLabels[idx];
+					char VALUE = LabelList[idx];
+					char NEWVAL = HistoryLabels[idx];
 					printf("    Relabel component %d as %d \n", VALUE, NEWVAL);
 				}
 			}
@@ -169,8 +169,8 @@ int main(int argc, char **argv)
 						int n = k*nx*ny+j*nx+i;
 						signed char LOCVAL = id[n];
 						for (unsigned int idx=0; idx < NLABELS; idx++){
-							signed char VALUE=LabelList[idx];
-							signed char NEWVALUE=HistoryLabels[idx];
+							char VALUE=LabelList[idx];
+							char NEWVALUE=HistoryLabels[idx];
 							if (LOCVAL == VALUE){
 								idx = NLABELS;
 								if (SignDist(i,j,k) < 1.0){
