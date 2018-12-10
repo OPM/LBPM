@@ -82,8 +82,8 @@ int main(int argc, char **argv)
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
-		char *id;
-		id = new char [N];
+		signed char *id;
+		id = new signed char [N];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
@@ -131,13 +131,13 @@ int main(int argc, char **argv)
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
 			if (rank==0) printf("Relabel solid components that touch fluid 1 \n");
-			auto LabelList = domain_db->getVector<char>( "ComponentLabels" );
-			auto HistoryLabels = domain_db->getVector<char>( "HistoryLabels" );
+			auto LabelList = domain_db->getVector<signed char>( "ComponentLabels" );
+			auto HistoryLabels = domain_db->getVector<signed char>( "HistoryLabels" );
 			size_t NLABELS=LabelList.size();
 			if (rank==0){
 				for (unsigned int idx=0; idx < NLABELS; idx++){
-					char VALUE = LabelList[idx];
-					char NEWVAL = HistoryLabels[idx];
+					signed char VALUE = LabelList[idx];
+					signed char NEWVAL = HistoryLabels[idx];
 					printf("    Relabel component %d as %d \n", VALUE, NEWVAL);
 				}
 			}
@@ -167,13 +167,15 @@ int main(int argc, char **argv)
 				for (int j=0;j<ny;j++){
 					for (int i=0;i<nx;i++){
 						int n = k*nx*ny+j*nx+i;
-						char LOCVAL = id[n];
+						signed char LOCVAL = id[n];
 						for (unsigned int idx=0; idx < NLABELS; idx++){
-							char VALUE=LabelList[idx];
+							signed char VALUE=LabelList[idx];
+							signed char NEWVALUE=HistoryLabels[idx];
 							if (LOCVAL == VALUE){
 								idx = NLABELS;
-								char NEWVALUE=HistoryLabels[idx];
-								if (SignDist(i,j,k) < 1.0) id[n] = NEWVALUE;
+								if (SignDist(i,j,k) < 1.0){
+									id[n] = NEWVALUE;
+								}
 							}
 						}
 					}
