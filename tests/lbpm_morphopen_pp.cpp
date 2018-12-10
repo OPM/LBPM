@@ -167,9 +167,10 @@ int main(int argc, char **argv)
 				for (int j=0;j<ny;j++){
 					for (int i=0;i<nx;i++){
 						int n = k*nx*ny+j*nx+i;
-						char VALUE=id[n];
+						char LOCVAL = id[n];
 						for (unsigned int idx=0; idx < NLABELS; idx++){
-							if (VALUE == LabelList[idx]){
+							char VALUE=LabelList[idx];
+							if (LOCVAL == VALUE){
 								idx = NLABELS;
 								char NEWVALUE=HistoryLabels[idx];
 								if (SignDist(i,j,k) < 1.0) id[n] = NEWVALUE;
