@@ -131,8 +131,8 @@ int main(int argc, char **argv)
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
 			if (rank==0) printf("Relabel solid components that touch fluid 1 \n");
-			auto LabelList = domain_db->getVector<signed char>( "ComponentLabels" );
-			auto HistoryLabels = domain_db->getVector<signed char>( "HistoryLabels" );
+			auto LabelList = domain_db->getVector<char>( "ComponentLabels" );
+			auto HistoryLabels = domain_db->getVector<char>( "HistoryLabels" );
 			size_t NLABELS=LabelList.size();
 			if (rank==0){
 				for (unsigned int idx=0; idx < NLABELS; idx++){
