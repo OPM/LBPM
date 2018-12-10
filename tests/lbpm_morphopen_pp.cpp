@@ -134,6 +134,13 @@ int main(int argc, char **argv)
 			auto LabelList = domain_db->getVector<char>( "ComponentLabels" );
 			auto HistoryLabels = domain_db->getVector<char>( "HistoryLabels" );
 			size_t NLABELS=LabelList.size();
+			if (rank==0){
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+					char VALUE = LabelList[idx];
+					char NEWVAL = HistoryLabels[idx];
+					printf("    Relabel component %d as %d \n", VALUE, NEWVAL);
+				}
+			}
 			for (int k=0;k<nz;k++){
 				for (int j=0;j<ny;j++){
 					for (int i=0;i<nx;i++){
@@ -165,7 +172,7 @@ int main(int argc, char **argv)
 							if (VALUE == LabelList[idx]){
 								idx = NLABELS;
 								char NEWVALUE=HistoryLabels[idx];
-								if (SignDist(i,j,k) < 2.f) id[n] = NEWVALUE;
+								if (SignDist(i,j,k) < 1.0) id[n] = NEWVALUE;
 							}
 						}
 					}
