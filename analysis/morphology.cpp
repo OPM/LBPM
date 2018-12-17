@@ -315,9 +315,9 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	int rank = Dm->rank();
 	
 	double count=0.0;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				if (Dist(i,j,k) < 0.0){
 					count+=1.0;
 				}
@@ -335,12 +335,12 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	double MAX_DISPLACEMENT = 0.0;
 	int COUNT_FOR_LOOP = 0;
 	if (rank == 0) printf("Estimate delta for growth=%f \n",TargetGrowth);
-	while (!(GrowthEstimate*TargetGrowth > TargetGrowth*TargetGrowth) && COUNT_FOR_LOOP < 10 ){
+	while ( fabs(GrowthEstimate - TargetGrowth)/TargetGrowth < 0.01) && COUNT_FOR_LOOP < 10 ){
 		COUNT_FOR_LOOP++;
 		count = 0.0;
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
+		for (int k=1; k<Nz-1; k++){
+			for (int j=1; j<Ny-1; j++){
+				for (int i=1; i<Nx-1; i++){
 					double walldist=BoundaryDist(i,j,k);
 					double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
@@ -367,9 +367,9 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	if (rank == 0) printf("Final delta=%f \n",morph_delta);
 
 	count = 0.0;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				double walldist=BoundaryDist(i,j,k);
 				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
 				Dist(i,j,k) -= wallweight*morph_delta;
