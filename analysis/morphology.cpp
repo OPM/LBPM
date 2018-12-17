@@ -328,13 +328,13 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 
 	// Estimate morph_delta
 	double morph_delta = 0.0;
-	if (TargetGrowth > 0.0) morph_delta = 0.5;
-	else					morph_delta = -0.5;
+	if (TargetGrowth > 0.0) morph_delta = 0.1;
+	else					morph_delta = -0.1;
 
 	double GrowthEstimate = 0.0;
 	int COUNT_FOR_LOOP = 0;
 	if (rank == 0) printf("Estimate delta for growth=%f \n",TargetGrowth);
-	while ( fabs(GrowthEstimate - TargetGrowth)/TargetGrowth < 0.01 && COUNT_FOR_LOOP < 10 ){
+	while ( fabs((GrowthEstimate - TargetGrowth)/TargetGrowth) < 0.01 && COUNT_FOR_LOOP < 10 ){
 		COUNT_FOR_LOOP++;
 		count = 0.0;
 		double MAX_DISPLACEMENT = 0.0;
@@ -357,10 +357,10 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 
 		if (rank == 0) printf("     delta=%f, growth=%f, max. displacement = %f \n",morph_delta, GrowthEstimate, MAX_DISPLACEMENT);
 		// Now adjust morph_delta
-		morph_delta *= max(fabs(TargetGrowth/GrowthEstimate),1.25);
+		morph_delta *= min(fabs((GrowthEstimate - TargetGrowth)/TargetGrowth),2.0);
 		//MAX_DISPLACEMENT *= max(TargetGrowth/GrowthEstimate,1.25);
 		if (MAX_DISPLACEMENT > 2.0 ){
-			morph_delta /= 0.5*MAX_DISPLACEMENT;
+			morph_delta = 2.0;
 			//if (COUNT_FOR_LOOP > 2) COUNT_FOR_LOOP = 100;
 			//COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
 		}
