@@ -364,12 +364,13 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		GrowthPrevious = GrowthEstimate;
 		morph_delta_previous = morph_delta;
 		morph_delta += step_size;
+		if (morph_delta / morph_delta_previous > 2.0 ) morph_delta = morph_delta_previous*2.0;
 				
 		//MAX_DISPLACEMENT *= max(TargetGrowth/GrowthEstimate,1.25);
 		if (MAX_DISPLACEMENT > 2.0 ){
-			morph_delta = 2.0;
+			morph_delta *= 2.0/morph_delta;
 			//if (COUNT_FOR_LOOP > 2) COUNT_FOR_LOOP = 100;
-			//COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+			COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
 		}
 	}
 	if (rank == 0) printf("Final delta=%f \n",morph_delta);
