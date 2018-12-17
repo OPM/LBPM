@@ -333,8 +333,9 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 
 	double GrowthEstimate = 0.0;
 	int COUNT_FOR_LOOP = 0;
+	double ERROR = 100.0;
 	if (rank == 0) printf("Estimate delta for growth=%f \n",TargetGrowth);
-	while ( fabs((GrowthEstimate - TargetGrowth)/TargetGrowth) < 0.01 && COUNT_FOR_LOOP < 10 ){
+	while ( ERROR > 0.01 && COUNT_FOR_LOOP < 10 ){
 		COUNT_FOR_LOOP++;
 		count = 0.0;
 		double MAX_DISPLACEMENT = 0.0;
@@ -354,6 +355,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		count=sumReduce( Dm->Comm, count);
 		MAX_DISPLACEMENT = maxReduce( Dm->Comm, MAX_DISPLACEMENT);
 		GrowthEstimate = count - count_original;
+		ERROR = fabs((GrowthEstimate - TargetGrowth)/TargetGrowth);
 
 		if (rank == 0) printf("     delta=%f, growth=%f, max. displacement = %f \n",morph_delta, GrowthEstimate, MAX_DISPLACEMENT);
 		// Now adjust morph_delta
