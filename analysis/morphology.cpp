@@ -355,7 +355,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		count=sumReduce( Dm->Comm, count);
 		MAX_DISPLACEMENT = maxReduce( Dm->Comm, MAX_DISPLACEMENT);
 		GrowthEstimate = count - count_original;
-		ERROR = fabs((GrowthEstimate - TargetGrowth)/TargetGrowth);
+		ERROR = fabs(GrowthEstimate /TargetGrowth);
 
 		if (rank == 0) printf("     delta=%f, growth=%f, max. displacement = %f \n",morph_delta, GrowthEstimate, MAX_DISPLACEMENT);
 		// Now adjust morph_delta
