@@ -318,7 +318,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				if (Dist(i,j,k) > 0.0){
+				if (Dist(i,j,k) < 0.0){
 					count+=1.0;
 				}
 			}
@@ -345,7 +345,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 					double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
 					
-					if (Dist(i,j,k) - wallweight*morph_delta > 0.0){
+					if (Dist(i,j,k) - wallweight*morph_delta < 0.0){
 						count+=1.0;
 					}
 				}
@@ -373,7 +373,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 				double walldist=BoundaryDist(i,j,k);
 				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
 				Dist(i,j,k) -= wallweight*morph_delta;
-				count+=1.0;
+				if (Dist(i,j,k) < 0.0)	count+=1.0;
 			}
 		}
 	}
