@@ -326,26 +326,46 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	}
 	double count_original=sumReduce( Dm->Comm, count);
 
-	// Figure out a good guess to morph_delta
-	double morph_delta = 0.5;
-	count = 0.0;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				double walldist=BoundaryDist(i,j,k);
-				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
-				if (Dist(i,j,k) - wallweight*morph_delta > 0.0){
-					count+=1.0;
+	// Estimate morph_delta
+	double morph_delta = 0.0;
+	if (TargetGrowth > 0.0) morph_delta = 0.5;
+	else					morph_delta = -0.5;
+
+	double GrowthEstimate = 0.0;
+	double MAX_DISPLACEMENT = 0.0;
+	int COUNT_FOR_LOOP = 0;
+	if (rank == 0) printf("Estimate delta for growth=%f \n",TargetGrowth);
+	while (!(GrowthEstimate*TargetGrowth > TargetGrowth*TargetGrowth) && COUNT_FOR_LOOP < 10 ){
+		COUNT_FOR_LOOP++;
+		count = 0.0;
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					//double walldist=BoundaryDist(i,j,k);
+					//double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
+					double wallweight = 1.f;
+					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
+					
+					if (Dist(i,j,k) - wallweight*morph_delta > 0.0){
+						count+=1.0;
+					}
 				}
 			}
 		}
-	}
-	count=sumReduce( Dm->Comm, count);
+		count=sumReduce( Dm->Comm, count);
+		MAX_DISPLACEMENT = sumReduce( Dm->Comm, MAX_DISPLACEMENT);
+		GrowthEstimate = count;
 
-	// Now adjust morph_delta
-	morph_delta = 0.5*TargetGrowth/(count_original-count);
-	if (morph_delta > 3.0 ) morph_delta=3.0;
-	
+		if (rank == 0) printf("     delta=%f, growth=%f, max. displacement = %f \n",morph_delta, GrowthEstimate, MAX_DISPLACEMENT);
+		// Now adjust morph_delta
+		morph_delta *= TargetGrowth/(count - count_original);
+		if (MAX_DISPLACEMENT > 2.0 ){
+			morph_delta /= 0.5*MAX_DISPLACEMENT;
+			COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+		}
+	}
+	if (rank == 0) printf("Final delta=%f \n",morph_delta);
+
 	count = 0.0;
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){

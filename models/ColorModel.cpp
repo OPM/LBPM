@@ -561,7 +561,6 @@ void ScaLBL_ColorModel::Run(){
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
 		// allow initial ramp-up to get closer to steady state
-		ramp_timesteps=1000;
 		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 && USE_MORPH){
 			if ( morph_timesteps > morph_interval ){
 
@@ -642,7 +641,6 @@ void ScaLBL_ColorModel::Run(){
 				}
 				Ca_previous = Ca;
 			}
-			MORPH_ADAPT=true;
 			if (MORPH_ADAPT ){
 				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
 				double volB = Averages->Volume_w(); 
@@ -780,22 +778,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	if (target_delta_volume > 0.0){
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
-		
-		// 5. Update phase indicator field based on new distnace
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					int n = k*Nx*Ny + j*Nx + i;
-					double d = phase_distance(i,j,k);
-					if (Averages->SDs(i,j,k) > 0.f){
-						// only update phase field in immediate proximity of largest component
-						if (d < 3.f){
-							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
-						}
-					}
-				} 
-			}
-		}
 	}
 	else{
 		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
@@ -808,10 +790,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 				}
 			}
 		}	
-		sprintf(LocalRankFilename,"D1.%05i.raw",rank);
-		FILE *F1 = fopen(LocalRankFilename,"wb");
-		fwrite(phase_distance.data(),8,N,F1);
-		
 		double void_fraction = MorphOpen(phase_distance,phase_id.data(),Averages->Dm,target_void_fraction);
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
@@ -821,36 +799,25 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 					else 		     phase_id(i,j,k) = 0;
 				}
 			}
-		}
-		
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					int n = k*Nx*Ny + j*Nx + i;
-					double d = phase_distance(i,j,k);
-					if (Averages->SDs(i,j,k) > 0.f && d > -3.f ){
-						// only update phase field in immediate proximity of largest component
-							if (phase_id(i,j,k) == 1 ) phase(i,j,k) = 1.0;
-							else  phase(i,j,k) = -1.0;
-					}
-				} 
-			}
-		}
-		
-		sprintf(LocalRankFilename,"phase_id.%05i.raw",rank);
-		FILE *F2 = fopen(LocalRankFilename,"wb");
-		fwrite(phase_id.data(),1,N,F2);
-		
-		sprintf(LocalRankFilename,"D1.%05i.raw",rank);
-		FILE *F3 = fopen(LocalRankFilename,"wb");
-		fwrite(phase_distance.data(),8,N,F3);
-		
+		}	
+		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
 	}
-	
-	sprintf(LocalRankFilename,"P.%05i.raw",rank);
-	FILE *F4 = fopen(LocalRankFilename,"wb");
-	fwrite(phase.data(),8,N,F4);
-	
+
+	// 5. Update phase indicator field based on new distnace
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int n = k*Nx*Ny + j*Nx + i;
+				double d = phase_distance(i,j,k);
+				if (Averages->SDs(i,j,k) > 0.f){
+					// only update phase field in immediate proximity of largest component
+					if (d < 3.f){
+						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);
+					}
+				}
+			} 
+		}
+	}
 
 	count = 0.f;
 	for (int k=0; k<Nz; k++){
@@ -865,6 +832,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
+	
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
