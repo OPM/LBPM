@@ -361,7 +361,8 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		MAX_DISPLACEMENT *= TargetGrowth/GrowthEstimate;
 		if (MAX_DISPLACEMENT > 2.0 ){
 			morph_delta /= 0.5*MAX_DISPLACEMENT;
-			COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+			if (COUNT_FOR_LOOP > 2) COUNT_FOR_LOOP = 100
+			//COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
 		}
 	}
 	if (rank == 0) printf("Final delta=%f \n",morph_delta);
