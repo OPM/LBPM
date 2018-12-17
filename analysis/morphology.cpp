@@ -332,12 +332,12 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 	else					morph_delta = -0.5;
 
 	double GrowthEstimate = 0.0;
-	double MAX_DISPLACEMENT = 0.0;
 	int COUNT_FOR_LOOP = 0;
 	if (rank == 0) printf("Estimate delta for growth=%f \n",TargetGrowth);
 	while ( fabs(GrowthEstimate - TargetGrowth)/TargetGrowth < 0.01 && COUNT_FOR_LOOP < 10 ){
 		COUNT_FOR_LOOP++;
 		count = 0.0;
+		double MAX_DISPLACEMENT = 0.0;
 		for (int k=1; k<Nz-1; k++){
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
