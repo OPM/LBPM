@@ -127,6 +127,61 @@ int main(int argc, char **argv)
 
 		// Run the morphological opening
 		MorphOpen(SignDist, id, Dm, SW);
+		
+		// calculate distance to non-wetting fluid
+		if (domain_db->keyExists( "HistoryLabels" )){
+			if (rank==0) printf("Relabel solid components that touch fluid 1 \n");
+			auto LabelList = domain_db->getVector<char>( "ComponentLabels" );
+			auto HistoryLabels = domain_db->getVector<char>( "HistoryLabels" );
+			size_t NLABELS=LabelList.size();
+			if (rank==0){
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+					char VALUE = LabelList[idx];
+					char NEWVAL = HistoryLabels[idx];
+					printf("    Relabel component %d as %d \n", VALUE, NEWVAL);
+				}
+			}
+			for (int k=0;k<nz;k++){
+				for (int j=0;j<ny;j++){
+					for (int i=0;i<nx;i++){
+						int n = k*nx*ny+j*nx+i;
+						// Initialize the solid phase
+						if (id[n] == 1)	id_solid(i,j,k) = 0;
+						else	     	id_solid(i,j,k) = 1;
+					}
+				}
+			}
+			// Initialize the signed distance function
+			for (int k=0;k<nz;k++){
+				for (int j=0;j<ny;j++){
+					for (int i=0;i<nx;i++){
+						int n = k*nx*ny+j*nx+i;
+						// Initialize distance to +/- 1
+						SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+					}
+				}
+			}
+			CalcDist(SignDist,id_solid,*Dm);
+			// re-label IDs near the non-wetting fluid
+			for (int k=0;k<nz;k++){
+				for (int j=0;j<ny;j++){
+					for (int i=0;i<nx;i++){
+						int n = k*nx*ny+j*nx+i;
+						signed char LOCVAL = id[n];
+						for (unsigned int idx=0; idx < NLABELS; idx++){
+							char VALUE=LabelList[idx];
+							char NEWVALUE=HistoryLabels[idx];
+							if (LOCVAL == VALUE){
+								idx = NLABELS;
+								if (SignDist(i,j,k) < 1.0){
+									id[n] = NEWVALUE;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);

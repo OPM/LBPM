@@ -209,7 +209,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
-			printf("   label=%i, affinity=%f, volume fraction==%f\n",int(VALUE),AFFINITY,volume_fraction); 
+			printf("   label=%i, affinity=%f, volume fraction=%f\n",int(VALUE),AFFINITY,volume_fraction); 
 		}
 	}
 
@@ -413,9 +413,11 @@ void ScaLBL_ColorModel::Run(){
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
 	int morph_interval;
-	double morph_delta;
 	int morph_timesteps = 0;
 	int ramp_timesteps = 50000;
+	int MORPH_TIME = 0; 
+	int MAX_MORPH_TIME = 20000; 
+	double morph_delta;
 	double capillary_number;
 	double tolerance = 1.f;
 	double Ca_previous = 0.f;
@@ -660,14 +662,23 @@ void ScaLBL_ColorModel::Run(){
 				if (morph_delta < 0.f){
 					if (volB/(volA + volB) > TARGET_SATURATION){
 						MORPH_ADAPT = false;
+						MORPH_TIME = 0;
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
 					}
 				}
 				else{
 					if (volB/(volA + volB) < TARGET_SATURATION){
 						MORPH_ADAPT = false;
+						MORPH_TIME = 0;
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
 					}
+				}
+				// maximum number of timesteps to spend on morphological adaptation
+				// this is to help get useful data when fluid connectivity breaks down
+				MORPH_TIME += analysis_interval;
+				if (MORPH_TIME > MAX_MORPH_TIME){
+					MORPH_ADAPT= false;
+					MORPH_TIME = 0;
 				}
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
