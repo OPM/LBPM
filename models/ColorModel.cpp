@@ -589,8 +589,8 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
-						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
+						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 						FILE * kr_log_file = fopen("relperm.csv","a");
 						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
@@ -716,9 +716,9 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	double count,count_global,volume_initial,volume_final;
 	count = 0.f;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
 			}
 		}
@@ -819,9 +819,9 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 	count = 0.f;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
 			}
 		}
