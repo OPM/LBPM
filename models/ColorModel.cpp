@@ -777,7 +777,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	 */
 
 	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-	double delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
+	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
 	/*	else{
 		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
 		if (rank==0) printf("MorphOpen with volume fraction %f \n", target_void_fraction);
