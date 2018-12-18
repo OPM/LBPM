@@ -764,7 +764,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 	// 4a. Apply erosion / dilation operation to phase_distance
-/*	for (int k=0; k<Nz; k++){
+	/*	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				double walldist=Averages->SDs(i,j,k);
@@ -773,11 +773,11 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-	*/
-	
-		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
-		/*	else{
+	 */
+
+	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+	double delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
+	/*	else{
 		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
 		if (rank==0) printf("MorphOpen with volume fraction %f \n", target_void_fraction);
 		// flip sign on distance to match morphopen convention
@@ -800,7 +800,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}	
 		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
 	}
-	*/
+	 */
 
 	// 5. Update phase indicator field based on new distnace
 	for (int k=0; k<Nz; k++){
@@ -831,7 +831,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
-	
+
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
