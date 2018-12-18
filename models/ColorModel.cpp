@@ -562,7 +562,7 @@ void ScaLBL_ColorModel::Run(){
 		
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 && USE_MORPH){
-			analysis.finalize();
+			analysis.finish();
 			if ( morph_timesteps > morph_interval ){
 
 				double volB = Averages->Volume_w(); 
