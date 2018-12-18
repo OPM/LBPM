@@ -561,6 +561,7 @@ void ScaLBL_ColorModel::Run(){
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
 		// allow initial ramp-up to get closer to steady state
+		MORPH_ADAPT=true;
 		if (timestep > ramp_timesteps && timestep%analysis_interval == analysis_interval-20 && USE_MORPH){
 			if ( morph_timesteps > morph_interval ){
 
