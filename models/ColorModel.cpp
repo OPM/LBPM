@@ -580,7 +580,7 @@ void ScaLBL_ColorModel::Run(){
 				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
 				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				double current_saturation = volB/(volA+volB);
-				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double(Nx*Ny*Nz*nprocs));
+				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
 				//double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
@@ -725,8 +725,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
-	volume_initial = count_global;
+	volume_initial = sumReduce( Dm->Comm, count);
 
 	// 2. Identify connected components of phase field -> phase_label
 	BlobIDstruct new_index;
@@ -828,8 +827,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-	MPI_Allreduce(&count,&count_global,1,MPI_DOUBLE,MPI_SUM,comm);
-	volume_final=count_global;
+	volume_final= sumReduce( Dm->Comm, count);
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
