@@ -556,19 +556,7 @@ void ScaLBL_ColorModel::Run(){
 		
 		MPI_Barrier(comm);
 		PROFILE_STOP("Update");
-		
-		double count = 0.f;
-		for (int k=1; k<Nz-1; k++){
-			for (int j=1; j<Ny-1; j++){
-				for (int i=1; i<Nx-1; i++){
-					int n = Nx*Ny*k+Nx*j+i;
-					if (Phi[n] > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
-				}
-			}
-		}
-		double volume_nwp = sumReduce( Dm->Comm, count);
-		if (rank==0) printf("   volume = %f \n", volume_nwp);
-
+	       
 		// Run the analysis
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
