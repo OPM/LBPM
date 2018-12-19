@@ -651,13 +651,13 @@ void ScaLBL_ColorModel::Run(){
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
-				if (rank==0) printf("***Morphological step with target volume change %f ***\n", (delta_volume_target-delta_volume)/delta_volume_target);
+				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-				delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
-				if ( (delta_volume_target - delta_volume )/delta_volume_target < 0.1 ){
+				delta_volume = MorphInit(beta,delta_volume_target);
+				//if ( (delta_volume_target - delta_volume )/delta_volume_target < 0.1 ){
 					MORPH_ADAPT = false;
 					delta_volume = 0.0;
-				}
+				//}
 				/*if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
 					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
 					if (morph_delta > 1.f) morph_delta = 1.f;
