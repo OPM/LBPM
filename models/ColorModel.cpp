@@ -420,13 +420,18 @@ void ScaLBL_ColorModel::Run(){
 	double tolerance = 1.f;
 	double Ca_previous = 0.f;
 
+
+	double delta_volume = 0.0;
+	double delta_volume_target = 0.0;
+	
+/*	double TARGET_SATURATION = 0.f;
 	int target_saturation_index=0;
 	std::vector<double> target_saturation;
-	double TARGET_SATURATION = 0.f;
 	if (color_db->keyExists( "target_saturation" )){
 		target_saturation = color_db->getVector<double>( "target_saturation" );
 		TARGET_SATURATION = target_saturation[0];
 	}
+	*/
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -442,7 +447,8 @@ void ScaLBL_ColorModel::Run(){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
 	}
 	else{
-		morph_delta=0.5;
+		morph_delta=0.0;
+		USE_MORPH = false;
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
@@ -587,6 +593,7 @@ void ScaLBL_ColorModel::Run(){
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					MORPH_ADAPT = true;
+					delta_volume_target = (volA + volB)*morph_delta; // set target volume chnage
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
@@ -619,7 +626,7 @@ void ScaLBL_ColorModel::Run(){
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 					}
 
-					if (morph_delta > 0.f){
+					/*if (morph_delta > 0.f){
 						// wetting phase saturation will decrease
 						while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
 							TARGET_SATURATION = target_saturation[target_saturation_index++];
@@ -632,6 +639,7 @@ void ScaLBL_ColorModel::Run(){
 							if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
 						}
 					}
+					*/
 				}
 				else{
 					if (rank==0){
@@ -643,21 +651,20 @@ void ScaLBL_ColorModel::Run(){
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
-				if (rank==0) printf("***Morphological step with target saturation %f ***\n",TARGET_SATURATION);
-				double volB = Averages->Volume_w(); 
-				double volA = Averages->Volume_n(); 
-				double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-				double delta_volume = MorphInit(beta,delta_volume_target);
-				// update the volume
-				volA += delta_volume;
-				volB -= delta_volume;
+				if (rank==0) printf("***Morphological step with target volume change %f ***\n", (delta_volume_target-delta_volume)/delta_volume_target);
+				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+				delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+				if ( (delta_volume_target - delta_volume )/delta_volume_target < 0.1 ){
+					MORPH_ADAPT = false;
+					delta_volume = 0.0;
+				}
 				/*if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
 					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
 					if (morph_delta > 1.f) morph_delta = 1.f;
 					if (morph_delta < -1.f) morph_delta = -1.f;
 					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
 					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
-				}*/
+				}
 				if (delta_volume_target < 0.f){
 					if (volB/(volA + volB) > TARGET_SATURATION){
 						MORPH_ADAPT = false;
@@ -670,7 +677,7 @@ void ScaLBL_ColorModel::Run(){
 						TARGET_SATURATION = target_saturation[target_saturation_index++];
 					}
 				}
-				
+				*/
 				MPI_Barrier(comm);
 				morph_timesteps = 0;
 			}
