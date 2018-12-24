@@ -413,6 +413,7 @@ void ScaLBL_ColorModel::Run(){
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
 	int MAX_MORPH_TIMESTEPS = 10000;
+	int CURRENT_MORPH_TIMESTEPS=0;
 	int morph_interval;
 	double morph_delta;
 	int morph_timesteps = 0;
@@ -594,6 +595,7 @@ void ScaLBL_ColorModel::Run(){
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					MORPH_ADAPT = true;
+					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume chnage
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
@@ -652,15 +654,15 @@ void ScaLBL_ColorModel::Run(){
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
+				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-				morph_timesteps += analysis_interval;
 				delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
 					delta_volume = 0.0;
 				}
-				else if (morph_timesteps > MAX_MORPH_TIMESTEPS) {
+				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
 				}
 				/*if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
@@ -684,7 +686,6 @@ void ScaLBL_ColorModel::Run(){
 				}
 				*/
 				MPI_Barrier(comm);
-				morph_timesteps = 0;
 			}
 			morph_timesteps += analysis_interval;
 		}
