@@ -817,11 +817,13 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-				else 		     				  phase_id(i,j,k) = 1;
+				//if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+				//else 		     				  phase_id(i,j,k) = 1;
+				if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
 			}
 		}
 	}	
+	/*
 	CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
 
 	// 5. Update phase indicator field based on new distnace
@@ -839,6 +841,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			} 
 		}
 	}
+	*/
 	fillDouble.fill(phase);
 
 	count = 0.f;
