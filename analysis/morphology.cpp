@@ -145,6 +145,7 @@ double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, do
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
+	
 	while (void_fraction_new > VoidFraction)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -301,6 +302,30 @@ double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, do
 	return final_void_fraction;
 }
 
+double morph_open()
+{
+
+	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
+
+
+	MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+
+	count = 0.f;
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				n=k*Nx*Ny+j*Nx+i;
+				if (id[n] == 2){
+					count+=1.0;
+				}
+			}
+		}
+	}
+	MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	return countGlobal;
+}
+
+
 double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth){
 	
 	int Nx = Dm->Nx;
@@ -368,9 +393,9 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		if (morph_delta / morph_delta_previous > 2.0 ) morph_delta = morph_delta_previous*2.0;
 				
 		//MAX_DISPLACEMENT *= max(TargetGrowth/GrowthEstimate,1.25);
-		if (MAX_DISPLACEMENT > 2.0 ){
-			if (morph_delta > 0.0 ) morph_delta = 2.0;
-			else 					morph_delta = -2.0;
+		if (MAX_DISPLACEMENT > 1.0 ){
+			if (morph_delta > 0.0 ) morph_delta = 1.0;
+			else 					morph_delta = -1.0;
 			
 			//if (COUNT_FOR_LOOP > 2) COUNT_FOR_LOOP = 100;
 			COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
