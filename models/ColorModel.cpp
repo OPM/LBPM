@@ -412,7 +412,7 @@ void ScaLBL_ColorModel::Run(){
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
-	int MAX_MORPH_TIMESTEPS = 10000;
+	int MAX_MORPH_TIMESTEPS = 20000;
 	int CURRENT_MORPH_TIMESTEPS=0;
 	int morph_interval;
 	double morph_delta;
@@ -799,7 +799,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	 */
 
 	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,target_delta_volume);
+	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm,0.2*target_delta_volume);
 	/*	else{
 		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
 		if (rank==0) printf("MorphOpen with volume fraction %f \n", target_void_fraction);
