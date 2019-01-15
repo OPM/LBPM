@@ -301,7 +301,7 @@ double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, do
 	}
 	return final_void_fraction;
 }
-
+/*
 double morph_open()
 {
 
@@ -324,7 +324,7 @@ double morph_open()
 	MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	return countGlobal;
 }
-
+*/
 
 double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth){
 	
