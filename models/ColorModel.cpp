@@ -208,7 +208,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
-			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocz);
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 			printf("   label=%i, affinity=%f, volume fraction==%f\n",int(VALUE),AFFINITY,volume_fraction); 
 		}
 	}
