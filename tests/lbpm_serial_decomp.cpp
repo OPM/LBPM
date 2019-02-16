@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	int BC=0;
 	int64_t xStart,yStart,zStart;
 	int64_t checkerSize;
-	int64_t CropInlet[3];
+	int64_t inlet_count_x, inlet_count_y, inlet_count_z;
 	//  char fluidValue,solidValue;	
 
 	xStart=yStart=zStart=0;
@@ -74,8 +74,11 @@ int main(int argc, char **argv)
 		yStart = offset[1];
 		zStart = offset[2];
 	}
-	if (domain_db->keyExists( "CropInlet" )){
-		CropInlet = domain_db->getVector<int64_t>( "CropInlet" );
+	if (domain_db->keyExists( "InletCount" )){
+		auto InletCount = domain_db->getVector<int64_t>( "InletCount" );
+		inlet_count_x = InletCount[0];
+		inlet_count_y = InletCount[1];
+		inlet_count_z = InletCount[2];
 	}
 	if (domain_db->keyExists( "checkerSize" )){
 		checkerSize = domain_db->getScalar<int64_t>( "checkerSize" );
@@ -144,11 +147,11 @@ int main(int argc, char **argv)
 		printf("Read segmented data from %s \n",Filename.c_str());
 	}
 
-	if (CropInlet[0] > 0){
+	if (inlet_count_x > 0){
 		// use checkerboard pattern
 		for (int k = 0; k<SIZE[2]; k++){
 			for (int j = 0; j<SIZE[1]; j++){
-				for (int i = 0; i<CropInlet[0]; i++){
+				for (int i = xStart; i < xStart+inlet_count_x; i++){
 					if ( ((j+k)/checkerSize)%2 == 0){
 						// solid checkers
 						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
