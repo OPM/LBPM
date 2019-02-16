@@ -164,6 +164,42 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+	
+	if (inlet_count_y > 0){
+		// use checkerboard pattern
+		for (int k = 0; k<SIZE[2]; k++){
+			for (int j = yStart; i < yStart+inlet_count_y; j++){
+				for (int i = 0; i<SIZE[0]; i++){
+					if ( ((i+k)/checkerSize)%2 == 0){
+						// solid checkers
+						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
+					}
+					else{
+						// void checkers
+						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 2;
+					}
+				}
+			}
+		}
+	}
+
+	if (inlet_count_z > 0){
+		// use checkerboard pattern
+		for (int k = zStart; k < zStart+inlet_count_z; k++){
+			for (int j = 0; j<SIZE[1]; j++){
+				for (int i = 0; k<SIZE[0]; i++){
+					if ( ((i+j)/checkerSize)%2 == 0){
+						// solid checkers
+						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
+					}
+					else{
+						// void checkers
+						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 2;
+					}
+				}
+			}
+		}
+	}
 
 	// Get the rank info
 	int64_t N = (nx+2)*(ny+2)*(nz+2);
