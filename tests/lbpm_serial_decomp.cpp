@@ -53,8 +53,8 @@ int main(int argc, char **argv)
 	int64_t i,j,k,n;
 	int BC=0;
 	int64_t xStart,yStart,zStart;
-	int64_t checkerSize;
-	int64_t inlet_count_x, inlet_count_y, inlet_count_z;
+	int checkerSize;
+	int inlet_count_x, inlet_count_y, inlet_count_z;
 	//  char fluidValue,solidValue;	
 
 	xStart=yStart=zStart=0;
@@ -75,13 +75,13 @@ int main(int argc, char **argv)
 		zStart = offset[2];
 	}
 	if (domain_db->keyExists( "InletCount" )){
-		auto InletCount = domain_db->getVector<int64_t>( "InletCount" );
+		auto InletCount = domain_db->getVector<int>( "InletCount" );
 		inlet_count_x = InletCount[0];
 		inlet_count_y = InletCount[1];
 		inlet_count_z = InletCount[2];
 	}
 	if (domain_db->keyExists( "checkerSize" )){
-		checkerSize = domain_db->getScalar<int64_t>( "checkerSize" );
+		checkerSize = domain_db->getScalar<int>( "checkerSize" );
 	}
 	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
