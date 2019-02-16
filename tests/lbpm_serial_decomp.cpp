@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 		zStart = offset[2];
 	}
 	if (domain_db->keyExists( "CropInlet" )){
-		CropInlet = domain_db->getVector<int>( "CropInlet" );
+		CropInlet = domain_db->getVector<int64_t>( "CropInlet" );
 	}
 	if (domain_db->keyExists( "checkerSize" )){
 		checkerSize = domain_db->getScalar<int64_t>( "checkerSize" );
