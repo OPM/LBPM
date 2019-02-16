@@ -730,7 +730,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	// 1. Copy phase field to CPU
 	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
 
-	double count,count_global,volume_initial,volume_final;
+	double count,count_global,volume_initial,volume_final,volume_connected;
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -750,17 +750,24 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	BlobIDstruct new_index;
 	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
 	MPI_Barrier(comm);
+	
 	// only operate on component "0"
+	count = 0.0;
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
 				int label = phase_label(i,j,k);
-				if (label == 0 )     phase_id(i,j,k) = 0;
-				else 		         phase_id(i,j,k) = 1;
-				
+				if (label == 0 ){
+					phase_id(i,j,k) = 0;
+					count += 1.0;
+				}
+				else 		
+					phase_id(i,j,k) = 1;
 			}
 		}
 	}	
+	volume_connected = sumReduce( Dm->Comm, count);
+
 	// 3. Generate a distance map to the largest object -> phase_distance
 	CalcDist(phase_distance,phase_id,*Dm);
 
@@ -786,66 +793,48 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
-	// 4a. Apply erosion / dilation operation to phase_distance
-	/*	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				double walldist=Averages->SDs(i,j,k);
-				double wallweight = 1.f / (1+exp(-5.f*(walldist-1.f))); 
-				phase_distance(i,j,k) -= wallweight*morph_delta;
-			}
-		}
-	}
-	 */
 
-	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-	double target_delta_volume_incremental = target_delta_volume;
-	if (fabs(target_delta_volume) > 0.01*volume_initial)  
-		target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
-	/*	else{
-		double target_void_fraction = 1.0- (volume_initial+target_delta_volume)/volume_initial;
-		if (rank==0) printf("MorphOpen with volume fraction %f \n", target_void_fraction);
-		// flip sign on distance to match morphopen convention
+	if (volume_connected < 0.05*volume_initial){
+		// if connected volume is less than 5% just delete the whole thing
+		if (rank==0) printf("Connected region has shrunk to less than 5% of total fluid volume (remove the whole thing) \n");
+	}
+	else {
+		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+		double target_delta_volume_incremental = target_delta_volume;
+		if (fabs(target_delta_volume) > 0.01*volume_initial)  
+			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
+		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
+
+
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
 				for (int i=0; i<Nx; i++){
-					phase_distance(i,j,k) *= -1.0;
+					if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+					else 		     				  phase_id(i,j,k) = 1;
+					//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
 				}
 			}
 		}	
-		double void_fraction = MorphOpen(phase_distance,phase_id.data(),Averages->Dm,target_void_fraction);
-		*/
-	// compute the distance again
-	
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-				else 		     				  phase_id(i,j,k) = 1;
-				//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+
+		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
+
+		// 5. Update phase indicator field based on new distnace
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					int n = k*Nx*Ny + j*Nx + i;
+					double d = phase_distance(i,j,k);
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (d < 3.f){
+							//phase(i,j,k) = -1.0;
+							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+						}
+					}
+				} 
 			}
 		}
-	}	
-	
-	CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
-    
-	// 5. Update phase indicator field based on new distnace
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				int n = k*Nx*Ny + j*Nx + i;
-				double d = phase_distance(i,j,k);
-				if (Averages->SDs(i,j,k) > 0.f){
-					if (d < 3.f){
-						//phase(i,j,k) = -1.0;
-						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-					}
-				}
-			} 
-		}
+		fillDouble.fill(phase);
 	}
-	fillDouble.fill(phase);
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
