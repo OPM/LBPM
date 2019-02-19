@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 		for (int k = 0; k<Nz; k++){
 			for (int j = 0; j<Ny; j++){
 				for (int i = xStart; i < xStart+inlet_count_x; i++){
-					if ( ((j+k)/checkerSize)%2 == 0){
+					if ( (j/checkerSize + k/checkerSize)%2 == 0){
 						// solid checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 		for (int k = 0; k<Nz; k++){
 			for (int j = yStart; i < yStart+inlet_count_y; j++){
 				for (int i = 0; i<Nx; i++){
-					if ( ((i+k)/checkerSize)%2 == 0){
+					if ( (i/checkerSize + k/checkerSize)%2 == 0){
 						// solid checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 		for (int k = zStart; k < zStart+inlet_count_z; k++){
 			for (int j = 0; j<Ny; j++){
 				for (int i = 0; i<Nx; i++){
-					if ( ((i+j)/checkerSize)%2 == 0){
+					if ( (i/checkerSize+j/checkerSize)%2 == 0){
 						// solid checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
