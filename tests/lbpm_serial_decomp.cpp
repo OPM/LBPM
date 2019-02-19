@@ -74,8 +74,8 @@ int main(int argc, char **argv)
 		yStart = offset[1];
 		zStart = offset[2];
 	}
-	if (domain_db->keyExists( "InletCount" )){
-		auto InletCount = domain_db->getVector<int>( "InletCount" );
+	if (domain_db->keyExists( "InletLayers" )){
+		auto InletCount = domain_db->getVector<int>( "InletLayers" );
 		inlet_count_x = InletCount[0];
 		inlet_count_y = InletCount[1];
 		inlet_count_z = InletCount[2];
@@ -149,16 +149,17 @@ int main(int argc, char **argv)
 
 	if (inlet_count_x > 0){
 		// use checkerboard pattern
-		for (int k = 0; k<SIZE[2]; k++){
-			for (int j = 0; j<SIZE[1]; j++){
+		printf("Checkerboard pattern at x inlet for %i layers \n",inlet_count_x);
+		for (int k = 0; k<Nz; k++){
+			for (int j = 0; j<Ny; j++){
 				for (int i = xStart; i < xStart+inlet_count_x; i++){
 					if ( ((j+k)/checkerSize)%2 == 0){
 						// solid checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 					else{
 						// void checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 2;
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
 					}
 				}
 			}
@@ -166,17 +167,18 @@ int main(int argc, char **argv)
 	}
 	
 	if (inlet_count_y > 0){
+		printf("Checkerboard pattern at y inlet for %i layers \n",inlet_count_y);
 		// use checkerboard pattern
-		for (int k = 0; k<SIZE[2]; k++){
+		for (int k = 0; k<Nz; k++){
 			for (int j = yStart; i < yStart+inlet_count_y; j++){
-				for (int i = 0; i<SIZE[0]; i++){
+				for (int i = 0; i<Nx; i++){
 					if ( ((i+k)/checkerSize)%2 == 0){
 						// solid checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 					else{
 						// void checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 2;
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
 					}
 				}
 			}
@@ -184,17 +186,18 @@ int main(int argc, char **argv)
 	}
 
 	if (inlet_count_z > 0){
+		printf("Checkerboard pattern at z inlet for %i layers \n",inlet_count_z);
 		// use checkerboard pattern
 		for (int k = zStart; k < zStart+inlet_count_z; k++){
-			for (int j = 0; j<SIZE[1]; j++){
-				for (int i = 0; k<SIZE[0]; i++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = 0; i<Nx; i++){
 					if ( ((i+j)/checkerSize)%2 == 0){
 						// solid checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 0;
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 					else{
 						// void checkers
-						SegData[k*SIZE[0]*SIZE[1]+i*SIZE[0]+i] = 2;
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
 					}
 				}
 			}
