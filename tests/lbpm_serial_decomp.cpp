@@ -58,6 +58,10 @@ int main(int argc, char **argv)
 	//  char fluidValue,solidValue;	
 
 	xStart=yStart=zStart=0;
+	inlet_count_x = 0;
+	inlet_count_y = 0;
+	inlet_count_z = 0;
+	checkerSize = 32;
 	// read the input database 
 	auto db = std::make_shared<Database>( filename );
 	auto domain_db = db->getDatabase( "Domain" );
