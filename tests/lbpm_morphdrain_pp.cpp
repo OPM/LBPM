@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	CalcDist(SignDist,id_solid,Dm);
 
 	// Run the morphological opening
-	MorphOpen(SignDist, id, Dm, SW);
+	MorphOpen(SignDist, id, *Dm, SW);
 
 	for (int k=0;k<nz;k++){
 		for (int j=0;j<ny;j++){
