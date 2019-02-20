@@ -12,6 +12,8 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "analysis/distance.h"
+#include "analysis/morphology.h"
+#include "analysis/runAnalysis.h"
 
 //*************************************************************************
 // Morpohological drainage pre-processor 
@@ -181,7 +183,7 @@ int main(int argc, char **argv)
 	// Extract only the connected part
 	BlobIDstruct new_index;
 	double vF=0.0; double vS=0.0;
-	ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm.rank_info,phase,SignDist,vF,vS,phase_label,Dm.comm);
+	ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm.rank_info,phase,SignDist,vF,vS,phase_label,Dm.Comm);
 	MPI_Barrier(comm);
 	
 	for (int k=0;k<nz;k++){
@@ -228,7 +230,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		CalcDist(SignDist,id_solid,*Dm);
+		CalcDist(SignDist,id_solid,Dm);
 		// re-label IDs near the non-wetting fluid
 		for (int k=0;k<nz;k++){
 			for (int j=0;j<ny;j++){
