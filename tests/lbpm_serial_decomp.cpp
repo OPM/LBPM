@@ -53,7 +53,9 @@ int main(int argc, char **argv)
 	int64_t i,j,k,n;
 	int BC=0;
 	int64_t xStart,yStart,zStart;
-	//  char fluidValue,solidValue;
+	int checkerSize;
+	int inlet_count_x, inlet_count_y, inlet_count_z;
+	//  char fluidValue,solidValue;	
 
 	xStart=yStart=zStart=0;
 	// read the input database 
@@ -71,6 +73,15 @@ int main(int argc, char **argv)
 		xStart = offset[0];
 		yStart = offset[1];
 		zStart = offset[2];
+	}
+	if (domain_db->keyExists( "InletLayers" )){
+		auto InletCount = domain_db->getVector<int>( "InletLayers" );
+		inlet_count_x = InletCount[0];
+		inlet_count_y = InletCount[1];
+		inlet_count_z = InletCount[2];
+	}
+	if (domain_db->keyExists( "checkerSize" )){
+		checkerSize = domain_db->getScalar<int>( "checkerSize" );
 	}
 	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
@@ -134,6 +145,63 @@ int main(int argc, char **argv)
 			}
 		}
 		printf("Read segmented data from %s \n",Filename.c_str());
+	}
+
+	if (inlet_count_x > 0){
+		// use checkerboard pattern
+		printf("Checkerboard pattern at x inlet for %i layers \n",inlet_count_x);
+		for (int k = 0; k<Nz; k++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = xStart; i < xStart+inlet_count_x; i++){
+					if ( (j/checkerSize + k/checkerSize)%2 == 0){
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+					else{
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+				}
+			}
+		}
+	}
+	
+	if (inlet_count_y > 0){
+		printf("Checkerboard pattern at y inlet for %i layers \n",inlet_count_y);
+		// use checkerboard pattern
+		for (int k = 0; k<Nz; k++){
+			for (int j = yStart; i < yStart+inlet_count_y; j++){
+				for (int i = 0; i<Nx; i++){
+					if ( (i/checkerSize + k/checkerSize)%2 == 0){
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+					else{
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+				}
+			}
+		}
+	}
+
+	if (inlet_count_z > 0){
+		printf("Checkerboard pattern at z inlet for %i layers \n",inlet_count_z);
+		// use checkerboard pattern
+		for (int k = zStart; k < zStart+inlet_count_z; k++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = 0; i<Nx; i++){
+					if ( (i/checkerSize+j/checkerSize)%2 == 0){
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+					else{
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+				}
+			}
+		}
 	}
 
 	// Get the rank info
