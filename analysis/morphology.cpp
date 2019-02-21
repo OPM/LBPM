@@ -602,6 +602,7 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 		
 		/*
 		* Extract only the connected part of NWP
+		*/
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
 				for (int i=1; i<nx-1; i++){
@@ -609,8 +610,14 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 					if (id[n] == 2){
 						phase(i,j,k) = 1.0;
 					}
-					else
+					else if (id[n] == 1){
+						// nwp
 						phase(i,j,k) = -1.0;
+					}
+					else{
+						// treat solid as WP since films can connect 
+						phase(i,j,k) = 1.0;
+					}
 				}
 			}
 		}
@@ -629,7 +636,6 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 			}
 		}
 		// done
-		 */
 
 		count = 0.f;
 		for (int k=1; k<nz-1; k++){
