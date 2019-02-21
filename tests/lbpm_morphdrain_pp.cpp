@@ -98,8 +98,6 @@ int main(int argc, char **argv)
 		// Initialize the domain and communication
 		Array<char> id_solid(nx,ny,nz);
 		DoubleArray SignDist(nx,ny,nz);
-		DoubleArray phase(nx,ny,nz);
-		IntArray phase_label(nx,ny,nz);
 
 		// Solve for the position of the solid phase
 		for (int k=0;k<nz;k++){
@@ -129,39 +127,8 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		// Run the morphological opening
-		MorphOpen(SignDist, id, Dm, SW);
-		
-		for (int k=0;k<nz;k++){
-			for (int j=0;j<ny;j++){
-				for (int i=0;i<nx;i++){
-					int n = k*nx*ny+j*nx+i;
-					if (id[n] == 1){
-						phase(i,j,k) = 1.0;
-					}
-					else
-						phase(i,j,k) = -1.0;
-				}
-			}
-		}
-		
-		// Extract only the connected part
-		BlobIDstruct new_index;
-		double vF=0.0; double vS=0.0;
-		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(comm);
-		
-		for (int k=0;k<nz;k++){
-			for (int j=0;j<ny;j++){
-				for (int i=0;i<nx;i++){
-					int n = k*nx*ny+j*nx+i;
-					if (id[n] == 1 && phase_label(i,j,k) > 1){
-						id[n] = 2;
-					}
-				}
-			}
-		}
-		
-		
+		MorphDrain(SignDist, id, Dm, SW);
+	
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
 			if (rank==0) printf("Relabel solid components that touch fluid 1 \n");
