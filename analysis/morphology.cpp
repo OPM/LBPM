@@ -586,7 +586,7 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(comm);
+		MPI_Barrier(Dm->Comm);
 		
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
