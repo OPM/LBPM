@@ -582,7 +582,7 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 			}
 		}
 		
-		// Extract only the connected part
+		// Extract only the connected part of NWP
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
@@ -598,13 +598,45 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 				}
 			}
 		}
+		
+		
+		/*
+		* Extract only the connected part of NWP
+		 */
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					if (id[n] == 2){
+						phase(i,j,k) = 1.0;
+					}
+					else
+						phase(i,j,k) = -1.0;
+				}
+			}
+		}
+		
+		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
+		MPI_Barrier(Dm->Comm);
+		
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					if (id[n] == 2 && phase_label(i,j,k) > 1){
+						id[n] = 20;
+					}
+				}
+			}
+		}
+		// done
 
 		count = 0.f;
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
 				for (int i=1; i<nx-1; i++){
 					n=k*nx*ny+j*nx+i;
-					if (id[n] == 2){
+					if (id[n] > 1){
 						count+=1.0;
 					}
 				}
@@ -633,6 +665,18 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 			printf("Final critical radius=%f\n",Rcrit_old);
 		}
 	}
+	// label all WP components as 2
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				n=k*nx*ny+j*nx+i;
+				if (id[n] > 1){
+					id[n] = 2;
+				}
+			}
+		}
+	}
+	
 	return final_void_fraction;
 }
 
