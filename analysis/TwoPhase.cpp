@@ -433,7 +433,7 @@ void TwoPhase::UpdateMeshValues()
 }
 void TwoPhase::ComputeLocal()
 {
-	int i,j,k,n,kmin,kmax;
+	int i,j,k,n,imin,jmin,kmin,kmax;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	// If external boundary conditions are set, do not average over the inlet
@@ -441,9 +441,15 @@ void TwoPhase::ComputeLocal()
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
+	imin=jmin=1;
+	// If inlet layers exist use these as default
+	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
+	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
+	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
+		
 	for (k=kmin; k<kmax; k++){
-		for (j=1; j<Ny-1; j++){
-			for (i=1; i<Nx-1; i++){
+		for (j=jmin; j<Ny-1; j++){
+			for (i=imin; i<Nx-1; i++){
 				//...........................................................................
 				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
