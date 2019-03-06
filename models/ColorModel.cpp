@@ -608,7 +608,9 @@ void ScaLBL_ColorModel::Run(){
 						fclose(kr_log_file);
 						// Add exit criteria based on relative permeability ratio
 						if (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < 0.05){
-							timestep = timestepMax;
+							//timestep = timestepMax; 
+							// flow reversal
+							delta_volume_target *= (-1.0);
 						}
 
 						printf("  Measured capillary number %f \n ",Ca);
@@ -632,21 +634,6 @@ void ScaLBL_ColorModel::Run(){
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
 					}
-
-					/*if (morph_delta > 0.f){
-						// wetting phase saturation will decrease
-						while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-							TARGET_SATURATION = target_saturation[target_saturation_index++];
-						}
-					}
-					else{
-						// wetting phase saturation will increase
-						while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-							TARGET_SATURATION = target_saturation[target_saturation_index++];
-							if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
-						}
-					}
-					*/
 				}
 				else{
 					if (rank==0){
@@ -669,26 +656,6 @@ void ScaLBL_ColorModel::Run(){
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
 				}
-				/*if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
-					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
-					if (morph_delta > 1.f) morph_delta = 1.f;
-					if (morph_delta < -1.f) morph_delta = -1.f;
-					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
-					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
-				}
-				if (delta_volume_target < 0.f){
-					if (volB/(volA + volB) > TARGET_SATURATION){
-						MORPH_ADAPT = false;
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
-					}
-				}
-				else{
-					if (volB/(volA + volB) < TARGET_SATURATION){
-						MORPH_ADAPT = false;
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
-					}
-				}
-				*/
 				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
