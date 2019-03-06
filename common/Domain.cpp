@@ -30,6 +30,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
 	Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_WORLD),
+	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -75,6 +76,7 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
+	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -117,6 +119,14 @@ void Domain::initialize( std::shared_ptr<Database> db )
     auto n = d_db->getVector<int>("n");
     auto L = d_db->getVector<double>("L");
     //nspheres = d_db->getScalar<int>("nspheres");
+    
+	if (d_db->keyExists( "InletLayers" )){
+		auto InletCount = d_db->getVector<int>( "InletLayers" );
+		inlet_layers_x = InletCount[0];
+		inlet_layers_y = InletCount[1];
+		inlet_layers_z = InletCount[2];
+	}
+	
     ASSERT( n.size() == 3u );
     ASSERT( L.size() == 3u );
     ASSERT( nproc.size() == 3u );
@@ -133,6 +143,10 @@ void Domain::initialize( std::shared_ptr<Database> db )
     int myrank;
     MPI_Comm_rank( Comm, &myrank );
 	rank_info = RankInfoStruct(myrank,nproc[0],nproc[1],nproc[2]);
+	// inlet layers only apply to lower part of domain
+	if (nproc[0] > 0) inlet_layers_x = 0;
+	if (nproc[1] > 0) inlet_layers_y = 0;
+	if (nproc[2] > 0) inlet_layers_z = 0;
     // Fill remaining variables
 	N = Nx*Ny*Nz;
 	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
