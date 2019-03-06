@@ -412,7 +412,7 @@ void ScaLBL_ColorModel::Run(){
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
-	int MAX_MORPH_TIMESTEPS = 20000;
+	int MAX_MORPH_TIMESTEPS = 50000;
 	int CURRENT_MORPH_TIMESTEPS=0;
 	int morph_interval;
 	double morph_delta;
@@ -765,9 +765,9 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 
-	if (volume_connected < 0.05*volume_initial){
-		// if connected volume is less than 5% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk to less than 5% of total fluid volume (remove the whole thing) \n");
+	if (volume_connected < 0.025*volume_initial){
+		// if connected volume is less than 2.5% just delete the whole thing
+		if (rank==0) printf("Connected region has shrunk to less than 2.5% of total fluid volume (remove the whole thing) \n");
 	}
 	else {
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
@@ -775,7 +775,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
 			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
 		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
-
 
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
