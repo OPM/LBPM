@@ -412,34 +412,30 @@ void ScaLBL_ColorModel::Run(){
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
-	int MAX_MORPH_TIMESTEPS = 50000;
-	int CURRENT_MORPH_TIMESTEPS=0;
-	int morph_interval;
-	double morph_delta;
+	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
+	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
+	int RAMP_TIMESTEPS = 50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
+	int morph_interval = 1000000;
+	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
+	double morph_delta = 0.0;
 	int morph_timesteps = 0;
-	int ramp_timesteps = 50000;
-	double capillary_number;
-	double tolerance = 1.f;
+	double capillary_number = 0.0;
+	double tolerance = 0.01;
 	double Ca_previous = 0.f;
-
-
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
+	double A_RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
+	double B_RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
-/*	double TARGET_SATURATION = 0.f;
-	int target_saturation_index=0;
-	std::vector<double> target_saturation;
-	if (color_db->keyExists( "target_saturation" )){
-		target_saturation = color_db->getVector<double>( "target_saturation" );
-		TARGET_SATURATION = target_saturation[0];
+	if (color_db->keyExists( "A_residual_endpoint_threshold" )){
+		A_RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "A_residual_endpoint_threshold" );
 	}
-	*/
+	if (color_db->keyExists( "B_residual_endpoint_threshold" )){
+		B_RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "B_residual_endpoint_threshold" );
+	}
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
-	}
-	else{
-		capillary_number=0;
 	}
 	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
@@ -448,25 +444,16 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
 	}
-	else{
-		morph_delta=0.0;
-		USE_MORPH = false;
-	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
 		USE_MORPH = true;
 	}
-	else{
-		morph_interval=1000000;
-		USE_MORPH = false;
-	}
 	if (analysis_db->keyExists( "tolerance" )){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
 	}
-	else{
-		tolerance = 0.02;
+	if (analysis_db->keyExists( "analysis_interval" )){
+		analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	}
-	int analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	
 	if (rank==0){
 		printf("********************************************************\n");
@@ -569,7 +556,7 @@ void ScaLBL_ColorModel::Run(){
 		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
 		// allow initial ramp-up to get closer to steady state
-		if (timestep > ramp_timesteps && timestep%analysis_interval == 0 && USE_MORPH){
+		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
 			analysis.finish();
 			if ( morph_timesteps > morph_interval ){
 
@@ -590,8 +577,6 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
-				//double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
-				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					MORPH_ADAPT = true;
@@ -606,10 +591,13 @@ void ScaLBL_ColorModel::Run(){
 						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
-						// Add exit criteria based on relative permeability ratio
-						if (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < 0.05){
-							//timestep = timestepMax; 
-							// flow reversal
+						//  flow reversal criteria based on fractional flow
+						if (delta_volume_target < 0.0 &&
+								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < A_RESIDUAL_ENDPOINT_THRESHOLD){
+							delta_volume_target *= (-1.0);
+						}
+						else if (delta_volume_target > 0.0 &&
+								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < B_RESIDUAL_ENDPOINT_THRESHOLD){
 							delta_volume_target *= (-1.0);
 						}
 
