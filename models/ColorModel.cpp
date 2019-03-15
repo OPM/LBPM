@@ -424,14 +424,10 @@ void ScaLBL_ColorModel::Run(){
 	double Ca_previous = 0.f;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
-	double A_RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
-	double B_RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
+	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
-	if (color_db->keyExists( "A_residual_endpoint_threshold" )){
-		A_RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "A_residual_endpoint_threshold" );
-	}
-	if (color_db->keyExists( "B_residual_endpoint_threshold" )){
-		B_RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "B_residual_endpoint_threshold" );
+	if (color_db->keyExists( "residual_endpoint_threshold" )){
+		RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "residual_endpoint_threshold" );
 	}
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
@@ -593,11 +589,11 @@ void ScaLBL_ColorModel::Run(){
 						fclose(kr_log_file);
 						//  flow reversal criteria based on fractional flow
 						if (delta_volume_target < 0.0 &&
-								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < A_RESIDUAL_ENDPOINT_THRESHOLD){
+								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
 							delta_volume_target *= (-1.0);
 						}
 						else if (delta_volume_target > 0.0 &&
-								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < B_RESIDUAL_ENDPOINT_THRESHOLD){
+								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
 							delta_volume_target *= (-1.0);
 						}
 
