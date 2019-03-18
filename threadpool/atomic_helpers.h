@@ -2,6 +2,8 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #ifndef included_ThreadPoolAtomicHelpers
 #define included_ThreadPoolAtomicHelpers
+
+#include <stdexcept>
 #include <stdint.h>
 #include <stdio.h>
 #include <typeinfo>
@@ -10,7 +12,6 @@
 #if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
 // Using windows
 #define USE_WINDOWS
-#define NOMINMAX
 #include <process.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -527,6 +528,11 @@ inline void atomic_swap( int64_atomic volatile *x, int64_atomic *y )
     }
     *y = tmp;
 }
+
+
+// Atomic operations for floating types
+double atomic_add( double volatile *x, double y );
+float atomic_add( float volatile *x, float y );
 
 
 // Define an atomic counter

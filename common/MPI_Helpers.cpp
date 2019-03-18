@@ -36,7 +36,7 @@ template<> MPI_Datatype getMPItype<double>() {
 ********************************************************/
 // unsigned char
 template<>
-size_t packsize<unsigned char>( const unsigned char& rhs )
+size_t packsize<unsigned char>( const unsigned char& )
 {
     return sizeof(unsigned char);
 }
@@ -52,7 +52,7 @@ void unpack<unsigned char>( unsigned char& data, const char *buffer )
 }
 // char
 template<>
-size_t packsize<char>( const char& rhs )
+size_t packsize<char>( const char& )
 {
     return sizeof(char);
 }
@@ -68,7 +68,7 @@ void unpack<char>( char& data, const char *buffer )
 }
 // int
 template<>
-size_t packsize<int>( const int& rhs )
+size_t packsize<int>( const int& )
 {
     return sizeof(int);
 }
@@ -84,7 +84,7 @@ void unpack<int>( int& data, const char *buffer )
 }
 // unsigned int
 template<>
-size_t packsize<unsigned int>( const unsigned int& rhs )
+size_t packsize<unsigned int>( const unsigned int& )
 {
     return sizeof(unsigned int);
 }
@@ -100,7 +100,7 @@ void unpack<unsigned int>( unsigned int& data, const char *buffer )
 }
 // size_t
 template<>
-size_t packsize<size_t>( const size_t& rhs )
+size_t packsize<size_t>( const size_t& )
 {
     return sizeof(size_t);
 }

@@ -1,8 +1,8 @@
 #include "Mesh.h"
 #include "common/Utilities.h"
-#include "shared_ptr.h"
 
 #include <limits>
+#include <memory>
 #include <stdint.h>
 
 namespace IO {

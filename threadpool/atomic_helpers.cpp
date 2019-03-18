@@ -25,5 +25,43 @@ static int create_atomic_pthread_lock()
 int atomic_pthread_lock_initialized = create_atomic_pthread_lock();
 #endif
 
+
+// Atomic operations for floating types
+double atomic_add( double volatile *x, double y )
+{
+    static_assert( sizeof( double ) == sizeof( int64_atomic ), "Unexpected size" );
+    union U {
+        double d;
+        int64_atomic i;
+    };
+    U a, b;
+    bool swap = false;
+    auto x2   = reinterpret_cast<int64_atomic volatile *>( x );
+    while ( !swap ) {
+        a.i  = atomic_add( x2, 0 );
+        b.d  = a.d + y;
+        swap = atomic_compare_and_swap( x2, a.i, b.i );
+    }
+    return b.d;
+}
+float atomic_add( float volatile *x, float y )
+{
+    static_assert( sizeof( float ) == sizeof( int32_atomic ), "Unexpected size" );
+    union U {
+        float d;
+        int32_atomic i;
+    };
+    U a, b;
+    bool swap = false;
+    auto x2   = reinterpret_cast<int32_atomic volatile *>( x );
+    while ( !swap ) {
+        a.i  = atomic_add( x2, 0 );
+        b.d  = a.d + y;
+        swap = atomic_compare_and_swap( x2, a.i, b.i );
+    }
+    return b.d;
+}
+
+
 } // AtomicOperations namespace
 

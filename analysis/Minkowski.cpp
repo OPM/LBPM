@@ -1,10 +1,8 @@
 #include "analysis/Minkowski.h"
 #include "analysis/pmmc.h"
+#include "analysis/analysis.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "analysis/analysis.h"
-
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
@@ -12,6 +10,8 @@
 #include "IO/Writer.h"
 
 #include "ProfilerApp.h"
+
+#include <memory>
 
 
 #define PI 3.14159265359
