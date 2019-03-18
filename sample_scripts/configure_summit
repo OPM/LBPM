@@ -19,10 +19,12 @@ cmake                                       \
         -D MPI_COMPILER:BOOL=TRUE           \
         -D MPIEXEC=mpirun                   \
         -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
-    -D HDF5_DIRECTORY="/ccs/proj/bip176/TPLs/hdf5/"		   \
-    -D HDF5_LIB="/ccs/proj/bip176/TPLs/hdf5/lib/libhdf5.a"	   \
-    -D SILO_LIB="/ccs/proj/bip176/TPLs/silo/lib/libsiloh5.a"    \
-    -D SILO_DIRECTORY="/ccs/proj/bip176/TPLs/silo/"		     \
+    -D USE_HDF5=1                        \
+        -D HDF5_DIRECTORY="/ccs/proj/bip176/TPLs/hdf5/"		   \
+    	-D HDF5_LIB="/ccs/proj/bip176/TPLs/hdf5/lib/libhdf5.a"	   \
+     -D USE_SILO=1                        \
+        -D SILO_LIB="/ccs/proj/bip176/TPLs/silo/lib/libsiloh5.a"    \
+   	-D SILO_DIRECTORY="/ccs/proj/bip176/TPLs/silo/"		     \
     -D USE_DOXYGEN:BOOL=false		        \
     -D USE_TIMER=0			                \
     ~/LBPM-WIA
