@@ -1117,9 +1117,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::vector<
  *  Interpolate                                          *
  ********************************************************/
 template<class T>
-struct is_compatible_double : std::integral_constant<bool,
-                                  std::is_floating_point<typename std::remove_cv<T>::type>::value ||
-                                      std::is_integral<typename std::remove_cv<T>::type>::value> {
+struct is_compatible_double
+    : std::integral_constant<bool, std::is_floating_point<T>::value || std::is_integral<T>::value> {
 };
 template<class TYPE>
 inline typename std::enable_if<is_compatible_double<TYPE>::value, TYPE>::type Array_interp_1D(

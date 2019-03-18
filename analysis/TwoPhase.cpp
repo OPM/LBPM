@@ -1,16 +1,17 @@
 #include "analysis/TwoPhase.h"
 
 #include "analysis/pmmc.h"
+#include "analysis/analysis.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "analysis/analysis.h"
-
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
+
+#include <memory>
+
 
 #define BLOB_AVG_COUNT 35
 

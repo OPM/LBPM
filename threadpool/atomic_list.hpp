@@ -10,28 +10,39 @@
 /******************************************************************
  * Constructor                                                     *
  ******************************************************************/
-template<class TYPE, int MAX_SIZE, class COMPARE>
-AtomicList<TYPE, MAX_SIZE, COMPARE>::AtomicList( const TYPE &default_value, const COMPARE &comp )
-    : d_compare( comp ), d_default( default_value )
+template<class TYPE, class COMPARE>
+AtomicList<TYPE, COMPARE>::AtomicList(
+    size_t capacity, const TYPE &default_value, const COMPARE &comp )
+    : d_compare( comp ),
+      d_capacity( capacity ),
+      d_default( default_value ),
+      d_objects( new TYPE[capacity] ),
+      d_N( 0 ),
+      d_next( new AtomicOperations::int32_atomic[capacity + 1] ),
+      d_unused( 1 ),
+      d_N_insert( 0 ),
+      d_N_remove( 0 )
 {
-    d_N        = 0;
-    d_next[0]  = -1;
-    d_unused   = 1;
-    d_N_insert = 0;
-    d_N_remove = 0;
-    for ( int i = 0; i < MAX_SIZE; i++ ) {
+    d_next[0] = -1;
+    for ( size_t i = 0; i < d_capacity; i++ ) {
         d_next[i + 1] = -5 - i;
         d_objects[i]  = d_default;
     }
+}
+template<class TYPE, class COMPARE>
+AtomicList<TYPE, COMPARE>::~AtomicList()
+{
+    delete[] d_objects;
+    delete[] d_next;
 }
 
 
 /******************************************************************
  * Remove an item                                                  *
  ******************************************************************/
-template<class TYPE, int MAX_SIZE, class COMPARE>
+template<class TYPE, class COMPARE>
 template<class Compare, class... Args>
-inline TYPE AtomicList<TYPE, MAX_SIZE, COMPARE>::remove( Compare compare, Args... args )
+inline TYPE AtomicList<TYPE, COMPARE>::remove( Compare compare, const Args &... args )
 {
     // Acquiring temporary ownership
     int pos   = 0;
@@ -50,8 +61,7 @@ inline TYPE AtomicList<TYPE, MAX_SIZE, COMPARE>::remove( Compare compare, Args..
         // Test to see if the object passes compare
         bool test = compare( const_cast<TYPE &>( d_objects[next - 1] ), args... );
         if ( test ) {
-            // We want to return this object, update next to point to another entry and remove the
-            // entry
+            // We want to return this object, update next to point to another entry and remove
             unlock( next, -3 );
             unlock( pos, next2 );
             pos = next;
@@ -71,8 +81,8 @@ inline TYPE AtomicList<TYPE, MAX_SIZE, COMPARE>::remove( Compare compare, Args..
     }
     return rtn;
 }
-template<class TYPE, int MAX_SIZE, class COMPARE>
-inline TYPE AtomicList<TYPE, MAX_SIZE, COMPARE>::remove_first()
+template<class TYPE, class COMPARE>
+inline TYPE AtomicList<TYPE, COMPARE>::remove_first()
 {
     TYPE rtn( d_default );
     auto next = lock( 0 );
@@ -94,11 +104,11 @@ inline TYPE AtomicList<TYPE, MAX_SIZE, COMPARE>::remove_first()
 /******************************************************************
  * Insert an item                                                  *
  ******************************************************************/
-template<class TYPE, int MAX_SIZE, class COMPARE>
-inline void AtomicList<TYPE, MAX_SIZE, COMPARE>::insert( TYPE x )
+template<class TYPE, class COMPARE>
+inline void AtomicList<TYPE, COMPARE>::insert( const TYPE &x )
 {
-    int N_used = AtomicOperations::atomic_increment( &d_N );
-    if ( N_used > MAX_SIZE ) {
+    size_t N_used = AtomicOperations::atomic_increment( &d_N );
+    if ( N_used > d_capacity ) {
         AtomicOperations::atomic_decrement( &d_N );
         throw std::logic_error( "No room in list" );
     }
@@ -141,8 +151,8 @@ inline void AtomicList<TYPE, MAX_SIZE, COMPARE>::insert( TYPE x )
  * Check the internal structures of the list                       *
  * This is mostly thread-safe, but blocks all threads              *
  ******************************************************************/
-template<class TYPE, int MAX_SIZE, class COMPARE>
-inline bool AtomicList<TYPE, MAX_SIZE, COMPARE>::check()
+template<class TYPE, class COMPARE>
+inline bool AtomicList<TYPE, COMPARE>::check()
 {
     // Get the lock and check for any other threads modifying the list
     auto start = lock( 0 );
@@ -153,11 +163,11 @@ inline bool AtomicList<TYPE, MAX_SIZE, COMPARE>::check()
     int N2       = 0;
     int N_unused = 0;
     int N_tail   = 0;
-    for ( int i = 0; i < MAX_SIZE; i++ ) {
+    for ( size_t i = 0; i < d_capacity; i++ ) {
         if ( d_objects[i] != d_default )
             N1++;
     }
-    for ( int i = 0; i < MAX_SIZE + 1; i++ ) {
+    for ( size_t i = 0; i <= d_capacity; i++ ) {
         int next = i == 0 ? start : d_next[i];
         if ( next > 0 ) {
             N2++;
@@ -169,7 +179,7 @@ inline bool AtomicList<TYPE, MAX_SIZE, COMPARE>::check()
             pass = false;
         }
     }
-    pass    = pass && N_tail == 1 && N1 == d_N && N2 == d_N && N_unused + d_N == MAX_SIZE;
+    pass    = pass && N_tail == 1 && N1 == d_N && N2 == d_N && N_unused + d_N == (int) d_capacity;
     int it  = 0;
     int pos = 0;
     while ( true ) {
