@@ -106,7 +106,8 @@ void ScaLBL_ColorModel::SetDomain(){
 	N = Nx*Ny*Nz;
 	id = new char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
@@ -153,7 +154,7 @@ void ScaLBL_ColorModel::ReadInput(){
 	
 	if (rank == 0) cout << "Domain set." << endl;
 	
-	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 }
 
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
@@ -462,7 +463,7 @@ void ScaLBL_ColorModel::Run(){
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-	
+		
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
@@ -549,21 +550,22 @@ void ScaLBL_ColorModel::Run(){
 		PROFILE_STOP("Update");
 	       
 		// Run the analysis
-		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		
+		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.subphase( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
 			analysis.finish();
 			if ( morph_timesteps > morph_interval ){
 
-				double volB = Averages->Volume_w(); 
-				double volA = Averages->Volume_n(); 
-				double vA_x = Averages->van_global(0); 
-				double vA_y = Averages->van_global(1); 
-				double vA_z = Averages->van_global(2); 
-				double vB_x = Averages->vaw_global(0); 
-				double vB_y = Averages->vaw_global(1); 
-				double vB_z = Averages->vaw_global(2);
+				double volB = Averages->wb.V; 
+				double volA = Averages->nb.V; 
+				double vA_x = Averages->nb.Px/Averages->nb.M; 
+				double vA_y = Averages->nb.Py/Averages->nb.M; 
+				double vA_z = Averages->nb.Pz/Averages->nb.M; 
+				double vB_x = Averages->wb.Px/Averages->nb.M; 
+				double vB_y = Averages->wb.Py/Averages->nb.M; 
+				double vB_z = Averages->wb.Pz/Averages->nb.M;
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
@@ -616,7 +618,7 @@ void ScaLBL_ColorModel::Run(){
 							Fz *= 1e-6/force_magnitude;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 					}
 				}
 				else{

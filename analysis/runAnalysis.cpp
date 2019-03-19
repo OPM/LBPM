@@ -247,6 +247,116 @@ private:
 };
 
 
+class TCATWorkItem: public ThreadPool::WorkItemRet<void>
+{
+public:
+	TCATWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
+            BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
+                type(type_), timestep(timestep_), Averages(Averages_), 
+                blob_ids(ids), id_list(id_list_), beta(beta_) { }
+    ~TCATWorkItem() { }
+    virtual void run() {
+        Averages.NumberComponents_NWP = blob_ids->first;
+        Averages.Label_NWP = blob_ids->second;
+        Averages.Label_NWP_map = *id_list;
+        Averages.NumberComponents_WP = 1;
+        Averages.Label_WP.fill(0.0);
+        if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+            // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+        }
+        if ( matches(type,AnalysisType::ComputeAverages) ) {
+            PROFILE_START("Compute TCAT",1);
+            Averages.Initialize();
+            Averages.ComputeDelPhi();
+            Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
+            Averages.UpdateMeshValues();
+            Averages.ComputeLocal();
+            Averages.Reduce();
+            Averages.PrintAll(timestep);
+            PROFILE_STOP("Compute TCAT",1);
+        }
+    }
+private:
+    TCATWorkItem();
+    AnalysisType type;
+    int timestep;
+    TwoPhase& Averages;
+    BlobIDstruct blob_ids;
+    BlobIDList id_list;
+    double beta;
+};
+
+
+class GanglionTrackingWorkItem: public ThreadPool::WorkItemRet<void>
+{
+public:
+	GanglionTrackingWorkItem( AnalysisType type_, int timestep_, TwoPhase& Averages_, 
+            BlobIDstruct ids, BlobIDList id_list_, double beta_ ):
+                type(type_), timestep(timestep_), Averages(Averages_), 
+                blob_ids(ids), id_list(id_list_), beta(beta_) { }
+    ~GanglionTrackingWorkItem() { }
+    virtual void run() {
+        Averages.NumberComponents_NWP = blob_ids->first;
+        Averages.Label_NWP = blob_ids->second;
+        Averages.Label_NWP_map = *id_list;
+        Averages.NumberComponents_WP = 1;
+        Averages.Label_WP.fill(0.0);
+        if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+            // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+        }
+        if ( matches(type,AnalysisType::ComputeAverages) ) {
+            PROFILE_START("Compute ganglion",1);
+            Averages.Initialize();
+            Averages.ComputeDelPhi();
+            Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.SDn);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tminus,Averages.Phase_tminus);
+            Averages.ColorToSignedDistance(beta,Averages.Phase_tplus,Averages.Phase_tplus);
+            Averages.UpdateMeshValues();
+            Averages.ComponentAverages();
+            Averages.SortBlobs();
+            Averages.PrintComponents(timestep);
+            PROFILE_STOP("Compute ganglion",1);
+        }
+    }
+private:
+    GanglionTrackingWorkItem();
+    AnalysisType type;
+    int timestep;
+    TwoPhase& Averages;
+    BlobIDstruct blob_ids;
+    BlobIDList id_list;
+    double beta;
+};
+
+
+class SubphaseWorkItem: public ThreadPool::WorkItemRet<void>
+{
+public:
+	SubphaseWorkItem( AnalysisType type_, int timestep_, SubPhase& Averages_ ):
+                type(type_), timestep(timestep_), Averages(Averages_){ }
+    ~SubphaseWorkItem() { }
+    virtual void run() {
+
+        if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
+            // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
+        }
+        if ( matches(type,AnalysisType::ComputeAverages) ) {
+            PROFILE_START("Compute subphase",1);
+            Averages.BulkAverage();
+            PROFILE_STOP("Compute subphase",1);
+        }
+    }
+private:
+    SubphaseWorkItem();
+    AnalysisType type;
+    int timestep;
+    SubPhase& Averages;
+    double beta;
+};
+
+
 /******************************************************************
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
@@ -683,5 +793,63 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
     PROFILE_STOP("run");
 }
 
+
+/******************************************************************
+ *  Run the analysis                                               *
+ ******************************************************************/
+void runAnalysis::subphase( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+{
+    int N = d_N[0]*d_N[1]*d_N[2];
+
+    // Check which analysis steps we need to perform
+    auto type = computeAnalysisType( timestep );
+    if ( type == AnalysisType::AnalyzeNone )
+        return;
+
+    // Check how may queued items we have
+    if ( d_tpool.N_queued() > 20 ) {
+        std::cerr << "Analysis queue is getting behind, waiting ...\n";
+        finish();
+    }
+
+    PROFILE_START("run");
+
+    // Copy the appropriate variables to the host (so we can spawn new threads)
+    ScaLBL_DeviceBarrier();
+    PROFILE_START("Copy data to host",1);
+
+    //if ( matches(type,AnalysisType::CopySimState) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+        // Copy the members of Averages to the cpu (phase was copied above)
+        PROFILE_START("Copy-Pressure",1);
+        ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
+        //ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
+        ScaLBL_DeviceBarrier();
+        PROFILE_STOP("Copy-Pressure",1);
+        PROFILE_START("Copy-Wait",1);
+        PROFILE_STOP("Copy-Wait",1);
+        PROFILE_START("Copy-State",1);
+        // copy other variables
+        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[d_Np],Averages.Rho_w);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+        PROFILE_STOP("Copy-State",1);
+    }
+    PROFILE_STOP("Copy data to host");
+
+    PROFILE_START("run",1);
+    // Spawn threads to do the analysis work
+    //if (timestep%d_restart_interval==0){
+    // if ( matches(type,AnalysisType::ComputeAverages) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+        auto work = new SubphaseWorkItem(type,timestep,Averages);
+        work->add_dependency(d_wait_analysis);    // Make sure we are done using analysis before modifying
+        d_wait_analysis = d_tpool.add_work(work);
+    }
+    PROFILE_STOP("run");
+}
 
 

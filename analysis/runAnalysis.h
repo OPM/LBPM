@@ -3,6 +3,7 @@
 
 #include "analysis/analysis.h"
 #include "analysis/TwoPhase.h"
+#include "analysis/SubPhase.h"
 #include "common/Communication.h"
 #include "common/ScaLBL.h"
 #include "threadpool/thread_pool.h"
@@ -32,6 +33,8 @@ public:
     //! Run the next analysis
     void run( int timestep, TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
+    
+    void subphase( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
 
     //! Finish all active analysis
     void finish();
