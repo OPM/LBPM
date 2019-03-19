@@ -24,6 +24,9 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=double((Nx-2)*(Ny-2)*(Nz-2))*double(Dm->nprocx()*Dm->nprocy()*Dm->nprocz());
 	
+	label.resize(Nx,Ny,Nz);         label.fill(0);
+	distance.resize(Nx,Ny,Nz);      distance.fill(0);
+
 	if (Dm->rank()==0){
 		LOGFILE = fopen("minkowski.csv","a+");
 		if (fseek(LOGFILE,0,SEEK_SET) == fseek(LOGFILE,0,SEEK_CUR))
@@ -127,6 +130,7 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	MPI_Barrier(Dm->Comm);
     PROFILE_STOP("ComputeScalar");
 }
+
 
 void Minkowski::PrintAll()
 {

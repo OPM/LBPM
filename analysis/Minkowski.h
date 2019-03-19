@@ -30,6 +30,8 @@ class Minkowski{
 public:
 	//...........................................................................
 	std::shared_ptr <Domain> Dm;
+	Array <char> label;
+	Array <double> distance;
 	//...........................................................................
 	// Averaging variables
 	//...........................................................................
@@ -44,12 +46,13 @@ public:
 	double A();
 	double J();
 	double X();
-	
+		
 	//..........................................................................
 	Minkowski(){};//NULL CONSTRUCTOR
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
+
 	void PrintAll();
 
 };
