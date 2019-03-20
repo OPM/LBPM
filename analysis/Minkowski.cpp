@@ -24,6 +24,7 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=double((Nx-2)*(Ny-2)*(Nz-2))*double(Dm->nprocx()*Dm->nprocy()*Dm->nprocz());
 	
+	id.resize(Nx,Ny,Nz);         	id.fill(0);
 	label.resize(Nx,Ny,Nz);         label.fill(0);
 	distance.resize(Nx,Ny,Nz);      distance.fill(0);
 
@@ -43,22 +44,6 @@ Minkowski::Minkowski(std::shared_ptr <Domain> dm):
 Minkowski::~Minkowski()
 {
     if ( LOGFILE!=NULL ) { fclose(LOGFILE); }
-}
-
-double Minkowski::V(){
-	return Vi_global;
-}
-
-double Minkowski::A(){
-	return Ai_global;
-}
-
-double Minkowski::J(){
-	return Ji_global;
-}
-
-double Minkowski::X(){
-	return Xi_global;
 }
 
 void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
@@ -129,6 +114,69 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	MPI_Allreduce(&Ji,&Ji_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	MPI_Barrier(Dm->Comm);
     PROFILE_STOP("ComputeScalar");
+}
+
+
+void Minkowski::MeasureObject(){
+	/*
+	 *  compute the distance to an object 
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 *    0 - labels the object
+	 *    1 - labels the rest of the 
+	 */
+
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				distance(i,j,k) =2.0*double(id(i,j,k))-1.0;
+			}
+		}
+	}	
+	CalcDist(distance,id,*Dm);
+	ComputeScalar(distance,0.0);
+
+}
+
+
+void Minkowski::MeasureConnectedPathway(){
+	/*
+	 * compute the connected pathway for object with LABEL in id field
+	 * compute the labels for connected components
+	 * compute the distance to the connected pathway
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 */
+	
+	char LABEL = 0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (id(i,j,k) == LABEL){
+					distance(i,j,k) = 1.0;
+				}
+				else
+					distance(i,j,k) = -1.0;
+			}
+		}
+	}
+	
+	// Extract only the connected part of NWP
+	double vF=0.0; 
+	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+	MPI_Barrier(Dm->Comm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				id(i,j,k) = 1;
+				if (id(i,j,k) == LABEL && label(i,j,k) == 0){
+					id(i,j,k) = 0;
+				}
+			}
+		}
+	}
+	MeasureObject();
 }
 
 

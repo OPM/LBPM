@@ -66,7 +66,7 @@ public:
 	 */
 	// mass
 	phase wc,wd,wb,nc,nd,nb;
-	interface i;
+	interface iwn;
 
 	//...........................................................................
     int Nx,Ny,Nz;
@@ -93,6 +93,7 @@ public:
 	
 	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double beta);
 	void BulkAverage();
+	void FullAnalysis();
 	
 private:
 	FILE *TIMELOG;
