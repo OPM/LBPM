@@ -25,10 +25,12 @@ public:
 	double p;
 	double M,Px,Py,Pz,K;
 	double V,A,H,X;
+
 	void reset(){
 		p=M=Px=Py=Pz=K=0.0;
 		V=A=H=X=0.0;
 	}
+
 private:
 };
 
@@ -42,6 +44,7 @@ public:
 		V=A=H=X=0.0;
 		Mw=Mn=Pnx=Pny=Pnz=Pwx=Pwy=Pwz=Kw=Kn=0.0;
 	}
+
 private:
 };
 
@@ -64,10 +67,13 @@ public:
 	 * 		i - interface region
 	 * 		b - bulk (total)
 	 */
-	// mass
+	// local entities
 	phase wc,wd,wb,nc,nd,nb;
 	interface iwn;
-
+	
+	// global entities
+	phase gwc,gwd,gwb,gnc,gnd,gnb;
+	interface giwn;
 	//...........................................................................
     int Nx,Ny,Nz;
 	IntArray PhaseID;		// Phase ID array (solid=0, non-wetting=1, wetting=2)

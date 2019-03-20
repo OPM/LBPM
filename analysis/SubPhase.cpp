@@ -176,19 +176,18 @@ void SubPhase::BulkAverage(){
 			}
 		}
 	}
-	wb.V=sumReduce( Dm->Comm, wb.V);
-	wb.M=sumReduce( Dm->Comm, wb.M);
-	nb.M=sumReduce( Dm->Comm, nb.M);
-	wb.Px=sumReduce( Dm->Comm, wb.Px);
-	wb.Py=sumReduce( Dm->Comm, wb.Py);
-	wb.Pz=sumReduce( Dm->Comm, wb.Pz);
-	nb.Px=sumReduce( Dm->Comm, nb.Px);
-	nb.Py=sumReduce( Dm->Comm, nb.Py);
-	nb.Pz=sumReduce( Dm->Comm, nb.Pz);
+	gwb.M=sumReduce( Dm->Comm, wb.M);
+	gnb.M=sumReduce( Dm->Comm, nb.M);
+	gwb.Px=sumReduce( Dm->Comm, wb.Px);
+	gwb.Py=sumReduce( Dm->Comm, wb.Py);
+	gwb.Pz=sumReduce( Dm->Comm, wb.Pz);
+	gnb.Px=sumReduce( Dm->Comm, nb.Px);
+	gnb.Py=sumReduce( Dm->Comm, nb.Py);
+	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
 
 	if (Dm->rank() == 0){
-		double saturation=wb.V/(wb.V + nb.V);
-		double fractional_flow=nb.M*sqrt(wb.Px*wb.Px+wb.Py*wb.Py+wb.Pz*wb.Pz)/(wb.M*sqrt(nb.Px*nb.Px+nb.Py*nb.Py+nb.Pz*nb.Pz));
+		double saturation=gwb.V/(gwb.V + gnb.V);
+		double fractional_flow=nb.M*sqrt(gwb.Px*gwb.Px+gwb.Py*gwb.Py+gwb.Pz*gwb.Pz)/(gwb.M*sqrt(gnb.Px*gnb.Px+gnb.Py*gnb.Py+gnb.Pz*gnb.Pz));
 		printf("saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 	}
 
@@ -325,6 +324,15 @@ void SubPhase::FullAnalysis(){
 	nd.A -= nc.A;
 	nd.H -= nc.H;
 	nd.X -= nc.X;
+	// compute global entities
+	gnc.V=sumReduce( Dm->Comm, nc.V);
+	gnc.A=sumReduce( Dm->Comm, nc.A);
+	gnc.H=sumReduce( Dm->Comm, nc.H);
+	gnc.X=sumReduce( Dm->Comm, nc.X);
+	gnd.V=sumReduce( Dm->Comm, nd.V);
+	gnd.A=sumReduce( Dm->Comm, nd.A);
+	gnd.H=sumReduce( Dm->Comm, nd.H);
+	gnd.X=sumReduce( Dm->Comm, nd.X);
 	
  	// wetting
 	for (k=0; k<Nz; k++){
@@ -363,6 +371,15 @@ void SubPhase::FullAnalysis(){
 	wd.A -= wc.A;
 	wd.H -= wc.H;
 	wd.X -= wc.X;
+	// compute global entities
+	gwc.V=sumReduce( Dm->Comm, wc.V);
+	gwc.A=sumReduce( Dm->Comm, wc.A);
+	gwc.H=sumReduce( Dm->Comm, wc.H);
+	gwc.X=sumReduce( Dm->Comm, wc.X);
+	gwd.V=sumReduce( Dm->Comm, wd.V);
+	gwd.A=sumReduce( Dm->Comm, wd.A);
+	gwd.H=sumReduce( Dm->Comm, wd.H);
+	gwd.X=sumReduce( Dm->Comm, wd.X);
 	
  	/*  Set up geometric analysis of interface region */
 	for (k=0; k<Nz; k++){
@@ -389,6 +406,10 @@ void SubPhase::FullAnalysis(){
 	iwn.A = morph_i->A(); 
 	iwn.H = morph_i->H(); 
 	iwn.X = morph_i->X(); 
+	giwn.V=sumReduce( Dm->Comm, iwn.V);
+	giwn.A=sumReduce( Dm->Comm, iwn.A);
+	giwn.H=sumReduce( Dm->Comm, iwn.H);
+	giwn.X=sumReduce( Dm->Comm, .X);
 	
 	double vol_nc_bulk = 0.0;
 	double vol_wc_bulk = 0.0;
@@ -461,21 +482,49 @@ void SubPhase::FullAnalysis(){
 			}
 		}
 	}
-	iwn.V=sumReduce( Dm->Comm, iwn.V);
-	wb.M=sumReduce( Dm->Comm, wb.M);
-	nb.M=sumReduce( Dm->Comm, nb.M);
-	wb.Px=sumReduce( Dm->Comm, wb.Px);
-	wb.Py=sumReduce( Dm->Comm, wb.Py);
-	wb.Pz=sumReduce( Dm->Comm, wb.Pz);
-	nb.Px=sumReduce( Dm->Comm, nb.Px);
-	nb.Py=sumReduce( Dm->Comm, nb.Py);
-	nb.Pz=sumReduce( Dm->Comm, nb.Pz);
+	gnd.M=sumReduce( Dm->Comm, nd.M);
+	gnd.Px=sumReduce( Dm->Comm, nd.Px);
+	gnd.Py=sumReduce( Dm->Comm, nd.Py);
+	gnd.Pz=sumReduce( Dm->Comm, nd.Pz);
+	gnd.K=sumReduce( Dm->Comm, nd.K);
+	gnd.p=sumReduce( Dm->Comm, nd.p);
 
-	if (Dm->rank() == 0){
-		double saturation=wb.V/(wb.V + nb.V);
-		double fractional_flow=nb.M*sqrt(wb.Px*wb.Px+wb.Py*wb.Py+wb.Pz*wb.Pz)/(wb.M*sqrt(nb.Px*nb.Px+nb.Py*nb.Py+nb.Pz*nb.Pz));
-		printf("saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-	}
+	gwd.M=sumReduce( Dm->Comm, wd.M);
+	gwd.Px=sumReduce( Dm->Comm, wd.Px);
+	gwd.Py=sumReduce( Dm->Comm, wd.Py);
+	gwd.Pz=sumReduce( Dm->Comm, wd.Pz);
+	gwd.K=sumReduce( Dm->Comm, wd.K);
+	gwd.p=sumReduce( Dm->Comm, wd.p);
+	
+	gnc.M=sumReduce( Dm->Comm, nc.M);
+	gnc.Px=sumReduce( Dm->Comm, nc.Px);
+	gnc.Py=sumReduce( Dm->Comm, nc.Py);
+	gnc.Pz=sumReduce( Dm->Comm, nc.Pz);
+	gnc.K=sumReduce( Dm->Comm, nc.K);
+	gnc.p=sumReduce( Dm->Comm, nc.p);
+
+	gwc.M=sumReduce( Dm->Comm, wc.M);
+	gwc.Px=sumReduce( Dm->Comm, wc.Px);
+	gwc.Py=sumReduce( Dm->Comm, wc.Py);
+	gwc.Pz=sumReduce( Dm->Comm, wc.Pz);
+	gwc.K=sumReduce( Dm->Comm, wc.K);
+	gwc.p=sumReduce( Dm->Comm, wc.p);
+
+	// pressure averaging
+	wc.p = wc.p /vol_wc_bulk;
+	nc.p = nc.p /vol_nc_bulk;
+	wd.p = wd.p /vol_wd_bulk;
+	nd.p = nd.p /vol_nd_bulk;
+	
+	vol_wc_bulk=sumReduce( Dm->Comm, vol_wc_bulk);
+	vol_wd_bulk=sumReduce( Dm->Comm, vol_wd_bulk);
+	vol_nc_bulk=sumReduce( Dm->Comm, vol_nc_bulk);
+	vol_nd_bulk=sumReduce( Dm->Comm, vol_nd_bulk);
+
+	gwc.p = gwc.p /vol_wc_bulk;
+	gnc.p = gnc.p /vol_nc_bulk;
+	gwd.p = gwd.p /vol_wd_bulk;
+	gnd.p = gnd.p /vol_nd_bulk;
 }
 
 
