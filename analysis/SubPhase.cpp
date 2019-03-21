@@ -34,7 +34,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 			fprintf(TIMELOG,"time rn rw nun nuw Fx Fy Fz iftwn ");				
-			fprintf(TIMELOG,"pnc pnd pni pwc pwd pwi ");				// pressures 
+			fprintf(TIMELOG,"pwc pwd pnc pnd ");						// pressures 
 			fprintf(TIMELOG,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 			fprintf(TIMELOG,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
 			fprintf(TIMELOG,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y ");			
@@ -45,7 +45,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(TIMELOG,"Vnc Anc Hnc Xnc ");					 	// nc region
 			fprintf(TIMELOG,"Vnd And Hnd Xnd ");					 	// nd region
 			fprintf(TIMELOG,"Vi Ai Hi Xi\n");					 		// interface region 
-			// stress tensor
+			// stress tensor?
 		}
 
 	}
@@ -57,7 +57,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		TIMELOG = fopen(LocalRankFilename,"a+");
 		//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
 		fprintf(TIMELOG,"time rn rw nun nuw Fx Fy Fz iftwn ");				
-		fprintf(TIMELOG,"pnc pnd pni pwc pwd pwi ");				// pressures 
+		fprintf(TIMELOG,"pwc pwd pnc pnd ");						// pressures 
 		fprintf(TIMELOG,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 		fprintf(TIMELOG,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
 		fprintf(TIMELOG,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y ");			
@@ -76,6 +76,25 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 SubPhase::~SubPhase()
 {
     if ( TIMELOG!=NULL ) { fclose(TIMELOG); }
+
+}
+
+void SubPhase::Write()
+{
+	if (Dm->rank()==0){
+		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwc.p, gwd.p, gnc.p, gnd.p);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
+
+		fflush(TIMELOG);
+	}
+	else{
+		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wc.p, wd.p, nc.p, nd.p);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
+
+		fflush(TIMELOG);
+	}
 
 }
 
