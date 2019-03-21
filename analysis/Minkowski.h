@@ -2,14 +2,15 @@
 #ifndef Minkowski_INC
 #define Minkowski_INC
 
+#include <memory>
 #include <vector>
 
 #include "analysis/dcel.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
+#include "analysis/distance.h"
 
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
@@ -30,7 +31,8 @@ class Minkowski{
 public:
 	//...........................................................................
 	std::shared_ptr <Domain> Dm;
-	Array <char> label;
+	Array <char> id;
+	Array <int> label;
 	Array <double> distance;
 	//...........................................................................
 	// Averaging variables
@@ -42,15 +44,25 @@ public:
 
 	//...........................................................................
 	int Nx,Ny,Nz;
-	double V();
-	double A();
-	double J();
-	double X();
+	double V(){
+		return Vi;
+	}
+	double A(){
+		return Ai;
+	}
+	double H(){
+		return Ji;
+	}
+	double X(){
+		return Xi;
+	}
 		
 	//..........................................................................
 	Minkowski(){};//NULL CONSTRUCTOR
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
+	void MeasureObject();
+	void MeasureConnectedPathway();
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
 
 	void PrintAll();

@@ -1,16 +1,17 @@
 #include "analysis/TwoPhase.h"
 
 #include "analysis/pmmc.h"
+#include "analysis/analysis.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "analysis/analysis.h"
-
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
+
+#include <memory>
+
 
 #define BLOB_AVG_COUNT 35
 
@@ -1199,8 +1200,8 @@ void TwoPhase::PrintAll(int timestep)
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw_global, wwnsdnwn_global, Jwnwwndnw_global);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->V(), wet_morph->A(), wet_morph->J(), wet_morph->X());
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->V(), nonwet_morph->A(), nonwet_morph->J(), nonwet_morph->X());
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->V(), wet_morph->A(), wet_morph->H(), wet_morph->X());
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->V(), nonwet_morph->A(), nonwet_morph->H(), nonwet_morph->X());
 //		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}

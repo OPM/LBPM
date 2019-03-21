@@ -232,13 +232,21 @@ void ScaLBL_MRTModel::Run(){
 			Morphology.ComputeScalar(Distance,0.f);
 			//Morphology.PrintAll();
 			double mu = (tau-0.5)/3.f;
+			double Vs = Morphology.V();
+			double As = Morphology.A();
+			double Hs = Morphology.H();
+			double Xs = Morphology.X();
+			Vs=sumReduce( Dm->Comm, Vs);
+			As=sumReduce( Dm->Comm, As);
+			Hs=sumReduce( Dm->Comm, Hs);
+			Xs=sumReduce( Dm->Comm, Xs);
 			if (rank==0) {
 				double h = Lz/double(Nz);
 				double absperm = h*h*mu*sqrt(vax*vax+vay*vay+vaz*vaz)/sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz, absperm);
+						Vs,As,Hs,Xs,vax,vay,vaz, absperm);
 				fclose(log_file);
 			}
 		}
