@@ -100,7 +100,7 @@ public:
 	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double beta);
 	void Basic();
 	void Full();
-	void Write();
+	void Write(int time);
 	
 private:
 	FILE *TIMELOG;

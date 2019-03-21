@@ -79,7 +79,7 @@ SubPhase::~SubPhase()
 
 }
 
-void SubPhase::Write()
+void SubPhase::Write(int timestep)
 {
 	if (Dm->rank()==0){
 		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
