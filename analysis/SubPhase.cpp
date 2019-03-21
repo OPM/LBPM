@@ -85,14 +85,30 @@ void SubPhase::Write(int timestep)
 		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
-
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Px, gwd.Px, giwn.Px, gnc.Px, gnd.Px, giwn.Px);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Py, gwd.Py, giwn.Py, gnc.Py, gnd.Py, giwn.Py);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Pz, gwd.Pz, giwn.Pz, gnc.Pz, gnd.Pz, giwn.Pz);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwc.V, gwc.A, gwc.H, gwc.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwd.V, gwd.A, gwd.H, gwd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gnc.V, gnc.A, gnc.H, gnc.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gnd.V, gnd.A, gnd.H, gnd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",giwn.V, giwn.A, giwn.H, giwn.X);
 		fflush(TIMELOG);
 	}
 	else{
 		fprintf(TIMELOG,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wc.p, wd.p, nc.p, nd.p);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
-
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Px, nc.Px, nd.Px, iwn.Px);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Py, nc.Py, nd.Py, iwn.Py);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pz, nc.Pz, nd.Pz, iwn.Pz);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wc.V, wc.A, wc.H, wc.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wd.V, wd.A, wd.H, wd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",nc.V, nc.A, nc.H, nc.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",nd.V, nd.A, nd.H, nd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",iwn.V, iwn.A, iwn.H, iwn.X);
 		fflush(TIMELOG);
 	}
 
