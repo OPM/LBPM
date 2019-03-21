@@ -34,7 +34,7 @@ public:
     void run( int timestep, TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
     
-    void subphase( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
+    void basic( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
 
     //! Finish all active analysis
     void finish();

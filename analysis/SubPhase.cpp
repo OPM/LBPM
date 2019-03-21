@@ -92,7 +92,7 @@ void SubPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, dou
 	beta = B;
 }
 
-void SubPhase::BulkAverage(){
+void SubPhase::Basic(){
 	int i,j,k,n,imin,jmin,kmin,kmax;
 
 	// If external boundary conditions are set, do not average over the inlet
@@ -254,7 +254,7 @@ inline void InterfaceTransportMeasures( double beta, double rA, double rB, doubl
 
 }
 
-void SubPhase::FullAnalysis(){
+void SubPhase::Full(){
 	int i,j,k,n,imin,jmin,kmin,kmax;
 
 	// If external boundary conditions are set, do not average over the inlet

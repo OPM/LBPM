@@ -98,8 +98,8 @@ public:
 	~SubPhase();
 	
 	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double beta);
-	void BulkAverage();
-	void FullAnalysis();
+	void Basic();
+	void Full();
 	
 private:
 	FILE *TIMELOG;

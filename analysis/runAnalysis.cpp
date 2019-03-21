@@ -331,12 +331,12 @@ private:
 };
 
 
-class SubphaseWorkItem: public ThreadPool::WorkItemRet<void>
+class BasicWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	SubphaseWorkItem( AnalysisType type_, int timestep_, SubPhase& Averages_ ):
+	BasicWorkItem( AnalysisType type_, int timestep_, SubPhase& Averages_ ):
                 type(type_), timestep(timestep_), Averages(Averages_){ }
-    ~SubphaseWorkItem() { }
+    ~BasicWorkItem() { }
     virtual void run() {
 
         if ( matches(type,AnalysisType::CopyPhaseIndicator) ) {
@@ -344,12 +344,12 @@ public:
         }
         if ( matches(type,AnalysisType::ComputeAverages) ) {
             PROFILE_START("Compute subphase",1);
-            Averages.BulkAverage();
+            Averages.Basic();
             PROFILE_STOP("Compute subphase",1);
         }
     }
 private:
-    SubphaseWorkItem();
+    BasicWorkItem();
     AnalysisType type;
     int timestep;
     SubPhase& Averages;
@@ -797,7 +797,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::subphase( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
@@ -845,7 +845,7 @@ void runAnalysis::subphase( int timestep, SubPhase &Averages, const double *Phi,
     //if (timestep%d_restart_interval==0){
     // if ( matches(type,AnalysisType::ComputeAverages) ) {
     if ( timestep%d_analysis_interval == 0 ) {
-        auto work = new SubphaseWorkItem(type,timestep,Averages);
+        auto work = new BasicWorkItem(type,timestep,Averages);
         work->add_dependency(d_wait_analysis);    // Make sure we are done using analysis before modifying
         d_wait_analysis = d_tpool.add_work(work);
     }
