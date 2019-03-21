@@ -405,11 +405,11 @@ void SubPhase::Full(){
 					morph_i->id(i,j,k) = 1;
 				}
 				else if (DelPhi(n) > 1e-4){
-					// wetting phase
+					// interface
 					morph_i->id(i,j,k) = 0;
 				}
 				else {
-					// non-wetting phase
+					// not interface
 					morph_i->id(i,j,k) = 1;
 				}
 			}
@@ -438,7 +438,7 @@ void SubPhase::Full(){
 					// compute density
 					double nA = Rho_n(n);
 					double nB = Rho_w(n);
-					double phi = (rho_n-rho_w)/(rho_n+rho_w);
+					double phi = (nA-nB)/(nA+nB);
 					double ux = Vel_x(n);
 					double uy = Vel_y(n);
 					double uz = Vel_z(n);

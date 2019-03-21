@@ -415,11 +415,11 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_MORPH = false;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
-	int RAMP_TIMESTEPS = 50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
+	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int morph_interval = 1000000;
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
-	double morph_delta = 0.0;
 	int morph_timesteps = 0;
+	double morph_delta = 0.0;
 	double capillary_number = 0.0;
 	double tolerance = 0.01;
 	double Ca_previous = 0.f;

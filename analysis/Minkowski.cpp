@@ -169,9 +169,11 @@ void Minkowski::MeasureConnectedPathway(){
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				id(i,j,k) = 1;
 				if (id(i,j,k) == LABEL && label(i,j,k) == 0){
 					id(i,j,k) = 0;
+				}
+				else{
+					id(i,j,k) = 1;
 				}
 			}
 		}
