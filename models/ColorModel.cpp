@@ -581,6 +581,8 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
 					Averages->Full();
+					Averages->Write(timestep);
+					
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
