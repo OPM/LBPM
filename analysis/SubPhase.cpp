@@ -409,7 +409,7 @@ void SubPhase::FullAnalysis(){
 	giwn.V=sumReduce( Dm->Comm, iwn.V);
 	giwn.A=sumReduce( Dm->Comm, iwn.A);
 	giwn.H=sumReduce( Dm->Comm, iwn.H);
-	giwn.X=sumReduce( Dm->Comm, .X);
+	giwn.X=sumReduce( Dm->Comm, iwn.X);
 	
 	double vol_nc_bulk = 0.0;
 	double vol_wc_bulk = 0.0;
