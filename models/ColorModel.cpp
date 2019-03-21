@@ -551,7 +551,7 @@ void ScaLBL_ColorModel::Run(){
 	       
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		analysis.subphase( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.basic( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
@@ -580,7 +580,7 @@ void ScaLBL_ColorModel::Run(){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
-					analysis.
+					Averages->Full();
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
