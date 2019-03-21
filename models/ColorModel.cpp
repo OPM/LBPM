@@ -558,14 +558,14 @@ void ScaLBL_ColorModel::Run(){
 			analysis.finish();
 			if ( morph_timesteps > morph_interval ){
 
-				double volB = Averages->wb.V; 
-				double volA = Averages->nb.V; 
-				double vA_x = Averages->nb.Px/Averages->nb.M; 
-				double vA_y = Averages->nb.Py/Averages->nb.M; 
-				double vA_z = Averages->nb.Pz/Averages->nb.M; 
-				double vB_x = Averages->wb.Px/Averages->nb.M; 
-				double vB_y = Averages->wb.Py/Averages->nb.M; 
-				double vB_z = Averages->wb.Pz/Averages->nb.M;
+				double volB = Averages->gwb.V; 
+				double volA = Averages->gnb.V; 
+				double vA_x = Averages->gnb.Px/Averages->gnb.M; 
+				double vA_y = Averages->gnb.Py/Averages->gnb.M; 
+				double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
+				double vB_x = Averages->gwb.Px/Averages->gnb.M; 
+				double vB_y = Averages->gwb.Py/Averages->gnb.M; 
+				double vB_z = Averages->gwb.Pz/Averages->gnb.M;
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
