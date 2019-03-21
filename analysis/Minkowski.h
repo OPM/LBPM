@@ -2,6 +2,7 @@
 #ifndef Minkowski_INC
 #define Minkowski_INC
 
+#include <memory>
 #include <vector>
 
 #include "analysis/dcel.h"
@@ -10,7 +11,6 @@
 #include "analysis/analysis.h"
 #include "analysis/distance.h"
 
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"

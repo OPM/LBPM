@@ -4,8 +4,8 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
+#include <memory>
 
-#include "shared_ptr.h"
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"

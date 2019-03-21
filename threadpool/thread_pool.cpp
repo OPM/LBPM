@@ -1,8 +1,10 @@
-#define _CRT_NONSTDC_NO_DEPRECATE
 #include "threadpool/thread_pool.h"
 #include "common/Utilities.h"
-#include "common/StackTrace.h"
+#include "StackTrace/StackTrace.h"
+#include "StackTrace/Utilities.h"
+
 #include "ProfilerApp.h"
+
 #include <algorithm>
 #include <bitset>
 #include <chrono>
@@ -10,9 +12,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <thread>
 #include <typeinfo>
+
+
+// Add profile timers or performance counters to the threadpool
+#define PROFILE_THREADPOOL_PERFORMANCE 0
+#define MONITOR_THREADPOOL_PERFORMANCE 0
 
 
 #define perr std::cerr
@@ -34,7 +42,6 @@
 #if defined( USE_WINDOWS )
     #include <process.h>
     #include <windows.h>
-    #define NOMINMAX
     // Disable warning: the inline specifier cannot be used when a friend
     // declaration refers to a specialization of a function template
     #pragma warning( disable : 4396 )
@@ -62,35 +69,57 @@
 
 
 // Set some macros
-#if PROFILE_THREADPOOL_PERFORMANCE
-#define PROFILE_THREADPOOL_START( X ) PROFILE_START( X, 3 )
-#define PROFILE_THREADPOOL_START2( X ) PROFILE_START2( X, 3 )
-#define PROFILE_THREADPOOL_STOP( X ) PROFILE_STOP( X, 3 )
-#define PROFILE_THREADPOOL_STOP2( X ) PROFILE_STOP2( X, 3 )
+// clang-format off
+#if PROFILE_THREADPOOL_PERFORMANCE == 1
+#define PROFILE_THREADPOOL_START(X)  PROFILE_START(X,3)
+#define PROFILE_THREADPOOL_START2(X) PROFILE_START2(X,3)
+#define PROFILE_THREADPOOL_STOP(X)   PROFILE_STOP(X,3)
+#define PROFILE_THREADPOOL_STOP2(X)  PROFILE_STOP2(X,3)
 #else
-#define PROFILE_THREADPOOL_START( X ) \
-    do {                              \
-    } while ( 0 )
-#define PROFILE_THREADPOOL_START2( X ) \
-    do {                               \
-    } while ( 0 )
-#define PROFILE_THREADPOOL_STOP( X ) \
-    do {                             \
-    } while ( 0 )
-#define PROFILE_THREADPOOL_STOP2( X ) \
-    do {                              \
-    } while ( 0 )
+#define PROFILE_THREADPOOL_START(X)  do {} while ( 0 )
+#define PROFILE_THREADPOOL_START2(X) do {} while ( 0 )
+#define PROFILE_THREADPOOL_STOP(X)   do {} while ( 0 )
+#define PROFILE_THREADPOOL_STOP2(X)  do {} while ( 0 )
 #endif
 #if MONITOR_THREADPOOL_PERFORMANCE == 1
-#define accumulate( x, t1, t2 )   \
-    AtomicOperations::atomic_add( \
-        &x, std::chrono::duration_cast<std::chrono::nanoseconds>( t2 - t1 ).count() );
+#define accumulate(x,t1,t2)  AtomicOperations::atomic_add( \
+    &x, std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count() );
 #endif
+// clang-format on
 
 
 #if MONITOR_THREADPOOL_PERFORMANCE == 1
 static AtomicOperations::int64_atomic total_add_work_time[5] = { 0, 0, 0, 0, 0 };
 #endif
+
+
+// Set env
+static std::mutex Utilities_mutex;
+void setenv( const std::string &name, const std::string &value )
+{
+    Utilities_mutex.lock();
+#if defined( USE_LINUX ) || defined( USE_MAC )
+    bool pass = false;
+    if ( value.empty() )
+        pass = ::setenv( name.data(), value.data(), 1 ) == 0;
+    else
+        pass = ::unsetenv( name.data() ) == 0;
+#elif defined( USE_WINDOWS )
+    bool pass = SetEnvironmentVariable( name.data(), value.data() ) != 0;
+#else
+#error Unknown OS
+#endif
+    Utilities_mutex.unlock();
+    if ( !pass ) {
+        char msg[1024];
+        if ( !value.empty() )
+            sprintf(
+                msg, "Error setting enviornmental variable: %s=%s\n", name.data(), value.data() );
+        else
+            sprintf( msg, "Error clearing enviornmental variable: %s\n", name.data() );
+        ERROR( msg );
+    }
+}
 
 
 // Helper functions
@@ -99,31 +128,24 @@ void quicksort( int N, T *data );
 template<class T>
 inline void quicksort( std::vector<T> &x )
 {
-    quicksort( (int) x.size(), x.data() );
+    quicksort( x.size(), x.data() );
 }
 static inline int find_id( int, const ThreadPool::thread_id_t *, const ThreadPool::thread_id_t & );
 
 
-// Function to generate a random size_t number (excluding 0 and ~0)
-static size_t rand_size_t()
+// Function to generate a random number for checking if tpool is valid
+static inline bool validHeadTail( uint32_t key )
 {
-    size_t key = 0;
-    double tmp = 1;
-    if ( sizeof( size_t ) == 4 ) {
-        while ( tmp < 4e9 ) {
-            key ^= rand() * 0x9E3779B9; // 2^32*0.5*(sqrt(5)-1)
-            tmp *= RAND_MAX;
-        }
-    } else if ( sizeof( size_t ) == 8 ) {
-        while ( tmp < 1.8e19 ) {
-            key ^= rand() * 0x9E3779B97F4A7C15; // 2^64*0.5*(sqrt(5)-1)
-            tmp *= RAND_MAX;
-        }
-    } else {
-        throw std::logic_error( "Unhandled case" );
-    }
-    if ( key == 0 || ( ~key ) == 0 )
-        key = rand_size_t();
+    return ( key > 10 ) && ( ~key > 10 ) && ( key % 2 != 0 ) && ( key % 3 == 2 );
+}
+static inline uint32_t generateHeadTail()
+{
+    uint32_t key = 0;
+    std::random_device rd;
+    std::mt19937 gen( rd() );
+    std::uniform_int_distribution<> dis( 1, 0xFFFFFF );
+    while ( !validHeadTail( key ) )
+        key = static_cast<uint32_t>( dis( gen ) ) * 0x9E3779B9; // 2^32*0.5*(sqrt(5)-1)
     return key;
 }
 
@@ -131,22 +153,10 @@ static size_t rand_size_t()
 /******************************************************************
  * Run some basic compile-time checks                              *
  ******************************************************************/
-#if MAX_NUM_THREADS % 64 != 0
-// We use a bit array for d_active and d_cancel
-#error MAX_NUM_THREADS must be a multiple of 64
-#endif
-#if MAX_NUM_THREADS >= 65535
-// We store N_threads as a short int
-#error MAX_NUM_THREADS must < 65535
-#endif
-#if MAX_QUEUED >= 65535
-// We store the indicies to the queue list as short ints
-#error MAX_QUEUED must < 65535
-#endif
-// Check the c++ std
-#if CXX_STD == 98
-#error Thread pool class requires c++11 or newer
-#endif
+static_assert( ThreadPool::MAX_THREADS % 64 == 0, "MAX_THREADS must be a multiple of 64" );
+static_assert( ThreadPool::MAX_THREADS < 65535, "MAX_THREADS must < 65535" );
+static_assert( sizeof( AtomicOperations::int32_atomic ) == 4, "atomic32 must be a 32-bit integer" );
+static_assert( sizeof( AtomicOperations::int64_atomic ) == 8, "atomic64 must be a 64-bit integer" );
 
 
 /******************************************************************
@@ -181,7 +191,7 @@ static inline bool get_bit( const volatile AtomicOperations::int64_atomic *x, si
     uint64_t mask = 0x01;
     mask <<= index % 64;
     // This is thread-safe since we only care about a single bit
-    AtomicOperations::int64_atomic y = x[index / 64]; 
+    AtomicOperations::int64_atomic y = x[index / 64];
     return ( y & mask ) != 0;
 }
 
@@ -214,18 +224,15 @@ static inline int count_bits( int_type x )
 /******************************************************************
  * Set the global constants                                        *
  ******************************************************************/
-constexpr int ThreadPool::MAX_NUM_THREADS;
-constexpr int ThreadPool::MAX_QUEUED;
-constexpr int ThreadPool::MAX_WAIT;
-constexpr bool ThreadPool::PROFILE_THREADPOOL_PERFORMANCE;
-constexpr bool ThreadPool::MONITOR_THREADPOOL_PERFORMANCE;
+constexpr uint16_t ThreadPool::MAX_THREADS;
+constexpr uint16_t ThreadPool::MAX_WAIT;
 
 
 /******************************************************************
  * Set the behavior of OS warnings                                 *
  ******************************************************************/
 static int global_OS_behavior = 0;
-std::mutex OS_warning_mutex;
+static std::mutex OS_warning_mutex;
 void ThreadPool::set_OS_warnings( int behavior )
 {
     ASSERT( behavior >= 0 && behavior <= 2 );
@@ -249,18 +256,7 @@ void ThreadPool::setErrorHandler( std::function<void( const std::string & )> fun
 /******************************************************************
  * Function to return the number of processors availible           *
  ******************************************************************/
-int ThreadPool::getNumberOfProcessors()
-{
-#if defined( USE_LINUX ) || defined( USE_MAC )
-    return sysconf( _SC_NPROCESSORS_ONLN );
-#elif defined( USE_WINDOWS )
-    SYSTEM_INFO sysinfo;
-    GetSystemInfo( &sysinfo );
-    return static_cast<int>( sysinfo.dwNumberOfProcessors );
-#else
-#error Unknown OS
-#endif
-}
+int ThreadPool::getNumberOfProcessors() { return std::thread::hardware_concurrency(); }
 
 
 /******************************************************************
@@ -293,19 +289,17 @@ std::vector<int> ThreadPool::getProcessAffinity()
     int error = sched_getaffinity( getpid(), sizeof( cpu_set_t ), &mask );
     if ( error != 0 )
         throw std::logic_error( "Error getting process affinity" );
-    for ( int i = 0; i < (int) sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
         if ( CPU_ISSET( i, &mask ) )
             procs.push_back( i );
     }
 #else
 #warning sched_getaffinity is not supported for this compiler/OS
     OS_warning( "sched_getaffinity is not supported for this compiler/OS" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
     OS_warning( "MAC does not support getting the process affinity" );
-    procs.clear();
 #elif defined( USE_WINDOWS )
     HANDLE hProc = GetCurrentProcess();
     size_t procMask;
@@ -313,7 +307,7 @@ std::vector<int> ThreadPool::getProcessAffinity()
     PDWORD_PTR procMaskPtr = reinterpret_cast<PDWORD_PTR>( &procMask );
     PDWORD_PTR sysMaskPtr  = reinterpret_cast<PDWORD_PTR>( &sysMask );
     GetProcessAffinityMask( hProc, procMaskPtr, sysMaskPtr );
-    for ( int i = 0; i < (int) sizeof( size_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( size_t ) * CHAR_BIT; i++ ) {
         if ( ( procMask & 0x1 ) != 0 )
             procs.push_back( i );
         procMask >>= 1;
@@ -323,7 +317,7 @@ std::vector<int> ThreadPool::getProcessAffinity()
 #endif
     return procs;
 }
-void ThreadPool::setProcessAffinity( std::vector<int> procs )
+void ThreadPool::setProcessAffinity( const std::vector<int> &procs )
 {
 #ifdef USE_LINUX
 #ifdef _GNU_SOURCE
@@ -337,12 +331,10 @@ void ThreadPool::setProcessAffinity( std::vector<int> procs )
 #else
 #warning sched_setaffinity is not supported for this compiler/OS
     OS_warning( "sched_setaffinity is not supported for this compiler/OS" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
     OS_warning( "MAC does not support setting the process affinity" );
-    procs.clear();
 #elif defined( USE_WINDOWS )
     DWORD mask = 0;
     for ( size_t i = 0; i < procs.size(); i++ )
@@ -365,7 +357,7 @@ DWORD GetThreadAffinityMask( HANDLE thread )
     DWORD old  = 0;
     // try every CPU one by one until one works or none are left
     while ( mask ) {
-        old = static_cast<DWORD>( SetThreadAffinityMask( thread, mask ) );
+        old = SetThreadAffinityMask( thread, mask );
         if ( old ) {                              // this one worked
             SetThreadAffinityMask( thread, old ); // restore original
             return old;
@@ -375,7 +367,6 @@ DWORD GetThreadAffinityMask( HANDLE thread )
         }
         mask <<= 1;
     }
-
     return 0;
 }
 #endif
@@ -388,22 +379,20 @@ std::vector<int> ThreadPool::getThreadAffinity()
     int error = pthread_getaffinity_np( pthread_self(), sizeof( cpu_set_t ), &mask );
     if ( error != 0 )
         throw std::logic_error( "Error getting thread affinity" );
-    for ( int i = 0; i < (int) sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
         if ( CPU_ISSET( i, &mask ) )
             procs.push_back( i );
     }
 #else
 #warning pthread_getaffinity_np is not supported
     OS_warning( "pthread does not support pthread_getaffinity_np" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
     OS_warning( "MAC does not support getting the thread affinity" );
-    procs.clear();
 #elif defined( USE_WINDOWS )
     size_t procMask = GetThreadAffinityMask( GetCurrentThread() );
-    for ( int i = 0; i < (int) sizeof( size_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( size_t ) * CHAR_BIT; i++ ) {
         if ( ( procMask & 0x1 ) != 0 )
             procs.push_back( i );
         procMask >>= 1;
@@ -418,30 +407,28 @@ std::vector<int> ThreadPool::getThreadAffinity( int thread ) const
     if ( thread >= getNumThreads() )
         std::logic_error( "Invalid thread number" );
     std::vector<int> procs;
-    auto handle = const_cast<std::thread &>( d_thread[thread] ).native_handle();
 #ifdef USE_LINUX
 #ifdef _GNU_SOURCE
+    auto handle = const_cast<std::thread &>( d_thread[thread] ).native_handle();
     cpu_set_t mask;
     int error = pthread_getaffinity_np( handle, sizeof( cpu_set_t ), &mask );
     if ( error != 0 )
         throw std::logic_error( "Error getting thread affinity" );
-    for ( int i = 0; i < (int) sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( cpu_set_t ) * CHAR_BIT; i++ ) {
         if ( CPU_ISSET( i, &mask ) )
             procs.push_back( i );
     }
 #else
 #warning pthread_getaffinity_np is not supported
     OS_warning( "pthread does not support pthread_getaffinity_np" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
-    NULL_USE( handle );
     OS_warning( "MAC does not support getting the thread affinity" );
-    procs.clear();
 #elif defined( USE_WINDOWS )
+    auto handle     = const_cast<std::thread &>( d_thread[thread] ).native_handle();
     size_t procMask = GetThreadAffinityMask( handle );
-    for ( int i = 0; i < (int) sizeof( size_t ) * CHAR_BIT; i++ ) {
+    for ( size_t i = 0; i < sizeof( size_t ) * CHAR_BIT; i++ ) {
         if ( ( procMask & 0x1 ) != 0 )
             procs.push_back( i );
         procMask >>= 1;
@@ -456,7 +443,7 @@ std::vector<int> ThreadPool::getThreadAffinity( int thread ) const
 /******************************************************************
  * Function to set the thread affinity                             *
  ******************************************************************/
-void ThreadPool::setThreadAffinity( std::vector<int> procs )
+void ThreadPool::setThreadAffinity( const std::vector<int> &procs )
 {
 #ifdef USE_LINUX
 #ifdef _GNU_SOURCE
@@ -470,7 +457,6 @@ void ThreadPool::setThreadAffinity( std::vector<int> procs )
 #else
 #warning pthread_getaffinity_np is not supported
     OS_warning( "pthread does not support pthread_setaffinity_np" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
@@ -485,34 +471,33 @@ void ThreadPool::setThreadAffinity( std::vector<int> procs )
 #error Unknown OS
 #endif
 }
-void ThreadPool::setThreadAffinity( int thread, std::vector<int> procs ) const
+void ThreadPool::setThreadAffinity( int thread, const std::vector<int> &procs ) const
 {
     if ( thread >= getNumThreads() )
         std::logic_error( "Invalid thread number" );
-    auto handle = const_cast<std::thread &>( d_thread[thread] ).native_handle();
 #ifdef USE_LINUX
 #ifdef __USE_GNU
     cpu_set_t mask;
     CPU_ZERO( &mask );
     for ( size_t i = 0; i < procs.size(); i++ )
         CPU_SET( procs[i], &mask );
-    int error = pthread_setaffinity_np( handle, sizeof( cpu_set_t ), &mask );
+    auto handle = const_cast<std::thread &>( d_thread[thread] ).native_handle();
+    int error   = pthread_setaffinity_np( handle, sizeof( cpu_set_t ), &mask );
     if ( error != 0 )
         throw std::logic_error( "Error setting thread affinity" );
 #else
 #warning pthread_getaffinity_np is not supported
     OS_warning( "pthread does not support pthread_setaffinity_np" );
-    procs.clear();
 #endif
 #elif defined( USE_MAC )
     // MAC does not support getting or setting the affinity
-    NULL_USE( handle );
     NULL_USE( procs );
     OS_warning( "MAC does not support getting the process affinity" );
 #elif defined( USE_WINDOWS )
     DWORD mask = 0;
     for ( size_t i = 0; i < procs.size(); i++ )
         mask |= ( (DWORD) 1 ) << procs[i];
+    auto handle = const_cast<std::thread &>( d_thread[thread] ).native_handle();
     SetThreadAffinityMask( handle, mask );
 #else
 #error Unknown OS
@@ -523,22 +508,10 @@ void ThreadPool::setThreadAffinity( int thread, std::vector<int> procs ) const
 /******************************************************************
  * Function to perform some basic checks before we start           *
  ******************************************************************/
-void ThreadPool::check_startup( size_t size0 )
+void ThreadPool::check_startup()
 {
-    // Check the size of the class to make sure that we don't have any
-    // byte alignment problems between a library implimentation and a calling pacakge
-    size_t size1 = sizeof( ThreadPool );
-    size_t size2 = ( (size_t) &d_NULL_HEAD ) - ( (size_t) this ) + sizeof( size_t );
-    size_t size3 = ( (size_t) &d_NULL_TAIL ) - ( (size_t) this ) + sizeof( size_t );
-    if ( size0 != size1 || size1 < size2 || size1 < size3 )
-        throw std::logic_error( "Internal data format problem" );
-    // Check the size of variables
-    if ( sizeof( AtomicOperations::int32_atomic ) != 4 )
-        throw std::logic_error( "AtomicOperations::int32_atomic is not 32 bits" );
-    if ( sizeof( AtomicOperations::int64_atomic ) != 8 )
-        throw std::logic_error( "AtomicOperations::int32_atomic is not 64 bits" );
     // Check getting/setting a bit
-    atomic_64 x[2] = { 0x0, 0x7 };
+    AtomicOperations::int64_atomic x[2] = { 0x0, 0x7 };
     set_bit( x, 2 );
     unset_bit( x, 66 );
     if ( x[0] != 4 || x[1] != 3 || !get_bit( x, 2 ) || get_bit( x, 66 ) )
@@ -578,17 +551,21 @@ void ThreadPool::check_startup( size_t size0 )
     if ( isValid( id ) || !isValid( id2 ) )
         pass = false;
     if ( !pass )
-        throw std::logic_error( "Thread pool failed to initialize" );
+        throw std::logic_error( "thread id test failed" );
 }
 
 
 /******************************************************************
- * Function to initialize the thread pool                          *
+ * Constructors/destructor                                         *
  ******************************************************************/
-void ThreadPool::initialize( const int N, const char *affinity, int N_procs, const int *procs )
+ThreadPool::ThreadPool(
+    const int N, const std::string &affinity, const std::vector<int> &procs, int queueSize )
+    : d_queue_list( queueSize )
 {
+    // Run some basic tests on startup
+    check_startup();
     // Initialize the header/tail
-    d_NULL_HEAD = rand_size_t();
+    d_NULL_HEAD = generateHeadTail();
     d_NULL_TAIL = d_NULL_HEAD;
     // Initialize the variables to NULL values
     d_id_assign     = 0;
@@ -600,31 +577,31 @@ void ThreadPool::initialize( const int N, const char *affinity, int N_procs, con
     d_N_started     = 0;
     d_N_finished    = 0;
     d_max_wait_time = 600;
-    memset( (void *) d_active, 0, MAX_NUM_THREADS / 8 );
-    memset( (void *) d_cancel, 0, MAX_NUM_THREADS / 8 );
+    memset( (void *) d_active, 0, MAX_THREADS / 8 );
+    memset( (void *) d_cancel, 0, MAX_THREADS / 8 );
     d_wait_last = nullptr;
     for ( auto &i : d_wait )
         i = nullptr;
     // Initialize the id
     d_id_assign = thread_id_t::maxThreadID;
     // Create the threads
-    setNumThreads( N, affinity, N_procs, procs );
+    setNumThreads( N, affinity, procs );
+    // Verify that the threadpool is valid
+    if ( !is_valid( this ) )
+        throw std::logic_error( "Thread pool is not valid" );
 }
-
-
-/******************************************************************
- * This is the de-constructor                                      *
- ******************************************************************/
 ThreadPool::~ThreadPool()
 {
     DISABLE_WARNINGS
-    if ( !is_valid( this ) )
-        throw std::logic_error( "Thread pool is not valid" );
+    if ( !is_valid( this ) ) {
+        std::cerr << "Thread pool is not valid, error calling destructor\n";
+        return;
+    }
     ENABLE_WARNINGS
     // Destroy the threads
     setNumThreads( 0 );
     // Delete all remaining data
-    d_N_threads = -1;
+    d_N_threads = ~0;
     d_NULL_HEAD = 0;
     d_NULL_TAIL = 0;
     delete d_wait_last;
@@ -645,9 +622,9 @@ bool ThreadPool::is_valid( const ThreadPool *tpool )
 {
     if ( tpool == nullptr )
         return false;
-    if ( tpool->d_N_threads < 0 || tpool->d_N_threads > MAX_NUM_THREADS )
+    if ( tpool->d_N_threads > MAX_THREADS )
         return false;
-    if ( tpool->d_NULL_HEAD == 0 || tpool->d_NULL_HEAD != tpool->d_NULL_TAIL )
+    if ( !validHeadTail( tpool->d_NULL_HEAD ) || tpool->d_NULL_HEAD != tpool->d_NULL_TAIL )
         return false;
     return true;
 }
@@ -657,17 +634,17 @@ bool ThreadPool::is_valid( const ThreadPool *tpool )
  * This function creates the threads in the thread pool            *
  ******************************************************************/
 void ThreadPool::setNumThreads(
-    int num_worker_threads, const char *affinity2, int N_procs, const int *procs )
+    int num_worker_threads, const std::string &affinity, const std::vector<int> &procs )
 {
     // Check if we are a member thread
     if ( isMemberThread() )
         throw std::logic_error(
             "Member threads are not allowed to change the number of threads in the pool" );
     // Determing the number of threads we need to create or destroy
-    if ( num_worker_threads > MAX_NUM_THREADS ) {
-        printp( "Warning: Maximum Number of Threads is %i\n", MAX_NUM_THREADS );
+    if ( num_worker_threads > MAX_THREADS ) {
+        printp( "Warning: Maximum Number of Threads is %i\n", MAX_THREADS );
         printp( "         Only that number will be created\n" );
-        num_worker_threads = MAX_NUM_THREADS;
+        num_worker_threads = MAX_THREADS;
     } else if ( num_worker_threads < 0 ) {
         printp( "Error: cannot have a negitive number of threads\n" );
         printp( "       Setting the number of threads to 0\n" );
@@ -681,23 +658,10 @@ void ThreadPool::setNumThreads(
                 throw std::logic_error(
                     "Threads are being created and destroyed at the same time" );
         }
-// Create the thread attributes (linux only)
-#if defined( USE_LINUX ) || defined( USE_MAC )
-        pthread_attr_t attr;
-        pthread_attr_init( &attr );
-// int ptmp;
-// pthread_attr_setstacksize(&attr,2097152);     // Default stack size is 8MB
-// pthread_attr_setschedpolicy(&attr,1);
-// pthread_attr_getschedpolicy(&attr,&ptmp);
-// pout << "getschedpolicy = " << ptmp << std::endl;
-#endif
         // Create the threads
-        auto tmp = new void *[2 * d_N_threads_diff];
-        int j    = d_N_threads;
+        int j = d_N_threads;
         for ( int i = 0; i < d_N_threads_diff; i++ ) {
             d_N_threads++;
-            tmp[0 + 2 * i] = this;
-            tmp[1 + 2 * i] = reinterpret_cast<void *>( static_cast<size_t>( j ) );
             set_bit( d_cancel, j );
             d_thread[j] = std::thread( create_new_thread, this, j );
             j++;
@@ -713,12 +677,7 @@ void ThreadPool::setNumThreads(
             if ( !wait )
                 break;
         }
-// Delete the thread attributes (linux only)
-#if defined( USE_LINUX ) || defined( USE_MAC )
-        pthread_attr_destroy( &attr );
-#endif
         std::this_thread::sleep_for( std::chrono::milliseconds( 25 ) );
-        delete[] tmp;
     } else if ( d_N_threads_diff < 0 ) {
         // Reduce the number of threads
         if ( num_worker_threads == 0 ) {
@@ -752,15 +711,14 @@ void ThreadPool::setNumThreads(
     } catch ( ... ) {
         pout << "Warning: Unable to get default cpus for thread affinities\n";
     }
-    if ( !cpus.empty() && N_procs > 0 ) {
-        cpus.resize( N_procs );
-        for ( int i = 0; i < N_procs; i++ )
+    if ( !cpus.empty() && !procs.empty() ) {
+        cpus.resize( procs.size() );
+        for ( size_t i = 0; i < procs.size(); i++ )
             cpus[i] = procs[i];
     }
     // Set the affinity model and the associated thread affinities
     // Note: not all OS's support setting the thread affinities
     std::vector<std::vector<int>> t_procs( d_N_threads );
-    std::string affinity( affinity2 );
     if ( cpus.empty() ) {
         // We do not have a list of cpus to use, do nothing (OS not supported)
     } else if ( affinity == "none" ) {
@@ -769,13 +727,13 @@ void ThreadPool::setNumThreads(
             t_procs[i] = cpus;
     } else if ( affinity == "independent" ) {
         // We want to use an independent set of processors for each thread
-        if ( (int) cpus.size() == d_N_threads ) {
+        if ( cpus.size() == d_N_threads ) {
             // The number of cpus matches the number of threads
             for ( int i = 0; i < d_N_threads; i++ )
                 t_procs[i] = std::vector<int>( 1, cpus[i] );
-        } else if ( (int) cpus.size() > d_N_threads ) {
+        } else if ( cpus.size() > d_N_threads ) {
             // There are more cpus than threads, threads will use more the one processor
-            int N_procs_thread = static_cast<int>( cpus.size() + d_N_threads - 1 ) / d_N_threads;
+            int N_procs_thread = ( cpus.size() + d_N_threads - 1 ) / d_N_threads;
             size_t k           = 0;
             for ( int i = 0; i < d_N_threads; i++ ) {
                 for ( int j = 0; j < N_procs_thread && k < cpus.size(); j++ ) {
@@ -785,8 +743,7 @@ void ThreadPool::setNumThreads(
             }
         } else {
             // There are fewer cpus than threads, threads will share a processor
-            auto N_threads_proc =
-                static_cast<int>( ( cpus.size() + d_N_threads - 1 ) / cpus.size() );
+            auto N_threads_proc = ( cpus.size() + d_N_threads - 1 ) / cpus.size();
             for ( int i = 0; i < d_N_threads; i++ )
                 t_procs[i].push_back( cpus[i / N_threads_proc] );
         }
@@ -797,7 +754,7 @@ void ThreadPool::setNumThreads(
     try {
         for ( int i = 0; i < d_N_threads; i++ ) {
             ThreadPool::setThreadAffinity( i, t_procs[i] );
-            std::vector<int> cpus2 = getThreadAffinity( i );
+            auto cpus2 = getThreadAffinity( i );
             if ( cpus2 != t_procs[i] )
                 pout << "Warning: error setting affinities (failed to set)\n";
         }
@@ -823,12 +780,14 @@ void ThreadPool::tpool_thread( int thread_id )
     AtomicOperations::atomic_increment( &d_num_active );
     set_bit( d_active, thread_id );
     unset_bit( d_cancel, thread_id );
+    setenv( "OMP_NUM_THREADS", "1" );
+    setenv( "MKL_NUM_THREADS", "1" );
     if ( printInfo ) {
         // Print the pid
         printp( "pid = %i\n", (int) getpid() );
         // Print the processor affinities for the process
         try {
-            std::vector<int> cpus = ThreadPool::getProcessAffinity();
+            auto cpus = ThreadPool::getProcessAffinity();
             printp( "%i cpus for current thread: ", (int) cpus.size() );
             for ( int cpu : cpus )
                 printp( "%i ", cpu );
@@ -842,7 +801,7 @@ void ThreadPool::tpool_thread( int thread_id )
     shutdown = false;
     while ( !shutdown ) {
         // Check if there is work to do
-        if ( d_queue_list.size() > 0 ) {
+        if ( !d_queue_list.empty() ) {
             // Get next work item to process
             auto work_id =
                 d_queue_list.remove( []( const thread_id_t &id ) { return id.ready(); } );
@@ -890,6 +849,8 @@ void ThreadPool::tpool_thread( int thread_id )
         } else {
             int N_active = AtomicOperations::atomic_decrement( &d_num_active );
             unset_bit( d_active, thread_id );
+            // Yield to give the main thread a chance to update
+            std::this_thread::yield();
             // Alert main thread that a thread finished processing
             if ( ( N_active == 0 ) && d_signal_empty ) {
                 d_wait_finished.notify_all();
@@ -897,7 +858,9 @@ void ThreadPool::tpool_thread( int thread_id )
             }
             // Wait for work
             PROFILE_THREADPOOL_STOP2( "thread active" );
-            d_wait_work.wait_for( 1e-3 );
+            double wait_time = thread_id <= 2 ? 0.01 : 0.1;
+            if ( d_queue_list.empty() )
+                d_wait_work.wait_for( wait_time );
             PROFILE_THREADPOOL_START2( "thread active" );
             AtomicOperations::atomic_increment( &d_num_active );
             set_bit( d_active, thread_id );
@@ -921,13 +884,13 @@ inline void ThreadPool::add_work( const ThreadPool::thread_id_t &id )
     auto work     = id.work();
     work->d_state = 1;
     // Check and change priorities of dependency ids
-    const int priority = id.getPriority();
+    int priority = id.getPriority();
+    auto compare = []( const thread_id_t &a, const thread_id_t &b ) { return a == b; };
     for ( int i = 0; i < work->d_N_ids; i++ ) {
         const auto &id1 = work->d_ids[i];
         if ( !id1.started() && id1 < id ) {
             // Remove and add the id back with a higher priority
-            auto id2 = d_queue_list.remove(
-                []( const thread_id_t &a, const thread_id_t &b ) { return a == b; }, id1 );
+            auto id2 = d_queue_list.remove( compare, id1 );
             id2.setPriority( std::max( priority, id2.getPriority() ) );
             d_queue_list.insert( id2 );
         }
@@ -939,7 +902,7 @@ void ThreadPool::add_work(
     size_t N, ThreadPool::WorkItem *work[], const int *priority, ThreadPool::thread_id_t *ids )
 {
     // If we have a very long list, break it up into smaller pieces to keep the threads busy
-    const size_t block_size = MAX_QUEUED / 8;
+    constexpr size_t block_size = 256;
     if ( N > block_size ) {
         size_t i = 0;
         while ( i < N ) {
@@ -949,13 +912,13 @@ void ThreadPool::add_work(
         return;
     }
     PROFILE_THREADPOOL_START( "add_work" );
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
     auto t1 = std::chrono::high_resolution_clock::now();
 #endif
     // Create the thread ids (can be done without blocking)
     for ( size_t i = 0; i < N; i++ )
         ids[i].reset( priority[i], AtomicOperations::atomic_decrement( &d_id_assign ), work[i] );
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
     auto t2 = std::chrono::high_resolution_clock::now();
     accumulate( total_add_work_time[0], t1, t2 );
 #endif
@@ -966,7 +929,7 @@ void ThreadPool::add_work(
             work[i]->run();
             work[i]->d_state = 3;
         }
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
         auto t5 = std::chrono::high_resolution_clock::now();
         accumulate( total_add_work_time[4], t2, t5 );
 #endif
@@ -974,29 +937,29 @@ void ThreadPool::add_work(
         return;
     }
     // Wait for enough room in the queue (doesn't need blocking since it isn't that precise)
-    if ( N > static_cast<size_t>( MAX_QUEUED - d_queue_list.size() ) ) {
-        auto N_wait = static_cast<int>( N - ( MAX_QUEUED - d_queue_list.size() ) );
+    if ( N > d_queue_list.capacity() - d_queue_list.size() ) {
+        int N_wait = N - ( d_queue_list.capacity() - d_queue_list.size() );
         while ( N_wait > 0 ) {
-            d_signal_count = static_cast<unsigned char>( std::min( N_wait, 255 ) );
+            d_signal_count = std::min<int>( N_wait, 255 );
             d_wait_finished.wait_for( 1e-4 );
-            N_wait = static_cast<int>( N - ( MAX_QUEUED - d_queue_list.size() ) );
+            N_wait = N - ( d_queue_list.capacity() - d_queue_list.size() );
         }
     }
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
     auto t3 = std::chrono::high_resolution_clock::now();
     accumulate( total_add_work_time[1], t2, t3 );
 #endif
     // Get add the work items to the queue
     for ( size_t i = 0; i < N; i++ )
         add_work( ids[i] );
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
     auto t4 = std::chrono::high_resolution_clock::now();
     accumulate( total_add_work_time[2], t3, t4 );
 #endif
     // Activate sleeping threads
     if ( d_num_active == d_N_threads ) {
         // All threads are active, no need to wake anybody
-    } else if ( d_queue_list.size() == 0 ) {
+    } else if ( d_queue_list.empty() ) {
         // Queue is empty, no need to activate
     } else if ( N == 1 ) {
         // Added 1 item to the queue, wake 1 worker
@@ -1005,7 +968,7 @@ void ThreadPool::add_work(
         // Added multple items in the queue, wake all workers
         d_wait_work.notify_all();
     }
-#if MONITOR_THREADPOOL_PERFORMANCE
+#if MONITOR_THREADPOOL_PERFORMANCE == 1
     auto t5 = std::chrono::high_resolution_clock::now();
     accumulate( total_add_work_time[3], t4, t5 );
 #endif
@@ -1026,8 +989,8 @@ static inline void check_finished(
         }
     }
 }
-int ThreadPool::wait_some(
-    size_t N_work, const ThreadPool::thread_id_t *ids, size_t N_wait, bool *finished ) const
+int ThreadPool::wait_some( size_t N_work, const ThreadPool::thread_id_t *ids, size_t N_wait,
+    bool *finished, int max_wait ) const
 {
     // Check the inputs
     if ( N_wait > N_work )
@@ -1056,13 +1019,21 @@ int ThreadPool::wait_some(
     auto tmp = new wait_ids_struct( N_work, ids, N_wait, d_cond_pool, MAX_WAIT, d_wait );
     // Wait for the ids
     auto t1 = std::chrono::high_resolution_clock::now();
-    while ( !tmp->wait_for( 0.01 ) ) {
-        check_wait_time( t1 );
+    auto t2 = t1;
+    int dt1 = 0;
+    while ( dt1 < max_wait ) {
+        if ( tmp->wait_for( std::min( max_wait, d_max_wait_time ), 0.01 ) )
+            break;
+        auto t3 = std::chrono::high_resolution_clock::now();
+        dt1     = std::chrono::duration_cast<std::chrono::seconds>( t3 - t1 ).count();
+        int dt2 = std::chrono::duration_cast<std::chrono::seconds>( t3 - t2 ).count();
+        if ( dt2 >= d_max_wait_time ) {
+            print_wait_warning();
+            t2 = t3;
+        }
     }
     // Update the ids that have finished
     check_finished( N_work, ids, N_finished, finished );
-    if ( N_finished < N_wait && N_work != 0 )
-        throw std::logic_error( "Internal error: failed to wait" );
     // Delete the wait event struct
     // Note: we want to maintain the reference in case a thread is still using it
     // Note: technically this should be atomic, but it really isn't necessary here
@@ -1075,40 +1046,43 @@ int ThreadPool::wait_some(
 /******************************************************************
  * This function waits for all of the threads to finish their work *
  ******************************************************************/
-void ThreadPool::check_wait_time(
-    std::chrono::time_point<std::chrono::high_resolution_clock> &t1 ) const
+void ThreadPool::print_wait_warning() const
 {
-    auto t2 = std::chrono::high_resolution_clock::now();
-    if ( std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count() > d_max_wait_time ) {
-        pout << "Warning: Maximum wait time in ThreadPool exceeded, threads may be hung\n";
-        pout << "N_active: " << d_num_active << std::endl;
-        pout << "N_queued: " << d_queue_list.size() << std::endl;
-        pout << "N_added: " << d_N_added << std::endl;
-        pout << "N_started: " << d_N_started << std::endl;
-        pout << "N_finished: " << d_N_finished << std::endl;
-        pout << "queue.insert(): " << d_queue_list.N_insert() << std::endl;
-        pout << "queue.remove(): " << d_queue_list.N_remove() << std::endl;
-        pout << "Stack Trace:\n";
-        auto call_stack = StackTrace::getAllCallStacks();
-        StackTrace::cleanupStackTrace( call_stack );
-        auto text = call_stack.print( "  " );
-        for ( auto &line : text )
-            pout << line << std::endl;
-        t1 = std::chrono::high_resolution_clock::now();
-    }
+    pout << "Warning: Maximum wait time in ThreadPool exceeded, threads may be hung\n";
+    pout << "N_active: " << d_num_active << std::endl;
+    pout << "N_queued: " << d_queue_list.size() << std::endl;
+    pout << "N_added: " << d_N_added << std::endl;
+    pout << "N_started: " << d_N_started << std::endl;
+    pout << "N_finished: " << d_N_finished << std::endl;
+    pout << "queue.insert(): " << d_queue_list.N_insert() << std::endl;
+    pout << "queue.remove(): " << d_queue_list.N_remove() << std::endl;
+    pout << "Stack Trace:\n";
+    auto call_stack = StackTrace::getAllCallStacks();
+    StackTrace::cleanupStackTrace( call_stack );
+    auto text = call_stack.print( "  " );
+    for ( auto &line : text )
+        pout << line << std::endl;
 }
 void ThreadPool::wait_pool_finished() const
 {
     // First check that we are not one of the threads
-    if ( isMemberThread() ) {
+    if ( isMemberThread() )
         throw std::logic_error( "Member thread attempted to call wait_pool_finished" );
-    }
     // Wait for all threads to finish their work
     auto t1 = std::chrono::high_resolution_clock::now();
-    while ( d_num_active > 0 || d_queue_list.size() > 0 ) {
-        check_wait_time( t1 );
+    while ( d_num_active > 0 || !d_queue_list.empty() ) {
+        // Wait for signal from last thread
         d_signal_empty = true;
-        d_wait_finished.wait_for( 10e-6 );
+        d_wait_finished.wait_for( 5e-4 );
+        if ( d_num_active == 0 && d_queue_list.empty() )
+            break;
+        // Check that we have not exceeded the maximum time
+        auto t2     = std::chrono::high_resolution_clock::now();
+        int seconds = std::chrono::duration_cast<std::chrono::seconds>( t2 - t1 ).count();
+        if ( seconds > d_max_wait_time ) {
+            print_wait_warning();
+            t1 = t2;
+        }
     }
     d_signal_empty = false;
 }
@@ -1162,30 +1136,46 @@ void ThreadPool::wait_ids_struct::id_finished( const ThreadPool::thread_id_t &id
         }
     }
 }
-bool ThreadPool::wait_ids_struct::wait_for( double seconds )
+inline bool ThreadPool::wait_ids_struct::check()
 {
-    for ( int i = 0; i < d_N; i++ ) {
-        if ( d_ids[i].finished() )
-            d_finished[i] = true;
+    int N_finished = 0;
+    for ( int i = 0; i < d_N; i++ )
+        N_finished += d_finished[i] ? 1 : 0;
+    if ( N_finished >= d_wait || d_N == 0 ) {
+        *d_ptr = nullptr;
+        d_wait = 0;
+        d_N    = 0;
+        return true;
     }
-    auto t1 = std::chrono::high_resolution_clock::now();
-    while ( true ) {
-        int N_finished = 0;
-        for ( int i = 0; i < d_N; i++ )
-            N_finished += d_finished[i] ? 1 : 0;
-        if ( N_finished >= d_wait || d_N == 0 ) {
-            *d_ptr = nullptr;
-            d_wait = 0;
-            d_N    = 0;
-            break;
+    return false;
+}
+bool ThreadPool::wait_ids_struct::wait_for( double total_time, double recheck_time )
+{
+    int total   = 1e6 * total_time;
+    int recheck = 1e6 * recheck_time;
+    auto t1     = std::chrono::high_resolution_clock::now();
+    auto t2     = t1;
+    int us1     = 0;
+    while ( us1 < total ) {
+        for ( int i = 0; i < d_N; i++ ) {
+            if ( d_ids[i].finished() )
+                d_finished[i] = true;
         }
-        auto t2 = std::chrono::high_resolution_clock::now();
-        if ( 1e-6 * std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count() >
-             seconds )
-            return false;
-        d_wait_event->wait_for( 1e-5 );
+        if ( check() )
+            return true;
+        int us2 = 0;
+        while ( us2 < recheck ) {
+            double dt = 1e-6 * std::max( 10, recheck - us2 );
+            d_wait_event->wait_for( dt );
+            if ( check() )
+                return true;
+            auto t3 = std::chrono::high_resolution_clock::now();
+            us2     = std::chrono::duration_cast<std::chrono::microseconds>( t3 - t2 ).count();
+            t2      = t3;
+        }
+        us1 = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
     }
-    return true;
+    return false;
 }
 
 
@@ -1298,9 +1288,8 @@ inline int find_id( int n, const ThreadPool::thread_id_t *x, const ThreadPool::t
     // Perform the search
     size_t lower = 0;
     size_t upper = n - 1;
-    size_t index;
     while ( ( upper - lower ) != 1 ) {
-        index = ( upper + lower ) / 2;
+        size_t index = ( upper + lower ) / 2;
         if ( x[index] == id )
             return index;
         if ( x[index] >= id )
@@ -1325,9 +1314,8 @@ void ThreadPool::WorkItem::add_dependencies( size_t N, const ThreadPool::thread_
         throw std::logic_error(
             "Cannot add dependency to work item once it has been added the the threadpool" );
     }
-    if ( static_cast<size_t>( d_N_ids ) + N > 0xFFFF ) {
+    if ( d_N_ids + N > 0xFFFF )
         throw std::logic_error( "Cannot add more than 65000 dependencies" );
-    }
     if ( d_N_ids + N + 1 > d_size ) {
         thread_id_t *tmp = d_ids;
         unsigned int N2  = d_size;

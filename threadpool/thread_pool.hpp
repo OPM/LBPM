@@ -21,19 +21,10 @@
  *  \param args         The arguments to pass to the function in the form (arg1,arg2,...)
  *  \param priority     Optional argument specifying the priority of the work item
  */
-#define TPOOL_TUPLE_TO_SEQ( t ) TPOOL_TUPLE_TO_SEQ_##II t
-#define TPOOL_TUPLE_TO_SEQ_II( a, ... ) a, ##__VA_ARGS__
-#if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
-#define TPOOL_GET_PRIORITY( a, N, c, ... ) N
-#define TPOOL_ADD_WORK( TPOOL, FUNCTION, ARGS, ... )                                      \
-    ThreadPool_add_work( TPOOL, TPOOL_GET_PRIORITY( 0, __VA_ARGS__, 0, 0 ) + 0, FUNCTION, \
-        TPOOL_TUPLE_TO_SEQ( ARGS ) )
-#else
-#define TPOOL_GET_PRIORITY( _0, N, ... ) N
-#define TPOOL_ADD_WORK( TPOOL, FUNCTION, ARGS, ... ) \
-    ThreadPool_add_work(                             \
-        TPOOL, TPOOL_GET_PRIORITY( _0, ##__VA_ARGS__, 0 ), FUNCTION, TPOOL_TUPLE_TO_SEQ( ARGS ) )
-#endif
+#define TPOOL_ADD_WORK2( TPOOL, FUNCTION, ARGS, PRIORITY, ... ) \
+    ThreadPool_add_work( TPOOL, PRIORITY, FUNCTION, std::make_tuple ARGS )
+#define TPOOL_ADD_WORK( TPOOL, FUNCTION, ... ) TPOOL_ADD_WORK2( TPOOL, FUNCTION, __VA_ARGS__, 0, 0 )
+
 
 /*! @} */
 
@@ -59,17 +50,17 @@ struct make_indexes : make_indexes_impl<0, index_tuple<>, Types...> {
 };
 template<class Ret, class... Args, int... Indexes>
 inline Ret apply_helper(
-    Ret ( *pf )( Args... ), index_tuple<Indexes...>, std::tuple<Args...> &&tup )
+    std::function<Ret( Args... )> &pf, index_tuple<Indexes...>, std::tuple<Args...> &&tup )
 {
     return pf( std::forward<Args>( std::get<Indexes>( tup ) )... );
 }
 template<class Ret, class... Args>
-inline Ret apply( Ret ( *pf )( Args... ), const std::tuple<Args...> &tup )
+inline Ret apply( std::function<Ret( Args... )> &pf, const std::tuple<Args...> &tup )
 {
     return apply_helper( pf, typename make_indexes<Args...>::type(), std::tuple<Args...>( tup ) );
 }
 template<class Ret, class... Args>
-inline Ret apply( Ret ( *pf )( Args... ), std::tuple<Args...> &&tup )
+inline Ret apply( std::function<Ret( Args... )> &pf, std::tuple<Args...> &&tup )
 {
     return apply_helper(
         pf, typename make_indexes<Args...>::type(), std::forward<std::tuple<Args...>>( tup ) );
@@ -92,32 +83,40 @@ public:
 template<class Ret, class... Args>
 class WorkItemFull;
 template<class... Args>
-class WorkItemFull<void, Args...> : public ThreadPool::WorkItemRet<void>
+class WorkItemFull<void, Args...> final : public ThreadPool::WorkItemRet<void>
 {
 private:
-    void ( *routine )( Args... );
+    std::function<void( Args... )> routine;
     std::tuple<Args...> args;
     WorkItemFull();
 
 public:
-    WorkItemFull( void ( *routine2 )( Args... ), Args... ts )
-        : ThreadPool::WorkItemRet<void>(), routine( routine2 ), args( ts... )
+    WorkItemFull( std::function<void( Args... )> &&routine2, Args... ts )
+        : ThreadPool::WorkItemRet<void>(), routine( std::move( routine2 ) ), args( ts... )
+    {
+    }
+    WorkItemFull( std::function<void( Args... )> &&routine2, std::tuple<Args...> &&ts )
+        : ThreadPool::WorkItemRet<void>(), routine( std::move( routine2 ) ), args( ts )
     {
     }
     virtual void run() override { apply( routine, args ); }
     virtual ~WorkItemFull() {}
 };
 template<class Ret, class... Args>
-class WorkItemFull : public ThreadPool::WorkItemRet<Ret>
+class WorkItemFull final : public ThreadPool::WorkItemRet<Ret>
 {
 private:
-    Ret ( *routine )( Args... );
+    std::function<Ret( Args... )> routine;
     std::tuple<Args...> args;
     WorkItemFull();
 
 public:
-    WorkItemFull( Ret ( *routine2 )( Args... ), Args... ts )
-        : ThreadPool::WorkItemRet<Ret>(), routine( routine2 ), args( ts... )
+    WorkItemFull( std::function<Ret( Args... )> &&routine2, Args... ts )
+        : ThreadPool::WorkItemRet<Ret>(), routine( std::move( routine2 ) ), args( ts... )
+    {
+    }
+    WorkItemFull( std::function<Ret( Args... )> &&routine2, std::tuple<Args...> &&ts )
+        : ThreadPool::WorkItemRet<Ret>(), routine( std::move( routine2 ) ), args( ts )
     {
     }
     virtual void run() override { this->d_result = apply( routine, args ); }
@@ -126,11 +125,40 @@ public:
 
 
 // Functions to add work to the thread pool
-template<class Ret, class... Ts>
+// clang-format off
+template<class Ret, class... Args>
 inline ThreadPool::thread_id_t ThreadPool_add_work(
-    ThreadPool *tpool, int priority, Ret ( *routine )( Ts... ), Ts... ts )
+    ThreadPool *tpool, int priority, std::function<Ret( Args... )> routine, std::tuple<Args...> &&args )
 {
-    auto work = new WorkItemFull<Ret, Ts...>( routine, ts... );
+    auto work = new WorkItemFull<Ret, Args...>( routine, std::move( args ) );
+    return ThreadPool::add_work( tpool, work, priority );
+}
+template<class Ret, class... Args>
+inline ThreadPool::thread_id_t ThreadPool_add_work(
+    ThreadPool *tpool, int priority, Ret ( *routine )( Args... ), std::tuple<Args...> &&args )
+{
+    auto work = new WorkItemFull<Ret, Args...>( routine, std::move( args ) );
+    return ThreadPool::add_work( tpool, work, priority );
+}
+template<class Ret, class... Args>
+inline ThreadPool::thread_id_t ThreadPool_add_work(
+    ThreadPool *tpool, int priority, Ret ( *routine )(), std::tuple<std::nullptr_t>&& )
+{
+    auto work = new WorkItemFull<Ret>( routine );
+    return ThreadPool::add_work( tpool, work, priority );
+}
+template<class Ret, class... Args>
+inline ThreadPool::thread_id_t ThreadPool_add_work(
+ThreadPool *tpool, int priority, std::function<Ret( Args... )> routine, Args... args )
+{
+    auto work = new WorkItemFull<Ret, Args...>( routine, std::forward_as_tuple( args... ) );
+    return ThreadPool::add_work( tpool, work, priority );
+}
+template<class Ret, class... Args>
+inline ThreadPool::thread_id_t ThreadPool_add_work(
+    ThreadPool *tpool, int priority, Ret ( *routine )( Args... ), Args... args )
+{
+    auto work = new WorkItemFull<Ret, Args...>( routine, std::forward_as_tuple( args... ) );
     return ThreadPool::add_work( tpool, work, priority );
 }
 template<class Ret>
@@ -141,10 +169,29 @@ inline ThreadPool::thread_id_t ThreadPool_add_work(
     return ThreadPool::add_work( tpool, work, priority );
 }
 template<class Ret, class... Args>
+inline ThreadPool::WorkItem *ThreadPool::createWork(
+    std::function<Ret( Args... )> routine, Args... args )
+{
+    return new WorkItemFull<Ret, Args...>( routine, std::forward_as_tuple( args... ) );
+}
+template<class Ret, class... Args>
 inline ThreadPool::WorkItem *ThreadPool::createWork( Ret ( *routine )( Args... ), Args... args )
 {
-    return new WorkItemFull<Ret, Args...>( routine, args... );
+    return new WorkItemFull<Ret, Args...>( routine, std::forward_as_tuple( args... ) );
 }
+template<class Ret, class... Args>
+inline ThreadPool::WorkItem *ThreadPool::createWork(
+    std::function<Ret( Args... )> routine, std::tuple<Args...> &&args )
+{
+    return new WorkItemFull<Ret, Args...>( routine, std::move( args ) );
+}
+template<class Ret, class... Args>
+inline ThreadPool::WorkItem *ThreadPool::createWork(
+    Ret ( *routine )( Args... ), std::tuple<Args...> &&args )
+{
+    return new WorkItemFull<Ret, Args...>( routine, std::move( args ) );
+}
+// clang-format on
 
 
 /******************************************************************
@@ -174,71 +221,49 @@ inline Ret ThreadPool::getFunctionRet( const ThreadPool::thread_id_t &id )
 /******************************************************************
  * Inline functions to wait for the work items to finish           *
  ******************************************************************/
-inline int ThreadPool::wait( ThreadPool::thread_id_t id ) const
+inline void ThreadPool::wait( ThreadPool::thread_id_t id ) const
 {
     bool finished;
-    wait_some( 1, &id, 1, &finished );
-    return 0;
+    int N = wait_some( 1, &id, 1, &finished, 10000000 );
+    if ( N != 1 )
+        throw std::logic_error( "Failed to wait for id" );
 }
-inline int ThreadPool::wait_any( size_t N_work, const ThreadPool::thread_id_t *ids )
-{
-    auto finished = new bool[N_work];
-    wait_some( N_work, ids, 1, finished );
-    int index = -1;
-    for ( size_t i = 0; i < N_work; i++ ) {
-        if ( finished[i] ) {
-            index = static_cast<int>( i );
-            break;
-        }
-    }
-    delete[] finished;
-    return index;
-}
-inline int ThreadPool::wait_any( const std::vector<thread_id_t> &ids ) const
+inline size_t ThreadPool::wait_any( const std::vector<thread_id_t> &ids ) const
 {
     if ( ids.empty() )
         return 0;
     auto finished = new bool[ids.size()];
-    wait_some( ids.size(), &ids[0], 1, finished );
-    int index = -1;
+    int N         = wait_some( ids.size(), &ids[0], 1, finished, 10000000 );
+    if ( N < 1 )
+        throw std::logic_error( "Failed to wait for any id" );
     for ( size_t i = 0; i < ids.size(); i++ ) {
         if ( finished[i] ) {
-            index = static_cast<int>( i );
-            break;
+            delete[] finished;
+            return i;
         }
     }
-    delete[] finished;
-    return index;
+    throw std::logic_error( "wait_any failed" );
 }
-inline int ThreadPool::wait_all( size_t N_work, const ThreadPool::thread_id_t *ids ) const
-{
-    if ( N_work == 0 )
-        return 0;
-    auto finished = new bool[N_work];
-    wait_some( N_work, ids, N_work, finished );
-    delete[] finished;
-    return 0;
-}
-inline int ThreadPool::wait_all( const std::vector<thread_id_t> &ids ) const
+inline void ThreadPool::wait_all( const std::vector<thread_id_t> &ids ) const
 {
     if ( ids.empty() )
-        return 0;
+        return;
     auto finished = new bool[ids.size()];
-    wait_some( ids.size(), ids.data(), ids.size(), finished );
+    int N         = wait_some( ids.size(), ids.data(), ids.size(), finished, 10000000 );
+    if ( N != (int) ids.size() )
+        throw std::logic_error( "Failed to wait for all ids" );
     delete[] finished;
-    return 0;
 }
-inline int ThreadPool::wait_all( const ThreadPool *tpool, const std::vector<thread_id_t> &ids )
+inline void ThreadPool::wait_all( const ThreadPool *tpool, const std::vector<thread_id_t> &ids )
 {
     if ( tpool )
         return tpool->wait_all( ids );
-    return ids.size();
 }
 inline std::vector<int> ThreadPool::wait_some(
-    int N_wait, const std::vector<thread_id_t> &ids ) const
+    int N_wait, const std::vector<thread_id_t> &ids, int max_wait ) const
 {
     auto finished  = new bool[ids.size()];
-    int N_finished = wait_some( ids.size(), ids.data(), N_wait, finished );
+    int N_finished = wait_some( ids.size(), ids.data(), N_wait, finished, max_wait );
     std::vector<int> index( N_finished, -1 );
     for ( size_t i = 0, j = 0; i < ids.size(); i++ ) {
         if ( finished[i] ) {
@@ -313,7 +338,7 @@ inline std::vector<ThreadPool::thread_id_t> ThreadPool::add_work( ThreadPool *tp
  * Class functions to for the thread id                            *
  ******************************************************************/
 inline ThreadPool::thread_id_t::thread_id_t()
-    : d_id( nullThreadID ), d_count( NULL ), d_work( NULL )
+    : d_id( nullThreadID ), d_count( nullptr ), d_work( nullptr )
 {
 }
 inline ThreadPool::thread_id_t::~thread_id_t() { reset(); }
@@ -350,7 +375,7 @@ inline ThreadPool::thread_id_t &ThreadPool::thread_id_t::operator=(
 inline ThreadPool::thread_id_t::thread_id_t( const volatile ThreadPool::thread_id_t &rhs )
     : d_id( rhs.d_id ), d_count( rhs.d_count ), d_work( rhs.d_work )
 {
-    if ( d_count != NULL )
+    if ( d_count != nullptr )
         AtomicOperations::atomic_increment( d_count );
 }
 #if !defined( WIN32 ) && !defined( _WIN32 ) && !defined( WIN64 ) && !defined( _WIN64 )
@@ -435,15 +460,9 @@ inline void ThreadPool::thread_id_t::reset()
 }
 inline uint64_t ThreadPool::thread_id_t::createId( int priority, uint64_t local_id )
 {
-    if ( priority < -127 || priority > 127 )
-        throw std::logic_error( "priority limited to +- 127" );
-    if ( local_id > maxThreadID )
-        throw std::logic_error( "local id >= 2^56" );
-    char tmp1          = static_cast<char>( priority + 128 );
-    unsigned char tmp2 = static_cast<unsigned char>( tmp1 );
-    if ( priority >= 0 )
-        tmp2 |= 0x80;
-    uint64_t id = tmp2;
+    if ( priority < -127 || priority > 127 || local_id > maxThreadID )
+        throw std::logic_error( "Invalid priority or local id" );
+    uint64_t id = priority + 128;
     id          = ( id << 56 ) + local_id;
     return id;
 }
@@ -460,9 +479,8 @@ inline void ThreadPool::thread_id_t::reset( int priority, uint64_t local_id, voi
     d_id = createId( priority, local_id );
     // Create the work and counter
     d_count = nullptr;
-    d_work  = nullptr;
-    if ( work != nullptr ) {
-        d_work   = work;
+    d_work  = work;
+    if ( d_work != nullptr ) {
         d_count  = &( reinterpret_cast<WorkItem *>( work )->d_count );
         *d_count = 1;
     }
@@ -512,7 +530,6 @@ inline bool ThreadPool::thread_id_t::ready() const
  ******************************************************************/
 inline bool ThreadPool::isValid( const ThreadPool::thread_id_t &id ) const
 {
-    static_assert( sizeof( atomic_64 ) == 8, "atomic_64 must be a 64-bit integer" );
     uint64_t local_id = id.getLocalID();
     uint64_t next_id  = d_id_assign - 1;
     return local_id != 0 && id.initialized() && local_id <= thread_id_t::maxThreadID &&
