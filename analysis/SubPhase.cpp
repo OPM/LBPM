@@ -177,16 +177,6 @@ void SubPhase::Basic(){
 						nb.Px += rho_n*nA*Vel_x(n);
 						nb.Py += rho_n*nA*Vel_y(n);
 						nb.Pz += rho_n*nA*Vel_z(n);
-
-						/* // volume the excludes the interfacial region
-						if (DelPhi(n) < 1e-4){
-							// pressure
-							pan += Pressure(n);
-						}
-						else{
-							
-						}
-						*/
 					}
 					else{
 						wb.M += rho_w;
@@ -196,21 +186,13 @@ void SubPhase::Basic(){
 						wb.Px += rho_w*nB*Vel_x(n);
 						wb.Py += rho_w*nB*Vel_y(n);
 						wb.Pz += rho_w*nB*Vel_z(n);
-
-						/*
-						if (DelPhi(n) < 1e-4){
-
-							
-						}
-						else{
-							
-						}
-						*/
 					}
 				}
 			}
 		}
 	}
+	gwb.V=sumReduce( Dm->Comm, wb.V);
+	gnb.V=sumReduce( Dm->Comm, nb.V);
 	gwb.M=sumReduce( Dm->Comm, wb.M);
 	gnb.M=sumReduce( Dm->Comm, nb.M);
 	gwb.Px=sumReduce( Dm->Comm, wb.Px);
@@ -223,7 +205,7 @@ void SubPhase::Basic(){
 	if (Dm->rank() == 0){
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double fractional_flow=nb.M*sqrt(gwb.Px*gwb.Px+gwb.Py*gwb.Py+gwb.Pz*gwb.Pz)/(gwb.M*sqrt(gnb.Px*gnb.Px+gnb.Py*gnb.Py+gnb.Pz*gnb.Pz));
-		printf("saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
+		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 	}
 
 }
