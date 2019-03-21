@@ -231,15 +231,12 @@ void SubPhase::Basic(){
 inline void InterfaceTransportMeasures( double beta, double rA, double rB, double nA, double nB, 
 		double nx, double ny, double nz, double ux, double uy, double uz, interface &I){
 	
-	double A0,A1,A2,A3,A4,A5,A6;
-	double B0,B1,B2,B3,B4,B5,B6;
+	double A1,A2,A3,A4,A5,A6;
+	double B1,B2,B3,B4,B5,B6;
 	double nAB,delta;
 	// Instantiate mass transport distributions
 	// Stationary value - distribution 0
 	nAB = 1.0/(nA+nB);
-	A0 = 0.3333333333333333*nA;
-	B0 = 0.3333333333333333*nB;
-
 	//...............................................
 	// q = 0,2,4
 	// Cq = {1,0,0}, {0,1,0}, {0,0,1}
