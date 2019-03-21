@@ -233,7 +233,7 @@ int main(int argc, char **argv)
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Comm_rank(comm,&rank);
     MPI_Comm_size(comm,&nprocs);
-    Utilities::setAbortBehavior(true,true,false);
+    Utilities::setAbortBehavior(true,2);
     Utilities::setErrorHandlers();
     UnitTest ut;
 
