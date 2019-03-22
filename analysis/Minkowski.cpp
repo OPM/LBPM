@@ -106,6 +106,9 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 			}
 		}
 	}
+	// convert X for 2D manifold to 3D object
+	Xi *= 0.5;
+	
 	MPI_Barrier(Dm->Comm);
 	// Phase averages
 	MPI_Allreduce(&Vi,&Vi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
@@ -139,7 +142,7 @@ void Minkowski::MeasureObject(){
 }
 
 
-void Minkowski::MeasureConnectedPathway(){
+int Minkowski::MeasureConnectedPathway(){
 	/*
 	 * compute the connected pathway for object with LABEL in id field
 	 * compute the labels for connected components
@@ -163,20 +166,24 @@ void Minkowski::MeasureConnectedPathway(){
 	
 	// Extract only the connected part of NWP
 	double vF=0.0; 
-	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+//	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
 	MPI_Barrier(Dm->Comm);
 	
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				id(i,j,k) = 1;
-				if (id(i,j,k) == LABEL && label(i,j,k) == 0){
+				if ( label(i,j,k) == 0){
 					id(i,j,k) = 0;
+				}
+				else{
+					id(i,j,k) = 1;
 				}
 			}
 		}
 	}
 	MeasureObject();
+	return n_connected_components; 
 }
 
 

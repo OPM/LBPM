@@ -22,13 +22,14 @@
 
 class phase{
 public:
+	int Nc;
 	double p;
 	double M,Px,Py,Pz,K;
 	double V,A,H,X;
-
 	void reset(){
 		p=M=Px=Py=Pz=K=0.0;
 		V=A=H=X=0.0;
+		Nc=1;
 	}
 
 private:
@@ -57,7 +58,6 @@ public:
 	double nu_n, nu_w;
 	double gamma_wn, beta;
 	double Fx, Fy, Fz;
-	
 	/*
 	 * indices 
 	 * 	    w - water phase

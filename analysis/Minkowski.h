@@ -41,7 +41,7 @@ public:
 	double Ai,Ji,Xi,Vi;
 	// Global averages (all processes)
 	double Ai_global,Ji_global,Xi_global,Vi_global;
-
+	int n_connected_components;
 	//...........................................................................
 	int Nx,Ny,Nz;
 	double V(){
@@ -62,7 +62,7 @@ public:
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
 	void MeasureObject();
-	void MeasureConnectedPathway();
+	int MeasureConnectedPathway();
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
 
 	void PrintAll();
