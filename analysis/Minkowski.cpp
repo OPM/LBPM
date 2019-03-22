@@ -139,7 +139,7 @@ void Minkowski::MeasureObject(){
 }
 
 
-void Minkowski::MeasureConnectedPathway(){
+int Minkowski::MeasureConnectedPathway(){
 	/*
 	 * compute the connected pathway for object with LABEL in id field
 	 * compute the labels for connected components
@@ -163,13 +163,14 @@ void Minkowski::MeasureConnectedPathway(){
 	
 	// Extract only the connected part of NWP
 	double vF=0.0; 
-	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+	int n_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+//	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
 	MPI_Barrier(Dm->Comm);
 	
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				if (id(i,j,k) == LABEL && label(i,j,k) == 0){
+				if ( label(i,j,k) == 0){
 					id(i,j,k) = 0;
 				}
 				else{
@@ -179,6 +180,7 @@ void Minkowski::MeasureConnectedPathway(){
 		}
 	}
 	MeasureObject();
+	return n_connected_components; 
 }
 
 
