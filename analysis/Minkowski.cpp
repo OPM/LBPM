@@ -106,6 +106,9 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 			}
 		}
 	}
+	// convert X for 2D manifold to 3D object
+	Xi *= 0.5;
+	
 	MPI_Barrier(Dm->Comm);
 	// Phase averages
 	MPI_Allreduce(&Vi,&Vi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);

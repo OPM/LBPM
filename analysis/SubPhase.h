@@ -22,13 +22,14 @@
 
 class phase{
 public:
+	int Nc;
 	double p;
 	double M,Px,Py,Pz,K;
 	double V,A,H,X;
-
 	void reset(){
 		p=M=Px=Py=Pz=K=0.0;
 		V=A=H=X=0.0;
+		Nc=1;
 	}
 
 private:

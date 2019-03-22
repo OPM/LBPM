@@ -41,9 +41,9 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(TIMELOG,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
 			fprintf(TIMELOG,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 			fprintf(TIMELOG,"Vwc Awc Hwc Xwc ");					 	// wc region 
-			fprintf(TIMELOG,"Vwd Awd Hwd Xwd ");					 	// wd region
+			fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					 	// wd region
 			fprintf(TIMELOG,"Vnc Anc Hnc Xnc ");					 	// nc region
-			fprintf(TIMELOG,"Vnd And Hnd Xnd ");					 	// nd region
+			fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					 	// nd region
 			fprintf(TIMELOG,"Vi Ai Hi Xi\n");					 		// interface region 
 			// stress tensor?
 		}
@@ -64,9 +64,9 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		fprintf(TIMELOG,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
 		fprintf(TIMELOG,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 		fprintf(TIMELOG,"Vwc Awc Hwc Xwc ");					 	// wc region 
-		fprintf(TIMELOG,"Vwd Awd Hwd Xwd ");					 	// wd region
+		fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					 	// wd region
 		fprintf(TIMELOG,"Vnc Anc Hnc Xnc ");					 	// nc region
-		fprintf(TIMELOG,"Vnd And Hnd Xnd ");					 	// nd region
+		fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					 	// nd region
 		fprintf(TIMELOG,"Vi Ai Hi Xi\n");					 		// interface region 
 	}
 }
@@ -90,9 +90,9 @@ void SubPhase::Write(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Pz, gwd.Pz, giwn.Pz, gnc.Pz, gnd.Pz, giwn.Pz);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwc.V, gwc.A, gwc.H, gwc.X);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gwd.V, gwd.A, gwd.H, gwd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gnc.V, gnc.A, gnc.H, gnc.X);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gnd.V, gnd.A, gnd.H, gnd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",gnd.V, gnd.A, gnd.H, gnd.X, gnd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",giwn.V, giwn.A, giwn.H, giwn.X);
 		fflush(TIMELOG);
 	}
@@ -105,9 +105,9 @@ void SubPhase::Write(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pz, nc.Pz, nd.Pz, iwn.Pz);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wc.V, wc.A, wc.H, wc.X);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wd.V, wd.A, wd.H, wd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",nc.V, nc.A, nc.H, nc.X);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",nd.V, nd.A, nd.H, nd.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",nd.V, nd.A, nd.H, nd.X, nd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",iwn.V, iwn.A, iwn.H, iwn.X);
 		fflush(TIMELOG);
 	}
@@ -204,7 +204,7 @@ void SubPhase::Basic(){
 
 	if (Dm->rank() == 0){
 		double saturation=gwb.V/(gwb.V + gnb.V);
-		double fractional_flow=nb.M*sqrt(gwb.Px*gwb.Px+gwb.Py*gwb.Py+gwb.Pz*gwb.Pz)/(gwb.M*sqrt(gnb.Px*gnb.Px+gnb.Py*gnb.Py+gnb.Pz*gnb.Pz));
+		double fractional_flow=gwb.V*nb.M*sqrt(gwb.Px*gwb.Px+gwb.Py*gwb.Py+gwb.Pz*gwb.Pz)/(gnb.V*gwb.M*sqrt(gnb.Px*gnb.Px+gnb.Py*gnb.Py+gnb.Pz*gnb.Pz));
 		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 	}
 
@@ -328,7 +328,7 @@ void SubPhase::Full(){
 	nd.H = morph_n->H(); 
 	nd.X = morph_n->X(); 
 	// measure only the connected part
-	morph_n->MeasureConnectedPathway();
+	nd.Nc = morph_n->MeasureConnectedPathway();
 	nc.V = morph_n->V(); 
 	nc.A = morph_n->A(); 
 	nc.H = morph_n->H(); 
@@ -338,6 +338,7 @@ void SubPhase::Full(){
 	nd.A -= nc.A;
 	nd.H -= nc.H;
 	nd.X -= nc.X;
+
 	// compute global entities
 	gnc.V=sumReduce( Dm->Comm, nc.V);
 	gnc.A=sumReduce( Dm->Comm, nc.A);
@@ -347,7 +348,7 @@ void SubPhase::Full(){
 	gnd.A=sumReduce( Dm->Comm, nd.A);
 	gnd.H=sumReduce( Dm->Comm, nd.H);
 	gnd.X=sumReduce( Dm->Comm, nd.X);
-	
+	gnd.Nc = nd.Nc;
  	// wetting
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -375,7 +376,7 @@ void SubPhase::Full(){
 	wd.H = morph_w->H(); 
 	wd.X = morph_w->X(); 
 	// measure only the connected part
-	morph_w->MeasureConnectedPathway();
+	wd.Nc = morph_w->MeasureConnectedPathway();
 	wc.V = morph_w->V(); 
 	wc.A = morph_w->A(); 
 	wc.H = morph_w->H(); 
@@ -394,6 +395,7 @@ void SubPhase::Full(){
 	gwd.A=sumReduce( Dm->Comm, wd.A);
 	gwd.H=sumReduce( Dm->Comm, wd.H);
 	gwd.X=sumReduce( Dm->Comm, wd.X);
+	gwd.Nc = wd.Nc;
 	
  	/*  Set up geometric analysis of interface region */
 	for (k=0; k<Nz; k++){
@@ -525,20 +527,28 @@ void SubPhase::Full(){
 	gwc.p=sumReduce( Dm->Comm, wc.p);
 
 	// pressure averaging
-	wc.p = wc.p /vol_wc_bulk;
-	nc.p = nc.p /vol_nc_bulk;
-	wd.p = wd.p /vol_wd_bulk;
-	nd.p = nd.p /vol_nd_bulk;
-	
+	if (vol_wc_bulk > 0.0)
+		wc.p = wc.p /vol_wc_bulk;
+	if (vol_nc_bulk > 0.0)
+		nc.p = nc.p /vol_nc_bulk;
+	if (vol_wd_bulk > 0.0)
+		wd.p = wd.p /vol_wd_bulk;
+	if (vol_nd_bulk > 0.0)
+		nd.p = nd.p /vol_nd_bulk;
+
 	vol_wc_bulk=sumReduce( Dm->Comm, vol_wc_bulk);
 	vol_wd_bulk=sumReduce( Dm->Comm, vol_wd_bulk);
 	vol_nc_bulk=sumReduce( Dm->Comm, vol_nc_bulk);
 	vol_nd_bulk=sumReduce( Dm->Comm, vol_nd_bulk);
-
-	gwc.p = gwc.p /vol_wc_bulk;
-	gnc.p = gnc.p /vol_nc_bulk;
-	gwd.p = gwd.p /vol_wd_bulk;
-	gnd.p = gnd.p /vol_nd_bulk;
+	
+	if (vol_wc_bulk > 0.0)
+		gwc.p = gwc.p /vol_wc_bulk;
+	if (vol_nc_bulk > 0.0)
+		gnc.p = gnc.p /vol_nc_bulk;
+	if (vol_wd_bulk > 0.0)
+		gwd.p = gwd.p /vol_wd_bulk;
+	if (vol_nd_bulk > 0.0)
+		gnd.p = gnd.p /vol_nd_bulk;
 }
 
 
