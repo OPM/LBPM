@@ -163,7 +163,7 @@ int Minkowski::MeasureConnectedPathway(){
 	
 	// Extract only the connected part of NWP
 	double vF=0.0; 
-	int n_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
 //	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
 	MPI_Barrier(Dm->Comm);
 	
