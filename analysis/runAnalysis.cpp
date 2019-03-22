@@ -198,6 +198,52 @@ private:
     runAnalysis::commWrapper comm;
 };
 
+// Helper class to write the vis file from a thread
+class IOWorkItem: public ThreadPool::WorkItemRet<void>
+{
+public:
+	IOWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
+        SubPhase& Averages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
+        timestep(timestep_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
+        {
+        }
+    ~IOWorkItem() { }
+    virtual void run() {
+        PROFILE_START("Save Vis",1);
+        ASSERT(visData[0].vars[0]->name=="phase");
+        ASSERT(visData[0].vars[1]->name=="Pressure");
+        ASSERT(visData[0].vars[2]->name=="Velocity_x");
+        ASSERT(visData[0].vars[3]->name=="Velocity_y");
+        ASSERT(visData[0].vars[4]->name=="Velocity_z");
+        ASSERT(visData[0].vars[5]->name=="SignDist");
+        ASSERT(visData[0].vars[6]->name=="BlobID");
+        Array<double>& PhaseData = visData[0].vars[0]->data;
+        Array<double>& PressData = visData[0].vars[1]->data;
+        Array<double>& VelxData = visData[0].vars[2]->data;
+        Array<double>& VelyData = visData[0].vars[3]->data;
+        Array<double>& VelzData = visData[0].vars[4]->data;
+        Array<double>& SignData  = visData[0].vars[5]->data;
+        Array<double>& BlobData  = visData[0].vars[6]->data;
+        fillData.copy(Averages.Phi,PhaseData);
+        fillData.copy(Averages.Pressure,PressData);
+        fillData.copy(Averages.SDs,SignData);
+        fillData.copy(Averages.Vel_x,VelxData);
+        fillData.copy(Averages.Vel_y,VelyData);
+        fillData.copy(Averages.Vel_z,VelzData);
+        fillData.copy(Averages.morph_n->label,BlobData);
+        IO::writeData( timestep, visData, comm.comm );
+        PROFILE_STOP("Save Vis",1);
+    };
+private:
+    IOWorkItem();
+    int timestep;
+    std::vector<IO::MeshDataStruct>& visData;
+    SubPhase& Averages;
+    fillHalo<double>& fillData;
+    runAnalysis::commWrapper comm;
+};
+
+
 
 // Helper class to run the analysis from within a thread
 // Note: Averages will be modified after the constructor is called
@@ -849,7 +895,78 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
         work->add_dependency(d_wait_analysis);    // Make sure we are done using analysis before modifying
         d_wait_analysis = d_tpool.add_work(work);
     }
+    
     PROFILE_STOP("run");
 }
 
+void runAnalysis::WriteVisData( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+{
+    int N = d_N[0]*d_N[1]*d_N[2];
+
+    // Check which analysis steps we need to perform
+    auto type = computeAnalysisType( timestep );
+    if ( type == AnalysisType::AnalyzeNone )
+        return;
+
+    // Check how may queued items we have
+    if ( d_tpool.N_queued() > 20 ) {
+        std::cerr << "Analysis queue is getting behind, waiting ...\n";
+        finish();
+    }
+
+    // Copy the appropriate variables to the host (so we can spawn new threads)
+    ScaLBL_DeviceBarrier();
+  /*  PROFILE_START("Copy data to host",1);
+
+    //if ( matches(type,AnalysisType::CopySimState) ) {
+    if ( timestep%d_analysis_interval == 0 ) {
+        // Copy the members of Averages to the cpu (phase was copied above)
+        PROFILE_START("Copy-Pressure",1);
+        ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
+        //ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
+        ScaLBL_DeviceBarrier();
+        PROFILE_STOP("Copy-Pressure",1);
+        PROFILE_START("Copy-Wait",1);
+        PROFILE_STOP("Copy-Wait",1);
+        PROFILE_START("Copy-State",1);
+        // copy other variables
+        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[d_Np],Averages.Rho_w);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
+        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
+        PROFILE_STOP("Copy-State",1);
+    }
+    PROFILE_STOP("Copy data to host");
+   */
+    PROFILE_START("write vis",1);
+
+    // if (Averages.WriteVis == true){
+    std::shared_ptr<double> cfq,cDen;
+    // Copy restart data to the CPU
+    cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
+    cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+    ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
+    ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+
+    if (d_rank==0) {
+    	FILE *Rst = fopen("Restart.txt","w");
+    	fprintf(Rst,"%i\n",timestep+4);
+    	fclose(Rst);
+    }
+    // Write the restart file (using a seperate thread)
+    auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
+    work1->add_dependency(d_wait_restart);
+    d_wait_restart = d_tpool.add_work(work1);
+
+    auto work2 = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+    work2->add_dependency(d_wait_vis);
+    d_wait_vis = d_tpool.add_work(work2);
+
+    //Averages.WriteVis = false;
+   // }
+    
+    PROFILE_STOP("write vis");
+}
 

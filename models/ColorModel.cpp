@@ -582,6 +582,8 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
+					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.finish();
 					
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");

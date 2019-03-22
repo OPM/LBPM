@@ -58,7 +58,6 @@ public:
 	double nu_n, nu_w;
 	double gamma_wn, beta;
 	double Fx, Fy, Fz;
-	
 	/*
 	 * indices 
 	 * 	    w - water phase
