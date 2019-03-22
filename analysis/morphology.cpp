@@ -450,8 +450,9 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
-	
-	while (void_fraction_new > VoidFraction)
+	MPI_Barrier(Dm->Comm);
+
+	while (void_fraction_new > VoidFraction && Rcrit_new > 0.5)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
 		void_fraction_old = void_fraction_new;
