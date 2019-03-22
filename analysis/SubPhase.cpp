@@ -172,14 +172,14 @@ void SubPhase::Basic(){
 					
 					if ( phi > 0.0 ){
 						nb.V += 1.0;
-						nb.M += rho_n;						
+						nb.M += nA*rho_n;						
 						// velocity
 						nb.Px += rho_n*nA*Vel_x(n);
 						nb.Py += rho_n*nA*Vel_y(n);
 						nb.Pz += rho_n*nA*Vel_z(n);
 					}
 					else{
-						wb.M += rho_w;
+						wb.M += nB*rho_w;
 						wb.V += 1.0;
 
 						// velocity
@@ -204,7 +204,10 @@ void SubPhase::Basic(){
 
 	if (Dm->rank() == 0){
 		double saturation=gwb.V/(gwb.V + gnb.V);
-		double fractional_flow=gwb.V*nb.M*sqrt(gwb.Px*gwb.Px+gwb.Py*gwb.Py+gwb.Pz*gwb.Pz)/(gnb.V*gwb.M*sqrt(gnb.Px*gnb.Px+gnb.Py*gnb.Py+gnb.Pz*gnb.Pz));
+		double water_flow_rate=gwb.V*sqrt(gwb.Px*gwb.Px + gwb.Py*gwb.Py + gwb.Pz*gwb.Pz)/gwb.M;
+		double not_water_flow_rate=gnb.V*sqrt(gnb.Px*gnb.Px + gnb.Py*gnb.Py + gnb.Pz*gnb.Pz)/gnb.M;
+		double total_flow_rate = water_flow_rate + not_water_flow_rate;
+		double fractional_flow= water_flow_rate / total_flow_rate;
 		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 	}
 
@@ -477,10 +480,10 @@ void SubPhase::Full(){
 						// water region
 						if (morph_w->label(i,j,k) > 0 ){
 							vol_wd_bulk += 1.0;
-							wd.M += nB*rho_n;						
-							wd.Px += nB*rho_n*ux;
-							wd.Py += nB*rho_n*uy;
-							wd.Pz += nB*rho_n*uz;
+							wd.M += nB*rho_w;						
+							wd.Px += nB*rho_w*ux;
+							wd.Py += nB*rho_w*uy;
+							wd.Pz += nB*rho_w*uz;
 							wd.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
 							wd.p += Pressure(n);
 						}
