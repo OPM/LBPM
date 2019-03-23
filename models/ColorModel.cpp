@@ -418,6 +418,7 @@ void ScaLBL_ColorModel::Run(){
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int morph_interval = 1000000;
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
+	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
 	double capillary_number = 0.0;
@@ -556,8 +557,9 @@ void ScaLBL_ColorModel::Run(){
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
 			analysis.finish();
-			if ( morph_timesteps > morph_interval ){
+			CURRENT_STEADY_TIMESTEPS += analysis_interval;
 
+			if ( morph_timesteps > morph_interval ){
 				double volB = Averages->gwb.V; 
 				double volA = Averages->gnb.V; 
 				double vA_x = Averages->gnb.Px/Averages->gnb.M; 
@@ -591,7 +593,7 @@ void ScaLBL_ColorModel::Run(){
 						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 						FILE * kr_log_file = fopen("relperm.csv","a");
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_STEADY_TIMESTEPS,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
 						//  flow reversal criteria based on fractional flow
@@ -643,9 +645,11 @@ void ScaLBL_ColorModel::Run(){
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
 					delta_volume = 0.0;
+					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
+					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				MPI_Barrier(comm);
 			}
