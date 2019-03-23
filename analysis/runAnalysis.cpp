@@ -895,7 +895,27 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
         work->add_dependency(d_wait_analysis);    // Make sure we are done using analysis before modifying
         d_wait_analysis = d_tpool.add_work(work);
     }
-    
+
+    if (timestep%d_restart_interval==0){
+    	std::shared_ptr<double> cfq,cDen;
+    	// Copy restart data to the CPU
+    	cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
+    	cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
+    	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
+    	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
+
+    	if (d_rank==0) {
+    		FILE *Rst = fopen("Restart.txt","w");
+    		fprintf(Rst,"%i\n",timestep+4);
+    		fclose(Rst);
+    	}
+    	// Write the restart file (using a seperate thread)
+    	auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
+    	work1->add_dependency(d_wait_restart);
+    	d_wait_restart = d_tpool.add_work(work1);
+
+    }
+
     PROFILE_STOP("run");
 }
 
@@ -916,50 +936,10 @@ void runAnalysis::WriteVisData( int timestep, SubPhase &Averages, const double *
 
     // Copy the appropriate variables to the host (so we can spawn new threads)
     ScaLBL_DeviceBarrier();
-  /*  PROFILE_START("Copy data to host",1);
 
-    //if ( matches(type,AnalysisType::CopySimState) ) {
-    if ( timestep%d_analysis_interval == 0 ) {
-        // Copy the members of Averages to the cpu (phase was copied above)
-        PROFILE_START("Copy-Pressure",1);
-        ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
-        //ScaLBL_D3Q19_Momentum(fq,Velocity,d_Np);
-        ScaLBL_DeviceBarrier();
-        PROFILE_STOP("Copy-Pressure",1);
-        PROFILE_START("Copy-Wait",1);
-        PROFILE_STOP("Copy-Wait",1);
-        PROFILE_START("Copy-State",1);
-        // copy other variables
-        d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Den[d_Np],Averages.Rho_w);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[0],Averages.Vel_x);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[d_Np],Averages.Vel_y);
-        d_ScaLBL_Comm->RegularLayout(d_Map,&Velocity[2*d_Np],Averages.Vel_z);
-        PROFILE_STOP("Copy-State",1);
-    }
-    PROFILE_STOP("Copy data to host");
-   */
     PROFILE_START("write vis",1);
 
     // if (Averages.WriteVis == true){
-    std::shared_ptr<double> cfq,cDen;
-    // Copy restart data to the CPU
-    cDen = std::shared_ptr<double>(new double[2*d_Np],DeleteArray<double>);
-    cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
-    ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
-    ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
-
-    if (d_rank==0) {
-    	FILE *Rst = fopen("Restart.txt","w");
-    	fprintf(Rst,"%i\n",timestep+4);
-    	fclose(Rst);
-    }
-    // Write the restart file (using a seperate thread)
-    auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
-    work1->add_dependency(d_wait_restart);
-    d_wait_restart = d_tpool.add_work(work1);
-
     auto work2 = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
     work2->add_dependency(d_wait_vis);
     d_wait_vis = d_tpool.add_work(work2);
