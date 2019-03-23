@@ -13,7 +13,6 @@
 #include "common/Domain.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
-#include "analysis/runAnalysis.h"
 
 //*************************************************************************
 // Morpohologica pre-processor

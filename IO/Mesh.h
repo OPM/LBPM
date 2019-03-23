@@ -17,14 +17,13 @@
 #define MESH_INC
 
 #include <iostream>
+#include <memory>
 #include <string.h>
 #include <vector>
 
 #include "common/Array.h"
 #include "common/Communication.h"
 #include "analysis/PointList.h"
-#include "shared_ptr.h"
-
 
 
 namespace IO {

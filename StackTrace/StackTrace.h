@@ -16,41 +16,30 @@
 #ifndef included_StackTrace
 #define included_StackTrace
 
+#include <array>
 #include <functional>
 #include <iostream>
 #include <set>
 #include <thread>
 #include <vector>
 
-
-// Check for and include MPI
-// clang-format off
-#if defined(USE_MPI) || defined(USE_EXT_MPI)
-    #include "mpi.h"
-#elif defined(__has_include)
-    #if __has_include("mpi.h")
-        #include "mpi.h"
-    #else
-        typedef int MPI_Comm;
-    #endif
-#else
-    typedef int MPI_Comm;
-#endif
-// clang-format on
+#include "StackTrace/string_view.h"
 
 
 namespace StackTrace {
 
-
+//! Class to contain stack trace info for a single thread/process
 struct stack_info {
+    uint32_t line;
     void *address;
     void *address2;
-    std::string object;
-    std::string function;
-    std::string filename;
-    int line;
+    std::array<char, 56> object;
+    std::array<char, 48> objectPath;
+    std::array<char, 64> filename;
+    std::array<char, 64> filenamePath;
+    std::array<char, 256> function;
     //! Default constructor
-    stack_info() : address( nullptr ), address2( nullptr ), line( 0 ) {}
+    stack_info();
     //! Reset the stack
     void clear();
     //! Operator==
@@ -61,19 +50,22 @@ struct stack_info {
     int getAddressWidth() const;
     //! Print the stack info
     std::string print( int widthAddress = 16, int widthObject = 20, int widthFunction = 32 ) const;
+    //! Print the stack info
+    static void print( std::ostream &out, const std::vector<stack_info> &stack,
+        const StackTrace::string_view &prefix = "" );
+    //! Print the stack info
+    void print2(
+        char *txt, int widthAddress = 16, int widthObject = 20, int widthFunction = 32 ) const;
     //! Compute the number of bytes needed to store the object
     size_t size() const;
     //! Pack the data to a byte array, returning a pointer to the end of the data
     char *pack( char *ptr ) const;
     //! Unpack the data from a byte array, returning a pointer to the end of the data
     const char *unpack( const char *ptr );
-    //! Pack a vector of data to a memory block
-    static std::vector<char> packArray( const std::vector<stack_info> &data );
-    //! Unpack a vector of data from a memory block
-    static std::vector<stack_info> unpackArray( const char *data );
 };
 
 
+//! Class to contain stack trace info for multiple threads/processes
 struct multi_stack_info {
     int N;                                  // Number of threads/processes
     stack_info stack;                       // Current stack item
@@ -86,16 +78,66 @@ struct multi_stack_info {
     multi_stack_info &operator=( const std::vector<stack_info> & );
     //! Reset the stack
     void clear();
+    //! Is the stack empty
+    bool empty() const { return N == 0; }
     //! Add the given stack to the multistack
     void add( size_t len, const stack_info *stack );
+    //! Add the given stack to the multistack
+    void add( const multi_stack_info &stack );
+    //! Compute the number of bytes needed to store the object
+    size_t size() const;
+    //! Pack the data to a byte array, returning a pointer to the end of the data
+    char *pack( char *ptr ) const;
+    //! Unpack the data from a byte array, returning a pointer to the end of the data
+    const char *unpack( const char *ptr );
     //! Print the stack info
-    std::vector<std::string> print( const std::string &prefix = std::string() ) const;
+    std::vector<std::string> print( const StackTrace::string_view &prefix = "" ) const;
+    //! Print the stack info
+    void print( std::ostream &out, const StackTrace::string_view &prefix = "" ) const;
+    //! Print the stack info
+    std::string printString( const StackTrace::string_view &prefix = "" ) const;
 
 private:
-    void print2( const std::string &prefix, int w[3], std::vector<std::string> &text ) const;
+    template<class FUN>
+    void print2( int Np, char *prefix, int w[3], bool c, FUN &fun ) const;
     int getAddressWidth() const;
     int getObjectWidth() const;
     int getFunctionWidth() const;
+};
+
+
+//!< Terminate type
+enum class terminateType : uint8_t { signal, exception, abort, MPI, unknown };
+enum class printStackType : uint8_t { local = 1, threaded = 2, global = 3 };
+
+//!< Class to contain exception info from abort
+class abort_error : public std::exception
+{
+public:
+    std::string message;       //!< Abort message
+    std::string filename;      //!< File where abort was called
+    terminateType type;        //!< What caused the termination
+    printStackType stackType;  //!< Print the local stack, all threads, or global call stack
+    uint8_t signal;            //!< Signal number
+    int line;                  //!< Line number where abort was called
+    size_t bytes;              //!< Memory in use during abort
+    std::vector<void *> stack; //!< Local call stack for abort
+public:
+    virtual const char *what() const noexcept override;
+    abort_error();
+    virtual ~abort_error() {}
+
+private:
+    mutable std::string d_msg;
+};
+
+
+//!< Class to contain symbol information
+struct symbols_struct {
+    char type;
+    void *address;
+    std::array<char, 56> obj;
+    std::array<char, 56> objPath;
 };
 
 
@@ -167,16 +209,18 @@ std::vector<stack_info> getStackInfo( const std::vector<void *> &address );
 
 
 //! Function to return the signal name
-std::string signalName( int signal );
+const char *signalName( int signal );
 
 
 /*!
  * Return the symbols from the current executable (not availible for all platforms)
- * @return      Returns 0 if sucessful
+ * @return      Returns the symbols loaded
  */
-int getSymbols( std::vector<void *> &address,
-                std::vector<char> &type,
-                std::vector<std::string> &obj );
+std::vector<symbols_struct> getSymbols();
+
+
+//! Clear internal symbol data
+void clearSymbols();
 
 
 /*!
@@ -193,20 +237,10 @@ std::string getExecutable();
 std::string getSymPaths();
 
 
-//!< Terminate type
-enum class terminateType { signal, exception };
-
-/*!
- * Set the error handlers
- * @param[in] abort     Function to terminate the program: abort(msg,type)
- */
-void setErrorHandlers( std::function<void( std::string, terminateType )> abort );
-
-
 /*!
  * Set the given signals to the handler
  * @param[in] signals   Signals to handle
- * @param[in] handler   Function to terminate the program: abort(msg,type)
+ * @param[in] handler   Function to terminate the program: abort(signal)
  */
 void setSignals( const std::vector<int> &signals, void ( *handler )( int ) );
 
@@ -215,8 +249,16 @@ void setSignals( const std::vector<int> &signals, void ( *handler )( int ) );
 void clearSignal( int signal );
 
 
+//! Clear a signal set by setSignals
+void clearSignals( const std::vector<int> &signals );
+
+
 //! Clear all signals set by setSignals
 void clearSignals();
+
+
+//! Raise a signal
+void raiseSignal( int signal );
 
 
 //! Return a list of all signals that can be caught
@@ -227,17 +269,10 @@ std::vector<int> defaultSignalsToCatch();
 
 
 //! Get a list of the active threads
-std::set<std::thread::native_handle_type> activeThreads();
+std::vector<std::thread::native_handle_type> activeThreads();
 
 //! Get a handle to this thread
 std::thread::native_handle_type thisThread();
-
-
-//! Initialize globalCallStack functionallity
-void globalCallStackInitialize( MPI_Comm comm );
-
-//! Clean up globalCallStack functionallity
-void globalCallStackFinalize();
 
 
 /*!
@@ -248,7 +283,25 @@ void globalCallStackFinalize();
  * @param[out] exit_code    Exit code returned from child process
  * @return                  Returns string containing the output
  */
-std::string exec( const std::string &cmd, int &exit_code );
+std::string exec( const string_view &cmd, int &exit_code );
+
+
+/*!
+ * @brief  Create stack from string
+ * @details  This function creates the call stack from the string generated by print
+ * @param[in] str           Vector of strings containing call stack
+ * @return                  Returns the call stack
+ */
+multi_stack_info generateFromString( const std::vector<std::string> &str );
+
+
+/*!
+ * @brief  Create stack from string
+ * @details  This function creates the call stack from the string
+ * @param[in] str           String containing call stack
+ * @return                  Returns the call stack
+ */
+multi_stack_info generateFromString( const std::string &str );
 
 
 } // namespace StackTrace

@@ -17,12 +17,12 @@
 #define READER_INC
 
 #include <iostream>
+#include <memory>
 #include <string.h>
 #include <vector>
 
 #include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
-#include "shared_ptr.h"
 
 
 namespace IO {

@@ -1,0 +1,111 @@
+/*
+ * Sub-phase averaging tools
+ */
+
+#ifndef SubPhase_INC
+#define SubPhase_INC
+
+#include <vector>
+#include "common/Domain.h"
+#include "common/Communication.h"
+#include "analysis/analysis.h"
+#include "analysis/distance.h"
+#include "analysis/Minkowski.h"
+
+#include "shared_ptr.h"
+#include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
+#include "IO/MeshDatabase.h"
+#include "IO/Reader.h"
+#include "IO/Writer.h"
+
+
+class phase{
+public:
+	int Nc;
+	double p;
+	double M,Px,Py,Pz,K;
+	double V,A,H,X;
+	void reset(){
+		p=M=Px=Py=Pz=K=0.0;
+		V=A=H=X=0.0;
+		Nc=1;
+	}
+
+private:
+};
+
+class interface{
+public:
+	double M,Px,Py,Pz,K;
+	double Mw,Mn,Pnx,Pny,Pnz,Pwx,Pwy,Pwz,Kw,Kn;
+	double V,A,H,X;
+	void reset(){
+		M=Px=Py=Pz=K=0.0;
+		V=A=H=X=0.0;
+		Mw=Mn=Pnx=Pny=Pnz=Pwx=Pwy=Pwz=Kw=Kn=0.0;
+	}
+
+private:
+};
+
+class SubPhase{
+public:
+	std::shared_ptr <Domain> Dm;
+	double Volume;
+	// input variables
+	double rho_n, rho_w;
+	double nu_n, nu_w;
+	double gamma_wn, beta;
+	double Fx, Fy, Fz;
+	/*
+	 * indices 
+	 * 	    w - water phase
+	 * 	    n - not water phase
+	 * 		c - connected part
+	 * 		d - disconnected part
+	 * 		i - interface region
+	 * 		b - bulk (total)
+	 */
+	// local entities
+	phase wc,wd,wb,nc,nd,nb;
+	interface iwn;
+	
+	// global entities
+	phase gwc,gwd,gwb,gnc,gnd,gnb;
+	interface giwn;
+	//...........................................................................
+    int Nx,Ny,Nz;
+	IntArray PhaseID;		// Phase ID array (solid=0, non-wetting=1, wetting=2)
+	BlobIDArray Label_WP;   // Wetting phase label
+	BlobIDArray Label_NWP;  // Non-wetting phase label index (0:nblobs-1)
+	std::vector<BlobIDType> Label_NWP_map;  // Non-wetting phase label for each index
+	DoubleArray Rho_n;	// density field 
+	DoubleArray Rho_w;	// density field 
+	DoubleArray Phi;		// phase indicator field
+	DoubleArray DelPhi;		// Magnitude of Gradient of the phase indicator field
+	DoubleArray Pressure; 	// pressure field
+	DoubleArray Vel_x;		// velocity field
+	DoubleArray Vel_y;
+	DoubleArray Vel_z;
+	DoubleArray SDs;
+
+	std::shared_ptr<Minkowski> morph_w;
+	std::shared_ptr<Minkowski> morph_n;
+	std::shared_ptr<Minkowski> morph_i;
+
+	SubPhase(std::shared_ptr <Domain> Dm);
+	~SubPhase();
+	
+	void SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double beta);
+	void Basic();
+	void Full();
+	void Write(int time);
+	
+private:
+	FILE *TIMELOG;
+
+};
+
+#endif
+

@@ -31,16 +31,17 @@
 #include "analysis/TwoPhase.h"
 
 #include "analysis/pmmc.h"
+#include "analysis/analysis.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "analysis/analysis.h"
-
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
+
+#include <memory>
+
 
 #define BLOB_AVG_COUNT 35
 
@@ -459,11 +460,10 @@ void TwoPhase::UpdateMeshValues()
 			}
 		}
 	}
-
 }
 void TwoPhase::ComputeLocal()
 {
-	int i,j,k,n,kmin,kmax;
+	int i,j,k,n,imin,jmin,kmin,kmax;
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};
 
 	// If external boundary conditions are set, do not average over the inlet
@@ -471,9 +471,15 @@ void TwoPhase::ComputeLocal()
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
+	imin=jmin=1;
+	// If inlet layers exist use these as default
+	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
+	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
+	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
+		
 	for (k=kmin; k<kmax; k++){
-		for (j=1; j<Ny-1; j++){
-			for (i=1; i<Nx-1; i++){
+		for (j=jmin; j<Ny-1; j++){
+			for (i=imin; i<Nx-1; i++){
 				//...........................................................................
 				n_nw_pts=n_ns_pts=n_ws_pts=n_nws_pts=n_local_sol_pts=n_local_nws_pts=0;
 				n_nw_tris=n_ns_tris=n_ws_tris=n_nws_seg=n_local_sol_tris=0;
@@ -1224,8 +1230,8 @@ void TwoPhase::PrintAll(int timestep)
 				Gws_global(0),Gws_global(1),Gws_global(2),Gws_global(3),Gws_global(4),Gws_global(5));	// orientation of ws interface
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",trawn_global, trJwn_global, trRwn_global);		// Trimmed curvature
 		fprintf(TIMELOG,"%.5g %.5g %.5g ",wwndnw_global, wwnsdnwn_global, Jwnwwndnw_global);		// kinematic quantities
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->V(), wet_morph->A(), wet_morph->J(), wet_morph->X());
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->V(), nonwet_morph->A(), nonwet_morph->J(), nonwet_morph->X());
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",wet_morph->V(), wet_morph->A(), wet_morph->H(), wet_morph->X());
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",nonwet_morph->V(), nonwet_morph->A(), nonwet_morph->H(), nonwet_morph->X());
 //		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",euler_global, Kn_global, Jn_global, An_global);			// minkowski measures
 		fflush(TIMELOG);
 	}

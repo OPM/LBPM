@@ -19,12 +19,12 @@
 #include "IO/silo.h"
 #include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
-#include "shared_ptr.h"
 
 #include <sys/stat.h>
 #include <algorithm>
 #include <vector>
 #include <set>
+#include <memory>
 
 
 

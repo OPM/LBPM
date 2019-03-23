@@ -121,7 +121,8 @@ void ScaLBL_ColorModel::SetDomain(){
 	N = Nx*Ny*Nz;
 	id = new char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
+	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
@@ -168,7 +169,7 @@ void ScaLBL_ColorModel::ReadInput(){
 	
 	if (rank == 0) cout << "Domain set." << endl;
 	
-	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 }
 
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
@@ -427,34 +428,27 @@ void ScaLBL_ColorModel::Run(){
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
-	int MAX_MORPH_TIMESTEPS = 20000;
-	int CURRENT_MORPH_TIMESTEPS=0;
-	int morph_interval;
-	double morph_delta;
+	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
+	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
+	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
+	int morph_interval = 1000000;
+	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
+	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int morph_timesteps = 0;
-	int ramp_timesteps = 50000;
-	double capillary_number;
-	double tolerance = 1.f;
+	double morph_delta = 0.0;
+	double capillary_number = 0.0;
+	double tolerance = 0.01;
 	double Ca_previous = 0.f;
-
-
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
+	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
-/*	double TARGET_SATURATION = 0.f;
-	int target_saturation_index=0;
-	std::vector<double> target_saturation;
-	if (color_db->keyExists( "target_saturation" )){
-		target_saturation = color_db->getVector<double>( "target_saturation" );
-		TARGET_SATURATION = target_saturation[0];
+	if (color_db->keyExists( "residual_endpoint_threshold" )){
+		RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "residual_endpoint_threshold" );
 	}
-	*/
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
-	}
-	else{
-		capillary_number=0;
 	}
 	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
@@ -463,25 +457,16 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
 	}
-	else{
-		morph_delta=0.0;
-		USE_MORPH = false;
-	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
 		USE_MORPH = true;
 	}
-	else{
-		morph_interval=1000000;
-		USE_MORPH = false;
-	}
 	if (analysis_db->keyExists( "tolerance" )){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
 	}
-	else{
-		tolerance = 0.02;
+	if (analysis_db->keyExists( "analysis_interval" )){
+		analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	}
-	int analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	
 	if (rank==0){
 		printf("********************************************************\n");
@@ -494,7 +479,7 @@ void ScaLBL_ColorModel::Run(){
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-	
+		
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
@@ -581,21 +566,23 @@ void ScaLBL_ColorModel::Run(){
 		PROFILE_STOP("Update");
 	       
 		// Run the analysis
-		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		
-		// allow initial ramp-up to get closer to steady state
-		if (timestep > ramp_timesteps && timestep%analysis_interval == 0 && USE_MORPH){
-			analysis.finish();
-			if ( morph_timesteps > morph_interval ){
+		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.basic( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
-				double volB = Averages->Volume_w(); 
-				double volA = Averages->Volume_n(); 
-				double vA_x = Averages->van_global(0); 
-				double vA_y = Averages->van_global(1); 
-				double vA_z = Averages->van_global(2); 
-				double vB_x = Averages->vaw_global(0); 
-				double vB_y = Averages->vaw_global(1); 
-				double vB_z = Averages->vaw_global(2);
+		// allow initial ramp-up to get closer to steady state
+		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
+			analysis.finish();
+			CURRENT_STEADY_TIMESTEPS += analysis_interval;
+
+			if ( morph_timesteps > morph_interval ){
+				double volB = Averages->gwb.V; 
+				double volA = Averages->gnb.V; 
+				double vA_x = Averages->gnb.Px/Averages->gnb.M; 
+				double vA_y = Averages->gnb.Py/Averages->gnb.M; 
+				double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
+				double vB_x = Averages->gwb.Px/Averages->gnb.M; 
+				double vB_y = Averages->gwb.Py/Averages->gnb.M; 
+				double vB_z = Averages->gwb.Pz/Averages->gnb.M;
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
@@ -605,22 +592,34 @@ void ScaLBL_ColorModel::Run(){
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
-				//double krA = muA*volA*flow_rate_A/force_magnitude/double(Nx*Ny*Nz*nprocs);
-				//double krB = muB*volB*flow_rate_B/force_magnitude/double(Nx*Ny*Nz*nprocs);
 
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = (volA + volB)*morph_delta; // set target volume chnage
+					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
+					Averages->Full();
+					Averages->Write(timestep);
+					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.finish();
+					
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 						FILE * kr_log_file = fopen("relperm.csv","a");
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",timestep-analysis_interval+20,muA,muB,5.796*alpha,Fx,Fy,Fz);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_STEADY_TIMESTEPS,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
+						//  flow reversal criteria based on fractional flow
+						if (delta_volume_target < 0.0 &&
+								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+							delta_volume_target *= (-1.0);
+						}
+						else if (delta_volume_target > 0.0 &&
+								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+							delta_volume_target *= (-1.0);
+						}
 
 						printf("  Measured capillary number %f \n ",Ca);
 					}
@@ -641,23 +640,8 @@ void ScaLBL_ColorModel::Run(){
 							Fz *= 1e-6/force_magnitude;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha);
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 					}
-
-					/*if (morph_delta > 0.f){
-						// wetting phase saturation will decrease
-						while (current_saturation < TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-							TARGET_SATURATION = target_saturation[target_saturation_index++];
-						}
-					}
-					else{
-						// wetting phase saturation will increase
-						while (current_saturation > TARGET_SATURATION && target_saturation_index < target_saturation.size() ){
-							TARGET_SATURATION = target_saturation[target_saturation_index++];
-							if (rank==0) printf("   Set target saturation as %f (currently %f)\n",TARGET_SATURATION,current_saturation);
-						}
-					}
-					*/
 				}
 				else{
 					if (rank==0){
@@ -676,30 +660,12 @@ void ScaLBL_ColorModel::Run(){
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
 					delta_volume = 0.0;
+					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
+					CURRENT_STEADY_TIMESTEPS=0;
 				}
-				/*if ((delta_volume_target - delta_volume) / delta_volume > 0.f){
-					morph_delta *= 1.01*min((delta_volume_target - delta_volume) / delta_volume, 2.0);
-					if (morph_delta > 1.f) morph_delta = 1.f;
-					if (morph_delta < -1.f) morph_delta = -1.f;
-					if (fabs(morph_delta) < 0.05 ) morph_delta = 0.05*(morph_delta)/fabs(morph_delta); // set minimum
-					if (rank==0) printf("  Adjust morph delta: %f \n", morph_delta);
-				}
-				if (delta_volume_target < 0.f){
-					if (volB/(volA + volB) > TARGET_SATURATION){
-						MORPH_ADAPT = false;
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
-					}
-				}
-				else{
-					if (volB/(volA + volB) < TARGET_SATURATION){
-						MORPH_ADAPT = false;
-						TARGET_SATURATION = target_saturation[target_saturation_index++];
-					}
-				}
-				*/
 				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
@@ -809,9 +775,9 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 
-	if (volume_connected < 0.05*volume_initial){
-		// if connected volume is less than 5% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk to less than 5% of total fluid volume (remove the whole thing) \n");
+	if (volume_connected < 0.025*volume_initial){
+		// if connected volume is less than 2.5% just delete the whole thing
+		if (rank==0) printf("Connected region has shrunk to less than 2.5% of total fluid volume (remove the whole thing) \n");
 	}
 	else {
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
@@ -819,7 +785,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
 			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
 		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
-
 
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){

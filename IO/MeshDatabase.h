@@ -18,9 +18,9 @@
 
 #include "IO/Mesh.h" 
 #include "common/MPI_Helpers.h"
-#include "shared_ptr.h"
 
 #include <iostream>
+#include <memory>
 #include <string.h>
 #include <vector>
 #include <map>

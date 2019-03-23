@@ -124,6 +124,7 @@ public: // Public variables (need to create accessors instead)
 
     double Lx,Ly,Lz,Volume;
     int Nx,Ny,Nz,N;
+    int inlet_layers_x, inlet_layers_y, inlet_layers_z;
     RankInfoStruct rank_info;
 
     MPI_Comm Comm;        // MPI Communicator for this domain
