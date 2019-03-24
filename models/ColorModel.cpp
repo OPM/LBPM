@@ -610,7 +610,7 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-3/force_magnitude;   
 							Fz *= 1e-3/force_magnitude;   
 						}
-						if (force_magnitude < 1e-6){
+						if (force_magnitude < 1e-7){
 							Fx *= 1e-6/force_magnitude;   // impose floor
 							Fy *= 1e-6/force_magnitude;   
 							Fz *= 1e-6/force_magnitude;   
@@ -620,11 +620,11 @@ void ScaLBL_ColorModel::Run(){
 					}
 					//  flow reversal criteria based on fractional flow rate
 					if (delta_volume_target < 0.0 &&
-							volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
 						delta_volume_target *= (-1.0);
 					}
 					else if (delta_volume_target > 0.0 &&
-							(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
 						delta_volume_target *= (-1.0);
 					}
 				}
