@@ -624,7 +624,7 @@ void ScaLBL_ColorModel::Run(){
 						delta_volume_target *= (-1.0);
 					}
 					else if (delta_volume_target > 0.0 &&
-							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
+							volB*flow_rate_B/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
 						delta_volume_target *= (-1.0);
 					}
 				}
