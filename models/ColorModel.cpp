@@ -596,15 +596,6 @@ void ScaLBL_ColorModel::Run(){
 						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_STEADY_TIMESTEPS,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
-						//  flow reversal criteria based on fractional flow
-						if (delta_volume_target < 0.0 &&
-								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
-							delta_volume_target *= (-1.0);
-						}
-						else if (delta_volume_target > 0.0 &&
-								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
-							delta_volume_target *= (-1.0);
-						}
 
 						printf("  Measured capillary number %f \n ",Ca);
 					}
@@ -626,6 +617,15 @@ void ScaLBL_ColorModel::Run(){
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+					}
+					//  flow reversal criteria based on fractional flow rate
+					if (delta_volume_target < 0.0 &&
+							volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+						delta_volume_target *= (-1.0);
+					}
+					else if (delta_volume_target > 0.0 &&
+							(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
+						delta_volume_target *= (-1.0);
 					}
 				}
 				else{
