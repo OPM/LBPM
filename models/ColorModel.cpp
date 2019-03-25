@@ -760,11 +760,11 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 
-	if (volume_connected < 0.025*volume_initial){
+/*	if (volume_connected < 0.025*volume_initial){
 		// if connected volume is less than 2.5% just delete the whole thing
 		if (rank==0) printf("Connected region has shrunk to less than 2.5% of total fluid volume (remove the whole thing) \n");
 	}
-	else {
+	else { */
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		double target_delta_volume_incremental = target_delta_volume;
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
@@ -799,7 +799,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 		fillDouble.fill(phase);
-	}
+	//}
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
