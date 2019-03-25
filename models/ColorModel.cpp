@@ -205,7 +205,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
-		printf("Components labels: %lu \n",NLABELS);
+		printf("Component labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
