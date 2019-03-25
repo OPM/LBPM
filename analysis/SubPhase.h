@@ -11,8 +11,6 @@
 #include "analysis/analysis.h"
 #include "analysis/distance.h"
 #include "analysis/Minkowski.h"
-
-#include "shared_ptr.h"
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
