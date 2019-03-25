@@ -49,6 +49,7 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 					ColorModel.Mask->id[n]=1;
 					ColorModel.Mask->id[n]=1;
 				}
+				ColorModel.id[n] = ColorModel.Mask->id[n];
 			}
 		}
 	}
