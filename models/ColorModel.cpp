@@ -10,7 +10,7 @@ rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rh
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
-
+	REVERSE_FLOW_DIRECTION = false;
 }
 ScaLBL_ColorModel::~ScaLBL_ColorModel(){
 
@@ -621,11 +621,15 @@ void ScaLBL_ColorModel::Run(){
 					//  flow reversal criteria based on fractional flow rate
 					if (delta_volume_target < 0.0 &&
 							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
-						delta_volume_target *= (-1.0);
+						REVERSE_FLOW_DIRECTION = true;
 					}
 					else if (delta_volume_target > 0.0 &&
 							volB*flow_rate_B/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
+						REVERSE_FLOW_DIRECTION = true;
+					}
+					if ( REVERSE_FLOW_DIRECTION ){
 						delta_volume_target *= (-1.0);
+						REVERSE_FLOW_DIRECTION = false;
 					}
 				}
 				else{
@@ -651,6 +655,12 @@ void ScaLBL_ColorModel::Run(){
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
+				if ( REVERSE_FLOW_DIRECTION ){
+					// flow direction will reverse after next steady point
+					MORPH_ADAPT = false;
+					CURRENT_STEADY_TIMESTEPS=0;
+				}
+
 				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
@@ -760,11 +770,12 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 
-/*	if (volume_connected < 0.025*volume_initial){
+	if (volume_connected < 0.025*volume_initial){
 		// if connected volume is less than 2.5% just delete the whole thing
 		if (rank==0) printf("Connected region has shrunk to less than 2.5% of total fluid volume (remove the whole thing) \n");
+		REVERSE_FLOW_DIRECTION = true;
 	}
-	else { */
+	else { 
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		double target_delta_volume_incremental = target_delta_volume;
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
@@ -799,7 +810,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 		fillDouble.fill(phase);
-	//}
+	}
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
