@@ -225,7 +225,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%i, affinity=%f, volume fraction==%f\n",int(VALUE),AFFINITY,volume_fraction); 
+			printf("   label=%hhd, affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
 		}
 	}
 
@@ -611,15 +611,6 @@ void ScaLBL_ColorModel::Run(){
 						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_STEADY_TIMESTEPS,muA,muB,5.796*alpha,Fx,Fy,Fz);
 						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
 						fclose(kr_log_file);
-						//  flow reversal criteria based on fractional flow
-						if (delta_volume_target < 0.0 &&
-								volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)/(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
-							delta_volume_target *= (-1.0);
-						}
-						else if (delta_volume_target > 0.0 &&
-								(volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z)) / (volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z)) < RESIDUAL_ENDPOINT_THRESHOLD){
-							delta_volume_target *= (-1.0);
-						}
 
 						printf("  Measured capillary number %f \n ",Ca);
 					}
@@ -634,13 +625,22 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-3/force_magnitude;   
 							Fz *= 1e-3/force_magnitude;   
 						}
-						if (force_magnitude < 1e-6){
+						if (force_magnitude < 1e-7){
 							Fx *= 1e-6/force_magnitude;   // impose floor
 							Fy *= 1e-6/force_magnitude;   
 							Fz *= 1e-6/force_magnitude;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+					}
+					//  flow reversal criteria based on fractional flow rate
+					if (delta_volume_target < 0.0 &&
+							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
+						delta_volume_target *= (-1.0);
+					}
+					else if (delta_volume_target > 0.0 &&
+							volB*flow_rate_B/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
+						delta_volume_target *= (-1.0);
 					}
 				}
 				else{
