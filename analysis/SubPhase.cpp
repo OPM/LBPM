@@ -28,8 +28,15 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 
 	//.........................................
 	if (Dm->rank()==0){
+		bool WriteHeader=false;
+		SUBPHASE = fopen("subphase.csv","r");
+		if (SUBPHASE != NULL)
+			SUBPHASE.close();
+		else
+			WriteHeader=true;
+
 		SUBPHASE = fopen("subphase.csv","a+");
-		if (ftell(SUBPHASE) == 0)
+		if (WriteHeader)
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
