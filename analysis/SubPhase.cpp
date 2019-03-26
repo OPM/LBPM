@@ -457,7 +457,8 @@ void SubPhase::Full(){
 	giwnc.A=sumReduce( Dm->Comm, iwnc.A);
 	giwnc.H=sumReduce( Dm->Comm, iwnc.H);
 	giwnc.X=sumReduce( Dm->Comm, iwnc.X);
-	
+	giwnc.Nc = iwnc.Nc;
+
 	double vol_nc_bulk = 0.0;
 	double vol_wc_bulk = 0.0;
 	double vol_nd_bulk = 0.0;
