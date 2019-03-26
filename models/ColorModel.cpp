@@ -591,6 +591,7 @@ void ScaLBL_ColorModel::Run(){
 				if (fabs((Ca - Ca_previous)/Ca) < tolerance || CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
+					CURRENT_STEADY_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
