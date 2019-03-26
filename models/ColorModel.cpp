@@ -652,10 +652,13 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
+					delta_volume = 0.0;
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				if ( REVERSE_FLOW_DIRECTION ){
+					if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
+					delta_volume = 0.0;
 					// flow direction will reverse after next steady point
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
@@ -770,47 +773,47 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 
-	if (volume_connected < 0.025*volume_initial){
-		// if connected volume is less than 2.5% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk to less than 2.5% of total fluid volume (remove the whole thing) \n");
+	if (volume_connected < 0.02*volume_initial){
+		// if connected volume is less than 2% just delete the whole thing
+		if (rank==0) printf("Connected region has shrunk to less than 2% of total fluid volume \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
-	else { 
-		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-		double target_delta_volume_incremental = target_delta_volume;
-		if (fabs(target_delta_volume) > 0.01*volume_initial)  
-			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
 
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-					else 		     				  phase_id(i,j,k) = 1;
-					//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
-				}
-			}
-		}	
+	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+	double target_delta_volume_incremental = target_delta_volume;
+	if (fabs(target_delta_volume) > 0.01*volume_initial)  
+		target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
+	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
 
-		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
-
-		// 5. Update phase indicator field based on new distnace
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					int n = k*Nx*Ny + j*Nx + i;
-					double d = phase_distance(i,j,k);
-					if (Averages->SDs(i,j,k) > 0.f){
-						if (d < 3.f){
-							//phase(i,j,k) = -1.0;
-							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-						}
-					}
-				} 
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+				else 		     				  phase_id(i,j,k) = 1;
+				//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
 			}
 		}
-		fillDouble.fill(phase);
+	}	
+
+	CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
+
+	// 5. Update phase indicator field based on new distnace
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				int n = k*Nx*Ny + j*Nx + i;
+				double d = phase_distance(i,j,k);
+				if (Averages->SDs(i,j,k) > 0.f){
+					if (d < 3.f){
+						//phase(i,j,k) = -1.0;
+						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+					}
+				}
+			} 
+		}
 	}
+	fillDouble.fill(phase);
+
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
