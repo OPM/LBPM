@@ -41,10 +41,12 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(TIMELOG,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
 			fprintf(TIMELOG,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 			fprintf(TIMELOG,"Vwc Awc Hwc Xwc ");					 	// wc region 
-			fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					 	// wd region
+			fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 			fprintf(TIMELOG,"Vnc Anc Hnc Xnc ");					 	// nc region
-			fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					 	// nd region
-			fprintf(TIMELOG,"Vi Ai Hi Xi\n");					 		// interface region 
+			fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					// nd region
+			fprintf(TIMELOG,"Vi Ai Hi Xi ");					 		// interface region 
+			fprintf(TIMELOG,"Vic Aic Hic Xic Nic\n");					// interface region 
+
 			// stress tensor?
 		}
 
@@ -64,10 +66,11 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		fprintf(TIMELOG,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
 		fprintf(TIMELOG,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 		fprintf(TIMELOG,"Vwc Awc Hwc Xwc ");					 	// wc region 
-		fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					 	// wd region
+		fprintf(TIMELOG,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 		fprintf(TIMELOG,"Vnc Anc Hnc Xnc ");					 	// nc region
-		fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					 	// nd region
-		fprintf(TIMELOG,"Vi Ai Hi Xi\n");					 		// interface region 
+		fprintf(TIMELOG,"Vnd And Hnd Xnd Nnd ");					// nd region
+		fprintf(TIMELOG,"Vi Ai Hi Xi ");					 		// interface region 
+		fprintf(TIMELOG,"Vic Aic Hic Xic Nic\n");					// interface region 
 	}
 }
 
@@ -93,7 +96,8 @@ void SubPhase::Write(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",gnc.V, gnc.A, gnc.H, gnc.X);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",gnd.V, gnd.A, gnd.H, gnd.X, gnd.Nc);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",giwn.V, giwn.A, giwn.H, giwn.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",giwn.V, giwn.A, giwn.H, giwn.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i\n",giwnc.V, giwnc.A, giwnc.H, giwnc.X, giwnc.Nc);
 		fflush(TIMELOG);
 	}
 	else{
@@ -108,7 +112,8 @@ void SubPhase::Write(int timestep)
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",nc.V, nc.A, nc.H, nc.X);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %i ",nd.V, nd.A, nd.H, nd.X, nd.Nc);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",iwn.V, iwn.A, iwn.H, iwn.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g ",iwn.V, iwn.A, iwn.H, iwn.X);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g\n",iwnc.V, iwnc.A, iwnc.H, iwnc.X);
 		fflush(TIMELOG);
 	}
 
@@ -429,6 +434,16 @@ void SubPhase::Full(){
 	giwn.A=sumReduce( Dm->Comm, iwn.A);
 	giwn.H=sumReduce( Dm->Comm, iwn.H);
 	giwn.X=sumReduce( Dm->Comm, iwn.X);
+	// measure only the connected part
+	iwnc.Nc = morph_i->MeasureConnectedPathway();
+	iwnc.V = morph_i->V(); 
+	iwnc.A = morph_i->A(); 
+	iwnc.H = morph_i->H(); 
+	iwnc.X = morph_i->X(); 
+	giwnc.V=sumReduce( Dm->Comm, iwnc.V);
+	giwnc.A=sumReduce( Dm->Comm, iwnc.A);
+	giwnc.H=sumReduce( Dm->Comm, iwnc.H);
+	giwnc.X=sumReduce( Dm->Comm, iwnc.X);
 	
 	double vol_nc_bulk = 0.0;
 	double vol_wc_bulk = 0.0;
