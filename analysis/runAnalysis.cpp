@@ -952,6 +952,15 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     	d_wait_restart = d_tpool.add_work(work1);
 
     }
+    
+    if (timestep%d_visualization_interval==0){
+        // Write the vis files
+        auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        work->add_dependency(d_wait_analysis);
+        work->add_dependency(d_wait_subphase);
+        work->add_dependency(d_wait_vis);
+        d_wait_vis = d_tpool.add_work(work);
+    }
 
     PROFILE_STOP("run");
 }
