@@ -290,7 +290,7 @@ void SubPhase::Full(){
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
 		
-	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();
+	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
 
  	Dm->CommunicateMeshHalo(Phi);
 	for (int k=1; k<Nz-1; k++){
@@ -543,7 +543,18 @@ void SubPhase::Full(){
 	gwc.Pz=sumReduce( Dm->Comm, wc.Pz);
 	gwc.K=sumReduce( Dm->Comm, wc.K);
 	gwc.p=sumReduce( Dm->Comm, wc.p);
-
+	
+	giwn.Mn=sumReduce( Dm->Comm, iwn.Mn);
+	giwn.Pnx=sumReduce( Dm->Comm, iwn.Pnx);
+	giwn.Pny=sumReduce( Dm->Comm, iwn.Pny);
+	giwn.Pnz=sumReduce( Dm->Comm, iwn.Pnz);
+	giwn.Kn=sumReduce( Dm->Comm, iwn.Kn);
+	giwn.Mw=sumReduce( Dm->Comm, iwn.Mw);
+	giwn.Pwx=sumReduce( Dm->Comm, iwn.Pwx);
+	giwn.Pwy=sumReduce( Dm->Comm, iwn.Pwy);
+	giwn.Pwz=sumReduce( Dm->Comm, iwn.Pwz);
+	giwn.Kw=sumReduce( Dm->Comm, iwn.Kw);
+	
 	// pressure averaging
 	if (vol_wc_bulk > 0.0)
 		wc.p = wc.p /vol_wc_bulk;
