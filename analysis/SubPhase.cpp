@@ -31,7 +31,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		bool WriteHeader=false;
 		SUBPHASE = fopen("subphase.csv","r");
 		if (SUBPHASE != NULL)
-			SUBPHASE.close();
+			fclose(SUBPHASE);
 		else
 			WriteHeader=true;
 
