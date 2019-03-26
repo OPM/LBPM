@@ -104,7 +104,7 @@ public:
 	
 private:
 	FILE *TIMELOG;
-
+	FILE *SUBPHASE;
 };
 
 #endif
