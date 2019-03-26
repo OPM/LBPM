@@ -514,43 +514,47 @@ void Domain::CommInit()
 
 void Domain::ReadIDs(){
 	// Read the IDs from input file
-  int nprocs=nprocx()*nprocy()*nprocz();
-    size_t readID;
-    char LocalRankString[8];
-    char LocalRankFilename[40];
-    //.......................................................................
-    if (rank() == 0)    printf("Read input media... \n");
-    //.......................................................................
-    sprintf(LocalRankString,"%05d",rank());
-    sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
-    // .......... READ THE INPUT FILE .......................................
-    if (rank()==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
-    sprintf(LocalRankFilename,"ID.%05i",rank());
-    FILE *IDFILE = fopen(LocalRankFilename,"rb");
-    if (IDFILE==NULL) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
-    readID=fread(id,1,N,IDFILE);
-    if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",rank());
-    fclose(IDFILE);
-    // Compute the porosity
-    double sum;
-    double porosity;
-    double sum_local=0.0;
-    double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-    if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
- 	//.........................................................
- 	// If external boundary conditions are applied remove solid
-    if (BoundaryCondition >  0  && kproc() == 0){
- 		for (int k=0; k<3; k++){
- 			for (int j=0;j<Ny;j++){
- 				for (int i=0;i<Nx;i++){
- 					int n = k*Nx*Ny+j*Nx+i;
- 					id[n] = 1;
- 				}                    
- 			}
+	int nprocs=nprocx()*nprocy()*nprocz();
+	size_t readID;
+	char LocalRankString[8];
+	char LocalRankFilename[40];
+	//.......................................................................
+	if (rank() == 0)    printf("Read input media... \n");
+	//.......................................................................
+	sprintf(LocalRankString,"%05d",rank());
+	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
+	// .......... READ THE INPUT FILE .......................................
+	if (rank()==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
+	sprintf(LocalRankFilename,"ID.%05i",rank());
+	FILE *IDFILE = fopen(LocalRankFilename,"rb");
+	if (IDFILE==NULL) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
+	readID=fread(id,1,N,IDFILE);
+	if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",rank());
+	fclose(IDFILE);
+	int inlet_layers=0;
+	int outlet_layers=0;
+	// Compute the porosity
+	double sum;
+	double porosity;
+	double sum_local=0.0;
+	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
+	//.........................................................
+	// If external boundary conditions are applied remove solid
+	if (BoundaryCondition >  0  && kproc() == 0){
+		inlet_layers=outlet_layers=10;
+		for (int k=0; k<inlet_layers; k++){
+			for (int j=0;j<Ny;j++){
+				for (int i=0;i<Nx;i++){
+					int n = k*Nx*Ny+j*Nx+i;
+					id[n] = 1;
+				}                    
+			}
  		}
  	}
     if (BoundaryCondition >  0  && kproc() == nprocz()-1){
- 		for (int k=Nz-3; k<Nz; k++){
+		outlet_layers=10;
+ 		for (int k=Nz-outlet_layers; k<Nz; k++){
  			for (int j=0;j<Ny;j++){
  				for (int i=0;i<Nx;i++){
  					int n = k*Nx*Ny+j*Nx+i;
@@ -559,7 +563,7 @@ void Domain::ReadIDs(){
  			}
  		}
  	}
-    for (int k=1;k<Nz-1;k++){
+    for (int k=inlet_layers+1; k<Nz-outlet_layers-1;k++){
         for (int j=1;j<Ny-1;j++){
             for (int i=1;i<Nx-1;i++){
                 int n = k*Nx*Ny+j*Nx+i;
