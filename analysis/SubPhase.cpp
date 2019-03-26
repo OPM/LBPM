@@ -28,8 +28,15 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 
 	//.........................................
 	if (Dm->rank()==0){
+		bool WriteHeader=false;
+		SUBPHASE = fopen("subphase.csv","r");
+		if (SUBPHASE != NULL)
+			fclose(SUBPHASE);
+		else
+			WriteHeader=true;
+
 		SUBPHASE = fopen("subphase.csv","a+");
-		if (ftell(SUBPHASE) == 0)
+		if (WriteHeader)
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
@@ -141,11 +148,12 @@ void SubPhase::Basic(){
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
 	imin=jmin=1;
-	// If inlet layers exist use these as default
+	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
-		
+	if (Dm->outlet_layers_z > 0) kmax = Dm->outlet_layers_z;
+	
 	nb.reset(); wb.reset();
 /*
  	//Dm->CommunicateMeshHalo(Phi);

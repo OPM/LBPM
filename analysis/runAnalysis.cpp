@@ -389,9 +389,9 @@ public:
             // Averages.ColorToSignedDistance(beta,Averages.Phase,Averages.Phase_tplus);
         }
         if ( matches(type,AnalysisType::ComputeAverages) ) {
-            PROFILE_START("Compute subphase",1);
+            PROFILE_START("Compute basic averages",1);
             Averages.Basic();
-            PROFILE_STOP("Compute subphase",1);
+            PROFILE_STOP("Compute basic averages",1);
         }
     }
 private:
@@ -401,6 +401,29 @@ private:
     SubPhase& Averages;
     double beta;
 };
+
+class SubphaseWorkItem: public ThreadPool::WorkItemRet<void>
+{
+public:
+	SubphaseWorkItem( AnalysisType type_, int timestep_, SubPhase& Averages_ ):
+                type(type_), timestep(timestep_), Averages(Averages_){ }
+    ~SubphaseWorkItem() { }
+    virtual void run() {
+
+        if ( matches(type,AnalysisType::ComputeAverages) ) {
+            PROFILE_START("Compute subphase",1);
+            Averages.Full();
+            PROFILE_STOP("Compute subphase",1);
+        }
+    }
+private:
+    SubphaseWorkItem();
+    AnalysisType type;
+    int timestep;
+    SubPhase& Averages;
+    double beta;
+};
+
 
 
 /******************************************************************
@@ -468,6 +491,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     ThreadPool::thread_id_t d_wait_analysis;
     ThreadPool::thread_id_t d_wait_vis;
     ThreadPool::thread_id_t d_wait_restart;
+    ThreadPool::thread_id_t d_wait_subphase;
 
     char rankString[20];
     sprintf(rankString,"%05d",Dm->rank());
@@ -479,6 +503,12 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_blobid_interval = db->getScalar<int>( "blobid_interval" );
     d_visualization_interval = db->getScalar<int>( "visualization_interval" );
     auto restart_file = db->getScalar<std::string>( "restart_file" );
+	if (db->keyExists( "subphase_analysis_interval" )){
+		d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
+	}
+	else{
+		d_subphase_analysis_interval = INT_MAX;
+	}
     d_restartFile = restart_file + "." + rankString;
     d_rank = MPI_WORLD_RANK();
     writeIDMap(ID_map_struct(),0,id_map_filename);
@@ -892,8 +922,15 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     // if ( matches(type,AnalysisType::ComputeAverages) ) {
     if ( timestep%d_analysis_interval == 0 ) {
         auto work = new BasicWorkItem(type,timestep,Averages);
-        work->add_dependency(d_wait_analysis);    // Make sure we are done using analysis before modifying
+        work->add_dependency(d_wait_subphase);    // Make sure we are done using analysis before modifying
+        work->add_dependency(d_wait_analysis);    
         d_wait_analysis = d_tpool.add_work(work);
+    }
+    
+    if ( timestep%d_subphase_analysis_interval == 0 ) {
+        auto work = new BasicWorkItem(type,timestep,Averages);
+        work->add_dependency(d_wait_subphase);    // Make sure we are done using analysis before modifying
+        d_wait_subphase = d_tpool.add_work(work);
     }
 
     if (timestep%d_restart_interval==0){
