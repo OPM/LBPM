@@ -223,7 +223,7 @@ void SubPhase::Basic(){
 		
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M;
-		double not_water_flow_rate=gnb.V*sqrt(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
+		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
 		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
