@@ -961,7 +961,7 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     
     if (timestep%d_visualization_interval==0){
         // Write the vis files
-        auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        auto work = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
         work->add_dependency(d_wait_vis);
