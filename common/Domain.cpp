@@ -77,6 +77,7 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
+	outlet_layers_x(0), outlet_layers_y(0), outlet_layers_z(0),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -126,6 +127,12 @@ void Domain::initialize( std::shared_ptr<Database> db )
 		inlet_layers_y = InletCount[1];
 		inlet_layers_z = InletCount[2];
 	}
+	if (d_db->keyExists( "OutletLayers" )){
+		auto OutletCount = d_db->getVector<int>( "OutletLayers" );
+		outlet_layers_x = OutletCount[0];
+		outlet_layers_y = OutletCount[1];
+		outlet_layers_z = OutletCount[2];
+	}
 	
     ASSERT( n.size() == 3u );
     ASSERT( L.size() == 3u );
@@ -144,9 +151,13 @@ void Domain::initialize( std::shared_ptr<Database> db )
     MPI_Comm_rank( Comm, &myrank );
 	rank_info = RankInfoStruct(myrank,nproc[0],nproc[1],nproc[2]);
 	// inlet layers only apply to lower part of domain
-	if (nproc[0] > 0) inlet_layers_x = 0;
-	if (nproc[1] > 0) inlet_layers_y = 0;
-	if (nproc[2] > 0) inlet_layers_z = 0;
+	if (rank_info.ix > 0) inlet_layers_x = 0;
+	if (rank_info.jy > 0) inlet_layers_y = 0;
+	if (rank_info.kz > 0) inlet_layers_z = 0;
+	// outlet layers only apply to top part of domain
+	if (rank_info.ix < nproc[0]-1 ) outlet_layers_x = 0;
+	if (rank_info.jy < nproc[1]-1) outlet_layers_y = 0;
+	if (rank_info.kz < nproc[2]-1) outlet_layers_z = 0;
     // Fill remaining variables
 	N = Nx*Ny*Nz;
 	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
@@ -531,8 +542,7 @@ void Domain::ReadIDs(){
 	readID=fread(id,1,N,IDFILE);
 	if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",rank());
 	fclose(IDFILE);
-	int inlet_layers=0;
-	int outlet_layers=0;
+
 	// Compute the porosity
 	double sum;
 	double porosity;
@@ -542,8 +552,8 @@ void Domain::ReadIDs(){
 	//.........................................................
 	// If external boundary conditions are applied remove solid
 	if (BoundaryCondition >  0  && kproc() == 0){
-		inlet_layers=outlet_layers=10;
-		for (int k=0; k<inlet_layers; k++){
+    	if (inlet_layers_z < 4)	inlet_layers_z=4;
+		for (int k=0; k<inlet_layers_z; k++){
 			for (int j=0;j<Ny;j++){
 				for (int i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
@@ -553,8 +563,8 @@ void Domain::ReadIDs(){
  		}
  	}
     if (BoundaryCondition >  0  && kproc() == nprocz()-1){
-		outlet_layers=10;
- 		for (int k=Nz-outlet_layers; k<Nz; k++){
+    	if (outlet_layers_z < 4)	outlet_layers_z=4;
+ 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
  			for (int j=0;j<Ny;j++){
  				for (int i=0;i<Nx;i++){
  					int n = k*Nx*Ny+j*Nx+i;
@@ -563,7 +573,7 @@ void Domain::ReadIDs(){
  			}
  		}
  	}
-    for (int k=inlet_layers+1; k<Nz-outlet_layers-1;k++){
+    for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
         for (int j=1;j<Ny-1;j++){
             for (int i=1;i<Nx-1;i++){
                 int n = k*Nx*Ny+j*Nx+i;
