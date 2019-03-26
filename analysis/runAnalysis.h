@@ -7,7 +7,7 @@
 #include "common/Communication.h"
 #include "common/ScaLBL.h"
 #include "threadpool/thread_pool.h"
-
+#include <limits.h>
 
 typedef std::shared_ptr<std::pair<int,IntArray>> BlobIDstruct;
 typedef std::shared_ptr<std::vector<BlobIDType>> BlobIDList;
