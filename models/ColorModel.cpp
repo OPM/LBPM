@@ -415,6 +415,7 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_MORPH = false;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
+	int MAX_STEADY_TIMESTEPS = 200000;
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int morph_interval = 1000000;
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
@@ -452,7 +453,12 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "analysis_interval" )){
 		analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	}
-	
+	if (analysis_db->keyExists( "max_steady_timesteps" )){
+		MAX_STEADY_TIMESTEPS = analysis_db->getScalar<int>( "max_steady_timesteps" );
+	}
+	if (analysis_db->keyExists( "max_morph_timesteps" )){
+		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
+	}
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("No. of timesteps: %i \n", timestepMax);
@@ -582,7 +588,7 @@ void ScaLBL_ColorModel::Run(){
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
 
-				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
+				if (fabs((Ca - Ca_previous)/Ca) < tolerance || CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
