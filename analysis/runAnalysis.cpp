@@ -503,7 +503,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_blobid_interval = db->getScalar<int>( "blobid_interval" );
     d_visualization_interval = db->getScalar<int>( "visualization_interval" );
     auto restart_file = db->getScalar<std::string>( "restart_file" );
-	if (db->keyExists( "subphase_analysis_interval" ){
+	if (db->keyExists( "subphase_analysis_interval" )){
 		d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
 	}
 	else{
