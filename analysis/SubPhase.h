@@ -35,10 +35,12 @@ private:
 
 class interface{
 public:
+	int Nc;
 	double M,Px,Py,Pz,K;
 	double Mw,Mn,Pnx,Pny,Pnz,Pwx,Pwy,Pwz,Kw,Kn;
 	double V,A,H,X;
 	void reset(){
+		Nc = 0;
 		M=Px=Py=Pz=K=0.0;
 		V=A=H=X=0.0;
 		Mw=Mn=Pnx=Pny=Pnz=Pwx=Pwy=Pwz=Kw=Kn=0.0;
@@ -67,11 +69,11 @@ public:
 	 */
 	// local entities
 	phase wc,wd,wb,nc,nd,nb;
-	interface iwn;
+	interface iwn,iwnc;
 	
 	// global entities
 	phase gwc,gwd,gwb,gnc,gnd,gnb;
-	interface giwn;
+	interface giwn,giwnc;
 	//...........................................................................
     int Nx,Ny,Nz;
 	IntArray PhaseID;		// Phase ID array (solid=0, non-wetting=1, wetting=2)
@@ -102,7 +104,7 @@ public:
 	
 private:
 	FILE *TIMELOG;
-
+	FILE *SUBPHASE;
 };
 
 #endif

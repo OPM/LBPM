@@ -14,13 +14,13 @@ using namespace std;
 inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){
 	// initialize a bubble
 	int i,j,k,n;
-	int rank = ColorModel.Mask->rank();
-	int nprocx = ColorModel.Mask->nprocx();
-	int nprocy = ColorModel.Mask->nprocy();
-	int nprocz = ColorModel.Mask->nprocz();
-	int Nx = ColorModel.Mask->Nx;
-	int Ny = ColorModel.Mask->Ny;
-	int Nz = ColorModel.Mask->Nz;
+	int rank = ColorModel.Dm->rank();
+	int nprocx = ColorModel.Dm->nprocx();
+	int nprocy = ColorModel.Dm->nprocy();
+	int nprocz = ColorModel.Dm->nprocz();
+	int Nx = ColorModel.Dm->Nx;
+	int Ny = ColorModel.Dm->Ny;
+	int Nz = ColorModel.Dm->Nz;
 	if (rank == 0) cout << "Setting up bubble..." << endl;
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
@@ -34,14 +34,12 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				n = k*Nx*Ny + j*Nz + i;
-				int iglobal= i+(Nx-2)*ColorModel.Mask->iproc();
-				int jglobal= j+(Ny-2)*ColorModel.Mask->jproc();
-				int kglobal= k+(Nz-2)*ColorModel.Mask->kproc();
+				n = k*Nx*Ny + j*Nx + i;
+				double iglobal= double(i+(Nx-2)*ColorModel.Dm->iproc())-double((Nx-2)*nprocx)*0.5;
+				double jglobal= double(j+(Ny-2)*ColorModel.Dm->jproc())-double((Ny-2)*nprocy)*0.5;
+				double kglobal= double(k+(Nz-2)*ColorModel.Dm->kproc())-double((Nz-2)*nprocz)*0.5;
 				// Initialize phase position field for parallel bubble test
-				if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
-						+(jglobal-0.5*(Ny-2)*nprocy)*(jglobal-0.5*(Ny-2)*nprocy)
-						+(kglobal-0.5*(Nz-2)*nprocz)*(kglobal-0.5*(Nz-2)*nprocz) < BubbleRadius*BubbleRadius){
+				if ((iglobal*iglobal)+(jglobal*jglobal)+(kglobal*kglobal) < BubbleRadius*BubbleRadius){
 					ColorModel.Mask->id[n] = 2;
 					ColorModel.Mask->id[n] = 2;
 				}
@@ -50,9 +48,17 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 					ColorModel.Mask->id[n]=1;
 				}
 				ColorModel.id[n] = ColorModel.Mask->id[n];
+				ColorModel.Dm->id[n] = ColorModel.Mask->id[n];
 			}
 		}
 	}
+	
+	FILE *OUTFILE;
+	char LocalRankFilename[40];
+	sprintf(LocalRankFilename,"Bubble.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(ColorModel.id,1,Nx*Ny*Nz,OUTFILE);
+	fclose(OUTFILE);
 	// initialize the phase indicator field
 }
 //***************************************************************************************

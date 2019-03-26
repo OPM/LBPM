@@ -415,6 +415,7 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_MORPH = false;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
+	int MAX_STEADY_TIMESTEPS = 200000;
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int morph_interval = 1000000;
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
@@ -452,7 +453,12 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "analysis_interval" )){
 		analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
 	}
-	
+	if (analysis_db->keyExists( "max_steady_timesteps" )){
+		MAX_STEADY_TIMESTEPS = analysis_db->getScalar<int>( "max_steady_timesteps" );
+	}
+	if (analysis_db->keyExists( "max_morph_timesteps" )){
+		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
+	}
 	if (rank==0){
 		printf("********************************************************\n");
 		printf("No. of timesteps: %i \n", timestepMax);
@@ -571,14 +577,18 @@ void ScaLBL_ColorModel::Run(){
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
-				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
-				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				double dir_x = Fx/force_mag;
+				double dir_y = Fy/force_mag;
+				double dir_z = Fz/force_mag;
+				double flow_rate_A = (vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
+				double flow_rate_B = (vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 				double current_saturation = volB/(volA+volB);
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 
 				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
 
-				if (fabs((Ca - Ca_previous)/Ca) < tolerance ){
+				if (fabs((Ca - Ca_previous)/Ca) < tolerance || CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
@@ -772,10 +782,9 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
-
 	if (volume_connected < 0.02*volume_initial){
 		// if connected volume is less than 2% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk to less than 2% of total fluid volume \n");
+		if (rank==0) printf("Connected region has shrunk to less than 2 %% of total fluid volume \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
 

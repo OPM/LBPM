@@ -754,12 +754,20 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		if (morph_delta / morph_delta_previous > 2.0 ) morph_delta = morph_delta_previous*2.0;
 				
 		//MAX_DISPLACEMENT *= max(TargetGrowth/GrowthEstimate,1.25);
-		if (MAX_DISPLACEMENT > 1.0 ){
-			if (morph_delta > 0.0 ) morph_delta = 1.0;
-			else 					morph_delta = -1.0;
-			
-			//if (COUNT_FOR_LOOP > 2) COUNT_FOR_LOOP = 100;
-			COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+		
+		if (morph_delta > 0.0 ){
+			// object is growing
+			if (MAX_DISPLACEMENT > 3.0 ){
+				morph_delta = 3.0;
+				COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+			}
+		}
+		else{
+			// object is shrinking
+			if (MAX_DISPLACEMENT > 1.0 ){
+				morph_delta = -1.0;
+				COUNT_FOR_LOOP = 100; // exit loop if displacement is too large
+			}
 		}
 	}
 	if (rank == 0) printf("Final delta=%f \n",morph_delta);
