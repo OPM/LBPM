@@ -108,6 +108,7 @@ private:
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;
     ThreadPool::thread_id_t d_wait_analysis;
+    ThreadPool::thread_id_t d_wait_subphase;
     ThreadPool::thread_id_t d_wait_vis;
     ThreadPool::thread_id_t d_wait_restart;
 
