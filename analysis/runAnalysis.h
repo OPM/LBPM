@@ -88,6 +88,7 @@ private:
     int d_Np;
     int d_rank;
     int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
+    int d_subphase_analysis_interval;
     double d_beta;
     bool d_regular;
     ThreadPool d_tpool;

@@ -148,11 +148,12 @@ void SubPhase::Basic(){
 	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
 	imin=jmin=1;
-	// If inlet layers exist use these as default
+	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
-		
+	if (Dm->outlet_layers_z > 0) kmax = Dm->outlet_layers_z;
+	
 	nb.reset(); wb.reset();
 /*
  	//Dm->CommunicateMeshHalo(Phi);
