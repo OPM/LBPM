@@ -491,6 +491,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     ThreadPool::thread_id_t d_wait_analysis;
     ThreadPool::thread_id_t d_wait_vis;
     ThreadPool::thread_id_t d_wait_restart;
+    ThreadPool::thread_id_t d_wait_subphase;
 
     char rankString[20];
     sprintf(rankString,"%05d",Dm->rank());
