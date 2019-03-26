@@ -208,7 +208,7 @@ void SubPhase::Basic(){
 	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
 
 	if (Dm->rank() == 0){
-		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz)
+		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 		double dir_x = Fx/force_mag;
 		double dir_y = Fy/force_mag;
 		double dir_z = Fz/force_mag;

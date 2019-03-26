@@ -577,7 +577,7 @@ void ScaLBL_ColorModel::Run(){
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
-				double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz)
+				double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				double dir_x = Fx/force_mag;
 				double dir_y = Fy/force_mag;
 				double dir_z = Fz/force_mag;
