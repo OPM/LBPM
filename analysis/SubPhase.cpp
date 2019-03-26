@@ -208,9 +208,14 @@ void SubPhase::Basic(){
 	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
 
 	if (Dm->rank() == 0){
+		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz)
+		double dir_x = Fx/force_mag;
+		double dir_y = Fy/force_mag;
+		double dir_z = Fz/force_mag;
+		
 		double saturation=gwb.V/(gwb.V + gnb.V);
-		double water_flow_rate=gwb.V*sqrt(gwb.Px*gwb.Px + gwb.Py*gwb.Py + gwb.Pz*gwb.Pz)/gwb.M;
-		double not_water_flow_rate=gnb.V*sqrt(gnb.Px*gnb.Px + gnb.Py*gnb.Py + gnb.Pz*gnb.Pz)/gnb.M;
+		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M;
+		double not_water_flow_rate=gnb.V*sqrt(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
 		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);

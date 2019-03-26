@@ -571,8 +571,12 @@ void ScaLBL_ColorModel::Run(){
 				double muA = rhoA*(tauA-0.5)/3.f; 
 				double muB = rhoB*(tauB-0.5)/3.f;				
 				
-				double flow_rate_A = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
-				double flow_rate_B = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz)
+				double dir_x = Fx/force_mag;
+				double dir_y = Fy/force_mag;
+				double dir_z = Fz/force_mag;
+				double flow_rate_A = (vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
+				double flow_rate_B = (vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 				double current_saturation = volB/(volA+volB);
 				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
 
@@ -771,7 +775,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-
 
 	if (volume_connected < 0.02*volume_initial){
 		// if connected volume is less than 2% just delete the whole thing
