@@ -412,6 +412,7 @@ public:
 
     	PROFILE_START("Compute subphase",1);
     	Averages.Full();
+    	Averages.Write(timestep);
     	PROFILE_STOP("Compute subphase",1);
     }
 private:
