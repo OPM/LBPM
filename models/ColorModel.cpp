@@ -783,7 +783,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
-	if (volume_connected < 0.02*volume_initial){
+	if (volume_connected < 0.02*volume_initial && target_delta_volume < 0.0){
 		// if connected volume is less than 2% just delete the whole thing
 		if (rank==0) printf("Connected region has shrunk to less than 2 %% of total fluid volume \n");
 		REVERSE_FLOW_DIRECTION = true;
