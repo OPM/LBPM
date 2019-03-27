@@ -15,7 +15,7 @@ typedef std::shared_ptr<std::vector<BlobIDType>> BlobIDList;
 
 // Types of analysis
 enum class AnalysisType : uint64_t { AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
-    CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
+    CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20, ComputeSubphase=0x40 };
 
 
 //! Class to run the analysis in multiple threads
