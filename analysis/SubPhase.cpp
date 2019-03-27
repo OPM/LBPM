@@ -239,6 +239,8 @@ void SubPhase::Basic(){
 		double dir_z = Fz/force_mag;
 		if (force_mag == 0.0){
 			// default to z direction
+			dir_x = 0.0;
+			dir_y = 0.0;
 			dir_z = 1.0;
 			force_mag = 1.0;
 		}
