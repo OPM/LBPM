@@ -410,11 +410,9 @@ public:
     ~SubphaseWorkItem() { }
     virtual void run() {
 
-        if ( matches(type,AnalysisType::ComputeAverages) ) {
-            PROFILE_START("Compute subphase",1);
-            Averages.Full();
-            PROFILE_STOP("Compute subphase",1);
-        }
+    	PROFILE_START("Compute subphase",1);
+    	Averages.Full();
+    	PROFILE_STOP("Compute subphase",1);
     }
 private:
     SubphaseWorkItem();
@@ -929,13 +927,16 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     if ( timestep%d_analysis_interval == 0 ) {
         auto work = new BasicWorkItem(type,timestep,Averages);
         work->add_dependency(d_wait_subphase);    // Make sure we are done using analysis before modifying
-        work->add_dependency(d_wait_analysis);    
+        work->add_dependency(d_wait_analysis);  
+        work->add_dependency(d_wait_vis);
         d_wait_analysis = d_tpool.add_work(work);
     }
     
     if ( timestep%d_subphase_analysis_interval == 0 ) {
         auto work = new SubphaseWorkItem(type,timestep,Averages);
         work->add_dependency(d_wait_subphase);    // Make sure we are done using analysis before modifying
+        work->add_dependency(d_wait_analysis);  
+        work->add_dependency(d_wait_vis);
         d_wait_subphase = d_tpool.add_work(work);
     }
 
