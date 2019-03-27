@@ -237,7 +237,11 @@ void SubPhase::Basic(){
 		double dir_x = Fx/force_mag;
 		double dir_y = Fy/force_mag;
 		double dir_z = Fz/force_mag;
-
+		if (force_mag == 0.0){
+			// default to z direction
+			dir_z = 1.0;
+			force_mag = 1.0;
+		}
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M;
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
