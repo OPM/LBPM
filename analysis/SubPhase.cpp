@@ -205,11 +205,11 @@ void SubPhase::Basic(){
 						wb.Pz += rho_w*nB*Vel_z(n);
 					}
 					if ( phi > 0.99 ){
-						nb.P += Pressure(n);
+						nb.p += Pressure(n);
 						count_n += 1.0;
 					}
 					else if ( phi < -0.99 ){
-						wb.P += Pressure(n);
+						wb.p += Pressure(n);
 						count_w += 1.0;
 					}
 				}

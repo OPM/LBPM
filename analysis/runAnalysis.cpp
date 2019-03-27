@@ -934,7 +934,7 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     }
     
     if ( timestep%d_subphase_analysis_interval == 0 ) {
-        auto work = new BasicWorkItem(type,timestep,Averages);
+        auto work = new SubphaseWorkItem(type,timestep,Averages);
         work->add_dependency(d_wait_subphase);    // Make sure we are done using analysis before modifying
         d_wait_subphase = d_tpool.add_work(work);
     }
