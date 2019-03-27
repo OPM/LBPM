@@ -498,17 +498,23 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
     d_N[0] = Dm->Nx;
     d_N[1] = Dm->Ny;
     d_N[2] = Dm->Nz;
+    
     d_restart_interval = db->getScalar<int>( "restart_interval" );
-    d_analysis_interval = db->getScalar<int>( "analysis_interval" );
-    d_blobid_interval = db->getScalar<int>( "blobid_interval" );
-    d_visualization_interval = db->getScalar<int>( "visualization_interval" );
-    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    d_analysis_interval = db->getScalar<int>( "analysis_interval" );    
+    d_subphase_analysis_interval = INT_MAX;
+	d_visualization_interval = INT_MAX;
+	d_blobid_interval = INT_MAX;
+	if (db->keyExists( "blobid_interval" )){
+	    d_blobid_interval = db->getScalar<int>( "blobid_interval" );
+	}
+	if (db->keyExists( "visualization_interval" )){
+	    d_visualization_interval = db->getScalar<int>( "visualization_interval" );
+	}
 	if (db->keyExists( "subphase_analysis_interval" )){
 		d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
 	}
-	else{
-		d_subphase_analysis_interval = INT_MAX;
-	}
+	
+    auto restart_file = db->getScalar<std::string>( "restart_file" );
     d_restartFile = restart_file + "." + rankString;
     d_rank = MPI_WORLD_RANK();
     writeIDMap(ID_map_struct(),0,id_map_filename);
@@ -951,6 +957,15 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
     	work1->add_dependency(d_wait_restart);
     	d_wait_restart = d_tpool.add_work(work1);
 
+    }
+    
+    if (timestep%d_visualization_interval==0){
+        // Write the vis files
+        auto work = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        work->add_dependency(d_wait_analysis);
+        work->add_dependency(d_wait_subphase);
+        work->add_dependency(d_wait_vis);
+        d_wait_vis = d_tpool.add_work(work);
     }
 
     PROFILE_STOP("run");

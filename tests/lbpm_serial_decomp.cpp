@@ -87,6 +87,9 @@ int main(int argc, char **argv)
 	if (domain_db->keyExists( "checkerSize" )){
 		checkerSize = domain_db->getScalar<int>( "checkerSize" );
 	}
+	else {
+		checkerSize = SIZE[0];
+	}
 	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
@@ -158,12 +161,12 @@ int main(int argc, char **argv)
 			for (int j = 0; j<Ny; j++){
 				for (int i = xStart; i < xStart+inlet_count_x; i++){
 					if ( (j/checkerSize + k/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
@@ -177,12 +180,12 @@ int main(int argc, char **argv)
 			for (int j = yStart; i < yStart+inlet_count_y; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize + k/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
@@ -196,12 +199,12 @@ int main(int argc, char **argv)
 			for (int j = 0; j<Ny; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize+j/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
