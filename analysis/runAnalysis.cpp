@@ -410,11 +410,9 @@ public:
     ~SubphaseWorkItem() { }
     virtual void run() {
 
-        if ( matches(type,AnalysisType::ComputeAverages) ) {
-            PROFILE_START("Compute subphase",1);
-            Averages.Full();
-            PROFILE_STOP("Compute subphase",1);
-        }
+    	PROFILE_START("Compute subphase",1);
+    	Averages.Full();
+    	PROFILE_STOP("Compute subphase",1);
     }
 private:
     SubphaseWorkItem();
