@@ -598,6 +598,7 @@ void runAnalysis::finish( )
     d_wait_blobID.reset();
     d_wait_analysis.reset();
     d_wait_vis.reset();
+    d_wait_subphase.reset();
     d_wait_restart.reset();
     // Syncronize
     MPI_Barrier( d_comm );
