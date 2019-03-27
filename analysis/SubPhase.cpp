@@ -79,6 +79,23 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		fprintf(SUBPHASE,"Vi Ai Hi Xi ");					 		// interface region 
 		fprintf(SUBPHASE,"Vic Aic Hic Xic Nic\n");					// interface region 
 	}
+	
+	if (Dm->rank()==0){
+		bool WriteHeader=false;
+		TIMELOG = fopen("timelog.csv","r");
+		if (TIMELOG != NULL)
+			fclose(TIMELOG);
+		else
+			WriteHeader=true;
+
+		TIMELOG = fopen("timelog.csv","a+");
+		if (WriteHeader)
+		{
+			// If timelog is empty, write a short header to list the averages
+			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
+			fprintf(TIMELOG,"sw krw krn qw qn pw pn\n");				
+		}
+	}
 }
 
 
@@ -121,7 +138,6 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",nd.V, nd.A, nd.H, nd.X, nd.Nc);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",iwn.V, iwn.A, iwn.H, iwn.X);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g\n",iwnc.V, iwnc.A, iwnc.H, iwnc.X);
-		fflush(SUBPHASE);
 	}
 
 }
@@ -155,22 +171,10 @@ void SubPhase::Basic(){
 	if (Dm->outlet_layers_z > 0) kmax = Dm->outlet_layers_z;
 	
 	nb.reset(); wb.reset();
-/*
- 	//Dm->CommunicateMeshHalo(Phi);
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				// Compute all of the derivatives using finite differences
-				double fx = 0.5*(Phi(i+1,j,k) - Phi(i-1,j,k));
-				double fy = 0.5*(Phi(i,j+1,k) - Phi(i,j-1,k));
-				double fz = 0.5*(Phi(i,j,k+1) - Phi(i,j,k-1));
-				DelPhi(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
-			}
-		}
-	}
-	*/
-	
+
 	double nA,nB;
+	double count_w = 0.0;
+	double count_n = 0.0;
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -200,6 +204,14 @@ void SubPhase::Basic(){
 						wb.Py += rho_w*nB*Vel_y(n);
 						wb.Pz += rho_w*nB*Vel_z(n);
 					}
+					if ( phi > 0.99 ){
+						nb.P += Pressure(n);
+						count_n += 1.0;
+					}
+					else if ( phi < -0.99 ){
+						wb.P += Pressure(n);
+						count_w += 1.0;
+					}
 				}
 			}
 		}
@@ -214,19 +226,29 @@ void SubPhase::Basic(){
 	gnb.Px=sumReduce( Dm->Comm, nb.Px);
 	gnb.Py=sumReduce( Dm->Comm, nb.Py);
 	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
+	
+	count_w=sumReduce( Dm->Comm, count_w);
+	count_n=sumReduce( Dm->Comm, count_n);
+	gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
+	gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
 
 	if (Dm->rank() == 0){
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 		double dir_x = Fx/force_mag;
 		double dir_y = Fy/force_mag;
 		double dir_z = Fz/force_mag;
-		
+
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M;
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
-		printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
+		
+		double krn = nu_n*not_water_flow_rate / force_mag;
+		double krw = nu_w*water_flow_rate / force_mag;
+		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,water_flow_rate,not_water_flow_rate, gwb.p, gnb.p); 
+		fflush(TIMELOG);
 	}
 
 }
