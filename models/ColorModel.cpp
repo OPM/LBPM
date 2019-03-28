@@ -163,7 +163,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	char VALUE=0;
 	double AFFINITY=0.f;
 
-	auto LabelList = color_db->getVector<signed char>( "ComponentLabels" );
+	auto LabelList = color_db->getVector<char>( "ComponentLabels" );
 	auto AffinityList = color_db->getVector<double>( "ComponentAffinity" );
 
 	NLABELS=LabelList.size();
