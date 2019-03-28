@@ -86,7 +86,7 @@ void ScaLBL_MRTModel::ReadInput(){
 			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				// Initialize the solid phase
-				if (Dm->id[n] > 0)	id_solid(i,j,k) = 1;
+				if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
 				else	     	    id_solid(i,j,k) = 0;
 			}
 		}
