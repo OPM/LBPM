@@ -412,6 +412,7 @@ public:
 
     	PROFILE_START("Compute subphase",1);
     	Averages.Full();
+    	Averages.Write(timestep);
     	PROFILE_STOP("Compute subphase",1);
     }
 private:
@@ -598,6 +599,7 @@ void runAnalysis::finish( )
     d_wait_blobID.reset();
     d_wait_analysis.reset();
     d_wait_vis.reset();
+    d_wait_subphase.reset();
     d_wait_restart.reset();
     // Syncronize
     MPI_Barrier( d_comm );
