@@ -104,7 +104,7 @@ void ScaLBL_ColorModel::SetDomain(){
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
 	Nx+=2; Ny+=2; Nz += 2;
 	N = Nx*Ny*Nz;
-	id = new char [N];
+	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
