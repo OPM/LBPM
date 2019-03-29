@@ -160,10 +160,10 @@ void ScaLBL_ColorModel::ReadInput(){
 void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 {
 	size_t NLABELS=0;
-	char VALUE=0;
+	signed char VALUE=0;
 	double AFFINITY=0.f;
 
-	auto LabelList = color_db->getVector<signed char>( "ComponentLabels" );
+	auto LabelList = color_db->getVector<int>( "ComponentLabels" );
 	auto AffinityList = color_db->getVector<double>( "ComponentAffinity" );
 
 	NLABELS=LabelList.size();
@@ -210,7 +210,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%hhd, affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
+			printf("   label=%d, affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
 		}
 	}
 
