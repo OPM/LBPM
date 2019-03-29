@@ -1,7 +1,7 @@
 #include <analysis/morphology.h>
 // Implementation of morphological opening routine
 
-inline void PackID(int *list, int count, char *sendbuf, char *ID){
+inline void PackID(int *list, int count, signed char *sendbuf, signed char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This packs up the values that need to be sent from one processor to another
 	int idx,n;
@@ -13,7 +13,7 @@ inline void PackID(int *list, int count, char *sendbuf, char *ID){
 }
 //***************************************************************************************
 
-inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
+inline void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This unpacks the values once they have been recieved from neighbors
 	int idx,n;
@@ -25,7 +25,7 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 }
 
 //***************************************************************************************
-double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
+double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
@@ -73,51 +73,51 @@ double MorphOpen(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, do
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 
 	// Communication buffers
-	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
-	char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
-	char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
-	char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
-	char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
-	char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
+	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
+	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
+	signed char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
+	signed char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
+	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
+	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
 	// send buffers
-	sendID_x = new char [Dm->sendCount_x];
-	sendID_y = new char [Dm->sendCount_y];
-	sendID_z = new char [Dm->sendCount_z];
-	sendID_X = new char [Dm->sendCount_X];
-	sendID_Y = new char [Dm->sendCount_Y];
-	sendID_Z = new char [Dm->sendCount_Z];
-	sendID_xy = new char [Dm->sendCount_xy];
-	sendID_yz = new char [Dm->sendCount_yz];
-	sendID_xz = new char [Dm->sendCount_xz];
-	sendID_Xy = new char [Dm->sendCount_Xy];
-	sendID_Yz = new char [Dm->sendCount_Yz];
-	sendID_xZ = new char [Dm->sendCount_xZ];
-	sendID_xY = new char [Dm->sendCount_xY];
-	sendID_yZ = new char [Dm->sendCount_yZ];
-	sendID_Xz = new char [Dm->sendCount_Xz];
-	sendID_XY = new char [Dm->sendCount_XY];
-	sendID_YZ = new char [Dm->sendCount_YZ];
-	sendID_XZ = new char [Dm->sendCount_XZ];
+	sendID_x = new signed char [Dm->sendCount_x];
+	sendID_y = new signed char [Dm->sendCount_y];
+	sendID_z = new signed char [Dm->sendCount_z];
+	sendID_X = new signed char [Dm->sendCount_X];
+	sendID_Y = new signed char [Dm->sendCount_Y];
+	sendID_Z = new signed char [Dm->sendCount_Z];
+	sendID_xy = new signed char [Dm->sendCount_xy];
+	sendID_yz = new signed char [Dm->sendCount_yz];
+	sendID_xz = new signed char [Dm->sendCount_xz];
+	sendID_Xy = new signed char [Dm->sendCount_Xy];
+	sendID_Yz = new signed char [Dm->sendCount_Yz];
+	sendID_xZ = new signed char [Dm->sendCount_xZ];
+	sendID_xY = new signed char [Dm->sendCount_xY];
+	sendID_yZ = new signed char [Dm->sendCount_yZ];
+	sendID_Xz = new signed char [Dm->sendCount_Xz];
+	sendID_XY = new signed char [Dm->sendCount_XY];
+	sendID_YZ = new signed char [Dm->sendCount_YZ];
+	sendID_XZ = new signed char [Dm->sendCount_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new char [Dm->recvCount_x];
-	recvID_y = new char [Dm->recvCount_y];
-	recvID_z = new char [Dm->recvCount_z];
-	recvID_X = new char [Dm->recvCount_X];
-	recvID_Y = new char [Dm->recvCount_Y];
-	recvID_Z = new char [Dm->recvCount_Z];
-	recvID_xy = new char [Dm->recvCount_xy];
-	recvID_yz = new char [Dm->recvCount_yz];
-	recvID_xz = new char [Dm->recvCount_xz];
-	recvID_Xy = new char [Dm->recvCount_Xy];
-	recvID_xZ = new char [Dm->recvCount_xZ];
-	recvID_xY = new char [Dm->recvCount_xY];
-	recvID_yZ = new char [Dm->recvCount_yZ];
-	recvID_Yz = new char [Dm->recvCount_Yz];
-	recvID_Xz = new char [Dm->recvCount_Xz];
-	recvID_XY = new char [Dm->recvCount_XY];
-	recvID_YZ = new char [Dm->recvCount_YZ];
-	recvID_XZ = new char [Dm->recvCount_XZ];
+	recvID_x = new signed char [Dm->recvCount_x];
+	recvID_y = new signed char [Dm->recvCount_y];
+	recvID_z = new signed char [Dm->recvCount_z];
+	recvID_X = new signed char [Dm->recvCount_X];
+	recvID_Y = new signed char [Dm->recvCount_Y];
+	recvID_Z = new signed char [Dm->recvCount_Z];
+	recvID_xy = new signed char [Dm->recvCount_xy];
+	recvID_yz = new signed char [Dm->recvCount_yz];
+	recvID_xz = new signed char [Dm->recvCount_xz];
+	recvID_Xy = new signed char [Dm->recvCount_Xy];
+	recvID_xZ = new signed char [Dm->recvCount_xZ];
+	recvID_xY = new signed char [Dm->recvCount_xY];
+	recvID_yZ = new signed char [Dm->recvCount_yZ];
+	recvID_Yz = new signed char [Dm->recvCount_Yz];
+	recvID_Xz = new signed char [Dm->recvCount_Xz];
+	recvID_XY = new signed char [Dm->recvCount_XY];
+	recvID_YZ = new signed char [Dm->recvCount_YZ];
+	recvID_XZ = new signed char [Dm->recvCount_XZ];
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
@@ -327,7 +327,7 @@ double morph_open()
 */
 
 //***************************************************************************************
-double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
+double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
@@ -378,51 +378,51 @@ double MorphDrain(DoubleArray &SignDist, char *id, std::shared_ptr<Domain> Dm, d
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 
 	// Communication buffers
-	char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
-	char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
-	char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
-	char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
-	char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
-	char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
+	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
+	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
+	signed char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
+	signed char *recvID_x, *recvID_y, *recvID_z, *recvID_X, *recvID_Y, *recvID_Z;
+	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
+	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
 	// send buffers
-	sendID_x = new char [Dm->sendCount_x];
-	sendID_y = new char [Dm->sendCount_y];
-	sendID_z = new char [Dm->sendCount_z];
-	sendID_X = new char [Dm->sendCount_X];
-	sendID_Y = new char [Dm->sendCount_Y];
-	sendID_Z = new char [Dm->sendCount_Z];
-	sendID_xy = new char [Dm->sendCount_xy];
-	sendID_yz = new char [Dm->sendCount_yz];
-	sendID_xz = new char [Dm->sendCount_xz];
-	sendID_Xy = new char [Dm->sendCount_Xy];
-	sendID_Yz = new char [Dm->sendCount_Yz];
-	sendID_xZ = new char [Dm->sendCount_xZ];
-	sendID_xY = new char [Dm->sendCount_xY];
-	sendID_yZ = new char [Dm->sendCount_yZ];
-	sendID_Xz = new char [Dm->sendCount_Xz];
-	sendID_XY = new char [Dm->sendCount_XY];
-	sendID_YZ = new char [Dm->sendCount_YZ];
-	sendID_XZ = new char [Dm->sendCount_XZ];
+	sendID_x = new signed char [Dm->sendCount_x];
+	sendID_y = new signed char [Dm->sendCount_y];
+	sendID_z = new signed char [Dm->sendCount_z];
+	sendID_X = new signed char [Dm->sendCount_X];
+	sendID_Y = new signed char [Dm->sendCount_Y];
+	sendID_Z = new signed char [Dm->sendCount_Z];
+	sendID_xy = new signed char [Dm->sendCount_xy];
+	sendID_yz = new signed char [Dm->sendCount_yz];
+	sendID_xz = new signed char [Dm->sendCount_xz];
+	sendID_Xy = new signed char [Dm->sendCount_Xy];
+	sendID_Yz = new signed char [Dm->sendCount_Yz];
+	sendID_xZ = new signed char [Dm->sendCount_xZ];
+	sendID_xY = new signed char [Dm->sendCount_xY];
+	sendID_yZ = new signed char [Dm->sendCount_yZ];
+	sendID_Xz = new signed char [Dm->sendCount_Xz];
+	sendID_XY = new signed char [Dm->sendCount_XY];
+	sendID_YZ = new signed char [Dm->sendCount_YZ];
+	sendID_XZ = new signed char [Dm->sendCount_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new char [Dm->recvCount_x];
-	recvID_y = new char [Dm->recvCount_y];
-	recvID_z = new char [Dm->recvCount_z];
-	recvID_X = new char [Dm->recvCount_X];
-	recvID_Y = new char [Dm->recvCount_Y];
-	recvID_Z = new char [Dm->recvCount_Z];
-	recvID_xy = new char [Dm->recvCount_xy];
-	recvID_yz = new char [Dm->recvCount_yz];
-	recvID_xz = new char [Dm->recvCount_xz];
-	recvID_Xy = new char [Dm->recvCount_Xy];
-	recvID_xZ = new char [Dm->recvCount_xZ];
-	recvID_xY = new char [Dm->recvCount_xY];
-	recvID_yZ = new char [Dm->recvCount_yZ];
-	recvID_Yz = new char [Dm->recvCount_Yz];
-	recvID_Xz = new char [Dm->recvCount_Xz];
-	recvID_XY = new char [Dm->recvCount_XY];
-	recvID_YZ = new char [Dm->recvCount_YZ];
-	recvID_XZ = new char [Dm->recvCount_XZ];
+	recvID_x = new signed char [Dm->recvCount_x];
+	recvID_y = new signed char [Dm->recvCount_y];
+	recvID_z = new signed char [Dm->recvCount_z];
+	recvID_X = new signed char [Dm->recvCount_X];
+	recvID_Y = new signed char [Dm->recvCount_Y];
+	recvID_Z = new signed char [Dm->recvCount_Z];
+	recvID_xy = new signed char [Dm->recvCount_xy];
+	recvID_yz = new signed char [Dm->recvCount_yz];
+	recvID_xz = new signed char [Dm->recvCount_xz];
+	recvID_Xy = new signed char [Dm->recvCount_Xy];
+	recvID_xZ = new signed char [Dm->recvCount_xZ];
+	recvID_xY = new signed char [Dm->recvCount_xY];
+	recvID_yZ = new signed char [Dm->recvCount_yZ];
+	recvID_Yz = new signed char [Dm->recvCount_Yz];
+	recvID_Xz = new signed char [Dm->recvCount_Xz];
+	recvID_XY = new signed char [Dm->recvCount_XY];
+	recvID_YZ = new signed char [Dm->recvCount_YZ];
+	recvID_XZ = new signed char [Dm->recvCount_XZ];
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
