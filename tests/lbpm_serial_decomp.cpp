@@ -115,8 +115,8 @@ int main(int argc, char **argv)
 	printf("Input media: %s\n",Filename.c_str());
 	printf("Relabeling %lu values\n",ReadValues.size());
 	for (int idx=0; idx<ReadValues.size(); idx++){
-		char oldvalue=ReadValues[idx];
-		char newvalue=WriteValues[idx];
+		int oldvalue=ReadValues[idx];
+		int newvalue=WriteValues[idx];
 		printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
 	}
 

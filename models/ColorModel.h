@@ -57,7 +57,7 @@ public:
     std::shared_ptr<Database> analysis_db;
 
     IntArray Map;
-    char *id;    
+    signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
 	double *fq, *Aq, *Bq;

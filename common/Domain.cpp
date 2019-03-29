@@ -161,7 +161,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
     // Fill remaining variables
 	N = Nx*Ny*Nz;
 	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
-	id = new char[N];
+	id = new signed char[N];
 	memset(id,0,N);
 	BoundaryCondition = d_db->getScalar<int>("BC");
     int nprocs;

@@ -352,7 +352,7 @@ void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  i
 	delete [] ReturnDist;
 }
 
-int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np){
+int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np){
 	/*
 	 * Generate a memory optimized layout
 	 *   id[n] == 0 implies that site n should be ignored (treat as a mask)

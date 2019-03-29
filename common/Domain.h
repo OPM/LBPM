@@ -170,7 +170,7 @@ public: // Public variables (need to create accessors instead)
     int *recvList_xY, *recvList_yZ, *recvList_Xz, *recvList_XY, *recvList_YZ, *recvList_XZ;
     //......................................................................................    
     // Solid indicator function
-    char *id;
+    signed char *id;
 
     void ReadIDs();
     void CommunicateMeshHalo(DoubleArray &Mesh);
@@ -179,8 +179,8 @@ public: // Public variables (need to create accessors instead)
 
 private:
 
-    void PackID(int *list, int count, char *sendbuf, char *ID);
-    void UnpackID(int *list, int count, char *recvbuf, char *ID);
+    void PackID(int *list, int count, signed char *sendbuf, signed char *ID);
+    void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID);
     void CommHaloIDs();
     
 	//......................................................................................
