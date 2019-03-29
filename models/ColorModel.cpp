@@ -403,7 +403,7 @@ void ScaLBL_ColorModel::Initialize(){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 		}
 	}
-	ScaLBL_CopyToHost(phase->data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 }
 
 void ScaLBL_ColorModel::Run(){
