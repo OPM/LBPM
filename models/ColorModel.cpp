@@ -560,6 +560,10 @@ void ScaLBL_ColorModel::Run(){
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		analysis.basic( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 
+		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
+			printf("....inlet pressure=%f \n",din);
+		}
+		
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
 			analysis.finish();
@@ -649,7 +653,6 @@ void ScaLBL_ColorModel::Run(){
 					}
 					morph_timesteps=0;
 				}
-				CURRENT_STEADY_TIMESTEPS=0;
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
