@@ -112,9 +112,9 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Px, gwd.Px, giwn.Px, gnc.Px, gnd.Px, giwn.Px);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Py, gwd.Py, giwn.Py, gnc.Py, gnd.Py, giwn.Py);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Pz, gwd.Pz, giwn.Pz, gnc.Pz, gnd.Pz, giwn.Pz);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.V, gwc.A, gwc.H, gwc.X);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
@@ -128,9 +128,9 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",wc.p, wd.p, nc.p, nd.p);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Px, nc.Px, nd.Px, iwn.Px);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Py, nc.Py, nd.Py, iwn.Py);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pz, nc.Pz, nd.Pz, iwn.Pz);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",wc.V, wc.A, wc.H, wc.X);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
