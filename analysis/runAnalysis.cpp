@@ -902,6 +902,7 @@ void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, do
 
     //if ( matches(type,AnalysisType::CopySimState) ) {
     if ( timestep%d_analysis_interval == 0 ) {
+        finish(); // can't copy if threads are still working on data
         // Copy the members of Averages to the cpu (phase was copied above)
         PROFILE_START("Copy-Pressure",1);
         ScaLBL_D3Q19_Pressure(fq,Pressure,d_Np);
