@@ -111,6 +111,7 @@ public: // Public variables (need to create accessors instead)
     int Nx,Ny,Nz,N;
     int inlet_layers_x, inlet_layers_y, inlet_layers_z;
     int outlet_layers_x, outlet_layers_y, outlet_layers_z;
+    double porosity;
     RankInfoStruct rank_info;
 
     MPI_Comm Comm;        // MPI Communicator for this domain
@@ -122,6 +123,7 @@ public: // Public variables (need to create accessors instead)
     //**********************************
     // MPI ranks for all 18 neighbors
     //**********************************
+    inline double Porosity() const { return porosity; }
     inline int iproc() const { return rank_info.ix; }
     inline int jproc() const { return rank_info.jy; }
     inline int kproc() const { return rank_info.kz; }
