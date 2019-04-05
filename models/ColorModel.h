@@ -47,6 +47,7 @@ public:
 	void WriteDebug();
 	
 	bool Restart,pBC;
+	bool REVERSE_FLOW_DIRECTION;
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
@@ -71,7 +72,7 @@ public:
     std::shared_ptr<Database> analysis_db;
 
     IntArray Map;
-    char *id;    
+    signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
 	double *fq, *Aq, *Bq;

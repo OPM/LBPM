@@ -22,7 +22,7 @@
 #include "common/Communication.h"
 #include "common/ScaLBL.h"
 #include "threadpool/thread_pool.h"
-
+#include <limits.h>
 
 typedef std::shared_ptr<std::pair<int,IntArray>> BlobIDstruct;
 typedef std::shared_ptr<std::vector<BlobIDType>> BlobIDList;
@@ -30,7 +30,7 @@ typedef std::shared_ptr<std::vector<BlobIDType>> BlobIDList;
 
 // Types of analysis
 enum class AnalysisType : uint64_t { AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
-    CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
+    CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20, ComputeSubphase=0x40 };
 
 
 //! Class to run the analysis in multiple threads
@@ -103,6 +103,7 @@ private:
     int d_Np;
     int d_rank;
     int d_restart_interval, d_analysis_interval, d_blobid_interval, d_visualization_interval;
+    int d_subphase_analysis_interval;
     double d_beta;
     bool d_regular;
     ThreadPool d_tpool;
@@ -122,6 +123,7 @@ private:
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;
     ThreadPool::thread_id_t d_wait_analysis;
+    ThreadPool::thread_id_t d_wait_subphase;
     ThreadPool::thread_id_t d_wait_vis;
     ThreadPool::thread_id_t d_wait_restart;
 

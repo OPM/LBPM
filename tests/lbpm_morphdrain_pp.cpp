@@ -59,8 +59,8 @@ int main(int argc, char **argv)
 		auto L = domain_db->getVector<double>( "L" );
 		auto size = domain_db->getVector<int>( "n" );
 		auto nproc = domain_db->getVector<int>( "nproc" );
-		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
-		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
+		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
+		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
 
 		// Generate the NWP configuration
@@ -82,8 +82,8 @@ int main(int argc, char **argv)
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
-		char *id;
-		id = new char [N];
+		signed char *id;
+		id = new signed char [N];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
@@ -131,14 +131,14 @@ int main(int argc, char **argv)
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
 			if (rank==0) printf("Relabel solid components that touch fluid 1 \n");
-			auto LabelList = domain_db->getVector<char>( "ComponentLabels" );
-			auto HistoryLabels = domain_db->getVector<char>( "HistoryLabels" );
+			auto LabelList = domain_db->getVector<int>( "ComponentLabels" );
+			auto HistoryLabels = domain_db->getVector<int>( "HistoryLabels" );
 			size_t NLABELS=LabelList.size();
 			if (rank==0){
 				for (unsigned int idx=0; idx < NLABELS; idx++){
-					char VALUE = LabelList[idx];
-					char NEWVAL = HistoryLabels[idx];
-					printf("    Relabel component %d as %d \n", VALUE, NEWVAL);
+					signed char VALUE = LabelList[idx];
+					signed char NEWVAL = HistoryLabels[idx];
+					printf("    Relabel component %hhd as %hhd \n", VALUE, NEWVAL);
 				}
 			}
 			for (int k=0;k<nz;k++){
@@ -169,8 +169,8 @@ int main(int argc, char **argv)
 						int n = k*nx*ny+j*nx+i;
 						signed char LOCVAL = id[n];
 						for (unsigned int idx=0; idx < NLABELS; idx++){
-							char VALUE=LabelList[idx];
-							char NEWVALUE=HistoryLabels[idx];
+							signed char VALUE=LabelList[idx];
+							signed char NEWVALUE=HistoryLabels[idx];
 							if (LOCVAL == VALUE){
 								idx = NLABELS;
 								if (SignDist(i,j,k) < 1.0){

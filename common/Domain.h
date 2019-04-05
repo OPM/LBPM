@@ -125,6 +125,8 @@ public: // Public variables (need to create accessors instead)
     double Lx,Ly,Lz,Volume;
     int Nx,Ny,Nz,N;
     int inlet_layers_x, inlet_layers_y, inlet_layers_z;
+    int outlet_layers_x, outlet_layers_y, outlet_layers_z;
+    double porosity;
     RankInfoStruct rank_info;
 
     MPI_Comm Comm;        // MPI Communicator for this domain
@@ -136,6 +138,7 @@ public: // Public variables (need to create accessors instead)
     //**********************************
     // MPI ranks for all 18 neighbors
     //**********************************
+    inline double Porosity() const { return porosity; }
     inline int iproc() const { return rank_info.ix; }
     inline int jproc() const { return rank_info.jy; }
     inline int kproc() const { return rank_info.kz; }
@@ -184,7 +187,7 @@ public: // Public variables (need to create accessors instead)
     int *recvList_xY, *recvList_yZ, *recvList_Xz, *recvList_XY, *recvList_YZ, *recvList_XZ;
     //......................................................................................    
     // Solid indicator function
-    char *id;
+    signed char *id;
 
     void ReadIDs();
     void CommunicateMeshHalo(DoubleArray &Mesh);
@@ -193,8 +196,8 @@ public: // Public variables (need to create accessors instead)
 
 private:
 
-    void PackID(int *list, int count, char *sendbuf, char *ID);
-    void UnpackID(int *list, int count, char *recvbuf, char *ID);
+    void PackID(int *list, int count, signed char *sendbuf, signed char *ID);
+    void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID);
     void CommHaloIDs();
     
 	//......................................................................................

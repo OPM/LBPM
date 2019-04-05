@@ -173,7 +173,7 @@ public:
 	int FirstInterior();
 	int LastInterior();
 	
-	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, char *id, int Np);
+	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
 //	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
 //	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);

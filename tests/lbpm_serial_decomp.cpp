@@ -87,8 +87,11 @@ int main(int argc, char **argv)
 	if (domain_db->keyExists( "checkerSize" )){
 		checkerSize = domain_db->getScalar<int>( "checkerSize" );
 	}
-	auto ReadValues = domain_db->getVector<char>( "ReadValues" );
-	auto WriteValues = domain_db->getVector<char>( "WriteValues" );
+	else {
+		checkerSize = SIZE[0];
+	}
+	auto ReadValues = domain_db->getVector<int>( "ReadValues" );
+	auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
 	if (ReadType == "8bit"){
 	}
@@ -112,8 +115,8 @@ int main(int argc, char **argv)
 	printf("Input media: %s\n",Filename.c_str());
 	printf("Relabeling %lu values\n",ReadValues.size());
 	for (int idx=0; idx<ReadValues.size(); idx++){
-		char oldvalue=ReadValues[idx];
-		char newvalue=WriteValues[idx];
+		int oldvalue=ReadValues[idx];
+		int newvalue=WriteValues[idx];
 		printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
 	}
 
@@ -158,12 +161,12 @@ int main(int argc, char **argv)
 			for (int j = 0; j<Ny; j++){
 				for (int i = xStart; i < xStart+inlet_count_x; i++){
 					if ( (j/checkerSize + k/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
@@ -177,12 +180,12 @@ int main(int argc, char **argv)
 			for (int j = yStart; i < yStart+inlet_count_y; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize + k/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
@@ -196,12 +199,12 @@ int main(int argc, char **argv)
 			for (int j = 0; j<Ny; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize+j/checkerSize)%2 == 0){
-						// solid checkers
-						SegData[k*Nx*Ny+j*Nx+i] = 0;
-					}
-					else{
 						// void checkers
 						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
 					}
 				}
 			}
@@ -259,8 +262,8 @@ int main(int argc, char **argv)
 								n = k*(nx+2)*(ny+2) + j*(nx+2) + i;;
 								char locval = loc_id[n];
 								for (int idx=0; idx<ReadValues.size(); idx++){
-									char oldvalue=ReadValues[idx];
-									char newvalue=WriteValues[idx];
+									signed char oldvalue=ReadValues[idx];
+									signed char newvalue=WriteValues[idx];
 									if (locval == oldvalue){
 										loc_id[n] = newvalue;
 										LabelCount[idx]++;
@@ -285,7 +288,7 @@ int main(int argc, char **argv)
 		}
 	}
 	for (int idx=0; idx<ReadValues.size(); idx++){
-		char label=ReadValues[idx];
+		int label=ReadValues[idx];
 		int count=LabelCount[idx];
 		printf("Label=%d, Count=%d \n",label,count);
 	}
