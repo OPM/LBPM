@@ -642,19 +642,6 @@ void ScaLBL_ColorModel::Run(){
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 					}
-					//  flow reversal criteria based on fractional flow rate
-					if (delta_volume_target < 0.0 &&
-							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
-						REVERSE_FLOW_DIRECTION = true;
-					}
-					else if (delta_volume_target > 0.0 &&
-							volB*flow_rate_B/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
-						REVERSE_FLOW_DIRECTION = true;
-					}
-					if ( REVERSE_FLOW_DIRECTION ){
-						delta_volume_target *= (-1.0);
-						REVERSE_FLOW_DIRECTION = false;
-					}
 				}
 				else{
 					if (rank==0){
@@ -686,6 +673,8 @@ void ScaLBL_ColorModel::Run(){
 					// flow direction will reverse after next steady point
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
+					delta_volume_target *= (-1.0);
+					REVERSE_FLOW_DIRECTION = false;
 				}
 
 				MPI_Barrier(comm);
