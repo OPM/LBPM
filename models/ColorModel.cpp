@@ -605,7 +605,7 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
+					delta_volume_target = (volA )*morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -635,9 +635,9 @@ void ScaLBL_ColorModel::Run(){
 							Fz *= 1e-3/force_magnitude;   
 						}
 						if (force_magnitude < 1e-7){
-							Fx *= 1e-6/force_magnitude;   // impose floor
-							Fy *= 1e-6/force_magnitude;   
-							Fz *= 1e-6/force_magnitude;   
+							Fx *= 1e-7/force_magnitude;   // impose floor
+							Fy *= 1e-7/force_magnitude;   
+							Fz *= 1e-7/force_magnitude;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
@@ -673,7 +673,7 @@ void ScaLBL_ColorModel::Run(){
 					// flow direction will reverse after next steady point
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
-					delta_volume_target *= (-1.0);
+					morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
 
