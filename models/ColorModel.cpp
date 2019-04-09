@@ -661,8 +661,8 @@ void ScaLBL_ColorModel::Run(){
 						printf("** Continue to simulate steady *** \n ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
-					morph_timesteps=0;
 				}
+				morph_timesteps=0;
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
