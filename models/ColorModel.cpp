@@ -133,8 +133,9 @@ void ScaLBL_ColorModel::ReadInput(){
 			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				// Initialize the solid phase
-				if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
-				else	     	      	id_solid(i,j,k) = 0;
+				signed char label = Mask->id[n];
+				if (label > 0)		id_solid(i,j,k) = 1;
+				else	     		id_solid(i,j,k) = 0;
 			}
 		}
 	}
