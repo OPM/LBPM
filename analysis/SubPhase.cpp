@@ -506,7 +506,7 @@ void SubPhase::Full(){
 					double uz = Vel_z(n);
 					Phi(n) = phi;
 
-					if (DelPhi(n) > 1e-4){
+					if (DelPhi(n) > 1e-3){
 						// interface region
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
 						double ny = 0.5*(Phi(i,j+1,k)-Phi(i,j-1,k));
