@@ -800,13 +800,13 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
-	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
+/*	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
 		// if connected volume is less than 2% just delete the whole thing
 		if (rank==0) printf("Connected region has shrunk -- reverse flow direction \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
 	else{
-		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
+*/		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		double target_delta_volume_incremental = target_delta_volume;
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
@@ -841,7 +841,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 		fillDouble.fill(phase);
-	}
+	//}
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
