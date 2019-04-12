@@ -669,12 +669,12 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				if ( REVERSE_FLOW_DIRECTION ){
-					if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
+					//if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
 					delta_volume = 0.0;
 					// flow direction will reverse after next steady point
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
-					morph_delta *= (-1.0);
+					//morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
 
@@ -802,7 +802,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
 		// if connected volume is less than 2% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk -- reverse flow direction \n");
+		if (rank==0) printf("Connected region has shrunk! \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
 /*	else{*/
