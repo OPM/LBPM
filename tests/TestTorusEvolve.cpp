@@ -127,9 +127,9 @@ int main(int argc, char **argv)
     				n = k*Nx*Ny+j*Nx+i;
 
     				// global position relative to center
-    				x = Dm->iproc()*(Nx-2)+i - CX;
-    				y = Dm->jproc()*(Ny-2)+j - CY;
-    				z = Dm->kproc()*(Nz-2)+k - CZ;
+    				x = Dm->iproc()*(Nx-2)+i - CX - 0.1;
+    				y = Dm->jproc()*(Ny-2)+j - CY - 0.1;
+    				z = Dm->kproc()*(Nz-2)+k - CZ -0.1;
 
     				//..............................................................................
     				// Single torus
