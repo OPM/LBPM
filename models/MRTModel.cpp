@@ -22,27 +22,27 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	mrt_db = db->getDatabase( "MRT" );
 
 	// Color Model parameters
-	if (color_db->keyExists( "timestepMax" )){
+	if (mrt_db->keyExists( "timestepMax" )){
 		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
 	}
-	if (color_db->keyExists( "tau" )){
+	if (mrt_db->keyExists( "tau" )){
 		tau = mrt_db->getScalar<double>( "tau" );
 	}
-	if (color_db->keyExists( "F" )){
+	if (mrt_db->keyExists( "F" )){
 		Fx = mrt_db->getVector<double>( "F" )[0];
 		Fy = mrt_db->getVector<double>( "F" )[1];
 		Fz = mrt_db->getVector<double>( "F" )[2];
 	}
-	if (color_db->keyExists( "Restart" )){
+	if (mrt_db->keyExists( "Restart" )){
 		Restart = mrt_db->getScalar<bool>( "Restart" );
 	}
-	if (color_db->keyExists( "din" )){
+	if (mrt_db->keyExists( "din" )){
 		din = mrt_db->getScalar<double>( "din" );
 	}
-	if (color_db->keyExists( "dout" )){
+	if (mrt_db->keyExists( "dout" )){
 		dout = mrt_db->getScalar<double>( "dout" );
 	}
-	if (color_db->keyExists( "flux" )){
+	if (mrt_db->keyExists( "flux" )){
 		flux = mrt_db->getScalar<double>( "flux" );
 	}	
 	
