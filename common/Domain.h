@@ -107,7 +107,7 @@ private:
 
 public: // Public variables (need to create accessors instead)
 
-    double Lx,Ly,Lz,Volume;
+    double Lx,Ly,Lz,Volume,voxel_length;
     int Nx,Ny,Nz,N;
     int inlet_layers_x, inlet_layers_y, inlet_layers_z;
     int outlet_layers_x, outlet_layers_y, outlet_layers_z;
