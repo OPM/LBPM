@@ -61,41 +61,65 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	color_db = db->getDatabase( "Color" );
 	analysis_db = db->getDatabase( "Analysis" );
 
+	// set defaults
+	timestepMax = 100000;
+	tauA = tauB = 1.0;
+	rhoA = rhoB = 1.0;
+	Fx = Fy = Fz = 0.0;
+	alpha=1e-3;
+	beta=0.95;
+	Restart=false;
+	din=dout=1.0;
+	flux=0.0;
+	
 	// Color Model parameters
-	timestepMax = color_db->getScalar<int>( "timestepMax" );
-	tauA = color_db->getScalar<double>( "tauA" );
-	tauB = color_db->getScalar<double>( "tauB" );
-	rhoA = color_db->getScalar<double>( "rhoA" );
-	rhoB = color_db->getScalar<double>( "rhoB" );
-	Fx = color_db->getVector<double>( "F" )[0];
-	Fy = color_db->getVector<double>( "F" )[1];
-	Fz = color_db->getVector<double>( "F" )[2];
-	alpha = color_db->getScalar<double>( "alpha" );
-	beta = color_db->getScalar<double>( "beta" );
-	Restart = color_db->getScalar<bool>( "Restart" );
-	din = color_db->getScalar<double>( "din" );
-	dout = color_db->getScalar<double>( "dout" );
-	flux = color_db->getScalar<double>( "flux" );
+	if (color_db->keyExists( "timestepMax" )){
+		timestepMax = color_db->getScalar<int>( "timestepMax" );
+	}
+	if (color_db->keyExists( "tauA" )){
+		tauA = color_db->getScalar<double>( "tauA" );
+	}
+	if (color_db->keyExists( "tauB" )){
+		tauB = color_db->getScalar<double>( "tauB" );
+	}
+	if (color_db->keyExists( "rhoA" )){
+		rhoA = color_db->getScalar<double>( "rhoA" );
+	}
+	if (color_db->keyExists( "rhoB" )){
+		rhoB = color_db->getScalar<double>( "rhoB" );
+	}
+	if (color_db->keyExists( "F" )){
+		Fx = color_db->getVector<double>( "F" )[0];
+		Fy = color_db->getVector<double>( "F" )[1];
+		Fz = color_db->getVector<double>( "F" )[2];
+	}
+	if (color_db->keyExists( "alpha" )){
+		alpha = color_db->getScalar<double>( "alpha" );
+	}
+	if (color_db->keyExists( "beta" )){
+		beta = color_db->getScalar<double>( "beta" );
+	}
+	if (color_db->keyExists( "Restart" )){
+		Restart = color_db->getScalar<bool>( "Restart" );
+	}
+	if (color_db->keyExists( "din" )){
+		din = color_db->getScalar<double>( "din" );
+	}
+	if (color_db->keyExists( "dout" )){
+		dout = color_db->getScalar<double>( "dout" );
+	}
+	if (color_db->keyExists( "flux" )){
+		flux = color_db->getScalar<double>( "flux" );
+	}
 	inletA=1.f;
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
 
-	// Read domain parameters
-	auto L = domain_db->getVector<double>( "L" );
-	auto size = domain_db->getVector<int>( "n" );
-	auto nproc = domain_db->getVector<int>( "nproc" );
-	BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	Nx = size[0];
-	Ny = size[1];
-	Nz = size[2];
-	Lx = L[0];
-	Ly = L[1];
-	Lz = L[2];
-	nprocx = nproc[0];
-	nprocy = nproc[1];
-	nprocz = nproc[2];
-	
+	BoundaryCondition = 0;
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
 	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
@@ -111,7 +135,17 @@ void ScaLBL_ColorModel::SetDomain(){
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
-	rank = Dm->rank();
+	// Read domain parameters
+	rank = Dm->rank();	
+	Nx = Dm->Nx;
+	Ny = Dm->Ny;
+	Nz = Dm->Nz;
+	Lx = Dm->Lx;
+	Ly = Dm->Ly;
+	Lz = Dm->Lz;
+	nprocx = Dm->nprocx();
+	nprocy = Dm->nprocy();
+	nprocz = Dm->nprocz();
 }
 
 void ScaLBL_ColorModel::ReadInput(){

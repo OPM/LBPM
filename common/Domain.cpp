@@ -119,6 +119,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
     auto nproc = d_db->getVector<int>("nproc");
     auto n = d_db->getVector<int>("n");
 
+    voxel_length = 1.0;
     if (d_db->keyExists( "voxel_length" )){
     	auto voxel_length = d_db->getScalar<double>("voxel_length");
     }
