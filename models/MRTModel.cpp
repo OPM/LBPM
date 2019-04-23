@@ -37,36 +37,49 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	mrt_db = db->getDatabase( "MRT" );
 
 	// Color Model parameters
-	timestepMax = mrt_db->getScalar<int>( "timestepMax" );
-	tau = mrt_db->getScalar<double>( "tau" );
-	Fx = mrt_db->getVector<double>( "F" )[0];
-	Fy = mrt_db->getVector<double>( "F" )[1];
-	Fz = mrt_db->getVector<double>( "F" )[2];
-	Restart = mrt_db->getScalar<bool>( "Restart" );
-	din = mrt_db->getScalar<double>( "din" );
-	dout = mrt_db->getScalar<double>( "dout" );
-	flux = mrt_db->getScalar<double>( "flux" );
+	if (mrt_db->keyExists( "timestepMax" )){
+		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
+	}
+	if (mrt_db->keyExists( "tau" )){
+		tau = mrt_db->getScalar<double>( "tau" );
+	}
+	if (mrt_db->keyExists( "F" )){
+		Fx = mrt_db->getVector<double>( "F" )[0];
+		Fy = mrt_db->getVector<double>( "F" )[1];
+		Fz = mrt_db->getVector<double>( "F" )[2];
+	}
+	if (mrt_db->keyExists( "Restart" )){
+		Restart = mrt_db->getScalar<bool>( "Restart" );
+	}
+	if (mrt_db->keyExists( "din" )){
+		din = mrt_db->getScalar<double>( "din" );
+	}
+	if (mrt_db->keyExists( "dout" )){
+		dout = mrt_db->getScalar<double>( "dout" );
+	}
+	if (mrt_db->keyExists( "flux" )){
+		flux = mrt_db->getScalar<double>( "flux" );
+	}	
 	
 	// Read domain parameters
-	auto L = domain_db->getVector<double>( "L" );
-	auto size = domain_db->getVector<int>( "n" );
-	auto nproc = domain_db->getVector<int>( "nproc" );
-	BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	Nx = size[0];
-	Ny = size[1];
-	Nz = size[2];
-	Lx = L[0];
-	Ly = L[1];
-	Lz = L[2];
-	nprocx = nproc[0];
-	nprocy = nproc[1];
-	nprocz = nproc[2];
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+
 	mu=(tau-0.5)/3.0;
 }
 void ScaLBL_MRTModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-	Nx+=2; Ny+=2; Nz += 2;
+
+	// domain parameters
+	Nx = Dm->Nx;
+	Ny = Dm->Ny;
+	Nz = Dm->Nz;
+	Lx = Dm->Lx;
+	Ly = Dm->Ly;
+	Lz = Dm->Lz;
+	
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
 	Velocity_x.resize(Nx,Ny,Nz);
@@ -78,6 +91,11 @@ void ScaLBL_MRTModel::SetDomain(){
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
+	
+	rank = Dm->rank();	
+	nprocx = Dm->nprocx();
+	nprocy = Dm->nprocy();
+	nprocz = Dm->nprocz();
 }
 
 void ScaLBL_MRTModel::ReadInput(){
@@ -256,7 +274,7 @@ void ScaLBL_MRTModel::Run(){
 			Hs=sumReduce( Dm->Comm, Hs);
 			Xs=sumReduce( Dm->Comm, Xs);
 			if (rank==0) {
-				double h = Lz/double((Nz-2)*nprocz);
+				double h = Dm->voxel_length;
 				double absperm = h*h*mu*Mask->Porosity()*sqrt(vax*vax+vay*vay+vaz*vaz)/sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");

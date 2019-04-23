@@ -245,12 +245,12 @@ void SubPhase::Basic(){
 			force_mag = 1.0;
 		}
 		double saturation=gwb.V/(gwb.V + gnb.V);
-		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M;
-		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M;
+		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
+		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
 		
-		double krn = nu_n*not_water_flow_rate / force_mag;
+		double krn = nu_n*not_water_flow_rate / force_mag ;
 		double krw = nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,water_flow_rate,not_water_flow_rate, gwb.p, gnb.p); 
@@ -506,7 +506,7 @@ void SubPhase::Full(){
 					double uz = Vel_z(n);
 					Phi(n) = phi;
 
-					if (DelPhi(n) > 1e-4){
+					if (DelPhi(n) > 1e-3){
 						// interface region
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
 						double ny = 0.5*(Phi(i,j+1,k)-Phi(i,j-1,k));

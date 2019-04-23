@@ -43,7 +43,7 @@ static inline void fgetl( char * str, int num, FILE * stream )
 Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
                double lx, double ly, double lz, int BC):
 	Nx(0), Ny(0), Nz(0), 
-	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
+	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0), voxel_length(1),
 	Comm(MPI_COMM_WORLD),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
@@ -133,8 +133,11 @@ void Domain::initialize( std::shared_ptr<Database> db )
     d_db = db;
     auto nproc = d_db->getVector<int>("nproc");
     auto n = d_db->getVector<int>("n");
-    auto L = d_db->getVector<double>("L");
-    //nspheres = d_db->getScalar<int>("nspheres");
+
+    voxel_length = 1.0;
+    if (d_db->keyExists( "voxel_length" )){
+    	auto voxel_length = d_db->getScalar<double>("voxel_length");
+    }
     
 	if (d_db->keyExists( "InletLayers" )){
 		auto InletCount = d_db->getVector<int>( "InletLayers" );
@@ -150,14 +153,13 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	}
 	
     ASSERT( n.size() == 3u );
-    ASSERT( L.size() == 3u );
     ASSERT( nproc.size() == 3u );
     int nx = n[0];
     int ny = n[1];
     int nz = n[2];
-    Lx = L[0];
-    Ly = L[1];
-    Lz = L[2];
+    Lx = nx*nproc[0]*voxel_length;
+    Ly = ny*nproc[1]*voxel_length;
+    Lz = nz*nproc[2]*voxel_length;
     Nx = nx+2;
     Ny = ny+2;
     Nz = nz+2;

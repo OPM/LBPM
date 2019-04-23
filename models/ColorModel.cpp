@@ -76,48 +76,78 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	color_db = db->getDatabase( "Color" );
 	analysis_db = db->getDatabase( "Analysis" );
 
+	// set defaults
+	timestepMax = 100000;
+	tauA = tauB = 1.0;
+	rhoA = rhoB = 1.0;
+	Fx = Fy = Fz = 0.0;
+	alpha=1e-3;
+	beta=0.95;
+	Restart=false;
+	din=dout=1.0;
+	flux=0.0;
+	
 	// Color Model parameters
-	timestepMax = color_db->getScalar<int>( "timestepMax" );
-	tauA = color_db->getScalar<double>( "tauA" );
-	tauB = color_db->getScalar<double>( "tauB" );
-	rhoA = color_db->getScalar<double>( "rhoA" );
-	rhoB = color_db->getScalar<double>( "rhoB" );
-	Fx = color_db->getVector<double>( "F" )[0];
-	Fy = color_db->getVector<double>( "F" )[1];
-	Fz = color_db->getVector<double>( "F" )[2];
-	alpha = color_db->getScalar<double>( "alpha" );
-	beta = color_db->getScalar<double>( "beta" );
-	Restart = color_db->getScalar<bool>( "Restart" );
-	din = color_db->getScalar<double>( "din" );
-	dout = color_db->getScalar<double>( "dout" );
-	flux = color_db->getScalar<double>( "flux" );
+	if (color_db->keyExists( "timestepMax" )){
+		timestepMax = color_db->getScalar<int>( "timestepMax" );
+	}
+	if (color_db->keyExists( "tauA" )){
+		tauA = color_db->getScalar<double>( "tauA" );
+	}
+	if (color_db->keyExists( "tauB" )){
+		tauB = color_db->getScalar<double>( "tauB" );
+	}
+	if (color_db->keyExists( "rhoA" )){
+		rhoA = color_db->getScalar<double>( "rhoA" );
+	}
+	if (color_db->keyExists( "rhoB" )){
+		rhoB = color_db->getScalar<double>( "rhoB" );
+	}
+	if (color_db->keyExists( "F" )){
+		Fx = color_db->getVector<double>( "F" )[0];
+		Fy = color_db->getVector<double>( "F" )[1];
+		Fz = color_db->getVector<double>( "F" )[2];
+	}
+	if (color_db->keyExists( "alpha" )){
+		alpha = color_db->getScalar<double>( "alpha" );
+	}
+	if (color_db->keyExists( "beta" )){
+		beta = color_db->getScalar<double>( "beta" );
+	}
+	if (color_db->keyExists( "Restart" )){
+		Restart = color_db->getScalar<bool>( "Restart" );
+	}
+	if (color_db->keyExists( "din" )){
+		din = color_db->getScalar<double>( "din" );
+	}
+	if (color_db->keyExists( "dout" )){
+		dout = color_db->getScalar<double>( "dout" );
+	}
+	if (color_db->keyExists( "flux" )){
+		flux = color_db->getScalar<double>( "flux" );
+	}
 	inletA=1.f;
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
 
-	// Read domain parameters
-	auto L = domain_db->getVector<double>( "L" );
-	auto size = domain_db->getVector<int>( "n" );
-	auto nproc = domain_db->getVector<int>( "nproc" );
-	BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	Nx = size[0];
-	Ny = size[1];
-	Nz = size[2];
-	Lx = L[0];
-	Ly = L[1];
-	Lz = L[2];
-	nprocx = nproc[0];
-	nprocy = nproc[1];
-	nprocz = nproc[2];
-	
+	BoundaryCondition = 0;
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
 	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
 void ScaLBL_ColorModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-	Nx+=2; Ny+=2; Nz += 2;
+	// domain parameters
+	Nx = Dm->Nx;
+	Ny = Dm->Ny;
+	Nz = Dm->Nz;
+	Lx = Dm->Lx;
+	Ly = Dm->Ly;
+	Lz = Dm->Lz;
 	N = Nx*Ny*Nz;
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
@@ -126,7 +156,11 @@ void ScaLBL_ColorModel::SetDomain(){
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
-	rank = Dm->rank();
+	// Read domain parameters
+	rank = Dm->rank();	
+	nprocx = Dm->nprocx();
+	nprocy = Dm->nprocy();
+	nprocz = Dm->nprocz();
 }
 
 void ScaLBL_ColorModel::ReadInput(){
@@ -148,8 +182,9 @@ void ScaLBL_ColorModel::ReadInput(){
 			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				// Initialize the solid phase
-				if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
-				else	     	      	id_solid(i,j,k) = 0;
+				signed char label = Mask->id[n];
+				if (label > 0)		id_solid(i,j,k) = 1;
+				else	     		id_solid(i,j,k) = 0;
 			}
 		}
 	}
@@ -620,7 +655,7 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = (volA + volB)*morph_delta; // set target volume change
+					delta_volume_target = (volA )*morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -650,25 +685,12 @@ void ScaLBL_ColorModel::Run(){
 							Fz *= 1e-3/force_magnitude;   
 						}
 						if (force_magnitude < 1e-7){
-							Fx *= 1e-6/force_magnitude;   // impose floor
-							Fy *= 1e-6/force_magnitude;   
-							Fz *= 1e-6/force_magnitude;   
+							Fx *= 1e-7/force_magnitude;   // impose floor
+							Fy *= 1e-7/force_magnitude;   
+							Fz *= 1e-7/force_magnitude;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					}
-					//  flow reversal criteria based on fractional flow rate
-					if (delta_volume_target < 0.0 &&
-							volA*flow_rate_A/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
-						REVERSE_FLOW_DIRECTION = true;
-					}
-					else if (delta_volume_target > 0.0 &&
-							volB*flow_rate_B/(volA*flow_rate_A+volB*flow_rate_B) < RESIDUAL_ENDPOINT_THRESHOLD){
-						REVERSE_FLOW_DIRECTION = true;
-					}
-					if ( REVERSE_FLOW_DIRECTION ){
-						delta_volume_target *= (-1.0);
-						REVERSE_FLOW_DIRECTION = false;
 					}
 				}
 				else{
@@ -676,8 +698,8 @@ void ScaLBL_ColorModel::Run(){
 						printf("** Continue to simulate steady *** \n ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
-					morph_timesteps=0;
 				}
+				morph_timesteps=0;
 				Ca_previous = Ca;
 			}
 			if (MORPH_ADAPT ){
@@ -696,11 +718,13 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				if ( REVERSE_FLOW_DIRECTION ){
-					if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
+					//if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
 					delta_volume = 0.0;
 					// flow direction will reverse after next steady point
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
+					//morph_delta *= (-1.0);
+					REVERSE_FLOW_DIRECTION = false;
 				}
 
 				MPI_Barrier(comm);
@@ -771,6 +795,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	
 	// only operate on component "0"
 	count = 0.0;
+	double second_biggest = 0.0;
+
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -781,10 +807,22 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 				}
 				else 		
 					phase_id(i,j,k) = 1;
+				if (label == 1 ){
+					second_biggest += 1.0;
+				}
 			}
 		}
 	}	
 	volume_connected = sumReduce( Dm->Comm, count);
+	second_biggest = sumReduce( Dm->Comm, second_biggest);
+
+	int reach_x, reach_y, reach_z;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+			}
+		}
+	}
 
 	// 3. Generate a distance map to the largest object -> phase_distance
 	CalcDist(phase_distance,phase_id,*Dm);
@@ -811,47 +849,48 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
-	if (volume_connected < 0.02*volume_initial && target_delta_volume < 0.0){
+	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
 		// if connected volume is less than 2% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk to less than 2 %% of total fluid volume \n");
+		if (rank==0) printf("Connected region has shrunk! \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
+/*	else{*/
+		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
+		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+		double target_delta_volume_incremental = target_delta_volume;
+		if (fabs(target_delta_volume) > 0.01*volume_initial)  
+			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
+		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
 
-	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-	double target_delta_volume_incremental = target_delta_volume;
-	if (fabs(target_delta_volume) > 0.01*volume_initial)  
-		target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+					else 		     				  phase_id(i,j,k) = 1;
+					//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+				}
+			}
+		}	
 
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-				else 		     				  phase_id(i,j,k) = 1;
-				//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
+
+		// 5. Update phase indicator field based on new distnace
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					int n = k*Nx*Ny + j*Nx + i;
+					double d = phase_distance(i,j,k);
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (d < 3.f){
+							//phase(i,j,k) = -1.0;
+							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+						}
+					}
+				} 
 			}
 		}
-	}	
-
-	CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
-
-	// 5. Update phase indicator field based on new distnace
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				int n = k*Nx*Ny + j*Nx + i;
-				double d = phase_distance(i,j,k);
-				if (Averages->SDs(i,j,k) > 0.f){
-					if (d < 3.f){
-						//phase(i,j,k) = -1.0;
-						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-					}
-				}
-			} 
-		}
-	}
-	fillDouble.fill(phase);
-
+		fillDouble.fill(phase);
+	//}
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){

@@ -39,6 +39,12 @@ int main(int argc, char **argv)
 		printf("Running Color LBM	\n");
 		printf("********************************************************\n");
 	}
+	// Initialize compute device
+	int device=ScaLBL_SetDevice(rank);
+	if (rank<4)	printf("Using GPU ID %i for rank %i \n",device,rank);
+	ScaLBL_DeviceBarrier();
+	MPI_Barrier(comm);
+	
     PROFILE_ENABLE(1);
     //PROFILE_ENABLE_TRACE();
     //PROFILE_ENABLE_MEMORY();
