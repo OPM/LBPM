@@ -212,6 +212,22 @@ int main(int argc, char **argv)
 			}
 		}
 		
+		count_water=0;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					if (id[n] == 2){
+						count_water++;
+					}
+				}
+			}
+		}
+		count_water=sumReduce( Dm->Comm, count_water);
+		
+		SW = double(count_water) / count_porespace;
+		if(rank==0) printf("Final saturation: %f \n", SW);
+		
 		if (rank==0) printf("Writing ID file \n");
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 
