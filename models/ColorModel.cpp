@@ -126,7 +126,13 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 void ScaLBL_ColorModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-	Nx+=2; Ny+=2; Nz += 2;
+	// domain parameters
+	Nx = Dm->Nx;
+	Ny = Dm->Ny;
+	Nz = Dm->Nz;
+	Lx = Dm->Lx;
+	Ly = Dm->Ly;
+	Lz = Dm->Lz;
 	N = Nx*Ny*Nz;
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
@@ -137,12 +143,6 @@ void ScaLBL_ColorModel::SetDomain(){
 	MPI_Barrier(comm);
 	// Read domain parameters
 	rank = Dm->rank();	
-	Nx = Dm->Nx;
-	Ny = Dm->Ny;
-	Nz = Dm->Nz;
-	Lx = Dm->Lx;
-	Ly = Dm->Ly;
-	Lz = Dm->Lz;
 	nprocx = Dm->nprocx();
 	nprocy = Dm->nprocy();
 	nprocz = Dm->nprocz();
