@@ -98,6 +98,7 @@ int main(int argc, char **argv)
 		// Generate the signed distance map
 		// Initialize the domain and communication
 		Array<char> id_solid(nx,ny,nz);
+		Array<int> phase_label(nx,ny,nz);
 		DoubleArray SignDist(nx,ny,nz);
 		DoubleArray phase(nx,ny,nz);
 		
@@ -176,12 +177,12 @@ int main(int argc, char **argv)
 					n=k*nx*ny+j*nx+i;
 					// only apply opening to connected component 
 					if ( phase_label(i,j,k) == 0){
-						id_solid(i,j,k) = 0;
+						id_solid(i,j,k) = 1;
 						id_connected[n] = 2;
 						id[n] = 2;
 					}
 					else{
-						id_solid(i,j,k) = 1;
+						id_solid(i,j,k) = 0;
 						id_connected[n] = 0;
 					}
 				}
