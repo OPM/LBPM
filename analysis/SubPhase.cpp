@@ -251,8 +251,8 @@ void SubPhase::Basic(){
 		double fractional_flow= water_flow_rate / total_flow_rate;
 
 		double h = Dm->voxel_length;		
-		double krn = h*h*rho_n*nu_n*not_water_flow_rate / force_mag ;
-		double krw = h*h*rho_w*nu_w*water_flow_rate / force_mag;
+		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
+		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*h*h*water_flow_rate,h*h*h*not_water_flow_rate, gwb.p, gnb.p); 
 		fflush(TIMELOG);
