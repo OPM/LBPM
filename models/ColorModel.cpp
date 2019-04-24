@@ -626,6 +626,8 @@ void ScaLBL_ColorModel::Run(){
 			if ( morph_timesteps > morph_interval ){
 				double volB = Averages->gwb.V; 
 				double volA = Averages->gnb.V; 
+				volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+				volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 				double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 				double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 				double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -639,12 +641,18 @@ void ScaLBL_ColorModel::Run(){
 				double dir_x = Fx/force_mag;
 				double dir_y = Fy/force_mag;
 				double dir_z = Fz/force_mag;
-				double flow_rate_A = (vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
-				double flow_rate_B = (vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+				if (force_mag == 0.0){
+					// default to z direction
+					dir_x = 0.0;
+					dir_y = 0.0;
+					dir_z = 1.0;
+					force_mag = 1.0;
+				}
+				
 				double current_saturation = volB/(volA+volB);
-				double Ca = fabs(volA*muA*flow_rate_A + volB*muB*flow_rate_B)/(5.796*alpha*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs));
-
-				double force_magnitude = sqrt(Fx*Fx + Fy*Fy + Fz*Fz);
+				double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
+				double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+				double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 				
 				bool isSteady = false;
 				if ( (fabs((Ca - Ca_previous)/Ca) < tolerance &&  CURRENT_STEADY_TIMESTEPS > MIN_STEADY_TIMESTEPS))
@@ -664,11 +672,27 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-						volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-						volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-						FILE * kr_log_file = fopen("relperm.csv","a");
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_STEADY_TIMESTEPS,muA,muB,5.796*alpha,Fx,Fy,Fz);
-						fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",volA,volB,vA_x,vA_y,vA_z,vB_x,vB_y,vB_z);
+						double pA = Averages->gnb.p;
+						double pB = Averages->gwb.p;
+
+						double h = Dm->voxel_length;		
+						double kAeff = h*h*muA*flow_rate_A/(rhoA*force_mag);
+						double kBeff = h*h*muB*flow_rate_B/(rhoB*force_mag);
+						double pAB = (pA-pB)/(h*5.796*alpha);
+						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
+						double Mobility = muA/muB;
+						
+						bool WriteHeader=false;
+						FILE * kr_log_file = fopen("relperm.csv","r");
+						if (kr_log_file != NULL)
+							fclose(kr_log_file);
+						else
+							WriteHeader=true;
+						kr_log_file = fopen("relperm.csv","a");
+						if (WriteHeader)
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water cap.pressure pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
@@ -679,15 +703,15 @@ void ScaLBL_ColorModel::Run(){
 						Fy *= capillary_number / Ca;
 						Fz *= capillary_number / Ca;
 
-						if (force_magnitude > 1e-3){
-							Fx *= 1e-3/force_magnitude;   // impose ceiling for stability
-							Fy *= 1e-3/force_magnitude;   
-							Fz *= 1e-3/force_magnitude;   
+						if (force_mag > 1e-3){
+							Fx *= 1e-3/force_mag;   // impose ceiling for stability
+							Fy *= 1e-3/force_mag;   
+							Fz *= 1e-3/force_mag;   
 						}
-						if (force_magnitude < 1e-7){
-							Fx *= 1e-7/force_magnitude;   // impose floor
-							Fy *= 1e-7/force_magnitude;   
-							Fz *= 1e-7/force_magnitude;   
+						if (force_mag < 1e-7){
+							Fx *= 1e-7/force_mag;   // impose floor
+							Fy *= 1e-7/force_mag;   
+							Fz *= 1e-7/force_mag;   
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
@@ -702,7 +726,7 @@ void ScaLBL_ColorModel::Run(){
 				morph_timesteps=0;
 				Ca_previous = Ca;
 			}
-			if (MORPH_ADAPT ){
+			if (MORPH_ADAPT && morph_delta != 0.0){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
