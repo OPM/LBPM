@@ -249,11 +249,12 @@ void SubPhase::Basic(){
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
-		
-		double krn = nu_n*not_water_flow_rate / force_mag ;
-		double krw = nu_w*water_flow_rate / force_mag;
+
+		double h = Dm->voxel_length;		
+		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
+		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,water_flow_rate,not_water_flow_rate, gwb.p, gnb.p); 
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*h*h*water_flow_rate,h*h*h*not_water_flow_rate, gwb.p, gnb.p); 
 		fflush(TIMELOG);
 	}
 
