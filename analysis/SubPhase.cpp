@@ -514,7 +514,7 @@ void SubPhase::Full(){
 						double nz = 0.5*(Phi(i,j,k+1)-Phi(i,j,k-1));
 						InterfaceTransportMeasures(  beta,  rho_w,  rho_n,  nA, nB, nx, ny, nz, ux, uy, uz, iwn);
 					}
-					else if ( phi > 0.0){
+					if ( phi > 0.0){
 						if (morph_n->label(i,j,k) > 0 ){
 							vol_nd_bulk += 1.0;
 							nd.M += nA*rho_n;						
