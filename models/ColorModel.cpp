@@ -687,7 +687,7 @@ void ScaLBL_ColorModel::Run(){
 				morph_timesteps=0;
 				Ca_previous = Ca;
 			}
-			if (MORPH_ADAPT ){
+			if (MORPH_ADAPT && morph_delta != 0.0){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
