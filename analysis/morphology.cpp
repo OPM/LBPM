@@ -144,7 +144,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
-	
 	while (void_fraction_new > VoidFraction)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -172,7 +171,11 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
+<<<<<<< HEAD
 									if (id[nn] == ErodeLabel && dsq <= Rcrit_new*Rcrit_new){
+=======
+									if (id[nn] == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
+>>>>>>> fe5a1100278e24d46e9fb65fae8c837afa9a19a6
 										LocalNumber+=1.0;
 										id[nn]=NewLabel;
 									}
@@ -461,9 +464,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
 		// and sw<Sw will be immediately broken
 		double LocalNumber=0.f;
-		for(int k=0; k<Nz; k++){
-			for(int j=0; j<Ny; j++){
-				for(int i=0; i<Nx; i++){
+		for(int k=1; k<Nz-1; k++){
+			for(int j=1; j<Ny-1; j++){
+				for(int i=1; i<Nx-1; i++){
 					n = k*nx*ny + j*nx+i;
 					if (SignDist(i,j,k) > Rcrit_new){
 						// loop over the window and update
@@ -478,7 +481,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
+									if (id[nn] == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
 										LocalNumber+=1.0;
 										id[nn]=1;
 									}
