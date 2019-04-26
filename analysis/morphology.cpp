@@ -25,7 +25,7 @@ inline void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID
 }
 
 //***************************************************************************************
-double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
+double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction, signed char ErodeLabel, signed char ReplaceLabel){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
@@ -56,12 +56,11 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
 				if ( SignDist(i,j,k) > 0.0 ){
 					count += 1.0;
-					id[n]  = 2;
+					//id[n]  = 2;
 				}
 			}
 		}
 	}
-
 	MPI_Barrier(Dm->Comm);
 	
 	// total Global is the number of nodes in the pore-space
@@ -173,9 +172,9 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
+									if (id[nn] == ErodeLabel && dsq <= Rcrit_new*Rcrit_new){
 										LocalNumber+=1.0;
-										id[nn]=1;
+										id[nn]=NewLabel;
 									}
 								}
 							}
