@@ -25,7 +25,7 @@ inline void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID
 }
 
 //***************************************************************************************
-double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction, signed char ErodeLabel, signed char ReplaceLabel){
+double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction, signed char ErodeLabel, signed char NewLabel){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
