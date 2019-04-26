@@ -171,11 +171,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-<<<<<<< HEAD
 									if (id[nn] == ErodeLabel && dsq <= Rcrit_new*Rcrit_new){
-=======
-									if (id[nn] == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
->>>>>>> fe5a1100278e24d46e9fb65fae8c837afa9a19a6
 										LocalNumber+=1.0;
 										id[nn]=NewLabel;
 									}
