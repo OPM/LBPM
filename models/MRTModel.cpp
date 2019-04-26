@@ -279,7 +279,7 @@ void ScaLBL_MRTModel::Run(){
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-						Vs,As,Hs,Xs,vax,vay,vaz, absperm);
+						h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
 				fclose(log_file);
 			}
 		}

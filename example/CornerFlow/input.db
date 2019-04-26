@@ -1,0 +1,49 @@
+Color {
+    tauA   = 0.7;  
+    tauB   = 0.7;  
+    rhoA   = 1.0;  
+    rhoB   = 1.0;  
+    alpha = 1e-3;
+    beta  = 0.95;
+    F = 0, 0, 0
+    Restart = false
+    pBC = 0
+    din = 1.0
+    dout = 1.0
+    timestepMax = 3000
+    interval = 1000
+    tol = 1e-5;
+    das = 0.1
+    dbs = 0.9
+    flux = 0.0
+    ComponentLabels = 0, -1        // labels for immobile components
+    ComponentAffinity = -1.0, 0.5  // wetting condition for immobile components (-1 = water wet / +1 oil wet)
+}
+
+Domain {
+    Filename = "CornerFlow.raw"
+    nproc = 1, 1, 2     // Number of processors (Npx,Npy,Npz)
+    n = 64, 64, 64      // Size of local domain (Nx,Ny,Nz)
+    N = 64, 64, 128      // size of the input image
+    n_spheres = 1       // Number of spheres
+    L = 1, 1, 1         // Length of domain (x,y,z)
+    BC = 0              // Boundary condition type
+    ReadType = "8bit"
+    ReadValues = 0, 1, 2  // labels within the original input image
+    WriteValues = 0, 1, 2 // labels to write (if they aren't the same)
+    ComponentLabels = 0   // labels that are immobile
+    HistoryLabels = -1    // new labels to assign to each immobile component based on fluid history
+    Sw = 0.3              // target saturation for morphological routines
+} 
+
+Analysis {
+    blobid_interval = 1000      // Frequency to perform blob identification
+    analysis_interval = 1000    // Frequency to perform analysis
+    restart_interval = 1000    // Frequency to write restart data
+    visualization_interval = 2000        // Frequency to write visualization data
+    restart_file = "Restart"    // Filename to use for restart file (will append rank)
+    N_threads    = 4            // Number of threads to use
+    load_balance = "independent" // Load balance method to use: "none", "default", "independent"
+}
+
+
