@@ -65,10 +65,10 @@ int main(int argc, char **argv)
 		signed char ErodeLabel=2;
 		signed char OpenLabel=1;
 		if (domain_db->keyExists( "OpenLabel" )){
-			OpenLabel = domain_db->getScalar<signed char >("OpenLabel");
+			OpenLabel = signed char( domain_db->getScalar<int>("OpenLabel"));
 		}
 		if (domain_db->keyExists( "ErodeLabel" )){
-			ErodeLabel = domain_db->getScalar<signed char >("ErodeLabel");
+			ErodeLabel = signed char( domain_db->getScalar<int>("ErodeLabel"));
 		}
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
