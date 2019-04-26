@@ -193,9 +193,12 @@ int main(int argc, char **argv)
 		// target water increase in voxels, normalized by connected volume
 		double St = (SW*count_porespace - count_water)/count_porespace;  
 		
+		
+		signed char water=2;
+		signed char notwater=1;
 		// Run the morphological opening
 		if (St > 0.0)
-			MorphOpen(SignDist, id_connected, Dm, St);
+			MorphOpen(SignDist, id_connected, Dm, St, water, notwater);
 		else {
 			if(rank==0) printf("Initial condition satisfies condition for saturation target \n");
 		}
