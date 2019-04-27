@@ -139,11 +139,13 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
+	if (ErodeLabel == 1){
+		VoidFraction = 1.0 - VoidFraction;
+		void_fraction_new = 1.0 - void_fraction_new;
+	}
+
 	double Rcrit_new = maxdistGlobal;
-	//if (argc>2){
-	//	Rcrit_new = strtod(argv[2],NULL);
-	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
-	//}
+
 	while (void_fraction_new > VoidFraction)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -268,7 +270,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					n=k*Nx*Ny+j*Nx+i;
-					if (id[n] == 2){
+					if (id[n] == ErodeLabel){
 						count+=1.0;
 					}
 				}
@@ -450,8 +452,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//}
 	MPI_Barrier(Dm->Comm);
 	
-	if (ErodeLabel == 1) VoidFraction = 1-VoidFraction;
-
 	while (void_fraction_new > VoidFraction && Rcrit_new > 0.5)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -643,7 +643,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 			for (int j=1; j<ny-1; j++){
 				for (int i=1; i<nx-1; i++){
 					n=k*nx*ny+j*nx+i;
-					if (id[n] == ErodeLabel){
+					if (id[n] > 1){
 						count+=1.0;
 					}
 				}
