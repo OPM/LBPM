@@ -54,7 +54,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				n = k*nx*ny+j*nx+i;
 				// extract maximum distance for critical radius
 				if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
-				if ( SignDist(i,j,k) > 0.0 ){
+				if ( id[n] == ErodeLabel){
 					count += 1.0;
 					//id[n]  = 2;
 				}
@@ -70,6 +70,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
+	final_void_fraction = volume_fraction; //initialize
 
 	// Communication buffers
 	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
@@ -141,7 +142,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 
 	if (ErodeLabel == 1){
 		VoidFraction = 1.0 - VoidFraction;
-		void_fraction_new = 1.0 - void_fraction_new;
 	}
 
 	double Rcrit_new = maxdistGlobal;
