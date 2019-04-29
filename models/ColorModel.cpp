@@ -4,6 +4,8 @@ color lattice boltzmann model
 #include "models/ColorModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
+#include <stdlib.h>
+#include <time.h>
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
@@ -458,6 +460,7 @@ void ScaLBL_ColorModel::Run(){
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
+	double seed_water = 0.0;
 	double capillary_number = 0.0;
 	double tolerance = 0.01;
 	double Ca_previous = 0.f;
@@ -475,6 +478,9 @@ void ScaLBL_ColorModel::Run(){
 	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
 		SET_CAPILLARY_NUMBER=false;
+	}
+	if (analysis_db->keyExists( "seed_water" )){
+		seed_water = analysis_db->getScalar<double>( "seed_water" );
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
@@ -715,7 +721,7 @@ void ScaLBL_ColorModel::Run(){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-				delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+				delta_volume += MorphInit(beta,delta_volume_target-delta_volume,seed_water);
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
 					delta_volume = 0.0;
@@ -764,7 +770,7 @@ void ScaLBL_ColorModel::Run(){
 	// ************************************************************************
 }
 
-double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta_volume){
+double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta_volume, const double seed_water){
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
 	double vF = 0.f;
@@ -776,6 +782,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	DoubleArray phase_distance(Nx,Ny,Nz);
 	Array<char> phase_id(Nx,Ny,Nz);
 	fillHalo<double> fillDouble(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
+	
+	srand(time(NULL));
 
 	// Basic algorithm to 
 	// 1. Copy phase field to CPU
@@ -905,7 +913,12 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
-				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
+				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f){
+					count+=1.f;
+					double random_value = double(rand())/ RAND_MAX;
+					double local_value = phase(i,j,k);
+					phase(i,j,k) -= local_value*random_value*seed_water;
+				}
 			}
 		}
 	}
