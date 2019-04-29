@@ -25,7 +25,7 @@ inline void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID
 }
 
 //***************************************************************************************
-double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction){
+double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain> Dm, double VoidFraction, signed char ErodeLabel, signed char NewLabel){
 	// SignDist is the distance to the object that you want to constaing the morphological opening
 	// VoidFraction is the the empty space where the object inst
 	// id is a labeled map
@@ -54,14 +54,13 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				n = k*nx*ny+j*nx+i;
 				// extract maximum distance for critical radius
 				if ( SignDist(i,j,k) > maxdist) maxdist=SignDist(i,j,k);
-				if ( SignDist(i,j,k) > 0.0 ){
+				if ( id[n] == ErodeLabel){
 					count += 1.0;
-					id[n]  = 2;
+					//id[n]  = 2;
 				}
 			}
 		}
 	}
-
 	MPI_Barrier(Dm->Comm);
 	
 	// total Global is the number of nodes in the pore-space
@@ -71,6 +70,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
+	final_void_fraction = volume_fraction; //initialize
 
 	// Communication buffers
 	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
@@ -140,12 +140,12 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
+	if (ErodeLabel == 1){
+		VoidFraction = 1.0 - VoidFraction;
+	}
+
 	double Rcrit_new = maxdistGlobal;
-	//if (argc>2){
-	//	Rcrit_new = strtod(argv[2],NULL);
-	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
-	//}
-	
+
 	while (void_fraction_new > VoidFraction)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -173,9 +173,9 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
+									if (id[nn] == ErodeLabel && dsq <= Rcrit_new*Rcrit_new){
 										LocalNumber+=1.0;
-										id[nn]=1;
+										id[nn]=NewLabel;
 									}
 								}
 							}
@@ -270,7 +270,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					n=k*Nx*Ny+j*Nx+i;
-					if (id[n] == 2){
+					if (id[n] == ErodeLabel){
 						count+=1.0;
 					}
 				}
@@ -451,7 +451,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
 	MPI_Barrier(Dm->Comm);
-
+	
 	while (void_fraction_new > VoidFraction && Rcrit_new > 0.5)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -462,9 +462,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		if (Window == 0) Window = 1; // If Window = 0 at the begining, after the following process will have sw=1.0
 		// and sw<Sw will be immediately broken
 		double LocalNumber=0.f;
-		for(int k=0; k<Nz; k++){
-			for(int j=0; j<Ny; j++){
-				for(int i=0; i<Nx; i++){
+		for(int k=1; k<Nz-1; k++){
+			for(int j=1; j<Ny-1; j++){
+				for(int i=1; i<Nx-1; i++){
 					n = k*nx*ny + j*nx+i;
 					if (SignDist(i,j,k) > Rcrit_new){
 						// loop over the window and update
@@ -479,7 +479,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 								for (ii=imin; ii<imax; ii++){
 									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= Rcrit_new*Rcrit_new){
+									if (id[nn] == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
 										LocalNumber+=1.0;
 										id[nn]=1;
 									}
