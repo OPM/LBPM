@@ -465,6 +465,7 @@ void ScaLBL_ColorModel::Run(){
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
+	bool USE_SEED = false;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
@@ -479,6 +480,7 @@ void ScaLBL_ColorModel::Run(){
 	double capillary_number = 0.0;
 	double tolerance = 0.01;
 	double Ca_previous = 0.f;
+	double initial_volume = 0.0;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
@@ -496,6 +498,7 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
+		USE_SEED = true;
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
@@ -629,36 +632,35 @@ void ScaLBL_ColorModel::Run(){
 			analysis.finish();
 			CURRENT_STEADY_TIMESTEPS += analysis_interval;
 
+			double volB = Averages->gwb.V; 
+			double volA = Averages->gnb.V; 
+			volA /= Dm->Volume;
+			volB /= Dm->Volume;;
+			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
+			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
+			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
+			double vB_x = Averages->gwb.Px/Averages->gwb.M; 
+			double vB_y = Averages->gwb.Py/Averages->gwb.M; 
+			double vB_z = Averages->gwb.Pz/Averages->gwb.M;
+			double muA = rhoA*(tauA-0.5)/3.f; 
+			double muB = rhoB*(tauB-0.5)/3.f;				
+			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+			double dir_x = Fx/force_mag;
+			double dir_y = Fy/force_mag;
+			double dir_z = Fz/force_mag;
+			if (force_mag == 0.0){
+				// default to z direction
+				dir_x = 0.0;
+				dir_y = 0.0;
+				dir_z = 1.0;
+				force_mag = 1.0;
+			}
+			double current_saturation = volB/(volA+volB);
+			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
+			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
+			
 			if ( morph_timesteps > morph_interval ){
-				double volB = Averages->gwb.V; 
-				double volA = Averages->gnb.V; 
-				volA /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-				volB /= double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-				double vA_x = Averages->gnb.Px/Averages->gnb.M; 
-				double vA_y = Averages->gnb.Py/Averages->gnb.M; 
-				double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
-				double vB_x = Averages->gwb.Px/Averages->gnb.M; 
-				double vB_y = Averages->gwb.Py/Averages->gnb.M; 
-				double vB_z = Averages->gwb.Pz/Averages->gnb.M;
-				double muA = rhoA*(tauA-0.5)/3.f; 
-				double muB = rhoB*(tauB-0.5)/3.f;				
-				
-				double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-				double dir_x = Fx/force_mag;
-				double dir_y = Fy/force_mag;
-				double dir_z = Fz/force_mag;
-				if (force_mag == 0.0){
-					// default to z direction
-					dir_x = 0.0;
-					dir_y = 0.0;
-					dir_z = 1.0;
-					force_mag = 1.0;
-				}
-				
-				double current_saturation = volB/(volA+volB);
-				double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
-				double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
-				double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 				
 				bool isSteady = false;
 				if ( (fabs((Ca - Ca_previous)/Ca) < tolerance &&  CURRENT_STEADY_TIMESTEPS > MIN_STEADY_TIMESTEPS))
@@ -732,18 +734,30 @@ void ScaLBL_ColorModel::Run(){
 				morph_timesteps=0;
 				Ca_previous = Ca;
 			}
-			if (MORPH_ADAPT && morph_delta != 0.0){
+
+			if (MORPH_ADAPT ){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
-				if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
-				//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-				delta_volume += MorphInit(beta,delta_volume_target-delta_volume,seed_water);
+				if (USE_SEED){
+					delta_volume = volA - initial_volume;
+					CURRENT_MORPH_TIMESTEPS += analysis_interval;
+					double massChange = SeedPhaseField(seed_water);
+					if (rank==0) printf("***Seed water in oil %f, mass change %f ***\n", seed_water, massChange);
+
+				}
+				else{
+					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
+					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+				}
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
+					initial_volume = volA;
 					delta_volume = 0.0;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					delta_volume = 0.0;
+					initial_volume = volA;
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
@@ -756,7 +770,6 @@ void ScaLBL_ColorModel::Run(){
 					//morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
-
 				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
@@ -784,8 +797,56 @@ void ScaLBL_ColorModel::Run(){
 
 	// ************************************************************************
 }
+double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
+	srand(time(NULL));
+	double mass_loss =0.f;
+	double count =0.f;
+	DoubleArray phase(Nx,Ny,Nz);
 
-double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta_volume, const double seed_water){
+	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				double random_value = double(rand())/ RAND_MAX;
+
+				if (Averages->SDs(i,j,k) < 0.f){
+					// skip
+				}
+				else if (phase(i,j,k) > 0.f ){
+					phase(i,j,k) -= random_value*seed_water_in_oil;
+					mass_loss += random_value*seed_water_in_oil;
+					count++;
+				}
+				else {
+
+				}
+			}
+		}
+	}
+	count= sumReduce( Dm->Comm, count);
+	mass_loss= sumReduce( Dm->Comm, mass_loss);
+	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
+
+	// 7. Re-initialize phase field and density
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	if (BoundaryCondition >0 ){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+	return(mass_loss);
+}
+
+double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta_volume){
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
 	double vF = 0.f;
@@ -798,7 +859,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	Array<char> phase_id(Nx,Ny,Nz);
 	fillHalo<double> fillDouble(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
 	
-	srand(time(NULL));
 
 	// Basic algorithm to 
 	// 1. Copy phase field to CPU
@@ -930,9 +990,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			for (int i=1; i<Nx-1; i++){
 				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f){
 					count+=1.f;
-					double random_value = double(rand())/ RAND_MAX;
-					double local_value = phase(i,j,k);
-					phase(i,j,k) -= local_value*random_value*seed_water;
 				}
 			}
 		}
