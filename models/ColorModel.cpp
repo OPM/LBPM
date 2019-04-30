@@ -727,7 +727,6 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
 					if (rank==0) printf("***Seed water in oil %f, mass change %f ***\n", seed_water, massChange);
-
 				}
 				else{
 					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
@@ -812,6 +811,12 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
 	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
 	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
+	
+	FILE *OUTFILE;
+	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(phase.data(),8,N,OUTFILE);
+	fclose(OUTFILE);
 
 	// 7. Re-initialize phase field and density
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
