@@ -742,7 +742,7 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume = volA - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
-					if (rank==0) printf("***Seed water in oil %f, mass change %f ***\n", seed_water, massChange);
+					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
 				}
 				else{
 					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
@@ -797,6 +797,116 @@ void ScaLBL_ColorModel::Run(){
 
 	// ************************************************************************
 }
+
+double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
+	
+	int nx = Nx;
+	int ny = Ny;
+	int nz = Nz;
+	int n;
+	int N = nx*ny*nz;
+	double volume_change;
+	Array<char> id_solid(nx,ny,nz);
+	Array<int> phase_label(nx,ny,nz);
+	DoubleArray distance(Nx,Ny,Nz);
+	DoubleArray phase(nx,ny,nz);
+	signed char *id_connected;
+	id_connected = new signed char [nx*ny*nz];
+	
+	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
+
+	// Extract only the connected part of NWP
+	BlobIDstruct new_index;
+	double vF=0.0; double vS=0.0;
+	ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,Dm->Comm);
+	MPI_Barrier(Dm->Comm);
+		
+	int count_oil=0;
+	int count_connected=0;
+	int count_porespace=0;
+	int count_water=0;
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				n=k*nx*ny+j*nx+i;
+				// only apply opening to connected component 
+				if ( phase_label(i,j,k) == 0){
+					count_connected++;
+				}
+				if (id[n] > 0){
+					count_porespace++;
+				}
+				if (id[n] == 2){
+					count_water++;
+				}
+			}
+		}
+	}
+	count_connected=sumReduce( Dm->Comm, count_connected);
+	count_porespace=sumReduce( Dm->Comm, count_porespace);
+	count_water=sumReduce( Dm->Comm, count_water);
+	
+	for (int k=0; k<nz; k++){
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
+				n=k*nx*ny+j*nx+i;
+				// only apply opening to connected component 
+				if ( phase_label(i,j,k) == 0){
+					id_solid(i,j,k) = 1;
+					id_connected[n] = 2;
+					id[n] = 2;
+					/* delete the connected component */
+					phase(i,j,k) = -1.0;
+				}
+				else{
+					id_solid(i,j,k) = 0;
+					id_connected[n] = 0;
+				}
+			}
+		}
+	}
+	CalcDist(distance,id_solid,*Dm);
+
+	double SW=0.5;
+	// target water increase in voxels, normalized by connected volume
+	double St = (SW*count_porespace - count_water)/count_porespace;  
+	
+	signed char water=2;
+	signed char notwater=1;
+	MorphOpen(distance, id_connected, Dm, St, water, notwater);
+	
+	for (int k=0; k<nz; k++){
+		for (int j=0; j<ny; j++){
+			for (int i=0; i<nx; i++){
+				n=k*nx*ny+j*nx+i;
+				// only apply opening to connected component 
+				if ( id_connected[n] == 1){
+					phase(i,j,k) = 1.0;
+				}
+			}
+		}
+	}
+	
+	
+	
+	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	if (BoundaryCondition >0 ){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+	return(volume_change);
+}
+
 double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	srand(time(NULL));
 	double mass_loss =0.f;
@@ -827,12 +937,6 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
 	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
 	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
-	
-	FILE *OUTFILE;
-	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
-	OUTFILE = fopen(LocalRankFilename,"wb");
-	fwrite(phase.data(),8,N,OUTFILE);
-	fclose(OUTFILE);
 
 	// 7. Re-initialize phase field and density
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);

@@ -58,7 +58,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		}
 
 	}
-	else{
+/*	else{
 		char LocalRankString[8];
 		sprintf(LocalRankString,"%05d",Dm->rank());
 		char LocalRankFilename[40];
@@ -79,7 +79,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		fprintf(SUBPHASE,"Vi Ai Hi Xi ");					 		// interface region 
 		fprintf(SUBPHASE,"Vic Aic Hic Xic Nic\n");					// interface region 
 	}
-	
+	*/
 	if (Dm->rank()==0){
 		bool WriteHeader=false;
 		TIMELOG = fopen("timelog.csv","r");
