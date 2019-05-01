@@ -451,7 +451,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
 	MPI_Barrier(Dm->Comm);
+
 	
+	FILE *DRAIN = fopen("morphdrain.csv","w");
+	fprintf(DRAIN,"sw radius\n");				
+
 	while (void_fraction_new > VoidFraction && Rcrit_new > 0.5)
 	{
 		void_fraction_diff_old = void_fraction_diff_new;
@@ -653,6 +657,8 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 		if (rank==0){
+			fprintf(DRAIN,"%f ",void_fraction_new);
+			fprintf(DRAIN,"%f\n",Rcrit_new);
 			printf("     %f ",void_fraction_new);
 			printf("     %f\n",Rcrit_new);
 		}
