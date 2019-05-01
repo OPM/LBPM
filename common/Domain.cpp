@@ -122,6 +122,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
     voxel_length = 1.0;
     if (d_db->keyExists( "voxel_length" )){
     	auto voxel_length = d_db->getScalar<double>("voxel_length");
+    	if (rank==0) printf("voxel length = %f micron \n", voxel_length);
     }
     
 	if (d_db->keyExists( "InletLayers" )){
