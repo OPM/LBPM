@@ -42,6 +42,11 @@ int main(int argc, char **argv)
 			printf("Running Single Phase Permeability Calculation \n");
 			printf("********************************************************\n");
 		}
+		// Initialize compute device
+		int device=ScaLBL_SetDevice(rank);
+		ScaLBL_DeviceBarrier();
+		MPI_Barrier(comm);
+		
 		
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
 		auto filename = argv[1];

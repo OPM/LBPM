@@ -9,6 +9,7 @@ extern "C" int ScaLBL_SetDevice(int rank){
 	//int device = local_rank % n_devices; 
 	int device = rank % n_devices; 
 	cudaSetDevice(device); 
+	if (rank < n_devices) printf("MPI rank=%i will use GPU ID %i / %i \n",rank,device,n_devices);
 	return device;
 }
 

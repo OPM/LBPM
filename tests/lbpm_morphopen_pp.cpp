@@ -62,7 +62,14 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
-
+		signed char ErodeLabel=2;
+		signed char OpenLabel=1;
+		if (domain_db->keyExists( "OpenLabel" )){
+			OpenLabel = domain_db->getScalar<int>("OpenLabel");
+		}
+		if (domain_db->keyExists( "ErodeLabel" )){
+			ErodeLabel = domain_db->getScalar<int>("ErodeLabel");
+		}
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
 		if (rank==0) printf("Performing morphological opening with target saturation %f \n", SW);
@@ -126,7 +133,7 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		// Run the morphological opening
-		MorphOpen(SignDist, id, Dm, SW);
+		MorphOpen(SignDist, id, Dm, SW, ErodeLabel, OpenLabel);
 		
 		// calculate distance to non-wetting fluid
 		if (domain_db->keyExists( "HistoryLabels" )){
@@ -173,7 +180,7 @@ int main(int argc, char **argv)
 							signed char NEWVALUE=HistoryLabels[idx];
 							if (LOCVAL == VALUE){
 								idx = NLABELS;
-								if (SignDist(i,j,k) < 1.0){
+								if (SignDist(i,j,k) < 2.0){
 									id[n] = NEWVALUE;
 								}
 							}

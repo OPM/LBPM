@@ -22,27 +22,27 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	mrt_db = db->getDatabase( "MRT" );
 
 	// Color Model parameters
-	if (color_db->keyExists( "timestepMax" )){
+	if (mrt_db->keyExists( "timestepMax" )){
 		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
 	}
-	if (color_db->keyExists( "tau" )){
+	if (mrt_db->keyExists( "tau" )){
 		tau = mrt_db->getScalar<double>( "tau" );
 	}
-	if (color_db->keyExists( "F" )){
+	if (mrt_db->keyExists( "F" )){
 		Fx = mrt_db->getVector<double>( "F" )[0];
 		Fy = mrt_db->getVector<double>( "F" )[1];
 		Fz = mrt_db->getVector<double>( "F" )[2];
 	}
-	if (color_db->keyExists( "Restart" )){
+	if (mrt_db->keyExists( "Restart" )){
 		Restart = mrt_db->getScalar<bool>( "Restart" );
 	}
-	if (color_db->keyExists( "din" )){
+	if (mrt_db->keyExists( "din" )){
 		din = mrt_db->getScalar<double>( "din" );
 	}
-	if (color_db->keyExists( "dout" )){
+	if (mrt_db->keyExists( "dout" )){
 		dout = mrt_db->getScalar<double>( "dout" );
 	}
-	if (color_db->keyExists( "flux" )){
+	if (mrt_db->keyExists( "flux" )){
 		flux = mrt_db->getScalar<double>( "flux" );
 	}	
 	
@@ -56,7 +56,15 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 void ScaLBL_MRTModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
-	Nx+=2; Ny+=2; Nz += 2;
+
+	// domain parameters
+	Nx = Dm->Nx;
+	Ny = Dm->Ny;
+	Nz = Dm->Nz;
+	Lx = Dm->Lx;
+	Ly = Dm->Ly;
+	Lz = Dm->Lz;
+	
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
 	Velocity_x.resize(Nx,Ny,Nz);
@@ -68,14 +76,8 @@ void ScaLBL_MRTModel::SetDomain(){
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
-	// Read domain parameters
+	
 	rank = Dm->rank();	
-	Nx = Dm->Nx;
-	Ny = Dm->Ny;
-	Nz = Dm->Nz;
-	Lx = Dm->Lx;
-	Ly = Dm->Ly;
-	Lz = Dm->Lz;
 	nprocx = Dm->nprocx();
 	nprocy = Dm->nprocy();
 	nprocz = Dm->nprocz();
@@ -262,7 +264,7 @@ void ScaLBL_MRTModel::Run(){
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-						Vs,As,Hs,Xs,vax,vay,vaz, absperm);
+						h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
 				fclose(log_file);
 			}
 		}

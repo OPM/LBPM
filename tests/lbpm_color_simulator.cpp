@@ -39,6 +39,11 @@ int main(int argc, char **argv)
 		printf("Running Color LBM	\n");
 		printf("********************************************************\n");
 	}
+	// Initialize compute device
+	int device=ScaLBL_SetDevice(rank);
+	ScaLBL_DeviceBarrier();
+	MPI_Barrier(comm);
+	
     PROFILE_ENABLE(1);
     //PROFILE_ENABLE_TRACE();
     //PROFILE_ENABLE_MEMORY();
