@@ -1,7 +1,6 @@
 require("ggplot2")
 
-IngestRelperm<-function(PATH){
-
+ReadSubphase<-function(PATH){
   FILE=paste0(PATH,"/subphase.csv")
   S<-read.csv(FILE,head=TRUE,sep=" ")
   S$Vw<-S$Vwc+S$Vwd
@@ -15,14 +14,26 @@ IngestRelperm<-function(PATH){
   return(S)
 }
 
+ReadTimelog<-function(PATH){
+	FILE=paste0(PATH,"/timelog.csv")
+	D<-read.csv(file=FILE,head=TRUE,sep=" ")
+	return(D)
+}
+
 ReadRelperm<-function(PATH){
 	FILE=paste0(PATH,"/relperm.csv")
-	D<-read.csv(file=FILE,head=FALSE,sep=" ")
-	colnames(D)<-c("time","nun","nuw","ift","Fx","Fy","Fz","Vn","Vw","unx","uny","unz","uwx","uwy","uwz")
-	D$Sw<-D$Vw/(D$Vn+D$Vw)
-	D$Krn<-D$Vn*D$nun*D$unx/D$Fx
-	D$Krw<-D$Vw*D$nuw*D$uwx/D$Fx
-	subset(D,D$time>100000)
+	D<-read.csv(file=FILE,head=TRUE,sep=" ")
+
+	p<-ggplot(D)+
+	  geom_line(aes(sat.water,eff.perm.oil,color="oil"))+
+	  geom_line(aes(sat.water,eff.perm.water,color="water"))+
+	  xlab("Water saturation")+ylab("Effective permeability")+
+	  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+	  theme_bw()
+
+	FILE=paste0(PATH,"-relperm.png")
+ 	ggsave(FILE,p,height=4.0,width=6.0)
+
 	return(D)
 }
 
@@ -39,18 +50,18 @@ ReadCase<-function(PATTERN){
 }
 
 
-D<-ReadCase("benth_w")
-require("ggplot2")
+ReadMorphDrain<-function(PATH){
+	FILE=paste0(PATH,"/morphdrain.csv")
+	B<-read.csv(FILE,head=TRUE,sep=" ")
+	B$Media<-PATH
 
-B<-read.csv("bentheimer/drain.csv",head=TRUE,sep=" ")
-B$Media<-"Bentheimer"
-M1<-read.csv("mineral_model_1/drain.csv",head=TRUE,sep=" ")
-M1$Media<-"Mineral Sandstone #1"
+	p<-ggplot()+
+	  geom_line(data=B,aes(Sw,2/R,colour=Media))+
+	  theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
+	  theme_bw()
 
-p<-ggplot()+
-	geom_line(data=B,aes(Sw,2/R,colour=Media))+
-	geom_line(data=M1,aes(Sw,2/R,colour=Media))+
-	theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())+
-	theme_bw()
+	FILE=paste0(PATH,"-morphdrain.png")
+ 	ggsave(FILE,p,height=4.0,width=6.0)
+	return(B)
+}
 
-ggsave("morph-drain.png",p,height=4.0,width=6.0)
