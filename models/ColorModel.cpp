@@ -689,6 +689,7 @@ void ScaLBL_ColorModel::Run(){
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
+						CURRENT_STEADY_TIMESTEPS = 0;
 					}
 
 					if (SET_CAPILLARY_NUMBER ){
