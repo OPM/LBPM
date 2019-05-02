@@ -133,7 +133,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	}
     voxel_length = 1.0;
     if (d_db->keyExists( "voxel_length" )){
-    	auto voxel_length = d_db->getScalar<double>("voxel_length");
+    	voxel_length = d_db->getScalar<double>("voxel_length");
     }
 
     ASSERT( n.size() == 3u );
