@@ -704,9 +704,7 @@ void ScaLBL_ColorModel::Run(){
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
-						CURRENT_STEADY_TIMESTEPS = 0;
 					}
-
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
@@ -725,6 +723,7 @@ void ScaLBL_ColorModel::Run(){
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 					}
+					CURRENT_STEADY_TIMESTEPS = 0;
 				}
 				else{
 					if (rank==0){
