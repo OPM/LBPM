@@ -95,6 +95,7 @@ private:
     void LoadParams(std::shared_ptr<Database> db0);
     void AssignComponentLabels(double *phase);
     double MorphInit(const double beta, const double morph_delta);
-    	
+    double SeedPhaseField(const double seed_water_in_oil);
+    double MorphOpenConnected(double target_volume_change);
 };
 

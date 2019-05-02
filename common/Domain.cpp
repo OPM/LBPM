@@ -133,11 +133,6 @@ void Domain::initialize( std::shared_ptr<Database> db )
     d_db = db;
     auto nproc = d_db->getVector<int>("nproc");
     auto n = d_db->getVector<int>("n");
-
-    voxel_length = 1.0;
-    if (d_db->keyExists( "voxel_length" )){
-    	auto voxel_length = d_db->getScalar<double>("voxel_length");
-    }
     
 	if (d_db->keyExists( "InletLayers" )){
 		auto InletCount = d_db->getVector<int>( "InletLayers" );
@@ -151,7 +146,11 @@ void Domain::initialize( std::shared_ptr<Database> db )
 		outlet_layers_y = OutletCount[1];
 		outlet_layers_z = OutletCount[2];
 	}
-	
+    voxel_length = 1.0;
+    if (d_db->keyExists( "voxel_length" )){
+    	auto voxel_length = d_db->getScalar<double>("voxel_length");
+    }
+
     ASSERT( n.size() == 3u );
     ASSERT( nproc.size() == 3u );
     int nx = n[0];
@@ -178,6 +177,9 @@ void Domain::initialize( std::shared_ptr<Database> db )
     // Fill remaining variables
 	N = Nx*Ny*Nz;
 	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
+
+	if (myrank==0) printf("voxel length = %f micron \n", voxel_length);
+
 	id = new signed char[N];
 	memset(id,0,N);
 	BoundaryCondition = d_db->getScalar<int>("BC");
