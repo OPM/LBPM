@@ -7,14 +7,7 @@ Color {
     beta  = 0.95;
     F = 0, 0, 0
     Restart = false
-    pBC = 0
-    din = 1.0
-    dout = 1.0
     timestepMax = 3000
-    interval = 1000
-    tol = 1e-5;
-    das = 0.1
-    dbs = 0.9
     flux = 2.0
     ComponentLabels = 0
     ComponentAffinity = -1.0;
@@ -25,7 +18,6 @@ Domain {
     nproc = 1, 1, 4     // Number of processors (Npx,Npy,Npz)
     n = 24, 24, 24      // Size of local domain (Nx,Ny,Nz)
     N = 24, 24, 96      // size of the input image
-    n_spheres = 1       // Number of spheres
     L = 1, 1, 1         // Length of domain (x,y,z)
     BC = 4              // Boundary condition type
     ReadType = "8bit"   
