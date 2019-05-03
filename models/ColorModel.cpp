@@ -867,6 +867,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		double SW=-(target_volume_change)/count_connected;
 		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
 
+		int count_morphopen=0.0;
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -874,11 +875,16 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 					// only apply opening to connected component 
 					if ( id_connected[n] == 1){
 						phase(i,j,k) = 1.0;
+						count_morphopen++;
 					}
 				}
 			}
 		}
+		count_morphopen=sumReduce( Dm->Comm, count_morphopen);
+		volume_change = double(count_morphopen - count_connected);
 		
+		if (rank==0)  printf("   opening of connected oil %f \n",volume_change);
+
 		ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
