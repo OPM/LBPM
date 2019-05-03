@@ -735,7 +735,7 @@ void ScaLBL_ColorModel::Run(){
 				}
 				else if (USE_MORPHOPEN_OIL){
 					if (rank==0) printf("***Morphological opening of connected oil, with target volume change ***\n", delta_volume_target);
-					MorphologicalOpening(delta_volume_target);
+					MorphOpenConnected(delta_volume_target);
 				}
 				else{
 					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
