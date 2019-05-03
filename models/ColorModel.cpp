@@ -738,7 +738,7 @@ void ScaLBL_ColorModel::Run(){
 				}
 				else if (USE_MORPHOPEN_OIL){
 					delta_volume = volA*Dm->Volume - initial_volume;
-					if (rank==0) printf("***Morphological opening of connected oil, with target volume change ***\n", delta_volume_target);
+					if (rank==0) printf("***Morphological opening of connected oil, with target volume change %f ***\n", delta_volume_target);
 					MorphOpenConnected(delta_volume_target);
 				}
 				else{
@@ -869,7 +869,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		signed char water=2;
 		signed char notwater=1;
 		double SW=-(target_volume_change)/count_connected;
-		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
+		MorphOpen(distance, id_connected, Dm, SW, notwater, water);
 
 		int count_morphopen=0.0;
 		for (int k=0; k<nz; k++){
