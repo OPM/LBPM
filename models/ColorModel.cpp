@@ -484,10 +484,12 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
+		if (rank == 0) printf("Seed water in oil %f (seed_water) \n",seed_water);
 		USE_SEED = true;
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
+		if (rank == 0) printf("Target volume change %f (morph_delta) \n",morph_delta);
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
@@ -495,6 +497,7 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "use_morphopen_oil" )){
 		USE_MORPHOPEN_OIL = analysis_db->getScalar<bool>( "use_morphopen_oil" );
+		if (rank == 0 && USE_MORPHOPEN_OIL) printf("Volume change by morphological opening \n");
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "tolerance" )){
@@ -734,6 +737,7 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
 				}
 				else if (USE_MORPHOPEN_OIL){
+					delta_volume = volA*Dm->Volume - initial_volume;
 					if (rank==0) printf("***Morphological opening of connected oil, with target volume change ***\n", delta_volume_target);
 					MorphOpenConnected(delta_volume_target);
 				}
@@ -800,7 +804,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 	int N = nx*ny*nz;
 	double volume_change=0.0;
 	
-	if (target_volume_change > 0.0){
+	if (target_volume_change < 0.0){
 		Array<char> id_solid(nx,ny,nz);
 		Array<int> phase_label(nx,ny,nz);
 		DoubleArray distance(Nx,Ny,Nz);
