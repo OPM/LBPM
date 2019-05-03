@@ -641,8 +641,8 @@ void ScaLBL_ColorModel::Run(){
 				force_mag = 1.0;
 			}
 			double current_saturation = volB/(volA+volB);
-			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
-			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+			double flow_rate_A = volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
+			double flow_rate_B = volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
 			if ( morph_timesteps > morph_interval ){
