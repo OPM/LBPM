@@ -877,12 +877,32 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 					n=k*nx*ny+j*nx+i;
 					// only apply opening to connected component 
 					if ( id_connected[n] == 1){
-						phase(i,j,k) = 1.0;
+						id_solid(i,j,k) = 0;
+					}
+					else{
+						id_solid(i,j,k) = 1;
 					}
 				}
 			}
 		}
-
+		CalcDist(distance,id_solid,*Dm);
+		
+		// re-initialize
+		double beta = 0.95;
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n=k*nx*ny+j*nx+i;
+					double d = distance(i,j,k);
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (d < 3.f){
+							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+						}
+					}
+				} 
+			}
+		}
+		
 		int count_morphopen=0.0;
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
