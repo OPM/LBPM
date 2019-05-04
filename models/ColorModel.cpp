@@ -877,7 +877,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 					n=k*nx*ny+j*nx+i;
 					// only apply opening to connected component 
 					if ( id_connected[n] == 1){
-						count_morphopen++;
+						phase(i,j,k) = 1.0;
 					}
 				}
 			}
