@@ -870,15 +870,26 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		signed char notwater=1;
 		double SW=-(target_volume_change)/count_connected;
 		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
-
-		int count_morphopen=0.0;
+		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
 					n=k*nx*ny+j*nx+i;
 					// only apply opening to connected component 
 					if ( id_connected[n] == 1){
-						phase(i,j,k) = 1.0;
+						count_morphopen++;
+					}
+				}
+			}
+		}
+
+		int count_morphopen=0.0;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					// only apply opening to connected component 
+					if ( id_connected[n] == 1){
 						count_morphopen++;
 					}
 				}
