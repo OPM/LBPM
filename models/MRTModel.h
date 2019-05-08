@@ -36,6 +36,7 @@ public:
 	double tau,mu;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
+	double tolerance;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
