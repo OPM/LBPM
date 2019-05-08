@@ -451,6 +451,7 @@ void ScaLBL_ColorModel::Run(){
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
 	bool USE_SEED = false;
+	bool USE_MORPHOPEN_OIL = false;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
@@ -483,13 +484,20 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
+		if (rank == 0) printf("Seed water in oil %f (seed_water) \n",seed_water);
 		USE_SEED = true;
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
+		if (rank == 0) printf("Target volume change %f (morph_delta) \n",morph_delta);
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
+		USE_MORPH = true;
+	}
+	if (analysis_db->keyExists( "use_morphopen_oil" )){
+		USE_MORPHOPEN_OIL = analysis_db->getScalar<bool>( "use_morphopen_oil" );
+		if (rank == 0 && USE_MORPHOPEN_OIL) printf("Volume change by morphological opening \n");
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "tolerance" )){
@@ -641,8 +649,8 @@ void ScaLBL_ColorModel::Run(){
 				force_mag = 1.0;
 			}
 			double current_saturation = volB/(volA+volB);
-			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
-			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
+			double flow_rate_A = volA*sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
+			double flow_rate_B = volB*sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
 			if ( morph_timesteps > morph_interval ){
@@ -656,7 +664,7 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = (volA )*morph_delta; // set target volume change
+					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -690,7 +698,6 @@ void ScaLBL_ColorModel::Run(){
 
 						printf("  Measured capillary number %f \n ",Ca);
 					}
-
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
@@ -709,6 +716,7 @@ void ScaLBL_ColorModel::Run(){
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 					}
+					CURRENT_STEADY_TIMESTEPS = 0;
 				}
 				else{
 					if (rank==0){
@@ -723,10 +731,15 @@ void ScaLBL_ColorModel::Run(){
 			if (MORPH_ADAPT ){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (USE_SEED){
-					delta_volume = volA - initial_volume;
+					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
-					if (rank==0) printf("***Seed water in oil %f, mass change %f ***\n", seed_water, massChange);
+					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
+				}
+				else if (USE_MORPHOPEN_OIL){
+					delta_volume = volA*Dm->Volume - initial_volume;
+					if (rank==0) printf("***Morphological opening of connected oil, with target volume change %f ***\n", delta_volume_target);
+					MorphOpenConnected(delta_volume_target);
 				}
 				else{
 					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
@@ -735,13 +748,13 @@ void ScaLBL_ColorModel::Run(){
 				}
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
-					initial_volume = volA;
+					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
 				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					delta_volume = 0.0;
-					initial_volume = volA;
+					initial_volume = volA*Dm->Volume;
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 				}
@@ -781,6 +794,151 @@ void ScaLBL_ColorModel::Run(){
 
 	// ************************************************************************
 }
+
+double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
+	
+	int nx = Nx;
+	int ny = Ny;
+	int nz = Nz;
+	int n;
+	int N = nx*ny*nz;
+	double volume_change=0.0;
+	
+	if (target_volume_change < 0.0){
+		Array<char> id_solid(nx,ny,nz);
+		Array<int> phase_label(nx,ny,nz);
+		DoubleArray distance(Nx,Ny,Nz);
+		DoubleArray phase(nx,ny,nz);
+		signed char *id_connected;
+		id_connected = new signed char [nx*ny*nz];
+
+		ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
+
+		// Extract only the connected part of NWP
+		BlobIDstruct new_index;
+		double vF=0.0; double vS=0.0;
+		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,Dm->Comm);
+		MPI_Barrier(Dm->Comm);
+
+		int count_oil=0;
+		int count_connected=0;
+		int count_porespace=0;
+		int count_water=0;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					// only apply opening to connected component 
+					if ( phase_label(i,j,k) == 0){
+						count_connected++;
+					}
+					if (id[n] > 0){
+						count_porespace++;
+					}
+					if (id[n] == 2){
+						count_water++;
+					}
+				}
+			}
+		}
+		count_connected=sumReduce( Dm->Comm, count_connected);
+		count_porespace=sumReduce( Dm->Comm, count_porespace);
+		count_water=sumReduce( Dm->Comm, count_water);
+
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n=k*nx*ny+j*nx+i;
+					// only apply opening to connected component 
+					if ( phase_label(i,j,k) == 0){
+						id_solid(i,j,k) = 1;
+						id_connected[n] = 2;
+						id[n] = 2;
+						/* delete the connected component */
+						phase(i,j,k) = -1.0;
+					}
+					else{
+						id_solid(i,j,k) = 0;
+						id_connected[n] = 0;
+					}
+				}
+			}
+		}
+		CalcDist(distance,id_solid,*Dm);
+
+		signed char water=2;
+		signed char notwater=1;
+		double SW=-(target_volume_change)/count_connected;
+		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
+		
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n=k*nx*ny+j*nx+i;
+					// only apply opening to connected component 
+					if ( id_connected[n] == 1){
+						id_solid(i,j,k) = 0;
+					}
+					else{
+						id_solid(i,j,k) = 1;
+					}
+				}
+			}
+		}
+		CalcDist(distance,id_solid,*Dm);
+		
+		// re-initialize
+		double beta = 0.95;
+		for (int k=0; k<nz; k++){
+			for (int j=0; j<ny; j++){
+				for (int i=0; i<nx; i++){
+					n=k*nx*ny+j*nx+i;
+					double d = distance(i,j,k);
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (d < 3.f){
+							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+						}
+					}
+				} 
+			}
+		}
+		
+		int count_morphopen=0.0;
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					n=k*nx*ny+j*nx+i;
+					// only apply opening to connected component 
+					if ( id_connected[n] == 1){
+						count_morphopen++;
+					}
+				}
+			}
+		}
+		count_morphopen=sumReduce( Dm->Comm, count_morphopen);
+		volume_change = double(count_morphopen - count_connected);
+		
+		if (rank==0)  printf("   opening of connected oil %f \n",volume_change/count_connected);
+
+		ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		if (BoundaryCondition >0 ){
+			if (Dm->kproc()==0){
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+			}
+			if (Dm->kproc() == nprocz-1){
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+			}
+		}
+	}
+	return(volume_change);
+}
+
 double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	srand(time(NULL));
 	double mass_loss =0.f;
@@ -811,12 +969,6 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
 	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
 	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
-	
-	FILE *OUTFILE;
-	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
-	OUTFILE = fopen(LocalRankFilename,"wb");
-	fwrite(phase.data(),8,N,OUTFILE);
-	fclose(OUTFILE);
 
 	// 7. Re-initialize phase field and density
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);

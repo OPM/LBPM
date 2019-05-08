@@ -246,6 +246,19 @@ void ScaLBL_MRTModel::Run(){
 			vay /= count;
 			vaz /= count;
 			
+			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+			double dir_x = Fx/force_mag;
+			double dir_y = Fy/force_mag;
+			double dir_z = Fz/force_mag;
+			if (force_mag == 0.0){
+				// default to z direction
+				dir_x = 0.0;
+				dir_y = 0.0;
+				dir_z = 1.0;
+				force_mag = 1.0;
+			}
+			double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
+			
 			//if (rank==0) printf("Computing Minkowski functionals \n");
 			Morphology.ComputeScalar(Distance,0.f);
 			//Morphology.PrintAll();
@@ -260,7 +273,7 @@ void ScaLBL_MRTModel::Run(){
 			Xs=sumReduce( Dm->Comm, Xs);
 			if (rank==0) {
 				double h = Dm->voxel_length;
-				double absperm = h*h*mu*Mask->Porosity()*sqrt(vax*vax+vay*vay+vaz*vaz)/sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
