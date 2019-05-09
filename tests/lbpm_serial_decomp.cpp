@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
 	// Read domain parameters
 	auto Filename = domain_db->getScalar<std::string>( "Filename" );
-	auto L = domain_db->getVector<double>( "L" );
+	//auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
 	auto SIZE = domain_db->getVector<int>( "N" );
 	auto nproc = domain_db->getVector<int>( "nproc" );

@@ -279,10 +279,10 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
-		if (rank==0){
+	/*	if (rank==0){
 			printf("     %f ",void_fraction_new);
 			printf("     %f\n",Rcrit_new);
-		}
+		} */
 	}
 
 	if (void_fraction_diff_new<void_fraction_diff_old){

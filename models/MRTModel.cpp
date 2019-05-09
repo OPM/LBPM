@@ -35,10 +35,19 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
 	mrt_db = db->getDatabase( "MRT" );
+	
+	tau = 1.0;
+	timestepMax = 100000;
+	tolerance = 0.01;
+	Fx = Fy = 0.0;
+	Fz = 1.0e-5;
 
 	// Color Model parameters
 	if (mrt_db->keyExists( "timestepMax" )){
 		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
+	}
+	if (mrt_db->keyExists( "tolerance" )){
+		tolerance = mrt_db->getScalar<int>( "timestepMax" );
 	}
 	if (mrt_db->keyExists( "tau" )){
 		tau = mrt_db->getScalar<double>( "tau" );
@@ -212,7 +221,9 @@ void ScaLBL_MRTModel::Run(){
 	if (rank==0) printf("Beginning AA timesteps...\n");
 	if (rank==0) printf("********************************************************\n");
 	timestep=0;
-	while (timestep < timestepMax) {
+	double error = 1.0;
+	double flow_rate_previous = 0.0;
+	while (timestep < timestepMax || error < tolerance) {
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -273,6 +284,9 @@ void ScaLBL_MRTModel::Run(){
 				force_mag = 1.0;
 			}
 			double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
+			
+			error = fabs(flow_rate - flow_rate_previous) / flow_rate;
+			flow_rate_previous = flow_rate;
 			
 			//if (rank==0) printf("Computing Minkowski functionals \n");
 			Morphology.ComputeScalar(Distance,0.f);
