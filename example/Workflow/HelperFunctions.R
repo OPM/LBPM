@@ -17,7 +17,7 @@ ReadSubphase<-function(PATH){
 ReadTimelog<-function(PATH){
 	FILE=paste0(PATH,"/timelog.csv")
 	D<-read.csv(file=FILE,head=TRUE,sep=" ")
-	D$time<-seq(0,nrow(D))
+	D$time<-seq(1,nrow(D))
 	return(D)
 }
 
