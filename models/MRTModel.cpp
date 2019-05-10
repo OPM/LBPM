@@ -208,7 +208,7 @@ void ScaLBL_MRTModel::Run(){
 	timestep=0;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
-	while (timestep < timestepMax || error < tolerance) {
+	while (timestep < timestepMax && error < tolerance) {
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -270,7 +270,7 @@ void ScaLBL_MRTModel::Run(){
 			}
 			double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
 			
-			error = fabs(flow_rate - flow_rate_previous) / flow_rate;
+			error = fabs(flow_rate - flow_rate_previous) / fabs(flow_rate);
 			flow_rate_previous = flow_rate;
 			
 			//if (rank==0) printf("Computing Minkowski functionals \n");
