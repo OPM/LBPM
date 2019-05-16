@@ -741,7 +741,7 @@ void ScaLBL_ColorModel::Run(){
 					BoundaryCondition = 4;
 					flux = morph_delta*5.796*alpha*capillary_number/(fabs(morph_delta)*muA*Dm->Lz);
 					Fx = Fy = Fz = 0.0; 
-					if (rank==0) printf("***Direct simulation with flux(A) %f, volume change %f / %f ***\n",flux, delta_volume, delta_volume_target))
+					if (rank==0) printf("***Direct simulation with flux(A) %f, volume change %f / %f ***\n",flux, delta_volume, delta_volume_target);
 				}
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
