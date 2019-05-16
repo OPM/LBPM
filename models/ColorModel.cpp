@@ -497,7 +497,7 @@ void ScaLBL_ColorModel::Run(){
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "use_direct" )){
-		USE_DIRECT = analysis_db->getScalar<int>( "use_direct" );
+		USE_DIRECT = analysis_db->getScalar<bool>( "use_direct" );
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "use_morphopen_oil" )){
