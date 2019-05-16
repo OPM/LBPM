@@ -451,15 +451,16 @@ void ScaLBL_ColorModel::Run(){
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
 	bool USE_SEED = false;
+	bool USE_DIRECT = false;
 	bool USE_MORPHOPEN_OIL = false;
-	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
-	int morph_interval = 1000000;
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
+	int morph_interval = 1000000;
+	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
 	double seed_water = 0.0;
@@ -493,6 +494,10 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
+		USE_MORPH = true;
+	}
+	if (analysis_db->keyExists( "use_direct" )){
+		USE_DIRECT = analysis_db->getScalar<int>( "use_direct" );
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "use_morphopen_oil" )){
@@ -629,6 +634,7 @@ void ScaLBL_ColorModel::Run(){
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
 			volB /= Dm->Volume;;
+			initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -730,7 +736,14 @@ void ScaLBL_ColorModel::Run(){
 
 			if (MORPH_ADAPT ){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
-				if (USE_SEED){
+				if (USE_DIRECT){
+					delta_volume = volA*Dm->Volume - initial_volume;
+					BoundaryCondition = 4;
+					flux = morph_delta*5.796*alpha*capillary_number/(fabs(morph_delta)*muA*Dm->Lz);
+					Fx = Fy = Fz = 0.0; 
+					if (rank==0) printf("***Direct simulation with flux(A) %f, volume change %f / %f ***\n",flux, delta_volume, delta_volume_target))
+				}
+				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
@@ -741,22 +754,28 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0) printf("***Morphological opening of connected oil, with target volume change %f ***\n", delta_volume_target);
 					MorphOpenConnected(delta_volume_target);
 				}
-				else{
+				else {
 					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
 					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
 					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
 				}
+
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
 					MORPH_ADAPT = false;
-					initial_volume = volA*Dm->Volume;
-					delta_volume = 0.0;
 					CURRENT_STEADY_TIMESTEPS=0;
-				}
-				else if (CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
-					delta_volume = 0.0;
 					initial_volume = volA*Dm->Volume;
+					delta_volume = 0.0;
+					if (USE_DIRECT){
+						Fx = capillary_number*dir_x*force_mag / Ca;
+						Fy = capillary_number*dir_y*force_mag / Ca;
+						Fz = capillary_number*dir_z*force_mag / Ca;
+					}
+				}
+				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
+					initial_volume = volA*Dm->Volume;
+					delta_volume = 0.0;
 				}
 				if ( REVERSE_FLOW_DIRECTION ){
 					//if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
