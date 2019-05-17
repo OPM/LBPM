@@ -769,12 +769,13 @@ void ScaLBL_ColorModel::Run(){
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
 					if (USE_DIRECT){
+						BoundaryCondition = 0;
+						ScaLBL_Comm->BoundaryCondition = 0;
+						ScaLBL_Comm_Regular->BoundaryCondition = 0;
 						Fx = capillary_number*dir_x*force_mag / Ca;
 						Fy = capillary_number*dir_y*force_mag / Ca;
 						Fz = capillary_number*dir_z*force_mag / Ca;
 					}
-					ScaLBL_Comm->BoundaryCondition = 0;
-					ScaLBL_Comm_Regular->BoundaryCondition = 0;
 				}
 				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
