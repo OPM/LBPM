@@ -2429,7 +2429,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	// compute the local flux and store the result
 	dvc_D3Q19_Flux_BC_z<<<GRID,512,sharedBytes>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz);
 	
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Flux_BC_z (flux calculation, step 1): %s \n",cudaGetErrorString(err));
 	}
@@ -2438,7 +2438,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
 	
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_Flux_BC_z (flux calculation, step 2): %s \n",cudaGetErrorString(err));
 	}
@@ -2512,7 +2512,7 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 
 	// compute the local flux and store the result
 	dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z<<<GRID,512,sharedBytes>>>(list, dist, flux, area, dvcsum, count, N);
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
@@ -2520,7 +2520,7 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_Flux_BC_z (reduction): %s \n",cudaGetErrorString(err));
 	}
@@ -2555,14 +2555,14 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 
 	// compute the local flux and store the result
 	dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z<<<GRID,512,sharedBytes>>>(neighborList, list, dist, flux, area, dvcsum, count, N);
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
-	cudaError_t err = cudaGetLastError();
+	err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (reduction): %s \n",cudaGetErrorString(err));
 	}
