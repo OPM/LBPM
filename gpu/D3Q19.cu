@@ -2501,7 +2501,7 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	double din;
 	double *sum;
  	double *dvcsum;
- 	sum = new double [1];
+	cudaMallocHost((void **)&sum,sizeof(double));
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
@@ -2546,7 +2546,7 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 	double din;
 	double *sum;
  	double *dvcsum;
- 	sum = new double [1];
+	cudaMallocHost((void **)&sum,sizeof(double));
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
