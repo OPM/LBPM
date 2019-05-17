@@ -2389,11 +2389,19 @@ extern "C" void ScaLBL_D3Q19_Pressure(double *fq, double *Pressure, int Np){
 extern "C" void ScaLBL_D3Q19_Velocity_BC_z(double *disteven, double *distodd, double uz,int Nx, int Ny, int Nz){
 	int GRID = Nx*Ny / 512 + 1;
 	dvc_D3Q19_Velocity_BC_z<<<GRID,512>>>(disteven,distodd, uz, Nx, Ny, Nz);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Velocity_BC_z: %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_Velocity_BC_Z(double *disteven, double *distodd, double uz, int Nx, int Ny, int Nz, int outlet){
 	int GRID = Nx*Ny / 512 + 1;
 	dvc_D3Q19_Velocity_BC_Z<<<GRID,512>>>(disteven, distodd, uz, Nx, Ny, Nz, outlet);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Velocity_BC_Z: %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, double flux,int Nx, int Ny, int Nz){
@@ -2402,7 +2410,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 
 	// IMPORTANT -- this routine may fail if Nx*Ny > 512*512
 	if (Nx*Ny > 512*512){
-		printf("WARNING (ScaLBL_D3Q19_Flux_BC_Z): CUDA reduction operation may fail if Nx*Ny > 512*512");
+		printf("WARNING (ScaLBL_D3Q19_Flux_BC_z): CUDA reduction operation may fail if Nx*Ny > 512*512");
 	}
 
 	// Allocate memory to store the sums
@@ -2412,13 +2420,28 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	int sharedBytes = NTHREADS*sizeof(double);
 	cudaMalloc((void **)&dvcsum,sizeof(double)*Nx*Ny);
 	cudaMemset(dvcsum,0,sizeof(double)*Nx*Ny);
+	
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Flux_BC_z (memory allocation): %s \n",cudaGetErrorString(err));
+	}
 
 	// compute the local flux and store the result
 	dvc_D3Q19_Flux_BC_z<<<GRID,512,sharedBytes>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz);
+	
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Flux_BC_z (flux calculation, step 1): %s \n",cudaGetErrorString(err));
+	}
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
+	
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Flux_BC_z (flux calculation, step 2): %s \n",cudaGetErrorString(err));
+	}
 
 	// free the memory needed for reduction
 	cudaFree(dvcsum);
@@ -2430,21 +2453,37 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, double din, int count, int N){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_z<<<GRID,512>>>(list, dist, din, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_Pressure_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, double dout, int count, int N){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_Z<<<GRID,512>>>(list, dist, dout, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_Pressure_BC_Z (kernel): %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *neighborList, int *list, double *dist, double din, int count, int N){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q19_AAodd_Pressure_BC_z<<<GRID,512>>>(neighborList, list, dist, din, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_Pressure_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *dist, double dout, int count, int N){
 	int GRID = count / 512 + 1;
 	dvc_ScaLBL_D3Q19_AAodd_Pressure_BC_Z<<<GRID,512>>>(neighborList, list, dist, dout, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_Pressure_BC_Z (kernel): %s \n",cudaGetErrorString(err));
+	}
 }
 
 
@@ -2465,13 +2504,26 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
+	
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_Flux_BC_z (memory allocation): %s \n",cudaGetErrorString(err));
+	}
 
 	// compute the local flux and store the result
 	dvc_ScaLBL_D3Q19_AAeven_Flux_BC_z<<<GRID,512,sharedBytes>>>(list, dist, flux, area, dvcsum, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
 
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_Flux_BC_z (reduction): %s \n",cudaGetErrorString(err));
+	}
 
 	// free the memory needed for reduction
 	cudaFree(dvcsum);
@@ -2486,7 +2538,7 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 
 	// IMPORTANT -- this routine may fail if Nx*Ny > 512*512
 	if (count > 512*512){
-		printf("WARNING (ScaLBL_D3Q19_Flux_BC_Z): CUDA reduction operation may fail if count > 512*512");
+		printf("WARNING (ScaLBL_D3Q19_AAodd_Flux_BC_z): CUDA reduction operation may fail if count > 512*512");
 	}
 
 	// Allocate memory to store the sums
@@ -2496,13 +2548,24 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (memory allocation): %s \n",cudaGetErrorString(err));
+	}
 
 	// compute the local flux and store the result
 	dvc_ScaLBL_D3Q19_AAodd_Flux_BC_z<<<GRID,512,sharedBytes>>>(neighborList, list, dist, flux, area, dvcsum, count, N);
-
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
 	// Now read the total flux
 	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (reduction): %s \n",cudaGetErrorString(err));
+	}
 
 	// free the memory needed for reduction
 	cudaFree(dvcsum);
