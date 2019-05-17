@@ -2543,7 +2543,8 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 
 	// Allocate memory to store the sums
 	double din;
-	double sum[1];
+	double *sum;
+	cudaHostAlloc((void **)&sum,sizeof(double));
  	double *dvcsum;
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
