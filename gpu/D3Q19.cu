@@ -2519,7 +2519,7 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	}
 
 	// Now read the total flux
-	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(&sum,dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
 	err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2562,7 +2562,7 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
 	// Now read the total flux
-	cudaMemcpy(&sum[0],&dvcsum[0],sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(&sum,dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 	din=sum[0];
 	err = cudaGetLastError();
 	if (cudaSuccess != err){
