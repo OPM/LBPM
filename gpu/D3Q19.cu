@@ -2501,7 +2501,8 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	double din;
 	double *sum;
  	double *dvcsum;
-	cudaMallocHost((void **)&sum,sizeof(double));
+ 	sum = new double [count];
+	//cudaMallocHost((void **)&sum,sizeof(double)*count);
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
@@ -2519,7 +2520,7 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 	}
 
 	// Now read the total flux
-	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(&sum,dvcsum,sizeof(double)*count,cudaMemcpyDeviceToHost);
 	din=sum[0];
 	err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2546,7 +2547,8 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 	double din;
 	double *sum;
  	double *dvcsum;
-	cudaMallocHost((void **)&sum,sizeof(double));
+ 	sum = new double [count];
+	//cudaMallocHost((void **)&sum,sizeof(double)*count);
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
@@ -2562,7 +2564,7 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 		printf("CUDA error in ScaLBL_D3Q19_AAodd_Flux_BC_z (kernel): %s \n",cudaGetErrorString(err));
 	}
 	// Now read the total flux
-	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(&sum,dvcsum,sizeof(double)*count,cudaMemcpyDeviceToHost);
 	din=sum[0];
 	err = cudaGetLastError();
 	if (cudaSuccess != err){
