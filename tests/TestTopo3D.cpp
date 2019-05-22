@@ -126,8 +126,8 @@ int main(int argc, char **argv)
 
 					//..............................................................................
 					if (x > 0 && y>0){
-						double d1 = R2-sqrt(x*x +(y-R1)*(y-R1));
-						double d2 = R2-sqrt((x-R1)*(x-R1)+y*y);
+						double d1 = R2-sqrt(x*x +(y-R1)*(y-R1) + z*z);
+						double d2 = R2-sqrt((x-R1)*(x-R1)+y*y + z*z);
 						Object.distance(i,j,k) = max(d1,d2);
 					}
 					else{
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 					//..............................................................................
 					// Single torus
 					double d1 = sqrt(x*x+y*y+z*z)-R1;
-					double d2 = R-sqrt(x*x+y*y+z*z);
+					double d2 = (R1-R2)-sqrt(x*x+y*y+z*z);
 					Object.distance(i,j,k) = min(d1,d2);
 
 					if (Object.distance(i,j,k) > 0.0){
@@ -200,9 +200,9 @@ int main(int argc, char **argv)
 
 					//..............................................................................
 					// Bowl
-					if (z <0 ){
+					if (z < 0 ){
 						double d1 = sqrt(x*x+y*y+z*z)-R1;
-						double d2 = R-sqrt(x*x+y*y+z*z);
+						double d2 = (R1-R2)-sqrt(x*x+y*y+z*z);
 						Object.distance(i,j,k) = min(d1,d2);
 					}
 					else{
