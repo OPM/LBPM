@@ -125,14 +125,14 @@ int main(int argc, char **argv)
 					z = Dm->kproc()*(Nz-2)+k - CZ -0.1;
 
 					//..............................................................................
-					if (x >= 0 && y>=0){
+					if (x <= 0 || y<=0) {
+						// Single torus
+						Object.distance(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+					}
+					else {
 						double d1 = R2-sqrt(x*x +(y-R1)*(y-R1) + z*z);
 						double d2 = R2-sqrt((x-R1)*(x-R1)+y*y + z*z);
 						Object.distance(i,j,k) = max(d1,d2);
-					}
-					else{
-						// Single torus
-						Object.distance(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
 					}
 
 					if (Object.distance(i,j,k) > 0.0){
@@ -200,15 +200,15 @@ int main(int argc, char **argv)
 
 					//..............................................................................
 					// Bowl
-					if (z <= 0 ){
+					if (z > 0 ){
+						Object.distance(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
+					}
+					else
+					{
 						double d1 = sqrt(x*x+y*y+z*z)-(R1-R2);
 						double d2 = R-sqrt(x*x+y*y+z*z);
 						Object.distance(i,j,k) = min(d1,d2);
 					}
-					else{
-						Object.distance(i,j,k) = sqrt((sqrt(x*x+y*y) - R1)*(sqrt(x*x+y*y) - R1) + z*z) - R2;
-					}
-
 					if (Object.distance(i,j,k) > 0.0){
 						Dm->id[n] = 2;
 						Object.id(i,j,k) = 2;
