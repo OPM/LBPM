@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 			}
 		}
 		ASSERT(visData[0].vars[0]->name=="phase");
-		Array<double>& PhaseData = visData[0].vars[0]->data;
+		PhaseData = visData[0].vars[0]->data;
 		fillData.copy(Object.distance,PhaseData);
 		IO::writeData( timestep, visData, comm );
 
@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 		}
 
 		ASSERT(visData[0].vars[0]->name=="phase");
-		Array<double>& PhaseData = visData[0].vars[0]->data;
+		PhaseData = visData[0].vars[0]->data;
 		fillData.copy(Object.distance,PhaseData);
 		IO::writeData( timestep, visData, comm );
 
