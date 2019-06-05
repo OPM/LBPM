@@ -23,7 +23,7 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	
 	tau = 1.0;
 	timestepMax = 100000;
-	tolerance = 0.01;
+	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
 
@@ -203,12 +203,12 @@ void ScaLBL_MRTModel::Run(){
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 	starttime = MPI_Wtime();
-	if (rank==0) printf("Beginning AA timesteps...\n");
+	if (rank==0) printf("Beginning AA timesteps, timestepMax = %i \n", timestepMax);
 	if (rank==0) printf("********************************************************\n");
 	timestep=0;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
-	while (timestep < timestepMax && error < tolerance) {
+	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
