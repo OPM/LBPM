@@ -549,7 +549,6 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 		
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -968,10 +967,15 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	srand(time(NULL));
 	double mass_loss =0.f;
 	double count =0.f;
-	DoubleArray phase(Nx,Ny,Nz);
+	double *Aq_tmp, *Bq_tmp;
+	
+	Aq_tmp = new double [7*Np];
+	Bq_tmp = new double [7*Np];
 
-	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
-	for (int k=1; k<Nz-1; k++){
+	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
+	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
+	
+/*	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double random_value = double(rand())/ RAND_MAX;
@@ -990,26 +994,66 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 			}
 		}
 	}
+	*/
+	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
+		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		double phase_id = (dA - dB) / (dA + dB);
+		if (phase_id > 0.0){
+			Aq_tmp[n] -= 0.3333333333333333*random_value;
+			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+			
+			Bq_tmp[n] += 0.3333333333333333*random_value;
+			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+		}
+		mass_loss += random_value*seed_water_in_oil;
+	}
+
+	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
+		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		double phase_id = (dA - dB) / (dA + dB);
+		if (phase_id > 0.0){
+			Aq_tmp[n] -= 0.3333333333333333*random_value;
+			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+			
+			Bq_tmp[n] += 0.3333333333333333*random_value;
+			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+		}
+		mass_loss += random_value*seed_water_in_oil;
+	}
+
 	count= sumReduce( Dm->Comm, count);
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
 	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
-	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 
-	// 7. Re-initialize phase field and density
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition >0 ){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
+	// Need to initialize Aq, Bq, Den, Phi directly
+	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
+	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double))
+	ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double))
+
 	return(mass_loss);
 }
 
