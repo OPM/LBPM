@@ -245,8 +245,8 @@ void SubPhase::Basic(){
 			force_mag = 1.0;
 		}
 		double saturation=gwb.V/(gwb.V + gnb.V);
-		double water_flow_rate=gwb.V*sqrt(gwb.Px*gwb.Px + gwb.Py*gwb.Py + gwb.Pz*gwb.Pz)/gwb.M / Dm->Volume;
-		double not_water_flow_rate=gnb.V*sqrt(gnb.Px*gnb.Px + gnb.Py*gnb.Py + gnb.Pz*gnb.Pz)/gnb.M/ Dm->Volume;
+		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
+		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
 		double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		double fractional_flow= water_flow_rate / total_flow_rate;
 

@@ -2499,9 +2499,8 @@ extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double 
 
 	// Allocate memory to store the sums
 	double din;
-	double *sum;
+	double sum[1];
  	double *dvcsum;
-	cudaMallocHost((void **)&sum,sizeof(double));
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
@@ -2544,9 +2543,8 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *neighborList, int *list, dou
 
 	// Allocate memory to store the sums
 	double din;
-	double *sum;
+	double sum[1];
  	double *dvcsum;
-	cudaMallocHost((void **)&sum,sizeof(double));
 	cudaMalloc((void **)&dvcsum,sizeof(double)*count);
 	cudaMemset(dvcsum,0,sizeof(double)*count);
 	int sharedBytes = 512*sizeof(double);
@@ -2595,7 +2593,7 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	dvc_D3Q19_Flux_BC_Z<<<GRID,512>>>(disteven, distodd, flux, dvcsum, Nx, Ny, Nz, outlet);
 
 	// Now read the total flux
-	cudaMemcpy(&sum[0],&dvcsum[0],sizeof(double),cudaMemcpyDeviceToHost);
+	cudaMemcpy(&sum[0],dvcsum,sizeof(double),cudaMemcpyDeviceToHost);
 
 	// free the memory needed for reduction
 
