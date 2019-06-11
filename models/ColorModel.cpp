@@ -1051,8 +1051,8 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
-	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double))
-	ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double))
+	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double));
+	  ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
 
 	return(mass_loss);
 }
