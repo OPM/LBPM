@@ -56,7 +56,6 @@ int main(int argc, char **argv)
 		auto domain_db = db->getDatabase( "Domain" );
 
 		// Read domain parameters
-		auto L = domain_db->getVector<double>( "L" );
 		auto size = domain_db->getVector<int>( "n" );
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<int>( "ReadValues" );

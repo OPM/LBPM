@@ -35,10 +35,19 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
 	mrt_db = db->getDatabase( "MRT" );
+	
+	tau = 1.0;
+	timestepMax = 100000;
+	tolerance = 1.0e-8;
+	Fx = Fy = 0.0;
+	Fz = 1.0e-5;
 
 	// Color Model parameters
 	if (mrt_db->keyExists( "timestepMax" )){
 		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
+	}
+	if (mrt_db->keyExists( "tolerance" )){
+		tolerance = mrt_db->getScalar<int>( "timestepMax" );
 	}
 	if (mrt_db->keyExists( "tau" )){
 		tau = mrt_db->getScalar<double>( "tau" );
@@ -209,10 +218,12 @@ void ScaLBL_MRTModel::Run(){
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 	starttime = MPI_Wtime();
-	if (rank==0) printf("Beginning AA timesteps...\n");
+	if (rank==0) printf("Beginning AA timesteps, timestepMax = %i \n", timestepMax);
 	if (rank==0) printf("********************************************************\n");
 	timestep=0;
-	while (timestep < timestepMax) {
+	double error = 1.0;
+	double flow_rate_previous = 0.0;
+	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -274,6 +285,9 @@ void ScaLBL_MRTModel::Run(){
 			}
 			double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
 			
+			error = fabs(flow_rate - flow_rate_previous) / fabs(flow_rate);
+			flow_rate_previous = flow_rate;
+			
 			//if (rank==0) printf("Computing Minkowski functionals \n");
 			Morphology.ComputeScalar(Distance,0.f);
 			//Morphology.PrintAll();
@@ -286,9 +300,9 @@ void ScaLBL_MRTModel::Run(){
 			As=sumReduce( Dm->Comm, As);
 			Hs=sumReduce( Dm->Comm, Hs);
 			Xs=sumReduce( Dm->Comm, Xs);
+			double h = Dm->voxel_length;
+			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			if (rank==0) {
-				double h = Dm->voxel_length;
-				double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 				printf("     %f\n",absperm);
 				FILE * log_file = fopen("Permeability.csv","a");
 				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 

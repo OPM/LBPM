@@ -7,15 +7,7 @@ Color {
     beta  = 0.95;
     F = 0, 0, 0
     Restart = false
-    pBC = 0
-    din = 1.0
-    dout = 1.0
-    flux = 1.0e-3
     timestepMax = 200
-    interval = 1000
-    tol = 1e-5;
-    das = 0.1
-    dbs = 0.9
     ComponentLabels = 0, 1, 2
     ComponentAffinity = -1.0, 1.0, -1.0
 }

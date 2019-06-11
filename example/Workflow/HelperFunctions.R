@@ -17,12 +17,14 @@ ReadSubphase<-function(PATH){
 ReadTimelog<-function(PATH){
 	FILE=paste0(PATH,"/timelog.csv")
 	D<-read.csv(file=FILE,head=TRUE,sep=" ")
+	D$time<-seq(1,nrow(D))
 	return(D)
 }
 
 ReadRelperm<-function(PATH){
 	FILE=paste0(PATH,"/relperm.csv")
 	D<-read.csv(file=FILE,head=TRUE,sep=" ")
+	D$Case<-PATH
 
 	p<-ggplot(D)+
 	  geom_line(aes(sat.water,eff.perm.oil,color="oil"))+
