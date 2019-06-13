@@ -669,7 +669,7 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					delta_volume_target = Dm->Volume*morph_delta; //*volA ???? // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
