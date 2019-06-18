@@ -564,7 +564,6 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 		
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -649,7 +648,6 @@ void ScaLBL_ColorModel::Run(){
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
 			volB /= Dm->Volume;;
-			initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -683,9 +681,10 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 
 				if ( isSteady ){
+					initial_volume = volA*Dm->Volume;
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					delta_volume_target = Dm->Volume*morph_delta; //*volA ???? // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -764,7 +763,8 @@ void ScaLBL_ColorModel::Run(){
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
-					double massChange = SeedPhaseField(seed_water);
+					double effective_seed_water = seed_water*(1.0+volB/volA);
+					double massChange = SeedPhaseField(effective_seed_water);
 					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
 				}
 				else if (USE_MORPHOPEN_OIL){
@@ -983,10 +983,16 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	srand(time(NULL));
 	double mass_loss =0.f;
 	double count =0.f;
-	DoubleArray phase(Nx,Ny,Nz);
+	double *Aq_tmp, *Bq_tmp;
+	double SEED_THRESHOLD = -0.9;
+	
+	Aq_tmp = new double [7*Np];
+	Bq_tmp = new double [7*Np];
 
-	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
-	for (int k=1; k<Nz-1; k++){
+	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
+	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
+	
+/*	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double random_value = double(rand())/ RAND_MAX;
@@ -1005,26 +1011,70 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 			}
 		}
 	}
+	*/
+	double oil_value = 0.0;
+	double water_value = 1.0;
+	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
+		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		double phase_id = (dA - dB) / (dA + dB);
+		double random_value = double(rand())/ RAND_MAX;
+		if (phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
+			Aq_tmp[n] = 0.3333333333333333*oil_value;
+			Aq_tmp[n+Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+2*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+3*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+4*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+5*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+6*Np] = 0.1111111111111111*oil_value;
+			
+			Bq_tmp[n] = 0.3333333333333333*water_value;
+			Bq_tmp[n+Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+2*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+3*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+4*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+5*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+6*Np] = 0.1111111111111111*water_value;
+			mass_loss += oil_value - dA;
+			count++;
+		}
+	}
+
+	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
+		double dA = Aq_tmp[n] + Aq_tmp[n+Np] + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		double dB = Bq_tmp[n] + Bq_tmp[n+Np] + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		double phase_id = (dA - dB) / (dA + dB);
+		double random_value = double(rand())/ RAND_MAX;
+		if (phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
+			Aq_tmp[n] = 0.3333333333333333*oil_value;
+			Aq_tmp[n+Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+2*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+3*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+4*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+5*Np] = 0.1111111111111111*oil_value;
+			Aq_tmp[n+6*Np] = 0.1111111111111111*oil_value;
+			
+			Bq_tmp[n] = 0.3333333333333333*water_value;
+			Bq_tmp[n+Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+2*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+3*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+4*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+5*Np] = 0.1111111111111111*water_value;
+			Bq_tmp[n+6*Np] = 0.1111111111111111*water_value;
+			mass_loss += oil_value - dA;
+			count++;
+		}
+	}
+
 	count= sumReduce( Dm->Comm, count);
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
 	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
-	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 
-	// 7. Re-initialize phase field and density
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition >0 ){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
+	// Need to initialize Aq, Bq, Den, Phi directly
+	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
+	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double));
+	  ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
+
 	return(mass_loss);
 }
 
