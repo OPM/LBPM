@@ -633,7 +633,6 @@ void ScaLBL_ColorModel::Run(){
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
 			volB /= Dm->Volume;;
-			initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -667,6 +666,7 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 
 				if ( isSteady ){
+					initial_volume = volA*Dm->Volume;
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
 					delta_volume_target = Dm->Volume*morph_delta; //*volA ???? // set target volume change
