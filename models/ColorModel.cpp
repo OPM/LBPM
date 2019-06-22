@@ -977,7 +977,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 
 	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
 	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
-	ScaLBL_CopyToHost(Vel_tmp, Vel, 3*Np*sizeof(double));
+	ScaLBL_CopyToHost(Vel_tmp, Velocity, 3*Np*sizeof(double));
 	
 /*	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -1022,17 +1022,17 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	double ux,uy,uz,dotprod;
 	double magforce = sqrt(Fx*Fx+ Fy*Fy + Fz*Fz);
 	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
-		 ux = Vel[n];
-		 uy = Vel[n+Np];
-		 uz = Vel[n+2*Np];
+		 ux = Vel_tmp[n];
+		 uy = Vel_tmp[n+Np];
+		 uz = Vel_tmp[n+2*Np];
 		 dotprod = (Fx*ux + Fy*uy + Fz*uz) / magforce;
 		 average_flow_rate += dotprod;
 		 count_voxels += 1.0;
 	}
 	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
-		 ux = Vel[n];
-		 uy = Vel[n+Np];
-		 uz = Vel[n+2*Np];
+		 ux = Vel_tmp[n];
+		 uy = Vel_tmp[n+Np];
+		 uz = Vel_tmp[n+2*Np];
 		 dotprod = (Fx*ux + Fy*uy + Fz*uz) / magforce;
 		 average_flow_rate += dotprod;
 		 count_voxels += 1.0;
@@ -1050,9 +1050,9 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 		double random_value = double(rand())/ RAND_MAX;
 		
 		// bias toward seed higher flow rate voxels 
-		 ux = Vel[n];
-		 uy = Vel[n+Np];
-		 uz = Vel[n+2*Np];
+		 ux = Vel_tmp[n];
+		 uy = Vel_tmp[n+Np];
+		 uz = Vel_tmp[n+2*Np];
 		 dotprod = (Fx*ux + Fy*uy + Fz*uz) / magforce;
 		
 		if (dotprod > average_flow_rate && phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
@@ -1083,9 +1083,9 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 		double random_value = double(rand())/ RAND_MAX;
 		
 		// bias toward seed higher flow rate voxels 
-		 ux = Vel[n];
-		 uy = Vel[n+Np];
-		 uz = Vel[n+2*Np];
+		 ux = Vel_tmp[n];
+		 uy = Vel_tmp[n+Np];
+		 uz = Vel_tmp[n+2*Np];
 		 dotprod = (Fx*ux + Fy*uy + Fz*uz) / magforce;
 		if (dotprod > average_flow_rate && phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
 			Aq_tmp[n] = 0.3333333333333333*oil_value;
