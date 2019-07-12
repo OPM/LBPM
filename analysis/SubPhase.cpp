@@ -637,6 +637,8 @@ void SubPhase::AggregateLabels(char *FILENAME){
 	int ipx = Dm->iproc();
 	int ipy = Dm->jproc();
 	int ipz = Dm->kproc();		
+	
+	int nprocs = Dm->nprocx()*Dm->nprocy()*Dm->nprocz();
 		
 	int full_nx = npx*(nx-2);
 	int full_ny = npy*(ny-2);
@@ -683,12 +685,13 @@ void SubPhase::AggregateLabels(char *FILENAME){
 			}
 		}
 		// next get the local ID from the other ranks
-		for (int rnk = 1; rnk<Dm->rank(); rnk++){
+		for (int rnk = 1; rnk<nprocs; rnk++){
 			ipz = rnk / (npx*npy);
 			ipy = (rnk - ipz*npx*npy) / npx;
 			ipx = (rnk - ipz*npx*npy - ipy*npx); 
+			printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
 			int tag = 15+rnk;
-			MPI_Recv(FullID,local_size,MPI_CHAR,rnk,tag,Dm->Comm,MPI_STATUS_IGNORE);
+			MPI_Recv(LocalID,local_size,MPI_CHAR,rnk,tag,Dm->Comm,MPI_STATUS_IGNORE);
 			for (int k=1; k<nz-1; k++){
 				for (int j=1; j<ny-1; j++){
 					for (int i=1; i<nx-1; i++){
