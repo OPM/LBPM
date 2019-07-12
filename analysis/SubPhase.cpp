@@ -689,7 +689,7 @@ void SubPhase::AggregateLabels(char *FILENAME){
 			ipz = rnk / (npx*npy);
 			ipy = (rnk - ipz*npx*npy) / npx;
 			ipx = (rnk - ipz*npx*npy - ipy*npx); 
-			printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
+			//printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
 			int tag = 15+rnk;
 			MPI_Recv(LocalID,local_size,MPI_CHAR,rnk,tag,Dm->Comm,MPI_STATUS_IGNORE);
 			for (int k=1; k<nz-1; k++){
