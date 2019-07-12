@@ -232,6 +232,9 @@ public:
         fillData.copy(Averages.Vel_z,VelzData);
         fillData.copy(Averages.morph_n->label,BlobData);
         IO::writeData( timestep, visData, comm.comm );
+        char CurrentIDFilename[40];
+    	sprintf(CurrentIDFilename,"id_t%d.raw",timestep);
+        Averages.AggregateLabels(CurrentIDFilename);
         PROFILE_STOP("Save Vis",1);
     };
 private:
@@ -1005,4 +1008,3 @@ void runAnalysis::WriteVisData( int timestep, SubPhase &Averages, const double *
     
     PROFILE_STOP("write vis");
 }
-

@@ -624,4 +624,99 @@ void SubPhase::Full(){
 }
 
 
+void SubPhase::AggregateLabels(char *FILENAME){
+	
+	int nx = Dm->Nx;
+	int ny = Dm->Ny;
+	int nz = Dm->Nz;
+	
+	int npx = Dm->nprocx();
+	int npy = Dm->nprocy();
+	int npz = Dm->nprocz();
+	
+	int ipx = Dm->iproc();
+	int ipy = Dm->jproc();
+	int ipz = Dm->kproc();		
+		
+	int full_nx = npx*(nx-2);
+	int full_ny = npy*(ny-2);
+	int full_nz = npz*(nz-2);
+	int local_size = (nx-2)*(ny-2)*(nz-2);
+	long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	
+	signed char *LocalID;
+	LocalID = new signed char [local_size];
+		
+	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
+	// assign the ID for the local sub-region
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				int n = k*nx*ny+j*nx+i;
+				signed char local_id_val = Dm->id[n]; 
+				if (local_id_val > 0){
+					double value = Phi(i,j,k);
+					if (value > 0.0)	local_id_val = 1;
+					else 				local_id_val = 2;
+				}
+				LocalID[(k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1] = local_id_val;
+			}
+		}
+	}
+	MPI_Barrier(Dm->Comm);
+
+	// populate the FullID 
+	if (Dm->rank() == 0){
+		signed char *FullID;
+		FullID = new signed char [full_size];
+		// first handle local ID for rank 0
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					int x = i-1;
+					int y = j-1;
+					int z = k-1;
+					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+					int n_full = z*full_nx*full_ny + y*full_nx + x;
+					FullID[n_full] = LocalID[n_local];
+				}
+			}
+		}
+		// next get the local ID from the other ranks
+		for (int rnk = 1; rnk<Dm->rank(); rnk++){
+			ipz = rnk / (npx*npy);
+			ipy = (rnk - ipz*npx*npy) / npx;
+			ipx = (rnk - ipz*npx*npy - ipy*npx); 
+			int tag = 15+rnk;
+			MPI_Recv(FullID,local_size,MPI_CHAR,rnk,tag,Dm->Comm,MPI_STATUS_IGNORE);
+			for (int k=1; k<nz-1; k++){
+				for (int j=1; j<ny-1; j++){
+					for (int i=1; i<nx-1; i++){
+						int x = i-1 + ipx*(nx-2);
+						int y = j-1 + ipy*(ny-2);
+						int z = k-1 + ipz*(nz-2);
+						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+						int n_full = z*full_nx*full_ny + y*full_nx + x;
+						FullID[n_full] = LocalID[n_local];
+					}
+				}
+			}
+		}
+		// write the output
+		FILE *OUTFILE;
+		OUTFILE = fopen(FILENAME,"wb");
+		fwrite(FullID,1,full_size,OUTFILE);
+		fclose(OUTFILE);
+	}
+	else{
+		// send LocalID to rank=0
+		int tag = 15+ Dm->rank();
+		int dstrank = 0;
+		MPI_Send(LocalID,local_size,MPI_CHAR,dstrank,tag,Dm->Comm);
+	}
+	MPI_Barrier(Dm->Comm);
+
+}
+
+
 
