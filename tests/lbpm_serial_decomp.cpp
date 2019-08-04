@@ -55,12 +55,16 @@ int main(int argc, char **argv)
 	int64_t xStart,yStart,zStart;
 	int checkerSize;
 	int inlet_count_x, inlet_count_y, inlet_count_z;
+	int outlet_count_x, outlet_count_y, outlet_count_z;
 	//  char fluidValue,solidValue;	
 
 	xStart=yStart=zStart=0;
 	inlet_count_x = 0;
 	inlet_count_y = 0;
 	inlet_count_z = 0;
+	outlet_count_x = 0;
+	outlet_count_y = 0;
+	outlet_count_z = 0;
 	checkerSize = 32;
 	// read the input database 
 	auto db = std::make_shared<Database>( filename );
@@ -83,6 +87,12 @@ int main(int argc, char **argv)
 		inlet_count_x = InletCount[0];
 		inlet_count_y = InletCount[1];
 		inlet_count_z = InletCount[2];
+	}
+	if (domain_db->keyExists( "OutletLayers" )){
+		auto OutletCount = domain_db->getVector<int>( "OutletLayers" );
+		outlet_count_x = OutletCount[0];
+		outlet_count_y = OutletCount[1];
+		outlet_count_z = OutletCount[2];
 	}
 	if (domain_db->keyExists( "checkerSize" )){
 		checkerSize = domain_db->getScalar<int>( "checkerSize" );
@@ -196,6 +206,63 @@ int main(int argc, char **argv)
 		printf("Checkerboard pattern at z inlet for %i layers \n",inlet_count_z);
 		// use checkerboard pattern
 		for (int k = zStart; k < zStart+inlet_count_z; k++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = 0; i<Nx; i++){
+					if ( (i/checkerSize+j/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+				}
+			}
+		}
+	}
+	
+	if (outlet_count_x > 0){
+		// use checkerboard pattern
+		printf("Checkerboard pattern at x outlet for %i layers \n",outlet_count_x);
+		for (int k = 0; k<Nz; k++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = xStart + nx*nprocx - outlet_count_x; i <  xStart + nx*nprocx; i++){
+					if ( (j/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+				}
+			}
+		}
+	}
+	
+	if (outlet_count_y > 0){
+		printf("Checkerboard pattern at y outlet for %i layers \n",outlet_count_y);
+		// use checkerboard pattern
+		for (int k = 0; k<Nz; k++){
+			for (int j = yStart + ny*nprocy - outlet_count_y; i < yStart + ny*nprocy; j++){
+				for (int i = 0; i<Nx; i++){
+					if ( (i/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*Nx*Ny+j*Nx+i] = 0;
+					}
+				}
+			}
+		}
+	}
+
+	if (outlet_count_z > 0){
+		printf("Checkerboard pattern at z outlet for %i layers \n",outlet_count_z);
+		// use checkerboard pattern
+		for (int k = zStart + nz*nprocz - outlet_count_z; k < zStart + nz*nprocz; k++){
 			for (int j = 0; j<Ny; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize+j/checkerSize)%2 == 0){
