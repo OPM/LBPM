@@ -312,6 +312,7 @@ double DECL::EdgeAngle(int edge)
 		}
 
 		if (dotprod > 1.f) dotprod=1.f;
+		if (dotprod < -1.f) dotprod=-1.f;
 		angle = acos(dotprod);
 		/* project onto plane of cube face also works
 		W = U - dotprod*V;
