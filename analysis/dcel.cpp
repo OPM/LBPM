@@ -345,6 +345,7 @@ double DECL::EdgeAngle(int edge)
 		// concave
 		angle = -angle;
 	}
+	if (angle != angle) angle = 0.0;
 	//printf("angle=%f,dot=%f (Edge=%i, twin=%i): P={%f, %f, %f}, Q={%f, %f, %f} U={%f, %f, %f}, V={%f, %f, %f}\n",angle,dotprod,edge,halfedge.twin(edge),P.x,P.y,P.z,Q.x,Q.y,Q.z,U.x,U.y,U.z,V.x,V.y,V.z);
 	return angle;
 }
