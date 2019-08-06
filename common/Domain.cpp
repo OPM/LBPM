@@ -533,7 +533,7 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 					}
 					else{
 						//printf("Sending data to process %i \n", rnk);
-						MPI_Send(loc_id,N,MPI_CHAR,rnk,15,comm);
+						MPI_Send(loc_id,N,MPI_CHAR,rnk,15,Comm);
 					}
 					// Write the data for this rank data 
 					sprintf(LocalRankFilename,"ID.%05i",rnk+rank_offset);
@@ -552,9 +552,9 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	else{
 		// Recieve the subdomain from rank = 0
 		//printf("Ready to recieve data %i at process %i \n", N,rank);
-		MPI_Recv(id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
+		MPI_Recv(id,N,MPI_CHAR,0,15,Comm,MPI_STATUS_IGNORE);
 	}
-	MPI_Barrier(comm);
+	MPI_Barrier(Comm);
 }
 
 /********************************************************
