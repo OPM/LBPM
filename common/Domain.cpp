@@ -232,7 +232,7 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	// Reading the domain information file
 	//.......................................................................
 	int rank_offset = 0;
-	int rank = 0;
+	int RANK = 0;
 	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
 	int64_t global_Nx,global_Ny,global_Nz;
 	int64_t i,j,k,n;
@@ -250,296 +250,294 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	outlet_layers_z = 0;
 	checkerSize = 32;
 
-	if (rank() == rank){
-		// Read domain parameters
-		auto Filename = domain_db->getScalar<std::string>( "Filename" );
-		//auto L = domain_db->getVector<double>( "L" );
-		auto size = domain_db->getVector<int>( "n" );
-		auto SIZE = domain_db->getVector<int>( "N" );
-		auto nproc = domain_db->getVector<int>( "nproc" );
-		if (domain_db->keyExists( "offset" )){
-			auto offset = domain_db->getVector<int>( "offset" );
-			xStart = offset[0];
-			yStart = offset[1];
-			zStart = offset[2];
-		}
-		if (domain_db->keyExists( "InletLayers" )){
-			auto InletCount = domain_db->getVector<int>( "InletLayers" );
-			inlet_layers_x = InletCount[0];
-			inlet_layers_y = InletCount[1];
-			inlet_layers_z = InletCount[2];
-		}
-		if (domain_db->keyExists( "OutletLayers" )){
-			auto OutletCount = domain_db->getVector<int>( "OutletLayers" );
-			outlet_layers_x = OutletCount[0];
-			outlet_layers_y = OutletCount[1];
-			outlet_layers_z = OutletCount[2];
-		}
-		if (domain_db->keyExists( "checkerSize" )){
-			checkerSize = domain_db->getScalar<int>( "checkerSize" );
-		}
-		else {
-			checkerSize = SIZE[0];
-		}
-		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
-		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
-		auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
+	// Read domain parameters
+	auto Filename = domain_db->getScalar<std::string>( "Filename" );
+	//auto L = domain_db->getVector<double>( "L" );
+	auto size = domain_db->getVector<int>( "n" );
+	auto SIZE = domain_db->getVector<int>( "N" );
+	auto nproc = domain_db->getVector<int>( "nproc" );
+	if (domain_db->keyExists( "offset" )){
+		auto offset = domain_db->getVector<int>( "offset" );
+		xStart = offset[0];
+		yStart = offset[1];
+		zStart = offset[2];
+	}
+	if (domain_db->keyExists( "InletLayers" )){
+		auto InletCount = domain_db->getVector<int>( "InletLayers" );
+		inlet_layers_x = InletCount[0];
+		inlet_layers_y = InletCount[1];
+		inlet_layers_z = InletCount[2];
+	}
+	if (domain_db->keyExists( "OutletLayers" )){
+		auto OutletCount = domain_db->getVector<int>( "OutletLayers" );
+		outlet_layers_x = OutletCount[0];
+		outlet_layers_y = OutletCount[1];
+		outlet_layers_z = OutletCount[2];
+	}
+	if (domain_db->keyExists( "checkerSize" )){
+		checkerSize = domain_db->getScalar<int>( "checkerSize" );
+	}
+	else {
+		checkerSize = SIZE[0];
+	}
+	auto ReadValues = domain_db->getVector<int>( "ReadValues" );
+	auto WriteValues = domain_db->getVector<int>( "WriteValues" );
+	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
+	if (ReadType == "8bit"){
+	}
+	else if (ReadType == "16bit"){
+	}
+	else{
+		printf("INPUT ERROR: Valid ReadType are 8bit, 16bit \n");
+		ReadType = "8bit";
+	}
+
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nprocx = nproc[0];
+	nprocy = nproc[1];
+	nprocz = nproc[2];
+	global_Nx = SIZE[0];
+	global_Ny = SIZE[1];
+	global_Nz = SIZE[2];
+
+	printf("Input media: %s\n",Filename.c_str());
+	printf("Relabeling %lu values\n",ReadValues.size());
+	for (int idx=0; idx<ReadValues.size(); idx++){
+		int oldvalue=ReadValues[idx];
+		int newvalue=WriteValues[idx];
+		printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
+	}
+
+	nprocs=nprocx*nprocy*nprocz;
+
+	char *SegData = NULL;
+	// Rank=0 reads the entire segmented data and distributes to worker processes
+	if (RANK==0){
+		printf("Dimensions of segmented image: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
+		int64_t SIZE = global_Nx*global_Ny*global_Nz;
+		SegData = new char[SIZE];
 		if (ReadType == "8bit"){
+			printf("Reading 8-bit input data \n");
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
+			size_t ReadSeg;
+			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
+			fclose(SEGDAT);
 		}
 		else if (ReadType == "16bit"){
-		}
-		else{
-			printf("INPUT ERROR: Valid ReadType are 8bit, 16bit \n");
-			ReadType = "8bit";
-		}
-
-		nx = size[0];
-		ny = size[1];
-		nz = size[2];
-		nprocx = nproc[0];
-		nprocy = nproc[1];
-		nprocz = nproc[2];
-		global_Nx = SIZE[0];
-		global_Ny = SIZE[1];
-		global_Nz = SIZE[2];
-
-		printf("Input media: %s\n",Filename.c_str());
-		printf("Relabeling %lu values\n",ReadValues.size());
-		for (int idx=0; idx<ReadValues.size(); idx++){
-			int oldvalue=ReadValues[idx];
-			int newvalue=WriteValues[idx];
-			printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
-		}
-
-		nprocs=nprocx*nprocy*nprocz;
-
-		char *SegData = NULL;
-		// Rank=0 reads the entire segmented data and distributes to worker processes
-		if (rank==0){
-			printf("Dimensions of segmented image: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
-			int64_t SIZE = global_Nx*global_Ny*global_Nz;
-			SegData = new char[SIZE];
-			if (ReadType == "8bit"){
-				printf("Reading 8-bit input data \n");
-				FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-				if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
-				size_t ReadSeg;
-				ReadSeg=fread(SegData,1,SIZE,SEGDAT);
-				if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
-				fclose(SEGDAT);
+			printf("Reading 16-bit input data \n");
+			short int *InputData;
+			InputData = new short int[SIZE];
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
+			size_t ReadSeg;
+			ReadSeg=fread(InputData,2,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
+			fclose(SEGDAT);
+			for (int n=0; n<SIZE; n++){
+				SegData[n] = char(InputData[n]);
 			}
-			else if (ReadType == "16bit"){
-				printf("Reading 16-bit input data \n");
-				short int *InputData;
-				InputData = new short int[SIZE];
-				FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-				if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
-				size_t ReadSeg;
-				ReadSeg=fread(InputData,2,SIZE,SEGDAT);
-				if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
-				fclose(SEGDAT);
-				for (int n=0; n<SIZE; n++){
-					SegData[n] = char(InputData[n]);
-				}
-			}
-			printf("Read segmented data from %s \n",Filename.c_str());
 		}
+		printf("Read segmented data from %s \n",Filename.c_str());
+	}
 
-		if (inlet_layers_x > 0){
-			// use checkerboard pattern
-			printf("Checkerboard pattern at x inlet for %i layers \n",inlet_layers_x);
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = xStart; i < xStart+inlet_layers_x; i++){
-						if ( (j/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (inlet_layers_x > 0){
+		// use checkerboard pattern
+		printf("Checkerboard pattern at x inlet for %i layers \n",inlet_layers_x);
+		for (int k = 0; k<global_Nz; k++){
+			for (int j = 0; j<global_Ny; j++){
+				for (int i = xStart; i < xStart+inlet_layers_x; i++){
+					if ( (j/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		if (inlet_layers_y > 0){
-			printf("Checkerboard pattern at y inlet for %i layers \n",inlet_layers_y);
-			// use checkerboard pattern
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart; i < yStart+inlet_layers_y; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (inlet_layers_y > 0){
+		printf("Checkerboard pattern at y inlet for %i layers \n",inlet_layers_y);
+		// use checkerboard pattern
+		for (int k = 0; k<global_Nz; k++){
+			for (int j = yStart; i < yStart+inlet_layers_y; j++){
+				for (int i = 0; i<global_Nx; i++){
+					if ( (i/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		if (inlet_layers_z > 0){
-			printf("Checkerboard pattern at z inlet for %i layers \n",inlet_layers_z);
-			// use checkerboard pattern
-			for (int k = zStart; k < zStart+inlet_layers_z; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize+j/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (inlet_layers_z > 0){
+		printf("Checkerboard pattern at z inlet for %i layers \n",inlet_layers_z);
+		// use checkerboard pattern
+		for (int k = zStart; k < zStart+inlet_layers_z; k++){
+			for (int j = 0; j<global_Ny; j++){
+				for (int i = 0; i<global_Nx; i++){
+					if ( (i/checkerSize+j/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		if (outlet_layers_x > 0){
-			// use checkerboard pattern
-			printf("Checkerboard pattern at x outlet for %i layers \n",outlet_layers_x);
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = xStart + nx*nprocx - outlet_layers_x; i <  xStart + nx*nprocx; i++){
-						if ( (j/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (outlet_layers_x > 0){
+		// use checkerboard pattern
+		printf("Checkerboard pattern at x outlet for %i layers \n",outlet_layers_x);
+		for (int k = 0; k<global_Nz; k++){
+			for (int j = 0; j<global_Ny; j++){
+				for (int i = xStart + nx*nprocx - outlet_layers_x; i <  xStart + nx*nprocx; i++){
+					if ( (j/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		if (outlet_layers_y > 0){
-			printf("Checkerboard pattern at y outlet for %i layers \n",outlet_layers_y);
-			// use checkerboard pattern
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart + ny*nprocy - outlet_layers_y; i < yStart + ny*nprocy; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (outlet_layers_y > 0){
+		printf("Checkerboard pattern at y outlet for %i layers \n",outlet_layers_y);
+		// use checkerboard pattern
+		for (int k = 0; k<global_Nz; k++){
+			for (int j = yStart + ny*nprocy - outlet_layers_y; i < yStart + ny*nprocy; j++){
+				for (int i = 0; i<global_Nx; i++){
+					if ( (i/checkerSize + k/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		if (outlet_layers_z > 0){
-			printf("Checkerboard pattern at z outlet for %i layers \n",outlet_layers_z);
-			// use checkerboard pattern
-			for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize+j/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
+	if (outlet_layers_z > 0){
+		printf("Checkerboard pattern at z outlet for %i layers \n",outlet_layers_z);
+		// use checkerboard pattern
+		for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
+			for (int j = 0; j<global_Ny; j++){
+				for (int i = 0; i<global_Nx; i++){
+					if ( (i/checkerSize+j/checkerSize)%2 == 0){
+						// void checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+					}
+					else{
+						// solid checkers
+						SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
 					}
 				}
 			}
 		}
+	}
 
-		// Get the rank info
-		int64_t N = (nx+2)*(ny+2)*(nz+2);
+	// Get the rank info
+	int64_t N = (nx+2)*(ny+2)*(nz+2);
 
-		// number of sites to use for periodic boundary condition transition zone
-		int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
-		if (z_transition_size < 0) z_transition_size=0;
+	// number of sites to use for periodic boundary condition transition zone
+	int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
+	if (z_transition_size < 0) z_transition_size=0;
 
-		char LocalRankFilename[40];
-		char *loc_id;
-		loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
+	char LocalRankFilename[40];
+	char *loc_id;
+	loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
 
-		std::vector<int> LabelCount(ReadValues.size(),0);
-		// Set up the sub-domains
-		if (rank==0){
-			printf("Distributing subdomains across %i processors \n",nprocs);
-			printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
-			printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
-			printf("Size of transition region: %ld \n", z_transition_size);
+	std::vector<int> LabelCount(ReadValues.size(),0);
+	// Set up the sub-domains
+	if (RANK==0){
+		printf("Distributing subdomains across %i processors \n",nprocs);
+		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
+		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
+		printf("Size of transition region: %ld \n", z_transition_size);
 
-			for (int kp=0; kp<nprocz; kp++){
-				for (int jp=0; jp<nprocy; jp++){
-					for (int ip=0; ip<nprocx; ip++){
-						// rank of the process that gets this subdomain
-						int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
-						// Pack and send the subdomain for rnk
-						for (k=0;k<nz+2;k++){
-							for (j=0;j<ny+2;j++){
-								for (i=0;i<nx+2;i++){
-									int64_t x = xStart + ip*nx + i-1;
-									int64_t y = yStart + jp*ny + j-1;
-									// int64_t z = zStart + kp*nz + k-1;
-									int64_t z = zStart + kp*nz + k-1 - z_transition_size;
-									if (x<xStart) 	x=xStart;
-									if (!(x<global_Nx))	x=global_Nx-1;
-									if (y<yStart) 	y=yStart;
-									if (!(y<global_Ny))	y=global_Ny-1;
-									if (z<zStart) 	z=zStart;
-									if (!(z<global_Nz))	z=global_Nz-1;
-									int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									int64_t nglobal = z*global_Nx*global_Ny+y*global_Nx+x;
-									loc_id[nlocal] = SegData[nglobal];
-								}
+		for (int kp=0; kp<nprocz; kp++){
+			for (int jp=0; jp<nprocy; jp++){
+				for (int ip=0; ip<nprocx; ip++){
+					// rank of the process that gets this subdomain
+					int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
+					// Pack and send the subdomain for rnk
+					for (k=0;k<nz+2;k++){
+						for (j=0;j<ny+2;j++){
+							for (i=0;i<nx+2;i++){
+								int64_t x = xStart + ip*nx + i-1;
+								int64_t y = yStart + jp*ny + j-1;
+								// int64_t z = zStart + kp*nz + k-1;
+								int64_t z = zStart + kp*nz + k-1 - z_transition_size;
+								if (x<xStart) 	x=xStart;
+								if (!(x<global_Nx))	x=global_Nx-1;
+								if (y<yStart) 	y=yStart;
+								if (!(y<global_Ny))	y=global_Ny-1;
+								if (z<zStart) 	z=zStart;
+								if (!(z<global_Nz))	z=global_Nz-1;
+								int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+								int64_t nglobal = z*global_Nx*global_Ny+y*global_Nx+x;
+								loc_id[nlocal] = SegData[nglobal];
 							}
 						}
-						// relabel the data
-						for (k=0;k<nz+2;k++){
-							for (j=0;j<ny+2;j++){
-								for (i=0;i<nx+2;i++){
-									n = k*(nx+2)*(ny+2) + j*(nx+2) + i;;
-									char locval = loc_id[n];
-									for (int idx=0; idx<ReadValues.size(); idx++){
-										signed char oldvalue=ReadValues[idx];
-										signed char newvalue=WriteValues[idx];
-										if (locval == oldvalue){
-											loc_id[n] = newvalue;
-											LabelCount[idx]++;
-											idx = ReadValues.size();
-										}
+					}
+					// relabel the data
+					for (k=0;k<nz+2;k++){
+						for (j=0;j<ny+2;j++){
+							for (i=0;i<nx+2;i++){
+								n = k*(nx+2)*(ny+2) + j*(nx+2) + i;;
+								char locval = loc_id[n];
+								for (int idx=0; idx<ReadValues.size(); idx++){
+									signed char oldvalue=ReadValues[idx];
+									signed char newvalue=WriteValues[idx];
+									if (locval == oldvalue){
+										loc_id[n] = newvalue;
+										LabelCount[idx]++;
+										idx = ReadValues.size();
 									}
-									//if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
-									//else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
-									//else                     loc_id[n] = 2;
-
 								}
+								//if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
+								//else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
+								//else                     loc_id[n] = 2;
+
 							}
 						}
-
-						// Write the data for this rank data 
-						sprintf(LocalRankFilename,"ID.%05i",rnk+rank_offset);
-						FILE *ID = fopen(LocalRankFilename,"wb");
-						fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
-						fclose(ID);
 					}
+
+					// Write the data for this rank data 
+					sprintf(LocalRankFilename,"ID.%05i",rnk+rank_offset);
+					FILE *ID = fopen(LocalRankFilename,"wb");
+					fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
+					fclose(ID);
 				}
 			}
 		}
-		for (int idx=0; idx<ReadValues.size(); idx++){
-			int label=ReadValues[idx];
-			int count=LabelCount[idx];
-			printf("Label=%d, Count=%d \n",label,count);
-		}
+	}
+	for (int idx=0; idx<ReadValues.size(); idx++){
+		int label=ReadValues[idx];
+		int count=LabelCount[idx];
+		printf("Label=%d, Count=%d \n",label,count);
 	}
 }
 
