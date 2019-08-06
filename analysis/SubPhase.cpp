@@ -492,6 +492,10 @@ void SubPhase::Full(){
 	double vol_wc_bulk = 0.0;
 	double vol_nd_bulk = 0.0;
 	double vol_wd_bulk = 0.0;
+	double count_wc = 0.0;
+	double count_nc = 0.0;
+	double count_wd = 0.0;
+	double count_nd = 0.0;
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -516,13 +520,33 @@ void SubPhase::Full(){
 					}
 					else if ( phi > 0.0){
 						if (morph_n->label(i,j,k) > 0 ){
+							count_nd += 1.0;
+							nd.p += Pressure(n);
+						}
+						else{
+							count_nc += 1.0;
+							nc.p += Pressure(n);
+						}
+					}
+					else{
+						// water region
+						if (morph_w->label(i,j,k) > 0 ){
+							count_wd += 1.0;
+							wd.p += Pressure(n);
+						}
+						else{
+							count_wc += 1.0;
+							wc.p += Pressure(n);
+						}
+					}
+					if ( phi > 0.0){
+						if (morph_n->label(i,j,k) > 0 ){
 							vol_nd_bulk += 1.0;
 							nd.M += nA*rho_n;						
 							nd.Px += nA*rho_n*ux;
 							nd.Py += nA*rho_n*uy;
 							nd.Pz += nA*rho_n*uz;
 							nd.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
-							nd.p += Pressure(n);
 						}
 						else{
 							vol_nc_bulk += 1.0;
@@ -531,7 +555,6 @@ void SubPhase::Full(){
 							nc.Py += nA*rho_n*uy;
 							nc.Pz += nA*rho_n*uz;
 							nc.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
-							nc.p += Pressure(n);
 						}
 					}
 					else{
@@ -543,7 +566,6 @@ void SubPhase::Full(){
 							wd.Py += nB*rho_w*uy;
 							wd.Pz += nB*rho_w*uz;
 							wd.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
-							wd.p += Pressure(n);
 						}
 						else{
 							vol_wc_bulk += 1.0;
@@ -552,40 +574,44 @@ void SubPhase::Full(){
 							wc.Py += nB*rho_w*uy;
 							wc.Pz += nB*rho_w*uz;
 							wc.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
-							wc.p += Pressure(n);
 						}
 					}
 				}
 			}
 		}
 	}
+	count_wc=sumReduce( Dm->Comm, count_wc);
+	count_nc=sumReduce( Dm->Comm, count_nc);
+	count_wd=sumReduce( Dm->Comm, count_wd);
+	count_nd=sumReduce( Dm->Comm, count_nd);
+	gnd.p=sumReduce( Dm->Comm, nd.p) / count_nd;
+	gwd.p=sumReduce( Dm->Comm, wd.p) / count_wd;
+	gnc.p=sumReduce( Dm->Comm, nc.p) / count_nc;
+	gwc.p=sumReduce( Dm->Comm, wc.p) / count_wc;
+
 	gnd.M=sumReduce( Dm->Comm, nd.M);
 	gnd.Px=sumReduce( Dm->Comm, nd.Px);
 	gnd.Py=sumReduce( Dm->Comm, nd.Py);
 	gnd.Pz=sumReduce( Dm->Comm, nd.Pz);
 	gnd.K=sumReduce( Dm->Comm, nd.K);
-	gnd.p=sumReduce( Dm->Comm, nd.p);
 
 	gwd.M=sumReduce( Dm->Comm, wd.M);
 	gwd.Px=sumReduce( Dm->Comm, wd.Px);
 	gwd.Py=sumReduce( Dm->Comm, wd.Py);
 	gwd.Pz=sumReduce( Dm->Comm, wd.Pz);
 	gwd.K=sumReduce( Dm->Comm, wd.K);
-	gwd.p=sumReduce( Dm->Comm, wd.p);
 	
 	gnc.M=sumReduce( Dm->Comm, nc.M);
 	gnc.Px=sumReduce( Dm->Comm, nc.Px);
 	gnc.Py=sumReduce( Dm->Comm, nc.Py);
 	gnc.Pz=sumReduce( Dm->Comm, nc.Pz);
 	gnc.K=sumReduce( Dm->Comm, nc.K);
-	gnc.p=sumReduce( Dm->Comm, nc.p);
 
 	gwc.M=sumReduce( Dm->Comm, wc.M);
 	gwc.Px=sumReduce( Dm->Comm, wc.Px);
 	gwc.Py=sumReduce( Dm->Comm, wc.Py);
 	gwc.Pz=sumReduce( Dm->Comm, wc.Pz);
 	gwc.K=sumReduce( Dm->Comm, wc.K);
-	gwc.p=sumReduce( Dm->Comm, wc.p);
 	
 	giwn.Mn=sumReduce( Dm->Comm, iwn.Mn);
 	giwn.Pnx=sumReduce( Dm->Comm, iwn.Pnx);
