@@ -151,8 +151,14 @@ void ScaLBL_ColorModel::SetDomain(){
 }
 
 void ScaLBL_ColorModel::ReadInput(){
-	size_t readID;
-	Mask->ReadIDs();
+	
+	if (domain_db->keyExists( "Filename" )){
+		Mask->Decomp(domain_db);
+	}
+	else{
+		size_t readID;
+		Mask->ReadIDs();
+	}
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 
 	sprintf(LocalRankString,"%05d",rank);
