@@ -232,7 +232,7 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	// Reading the domain information file
 	//.......................................................................
 	int rank_offset = 0;
-	int RANK = 0;
+	int RANK = rank();
 	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
 	int64_t global_Nx,global_Ny,global_Nz;
 	int64_t i,j,k,n;
@@ -518,10 +518,6 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 										idx = ReadValues.size();
 									}
 								}
-								//if (loc_id[n]==char(SOLID))     loc_id[n] = 0;
-								//else if (loc_id[n]==char(NWP))  loc_id[n] = 1;
-								//else                     loc_id[n] = 2;
-
 							}
 						}
 					}
@@ -530,13 +526,13 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 							for (j=0;j<ny+2;j++){
 								for (i=0;i<nx+2;i++){
 									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									Dm.id[nlocal] = loc_id[nlocal];
+									id[nlocal] = loc_id[nlocal];
 								}
 							}
 						}
 					}
 					else{
-						printf("Sending data to process %i \n", rnk);
+						//printf("Sending data to process %i \n", rnk);
 						MPI_Send(loc_id,N,MPI_CHAR,rnk,15,comm);
 					}
 					// Write the data for this rank data 
@@ -547,12 +543,18 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 				}
 			}
 		}
+		for (int idx=0; idx<ReadValues.size(); idx++){
+			int label=ReadValues[idx];
+			int count=LabelCount[idx];
+			printf("Label=%d, Count=%d \n",label,count);
+		}
 	}
-	for (int idx=0; idx<ReadValues.size(); idx++){
-		int label=ReadValues[idx];
-		int count=LabelCount[idx];
-		printf("Label=%d, Count=%d \n",label,count);
+	else{
+		// Recieve the subdomain from rank = 0
+		//printf("Ready to recieve data %i at process %i \n", N,rank);
+		MPI_Recv(id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
 	}
+	MPI_Barrier(comm);
 }
 
 /********************************************************
