@@ -231,6 +231,7 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
+  int rank_offset = 0;
 	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
 	int64_t global_Nx,global_Ny,global_Nz;
 	int64_t i,j,k,n;
@@ -316,17 +317,17 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 
 	char *SegData = NULL;
 	// Rank=0 reads the entire segmented data and distributes to worker processes
-	if (rank==0){
+	if (rank()==0){
 		printf("Dimensions of segmented image: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
 		int64_t SIZE = global_Nx*global_Ny*global_Nz;
 		SegData = new char[SIZE];
 		if (ReadType == "8bit"){
 			printf("Reading 8-bit input data \n");
 			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Error reading segmented data");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
 			size_t ReadSeg;
 			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
-			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
 			fclose(SEGDAT);
 		}
 		else if (ReadType == "16bit"){
@@ -334,10 +335,10 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 			short int *InputData;
 			InputData = new short int[SIZE];
 			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Error reading segmented data");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
 			size_t ReadSeg;
 			ReadSeg=fread(InputData,2,SIZE,SEGDAT);
-			if (ReadSeg != size_t(SIZE)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
 			fclose(SEGDAT);
 			for (int n=0; n<SIZE; n++){
 				SegData[n] = char(InputData[n]);
@@ -473,7 +474,7 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 
 	std::vector<int> LabelCount(ReadValues.size(),0);
 	// Set up the sub-domains
-	if (rank==0){
+	if (rank()==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
 		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
 		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
