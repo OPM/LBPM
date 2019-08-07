@@ -30,12 +30,16 @@ int main(int argc, char **argv)
     int BC=2;
     int npx=1; int npy=2; int npz=4;
     int nx=32; int ny=34; int nz=35;
+    std::vector<std::string> List;
+    List.push_back("name1");
+    List.push_back("name2");
     
     // write a simple database and test that it can be read by LBPM
     auto db = std::make_shared<Database>( );
     db->putScalar<int>( "BC", BC );
     db->putVector<int>( "nproc", { npx, npy, npz } );
     db->putVector<int>( "n", { nx, ny, nz } );
+    db->putVector<std::string>( "Files", List);
 
     std::ofstream OutStream("test.db");
 //    db->putDatabase();
