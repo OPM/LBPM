@@ -101,7 +101,8 @@ public:
 	void Basic();
 	void Full();
 	void Write(int time);
-	
+    void AggregateLabels(char *FILENAME);
+
 private:
 	FILE *TIMELOG;
 	FILE *SUBPHASE;

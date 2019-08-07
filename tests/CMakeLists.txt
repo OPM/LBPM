@@ -39,6 +39,7 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_
 
 # Add the tests
 ADD_LBPM_TEST( pmmc_cylinder )
+ADD_LBPM_TEST( TestSubphase )
 ADD_LBPM_TEST( TestTorus )
 ADD_LBPM_TEST( TestTorusEvolve )
 ADD_LBPM_TEST( TestTopo3D )
@@ -67,6 +68,7 @@ ADD_LBPM_TEST_PARALLEL( TestSegDist 8 )
 ADD_LBPM_TEST_PARALLEL( TestCommD3Q19 8 )
 ADD_LBPM_TEST_1_2_4( testCommunication )
 ADD_LBPM_TEST( TestWriter )
+ADD_LBPM_TEST( TestDatabase )
 IF ( USE_NETCDF )
     ADD_LBPM_TEST_PARALLEL( TestNetcdf 8 )
     ADD_LBPM_EXECUTABLE( lbpm_uCT_pp )

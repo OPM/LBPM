@@ -231,7 +231,20 @@ void SubPhase::Basic(){
 	count_n=sumReduce( Dm->Comm, count_n);
 	gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
 	gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
-
+	
+	// check for NaN
+	bool err=false;
+	if (gwb.V != gwb.V) err=true;
+	if (gnb.V != gnb.V) err=true;
+	if (gwb.p != gwb.p) err=true;
+	if (gnb.p != gnb.p) err=true;
+	if (gwb.Px != gwb.Px) err=true;
+	if (gwb.Py != gwb.Py) err=true;
+	if (gwb.Pz != gwb.Pz) err=true;
+	if (gnb.Px != gnb.Px) err=true;
+	if (gnb.Py != gnb.Py) err=true;
+	if (gnb.Pz != gnb.Pz) err=true;	
+	
 	if (Dm->rank() == 0){
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 		double dir_x = Fx/force_mag;
@@ -257,7 +270,11 @@ void SubPhase::Basic(){
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*h*h*water_flow_rate,h*h*h*not_water_flow_rate, gwb.p, gnb.p); 
 		fflush(TIMELOG);
 	}
-
+	if (err==true){
+		// exception if simulation produceds NaN
+		printf("SubPhase.cpp: NaN encountered, may need to check simulation parameters \n");
+	}	
+	ASSERT(err==false);
 }
 
 inline void InterfaceTransportMeasures( double beta, double rA, double rB, double nA, double nB, 
@@ -492,6 +509,10 @@ void SubPhase::Full(){
 	double vol_wc_bulk = 0.0;
 	double vol_nd_bulk = 0.0;
 	double vol_wd_bulk = 0.0;
+	double count_wc = 0.0;
+	double count_nc = 0.0;
+	double count_wd = 0.0;
+	double count_nd = 0.0;
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -516,13 +537,33 @@ void SubPhase::Full(){
 					}
 					else if ( phi > 0.0){
 						if (morph_n->label(i,j,k) > 0 ){
+							count_nd += 1.0;
+							nd.p += Pressure(n);
+						}
+						else{
+							count_nc += 1.0;
+							nc.p += Pressure(n);
+						}
+					}
+					else{
+						// water region
+						if (morph_w->label(i,j,k) > 0 ){
+							count_wd += 1.0;
+							wd.p += Pressure(n);
+						}
+						else{
+							count_wc += 1.0;
+							wc.p += Pressure(n);
+						}
+					}
+					if ( phi > 0.0){
+						if (morph_n->label(i,j,k) > 0 ){
 							vol_nd_bulk += 1.0;
 							nd.M += nA*rho_n;						
 							nd.Px += nA*rho_n*ux;
 							nd.Py += nA*rho_n*uy;
 							nd.Pz += nA*rho_n*uz;
 							nd.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
-							nd.p += Pressure(n);
 						}
 						else{
 							vol_nc_bulk += 1.0;
@@ -531,7 +572,6 @@ void SubPhase::Full(){
 							nc.Py += nA*rho_n*uy;
 							nc.Pz += nA*rho_n*uz;
 							nc.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
-							nc.p += Pressure(n);
 						}
 					}
 					else{
@@ -543,7 +583,6 @@ void SubPhase::Full(){
 							wd.Py += nB*rho_w*uy;
 							wd.Pz += nB*rho_w*uz;
 							wd.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
-							wd.p += Pressure(n);
 						}
 						else{
 							vol_wc_bulk += 1.0;
@@ -552,40 +591,44 @@ void SubPhase::Full(){
 							wc.Py += nB*rho_w*uy;
 							wc.Pz += nB*rho_w*uz;
 							wc.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
-							wc.p += Pressure(n);
 						}
 					}
 				}
 			}
 		}
 	}
+	count_wc=sumReduce( Dm->Comm, count_wc);
+	count_nc=sumReduce( Dm->Comm, count_nc);
+	count_wd=sumReduce( Dm->Comm, count_wd);
+	count_nd=sumReduce( Dm->Comm, count_nd);
+	gnd.p=sumReduce( Dm->Comm, nd.p) / count_nd;
+	gwd.p=sumReduce( Dm->Comm, wd.p) / count_wd;
+	gnc.p=sumReduce( Dm->Comm, nc.p) / count_nc;
+	gwc.p=sumReduce( Dm->Comm, wc.p) / count_wc;
+
 	gnd.M=sumReduce( Dm->Comm, nd.M);
 	gnd.Px=sumReduce( Dm->Comm, nd.Px);
 	gnd.Py=sumReduce( Dm->Comm, nd.Py);
 	gnd.Pz=sumReduce( Dm->Comm, nd.Pz);
 	gnd.K=sumReduce( Dm->Comm, nd.K);
-	gnd.p=sumReduce( Dm->Comm, nd.p);
 
 	gwd.M=sumReduce( Dm->Comm, wd.M);
 	gwd.Px=sumReduce( Dm->Comm, wd.Px);
 	gwd.Py=sumReduce( Dm->Comm, wd.Py);
 	gwd.Pz=sumReduce( Dm->Comm, wd.Pz);
 	gwd.K=sumReduce( Dm->Comm, wd.K);
-	gwd.p=sumReduce( Dm->Comm, wd.p);
 	
 	gnc.M=sumReduce( Dm->Comm, nc.M);
 	gnc.Px=sumReduce( Dm->Comm, nc.Px);
 	gnc.Py=sumReduce( Dm->Comm, nc.Py);
 	gnc.Pz=sumReduce( Dm->Comm, nc.Pz);
 	gnc.K=sumReduce( Dm->Comm, nc.K);
-	gnc.p=sumReduce( Dm->Comm, nc.p);
 
 	gwc.M=sumReduce( Dm->Comm, wc.M);
 	gwc.Px=sumReduce( Dm->Comm, wc.Px);
 	gwc.Py=sumReduce( Dm->Comm, wc.Py);
 	gwc.Pz=sumReduce( Dm->Comm, wc.Pz);
 	gwc.K=sumReduce( Dm->Comm, wc.K);
-	gwc.p=sumReduce( Dm->Comm, wc.p);
 	
 	giwn.Mn=sumReduce( Dm->Comm, iwn.Mn);
 	giwn.Pnx=sumReduce( Dm->Comm, iwn.Pnx);
@@ -621,6 +664,104 @@ void SubPhase::Full(){
 		gwd.p = gwd.p /vol_wd_bulk;
 	if (vol_nd_bulk > 0.0)
 		gnd.p = gnd.p /vol_nd_bulk;
+}
+
+
+void SubPhase::AggregateLabels(char *FILENAME){
+	
+	int nx = Dm->Nx;
+	int ny = Dm->Ny;
+	int nz = Dm->Nz;
+	
+	int npx = Dm->nprocx();
+	int npy = Dm->nprocy();
+	int npz = Dm->nprocz();
+	
+	int ipx = Dm->iproc();
+	int ipy = Dm->jproc();
+	int ipz = Dm->kproc();		
+	
+	int nprocs = Dm->nprocx()*Dm->nprocy()*Dm->nprocz();
+		
+	int full_nx = npx*(nx-2);
+	int full_ny = npy*(ny-2);
+	int full_nz = npz*(nz-2);
+	int local_size = (nx-2)*(ny-2)*(nz-2);
+	long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	
+	signed char *LocalID;
+	LocalID = new signed char [local_size];
+		
+	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
+	// assign the ID for the local sub-region
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				int n = k*nx*ny+j*nx+i;
+				signed char local_id_val = Dm->id[n]; 
+				if (local_id_val > 0){
+					double value = Phi(i,j,k);
+					if (value > 0.0)	local_id_val = 1;
+					else 				local_id_val = 2;
+				}
+				LocalID[(k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1] = local_id_val;
+			}
+		}
+	}
+	MPI_Barrier(Dm->Comm);
+
+	// populate the FullID 
+	if (Dm->rank() == 0){
+		signed char *FullID;
+		FullID = new signed char [full_size];
+		// first handle local ID for rank 0
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					int x = i-1;
+					int y = j-1;
+					int z = k-1;
+					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+					int n_full = z*full_nx*full_ny + y*full_nx + x;
+					FullID[n_full] = LocalID[n_local];
+				}
+			}
+		}
+		// next get the local ID from the other ranks
+		for (int rnk = 1; rnk<nprocs; rnk++){
+			ipz = rnk / (npx*npy);
+			ipy = (rnk - ipz*npx*npy) / npx;
+			ipx = (rnk - ipz*npx*npy - ipy*npx); 
+			//printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
+			int tag = 15+rnk;
+			MPI_Recv(LocalID,local_size,MPI_CHAR,rnk,tag,Dm->Comm,MPI_STATUS_IGNORE);
+			for (int k=1; k<nz-1; k++){
+				for (int j=1; j<ny-1; j++){
+					for (int i=1; i<nx-1; i++){
+						int x = i-1 + ipx*(nx-2);
+						int y = j-1 + ipy*(ny-2);
+						int z = k-1 + ipz*(nz-2);
+						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+						int n_full = z*full_nx*full_ny + y*full_nx + x;
+						FullID[n_full] = LocalID[n_local];
+					}
+				}
+			}
+		}
+		// write the output
+		FILE *OUTFILE;
+		OUTFILE = fopen(FILENAME,"wb");
+		fwrite(FullID,1,full_size,OUTFILE);
+		fclose(OUTFILE);
+	}
+	else{
+		// send LocalID to rank=0
+		int tag = 15+ Dm->rank();
+		int dstrank = 0;
+		MPI_Send(LocalID,local_size,MPI_CHAR,dstrank,tag,Dm->Comm);
+	}
+	MPI_Barrier(Dm->Comm);
+
 }
 
 

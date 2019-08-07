@@ -75,7 +75,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
-	color_db = db->getDatabase( "Color" );
+	color_db =  db->getDatabase( "Color" );
 	analysis_db = db->getDatabase( "Analysis" );
 
 	// set defaults
@@ -166,8 +166,14 @@ void ScaLBL_ColorModel::SetDomain(){
 }
 
 void ScaLBL_ColorModel::ReadInput(){
-	size_t readID;
-	Mask->ReadIDs();
+	
+	if (domain_db->keyExists( "Filename" )){
+		Mask->Decomp(domain_db);
+	}
+	else{
+		size_t readID;
+		Mask->ReadIDs();
+	}
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 
 	sprintf(LocalRankString,"%05d",rank);
@@ -648,6 +654,7 @@ void ScaLBL_ColorModel::Run(){
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
 			volB /= Dm->Volume;;
+			initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -681,10 +688,9 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 
 				if ( isSteady ){
-					initial_volume = volA*Dm->Volume;
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*morph_delta; //*volA ???? // set target volume change
+					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -763,8 +769,7 @@ void ScaLBL_ColorModel::Run(){
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
-					double effective_seed_water = seed_water*(1.0+volB/volA);
-					double massChange = SeedPhaseField(effective_seed_water);
+					double massChange = SeedPhaseField(seed_water);
 					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
 				}
 				else if (USE_MORPHOPEN_OIL){
@@ -984,7 +989,6 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	double mass_loss =0.f;
 	double count =0.f;
 	double *Aq_tmp, *Bq_tmp;
-	double SEED_THRESHOLD = -0.9;
 	
 	Aq_tmp = new double [7*Np];
 	Bq_tmp = new double [7*Np];
@@ -1012,58 +1016,54 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 		}
 	}
 	*/
-	double oil_value = 0.0;
-	double water_value = 1.0;
 	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
+		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
 		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
 		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		double phase_id = (dA - dB) / (dA + dB);
-		double random_value = double(rand())/ RAND_MAX;
-		if (phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
-			Aq_tmp[n] = 0.3333333333333333*oil_value;
-			Aq_tmp[n+Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+2*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+3*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+4*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+5*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+6*Np] = 0.1111111111111111*oil_value;
+		if (phase_id > 0.0){
+			Aq_tmp[n] -= 0.3333333333333333*random_value;
+			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
 			
-			Bq_tmp[n] = 0.3333333333333333*water_value;
-			Bq_tmp[n+Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+2*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+3*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+4*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+5*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+6*Np] = 0.1111111111111111*water_value;
-			mass_loss += oil_value - dA;
-			count++;
+			Bq_tmp[n] += 0.3333333333333333*random_value;
+			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
 		}
+		mass_loss += random_value*seed_water_in_oil;
 	}
 
 	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
-		double dA = Aq_tmp[n] + Aq_tmp[n+Np] + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
-		double dB = Bq_tmp[n] + Bq_tmp[n+Np] + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		double phase_id = (dA - dB) / (dA + dB);
-		double random_value = double(rand())/ RAND_MAX;
-		if (phase_id > SEED_THRESHOLD && random_value < seed_water_in_oil){
-			Aq_tmp[n] = 0.3333333333333333*oil_value;
-			Aq_tmp[n+Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+2*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+3*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+4*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+5*Np] = 0.1111111111111111*oil_value;
-			Aq_tmp[n+6*Np] = 0.1111111111111111*oil_value;
+		if (phase_id > 0.0){
+			Aq_tmp[n] -= 0.3333333333333333*random_value;
+			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
 			
-			Bq_tmp[n] = 0.3333333333333333*water_value;
-			Bq_tmp[n+Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+2*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+3*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+4*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+5*Np] = 0.1111111111111111*water_value;
-			Bq_tmp[n+6*Np] = 0.1111111111111111*water_value;
-			mass_loss += oil_value - dA;
-			count++;
+			Bq_tmp[n] += 0.3333333333333333*random_value;
+			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
 		}
+		mass_loss += random_value*seed_water_in_oil;
 	}
 
 	count= sumReduce( Dm->Comm, count);
