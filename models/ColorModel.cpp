@@ -60,7 +60,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
-	color_db = db->getDatabase( "Color" );
+	color_db =  db->getDatabase( "Color" );
 	analysis_db = db->getDatabase( "Analysis" );
 
 	// set defaults

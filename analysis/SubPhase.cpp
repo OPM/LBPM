@@ -231,7 +231,20 @@ void SubPhase::Basic(){
 	count_n=sumReduce( Dm->Comm, count_n);
 	gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
 	gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
-
+	
+	// check for NaN
+	bool err=false;
+	if (gwb.V != gwb.V) err=true;
+	if (gnb.V != gnb.V) err=true;
+	if (gwb.p != gwb.p) err=true;
+	if (gnb.p != gnb.p) err=true;
+	if (gwb.Px != gwb.Px) err=true;
+	if (gwb.Py != gwb.Py) err=true;
+	if (gwb.Pz != gwb.Pz) err=true;
+	if (gnb.Px != gnb.Px) err=true;
+	if (gnb.Py != gnb.Py) err=true;
+	if (gnb.Pz != gnb.Pz) err=true;	
+	
 	if (Dm->rank() == 0){
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 		double dir_x = Fx/force_mag;
@@ -257,7 +270,11 @@ void SubPhase::Basic(){
 		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*h*h*water_flow_rate,h*h*h*not_water_flow_rate, gwb.p, gnb.p); 
 		fflush(TIMELOG);
 	}
-
+	if (err==true){
+		// exception if simulation produceds NaN
+		printf("SubPhase.cpp: NaN encountered, may need to check simulation parameters \n");
+	}	
+	ASSERT(err==false);
 }
 
 inline void InterfaceTransportMeasures( double beta, double rA, double rB, double nA, double nB, 
