@@ -7,6 +7,8 @@ module list
 module load hdf5/1.8.12 
 module load silo 
 
+export LBPM_SOURCE_DIR=$HOME/LBPM
+
 cmake                                    \
     -D CMAKE_C_COMPILER:PATH=mpicc          \
     -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
@@ -24,7 +26,7 @@ cmake                                    \
     -D USE_SILO=1				 \
        -D SILO_DIRECTORY=$SILO_DIR \
     -D USE_TIMER=0				 \
-    ~/LBPM-WIA
+    $LBPM_SOURCE_DIR
 
 make VERBOSE=1 -j1 && make install
 
