@@ -476,11 +476,9 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis( std::shared_ptr<Database> db,
-        const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
-        int Np, bool Regular, double beta, IntArray Map ):
+runAnalysis::runAnalysis(std::shared_ptr<Database> db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+        int Np, bool Regular, IntArray Map ):
             d_Np( Np ),
-            d_beta( beta ),
             d_regular ( Regular),
             d_rank_info( rank_info ),
             d_Map( Map ),
@@ -518,6 +516,8 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> db,
 	
     auto restart_file = db->getScalar<std::string>( "restart_file" );
     d_restartFile = restart_file + "." + rankString;
+    
+    
     d_rank = MPI_WORLD_RANK();
     writeIDMap(ID_map_struct(),0,id_map_filename);
     // Initialize IO for silo
@@ -714,10 +714,12 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
+void runAnalysis::run( std::shared_ptr<Database> db, TwoPhase& Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
+    
+    int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );
@@ -882,7 +884,7 @@ void runAnalysis::run( int timestep, TwoPhase& Averages, const double *Phi,
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::basic( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 

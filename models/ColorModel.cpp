@@ -542,7 +542,7 @@ void ScaLBL_ColorModel::Run(){
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, beta, Map );
+	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -624,7 +624,9 @@ void ScaLBL_ColorModel::Run(){
 	       
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		analysis.basic( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		
+		analysis_db->putScalar<int>("timestep",timestep);
+		analysis.basic( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
 			printf("....inlet pressure=%f \n",din);
