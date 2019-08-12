@@ -37,6 +37,7 @@ int main(int argc, char **argv)
     // write a simple database and test that it can be read by LBPM
     auto db = std::make_shared<Database>( );
     db->putScalar<int>( "BC", BC );
+    db->putScalar<int>( "BC", BC );
     db->putVector<int>( "nproc", { npx, npy, npz } );
     db->putVector<int>( "n", { nx, ny, nz } );
     db->putVector<std::string>( "Files", List);
