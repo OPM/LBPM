@@ -112,9 +112,9 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny);
+		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.V, gwc.A, gwc.H, gwc.X);
 		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
