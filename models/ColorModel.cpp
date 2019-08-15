@@ -478,6 +478,27 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "default" );
+	if (protocol == "image sequence"){
+		// Get the list of images
+		//USE_DIRECT = true;
+	}
+	else if (protocol == "seed water"){
+		morph_delta = 0.05;
+		seed_water = 0.01;
+		USE_SEED = true;
+		USE_MORPH = true;
+	}
+	else if (protocol == "open connected oil"){
+		morph_delta = 0.05;
+		USE_MORPH = true;
+		USE_MORPHOPEN_OIL = true;
+	}
+	else if (protocol == "shell aggregation"){
+		morph_delta = 0.05;
+		USE_MORPH = true;
+	}  
+	
 	if (color_db->keyExists( "residual_endpoint_threshold" )){
 		RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "residual_endpoint_threshold" );
 	}
@@ -526,18 +547,50 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
+
 	if (rank==0){
 		printf("********************************************************\n");
+		if (protocol == "image sequence"){
+			printf("  using protocol = image sequence \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+		}
+		else if (protocol == "seed water"){
+			printf("  using protocol =  seed water \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+			printf("     seed_water = %f \n",seed_water);
+
+		}
+		else if (protocol == "open connected oil"){
+			printf("  using protocol = open connected oil \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+		}
+		else if (protocol == "shell aggregation"){
+			printf("  using protocol = shell aggregation \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+		}  
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
 	}
+
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-		
+
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
@@ -765,7 +818,7 @@ void ScaLBL_ColorModel::Run(){
 					MorphOpenConnected(delta_volume_target);
 				}
 				else {
-					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
+					if (rank==0) printf("*** with target volume change %f ***\n", delta_volume_target);
 					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
 					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
 				}

@@ -887,6 +887,7 @@ void runAnalysis::run( std::shared_ptr<Database> db, TwoPhase& Averages, const d
 void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
+    int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );
