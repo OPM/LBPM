@@ -107,6 +107,7 @@ private:
 
 public: // Public variables (need to create accessors instead)
 
+    std::shared_ptr<Database> database;
     double Lx,Ly,Lz,Volume,voxel_length;
     int Nx,Ny,Nz,N;
     int inlet_layers_x, inlet_layers_y, inlet_layers_z;
@@ -175,7 +176,7 @@ public: // Public variables (need to create accessors instead)
     signed char *id;
 
     void ReadIDs();
-    void Decomp(std::shared_ptr<Database> domain_db);
+    void Decomp(std::string Filename);
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();

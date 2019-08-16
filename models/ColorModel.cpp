@@ -152,18 +152,18 @@ void ScaLBL_ColorModel::SetDomain(){
 
 void ScaLBL_ColorModel::ReadInput(){
 	
-	if (domain_db->keyExists( "Filename" )){
-		Mask->Decomp(domain_db);
-	}
-	else{
-		size_t readID;
-		Mask->ReadIDs();
-	}
-	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
-
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+	
+	if (domain_db->keyExists( "Filename" )){
+		auto Filename = domain_db->getScalar<std::string>( "Filename" );
+		Mask->Decomp(Filename);
+	}
+	else{
+		Mask->ReadIDs();
+	}
+	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 	
 	// Generate the signed distance map
 	// Initialize the domain and communication
@@ -878,6 +878,48 @@ void ScaLBL_ColorModel::Run(){
 	if (rank==0) printf("********************************************************\n");
 
 	// ************************************************************************
+}
+
+double ScaLBL_ColorModel::ImageInit(std::string Filename){
+	
+	bool suppress = false;
+	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename);
+	Mask->Decomp(Filename);
+	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
+	
+	double *PhaseLabel;
+	PhaseLabel = new double[N];
+	AssignComponentLabels(PhaseLabel);
+
+	// consistency check
+	double Count = 0.0;
+	double PoreCount = 0.0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double distance = Averages->SDs(i,j,k);
+				if (distance > 0.0){
+					if (id[Nx*Ny*k+Nx*j+i] == 2){
+						PoreCount++;
+						Count++;
+					}
+					else if (id[Nx*Ny*k+Nx*j+i] == 1){
+						PoreCount++;						
+					}
+					else if (suppress == false){
+						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
+						suppress = true;
+					}
+				}
+			}
+		}
+	}
+	Count=sumReduce( Dm->Comm, Count);
+	PoreCount=sumReduce( Dm->Comm, PoreCount);
+	
+	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
+	MPI_Barrier(comm);
+
 }
 
 double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
