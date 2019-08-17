@@ -890,6 +890,7 @@ void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const
     int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
+    int timestep = db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
     if ( type == AnalysisType::AnalyzeNone )
         return;
