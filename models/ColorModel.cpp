@@ -453,6 +453,9 @@ void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
+	
+	int IMAGE_INDEX = 0;
+	std::vector<std::string> ImageList;
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
@@ -481,7 +484,9 @@ void ScaLBL_ColorModel::Run(){
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "default" );
 	if (protocol == "image sequence"){
 		// Get the list of images
-		//USE_DIRECT = true;
+		USE_DIRECT = true;
+		ImageList = color_db->getVector<std::string>( "image_sequence");
+		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
@@ -521,10 +526,6 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
-		USE_MORPH = true;
-	}
-	if (analysis_db->keyExists( "use_direct" )){
-		USE_DIRECT = analysis_db->getScalar<bool>( "use_direct" );
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "use_morphopen_oil" )){
@@ -797,14 +798,10 @@ void ScaLBL_ColorModel::Run(){
 			if (MORPH_ADAPT ){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (USE_DIRECT){
-					delta_volume = volA*Dm->Volume - initial_volume;
-					BoundaryCondition = 4;
-					flux = morph_delta*5.796*alpha*capillary_number/(fabs(morph_delta)*muA*Dm->Lz);
-					Fx = Fy = Fz = 0.0; 
-					ScaLBL_Comm->BoundaryCondition = 4;
-					ScaLBL_Comm_Regular->BoundaryCondition = 4;
-
-					if (rank==0) printf("***Direct simulation with flux(A) %f, volume change %f / %f ***\n",flux, delta_volume, delta_volume_target);
+					// Use image sequence
+					std::string next_image = ImageList[IMAGE_INDEX];
+					if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
+					IMAGE_INDEX++;
 				}
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
@@ -814,11 +811,11 @@ void ScaLBL_ColorModel::Run(){
 				}
 				else if (USE_MORPHOPEN_OIL){
 					delta_volume = volA*Dm->Volume - initial_volume;
-					if (rank==0) printf("***Morphological opening of connected oil, with target volume change %f ***\n", delta_volume_target);
+					if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
 					MorphOpenConnected(delta_volume_target);
 				}
 				else {
-					if (rank==0) printf("*** with target volume change %f ***\n", delta_volume_target);
+					if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
 					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
 					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
 				}
@@ -829,12 +826,12 @@ void ScaLBL_ColorModel::Run(){
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
 					if (USE_DIRECT){
-						BoundaryCondition = 0;
-						ScaLBL_Comm->BoundaryCondition = 0;
-						ScaLBL_Comm_Regular->BoundaryCondition = 0;
-						Fx = capillary_number*dir_x*force_mag / Ca;
-						Fy = capillary_number*dir_y*force_mag / Ca;
-						Fz = capillary_number*dir_z*force_mag / Ca;
+						//BoundaryCondition = 0;
+						//ScaLBL_Comm->BoundaryCondition = 0;
+						//ScaLBL_Comm_Regular->BoundaryCondition = 0;
+						//Fx = capillary_number*dir_x*force_mag / Ca;
+						//Fy = capillary_number*dir_y*force_mag / Ca;
+						//Fz = capillary_number*dir_z*force_mag / Ca;
 					}
 				}
 				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
