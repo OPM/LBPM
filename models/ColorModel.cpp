@@ -455,6 +455,7 @@ void ScaLBL_ColorModel::Run(){
 	
 	
 	int IMAGE_INDEX = 0;
+	int IMAGE_COUNT = 0;
 	std::vector<std::string> ImageList;
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
@@ -487,6 +488,7 @@ void ScaLBL_ColorModel::Run(){
 		USE_DIRECT = true;
 		ImageList = color_db->getVector<std::string>( "image_sequence");
 		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		IMAGE_COUNT = ImageList.size();
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
@@ -800,9 +802,15 @@ void ScaLBL_ColorModel::Run(){
 				if (USE_DIRECT){
 					// Use image sequence
 					std::string next_image = ImageList[IMAGE_INDEX];
-					if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
-					ImageInit(next_image);
-					IMAGE_INDEX++;
+					if (IMAGE_INDEX < IMAGE_COUNT){
+						if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
+						ImageInit(next_image);
+						IMAGE_INDEX++;
+					}
+					else{
+						if (rank==0) printf("Finished simulating image sequence \n");
+						timestep = timestepMax;
+					}
 				}
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
