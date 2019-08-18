@@ -801,6 +801,7 @@ void ScaLBL_ColorModel::Run(){
 					// Use image sequence
 					std::string next_image = ImageList[IMAGE_INDEX];
 					if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
+					ImageInit(next_image);
 					IMAGE_INDEX++;
 				}
 				else if (USE_SEED){
