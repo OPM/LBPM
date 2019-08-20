@@ -934,6 +934,10 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 	MPI_Barrier(comm);
+	
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	MPI_Barrier(comm);
 
 }
 
