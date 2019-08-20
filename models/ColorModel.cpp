@@ -920,7 +920,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 					else if (id[Nx*Ny*k+Nx*j+i] == 1){
 						PoreCount++;						
 					}
-					else (suppress == false){
+					else if (suppress == false){
 						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
 						suppress = true;
 					}
