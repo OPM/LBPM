@@ -558,7 +558,8 @@ void ScaLBL_ColorModel::Run(){
 			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
-			printf("     morph_delta = %f \n",morph_delta);
+			std::string first_image = ImageList[IMAGE_INDEX];
+
 		}
 		else if (protocol == "seed water"){
 			printf("  using protocol =  seed water \n");
@@ -803,7 +804,7 @@ void ScaLBL_ColorModel::Run(){
 					// Use image sequence
 					std::string next_image = ImageList[IMAGE_INDEX];
 					if (IMAGE_INDEX < IMAGE_COUNT){
-						if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
+						if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", IMAGE_INDEX, next_image);
 						ImageInit(next_image);
 						IMAGE_INDEX++;
 					}
