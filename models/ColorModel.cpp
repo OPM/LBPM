@@ -559,7 +559,7 @@ void ScaLBL_ColorModel::Run(){
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
 			std::string first_image = ImageList[IMAGE_INDEX];
-
+			printf("  first image in sequence: %s ***\n", next_image);
 		}
 		else if (protocol == "seed water"){
 			printf("  using protocol =  seed water \n");
