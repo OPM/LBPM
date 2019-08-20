@@ -497,6 +497,7 @@ void ScaLBL_ColorModel::Run(){
 		ImageList = color_db->getVector<std::string>( "image_sequence");
 		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
 		IMAGE_COUNT = ImageList.size();
+		IMAGE_INDEX++; // first image is already loaded as initial condition
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
@@ -567,7 +568,7 @@ void ScaLBL_ColorModel::Run(){
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
 			std::string first_image = ImageList[IMAGE_INDEX];
-			printf("  first image in sequence: %s ***\n", first_image.c_str());
+			printf("     first image in sequence: %s ***\n", first_image.c_str());
 		}
 		else if (protocol == "seed water"){
 			printf("  using protocol =  seed water \n");
