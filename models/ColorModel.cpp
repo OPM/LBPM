@@ -162,6 +162,7 @@ void ScaLBL_ColorModel::ReadInput(){
 		int IMAGE_COUNT = ImageList.size();
 		std::string first_image = ImageList[IMAGE_INDEX];
 		Mask->Decomp(first_image);
+		IMAGE_INDEX++;
 	}
 	else if (color_db->keyExists( "Filename" )){
 		auto Filename = domain_db->getScalar<std::string>( "Filename" );
