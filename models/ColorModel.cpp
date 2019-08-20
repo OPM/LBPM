@@ -803,7 +803,7 @@ void ScaLBL_ColorModel::Run(){
 					// Use image sequence
 					std::string next_image = ImageList[IMAGE_INDEX];
 					if (IMAGE_INDEX < IMAGE_COUNT){
-						if (rank==0) printf("***Loading next image in sequence (%i): %s ***\n", next_image);
+						if (rank==0) printf("***Loading next image in sequence (%i) ***\n");
 						ImageInit(next_image);
 						IMAGE_INDEX++;
 					}
@@ -889,7 +889,7 @@ void ScaLBL_ColorModel::Run(){
 double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	
 	bool suppress = false;
-	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename);
+	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 	
