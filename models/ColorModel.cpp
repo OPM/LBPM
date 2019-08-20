@@ -156,7 +156,14 @@ void ScaLBL_ColorModel::ReadInput(){
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 	
-	if (domain_db->keyExists( "Filename" )){
+	if (color_db->keyExists( "image_sequence" )){
+		auto ImageList = color_db->getVector<std::string>( "image_sequence");
+		int IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		int IMAGE_COUNT = ImageList.size();
+		std::string first_image = ImageList[IMAGE_INDEX];
+		Mask->Decomp(first_image);
+	}
+	else if (color_db->keyExists( "Filename" )){
 		auto Filename = domain_db->getScalar<std::string>( "Filename" );
 		Mask->Decomp(Filename);
 	}
@@ -895,7 +902,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 	
 	double *PhaseLabel;
-	PhaseLabel = new double[N];
+	PhaseLabel = new double[Nx*Ny*Nz];
 	AssignComponentLabels(PhaseLabel);
 
 	// consistency check
@@ -913,7 +920,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 					else if (id[Nx*Ny*k+Nx*j+i] == 1){
 						PoreCount++;						
 					}
-					else if (suppress == false){
+					else (suppress == false){
 						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
 						suppress = true;
 					}
@@ -924,6 +931,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
+	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 	MPI_Barrier(comm);
 
