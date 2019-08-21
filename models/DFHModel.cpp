@@ -492,7 +492,7 @@ void ScaLBL_DFHModel::Run(){
 
 	bool Regular = true;
 	PROFILE_START("Loop");
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, beta, Map );
+	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
@@ -573,7 +573,7 @@ void ScaLBL_DFHModel::Run(){
 		PROFILE_STOP("Update");
 
 		// Run the analysis
-		analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.run( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");

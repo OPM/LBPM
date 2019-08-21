@@ -42,7 +42,7 @@ static inline void fgetl( char * str, int num, FILE * stream )
  ********************************************************/
 Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
                double lx, double ly, double lz, int BC):
-	Nx(0), Ny(0), Nz(0), 
+	database(NULL), Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0), voxel_length(1),
 	Comm(MPI_COMM_WORLD),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
@@ -88,7 +88,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
     initialize( db );
 }
 Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
-	Nx(0), Ny(0), Nz(0), 
+	database(db), Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	Comm(MPI_COMM_NULL),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
@@ -241,7 +241,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	INSIST(nprocs == nproc[0]*nproc[1]*nproc[2],"Fatal error in processor count!");
 }
 
-void Domain::Decomp(std::shared_ptr<Database> domain_db )
+void Domain::Decomp(std::string Filename)
 {
 	//.......................................................................
 	// Reading the domain information file
@@ -266,38 +266,38 @@ void Domain::Decomp(std::shared_ptr<Database> domain_db )
 	checkerSize = 32;
 
 	// Read domain parameters
-	auto Filename = domain_db->getScalar<std::string>( "Filename" );
-	//auto L = domain_db->getVector<double>( "L" );
-	auto size = domain_db->getVector<int>( "n" );
-	auto SIZE = domain_db->getVector<int>( "N" );
-	auto nproc = domain_db->getVector<int>( "nproc" );
-	if (domain_db->keyExists( "offset" )){
-		auto offset = domain_db->getVector<int>( "offset" );
+	//auto Filename = database->getScalar<std::string>( "Filename" );
+	//auto L = database->getVector<double>( "L" );
+	auto size = database->getVector<int>( "n" );
+	auto SIZE = database->getVector<int>( "N" );
+	auto nproc = database->getVector<int>( "nproc" );
+	if (database->keyExists( "offset" )){
+		auto offset = database->getVector<int>( "offset" );
 		xStart = offset[0];
 		yStart = offset[1];
 		zStart = offset[2];
 	}
-	if (domain_db->keyExists( "InletLayers" )){
-		auto InletCount = domain_db->getVector<int>( "InletLayers" );
+	if (database->keyExists( "InletLayers" )){
+		auto InletCount = database->getVector<int>( "InletLayers" );
 		inlet_layers_x = InletCount[0];
 		inlet_layers_y = InletCount[1];
 		inlet_layers_z = InletCount[2];
 	}
-	if (domain_db->keyExists( "OutletLayers" )){
-		auto OutletCount = domain_db->getVector<int>( "OutletLayers" );
+	if (database->keyExists( "OutletLayers" )){
+		auto OutletCount = database->getVector<int>( "OutletLayers" );
 		outlet_layers_x = OutletCount[0];
 		outlet_layers_y = OutletCount[1];
 		outlet_layers_z = OutletCount[2];
 	}
-	if (domain_db->keyExists( "checkerSize" )){
-		checkerSize = domain_db->getScalar<int>( "checkerSize" );
+	if (database->keyExists( "checkerSize" )){
+		checkerSize = database->getScalar<int>( "checkerSize" );
 	}
 	else {
 		checkerSize = SIZE[0];
 	}
-	auto ReadValues = domain_db->getVector<int>( "ReadValues" );
-	auto WriteValues = domain_db->getVector<int>( "WriteValues" );
-	auto ReadType = domain_db->getScalar<std::string>( "ReadType" );
+	auto ReadValues = database->getVector<int>( "ReadValues" );
+	auto WriteValues = database->getVector<int>( "WriteValues" );
+	auto ReadType = database->getScalar<std::string>( "ReadType" );
 	
 	if (ReadType == "8bit"){
 	}

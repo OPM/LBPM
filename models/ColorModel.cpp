@@ -167,18 +167,26 @@ void ScaLBL_ColorModel::SetDomain(){
 
 void ScaLBL_ColorModel::ReadInput(){
 	
-	if (domain_db->keyExists( "Filename" )){
-		Mask->Decomp(domain_db);
-	}
-	else{
-		size_t readID;
-		Mask->ReadIDs();
-	}
-	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
-
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
 	sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+	
+	if (color_db->keyExists( "image_sequence" )){
+		auto ImageList = color_db->getVector<std::string>( "image_sequence");
+		int IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		int IMAGE_COUNT = ImageList.size();
+		std::string first_image = ImageList[IMAGE_INDEX];
+		Mask->Decomp(first_image);
+		IMAGE_INDEX++;
+	}
+	else if (color_db->keyExists( "Filename" )){
+		auto Filename = domain_db->getScalar<std::string>( "Filename" );
+		Mask->Decomp(Filename);
+	}
+	else{
+		Mask->ReadIDs();
+	}
+	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 	
 	// Generate the signed distance map
 	// Initialize the domain and communication
@@ -468,6 +476,10 @@ void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
+	
+	int IMAGE_INDEX = 0;
+	int IMAGE_COUNT = 0;
+	std::vector<std::string> ImageList;
 	bool SET_CAPILLARY_NUMBER = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
@@ -493,6 +505,31 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "default" );
+	if (protocol == "image sequence"){
+		// Get the list of images
+		USE_DIRECT = true;
+		ImageList = color_db->getVector<std::string>( "image_sequence");
+		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		IMAGE_COUNT = ImageList.size();
+		IMAGE_INDEX++; // first image is already loaded as initial condition
+	}
+	else if (protocol == "seed water"){
+		morph_delta = 0.05;
+		seed_water = 0.01;
+		USE_SEED = true;
+		USE_MORPH = true;
+	}
+	else if (protocol == "open connected oil"){
+		morph_delta = 0.05;
+		USE_MORPH = true;
+		USE_MORPHOPEN_OIL = true;
+	}
+	else if (protocol == "shell aggregation"){
+		morph_delta = 0.05;
+		USE_MORPH = true;
+	}  
+	
 	if (color_db->keyExists( "residual_endpoint_threshold" )){
 		RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "residual_endpoint_threshold" );
 	}
@@ -517,10 +554,6 @@ void ScaLBL_ColorModel::Run(){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
 		USE_MORPH = true;
 	}
-	if (analysis_db->keyExists( "use_direct" )){
-		USE_DIRECT = analysis_db->getScalar<bool>( "use_direct" );
-		USE_MORPH = true;
-	}
 	if (analysis_db->keyExists( "use_morphopen_oil" )){
 		USE_MORPHOPEN_OIL = analysis_db->getScalar<bool>( "use_morphopen_oil" );
 		if (rank == 0 && USE_MORPHOPEN_OIL) printf("Volume change by morphological opening \n");
@@ -541,23 +574,56 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
+
 	if (rank==0){
 		printf("********************************************************\n");
+		if (protocol == "image sequence"){
+			printf("  using protocol = image sequence \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			std::string first_image = ImageList[IMAGE_INDEX];
+			printf("     first image in sequence: %s ***\n", first_image.c_str());
+		}
+		else if (protocol == "seed water"){
+			printf("  using protocol =  seed water \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+			printf("     seed_water = %f \n",seed_water);
+
+		}
+		else if (protocol == "open connected oil"){
+			printf("  using protocol = open connected oil \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+		}
+		else if (protocol == "shell aggregation"){
+			printf("  using protocol = shell aggregation \n");
+			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
+			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
+			printf("     tolerance = %f \n",tolerance);
+			printf("     morph_delta = %f \n",morph_delta);
+		}  
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
 	}
+
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
-		
+
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, beta, Map );
+	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -639,7 +705,9 @@ void ScaLBL_ColorModel::Run(){
 	       
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		analysis.basic( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		
+		analysis_db->putScalar<int>("timestep",timestep);
+		analysis.basic( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
 			printf("....inlet pressure=%f \n",din);
@@ -757,14 +825,17 @@ void ScaLBL_ColorModel::Run(){
 			if (MORPH_ADAPT ){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (USE_DIRECT){
-					delta_volume = volA*Dm->Volume - initial_volume;
-					BoundaryCondition = 4;
-					flux = morph_delta*5.796*alpha*capillary_number/(fabs(morph_delta)*muA*Dm->Lz);
-					Fx = Fy = Fz = 0.0; 
-					ScaLBL_Comm->BoundaryCondition = 4;
-					ScaLBL_Comm_Regular->BoundaryCondition = 4;
-
-					if (rank==0) printf("***Direct simulation with flux(A) %f, volume change %f / %f ***\n",flux, delta_volume, delta_volume_target);
+					// Use image sequence
+					std::string next_image = ImageList[IMAGE_INDEX];
+					if (IMAGE_INDEX < IMAGE_COUNT){
+						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						ImageInit(next_image);
+						IMAGE_INDEX++;
+					}
+					else{
+						if (rank==0) printf("Finished simulating image sequence \n");
+						timestep = timestepMax;
+					}
 				}
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
@@ -774,11 +845,11 @@ void ScaLBL_ColorModel::Run(){
 				}
 				else if (USE_MORPHOPEN_OIL){
 					delta_volume = volA*Dm->Volume - initial_volume;
-					if (rank==0) printf("***Morphological opening of connected oil, with target volume change %f ***\n", delta_volume_target);
+					if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
 					MorphOpenConnected(delta_volume_target);
 				}
 				else {
-					if (rank==0) printf("***Morphological step with target volume change %f ***\n", delta_volume_target);
+					if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
 					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
 					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
 				}
@@ -789,12 +860,12 @@ void ScaLBL_ColorModel::Run(){
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
 					if (USE_DIRECT){
-						BoundaryCondition = 0;
-						ScaLBL_Comm->BoundaryCondition = 0;
-						ScaLBL_Comm_Regular->BoundaryCondition = 0;
-						Fx = capillary_number*dir_x*force_mag / Ca;
-						Fy = capillary_number*dir_y*force_mag / Ca;
-						Fz = capillary_number*dir_z*force_mag / Ca;
+						//BoundaryCondition = 0;
+						//ScaLBL_Comm->BoundaryCondition = 0;
+						//ScaLBL_Comm_Regular->BoundaryCondition = 0;
+						//Fx = capillary_number*dir_x*force_mag / Ca;
+						//Fy = capillary_number*dir_y*force_mag / Ca;
+						//Fz = capillary_number*dir_z*force_mag / Ca;
 					}
 				}
 				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
@@ -838,6 +909,57 @@ void ScaLBL_ColorModel::Run(){
 	if (rank==0) printf("********************************************************\n");
 
 	// ************************************************************************
+}
+
+double ScaLBL_ColorModel::ImageInit(std::string Filename){
+	
+	bool suppress = false;
+	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
+	Mask->Decomp(Filename);
+	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
+	
+	double *PhaseLabel;
+	PhaseLabel = new double[Nx*Ny*Nz];
+	AssignComponentLabels(PhaseLabel);
+
+	// consistency check
+	double Count = 0.0;
+	double PoreCount = 0.0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double distance = Averages->SDs(i,j,k);
+				if (distance > 0.0){
+					if (id[Nx*Ny*k+Nx*j+i] == 2){
+						PoreCount++;
+						Count++;
+					}
+					else if (id[Nx*Ny*k+Nx*j+i] == 1){
+						PoreCount++;						
+					}
+/*					else if (suppress == false){
+						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
+						suppress = true;
+					}
+					*/
+				}
+			}
+		}
+	}
+	Count=sumReduce( Dm->Comm, Count);
+	PoreCount=sumReduce( Dm->Comm, PoreCount);
+	
+	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
+	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
+	MPI_Barrier(comm);
+	
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	MPI_Barrier(comm);
+	
+	double saturation = Count/PoreCount;
+	return saturation;
+
 }
 
 double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){

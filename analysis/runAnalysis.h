@@ -40,16 +40,16 @@ public:
 
     //! Constructor
     runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
-    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool Regular, double beta, IntArray Map );
+    		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool Regular, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
 
     //! Run the next analysis
-    void run( int timestep, TwoPhase &Averages, const double *Phi,
+    void run( std::shared_ptr<Database> db,  TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
     
-    void basic( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
+    void basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
     void WriteVisData( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den);
 
     //! Finish all active analysis
