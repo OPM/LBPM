@@ -922,10 +922,11 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 					else if (id[Nx*Ny*k+Nx*j+i] == 1){
 						PoreCount++;						
 					}
-					else if (suppress == false){
+/*					else if (suppress == false){
 						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
 						suppress = true;
 					}
+					*/
 				}
 			}
 		}
@@ -934,12 +935,15 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
 	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
-	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
+	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(comm);
 	
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(comm);
+	
+	double saturation = Count/PoreCount;
+	return saturation;
 
 }
 
