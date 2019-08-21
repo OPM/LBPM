@@ -521,6 +521,9 @@ void ScaLBL_ColorModel::Run(){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
 	}
+	if (color_db->keyExists( "timestep" )){
+		timestep = color_db->getScalar<int>( "timestep" );
+	}
 	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
 		SET_CAPILLARY_NUMBER=false;
@@ -607,7 +610,8 @@ void ScaLBL_ColorModel::Run(){
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
+	auto current_db = db->cloneDatabase();
+	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -690,8 +694,9 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		analysis_db->putScalar<int>("timestep",timestep);
-		analysis.basic( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+		color_db->putScalar<int>("timestep",timestep);
+		current_db->putDatabase("Color", color_db);
+		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
 			printf("....inlet pressure=%f \n",din);
@@ -793,6 +798,7 @@ void ScaLBL_ColorModel::Run(){
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+						color_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
 					CURRENT_STEADY_TIMESTEPS = 0;
 				}
@@ -815,6 +821,7 @@ void ScaLBL_ColorModel::Run(){
 					if (IMAGE_INDEX < IMAGE_COUNT){
 						std::string next_image = ImageList[IMAGE_INDEX];
 						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						color_db->putScalar<int>("image_index",IMAGE_INDEX);
 						ImageInit(next_image);
 					}
 					else{
