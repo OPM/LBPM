@@ -240,7 +240,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 						AFFINITY=AffinityList[idx];
 						label_count[idx] += 1.0;
 						idx = NLABELS;
-						Mask->id[n] = 0; // set mask to zero since this is an immobile component
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
 				// fluid labels are reserved
