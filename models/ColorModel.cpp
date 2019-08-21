@@ -497,6 +497,8 @@ void ScaLBL_ColorModel::Run(){
 		ImageList = color_db->getVector<std::string>( "image_sequence");
 		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
 		IMAGE_COUNT = ImageList.size();
+		morph_interval = 10000;
+		USE_MORPH = true;
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
