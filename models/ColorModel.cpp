@@ -250,9 +250,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			}
 		}
 	}
+
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
-
+	
 	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
