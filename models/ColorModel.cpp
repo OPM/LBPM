@@ -476,7 +476,6 @@ void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
-	
 	int IMAGE_INDEX = 0;
 	int IMAGE_COUNT = 0;
 	std::vector<std::string> ImageList;
@@ -512,7 +511,6 @@ void ScaLBL_ColorModel::Run(){
 		ImageList = color_db->getVector<std::string>( "image_sequence");
 		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
 		IMAGE_COUNT = ImageList.size();
-		IMAGE_INDEX++; // first image is already loaded as initial condition
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
@@ -826,11 +824,12 @@ void ScaLBL_ColorModel::Run(){
 				CURRENT_MORPH_TIMESTEPS += analysis_interval;
 				if (USE_DIRECT){
 					// Use image sequence
-					std::string next_image = ImageList[IMAGE_INDEX];
+					IMAGE_INDEX++;
+					MORPH_ADAPT = false;
 					if (IMAGE_INDEX < IMAGE_COUNT){
+						std::string next_image = ImageList[IMAGE_INDEX];
 						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
 						ImageInit(next_image);
-						IMAGE_INDEX++;
 					}
 					else{
 						if (rank==0) printf("Finished simulating image sequence \n");
