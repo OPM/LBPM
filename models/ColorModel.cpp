@@ -933,7 +933,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 						PoreCount++;						
 					}
 					else if (suppress == false){
-						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n      (%i, %i, %i)",rank, i,j,k);
+						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n      (%i, %i, %i) \n",rank, i,j,k);
 						suppress = true;
 					}
 					
