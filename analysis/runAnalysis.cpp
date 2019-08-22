@@ -859,9 +859,6 @@ void runAnalysis::run( std::shared_ptr<Database> input_db, TwoPhase& Averages, c
     if (timestep%d_restart_interval==0){
 
     	if (d_rank==0) {
-    		FILE *Rst = fopen("Restart.txt","w");
-    		fprintf(Rst,"%i\n",timestep+4);
-    		fclose(Rst);
     		input_db->putScalar<bool>( "Restart", true );
     		std::ofstream OutStream("Restart.db");
     		input_db->print(OutStream, "");
@@ -966,9 +963,6 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
 
     	if (d_rank==0) {
-    		FILE *Rst = fopen("Restart.txt","w");
-    		fprintf(Rst,"%i\n",timestep+4);
-    		fclose(Rst);    		
     		color_db->putScalar<bool>( "Restart", true );
     		input_db->putDatabase("Color", color_db);
     		std::ofstream OutStream("Restart.db");

@@ -373,17 +373,8 @@ void ScaLBL_ColorModel::Initialize(){
 	if (Restart == true){
 		if (rank==0){
 			printf("Reading restart file! \n");
-			ifstream restart("Restart.txt");
-			if (restart.is_open()){
-				restart  >> timestep;
-				printf("Restarting from timestep =%i \n",timestep);
-			}
-			else{
-				printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-				timestep=0;
-			}
 		}
-		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+
 		// Read in the restart file to CPU buffers
 		int *TmpMap;
 		TmpMap = new int[Np];
