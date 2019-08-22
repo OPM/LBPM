@@ -765,8 +765,8 @@ void ScaLBL_ColorModel::Run(){
 						double vBc_x = Averages->gwc.Px/Averages->gwb.M; 
 						double vBc_y = Averages->gwc.Py/Averages->gwb.M; 
 						double vBc_z = Averages->gwc.Pz/Averages->gwb.M;
-						double flow_rate_A_connected = volA*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
-						double flow_rate_B_connected = volB*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double flow_rate_A_connected = gnc.V*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+						double flow_rate_B_connected = gwc.V*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
 						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
 						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
 						double pAc = Averages->gnc.p;
