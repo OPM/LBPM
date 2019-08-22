@@ -917,34 +917,26 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	PhaseLabel = new double[Nx*Ny*Nz];
 	AssignComponentLabels(PhaseLabel);
 
-	// consistency check
 	double Count = 0.0;
 	double PoreCount = 0.0;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				double distance = Averages->SDs(i,j,k);
-				if (distance > 0.0){
-					if (id[Nx*Ny*k+Nx*j+i] == 2){
-						PoreCount++;
-						Count++;
-					}
-					else if (id[Nx*Ny*k+Nx*j+i] == 1){
-						PoreCount++;						
-					}
-					else if (suppress == false){
-						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n      (%i, %i, %i) \n",rank, i,j,k);
-						suppress = true;
-					}
-					
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				if (id[Nx*Ny*k+Nx*j+i] == 2){
+					PoreCount++;
+					Count++;
+				}
+				else if (id[Nx*Ny*k+Nx*j+i] == 1){
+					PoreCount++;						
 				}
 			}
 		}
 	}
+
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
-	if (rank==0) printf("   new saturation: %f (%i / %i) \n", Count / PoreCount, Count, PoreCount);
+	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(comm);
 	
@@ -953,7 +945,14 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(comm);
 	
-	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
+	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
+	
+	FILE *OUTFILE;
+	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,OUTFILE);
+	fclose(OUTFILE);
+	
 	double saturation = Count/PoreCount;
 	return saturation;
 
