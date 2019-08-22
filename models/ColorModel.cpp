@@ -758,6 +758,20 @@ void ScaLBL_ColorModel::Run(){
 						double pAB = (pA-pB)/(h*5.796*alpha);
 						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 						double Mobility = muA/muB;
+
+						double vAc_x = Averages->gnc.Px/Averages->gnb.M; 
+						double vAc_y = Averages->gnc.Py/Averages->gnb.M; 
+						double vAc_z = Averages->gnc.Pz/Averages->gnb.M; 
+						double vBc_x = Averages->gwc.Px/Averages->gwb.M; 
+						double vBc_y = Averages->gwc.Py/Averages->gwb.M; 
+						double vBc_z = Averages->gwc.Pz/Averages->gwb.M;
+						double flow_rate_A_connected = volA*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+						double flow_rate_B_connected = volB*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
+						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
+						double pAc = Averages->gnc.p;
+						double pBc = Averages->gwc.p;
+						double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
 						
 						bool WriteHeader=false;
 						FILE * kr_log_file = fopen("relperm.csv","r");
@@ -767,9 +781,9 @@ void ScaLBL_ColorModel::Run(){
 							WriteHeader=true;
 						kr_log_file = fopen("relperm.csv","a");
 						if (WriteHeader)
-							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water cap.pressure pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected cap.pressure cap.pressure.connected pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
