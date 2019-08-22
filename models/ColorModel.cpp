@@ -759,14 +759,16 @@ void ScaLBL_ColorModel::Run(){
 						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 						double Mobility = muA/muB;
 
+						double Vol_nc = gnc.V/Dm->Volume;
+						double Vol_wc = gwc.V/Dm->Volume;
 						double vAc_x = Averages->gnc.Px/Averages->gnb.M; 
 						double vAc_y = Averages->gnc.Py/Averages->gnb.M; 
 						double vAc_z = Averages->gnc.Pz/Averages->gnb.M; 
 						double vBc_x = Averages->gwc.Px/Averages->gwb.M; 
 						double vBc_y = Averages->gwc.Py/Averages->gwb.M; 
 						double vBc_z = Averages->gwc.Pz/Averages->gwb.M;
-						double flow_rate_A_connected = Averages->gnc.V*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
-						double flow_rate_B_connected = Averages->gwc.V*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double flow_rate_A_connected = Averages->Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+						double flow_rate_B_connected = Averages->Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
 						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
 						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
 						double pAc = Averages->gnc.p;
