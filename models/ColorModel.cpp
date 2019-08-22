@@ -944,7 +944,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
-	if (rank==0) printf("   new saturation: %f (%i / %i) \n", Count / PoreCount, Count, PoreCountsd);
+	if (rank==0) printf("   new saturation: %f (%i / %i) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(comm);
 	
