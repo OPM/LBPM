@@ -890,12 +890,12 @@ void runAnalysis::run( std::shared_ptr<Database> input_db, TwoPhase& Averages, c
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
     // Check which analysis steps we need to perform
-	auto color_db =  db->getDatabase( "Color" );
+	auto color_db =  input_db->getDatabase( "Color" );
 
     int timestep = color_db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
@@ -969,6 +969,12 @@ void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const
     		FILE *Rst = fopen("Restart.txt","w");
     		fprintf(Rst,"%i\n",timestep+4);
     		fclose(Rst);
+    		
+      		input_db->putScalar<bool>( "Restart", true );
+        		std::ofstream OutStream("Restart.db");
+        		input_db->print(OutStream, "");
+        		OutStream.close();
+        	}
     	}
     	// Write the restart file (using a seperate thread)
     	auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
