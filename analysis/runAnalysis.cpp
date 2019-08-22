@@ -970,11 +970,11 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     		fprintf(Rst,"%i\n",timestep+4);
     		fclose(Rst);
     		
-      		input_db->putScalar<bool>( "Restart", true );
-        		std::ofstream OutStream("Restart.db");
-        		input_db->print(OutStream, "");
-        		OutStream.close();
-        	}
+    		input_db->putScalar<bool>( "Restart", true );
+    		std::ofstream OutStream("Restart.db");
+    		input_db->print(OutStream, "");
+    		OutStream.close();
+  
     	}
     	// Write the restart file (using a seperate thread)
     	auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
