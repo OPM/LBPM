@@ -952,6 +952,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(comm);
 	
+	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 	double saturation = Count/PoreCount;
 	return saturation;
 
