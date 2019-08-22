@@ -911,7 +911,8 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
-	
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];  // save what was read
+
 	double *PhaseLabel;
 	PhaseLabel = new double[Nx*Ny*Nz];
 	AssignComponentLabels(PhaseLabel);
@@ -943,7 +944,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
-	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
+	if (rank==0) printf("   new saturation: %f (%i / %i) \n", Count / PoreCount, Count, PoreCountsd);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(comm);
 	
