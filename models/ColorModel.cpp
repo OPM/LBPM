@@ -950,7 +950,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	FILE *OUTFILE;
 	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
 	OUTFILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,OUTFILE);
+	fwrite(Averages->Phi.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
 	
 	double saturation = Count/PoreCount;
