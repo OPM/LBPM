@@ -946,13 +946,7 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	MPI_Barrier(comm);
 	
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
-	
-	FILE *OUTFILE;
-	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
-	OUTFILE = fopen(LocalRankFilename,"wb");
-	fwrite(Averages->Phi.data(),8,N,OUTFILE);
-	fclose(OUTFILE);
-	
+
 	double saturation = Count/PoreCount;
 	return saturation;
 
