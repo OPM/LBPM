@@ -750,31 +750,46 @@ void ScaLBL_ColorModel::Run(){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 						double h = Dm->voxel_length;		
-
+						// pressures
 						double pA = Averages->gnb.p;
 						double pB = Averages->gwb.p;
 						double pAc = Averages->gnc.p;
 						double pBc = Averages->gwc.p;
 						double pAB = (pA-pB)/(h*5.796*alpha);
 						double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
-
-						double kAeff = h*h*muA*flow_rate_A/(rhoA*force_mag);
-						double kBeff = h*h*muB*flow_rate_B/(rhoB*force_mag);
-						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
-						double Mobility = muA/muB;
-
+						// connected contribution
 						double Vol_nc = Averages->gnc.V/Dm->Volume;
 						double Vol_wc = Averages->gwc.V/Dm->Volume;
-						double vAc_x = Averages->gnc.Px/Averages->gnc.M; 
-						double vAc_y = Averages->gnc.Py/Averages->gnc.M; 
-						double vAc_z = Averages->gnc.Pz/Averages->gnc.M; 
-						double vBc_x = Averages->gwc.Px/Averages->gwc.M; 
-						double vBc_y = Averages->gwc.Py/Averages->gwc.M; 
-						double vBc_z = Averages->gwc.Pz/Averages->gwc.M;
+						double Vol_nd = Averages->gnd.V/Dm->Volume;
+						double Vol_wd = Averages->gwd.V/Dm->Volume;
+						double Mass_n = Averages->gnc.M + Averages->gnd.M;
+						double Mass_w = Averages->gwc.M + Averages->gwd.M;
+						double vAc_x = Averages->gnc.Px/Mass_n; 
+						double vAc_y = Averages->gnc.Py/Mass_n; 
+						double vAc_z = Averages->gnc.Pz/Mass_n; 
+						double vBc_x = Averages->gwc.Px/Mass_w; 
+						double vBc_y = Averages->gwc.Py/Mass_w; 
+						double vBc_z = Averages->gwc.Pz/Mass_w;
+						// disconnected contribution
+						double vAd_x = Averages->gnd.Px/Mass_n; 
+						double vAd_y = Averages->gnd.Py/Mass_n; 
+						double vAd_z = Averages->gnd.Pz/Mass_n; 
+						double vBd_x = Averages->gwd.Px/Mass_w; 
+						double vBd_y = Averages->gwd.Py/Mass_w; 
+						double vBd_z = Averages->gwd.Pz/Mass_w;
+						
 						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
 						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double flow_rate_A_disconnected = Vol_nd*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+						double flow_rate_B_disconnected = Vol_wd*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+						
 						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
 						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
+						
+						double kAeff = h*h*muA*(flow_rate_A_connected+flow_rate_A_disconnected)/(rhoA*force_mag);
+						double kBeff = h*h*muB*(flow_rate_B_connected+flow_rate_B_disconnected)/(rhoB*force_mag);
+						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
+						double Mobility = muA/muB;
 						
 						bool WriteHeader=false;
 						FILE * kr_log_file = fopen("relperm.csv","r");
