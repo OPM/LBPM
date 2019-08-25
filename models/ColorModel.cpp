@@ -129,21 +129,21 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	if (protocol == "seed water"){
 		if (BoundaryCondition != 0 ){
 			BoundaryCondition = 0;
-			if (rank==0) printf("WARNING: protocol (seed water) supports only full periodic boundary condition \n")
+			if (rank==0) printf("WARNING: protocol (seed water) supports only full periodic boundary condition \n");
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}
 	else if (protocol == "open connected oil"){
 		if (BoundaryCondition != 0 ){
 			BoundaryCondition = 0;
-			if (rank==0) printf("WARNING: protocol (open connected oil) supports only full periodic boundary condition \n")
+			if (rank==0) printf("WARNING: protocol (open connected oil) supports only full periodic boundary condition \n");
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}
 	else if (protocol == "shell aggregation"){
 		if (BoundaryCondition != 0 ){
 			BoundaryCondition = 0;
-			if (rank==0) printf("WARNING: protocol (shell aggregation) supports only full periodic boundary condition \n")
+			if (rank==0) printf("WARNING: protocol (shell aggregation) supports only full periodic boundary condition \n");
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}  
