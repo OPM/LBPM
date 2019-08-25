@@ -117,14 +117,38 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
+	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
-
+	
+	// Override user-specified boundary condition for specific protocols
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
+	if (protocol == "seed water"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (seed water) supports only full periodic boundary condition \n")
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "open connected oil"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (open connected oil) supports only full periodic boundary condition \n")
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "shell aggregation"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (shell aggregation) supports only full periodic boundary condition \n")
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}  
 }
+
 void ScaLBL_ColorModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
@@ -481,7 +505,7 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
-	auto protocol = color_db->getWithDefault<std::string>( "protocol", "default" );
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
 		// Get the list of images
 		USE_DIRECT = true;
