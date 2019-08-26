@@ -491,7 +491,7 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis(std::shared_ptr<Database> db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
         int Np, bool Regular, IntArray Map ):
             d_Np( Np ),
             d_regular ( Regular),
@@ -501,6 +501,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> db, const RankInfoStruct& ran
             d_ScaLBL_Comm( ScaLBL_Comm)
 {
 
+	auto db = input_db->getDatabase( "Analysis" );
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;
     ThreadPool::thread_id_t d_wait_analysis;
@@ -729,11 +730,12 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::run( std::shared_ptr<Database> db, TwoPhase& Averages, const double *Phi,
+void runAnalysis::run( std::shared_ptr<Database> input_db, TwoPhase& Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
     
+	auto db = input_db->getDatabase( "Analysis" );
     int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
@@ -871,12 +873,13 @@ void runAnalysis::run( std::shared_ptr<Database> db, TwoPhase& Averages, const d
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
 
-        if (d_rank==0) {
-            FILE *Rst = fopen("Restart.txt","w");
-            fprintf(Rst,"%i\n",timestep+4);
-            fclose(Rst);
-        }
-        // Write the restart file (using a seperate thread)
+    	if (d_rank==0) {
+    		input_db->putScalar<bool>( "Restart", true );
+    		std::ofstream OutStream("Restart.db");
+    		input_db->print(OutStream, "");
+    		OutStream.close();
+    	}
+    	// Write the restart file (using a seperate thread)
         auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
         work->add_dependency(d_wait_restart);
         d_wait_restart = d_tpool.add_work(work);
@@ -899,12 +902,14 @@ void runAnalysis::run( std::shared_ptr<Database> db, TwoPhase& Averages, const d
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
     // Check which analysis steps we need to perform
-    int timestep = db->getWithDefault<int>( "timestep", 0 );
+	auto color_db =  input_db->getDatabase( "Color" );
+
+    int timestep = color_db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
     if ( type == AnalysisType::AnalyzeNone )
         return;
@@ -973,9 +978,12 @@ void runAnalysis::basic( std::shared_ptr<Database> db, SubPhase &Averages, const
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
 
     	if (d_rank==0) {
-    		FILE *Rst = fopen("Restart.txt","w");
-    		fprintf(Rst,"%i\n",timestep+4);
-    		fclose(Rst);
+    		color_db->putScalar<bool>( "Restart", true );
+    		input_db->putDatabase("Color", color_db);
+    		std::ofstream OutStream("Restart.db");
+    		input_db->print(OutStream, "");
+    		OutStream.close();
+  
     	}
     	// Write the restart file (using a seperate thread)
     	auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);

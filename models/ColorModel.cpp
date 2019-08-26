@@ -132,14 +132,38 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
+	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
-
+	
+	// Override user-specified boundary condition for specific protocols
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
+	if (protocol == "seed water"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (seed water) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "open connected oil"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (open connected oil) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}
+	else if (protocol == "shell aggregation"){
+		if (BoundaryCondition != 0 ){
+			BoundaryCondition = 0;
+			if (rank==0) printf("WARNING: protocol (shell aggregation) supports only full periodic boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	}  
 }
+
 void ScaLBL_ColorModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
@@ -255,7 +279,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 						AFFINITY=AffinityList[idx];
 						label_count[idx] += 1.0;
 						idx = NLABELS;
-						Mask->id[n] = 0; // set mask to zero since this is an immobile component
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
 				// fluid labels are reserved
@@ -265,9 +289,10 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 			}
 		}
 	}
+
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
-
+	
 	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
@@ -387,17 +412,8 @@ void ScaLBL_ColorModel::Initialize(){
 	if (Restart == true){
 		if (rank==0){
 			printf("Reading restart file! \n");
-			ifstream restart("Restart.txt");
-			if (restart.is_open()){
-				restart  >> timestep;
-				printf("Restarting from timestep =%i \n",timestep);
-			}
-			else{
-				printf("WARNING:No Restart.txt file, setting timestep=0 \n");
-				timestep=0;
-			}
 		}
-		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+
 		// Read in the restart file to CPU buffers
 		int *TmpMap;
 		TmpMap = new int[Np];
@@ -504,13 +520,15 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	
-	auto protocol = color_db->getWithDefault<std::string>( "protocol", "default" );
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
 		// Get the list of images
 		USE_DIRECT = true;
 		ImageList = color_db->getVector<std::string>( "image_sequence");
 		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
 		IMAGE_COUNT = ImageList.size();
+		morph_interval = 10000;
+		USE_MORPH = true;
 	}
 	else if (protocol == "seed water"){
 		morph_delta = 0.05;
@@ -534,6 +552,9 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
+	}
+	if (color_db->keyExists( "timestep" )){
+		timestep = color_db->getScalar<int>( "timestep" );
 	}
 	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
 		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
@@ -621,7 +642,8 @@ void ScaLBL_ColorModel::Run(){
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
-	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
+	auto current_db = db->cloneDatabase();
+	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -704,8 +726,9 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
 		
-		analysis_db->putScalar<int>("timestep",timestep);
-		analysis.basic( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+		color_db->putScalar<int>("timestep",timestep);
+		current_db->putDatabase("Color", color_db);
+		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
 			printf("....inlet pressure=%f \n",din);
@@ -765,13 +788,45 @@ void ScaLBL_ColorModel::Run(){
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
 						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						double h = Dm->voxel_length;		
+						// pressures
 						double pA = Averages->gnb.p;
 						double pB = Averages->gwb.p;
-
-						double h = Dm->voxel_length;		
-						double kAeff = h*h*muA*flow_rate_A/(rhoA*force_mag);
-						double kBeff = h*h*muB*flow_rate_B/(rhoB*force_mag);
+						double pAc = Averages->gnc.p;
+						double pBc = Averages->gwc.p;
 						double pAB = (pA-pB)/(h*5.796*alpha);
+						double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
+						// connected contribution
+						double Vol_nc = Averages->gnc.V/Dm->Volume;
+						double Vol_wc = Averages->gwc.V/Dm->Volume;
+						double Vol_nd = Averages->gnd.V/Dm->Volume;
+						double Vol_wd = Averages->gwd.V/Dm->Volume;
+						double Mass_n = Averages->gnc.M + Averages->gnd.M;
+						double Mass_w = Averages->gwc.M + Averages->gwd.M;
+						double vAc_x = Averages->gnc.Px/Mass_n; 
+						double vAc_y = Averages->gnc.Py/Mass_n; 
+						double vAc_z = Averages->gnc.Pz/Mass_n; 
+						double vBc_x = Averages->gwc.Px/Mass_w; 
+						double vBc_y = Averages->gwc.Py/Mass_w; 
+						double vBc_z = Averages->gwc.Pz/Mass_w;
+						// disconnected contribution
+						double vAd_x = Averages->gnd.Px/Mass_n; 
+						double vAd_y = Averages->gnd.Py/Mass_n; 
+						double vAd_z = Averages->gnd.Pz/Mass_n; 
+						double vBd_x = Averages->gwd.Px/Mass_w; 
+						double vBd_y = Averages->gwd.Py/Mass_w; 
+						double vBd_z = Averages->gwd.Pz/Mass_w;
+						
+						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double flow_rate_A_disconnected = Vol_nd*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+						double flow_rate_B_disconnected = Vol_wd*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+						
+						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
+						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
+						
+						double kAeff = h*h*muA*(flow_rate_A_connected+flow_rate_A_disconnected)/(rhoA*force_mag);
+						double kBeff = h*h*muB*(flow_rate_B_connected+flow_rate_B_disconnected)/(rhoB*force_mag);
 						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 						double Mobility = muA/muB;
 						
@@ -783,9 +838,9 @@ void ScaLBL_ColorModel::Run(){
 							WriteHeader=true;
 						kr_log_file = fopen("relperm.csv","a");
 						if (WriteHeader)
-							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water cap.pressure pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected cap.pressure cap.pressure.connected pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
@@ -807,6 +862,7 @@ void ScaLBL_ColorModel::Run(){
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+						color_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
 					CURRENT_STEADY_TIMESTEPS = 0;
 				}
@@ -829,6 +885,7 @@ void ScaLBL_ColorModel::Run(){
 					if (IMAGE_INDEX < IMAGE_COUNT){
 						std::string next_image = ImageList[IMAGE_INDEX];
 						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						color_db->putScalar<int>("image_index",IMAGE_INDEX);
 						ImageInit(next_image);
 					}
 					else{
@@ -916,46 +973,42 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
-	
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];  // save what was read
+
 	double *PhaseLabel;
 	PhaseLabel = new double[Nx*Ny*Nz];
 	AssignComponentLabels(PhaseLabel);
 
-	// consistency check
 	double Count = 0.0;
 	double PoreCount = 0.0;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				double distance = Averages->SDs(i,j,k);
-				if (distance > 0.0){
-					if (id[Nx*Ny*k+Nx*j+i] == 2){
-						PoreCount++;
-						Count++;
-					}
-					else if (id[Nx*Ny*k+Nx*j+i] == 1){
-						PoreCount++;						
-					}
-/*					else if (suppress == false){
-						printf("WARNING (ScaLBLColorModel::ImageInit) image input file sequence may not be labeled correctly (rank=%i) \n",rank);
-						suppress = true;
-					}
-					*/
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				if (id[Nx*Ny*k+Nx*j+i] == 2){
+					PoreCount++;
+					Count++;
+				}
+				else if (id[Nx*Ny*k+Nx*j+i] == 1){
+					PoreCount++;						
 				}
 			}
 		}
 	}
+
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
 	
-	if (rank==0) printf("   new saturation: %f \n", Count / PoreCount);
+	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(comm);
 	
+	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(comm);
 	
+	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
+
 	double saturation = Count/PoreCount;
 	return saturation;
 
