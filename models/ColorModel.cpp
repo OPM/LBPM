@@ -807,11 +807,11 @@ void ScaLBL_ColorModel::Run(){
 						double flow_rate_A_disconnected = Vol_nd*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
 						double flow_rate_B_disconnected = Vol_wd*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
 						
-						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
-						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
+						double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+						double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
 						
-						double kAeff = h*h*muA*(flow_rate_A_connected+flow_rate_A_disconnected)/(rhoA*force_mag);
-						double kBeff = h*h*muB*(flow_rate_B_connected+flow_rate_B_disconnected)/(rhoB*force_mag);
+						double kAeff = h*h*muA*(flow_rate_A_connected+flow_rate_A_disconnected)/(force_mag);
+						double kBeff = h*h*muB*(flow_rate_B_connected+flow_rate_B_disconnected)/(force_mag);
 						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 						double Mobility = muA/muB;
 						
