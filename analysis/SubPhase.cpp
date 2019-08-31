@@ -630,6 +630,11 @@ void SubPhase::Full(){
 	giwn.Kw=sumReduce( Dm->Comm, iwn.Kw);
 	
 	// pressure averaging
+	gnc.p=sumReduce( Dm->Comm, nc.p);
+	gnd.p=sumReduce( Dm->Comm, nd.p);
+	gwc.p=sumReduce( Dm->Comm, wc.p);
+	gwd.p=sumReduce( Dm->Comm, wd.p);
+
 	if (vol_wc_bulk > 0.0)
 		wc.p = wc.p /vol_wc_bulk;
 	if (vol_nc_bulk > 0.0)
