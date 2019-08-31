@@ -554,7 +554,7 @@ void SubPhase::Full(){
 					}
 					if ( phi > 0.0){
 						if (morph_n->label(i,j,k) > 0 ){
-							nA = 1.0;
+							//nA = 1.0;
 							nd.M += nA*rho_n;						
 							nd.Px += nA*rho_n*ux;
 							nd.Py += nA*rho_n*uy;
@@ -562,7 +562,7 @@ void SubPhase::Full(){
 							nd.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
 						}
 						else{
-							nA = 1.0;
+							//nA = 1.0;
 							nc.M += nA*rho_n;						
 							nc.Px += nA*rho_n*ux;
 							nc.Py += nA*rho_n*uy;
@@ -573,7 +573,7 @@ void SubPhase::Full(){
 					else{
 						// water region
 						if (morph_w->label(i,j,k) > 0 ){
-							nB = 1.0;
+							//nB = 1.0;
 							wd.M += nB*rho_w;						
 							wd.Px += nB*rho_w*ux;
 							wd.Py += nB*rho_w*uy;
@@ -581,7 +581,7 @@ void SubPhase::Full(){
 							wd.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
 						}
 						else{
-							nB = 1.0;
+							//nB = 1.0;
 							wc.M += nB*rho_w;						
 							wc.Px += nB*rho_w*ux;
 							wc.Py += nB*rho_w*uy;
