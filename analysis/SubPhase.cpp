@@ -175,6 +175,23 @@ void SubPhase::Basic(){
 	double nA,nB;
 	double count_w = 0.0;
 	double count_n = 0.0;
+	
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				n = k*Nx*Ny + j*Nx + i;
+				// Compute volume averages
+				if ( Dm->id[n] > 0 ){
+					// compute density
+					double nA = Rho_n(n);
+					double nB = Rho_w(n);
+					double phi = (nA-nB)/(nA+nB);
+					Phi(n) = phi;
+				}
+			}
+		}
+	}
+	
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -184,9 +201,7 @@ void SubPhase::Basic(){
 					// compute density
 					double nA = Rho_n(n);
 					double nB = Rho_w(n);
-					double phi = (nA-nB)/(nA+nB);
-					Phi(n) = phi;
-					
+					double phi = (nA-nB)/(nA+nB);					
 					if ( phi > 0.0 ){
 						nb.V += 1.0;
 						nb.M += nA*rho_n;						
@@ -522,8 +537,7 @@ void SubPhase::Full(){
 					double ux = Vel_x(n);
 					double uy = Vel_y(n);
 					double uz = Vel_z(n);
-					Phi(n) = phi;
-
+					
 					if (DelPhi(n) > 1e-3){
 						// interface region
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
