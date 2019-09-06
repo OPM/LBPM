@@ -188,7 +188,7 @@ void ScaLBL_ColorModel::ReadInput(){
 		Mask->Decomp(first_image);
 		IMAGE_INDEX++;
 	}
-	else if (color_db->keyExists( "Filename" )){
+	else if (domain_db->keyExists( "Filename" )){
 		auto Filename = domain_db->getScalar<std::string>( "Filename" );
 		Mask->Decomp(Filename);
 	}
