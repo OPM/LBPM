@@ -819,14 +819,18 @@ void ScaLBL_ColorModel::Run(){
 						
 						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
 						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
-						double flow_rate_A_disconnected = Vol_nd*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
-						double flow_rate_B_disconnected = Vol_wd*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+						double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+						double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
 						
-						double kAeff_connected = h*h*muA*flow_rate_A_connected/(rhoA*force_mag);
-						double kBeff_connected = h*h*muB*flow_rate_B_connected/(rhoB*force_mag);
+						double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+						double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
 						
-						double kAeff = h*h*muA*(flow_rate_A_connected+flow_rate_A_disconnected)/(rhoA*force_mag);
-						double kBeff = h*h*muB*(flow_rate_B_connected+flow_rate_B_disconnected)/(rhoB*force_mag);
+						double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(rhoA*force_mag);
+						double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(rhoB*force_mag);
+
+						double kAeff = h*h*muA*(flow_rate_A)/(rhoA*force_mag);
+						double kBeff = h*h*muB*(flow_rate_B)/(rhoB*force_mag);
+
 						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 						double Mobility = muA/muB;
 						
@@ -838,9 +842,9 @@ void ScaLBL_ColorModel::Run(){
 							WriteHeader=true;
 						kr_log_file = fopen("relperm.csv","a");
 						if (WriteHeader)
-							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected cap.pressure cap.pressure.connected pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g  %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
 						printf("  Measured capillary number %f \n ",Ca);
