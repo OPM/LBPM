@@ -1,5 +1,7 @@
 require("ggplot2")
 
+GG_THEME=theme_bw()+theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
+
 ReadSubphase<-function(PATH){
   FILE=paste0(PATH,"/subphase.csv")
   S<-read.csv(FILE,head=TRUE,sep=" ")
