@@ -165,28 +165,34 @@ public:
     ~WriteVisWorkItem() { }
     virtual void run() {
         PROFILE_START("Save Vis",1);
+        
         ASSERT(visData[0].vars[0]->name=="phase");
+        Array<double>& PhaseData = visData[0].vars[0]->data;
+        fillData.copy(Averages.SDn,PhaseData);
+
+        ASSERT(visData[0].vars[5]->name=="SignDist");
+        Array<double>& SignData  = visData[0].vars[5]->data;
+        fillData.copy(Averages.SDs,SignData);
+
         ASSERT(visData[0].vars[1]->name=="Pressure");
+        Array<double>& PressData = visData[0].vars[1]->data;
+        fillData.copy(Averages.Press,PressData);
+
         ASSERT(visData[0].vars[2]->name=="Velocity_x");
         ASSERT(visData[0].vars[3]->name=="Velocity_y");
         ASSERT(visData[0].vars[4]->name=="Velocity_z");
-        ASSERT(visData[0].vars[5]->name=="SignDist");
-        ASSERT(visData[0].vars[6]->name=="BlobID");
-        Array<double>& PhaseData = visData[0].vars[0]->data;
-        Array<double>& PressData = visData[0].vars[1]->data;
         Array<double>& VelxData = visData[0].vars[2]->data;
         Array<double>& VelyData = visData[0].vars[3]->data;
         Array<double>& VelzData = visData[0].vars[4]->data;
-        Array<double>& SignData  = visData[0].vars[5]->data;
-        Array<double>& BlobData  = visData[0].vars[6]->data;
-        fillData.copy(Averages.SDn,PhaseData);
-        fillData.copy(Averages.Press,PressData);
-        fillData.copy(Averages.SDs,SignData);
         fillData.copy(Averages.Vel_x,VelxData);
         fillData.copy(Averages.Vel_y,VelyData);
         fillData.copy(Averages.Vel_z,VelzData);
+        
+        ASSERT(visData[0].vars[6]->name=="BlobID");
+        Array<double>& BlobData  = visData[0].vars[6]->data;        
         fillData.copy(Averages.Label_NWP,BlobData);
         IO::writeData( timestep, visData, comm.comm );
+        
         PROFILE_STOP("Save Vis",1);
     };
 private:
@@ -202,50 +208,71 @@ private:
 class IOWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	IOWorkItem( int timestep_, std::vector<IO::MeshDataStruct>& visData_,
+	IOWorkItem( std::shared_ptr<Database> vis_db_, std::vector<IO::MeshDataStruct>& visData_,
         SubPhase& Averages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
-        timestep(timestep_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
+        vis_db(vis_db_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
         {
         }
     ~IOWorkItem() { }
     virtual void run() {
+        int timestep = vis_db->getWithDefault<int>( "timestep", 0 );
+        
         PROFILE_START("Save Vis",1);
-        ASSERT(visData[0].vars[0]->name=="phase");
-        ASSERT(visData[0].vars[1]->name=="Pressure");
-        ASSERT(visData[0].vars[2]->name=="Velocity_x");
-        ASSERT(visData[0].vars[3]->name=="Velocity_y");
-        ASSERT(visData[0].vars[4]->name=="Velocity_z");
-        ASSERT(visData[0].vars[5]->name=="SignDist");
-        ASSERT(visData[0].vars[6]->name=="BlobID");
-        Array<double>& PhaseData = visData[0].vars[0]->data;
-        Array<double>& PressData = visData[0].vars[1]->data;
-        Array<double>& VelxData = visData[0].vars[2]->data;
-        Array<double>& VelyData = visData[0].vars[3]->data;
-        Array<double>& VelzData = visData[0].vars[4]->data;
-        Array<double>& SignData  = visData[0].vars[5]->data;
-        Array<double>& BlobData  = visData[0].vars[6]->data;
-        fillData.copy(Averages.Phi,PhaseData);
-        fillData.copy(Averages.Pressure,PressData);
-        fillData.copy(Averages.SDs,SignData);
-        fillData.copy(Averages.Vel_x,VelxData);
-        fillData.copy(Averages.Vel_y,VelyData);
-        fillData.copy(Averages.Vel_z,VelzData);
-        fillData.copy(Averages.morph_n->label,BlobData);
+
+        if (vis_db->getWithDefault<bool>( "save_phase_field", true )){
+        	ASSERT(visData[0].vars[0]->name=="phase");
+        	Array<double>& PhaseData = visData[0].vars[0]->data;
+        	fillData.copy(Averages.Phi,PhaseData);
+        }
+
+        if (vis_db->getWithDefault<bool>( "save_pressure", false )){
+        	ASSERT(visData[0].vars[1]->name=="Pressure");
+        	Array<double>& PressData = visData[0].vars[1]->data;
+        	fillData.copy(Averages.Pressure,PressData);
+        }
+
+        if (vis_db->getWithDefault<bool>( "save_velocity", false )){
+        	ASSERT(visData[0].vars[2]->name=="Velocity_x");
+        	ASSERT(visData[0].vars[3]->name=="Velocity_y");
+        	ASSERT(visData[0].vars[4]->name=="Velocity_z");
+        	Array<double>& VelxData = visData[0].vars[2]->data;
+        	Array<double>& VelyData = visData[0].vars[3]->data;
+        	Array<double>& VelzData = visData[0].vars[4]->data;
+        	fillData.copy(Averages.Vel_x,VelxData);
+        	fillData.copy(Averages.Vel_y,VelyData);
+        	fillData.copy(Averages.Vel_z,VelzData);
+        }
+
+        if (vis_db->getWithDefault<bool>( "save_distance", false )){
+        	ASSERT(visData[0].vars[5]->name=="SignDist");
+        	Array<double>& SignData  = visData[0].vars[5]->data;
+        	fillData.copy(Averages.SDs,SignData);
+        }
+
+        if (vis_db->getWithDefault<bool>( "save_connected_components", false )){
+        	ASSERT(visData[0].vars[6]->name=="BlobID");
+        	Array<double>& BlobData  = visData[0].vars[6]->data;
+        	fillData.copy(Averages.morph_n->label,BlobData);
+        }
         IO::writeData( timestep, visData, comm.comm );
-        char CurrentIDFilename[40];
-    	sprintf(CurrentIDFilename,"id_t%d.raw",timestep);
-        Averages.AggregateLabels(CurrentIDFilename);
+
+        if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
+        	char CurrentIDFilename[40];
+        	sprintf(CurrentIDFilename,"id_t%d.raw",timestep);
+        	Averages.AggregateLabels(CurrentIDFilename);
+        }
+
         PROFILE_STOP("Save Vis",1);
     };
 private:
     IOWorkItem();
     int timestep;
+    std::shared_ptr<Database> vis_db;
     std::vector<IO::MeshDataStruct>& visData;
     SubPhase& Averages;
     fillHalo<double>& fillData;
     runAnalysis::commWrapper comm;
 };
-
 
 
 // Helper class to run the analysis from within a thread
@@ -893,6 +920,7 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
 
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
+	auto vis_db =  input_db->getDatabase( "Visualization" );
 
     int timestep = color_db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
@@ -979,7 +1007,7 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     
     if (timestep%d_visualization_interval==0){
         // Write the vis files
-        auto work = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        auto work = new IOWorkItem( vis_db, d_meshData, Averages, d_fillData, getComm() );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
         work->add_dependency(d_wait_vis);
@@ -989,9 +1017,10 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     PROFILE_STOP("run");
 }
 
-void runAnalysis::WriteVisData( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::WriteVisData( std::shared_ptr<Database> vis_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
+    int timestep = vis_db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );
@@ -1010,7 +1039,7 @@ void runAnalysis::WriteVisData( int timestep, SubPhase &Averages, const double *
     PROFILE_START("write vis",1);
 
     // if (Averages.WriteVis == true){
-    auto work2 = new IOWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+    auto work2 = new IOWorkItem( vis_db, d_meshData, Averages, d_fillData, getComm() );
     work2->add_dependency(d_wait_vis);
     d_wait_vis = d_tpool.add_work(work2);
 
