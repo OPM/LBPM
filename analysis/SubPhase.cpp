@@ -246,9 +246,15 @@ void SubPhase::Basic(){
 	
 	count_w=sumReduce( Dm->Comm, count_w);
 	count_n=sumReduce( Dm->Comm, count_n);
-	gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
-	gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
-	
+	if (count_w > 0.0)
+		gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
+	else 
+		gwb.p = 0.0;
+	if (count_n > 0.0)
+		gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
+	else 
+		gnb.p = 0.0;
+
 	// check for NaN
 	bool err=false;
 	if (gwb.V != gwb.V) err=true;
