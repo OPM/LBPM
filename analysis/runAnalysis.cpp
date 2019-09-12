@@ -514,6 +514,8 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
 {
 
 	auto db = input_db->getDatabase( "Analysis" );
+	auto vis_db = input_db->getDatabase( "Visualization" );
+
     // Ids of work items to use for dependencies
     ThreadPool::thread_id_t d_wait_blobID;
     ThreadPool::thread_id_t d_wait_analysis;
@@ -552,6 +554,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     IO::initialize("","silo","false");
     // Create the MeshDataStruct    
     d_meshData.resize(1);
+    
     d_meshData[0].meshName = "domain";
     d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
     auto PhaseVar = std::make_shared<IO::Variable>();
@@ -562,43 +565,57 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     auto SignDistVar = std::make_shared<IO::Variable>();
     auto BlobIDVar = std::make_shared<IO::Variable>();
     
-    PhaseVar->name = "phase";
-    PhaseVar->type = IO::VariableType::VolumeVariable;
-    PhaseVar->dim = 1;
-    PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(PhaseVar);
-    PressVar->name = "Pressure";
-    PressVar->type = IO::VariableType::VolumeVariable;
-    PressVar->dim = 1;
-    PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(PressVar);
+    if (vis_db->getWithDefault<bool>( "save_phase_field", true )){
+        PhaseVar->name = "phase";
+        PhaseVar->type = IO::VariableType::VolumeVariable;
+        PhaseVar->dim = 1;
+        PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(PhaseVar);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_pressure", false )){
+        PressVar->name = "Pressure";
+        PressVar->type = IO::VariableType::VolumeVariable;
+        PressVar->dim = 1;
+        PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(PressVar);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_velocity", false )){
+        VxVar->name = "Velocity_x";
+        VxVar->type = IO::VariableType::VolumeVariable;
+        VxVar->dim = 1;
+        VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(VxVar);
+        VyVar->name = "Velocity_y";
+        VyVar->type = IO::VariableType::VolumeVariable;
+        VyVar->dim = 1;
+        VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(VyVar);
+        VzVar->name = "Velocity_z";
+        VzVar->type = IO::VariableType::VolumeVariable;
+        VzVar->dim = 1;
+        VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(VzVar);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_distance", false )){
+        SignDistVar->name = "SignDist";
+        SignDistVar->type = IO::VariableType::VolumeVariable;
+        SignDistVar->dim = 1;
+        SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(SignDistVar);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_connected_components", false )){
+        BlobIDVar->name = "BlobID";
+        BlobIDVar->type = IO::VariableType::VolumeVariable;
+        BlobIDVar->dim = 1;
+        BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        d_meshData[0].vars.push_back(BlobIDVar);
+    }
     
-    VxVar->name = "Velocity_x";
-    VxVar->type = IO::VariableType::VolumeVariable;
-    VxVar->dim = 1;
-    VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(VxVar);
-    VyVar->name = "Velocity_y";
-    VyVar->type = IO::VariableType::VolumeVariable;
-    VyVar->dim = 1;
-    VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(VyVar);
-    VzVar->name = "Velocity_z";
-    VzVar->type = IO::VariableType::VolumeVariable;
-    VzVar->dim = 1;
-    VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(VzVar);
-    
-    SignDistVar->name = "SignDist";
-    SignDistVar->type = IO::VariableType::VolumeVariable;
-    SignDistVar->dim = 1;
-    SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(SignDistVar);
-    BlobIDVar->name = "BlobID";
-    BlobIDVar->type = IO::VariableType::VolumeVariable;
-    BlobIDVar->dim = 1;
-    BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    d_meshData[0].vars.push_back(BlobIDVar);
+
     // Initialize the comms
     MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
     for (int i=0; i<1024; i++) {
