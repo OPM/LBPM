@@ -50,7 +50,7 @@ public:
         double *Pressure, double *Velocity, double *fq, double *Den );
     
     void basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
-    void WriteVisData( int timestep, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den);
+    void WriteVisData( std::shared_ptr<Database> vis_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den);
 
     //! Finish all active analysis
     void finish();

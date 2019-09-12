@@ -70,6 +70,7 @@ public:
     std::shared_ptr<Database> domain_db;
     std::shared_ptr<Database> color_db;
     std::shared_ptr<Database> analysis_db;
+    std::shared_ptr<Database> vis_db;
 
     IntArray Map;
     signed char *id;    
