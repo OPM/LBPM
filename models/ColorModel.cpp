@@ -62,6 +62,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	domain_db = db->getDatabase( "Domain" );
 	color_db =  db->getDatabase( "Color" );
 	analysis_db = db->getDatabase( "Analysis" );
+	vis_db = db->getDatabase( "Visualization" );
 
 	// set defaults
 	timestepMax = 100000;
@@ -767,7 +768,7 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
-					analysis.WriteVisData( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.WriteVisData( vis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 					analysis.finish();
 					
 					if (rank==0){
