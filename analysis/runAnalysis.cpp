@@ -254,7 +254,9 @@ public:
         	Array<double>& BlobData  = visData[0].vars[6]->data;
         	fillData.copy(Averages.morph_n->label,BlobData);
         }
-        IO::writeData( timestep, visData, comm.comm );
+        
+        if (vis_db->getWithDefault<bool>( "write_silo", true ))
+        	IO::writeData( timestep, visData, comm.comm );
 
         if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
         	char CurrentIDFilename[40];
