@@ -270,7 +270,7 @@ public:
 private:
     IOWorkItem();
     int timestep;
-    std::shared_ptr<Database> vis_db;
+    std::shared_ptr<Database> input_db;
     std::vector<IO::MeshDataStruct>& visData;
     SubPhase& Averages;
     fillHalo<double>& fillData;
