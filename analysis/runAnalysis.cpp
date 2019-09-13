@@ -216,7 +216,9 @@ public:
     ~IOWorkItem() { }
     virtual void run() {
     	auto vis_db = input_db->getDatabase( "Visualization" );
-        int timestep = vis_db->getWithDefault<int>( "timestep", 0 );
+    	auto db = input_db->getDatabase( "Colr" );
+
+        int timestep = db->getWithDefault<int>( "timestep", 0 );
         
         PROFILE_START("Save Vis",1);
 
