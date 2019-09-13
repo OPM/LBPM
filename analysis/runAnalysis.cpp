@@ -208,13 +208,14 @@ private:
 class IOWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	IOWorkItem( std::shared_ptr<Database> vis_db_, std::vector<IO::MeshDataStruct>& visData_,
+	IOWorkItem( std::shared_ptr<Database> input_db_, std::vector<IO::MeshDataStruct>& visData_,
         SubPhase& Averages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
-        vis_db(vis_db_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
+        input_db(input_db_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
         {
         }
     ~IOWorkItem() { }
     virtual void run() {
+    	auto vis_db = input_db->getDatabase( "Visualization" );
         int timestep = vis_db->getWithDefault<int>( "timestep", 0 );
         
         PROFILE_START("Save Vis",1);
@@ -939,7 +940,7 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
 
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
-	auto vis_db =  input_db->getDatabase( "Visualization" );
+	//auto vis_db =  input_db->getDatabase( "Visualization" );
 
     int timestep = color_db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
@@ -1026,7 +1027,7 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     
     if (timestep%d_visualization_interval==0){
         // Write the vis files
-        auto work = new IOWorkItem( vis_db, d_meshData, Averages, d_fillData, getComm() );
+        auto work = new IOWorkItem( input_db, d_meshData, Averages, d_fillData, getComm() );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
         work->add_dependency(d_wait_vis);
@@ -1036,10 +1037,11 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     PROFILE_STOP("run");
 }
 
-void runAnalysis::WriteVisData( std::shared_ptr<Database> vis_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::WriteVisData( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
-    int timestep = vis_db->getWithDefault<int>( "timestep", 0 );
+	auto db = input_db->getDatabase( "Color" );
+    int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );
@@ -1058,7 +1060,7 @@ void runAnalysis::WriteVisData( std::shared_ptr<Database> vis_db, SubPhase &Aver
     PROFILE_START("write vis",1);
 
     // if (Averages.WriteVis == true){
-    auto work2 = new IOWorkItem( vis_db, d_meshData, Averages, d_fillData, getComm() );
+    auto work2 = new IOWorkItem( input_db, d_meshData, Averages, d_fillData, getComm() );
     work2->add_dependency(d_wait_vis);
     d_wait_vis = d_tpool.add_work(work2);
 
