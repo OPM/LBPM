@@ -231,7 +231,7 @@ public:
     ~IOWorkItem() { }
     virtual void run() {
     	auto vis_db = input_db->getDatabase( "Visualization" );
-    	auto db = input_db->getDatabase( "Colr" );
+    	auto db = input_db->getDatabase( "Color" );
 
         int timestep = db->getWithDefault<int>( "timestep", 0 );
         
