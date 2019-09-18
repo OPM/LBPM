@@ -167,8 +167,8 @@ void SubPhase::Basic(){
 	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
-	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
-	if (Dm->outlet_layers_z > 0) kmax = Dm->outlet_layers_z;
+	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
+	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 	
 	nb.reset(); wb.reset();
 
@@ -246,9 +246,15 @@ void SubPhase::Basic(){
 	
 	count_w=sumReduce( Dm->Comm, count_w);
 	count_n=sumReduce( Dm->Comm, count_n);
-	gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
-	gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
-	
+	if (count_w > 0.0)
+		gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
+	else 
+		gwb.p = 0.0;
+	if (count_n > 0.0)
+		gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
+	else 
+		gnb.p = 0.0;
+
 	// check for NaN
 	bool err=false;
 	if (gwb.V != gwb.V) err=true;
@@ -364,7 +370,8 @@ void SubPhase::Full(){
 	// If inlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
-	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
+	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
+	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 		
 	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
 
