@@ -657,7 +657,8 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 		if (BoundaryCondition > 0){
@@ -783,7 +784,7 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
-					analysis.WriteVisData( vis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.WriteVisData( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 					analysis.finish();
 					
 					if (rank==0){

@@ -167,8 +167,8 @@ void SubPhase::Basic(){
 	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
-	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
-	if (Dm->outlet_layers_z > 0) kmax = Dm->outlet_layers_z;
+	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
+	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 	
 	nb.reset(); wb.reset();
 
@@ -370,7 +370,8 @@ void SubPhase::Full(){
 	// If inlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
-	if (Dm->inlet_layers_z > 0) kmin = Dm->inlet_layers_z;
+	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
+	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 		
 	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
 

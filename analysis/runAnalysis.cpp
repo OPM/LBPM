@@ -230,11 +230,10 @@ public:
         }
     ~IOWorkItem() { }
     virtual void run() {
-    	auto vis_db = input_db->getDatabase( "Visualization" );
-    	auto db = input_db->getDatabase( "Colr" );
+    	auto color_db =  input_db->getDatabase( "Color" );
+    	auto vis_db =  input_db->getDatabase( "Visualization" );
+        int timestep = color_db->getWithDefault<int>( "timestep", 0 );
 
-        int timestep = db->getWithDefault<int>( "timestep", 0 );
-        
         PROFILE_START("Save Vis",1);
 
         if (vis_db->getWithDefault<bool>( "save_phase_field", true )){
@@ -1057,8 +1056,9 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
 void runAnalysis::WriteVisData( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
-	auto db = input_db->getDatabase( "Color" );
-    int timestep = db->getWithDefault<int>( "timestep", 0 );
+	auto color_db =  input_db->getDatabase( "Color" );
+	auto vis_db =  input_db->getDatabase( "Visualization" );
+    int timestep = color_db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );

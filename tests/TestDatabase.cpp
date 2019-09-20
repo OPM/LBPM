@@ -49,6 +49,11 @@ int main(int argc, char **argv)
     OutStream << "} \n";
 	printf("TestDatbase: writing test file\n");
 	OutStream.close();
+	
+	std::string protocol="steady state";
+	if (protocol == "steady state"){
+		printf("Run steady state \n");
+	}
 
 	auto new_db = std::make_shared<Database>( "test.db" );
 	auto domain_db = new_db->getDatabase( "Domain" );
