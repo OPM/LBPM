@@ -642,7 +642,8 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 		if (BoundaryCondition > 0){
