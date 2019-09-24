@@ -343,6 +343,34 @@ void Domain::Decomp(std::string Filename)
 			}
 		}
 		printf("Read segmented data from %s \n",Filename.c_str());
+		
+		// relabel the data
+		std::vector<long int> LabelCount(ReadValues.size(),0);
+		for (int k = 0; k<Nz; k++){
+			for (int j = 0; j<Ny; j++){
+				for (int i = 0; i<Nx; i++){
+					n = k*Nx*Ny+j*Nx+i;
+					//char locval = loc_id[n];
+					char locval = SegData[n];
+					for (int idx=0; idx<ReadValues.size(); idx++){
+						signed char oldvalue=ReadValues[idx];
+						signed char newvalue=WriteValues[idx];
+						if (locval == oldvalue){
+							SegData[n] = newvalue;
+							LabelCount[idx]++;
+							idx = ReadValues.size();
+						}
+					}
+				}
+			}
+		}
+		if (RANK==0){
+			for (int idx=0; idx<ReadValues.size(); idx++){
+				long int label=ReadValues[idx];
+				long int count=LabelCount[idx];
+				printf("Label=%d, Count=%d \n",label,count);
+			}
+		}
 
 		if (inlet_layers_x > 0){
 			// use checkerboard pattern
@@ -470,7 +498,6 @@ void Domain::Decomp(std::string Filename)
 	char *loc_id;
 	loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
 
-	std::vector<int> LabelCount(ReadValues.size(),0);
 	// Set up the sub-domains
 	if (RANK==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
@@ -503,24 +530,6 @@ void Domain::Decomp(std::string Filename)
 							}
 						}
 					}
-					// relabel the data
-					for (k=0;k<nz+2;k++){
-						for (j=0;j<ny+2;j++){
-							for (i=0;i<nx+2;i++){
-								n = k*(nx+2)*(ny+2) + j*(nx+2) + i;;
-								char locval = loc_id[n];
-								for (int idx=0; idx<ReadValues.size(); idx++){
-									signed char oldvalue=ReadValues[idx];
-									signed char newvalue=WriteValues[idx];
-									if (locval == oldvalue){
-										loc_id[n] = newvalue;
-										LabelCount[idx]++;
-										idx = ReadValues.size();
-									}
-								}
-							}
-						}
-					}
 					if (rnk==0){
 						for (k=0;k<nz+2;k++){
 							for (j=0;j<ny+2;j++){
@@ -543,11 +552,7 @@ void Domain::Decomp(std::string Filename)
 				}
 			}
 		}
-		for (int idx=0; idx<ReadValues.size(); idx++){
-			int label=ReadValues[idx];
-			int count=LabelCount[idx];
-			printf("Label=%d, Count=%d \n",label,count);
-		}
+
 	}
 	else{
 		// Recieve the subdomain from rank = 0
