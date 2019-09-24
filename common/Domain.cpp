@@ -31,6 +31,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0), voxel_length(1),
 	Comm(MPI_COMM_WORLD),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
+    inlet_layers_phase(1),outlet_layers_phase(2),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -78,6 +79,7 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	Comm(MPI_COMM_NULL),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
 	outlet_layers_x(0), outlet_layers_y(0), outlet_layers_z(0),
+    inlet_layers_phase(1),outlet_layers_phase(2),
 	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
 	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
 	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
@@ -184,6 +186,12 @@ void Domain::initialize( std::shared_ptr<Database> db )
 		outlet_layers_y = OutletCount[1];
 		outlet_layers_z = OutletCount[2];
 	}
+	if (d_db->keyExists( "InletLayersPhase" )){
+		inlet_layers_phase = d_db->getScalar<int>( "InletLayersPhase" );
+	}
+	if (d_db->keyExists( "OutletLayersPhase" )){
+		outlet_layers_phase = d_db->getScalar<int>( "OutletLayersPhase" );
+	}
     voxel_length = 1.0;
     if (d_db->keyExists( "voxel_length" )){
     	voxel_length = d_db->getScalar<double>("voxel_length");
@@ -248,6 +256,8 @@ void Domain::Decomp(std::string Filename)
 	outlet_layers_x = 0;
 	outlet_layers_y = 0;
 	outlet_layers_z = 0;
+    inlet_layers_phase=1;
+    outlet_layers_phase=2;
 	checkerSize = 32;
 
 	// Read domain parameters
@@ -279,6 +289,12 @@ void Domain::Decomp(std::string Filename)
 	}
 	else {
 		checkerSize = SIZE[0];
+	}
+	if (database->keyExists( "InletLayersPhase" )){
+		inlet_layers_phase = database->getScalar<int>( "InletLayersPhase" );
+	}
+	if (database->keyExists( "OutletLayersPhase" )){
+		outlet_layers_phase = database->getScalar<int>( "OutletLayersPhase" );
 	}
 	auto ReadValues = database->getVector<int>( "ReadValues" );
 	auto WriteValues = database->getVector<int>( "WriteValues" );
@@ -390,7 +406,8 @@ void Domain::Decomp(std::string Filename)
 					for (int i = 0; i<global_Nx; i++){
 						if ( (i/checkerSize+j/checkerSize)%2 == 0){
 							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = inlet_layers_phase;
 						}
 						else{
 							// solid checkers
@@ -447,7 +464,8 @@ void Domain::Decomp(std::string Filename)
 					for (int i = 0; i<global_Nx; i++){
 						if ( (i/checkerSize+j/checkerSize)%2 == 0){
 							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = outlet_layers_phase;
 						}
 						else{
 							// solid checkers

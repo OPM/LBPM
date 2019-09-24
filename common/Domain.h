@@ -112,6 +112,8 @@ public: // Public variables (need to create accessors instead)
     int Nx,Ny,Nz,N;
     int inlet_layers_x, inlet_layers_y, inlet_layers_z;
     int outlet_layers_x, outlet_layers_y, outlet_layers_z;
+    int inlet_layers_phase; //as usual: 1->n, 2->w
+    int outlet_layers_phase;
     double porosity;
     RankInfoStruct rank_info;
 
