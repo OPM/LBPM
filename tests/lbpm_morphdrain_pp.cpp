@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
-		auto READFILE = domain_db->getScalar<std::string>( "Filename" )
+		auto READFILE = domain_db->getScalar<std::string>( "Filename" );
 
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
