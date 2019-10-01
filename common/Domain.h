@@ -188,6 +188,7 @@ private:
     void PackID(int *list, int count, signed char *sendbuf, signed char *ID);
     void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID);
     void CommHaloIDs();
+    void AggregateLabels(char *FILENAME);
     
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
