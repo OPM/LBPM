@@ -42,6 +42,7 @@ int main(int argc, char **argv)
 
 		char LocalRankString[8];
 		char LocalRankFilename[40];
+		char FILENAME[64];
 
 		string filename;
 		double Rcrit_new, SW;
@@ -61,6 +62,7 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<int>( "WriteValues" );
 		SW = domain_db->getScalar<double>("Sw");
+		auto READFILE = domain_db->getScalar<std::string>( "Filename" )
 
 		// Generate the NWP configuration
 		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
@@ -77,19 +79,24 @@ int main(int argc, char **argv)
 		int N = (nx+2)*(ny+2)*(nz+2);
 
 		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
+		std::shared_ptr<Domain> Mask (new Domain(domain_db,comm));
 		//		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
 		signed char *id;
 		id = new signed char [N];
-		sprintf(LocalRankFilename,"ID.%05i",rank);
+		Mask->Decomp(READFILE);
+		Mask->CommInit();
+
+		/*sprintf(LocalRankFilename,"ID.%05i",rank);
 		size_t readID;
 		FILE *IDFILE = fopen(LocalRankFilename,"rb");
 		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
 		readID=fread(id,1,N,IDFILE);
 		if (readID != size_t(N)) printf("lbpm_morphopen_pp: Error reading ID (rank=%i) \n",rank);
 		fclose(IDFILE);
+		*/
 
 		nx+=2; ny+=2; nz+=2;
 		// Generate the signed distance map
@@ -103,8 +110,8 @@ int main(int argc, char **argv)
 				for (int i=0;i<nx;i++){
 					int n = k*nx*ny+j*nx+i;
 					// Initialize the solid phase
-					if (id[n] > 0)	id_solid(i,j,k) = 1;
-					else	     	id_solid(i,j,k) = 0;
+					if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
+					else	     			id_solid(i,j,k) = 0;
 				}
 			}
 		}
@@ -189,6 +196,18 @@ int main(int argc, char **argv)
 		fwrite(id,1,N,ID);
 		fclose(ID);
 	}
+
+	// write the geometry to a single file
+	for (int k=0;k<nz;k++){
+		for (int j=0;j<ny;j++){ 
+			for (int i=0;i<nx;i++){
+				int n = k*nx*ny+j*nx+i;
+				Mask->id[n] = id[n];
+			}
+		}
+	}
+	sprintf(FILENAME,READFILE,"morphdrain.raw");
+	Mask->AggregateLabels(FILENAME);
 
 	MPI_Barrier(comm);
 	MPI_Finalize();
