@@ -195,19 +195,20 @@ int main(int argc, char **argv)
 		FILE *ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
-	}
-
-	// write the geometry to a single file
-	for (int k=0;k<nz;k++){
-		for (int j=0;j<ny;j++){ 
-			for (int i=0;i<nx;i++){
-				int n = k*nx*ny+j*nx+i;
-				Mask->id[n] = id[n];
+		
+		// write the geometry to a single file
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){ 
+				for (int i=0;i<nx;i++){
+					int n = k*nx*ny+j*nx+i;
+					Mask->id[n] = id[n];
+				}
 			}
 		}
+		sprintf(FILENAME,READFILE,"morphdrain.raw");
+		Mask->AggregateLabels(FILENAME);
+
 	}
-	sprintf(FILENAME,READFILE,"morphdrain.raw");
-	Mask->AggregateLabels(FILENAME);
 
 	MPI_Barrier(comm);
 	MPI_Finalize();
