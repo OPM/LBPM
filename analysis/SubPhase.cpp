@@ -688,14 +688,9 @@ void SubPhase::AggregateLabels(char *FILENAME){
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
 	int nz = Dm->Nz;
-
-	int local_size = (nx-2)*(ny-2)*(nz-2);
-	
-	signed char *LocalID;
-	LocalID = new signed char [local_size];
 		
 	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
-	// assign the ID for the local sub-region
+	// assign the ID from the phase indicator field
 	for (int k=0; k<nz; k++){
 		for (int j=0; j<ny; j++){
 			for (int i=0; i<nx; i++){
