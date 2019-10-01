@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sprintf(FILENAME,READFILE,"morphdrain.raw");
+		sprintf(FILENAME,READFILE.c_str(),"morphdrain.raw");
 		Mask->AggregateLabels(FILENAME);
 
 	}
