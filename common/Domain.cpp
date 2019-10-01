@@ -362,10 +362,10 @@ void Domain::Decomp(std::string Filename)
 		
 		// relabel the data
 		std::vector<long int> LabelCount(ReadValues.size(),0);
-		for (int k = 0; k<Nz; k++){
-			for (int j = 0; j<Ny; j++){
-				for (int i = 0; i<Nx; i++){
-					n = k*Nx*Ny+j*Nx+i;
+		for (int k = 0; k<global_Nz; k++){
+			for (int j = 0; j<global_Ny; j++){
+				for (int i = 0; i<global_Nx; i++){
+					n = k*global_Nx*global_Ny+j*global_Nx+i;
 					//char locval = loc_id[n];
 					char locval = SegData[n];
 					for (int idx=0; idx<ReadValues.size(); idx++){

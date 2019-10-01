@@ -32,20 +32,13 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-		double Lx, Ly, Lz;
-		int i,j,k,n;
-		int BC=0;
-		//  char fluidValue,solidValue;
-		int MAXTIME=1000;
-		int READ_FROM_BLOCK=0;
-
+		int n, nprocx, nprocy, nprocz, nx, ny, nz;
 		char LocalRankString[8];
 		char LocalRankFilename[40];
-		char FILENAME[64];
+		char FILENAME[128];
 
 		string filename;
-		double Rcrit_new, SW;
+		double SW,Rcrit_new;
 		if (argc > 1){
 			filename=argv[1];
 			Rcrit_new=0.f; 
@@ -109,9 +102,13 @@ int main(int argc, char **argv)
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
 					int n = k*nx*ny+j*nx+i;
+					id[n] = Mask->id[n];
 					// Initialize the solid phase
-					if (Mask->id[n] > 0)	id_solid(i,j,k) = 1;
-					else	     			id_solid(i,j,k) = 0;
+					if (Mask->id[n] > 0){
+						id_solid(i,j,k) = 1;
+					}
+					else	    
+						id_solid(i,j,k) = 0;
 				}
 			}
 		}
@@ -205,9 +202,12 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sprintf(FILENAME,READFILE.c_str(),"morphdrain.raw");
-		Mask->AggregateLabels(FILENAME);
+		MPI_Barrier(comm);
 
+		sprintf(FILENAME,READFILE.c_str());
+		sprintf(FILENAME+strlen(FILENAME),".morphdrain.raw");
+		if (rank==0) printf("Writing file to: %s \n", FILENAME);
+		Mask->AggregateLabels(FILENAME);
 	}
 
 	MPI_Barrier(comm);
