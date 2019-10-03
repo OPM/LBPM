@@ -105,9 +105,13 @@ int main(int argc, char **argv)
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
 					int n = k*nx*ny+j*nx+i;
+					id[n] = Mask->id[n];
 					// Initialize the solid phase
-					if (id[n] > 0)	id_solid(i,j,k) = 1;
-					else	     	id_solid(i,j,k) = 0;
+					if (Mask->id[n] > 0){
+						id_solid(i,j,k) = 1;
+					}
+					else	    
+						id_solid(i,j,k) = 0;
 				}
 			}
 		}
