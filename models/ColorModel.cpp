@@ -712,9 +712,10 @@ void ScaLBL_ColorModel::Run(){
 	       
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		
-		color_db->putScalar<int>("timestep",timestep);
-		current_db->putDatabase("Color", color_db);
+		if (timestep%analysis_interval == 0 ){
+			color_db->putScalar<int>("timestep",timestep);
+			current_db->putDatabase("Color", color_db);
+		}
 		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
