@@ -607,7 +607,7 @@ void ScaLBL_ColorModel::Run(){
 			printf("     morph_delta = %f \n",morph_delta);
 		}
 		else if (protocol == "shell aggregation"){
-			printf("  using protocol = shell aggregation \n");
+			printf("  using protocol = shell aggregation \n"); 
 			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
@@ -709,18 +709,17 @@ void ScaLBL_ColorModel::Run(){
 		
 		MPI_Barrier(comm);
 		PROFILE_STOP("Update");
-	       
-		// Run the analysis
-		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		if (timestep%analysis_interval == 0 ){
-			color_db->putScalar<int>("timestep",timestep);
-			current_db->putDatabase("Color", color_db);
-		}
-		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
-			printf("....inlet pressure=%f \n",din);
+			printf("%i %f \n",timestep,din);
 		}
+		// Run the analysis
+		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
+		color_db->putScalar<int>("timestep",timestep);
+		current_db->putDatabase("Color", color_db);
+
+		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+
 		
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
