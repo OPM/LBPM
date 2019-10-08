@@ -573,7 +573,7 @@ void ScaLBL_DFHModel::Run(){
 		PROFILE_STOP("Update");
 
 		// Run the analysis
-		analysis.run( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.run(timestep, analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");

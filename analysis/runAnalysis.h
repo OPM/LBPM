@@ -24,7 +24,7 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis(int timestep, std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
+    runAnalysis(std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
     		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool Regular, IntArray Map );
 
     //! Destructor

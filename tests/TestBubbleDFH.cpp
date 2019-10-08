@@ -405,7 +405,7 @@ int main(int argc, char **argv)
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
 		//std::shared_ptr<Database> analysis_db;
-        runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, Map );
+		runAnalysis analysis(analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, Map );
         //analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-            analysis.run( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+			analysis.run( timestep, analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		}
         analysis.finish();
