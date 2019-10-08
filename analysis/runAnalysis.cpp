@@ -507,7 +507,7 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+runAnalysis::runAnalysis(int timestep, std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
         int Np, bool Regular, IntArray Map ):
             d_Np( Np ),
             d_regular ( Regular),
@@ -1029,7 +1029,7 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     
     if (timestep%d_visualization_interval==0){
         // Write the vis files
-        auto work = new IOWorkItem( input_db, d_meshData, Averages, d_fillData, getComm() );
+         auto work = new IOWorkItem( timestep, input_db, d_meshData, Averages, d_fillData, getComm() );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
         work->add_dependency(d_wait_vis);
@@ -1063,7 +1063,7 @@ void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db,
     PROFILE_START("write vis",1);
 
     // if (Averages.WriteVis == true){
-    auto work2 = new IOWorkItem( input_db, d_meshData, Averages, d_fillData, getComm() );
+    auto work2 = new IOWorkItem(timestep, input_db, d_meshData, Averages, d_fillData, getComm() );
     work2->add_dependency(d_wait_vis);
     d_wait_vis = d_tpool.add_work(work2);
 
