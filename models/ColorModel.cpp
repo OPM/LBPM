@@ -715,10 +715,10 @@ void ScaLBL_ColorModel::Run(){
 		}
 		// Run the analysis
 		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		color_db->putScalar<int>("timestep",timestep);
-		current_db->putDatabase("Color", color_db);
+		//color_db->putScalar<int>("timestep",timestep);
+		//current_db->putDatabase("Color", color_db);
 
-		analysis.basic( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		
 		// allow initial ramp-up to get closer to steady state
@@ -769,7 +769,7 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
 					Averages->Full();
 					Averages->Write(timestep);
-					analysis.WriteVisData( current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 					analysis.finish();
 					
 					if (rank==0){

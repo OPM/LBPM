@@ -208,16 +208,16 @@ private:
 class IOWorkItem: public ThreadPool::WorkItemRet<void>
 {
 public:
-	IOWorkItem( std::shared_ptr<Database> input_db_, std::vector<IO::MeshDataStruct>& visData_,
+	IOWorkItem(int timestep_, std::shared_ptr<Database> input_db_, std::vector<IO::MeshDataStruct>& visData_,
         SubPhase& Averages_, fillHalo<double>& fillData_, runAnalysis::commWrapper&& comm_ ):
-        input_db(input_db_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
+        timestep(timestep_), input_db(input_db_), visData(visData_), Averages(Averages_), fillData(fillData_), comm(std::move(comm_))
         {
         }
     ~IOWorkItem() { }
     virtual void run() {
     	auto color_db =  input_db->getDatabase( "Color" );
     	auto vis_db =  input_db->getDatabase( "Visualization" );
-        int timestep = color_db->getWithDefault<int>( "timestep", 0 );
+       // int timestep = color_db->getWithDefault<int>( "timestep", 0 );
 
         PROFILE_START("Save Vis",1);
 
@@ -763,13 +763,13 @@ AnalysisType runAnalysis::computeAnalysisType( int timestep )
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::run( std::shared_ptr<Database> input_db, TwoPhase& Averages, const double *Phi,
+void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase& Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
     
 	auto db = input_db->getDatabase( "Analysis" );
-    int timestep = db->getWithDefault<int>( "timestep", 0 );
+    //int timestep = db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );
@@ -935,15 +935,15 @@ void runAnalysis::run( std::shared_ptr<Database> input_db, TwoPhase& Averages, c
 /******************************************************************
  *  Run the analysis                                               *
  ******************************************************************/
-void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
-	//auto vis_db =  input_db->getDatabase( "Visualization" );
+	auto vis_db =  input_db->getDatabase( "Visualization" );
 
-    int timestep = color_db->getWithDefault<int>( "timestep", 0 );
+    //int timestep = color_db->getWithDefault<int>( "timestep", 0 );
     auto type = computeAnalysisType( timestep );
     if ( type == AnalysisType::AnalyzeNone )
         return;
@@ -1012,6 +1012,7 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
 
     	if (d_rank==0) {
+    		color_db->putScalar<int>("timestep",timestep);    		
     		color_db->putScalar<bool>( "Restart", true );
     		input_db->putDatabase("Color", color_db);
     		std::ofstream OutStream("Restart.db");
@@ -1038,12 +1039,12 @@ void runAnalysis::basic( std::shared_ptr<Database> input_db, SubPhase &Averages,
     PROFILE_STOP("run");
 }
 
-void runAnalysis::WriteVisData( std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
+void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
-    int timestep = color_db->getWithDefault<int>( "timestep", 0 );
+    //int timestep = color_db->getWithDefault<int>( "timestep", 0 );
 
     // Check which analysis steps we need to perform
     auto type = computeAnalysisType( timestep );

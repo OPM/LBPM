@@ -24,18 +24,18 @@ class runAnalysis
 public:
 
     //! Constructor
-    runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
+    runAnalysis(int timestep, std::shared_ptr<Database> db, const RankInfoStruct& rank_info,
     		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> dm, int Np, bool Regular, IntArray Map );
 
     //! Destructor
     ~runAnalysis();
 
     //! Run the next analysis
-    void run( std::shared_ptr<Database> db,  TwoPhase &Averages, const double *Phi,
+    void run(int timestep, std::shared_ptr<Database> db,  TwoPhase &Averages, const double *Phi,
         double *Pressure, double *Velocity, double *fq, double *Den );
     
-    void basic( std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
-    void WriteVisData( std::shared_ptr<Database> vis_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den);
+    void basic( int timestep, std::shared_ptr<Database> db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den );
+    void WriteVisData(int timestep, std::shared_ptr<Database> vis_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den);
 
     //! Finish all active analysis
     void finish();
