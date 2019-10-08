@@ -507,7 +507,7 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis(int timestep, std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
         int Np, bool Regular, IntArray Map ):
             d_Np( Np ),
             d_regular ( Regular),
