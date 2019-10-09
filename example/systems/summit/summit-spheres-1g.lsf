@@ -1,5 +1,5 @@
 #!/bin/bash
-#BSUB -P CSC275MCCLURE
+#BSUB -P CSC380
 #BSUB -J spheres
 #BSUB -o spheres.o%J
 #BSUB -W 10
@@ -10,10 +10,9 @@ date
 
 module load gcc cuda 
 
-export SCALBL_DIR=$HOME/summit/build/LBPM-WIA/tests
+export LBPM_DIR=/ccs/proj/csc380/mcclurej/install/LBPM/tests
 
-jsrun -n1 -r1 -g1 -c1 -brs $SCALBL_DIR/GenerateSphereTest 1896
-
+jsrun -n1 -r1 -g1 -c1 -brs $LBPM_DIR/GenerateSphereTest input.db
 
 
 # Create the 1200 GPU case
@@ -45,4 +44,3 @@ for i in `seq -w 0 $NRANKS`; do distfile="$BASEDIST$i"; echo $distfile; cp SignD
 
 
 exit;
-
