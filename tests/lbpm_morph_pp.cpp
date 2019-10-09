@@ -32,16 +32,15 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int n, nprocx, nprocy, nprocz, nx, ny, nz;
-		char LocalRankString[8];
+	        int n, nx, ny, nz;
 		char LocalRankFilename[40];
 		char FILENAME[128];
 
 		string filename;
-		double SW,Rcrit_new;
+		double SW;
 		if (argc > 1){
 			filename=argv[1];
-			Rcrit_new=0.f; 
+			//Rcrit_new=0.f; 
 			//SW=strtod(argv[2],NULL);
 		}
 		else ERROR("No input database provided\n");
@@ -65,9 +64,6 @@ int main(int argc, char **argv)
 		nx = size[0];
 		ny = size[1];
 		nz = size[2];
-		nprocx = nproc[0];
-		nprocy = nproc[1];
-		nprocz = nproc[2];
 
 		int N = (nx+2)*(ny+2)*(nz+2);
 
@@ -79,6 +75,8 @@ int main(int argc, char **argv)
 
 		signed char *id;
 		id = new signed char [N];
+		signed char *id_connected;
+		id_connected = new signed char [N];
 		Mask->Decomp(READFILE);
 		Mask->CommInit();
 
@@ -122,7 +120,6 @@ int main(int argc, char **argv)
 		for (int k=0;k<nz;k++){
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
-					int n = k*nx*ny+j*nx+i;
 					// Initialize distance to +/- 1
 					SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 				}
