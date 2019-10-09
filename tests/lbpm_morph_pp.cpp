@@ -240,7 +240,7 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		sprintf(FILENAME,READFILE.c_str());
-		sprintf(FILENAME+strlen(FILENAME),".morphdrain.raw");
+		sprintf(FILENAME+strlen(FILENAME),".morph.raw");
 		if (rank==0) printf("Writing file to: %s \n", FILENAME);
 		Mask->AggregateLabels(FILENAME);
 	}
