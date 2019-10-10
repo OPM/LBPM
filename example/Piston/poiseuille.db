@@ -18,3 +18,5 @@ Domain {
     BC = 0              // Boundary condition type
 }
 
+Visualization {
+}

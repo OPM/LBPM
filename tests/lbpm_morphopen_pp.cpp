@@ -32,19 +32,13 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-		double Lx, Ly, Lz;
-		int i,j,k,n;
-		int BC=0;
-		//  char fluidValue,solidValue;
-		int MAXTIME=1000;
-		int READ_FROM_BLOCK=0;
-
+		int n, nprocx, nprocy, nprocz, nx, ny, nz;
 		char LocalRankString[8];
 		char LocalRankFilename[40];
+		char FILENAME[128];
 
 		string filename;
-		double Rcrit_new, SW;
+		double SW,Rcrit_new;
 		if (argc > 1){
 			filename=argv[1];
 			Rcrit_new=0.f; 
@@ -56,6 +50,7 @@ int main(int argc, char **argv)
 		auto domain_db = db->getDatabase( "Domain" );
 
 		// Read domain parameters
+		auto READFILE = domain_db->getScalar<std::string>( "Filename" );
 		auto size = domain_db->getVector<int>( "n" );
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<int>( "ReadValues" );
@@ -84,19 +79,20 @@ int main(int argc, char **argv)
 		int N = (nx+2)*(ny+2)*(nz+2);
 
 		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
+		std::shared_ptr<Domain> Mask (new Domain(domain_db,comm));
 		//		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
 		for (n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
 		signed char *id;
 		id = new signed char [N];
-		sprintf(LocalRankFilename,"ID.%05i",rank);
-		size_t readID;
-		FILE *IDFILE = fopen(LocalRankFilename,"rb");
-		if (IDFILE==NULL) ERROR("Error opening file: ID.xxxxx");
-		readID=fread(id,1,N,IDFILE);
-		if (readID != size_t(N)) printf("lbpm_morphopen_pp: Error reading ID (rank=%i) \n",rank);
-		fclose(IDFILE);
+		Mask->Decomp(READFILE);
+		Mask->CommInit();
+
+		// Generate the NWP configuration
+		//if (rank==0) printf("Initializing morphological distribution with critical radius %f \n", Rcrit);
+		if (rank==0) printf("Performing morphological opening with target saturation %f \n", SW);
+		//	GenerateResidual(id,nx,ny,nz,Saturation);
 
 		nx+=2; ny+=2; nz+=2;
 		// Generate the signed distance map
@@ -109,9 +105,13 @@ int main(int argc, char **argv)
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
 					int n = k*nx*ny+j*nx+i;
+					id[n] = Mask->id[n];
 					// Initialize the solid phase
-					if (id[n] > 0)	id_solid(i,j,k) = 1;
-					else	     	id_solid(i,j,k) = 0;
+					if (Mask->id[n] > 0){
+						id_solid(i,j,k) = 1;
+					}
+					else	    
+						id_solid(i,j,k) = 0;
 				}
 			}
 		}
@@ -195,6 +195,22 @@ int main(int argc, char **argv)
 		FILE *ID = fopen(LocalRankFilename,"wb");
 		fwrite(id,1,N,ID);
 		fclose(ID);
+		
+		// write the geometry to a single file
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){ 
+				for (int i=0;i<nx;i++){
+					int n = k*nx*ny+j*nx+i;
+					Mask->id[n] = id[n];
+				}
+			}
+		}
+		MPI_Barrier(comm);
+
+		sprintf(FILENAME,READFILE.c_str());
+		sprintf(FILENAME+strlen(FILENAME),".morphopen.raw");
+		if (rank==0) printf("Writing file to: %s \n", FILENAME);
+		Mask->AggregateLabels(FILENAME);
 	}
 
 	MPI_Barrier(comm);
