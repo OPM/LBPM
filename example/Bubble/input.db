@@ -30,4 +30,5 @@ Analysis {
     load_balance = "independent" // Load balance method to use: "none", "default", "independent"
 }
 
-
+Visualization {
+}

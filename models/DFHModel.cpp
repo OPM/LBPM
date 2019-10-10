@@ -60,20 +60,22 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	analysis_db = db->getDatabase( "Analysis" );
 
 	// Color Model parameters
-	timestepMax = color_db->getScalar<int>( "timestepMax" );
-	tauA = color_db->getScalar<double>( "tauA" );
-	tauB = color_db->getScalar<double>( "tauB" );
-	rhoA = color_db->getScalar<double>( "rhoA" );
-	rhoB = color_db->getScalar<double>( "rhoB" );
-	Fx = color_db->getVector<double>( "F" )[0];
-	Fy = color_db->getVector<double>( "F" )[1];
-	Fz = color_db->getVector<double>( "F" )[2];
-	alpha = color_db->getScalar<double>( "alpha" );
-	beta = color_db->getScalar<double>( "beta" );
-	Restart = color_db->getScalar<bool>( "Restart" );
-	din = color_db->getScalar<double>( "din" );
-	dout = color_db->getScalar<double>( "dout" );
-	flux = color_db->getScalar<double>( "flux" );
+	timestepMax = color_db->getWithDefault<int>( "timestepMax", 100 );
+	tauA = color_db->getWithDefault<double>( "tauA", 1.0 );
+	tauB = color_db->getWithDefault<double>( "tauB", 1.0  );
+	rhoA = color_db->getWithDefault<double>( "rhoA", 1.0  );
+	rhoB = color_db->getWithDefault<double>( "rhoB", 1.0  );
+	alpha = color_db->getWithDefault<double>( "alpha", 0.001  );
+	beta = color_db->getWithDefault<double>( "beta", 0.95  );
+	Restart = color_db->getWithDefault<bool>( "Restart", true );
+	din = color_db->getWithDefault<double>( "din", 1.0  );
+	dout = color_db->getWithDefault<double>( "dout", 1.0  );
+	flux = color_db->getWithDefault<double>( "flux", 0.0 );
+	if (color_db->keyExists( "F" )){
+		Fx = color_db->getVector<double>( "F" )[0];
+		Fy = color_db->getVector<double>( "F" )[1];
+		Fz = color_db->getVector<double>( "F" )[2];
+	}
 	inletA=1.f;
 	inletB=0.f;
 	outletA=0.f;
@@ -573,7 +575,7 @@ void ScaLBL_DFHModel::Run(){
 		PROFILE_STOP("Update");
 
 		// Run the analysis
-		analysis.run( analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+		analysis.run(timestep, analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");

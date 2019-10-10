@@ -1,4 +1,4 @@
-MRT {
+B1;95;0cMRT {
     tau = 1.0          // relaxation time
     F = 0, 0, 1e-4     // external body force applied to system
     timestepMax = 1000 // max number of timesteps
@@ -26,8 +26,8 @@ Color {
 }
 
 Domain {
-    nproc = 2, 2, 2        // Number of processors (Npx,Npy,Npz)
-    n = 120, 120, 120      // Size of local domain (Nx,Ny,Nz)
+    nproc = 1, 1, 1        // Number of processors (Npx,Npy,Npz)
+    n = 400, 400, 400      // Size of local domain (Nx,Ny,Nz)
     nspheres = 1896        // Number of spheres (only needed if using a sphere packing)
     L = 1, 1, 1            // Length of domain (x,y,z)
     BC = 0                 // Boundary condition type 
@@ -51,6 +51,3 @@ Analysis {
     load_balance = "independent" // Load balance method to use: "none", "default", "independent"
 }
 
-Visualization {
-
-}
