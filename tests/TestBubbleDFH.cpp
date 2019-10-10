@@ -86,18 +86,18 @@ int main(int argc, char **argv)
 
         // Color Model parameters
         int timestepMax = color_db->getScalar<int>( "timestepMax" );
-        double tauA = color_db->getScalar<double>( "tauA" );
-        double tauB = color_db->getScalar<double>( "tauB" );
-        double rhoA = color_db->getScalar<double>( "rhoA" );
-        double rhoB = color_db->getScalar<double>( "rhoB" );
+        double tauA = color_db->getWithDefault<double>( "tauA", 1.0 );
+        double tauB = color_db->getWithDefault<double>( "tauB", 1.0 );
+        double rhoA = color_db->getWithDefault<double>( "rhoA", 1.0 );
+        double rhoB = color_db->getWithDefault<double>( "rhoB", 1.0 );
         double Fx = color_db->getVector<double>( "F" )[0];
         double Fy = color_db->getVector<double>( "F" )[1];
         double Fz = color_db->getVector<double>( "F" )[2];
-        double alpha = color_db->getScalar<double>( "alpha" );
-        double beta = color_db->getScalar<double>( "beta" );
-        bool Restart = color_db->getScalar<bool>( "Restart" );
-        double din = color_db->getScalar<double>( "din" );
-        double dout = color_db->getScalar<double>( "dout" );;
+        double alpha = color_db->getWithDefault<double>( "alpha", 0.001 );
+        double beta = color_db->getWithDefault<double>( "beta", 0.95 );
+        bool Restart = color_db->getWithDefault<bool>( "Restart", false );
+        double din = color_db->getWithDefault<double>( "din", 1.0 );
+        double dout = color_db->getWithDefault<double>( "dout", 1.0 );;
         double inletA=1.f;
         double inletB=0.f;
         double outletA=0.f;
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
         auto L = domain_db->getVector<double>( "L" );
         auto size = domain_db->getVector<int>( "n" );
         auto nproc = domain_db->getVector<int>( "nproc" );
-        int BoundaryCondition = domain_db->getScalar<int>( "BC" );
+        int BoundaryCondition = domain_db->getWithDefault<int>( "BC", 0 );
         int Nx = size[0];
         int Ny = size[1];
         int Nz = size[2];
@@ -405,7 +405,7 @@ int main(int argc, char **argv)
 		//************ MAIN ITERATION LOOP ***************************************/
 		PROFILE_START("Loop");
 		//std::shared_ptr<Database> analysis_db;
-		runAnalysis analysis(analysis_db, rank_info, ScaLBL_Comm, Dm, Np, pBC, Map );
+		runAnalysis analysis(db, rank_info, ScaLBL_Comm, Dm, Np, pBC, Map );
         //analysis.createThreads( analysis_method, 4 );
 		while (timestep < timestepMax && err > tol ) {
 			//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 			PROFILE_STOP("Update");
 
 			// Run the analysis
-			analysis.run( timestep, analysis_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+			analysis.run( timestep, db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		}
         analysis.finish();

@@ -67,7 +67,7 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	rhoB = color_db->getWithDefault<double>( "rhoB", 1.0  );
 	alpha = color_db->getWithDefault<double>( "alpha", 0.001  );
 	beta = color_db->getWithDefault<double>( "beta", 0.95  );
-	Restart = color_db->getScalar<bool>( "Restart", true );
+	Restart = color_db->getWithDefault<bool>( "Restart", true );
 	din = color_db->getWithDefault<double>( "din", 1.0  );
 	dout = color_db->getWithDefault<double>( "dout", 1.0  );
 	flux = color_db->getWithDefault<double>( "flux", 0.0 );
