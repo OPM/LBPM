@@ -173,6 +173,12 @@ void Domain::initialize( std::shared_ptr<Database> db )
     d_db = db;
     auto nproc = d_db->getVector<int>("nproc");
     auto n = d_db->getVector<int>("n");
+
+    ASSERT( n.size() == 3u );
+    ASSERT( nproc.size() == 3u );
+    int nx = n[0];
+    int ny = n[1];
+    int nz = n[2];
     
 	if (d_db->keyExists( "InletLayers" )){
 		auto InletCount = d_db->getVector<int>( "InletLayers" );
@@ -196,12 +202,13 @@ void Domain::initialize( std::shared_ptr<Database> db )
     if (d_db->keyExists( "voxel_length" )){
     	voxel_length = d_db->getScalar<double>("voxel_length");
     }
-
-    ASSERT( n.size() == 3u );
-    ASSERT( nproc.size() == 3u );
-    int nx = n[0];
-    int ny = n[1];
-    int nz = n[2];
+    else if (d_db->keyExists( "L" )){
+    	auto Length = d_db->getVector<double>("L");
+    	Lx = Length[0];
+    	Ly = Length[1];
+    	Lz = Length[2];
+    	voxel_length = Lx/(nx*nproc[0]);
+    }
     Lx = nx*nproc[0]*voxel_length;
     Ly = ny*nproc[1]*voxel_length;
     Lz = nz*nproc[2]*voxel_length;
