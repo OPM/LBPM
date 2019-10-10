@@ -849,7 +849,7 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
 						}
-						if (flow_rate_A_connected < NOISE_THRESHOLD){
+						if (flow_rate_A < NOISE_THRESHOLD){
 							if (rank==0) printf("Hit noise threshold (%f): bumping capillary number by %f X \n",NOISE_THRESHOLD,BUMP_RATE);
 							Fx *= BUMP_RATE;   // impose bump condition
 							Fy *= BUMP_RATE;   
