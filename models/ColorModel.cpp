@@ -493,7 +493,7 @@ void ScaLBL_ColorModel::Run(){
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
-	int morph_interval = 1000000;
+	int morph_interval = 100000;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
