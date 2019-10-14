@@ -505,8 +505,8 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
-	double NOISE_THRESHOLD = 1.0e-6;
-	double BUMP_RATE = 10.0;
+	double NOISE_THRESHOLD = 1.0e-7;
+	double BUMP_RATE = 2.0;
 	
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
