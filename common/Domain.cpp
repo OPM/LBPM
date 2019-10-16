@@ -433,7 +433,7 @@ void Domain::Decomp(std::string Filename)
 			printf("Checkerboard pattern at y inlet for %i layers \n",inlet_layers_y);
 			// use checkerboard pattern
 			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart; i < yStart+inlet_layers_y; j++){
+				for (int j = yStart; j < yStart+inlet_layers_y; j++){
 					for (int i = 0; i<global_Nx; i++){
 						if ( (i/checkerSize + k/checkerSize)%2 == 0){
 							// void checkers

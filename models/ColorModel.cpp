@@ -508,7 +508,7 @@ void ScaLBL_ColorModel::Run(){
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
-	int morph_interval = 1000000;
+	int morph_interval = 100000;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
@@ -520,8 +520,8 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
-	double NOISE_THRESHOLD = 1.0e-6;
-	double BUMP_RATE = 10.0;
+	double NOISE_THRESHOLD = 0.0;
+	double BUMP_RATE = 2.0;
 	
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
