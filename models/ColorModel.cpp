@@ -508,7 +508,7 @@ void ScaLBL_ColorModel::Run(){
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
-	int morph_interval = 1000000;
+	int morph_interval = 100000;
 	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
 	int morph_timesteps = 0;
 	double morph_delta = 0.0;
@@ -520,6 +520,8 @@ void ScaLBL_ColorModel::Run(){
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
+	double NOISE_THRESHOLD = 0.0;
+	double BUMP_RATE = 2.0;
 	
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -549,6 +551,12 @@ void ScaLBL_ColorModel::Run(){
 	
 	if (color_db->keyExists( "residual_endpoint_threshold" )){
 		RESIDUAL_ENDPOINT_THRESHOLD  = color_db->getScalar<double>( "residual_endpoint_threshold" );
+	}
+	if (color_db->keyExists( "noise_threshold" )){
+		NOISE_THRESHOLD  = color_db->getScalar<double>( "noise_threshold" );
+	}
+	if (color_db->keyExists( "bump_rate" )){
+		BUMP_RATE  = color_db->getScalar<double>( "bump_rate" );
 	}
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
@@ -612,7 +620,6 @@ void ScaLBL_ColorModel::Run(){
 			printf("     tolerance = %f \n",tolerance);
 			printf("     morph_delta = %f \n",morph_delta);
 			printf("     seed_water = %f \n",seed_water);
-
 		}
 		else if (protocol == "open connected oil"){
 			printf("  using protocol = open connected oil \n");
@@ -729,10 +736,6 @@ void ScaLBL_ColorModel::Run(){
 			printf("%i %f \n",timestep,din);
 		}
 		// Run the analysis
-		//analysis.run( timestep, *Averages, Phi, Pressure, Velocity, fq, Den );
-		//color_db->putScalar<int>("timestep",timestep);
-		//current_db->putDatabase("Color", color_db);
-
 		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
 		
@@ -861,10 +864,15 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
 						}
-						if (force_mag < 1e-7){
-							Fx *= 1e-7/force_mag;   // impose floor
-							Fy *= 1e-7/force_mag;   
-							Fz *= 1e-7/force_mag;   
+						if (flow_rate_A < NOISE_THRESHOLD){
+							if (rank==0) printf("Hit noise threshold (%f): bumping capillary number by %f X \n",NOISE_THRESHOLD,BUMP_RATE);
+							Fx *= BUMP_RATE;   // impose bump condition
+							Fy *= BUMP_RATE;   
+							Fz *= BUMP_RATE;   
+							capillary_number *= BUMP_RATE;
+							color_db->putScalar<int>("capillary_number",capillary_number);
+							current_db->putDatabase("Color", color_db);
+							MORPH_ADAPT = false; // re-run current point if below noise threshold
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);

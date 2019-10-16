@@ -28,5 +28,5 @@ cmake                                    \
     -D USE_TIMER=0				 \
     $LBPM_SOURCE_DIR
 
-make VERBOSE=1 -j1 && make install
+make VERBOSE=1 -j8 && make install
 
