@@ -27,8 +27,8 @@ Color {
 
 Domain {
     nproc = 1, 1, 1        // Number of processors (Npx,Npy,Npz)
-    n = 400, 400, 400      // Size of local domain (Nx,Ny,Nz)
-    N = 400, 400, 400      
+    n = 320, 320, 320      // Size of local domain (Nx,Ny,Nz)
+    N = 320, 320, 320      
     nspheres = 1896        // Number of spheres (only needed if using a sphere packing)
     L = 1, 1, 1            // Length of domain (x,y,z)
     BC = 0                 // Boundary condition type 
