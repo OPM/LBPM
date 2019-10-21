@@ -26,27 +26,25 @@ Color {
 }
 
 Domain {
-    nproc = 2, 2, 2        // Number of processors (Npx,Npy,Npz)
-    n = 256, 256, 256      // Size of local domain (Nx,Ny,Nz)
-    N = 512, 512, 512      
+    nproc = 1, 1, 1        // Number of processors (Npx,Npy,Npz)
+    n = 400, 400, 400      // Size of local domain (Nx,Ny,Nz)
+    N = 400, 400, 400      
     nspheres = 1896        // Number of spheres (only needed if using a sphere packing)
     L = 1, 1, 1            // Length of domain (x,y,z)
     BC = 0                 // Boundary condition type 
                            //     BC = 0  for periodic BC
                            //     BC = 1  for pressure BC (applied in z direction)
                            //     BC = 4  for flux BC (applied in z direction
-    // Filename = "mineralmodel.raw"                    // name of raw binary file to read digital image from 
     ReadType = "8bit"
-    ReadValues = 0, 1, 2, 3, 4, 5, 6, 7, 8           // list of labels within the binary file (read)
-    WriteValues = 1, -1, -2, -2, -3, -3, -4, -4, -4  // list of labels within the output files (write)
+    ReadValues = 0, 1, 2           // list of labels within the binary file (read)
+    WriteValues = 0, 1, 2          // list of labels within the output files (write)
 
 }
 
 Analysis {
-    blobid_interval = 1000      // Frequency to perform blob identification
     analysis_interval = 1000    // Frequency to perform analysis
-    restart_interval = 2000    // Frequency to write restart data
-    visualization_interval = 2000        // Frequency to write visualization data
+    restart_interval = 50000    // Frequency to write restart data
+    visualization_interval = 50000        // Frequency to write visualization data
     restart_file = "Restart"    // Filename to use for restart file (will append rank)
     N_threads    = 4            // Number of threads to use
     load_balance = "independent" // Load balance method to use: "none", "default", "independent"
