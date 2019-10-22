@@ -278,15 +278,12 @@ void SubPhase::Basic(){
 			dir_y = Fy/force_mag;
 			dir_z = Fz/force_mag;
 		}
-
-		
 		if (Dm->BoundaryCondition > 0 ){
 			// compute the pressure drop
 			double pressure_drop = (Pressure(Nx*Ny + Nx + 1) - 1.0) / 3.0;
-			double length = ((Nz-2)*Dm->nprocz);
-			force_mag -= pressure_drop/length;
+			double length = ((Nz-2)*Dm->nprocz());
+			force_mag += pressure_drop/length;
 		}
-		
 		if (force_mag == 0.0){
 			// default to z direction
 			dir_x = 0.0;
