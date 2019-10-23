@@ -522,6 +522,7 @@ void ScaLBL_ColorModel::Run(){
 	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
 	double NOISE_THRESHOLD = 0.0;
 	double BUMP_RATE = 2.0;
+	bool USE_BUMP_RATE = false;
 	
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -554,9 +555,11 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (color_db->keyExists( "noise_threshold" )){
 		NOISE_THRESHOLD  = color_db->getScalar<double>( "noise_threshold" );
+		USE_BUMP_RATE = true;
 	}
 	if (color_db->keyExists( "bump_rate" )){
 		BUMP_RATE  = color_db->getScalar<double>( "bump_rate" );
+		USE_BUMP_RATE = true;
 	}
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
@@ -864,7 +867,7 @@ void ScaLBL_ColorModel::Run(){
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
 						}
-						if (flow_rate_A < NOISE_THRESHOLD){
+						if (flow_rate_A < NOISE_THRESHOLD && USE_BUMP_RATE){
 							if (rank==0) printf("Hit noise threshold (%f): bumping capillary number by %f X \n",NOISE_THRESHOLD,BUMP_RATE);
 							Fx *= BUMP_RATE;   // impose bump condition
 							Fy *= BUMP_RATE;   
