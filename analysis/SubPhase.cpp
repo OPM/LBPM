@@ -288,7 +288,7 @@ void SubPhase::Basic(){
 			// compute the pressure drop
 			double pressure_drop = (Pressure(Nx*Ny + Nx + 1) - 1.0) / 3.0;
 			double length = ((Nz-2)*Dm->nprocz());
-			force_mag += pressure_drop/length;
+			force_mag -= pressure_drop/length;
 		}
 		if (force_mag == 0.0){
 			// default to z direction
