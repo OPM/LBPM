@@ -16,6 +16,8 @@ void ParallelPlates(ScaLBL_MRTModel &MRT){
 	int Nx = MRT.Nx;
 	int Ny = MRT.Ny;
 	int Nz = MRT.Nz;
+	Array<char> id_solid(Nx,Ny,Nz);
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -23,9 +25,23 @@ void ParallelPlates(ScaLBL_MRTModel &MRT){
 				if (i<2) MRT.Mask->id[n] = 0;
 				else if (i>Nx-3) MRT.Mask->id[n] = 0;
 				else MRT.Mask->id[n]=1;
+				if (MRT.Mask->id[n] == 0) 	id_solid(i,j,k) = 1;
+				else 						id_solid(i,j,k) = 0;
 			}
 		}
 	}
+	// Initialize the signed distance function
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				// Initialize distance to +/- 1
+				MRT.Distance(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+			}
+		}
+	}
+	if (MRT.rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	CalcDist(MRT.Distance,id_solid,*MRT.Dm);
+    if (MRT.rank == 0) cout << "Domain set." << endl;
 }
 
 //***************************************************************************************
