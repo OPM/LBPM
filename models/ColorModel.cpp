@@ -508,6 +508,8 @@ void ScaLBL_ColorModel::Run(){
 	double NOISE_THRESHOLD = 0.0;
 	double BUMP_RATE = 2.0;
 	bool USE_BUMP_RATE = false;
+	int RESCALE_FORCE_COUNT = 0;
+	int RESCALE_FORCE_MAX = 0;
 	
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -549,6 +551,10 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
+		RESCALE_FORCE_MAX = 1;
+	}
+	if (analysis_db->keyExists( "rescale_force_count" )){
+		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
 	}
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
@@ -590,6 +596,7 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
+
 
 	if (rank==0){
 		printf("********************************************************\n");
@@ -768,6 +775,23 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
+				
+				if (SET_CAPILLARY_NUMBER  && RESCALE_FORCE_COUNT < RESCALE_FORCE_MAX){
+					RESCALE_FORCE_COUNT++;
+					Fx *= capillary_number / Ca;
+					Fy *= capillary_number / Ca;
+					Fz *= capillary_number / Ca;
+
+					if (force_mag > 1e-3){
+						Fx *= 1e-3/force_mag;   // impose ceiling for stability
+						Fy *= 1e-3/force_mag;   
+						Fz *= 1e-3/force_mag;   
+					}
+					
+					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+					color_db->putVector<double>("F",{Fx,Fy,Fz});
+				}
 
 				if ( isSteady ){
 					MORPH_ADAPT = true;
@@ -846,7 +870,7 @@ void ScaLBL_ColorModel::Run(){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
 						Fz *= capillary_number / Ca;
-
+						RESCALE_FORCE_COUNT = 1;
 						if (force_mag > 1e-3){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
