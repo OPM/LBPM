@@ -19,16 +19,28 @@
 /********************************************************
 *  Structure to store the rank info                     *
 ********************************************************/
-inline int getRankForBlock( int nprocx, int nprocy, int nprocz, int i, int j, int k )
+int RankInfoStruct::getRankForBlock( int i, int j, int k ) const
 {
-	int i2 = (i+nprocx)%nprocx;
-	int j2 = (j+nprocy)%nprocy;
-	int k2 = (k+nprocz)%nprocz;
-	return i2 + j2*nprocx + k2*nprocx*nprocy;
+	int i2 = (i+nx)%nx;
+	int j2 = (j+ny)%ny;
+	int k2 = (k+nz)%nz;
+	return i2 + j2*nx + k2*nx*ny;
 }
 RankInfoStruct::RankInfoStruct()
 {
-    memset(this,0,sizeof(RankInfoStruct));
+    nx = 0;
+    ny = 0;
+    nz = 0;
+    ix = -1;
+    jy = -1;
+    kz = -1;
+    for (int i=-1; i<=1; i++) {
+        for (int j=-1; j<=1; j++) {
+            for (int k=-1; k<=1; k++) {
+                rank[i+1][j+1][k+1] = -1;
+            }
+        }
+    }
 }
 RankInfoStruct::RankInfoStruct( int rank0, int nprocx, int nprocy, int nprocz )
 {
@@ -36,17 +48,30 @@ RankInfoStruct::RankInfoStruct( int rank0, int nprocx, int nprocy, int nprocz )
     nx = nprocx;
     ny = nprocy;
     nz = nprocz;
-	ix = rank0%nprocx;
-	jy = (rank0/nprocx)%nprocy;
-	kz = rank0/(nprocx*nprocy);
-    for (int i=-1; i<=1; i++) {
-        for (int j=-1; j<=1; j++) {
-            for (int k=-1; k<=1; k++) {
-                rank[i+1][j+1][k+1] = getRankForBlock(nprocx,nprocy,nprocz,ix+i,jy+j,kz+k);
+    if ( rank0 >= nprocx * nprocy * nprocz ) {
+	    ix = -1;
+	    jy = -1;
+	    kz = -1;
+        for (int i=-1; i<=1; i++) {
+            for (int j=-1; j<=1; j++) {
+                for (int k=-1; k<=1; k++) {
+                    rank[i+1][j+1][k+1] = -1;
+                }
             }
         }
+    } else {
+	    ix = rank0%nprocx;
+	    jy = (rank0/nprocx)%nprocy;
+	    kz = rank0/(nprocx*nprocy);
+        for (int i=-1; i<=1; i++) {
+            for (int j=-1; j<=1; j++) {
+                for (int k=-1; k<=1; k++) {
+                    rank[i+1][j+1][k+1] = getRankForBlock(ix+i,jy+j,kz+k);
+                }
+            }
+        }
+        ASSERT(rank[1][1][1]==rank0);
     }
-    ASSERT(rank[1][1][1]==rank0);
 }
 
 

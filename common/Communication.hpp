@@ -38,7 +38,90 @@
 
 
 /********************************************************
-*  Structure to store the rank info                     *
+*  Redistribute data between two grids                  *
+********************************************************/
+template<class TYPE>
+Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src_data,
+    const RankInfoStruct& dst_rank, std::array<int,3> dst_size, MPI_Comm comm )
+{
+#ifdef USE_MPI
+    // Get the src size
+    std::array<int,3> src_size;
+    int size0[3] = { (int) src_data.size(0), (int) src_data.size(1), (int) src_data.size(2) };
+    MPI_Allreduce( size0, src_size.data(), 3, MPI_INT, MPI_MAX, comm );
+    if ( !src_data.empty() )
+        ASSERT( src_size[0] == size0[0] && src_size[1] == size0[1] && src_size[2] == size0[2] );
+    // Check that dst_size matches on all ranks
+    MPI_Allreduce( dst_size.data(), size0, 3, MPI_INT, MPI_MAX, comm );
+    ASSERT( dst_size[0] == size0[0] && dst_size[1] == size0[1] && dst_size[2] == size0[2] );
+    // Function to get overlap range
+    auto calcOverlap = []( int i1[3], int i2[3], int j1[3], int j2[3] ) {
+        std::vector<size_t> index;
+        if ( i1[0] > j2[0] || i2[0] < j1[0] || i1[1] > j2[1] || i2[1] < j1[1] || i1[2] > j2[2] || i2[2] < j1[2] )
+            return index;
+        index.resize( 6 );
+        index[0] = std::max( j1[0] - i1[0], 0 );
+        index[1] = std::min( j2[0] - i1[0], i2[0] - i1[0] );
+        index[2] = std::max( j1[1] - i1[1], 0 );
+        index[3] = std::min( j2[1] - i1[1], i2[1] - i1[1] );
+        index[4] = std::max( j1[2] - i1[2], 0 );
+        index[5] = std::min( j2[2] - i1[2], i2[2] - i1[2] );
+        return index;
+    };
+    // Pack and send my data to the appropriate ranks (including myself)
+    std::vector<int> send_rank;
+    std::vector<Array<TYPE>> send_data;
+    if ( !src_data.empty() ) {
+        int i1[3] = { src_size[0] * src_rank.ix, src_size[1] * src_rank.jy, src_size[2] * src_rank.kz };
+        int i2[3] = { i1[0] + src_size[0] - 1, i1[1] + src_size[1] - 1, i1[2] + src_size[2] - 1 };
+        for ( size_t i=0; i<dst_rank.nx; i++ ) {
+            for ( size_t j=0; j<dst_rank.ny; j++ ) {
+                for ( size_t k=0; k<dst_rank.nz; k++ ) {
+                    int j1[3] = { i * dst_size[0], j * dst_size[1], k * dst_size[2] };
+                    int j2[3] = { j1[0] + dst_size[0] - 1, j1[1] + dst_size[1] - 1, j1[2] + dst_size[2] - 1 };
+                    auto index = calcOverlap( i1, i2, j1, j2 );
+                    if ( index.empty() )
+                        continue;
+                    send_rank.push_back( dst_rank.getRankForBlock(i,j,k) );
+                    send_data.push_back( src_data.subset( index ) );
+                }
+            }
+        }
+    }
+    std::vector<MPI_Request> send_request( send_rank.size() );
+    for (size_t i=0; i<send_rank.size(); i++)
+        MPI_Isend( send_data[i].data(), sizeof(TYPE)*send_data[i].length(), MPI_BYTE, send_rank[i], 5462, comm, &send_request[i]);
+    // Unpack data from the appropriate ranks (including myself)
+    Array<TYPE> dst_data( dst_size[0], dst_size[1], dst_size[2] );
+    int i1[3] = { dst_size[0] * dst_rank.ix, dst_size[1] * dst_rank.jy, dst_size[2] * dst_rank.kz };
+    int i2[3] = { i1[0] + dst_size[0] - 1, i1[1] + dst_size[1] - 1, i1[2] + dst_size[2] - 1 };
+    for ( size_t i=0; i<src_rank.nx; i++ ) {
+        for ( size_t j=0; j<src_rank.ny; j++ ) {
+            for ( size_t k=0; k<src_rank.nz; k++ ) {
+                int j1[3] = { i * src_size[0], j * src_size[1], k * src_size[2] };
+                int j2[3] = { j1[0] + src_size[0] - 1, j1[1] + src_size[1] - 1, j1[2] + src_size[2] - 1 };
+                auto index = calcOverlap( i1, i2, j1, j2 );
+                if ( index.empty() )
+                    continue;
+                int rank  = src_rank.getRankForBlock(i,j,k);
+                Array<TYPE> data( index[1] - index[0] + 1, index[3] - index[2] + 1, index[5] - index[4] + 1 );
+                MPI_Recv( data.data(), sizeof(TYPE)*data.length(), MPI_BYTE, rank, 5462, comm, MPI_STATUS_IGNORE );
+                dst_data.copySubset( index, data );
+            }
+        }
+    }
+    // Free data
+    MPI_Waitall( send_request.size(), send_request.data(), MPI_STATUSES_IGNORE );
+    return dst_data;
+#else
+    return src_data.subset( { 0, dst_size[0]-1, 0, dst_size[1]-1, 0, dst_size[2]-1 );
+#endif
+}
+
+
+
+/********************************************************
+*  Structure to fill halo cells                         *
 ********************************************************/
 template<class TYPE>
 fillHalo<TYPE>::fillHalo( MPI_Comm comm_, const RankInfoStruct& info_,
