@@ -32,7 +32,7 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
 	}
 	if (mrt_db->keyExists( "tolerance" )){
-		tolerance = mrt_db->getScalar<int>( "timestepMax" );
+		tolerance = mrt_db->getScalar<double>( "tolerance" );
 	}
 	if (mrt_db->keyExists( "tau" )){
 		tau = mrt_db->getScalar<double>( "tau" );

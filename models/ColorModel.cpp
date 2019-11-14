@@ -551,7 +551,7 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
-		RESCALE_FORCE_MAX = 1;
+		//RESCALE_FORCE_MAX = 1;
 	}
 	if (analysis_db->keyExists( "rescale_force_count" )){
 		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
