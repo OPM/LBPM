@@ -70,6 +70,8 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     auto n = domain.getVector<int>( "n" );
     int rank = comm_rank(MPI_COMM_WORLD);
     auto nproc = domain.getVector<int>( "nproc" );
+	auto ReadValues = domain.getVector<int>( "ReadValues" );
+	auto WriteValues = domain.getVector<int>( "WriteValues" );
     RankInfoStruct rankInfo( rank, nproc[0], nproc[1], nproc[2] );
     
     // Determine the largest file number to get
@@ -94,6 +96,25 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
         }
         data = readMicroCT( filename );
     }
+    
+    // Relabel the data
+	for (int k = 0; k<Nfz; k++){
+		for (int j = 0; j<Nfy; j++){
+			for (int i = 0; i<Nfx; i++){
+				//n = k*Nfx*Nfy + j*Nfx + i;
+				//char locval = loc_id[n];
+				char locval = data(i,j,k);
+				for (int idx=0; idx<ReadValues.size(); idx++){
+					signed char oldvalue=ReadValues[idx];
+					signed char newvalue=WriteValues[idx];
+					if (locval == oldvalue){
+						data(i,j,k) = newvalue;
+						idx = ReadValues.size();
+					}
+				}
+			}
+		}
+	}
 
     // Redistribute the data
     data = redistribute( srcRankInfo, data, rankInfo, { n[0], n[1], n[2] }, comm );

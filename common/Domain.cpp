@@ -329,7 +329,6 @@ void Domain::Decomp(std::string Filename)
 	char *SegData = NULL;
 	
 	if (RANK==0){
-
 		printf("Input media: %s\n",Filename.c_str());
 		printf("Relabeling %lu values\n",ReadValues.size());
 		for (int idx=0; idx<ReadValues.size(); idx++){
@@ -485,6 +484,7 @@ void Domain::Decomp(std::string Filename)
 						else{
 							// solid checkers
 							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							
 						}
 					}
 				}

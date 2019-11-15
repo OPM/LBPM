@@ -16,7 +16,6 @@
 #include "common/Communication.h"
 #include "common/Database.h"
 
-
 class Domain;
 template<class TYPE> class PatchData;
 
