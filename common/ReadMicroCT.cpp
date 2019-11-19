@@ -98,9 +98,9 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     }
     
     // Relabel the data
-	for (int k = 0; k<Nfz; k++){
-		for (int j = 0; j<Nfy; j++){
-			for (int i = 0; i<Nfx; i++){
+	for (int k = 0; k<1024; k++){
+		for (int j = 0; j<1024; j++){
+			for (int i = 0; i<1024; i++){
 				//n = k*Nfx*Nfy + j*Nfx + i;
 				//char locval = loc_id[n];
 				char locval = data(i,j,k);
