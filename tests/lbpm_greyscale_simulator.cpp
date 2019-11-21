@@ -47,15 +47,14 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 		
 		
-		ScaLBL_MRTModel MRT(rank,nprocs,comm);
+		ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
 		auto filename = argv[1];
-		MRT.ReadParams(filename);
-		MRT.SetDomain();    // this reads in the domain 
-		MRT.ReadInput();
-		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-		MRT.Initialize();   // initializing the model will set initial conditions for variables
-		MRT.Run();	 
-		MRT.VelocityField();
+		Greyscale.ReadParams(filename);
+		Greyscale.SetDomain();    // this reads in the domain 
+		Greyscale.ReadInput();
+		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
+		Greyscale.Run();	 
 	}
 	// ****************************************************
 	MPI_Barrier(comm);
