@@ -30,6 +30,7 @@ public:
 	void Initialize();
 	void Run();
 	void WriteDebug();
+	void VelocityField();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -38,6 +39,7 @@ public:
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
+    double dp;//solid particle diameter, unit in voxel
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -54,16 +56,19 @@ public:
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
-    IntArray Map;
-    DoubleArray SignDist;
     signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
 	double *fq;
-	double *Permeability;
+	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
 	double *Pressure;
+    IntArray Map;
+    DoubleArray SignDist;
+    DoubleArray Velocity_x;
+    DoubleArray Velocity_y;
+    DoubleArray Velocity_z;
 		
 private:
 	MPI_Comm comm;

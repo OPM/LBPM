@@ -8,11 +8,11 @@ color lattice boltzmann model
 #include <time.h>
 
 ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
-	SignDist.resize(Nx,Ny,Nz);           SignDist.fill(0);
+	SignDist.resize(Nx,Ny,Nz);           
+    SignDist.fill(0);
 
 }
 ScaLBL_GreyscaleModel::~ScaLBL_GreyscaleModel(){
@@ -35,13 +35,17 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	Restart=false;
 	din=dout=1.0;
 	flux=0.0;
+    dp = 10.0; //unit of 'dp': voxel
 	
 	// Color Model parameters
 	if (greyscale_db->keyExists( "timestepMax" )){
 		timestepMax = greyscale_db->getScalar<int>( "timestepMax" );
 	}
 	if (greyscale_db->keyExists( "tau" )){
-		tau = greyscale_db->getScalar<double>( "tauA" );
+		tau = greyscale_db->getScalar<double>( "tau" );
+	}
+	if (greyscale_db->keyExists( "dp" )){
+		dp = greyscale_db->getScalar<double>( "dp" );
 	}
 	if (greyscale_db->keyExists( "F" )){
 		Fx = greyscale_db->getVector<double>( "F" )[0];
@@ -80,6 +84,12 @@ void ScaLBL_GreyscaleModel::SetDomain(){
 	Ly = Dm->Ly;
 	Lz = Dm->Lz;
 	N = Nx*Ny*Nz;
+
+	SignDist.resize(Nx,Ny,Nz);
+	Velocity_x.resize(Nx,Ny,Nz);
+	Velocity_y.resize(Nx,Ny,Nz);
+	Velocity_z.resize(Nx,Ny,Nz);
+
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	MPI_Barrier(comm);
@@ -140,6 +150,9 @@ void ScaLBL_GreyscaleModel::ReadInput(){
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
+/********************************************************
+ * AssignComponentLabels                                 *
+ ********************************************************/
 void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Permeablity)
 {
 	size_t NLABELS=0;
@@ -182,8 +195,14 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 				else if (VALUE == 2) POROSITY=1.0;
 				else if (VALUE < 1)	 POROSITY = 0.0;  
 				int idx = Map(i,j,k);
-				if (!(idx < 0))
-					Porosity[idx] = POROSITY;
+				if (!(idx < 0)){
+                    if (POROSITY<=0.0){
+                        ERROR("Error: Porosity for grey voxels must be 0.0 < Porosity <= 1.0 !\n");
+                    }
+                    else{
+					    Porosity[idx] = POROSITY;
+                    }
+                }
 			}
 		}
 	}
@@ -205,13 +224,21 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
-				// fluid labels are reserved / negative labels are immobile
+				// Permeability of fluid labels are reserved
+                // NOTE: the voxel permeability of apparent pore nodes should be infinity
+                // TODO: Need to revise the PERMEABILITY of nodes whose VALUE=1 and 2
 				if (VALUE == 1) PERMEABILITY=1.0;
 				else if (VALUE == 2) PERMEABILITY=1.0;
 				else if (VALUE < 1)	 PERMEABILITY = 0.0;  
 				int idx = Map(i,j,k);
-				if (!(idx < 0))
-					Permeability[idx] = PERMEABILITY;
+				if (!(idx < 0)){
+                    if (PERMEABILITY<=0.0){
+                        ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
+                    }
+                    else{
+					    Permeability[idx] = PERMEABILITY;
+                    }
+                }
 			}
 		}
 	}
@@ -229,7 +256,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 			POROSITY=PorosityList[idx];
 			PERMEABILITY=PermeabilityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d, porosity=%f, permeability=%f, volume fraction==%f\n",VALUE,POROSITY,PERMEABILITY,volume_fraction); 
+			printf("   label=%d, porosity=%.3g, permeability=%.3g, volume fraction==%.3g\n",VALUE,POROSITY,PERMEABILITY,volume_fraction); 
 		}
 	}
 
@@ -324,9 +351,6 @@ void ScaLBL_GreyscaleModel::Create(){
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
 }        
 
-/********************************************************
- * AssignComponentLabels                                 *
- ********************************************************/
 
 void ScaLBL_GreyscaleModel::Initialize(){
 	
@@ -387,10 +411,6 @@ void ScaLBL_GreyscaleModel::Run(){
 	//.........................................
 	
 	Minkowski Morphology(Mask);
-	DoubleArray Velocity_x(Nx,Ny,Nz);
-	DoubleArray Velocity_y(Nx,Ny,Nz);
-	DoubleArray Velocity_z(Nx,Ny,Nz);
-	DoubleArray Pressure(Nx,Ny,Nz);
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
@@ -403,21 +423,21 @@ void ScaLBL_GreyscaleModel::Run(){
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
+		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
+		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
+		ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
+		ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
 		if (timestep%1000==0){
-			ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			//ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
+			//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -509,6 +529,106 @@ void ScaLBL_GreyscaleModel::Run(){
 	// ************************************************************************
 }
 
+void ScaLBL_GreyscaleModel::VelocityField(){
+
+/*	Minkowski Morphology(Mask);
+	int SIZE=Np*sizeof(double);
+	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
+	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
+
+	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
+	Morphology.Initialize();
+	Morphology.UpdateMeshValues();
+	Morphology.ComputeLocal();
+	Morphology.Reduce();
+	
+	double count_loc=0;
+	double count;
+	double vax,vay,vaz;
+	double vax_loc,vay_loc,vaz_loc;
+	vax_loc = vay_loc = vaz_loc = 0.f;
+	for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
+		vax_loc += VELOCITY[n];
+		vay_loc += VELOCITY[Np+n];
+		vaz_loc += VELOCITY[2*Np+n];
+		count_loc+=1.0;
+	}
+	
+	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
+		vax_loc += VELOCITY[n];
+		vay_loc += VELOCITY[Np+n];
+		vaz_loc += VELOCITY[2*Np+n];
+		count_loc+=1.0;
+	}
+	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	
+	vax /= count;
+	vay /= count;
+	vaz /= count;
+	
+	double mu = (tau-0.5)/3.f;
+	if (rank==0) printf("Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
+	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
+						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
+						*/
+	
+	std::vector<IO::MeshDataStruct> visData;
+	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
+
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
+	auto SignDistVar = std::make_shared<IO::Variable>();
+
+	IO::initialize("","silo","false");
+	// Create the MeshDataStruct	
+	visData.resize(1);
+	visData[0].meshName = "domain";
+	visData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
+	SignDistVar->name = "SignDist";
+	SignDistVar->type = IO::VariableType::VolumeVariable;
+	SignDistVar->dim = 1;
+	SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(SignDistVar);
+	
+	VxVar->name = "Velocity_x";
+	VxVar->type = IO::VariableType::VolumeVariable;
+	VxVar->dim = 1;
+	VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(VxVar);
+	VyVar->name = "Velocity_y";
+	VyVar->type = IO::VariableType::VolumeVariable;
+	VyVar->dim = 1;
+	VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(VyVar);
+	VzVar->name = "Velocity_z";
+	VzVar->type = IO::VariableType::VolumeVariable;
+	VzVar->dim = 1;
+	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(VzVar);
+	
+	Array<double>& SignData  = visData[0].vars[0]->data;
+	Array<double>& VelxData = visData[0].vars[1]->data;
+	Array<double>& VelyData = visData[0].vars[2]->data;
+	Array<double>& VelzData = visData[0].vars[3]->data;
+	
+    ASSERT(visData[0].vars[0]->name=="SignDist");
+    ASSERT(visData[0].vars[1]->name=="Velocity_x");
+    ASSERT(visData[0].vars[2]->name=="Velocity_y");
+    ASSERT(visData[0].vars[3]->name=="Velocity_z");
+	
+    fillData.copy(SignDist,SignData);
+    fillData.copy(Velocity_x,VelxData);
+    fillData.copy(Velocity_y,VelyData);
+    fillData.copy(Velocity_z,VelzData);
+	
+    IO::writeData( timestep, visData, Dm->Comm );
+
+}
 
 void ScaLBL_GreyscaleModel::WriteDebug(){
 	// Copy back final phase indicator field and convert to regular layout
