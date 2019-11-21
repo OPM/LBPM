@@ -4,6 +4,7 @@ color lattice boltzmann model
 #include "models/ColorModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
+#include "common/Communication.h"
 #include "common/ReadMicroCT.h"
 #include <stdlib.h>
 #include <time.h>
@@ -191,8 +192,17 @@ void ScaLBL_ColorModel::ReadInput(){
 		IMAGE_INDEX++;
 	}
 	else if (domain_db->keyExists( "GridFile" )){
+        // Read the local domain data
 	    auto input_id = readMicroCT( *domain_db, MPI_COMM_WORLD );
-	    for (int i=0; i<Nx*Ny*Nz; i++) Mask->id[i] = input_id(i);
+        // Fill the halo (assuming GCW of 1)
+        array<int,3> size0 = { input_id.size(0), input_id.size(1), input_id.size(2) };
+        ArraySize size1 = { Mask->Nx, Mask->Ny, Mask->Nz };
+        ASSERT( size1[0] == size0[0]+2 && size1[1] == size0[1]+2 && size1[2] == size0[2]+2 );
+        fillHalo<signed char> fill( MPI_COMM_WORLD, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
+        Array<signed char> id_view;
+        id_view.viewRaw( size1, Mask->id );
+        fill.copy( input_id, id_view );
+        fill.fill( id_view );
 	}
 	else if (domain_db->keyExists( "Filename" )){
 		auto Filename = domain_db->getScalar<std::string>( "Filename" );
