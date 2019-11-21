@@ -70,6 +70,8 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     auto n = domain.getVector<int>( "n" );
     int rank = comm_rank(MPI_COMM_WORLD);
     auto nproc = domain.getVector<int>( "nproc" );
+	auto ReadValues = domain.getVector<int>( "ReadValues" );
+	auto WriteValues = domain.getVector<int>( "WriteValues" );
     RankInfoStruct rankInfo( rank, nproc[0], nproc[1], nproc[2] );
     
     // Determine the largest file number to get
@@ -81,18 +83,37 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     Array<uint8_t> data;
     RankInfoStruct srcRankInfo( rank, Nfx, Nfy, Nfz );
     if ( srcRankInfo.ix >= 0 ) {
-        auto filename = domain.getScalar<std::string>( "Filename" );
-        char tmp[100];
-        if ( filename.find( "0x_0y_0z.gbd.gz" ) != std::string::npos ) {
-            sprintf( tmp, "%ix_%iy_%iz.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
-            filename = filename.replace( filename.find( "0x_0y_0z.gbd.gz" ), 15, std::string( tmp ) );
-        } else if ( filename.find( "x0_y0_z0.gbd.gz" ) != std::string::npos ) {
-            sprintf( tmp, "x%i_y%i_z%i.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
-            filename = filename.replace( filename.find( "x0_y0_z0.gbd.gz" ), 15, std::string( tmp ) );
-        } else {
-            ERROR( "Invalid name for first file" );
-        }
-        data = readMicroCT( filename );
+    	auto filename = domain.getScalar<std::string>( "Filename" );
+    	char tmp[100];
+    	if ( filename.find( "0x_0y_0z.gbd.gz" ) != std::string::npos ) {
+    		sprintf( tmp, "%ix_%iy_%iz.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
+    		filename = filename.replace( filename.find( "0x_0y_0z.gbd.gz" ), 15, std::string( tmp ) );
+    	} else if ( filename.find( "x0_y0_z0.gbd.gz" ) != std::string::npos ) {
+    		sprintf( tmp, "x%i_y%i_z%i.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
+    		filename = filename.replace( filename.find( "x0_y0_z0.gbd.gz" ), 15, std::string( tmp ) );
+    	} else {
+    		ERROR( "Invalid name for first file" );
+    	}
+    	data = readMicroCT( filename );
+
+    	// Relabel the data
+    	for (int k = 0; k<1024; k++){
+    		for (int j = 0; j<1024; j++){
+    			for (int i = 0; i<1024; i++){
+    				//n = k*Nfx*Nfy + j*Nfx + i;
+    				//char locval = loc_id[n];
+    				char locval = data(i,j,k);
+    				for (int idx=0; idx<ReadValues.size(); idx++){
+    					signed char oldvalue=ReadValues[idx];
+    					signed char newvalue=WriteValues[idx];
+    					if (locval == oldvalue){
+    						data(i,j,k) = newvalue;
+    						idx = ReadValues.size();
+    					}
+    				}
+    			}
+    		}
+    	}
     }
 
     // Redistribute the data
