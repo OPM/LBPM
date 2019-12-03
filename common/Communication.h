@@ -31,7 +31,14 @@ struct RankInfoStruct {
     int rank[3][3][3];      //!<  The rank for the neighbor [i][j][k]
     RankInfoStruct();
     RankInfoStruct( int rank, int nprocx, int nprocy, int nprocz );
+    int getRankForBlock( int i, int j, int k ) const;
 };
+
+
+//! Redistribute domain data (dst may be smaller than the src)
+template<class TYPE>
+Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src_data,
+    const RankInfoStruct& dst_rank, std::array<int,3> dst_size, MPI_Comm comm );
 
 
 /*!

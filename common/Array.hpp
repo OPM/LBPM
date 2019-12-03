@@ -694,15 +694,15 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::repmat(
     for ( size_t i4 = 0, index = 0; i4 < N1[4]; i4++ ) {
         for ( size_t j4 = 0; j4 < Nr[4]; j4++ ) {
             for ( size_t i3 = 0; i3 < N1[3]; i3++ ) {
-                for ( size_t j4 = 0; j4 < Nr[3]; j4++ ) {
+                for ( size_t j3 = 0; j3 < Nr[3]; j3++ ) {
                     for ( size_t i2 = 0; i2 < N1[2]; i2++ ) {
-                        for ( size_t j4 = 0; j4 < Nr[2]; j4++ ) {
+                        for ( size_t j2 = 0; j2 < Nr[2]; j2++ ) {
                             for ( size_t i1 = 0; i1 < N1[1]; i1++ ) {
-                                for ( size_t j4 = 0; j4 < Nr[1]; j4++ ) {
+                                for ( size_t j1 = 0; j1 < Nr[1]; j1++ ) {
                                     for ( size_t i0 = 0; i0 < N1[0]; i0++ ) {
                                         size_t k = d_size.index( i0, i1, i2, i3, i4 );
                                         TYPE x   = d_data[k];
-                                        for ( size_t j4 = 0; j4 < Nr[0]; j4++, index++ )
+                                        for ( size_t j0 = 0; j0 < Nr[0]; j0++, index++ )
                                             y2[index] = x;
                                     }
                                 }
