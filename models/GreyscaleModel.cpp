@@ -498,13 +498,24 @@ void ScaLBL_GreyscaleModel::Run(){
 			Xs=sumReduce( Dm->Comm, Xs);
 			double h = Dm->voxel_length;
 			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
-			if (rank==0) {
-				printf("     %f\n",absperm);
-				FILE * log_file = fopen("Permeability.csv","a");
-				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-						h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
-				fclose(log_file);
-			}
+
+            if (rank==0){
+				printf("     AbsPerm = %.5g [micron^2]\n",absperm);
+                bool WriteHeader=false;
+                FILE * log_file = fopen("Permeability.csv","r");
+                if (log_file != NULL)
+                    fclose(log_file);
+                else
+                    WriteHeader=true;
+                log_file = fopen("Permeability.csv","a");
+                if (WriteHeader)
+                    fprintf(log_file,"timesteps Fx Fy Fz mu Vs As Hs Xs vax vay vaz absperm \n",
+                            timestep,Fx,Fy,Fz,mu,h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz,absperm);
+
+                fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
+                        h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
+                fclose(log_file);
+            }
 		}
 	}
 	PROFILE_STOP("Loop");
