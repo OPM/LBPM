@@ -585,6 +585,50 @@ void Domain::Decomp(std::string Filename)
 		MPI_Recv(id,N,MPI_CHAR,0,15,Comm,MPI_STATUS_IGNORE);
 	}
 	MPI_Barrier(Comm);
+
+	// Compute the porosity
+	double sum;
+	double sum_local=0.0;
+	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	//.........................................................
+	// If external boundary conditions are applied remove solid
+	if (BoundaryCondition >  0  && kproc() == 0){
+    	if (inlet_layers_z < 4)	inlet_layers_z=4;
+		for (int k=0; k<inlet_layers_z; k++){
+			for (int j=0;j<Ny;j++){
+				for (int i=0;i<Nx;i++){
+					int n = k*Nx*Ny+j*Nx+i;
+					id[n] = 1;
+				}                    
+			}
+ 		}
+ 	}
+    if (BoundaryCondition >  0  && kproc() == nprocz-1){
+    	if (outlet_layers_z < 4)	outlet_layers_z=4;
+ 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
+ 			for (int j=0;j<Ny;j++){
+ 				for (int i=0;i<Nx;i++){
+ 					int n = k*Nx*Ny+j*Nx+i;
+ 					id[n] = 2;
+ 				}                    
+ 			}
+ 		}
+ 	}
+    for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
+        for (int j=1;j<Ny-1;j++){
+            for (int i=1;i<Nx-1;i++){
+                int n = k*Nx*Ny+j*Nx+i;
+                if (id[n] > 0){
+                    sum_local+=1.0;
+                }
+            }
+        }
+    }
+    MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,Comm);
+    porosity = sum*iVol_global;
+    if (rank()==0) printf("Media porosity = %f \n",porosity);
+ 	//.........................................................
 }
 
 void Domain::AggregateLabels(char *FILENAME){
