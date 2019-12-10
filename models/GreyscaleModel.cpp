@@ -153,7 +153,7 @@ void ScaLBL_GreyscaleModel::ReadInput(){
 /********************************************************
  * AssignComponentLabels                                 *
  ********************************************************/
-void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Permeablity)
+void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Permeability)
 {
 	size_t NLABELS=0;
 	signed char VALUE=0;
@@ -695,5 +695,17 @@ void ScaLBL_GreyscaleModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 
+	ScaLBL_Comm->RegularLayout(Map,&Porosity[0],PhaseField);
+	FILE *POROS_FILE;
+	sprintf(LocalRankFilename,"Porosity.%05i.raw",rank);
+	POROS_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,POROS_FILE);
+	fclose(POROS_FILE);
 
+	ScaLBL_Comm->RegularLayout(Map,&Permeability[0],PhaseField);
+	FILE *PERM_FILE;
+	sprintf(LocalRankFilename,"Permeability.%05i.raw",rank);
+	PERM_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,PERM_FILE);
+	fclose(PERM_FILE);
 }

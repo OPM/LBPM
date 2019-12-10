@@ -1,6 +1,6 @@
 #include <math.h>
 
-extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
                                               double *Poros,double *Perm, double *Velocity){
 	int n;
 	// conserved momemnts
@@ -14,6 +14,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
     double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
 
 	for (int n=start; n<finish; n++){
 		// q=0
@@ -47,27 +48,23 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
         if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
 		rho = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
-		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Fx;
-		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Fy;
-		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Fz;
+		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Gx;
+		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Gy;
+		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Gz;
         v_mag=sqrt(vx*vx+vy*vy+vz*vz);
         ux = vx/(c0+sqrt(c0*c0+c1*v_mag));
         uy = vy/(c0+sqrt(c0*c0+c1*v_mag));
         uz = vz/(c0+sqrt(c0*c0+c1*v_mag));
         u_mag=sqrt(ux*ux+uy*uy+uz*uz);
-		//uu = 1.5*(ux*ux+uy*uy+uz*uz);
 
-        //Update the body force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-        double Fx_tmp=Fx; //Fx_tmp stores user-specified body force
-        double Fy_tmp=Fy;
-        double Fz_tmp=Fz;
-        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Fx;
-        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Fy;
-        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Fz;
+        //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
+        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
+        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
+        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
         if (porosity==1.0){
-            Fx=Fx_tmp;
-            Fy=Fy_tmp;
-            Fz=Fz_tmp;
+            Fx=Gx;
+            Fy=Gy;
+            Fz=Gz;
         }
 
 		// q=0
@@ -165,7 +162,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz, 
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz, 
                                              double *Poros,double *Perm, double *Velocity){
 	int n;
 	// conserved momemnts
@@ -180,6 +177,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
     double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
 
 	int nread;
 	for (int n=start; n<finish; n++){
@@ -268,27 +266,23 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
         if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
 		rho = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
-		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Fx;
-		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Fy;
-		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Fz;
+		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Gx;
+		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Gy;
+		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Gz;
         v_mag=sqrt(vx*vx+vy*vy+vz*vz);
         ux = vx/(c0+sqrt(c0*c0+c1*v_mag));
         uy = vy/(c0+sqrt(c0*c0+c1*v_mag));
         uz = vz/(c0+sqrt(c0*c0+c1*v_mag));
         u_mag=sqrt(ux*ux+uy*uy+uz*uz);
-		//uu = 1.5*(ux*ux+uy*uy+uz*uz);
 
-        //Update the body force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-        double Fx_tmp=Fx; //Fx_tmp stores user-specified body force
-        double Fy_tmp=Fy;
-        double Fz_tmp=Fz;
-        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Fx;
-        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Fy;
-        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Fz;
+        //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
+        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
+        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
+        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
         if (porosity==1.0){
-            Fx=Fx_tmp;
-            Fy=Fy_tmp;
-            Fz=Fz_tmp;
+            Fx=Gx;
+            Fy=Gy;
+            Fz=Gz;
         }
 
 		// q=0
