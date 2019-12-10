@@ -643,34 +643,36 @@ void ScaLBL_GreyscaleModel::VelocityField(){
 
 void ScaLBL_GreyscaleModel::WriteDebug(){
 	// Copy back final phase indicator field and convert to regular layout
-/*	ScaLBL_CopyToHost(Porosity.data(), Poros, sizeof(double)*N);
+	DoubleArray PhaseField(Nx,Ny,Nz);
 
-	FILE *OUTFILE;
-	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
-	OUTFILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,OUTFILE);
-	fclose(OUTFILE);
+	//ScaLBL_CopyToHost(Porosity.data(), Poros, sizeof(double)*N);
 
-    ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	FILE *AFILE;
-	sprintf(LocalRankFilename,"A.%05i.raw",rank);
-	AFILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,AFILE);
-	fclose(AFILE);
-
-	ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	FILE *BFILE;
-	sprintf(LocalRankFilename,"B.%05i.raw",rank);
-	BFILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,BFILE);
-	fclose(BFILE);
-
-	ScaLBL_Comm->RegularLayout(Map,Pressure,PhaseField);
-	FILE *PFILE;
-	sprintf(LocalRankFilename,"Pressure.%05i.raw",rank);
-	PFILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,PFILE);
-	fclose(PFILE);
+//	FILE *OUTFILE;
+//	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
+//	OUTFILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,OUTFILE);
+//	fclose(OUTFILE);
+//
+//    ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+//	FILE *AFILE;
+//	sprintf(LocalRankFilename,"A.%05i.raw",rank);
+//	AFILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,AFILE);
+//	fclose(AFILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+//	FILE *BFILE;
+//	sprintf(LocalRankFilename,"B.%05i.raw",rank);
+//	BFILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,BFILE);
+//	fclose(BFILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,Pressure,PhaseField);
+//	FILE *PFILE;
+//	sprintf(LocalRankFilename,"Pressure.%05i.raw",rank);
+//	PFILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,PFILE);
+//	fclose(PFILE);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
 	FILE *VELX_FILE;
@@ -693,7 +695,5 @@ void ScaLBL_GreyscaleModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 
- * 
- */
 
 }

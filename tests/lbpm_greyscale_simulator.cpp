@@ -55,6 +55,7 @@ int main(int argc, char **argv)
 		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
 		Greyscale.Run();	 
 		Greyscale.VelocityField();
+		Greyscale.WriteDebug();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);
