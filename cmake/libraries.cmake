@@ -77,7 +77,7 @@ MACRO( CONFIGURE_MPI )
                 ENDIF ()
             ELSE ()
                 # Search for the MPI executable in the current directory
-                FIND_PROGRAM ( MPIEXEC  NAMES mpiexec mpirun lamexec  PATHS ${MPI_DIRECTORY}/bin  NO_DEFAULT_PATH )
+                FIND_PROGRAM( MPIEXEC  NAMES mpiexec mpirun lamexec  PATHS ${MPI_DIRECTORY}/bin  NO_DEFAULT_PATH )
                 IF ( NOT MPIEXEC )
                     MESSAGE( FATAL_ERROR "Could not locate mpi executable" )
                 ENDIF()
