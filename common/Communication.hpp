@@ -44,9 +44,9 @@ Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src
     if ( !src_data.empty() ) {
         int i1[3] = { src_size[0] * src_rank.ix, src_size[1] * src_rank.jy, src_size[2] * src_rank.kz };
         int i2[3] = { i1[0] + src_size[0] - 1, i1[1] + src_size[1] - 1, i1[2] + src_size[2] - 1 };
-        for ( size_t i=0; i<dst_rank.nx; i++ ) {
-            for ( size_t j=0; j<dst_rank.ny; j++ ) {
-                for ( size_t k=0; k<dst_rank.nz; k++ ) {
+        for ( int i=0; i<dst_rank.nx; i++ ) {
+            for ( int j=0; j<dst_rank.ny; j++ ) {
+                for ( int k=0; k<dst_rank.nz; k++ ) {
                     int j1[3] = { i * dst_size[0], j * dst_size[1], k * dst_size[2] };
                     int j2[3] = { j1[0] + dst_size[0] - 1, j1[1] + dst_size[1] - 1, j1[2] + dst_size[2] - 1 };
                     auto index = calcOverlap( i1, i2, j1, j2 );
@@ -65,9 +65,9 @@ Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src
     Array<TYPE> dst_data( dst_size[0], dst_size[1], dst_size[2] );
     int i1[3] = { dst_size[0] * dst_rank.ix, dst_size[1] * dst_rank.jy, dst_size[2] * dst_rank.kz };
     int i2[3] = { i1[0] + dst_size[0] - 1, i1[1] + dst_size[1] - 1, i1[2] + dst_size[2] - 1 };
-    for ( size_t i=0; i<src_rank.nx; i++ ) {
-        for ( size_t j=0; j<src_rank.ny; j++ ) {
-            for ( size_t k=0; k<src_rank.nz; k++ ) {
+    for ( int i=0; i<src_rank.nx; i++ ) {
+        for ( int j=0; j<src_rank.ny; j++ ) {
+            for ( int k=0; k<src_rank.nz; k++ ) {
                 int j1[3] = { i * src_size[0], j * src_size[1], k * src_size[2] };
                 int j2[3] = { j1[0] + src_size[0] - 1, j1[1] + src_size[1] - 1, j1[2] + src_size[2] - 1 };
                 auto index = calcOverlap( i1, i2, j1, j2 );
