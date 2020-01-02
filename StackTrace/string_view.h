@@ -119,7 +119,7 @@ public:
         int result = 0;
         for ( int i = 0; i < N && result == 0; i++ )
             if ( d_data[i] != other[i] )
-                result = d_data[i] < other[i] ? -i : i;
+                result = d_data[i] < other[i] ? -( i + 1 ) : ( i + 1 );
         if ( result == 0 )
             result = size() == other.size() ? 0 : size() < other.size() ? -1 : 1;
         return result;

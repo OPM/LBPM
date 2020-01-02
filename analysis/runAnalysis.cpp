@@ -767,6 +767,8 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
         double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
+    NULL_USE( N );
+    NULL_USE( Phi );
     
 	auto db = input_db->getDatabase( "Analysis" );
     //int timestep = db->getWithDefault<int>( "timestep", 0 );
@@ -937,8 +939,6 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
  ******************************************************************/
 void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
-
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
@@ -954,7 +954,7 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         finish();
     }
 
-    PROFILE_START("run");
+    PROFILE_START("basic");
 
     // Copy the appropriate variables to the host (so we can spawn new threads)
     ScaLBL_DeviceBarrier();
@@ -983,7 +983,6 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     }
     PROFILE_STOP("Copy data to host");
 
-    PROFILE_START("run",1);
     // Spawn threads to do the analysis work
     //if (timestep%d_restart_interval==0){
     // if ( matches(type,AnalysisType::ComputeAverages) ) {
@@ -1036,12 +1035,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         d_wait_vis = d_tpool.add_work(work);
     }
 
-    PROFILE_STOP("run");
+    PROFILE_STOP("basic");
 }
 
 void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
     //int timestep = color_db->getWithDefault<int>( "timestep", 0 );
@@ -1068,7 +1066,6 @@ void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db,
     d_wait_vis = d_tpool.add_work(work2);
 
     //Averages.WriteVis = false;
-   // }
     
     PROFILE_STOP("write vis");
 }
