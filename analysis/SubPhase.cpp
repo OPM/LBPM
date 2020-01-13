@@ -160,9 +160,6 @@ void SubPhase::Basic(){
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
-
 	imin=jmin=1;
 	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
