@@ -118,7 +118,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
+	//if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
