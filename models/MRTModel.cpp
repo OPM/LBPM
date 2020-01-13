@@ -194,10 +194,20 @@ void ScaLBL_MRTModel::Run(){
 	int SIZE=Np*sizeof(double);
 
 	if (rank==0){
-		FILE * log_file = fopen("Permeability.csv","a");
-		fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz k\n");
-		fclose(log_file);
+		bool WriteHeader=false;
+		log_file = fopen("Permeability.csv","r");
+		if (log_file != NULL)
+			fclose(log_file);
+		else
+			WriteHeader=true;
+
+		if (WriteHeader){
+			FILE * log_file = fopen("Permeability.csv","a");
+			fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz k\n");
+			fclose(log_file);
+		}
 	}
+
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
