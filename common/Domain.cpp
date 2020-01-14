@@ -391,7 +391,7 @@ void Domain::Decomp(std::string Filename)
 			for (int idx=0; idx<ReadValues.size(); idx++){
 				long int label=ReadValues[idx];
 				long int count=LabelCount[idx];
-				printf("Label=%d, Count=%d \n",label,count);
+				printf("Label=%ld, Count=%ld \n",label,count);
 			}
 		}
 
