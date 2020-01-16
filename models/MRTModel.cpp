@@ -202,7 +202,7 @@ void ScaLBL_MRTModel::Run(){
 			WriteHeader=true;
 
 		if (WriteHeader){
-			log_file = fopen("Permeability.csv","a");
+			log_file = fopen("Permeability.csv","a+");
 			fprintf(log_file,"time Fx Fy Fz mu Vs As Js Xs vx vy vz k\n");
 			fclose(log_file);
 		}
