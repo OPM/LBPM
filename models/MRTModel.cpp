@@ -208,7 +208,6 @@ void ScaLBL_MRTModel::Run(){
 		}
 	}
 
-
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
