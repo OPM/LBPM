@@ -19,6 +19,7 @@ color lattice boltzmann model
 #include "models/ColorModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
+#include "common/ReadMicroCT.h"
 #include <stdlib.h>
 #include <time.h>
 
@@ -133,7 +134,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	inletB=0.f;
 	outletA=0.f;
 	outletB=1.f;
-	if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
+	//if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
@@ -203,6 +204,10 @@ void ScaLBL_ColorModel::ReadInput(){
 		std::string first_image = ImageList[IMAGE_INDEX];
 		Mask->Decomp(first_image);
 		IMAGE_INDEX++;
+	}
+	else if (domain_db->keyExists( "GridFile" )){
+	    auto input_id = readMicroCT( *domain_db, MPI_COMM_WORLD );
+	    for (int i=0; i<Nx*Ny*Nz; i++) Mask->id[i] = input_id(i);
 	}
 	else if (domain_db->keyExists( "Filename" )){
 		auto Filename = domain_db->getScalar<std::string>( "Filename" );
@@ -1490,4 +1495,68 @@ void ScaLBL_ColorModel::WriteDebug(){
 	OUTFILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
+
+    ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+	FILE *AFILE;
+	sprintf(LocalRankFilename,"A.%05i.raw",rank);
+	AFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,AFILE);
+	fclose(AFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	FILE *BFILE;
+	sprintf(LocalRankFilename,"B.%05i.raw",rank);
+	BFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,BFILE);
+	fclose(BFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,Pressure,PhaseField);
+	FILE *PFILE;
+	sprintf(LocalRankFilename,"Pressure.%05i.raw",rank);
+	PFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,PFILE);
+	fclose(PFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
+	FILE *VELX_FILE;
+	sprintf(LocalRankFilename,"Velocity_X.%05i.raw",rank);
+	VELX_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELX_FILE);
+	fclose(VELX_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
+	FILE *VELY_FILE;
+	sprintf(LocalRankFilename,"Velocity_Y.%05i.raw",rank);
+	VELY_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELY_FILE);
+	fclose(VELY_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
+	FILE *VELZ_FILE;
+	sprintf(LocalRankFilename,"Velocity_Z.%05i.raw",rank);
+	VELZ_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELZ_FILE);
+	fclose(VELZ_FILE);
+
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
+//	FILE *CGX_FILE;
+//	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
+//	CGX_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGX_FILE);
+//	fclose(CGX_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
+//	FILE *CGY_FILE;
+//	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
+//	CGY_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGY_FILE);
+//	fclose(CGY_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
+//	FILE *CGZ_FILE;
+//	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
+//	CGZ_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGZ_FILE);
+//	fclose(CGZ_FILE);
+
 }

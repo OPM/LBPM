@@ -93,7 +93,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn qw qn pw pn\n");				
+			fprintf(TIMELOG,"sw krw krn vw vn pw pn\n");				
 		}
 	}
 }
@@ -109,35 +109,35 @@ SubPhase::~SubPhase()
 void SubPhase::Write(int timestep)
 {
 	if (Dm->rank()==0){
-		fprintf(SUBPHASE,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.p, gwd.p, gnc.p, gnd.p);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gwc.V, gwc.A, gwc.H, gwc.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",gnc.V, gnc.A, gnc.H, gnc.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",gnd.V, gnd.A, gnd.H, gnd.X, gnd.Nc);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",giwn.V, giwn.A, giwn.H, giwn.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i\n",giwnc.V, giwnc.A, giwnc.H, giwnc.X, giwnc.Nc);
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.p, gwd.p, gnc.p, gnd.p);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.V, gwc.A, gwc.H, gwc.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gnc.V, gnc.A, gnc.H, gnc.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",gnd.V, gnd.A, gnd.H, gnd.X, gnd.Nc);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",giwn.V, giwn.A, giwn.H, giwn.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i\n",giwnc.V, giwnc.A, giwnc.H, giwnc.X, giwnc.Nc);
 		fflush(SUBPHASE);
 	}
 	else{
-		fprintf(SUBPHASE,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",wc.p, wd.p, nc.p, nd.p);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %.5g %.5g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",wc.V, wc.A, wc.H, wc.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",nc.V, nc.A, nc.H, nc.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g %i ",nd.V, nd.A, nd.H, nd.X, nd.Nc);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g ",iwn.V, iwn.A, iwn.H, iwn.X);
-		fprintf(SUBPHASE,"%.5g %.5g %.5g %.5g\n",iwnc.V, iwnc.A, iwnc.H, iwnc.X);
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.p, wd.p, nc.p, nd.p);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.V, wc.A, wc.H, wc.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",nc.V, nc.A, nc.H, nc.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",nd.V, nd.A, nd.H, nd.X, nd.Nc);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",iwn.V, iwn.A, iwn.H, iwn.X);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g\n",iwnc.V, iwnc.A, iwnc.H, iwnc.X);
 	}
 
 }
@@ -160,9 +160,6 @@ void SubPhase::Basic(){
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
-
 	imin=jmin=1;
 	// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
@@ -307,7 +304,7 @@ void SubPhase::Basic(){
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*h*h*water_flow_rate,h*h*h*not_water_flow_rate, gwb.p, gnb.p); 
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p); 
 		fflush(TIMELOG);
 	}
 	if (err==true){
