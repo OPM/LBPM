@@ -724,169 +724,113 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
         pressure=0.5/porosity*(pressure-0.5*Den*u_mag*u_mag/porosity);
 
 		//..............carry out relaxation process...............................................
-//		m1 = m1 + rlx_setA*((-30*Den+19*(jx*jx+jy*jy+jz*jz)/Den/porosity + 57*pressure*porosity) - m1);
-//		m2 = m2 + rlx_setA*((12*Den - 5.5*(jx*jx+jy*jy+jz*jz)/Den/porosity-27*pressure*porosity) - m2);
-//		m4 = m4 + rlx_setB*((-0.6666666666666666*jx) - m4);
-//		m6 = m6 + rlx_setB*((-0.6666666666666666*jy) - m6);
-//		m8 = m8 + rlx_setB*((-0.6666666666666666*jz) - m8);
-//		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/Den/porosity) - m9);
-//		m10 = m10 + rlx_setA*(-0.5*((2*jx*jx-jy*jy-jz*jz)/Den/porosity)- m10);
-//		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/Den/porosity) - m11);
-//		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/Den/porosity)- m12);
-//		m13 = m13 + rlx_setA*((jx*jy/Den/porosity) - m13);
-//		m14 = m14 + rlx_setA*((jy*jz/Den/porosity) - m14);
-//		m15 = m15 + rlx_setA*((jx*jz/Den/porosity) - m15);
-//		m16 = m16 + rlx_setB*( - m16);
-//		m17 = m17 + rlx_setB*( - m17);
-//		m18 = m18 + rlx_setB*( - m18);
-		//.......................................................................................................
-
-		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
-		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
-		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4);
-		m6 = m6 + rlx_setB*((-0.6666666666666666*uy*Den) - m6);
-		m8 = m8 + rlx_setB*((-0.6666666666666666*uz*Den) - m8);
-		m9 = m9 + rlx_setA*((Den*(2*ux*ux-uy*uy-uz*uz)/porosity) - m9);
-		m10 = m10 + rlx_setA*(-0.5*Den*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
-		m11 = m11 + rlx_setA*((Den*(uy*uy-uz*uz)/porosity) - m11);
-		m12 = m12 + rlx_setA*(-0.5*(Den*(uy*uy-uz*uz)/porosity)- m12);
-		m13 = m13 + rlx_setA*((Den*ux*uy/porosity) - m13);
-		m14 = m14 + rlx_setA*((Den*uy*uz/porosity) - m14);
-		m15 = m15 + rlx_setA*((Den*ux*uz/porosity) - m15);
+		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
+                + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
+                + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+        jx = jx + Fx;
+		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+        jy = jy + Fy;
+		m6 = m6 + rlx_setB*((-0.6666666666666666*uy*Den) - m6)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+        jz = jz + Fz;
+		m8 = m8 + rlx_setB*((-0.6666666666666666*uz*Den) - m8)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+		m9 = m9 + rlx_setA*((Den*(2*ux*ux-uy*uy-uz*uz)/porosity) - m9)
+                + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+		m10 = m10 + rlx_setA*(-0.5*Den*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+                  + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+		m11 = m11 + rlx_setA*((Den*(uy*uy-uz*uz)/porosity) - m11)
+                  + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+		m12 = m12 + rlx_setA*(-0.5*(Den*(uy*uy-uz*uz)/porosity)- m12)
+                  + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+		m13 = m13 + rlx_setA*((Den*ux*uy/porosity) - m13)
+                  + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+		m14 = m14 + rlx_setA*((Den*uy*uz/porosity) - m14)
+                  + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+		m15 = m15 + rlx_setA*((Den*ux*uz/porosity) - m15)
+                  + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
 		m16 = m16 + rlx_setB*( - m16);
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
 		//.......................................................................................................
 
-        jx+=0.5*Fx;//There is no collision for momentum, but they must be updated subject to the body force
-        jy+=0.5*Fy;
-        jz+=0.5*Fz;
 		//.................inverse transformation......................................................
 		// q=0
-		//fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
-		fq = mrt_V1*Den-mrt_V2*m1+mrt_V3*m2 
-                  + 0.3333333333333333*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V2*m1+mrt_V3*m2;
 		dist[n] = fq;
 
 		// q = 1
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*Fx;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) 
-            +0.05555555555555555*(1. - 0.5*rlx)*(Fx*(3. + (6.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10);
 		dist[1*Np+n] = fq;
 
 		// q=2
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) 
-            +0.05555555555555555*(1. - 0.5*rlx)*(Fx*(-3. + (6.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10);
 		dist[2*Np+n] = fq;
 
 		// q = 3
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. + (6.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12);
 		dist[3*Np+n] = fq;
 
 		// q = 4
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. + (6.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12);
 		dist[4*Np+n] = fq;
 
 		// q = 5
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(3. + (6.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11);
 		dist[5*Np+n] = fq;
 
 		// q = 6
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11)
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(-3. + (6.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11);
 		dist[6*Np+n] = fq;
 
 		// q = 7
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(3. - (3.*ux)/porosity + (9.*(ux + uy))/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(ux + uy))/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17);
 		dist[7*Np+n] = fq;
 
 		// q = 8
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(-3. - (3.*ux)/porosity - (9.*(-ux - uy))/porosity) + Fy*(-3. - (9.*(-ux - uy))/porosity - (3.*uy)/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16);
 		dist[8*Np+n] = fq;
 
 		// q = 9
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(3. - (3.*ux)/porosity + (9.*(ux - uy))/porosity) + Fy*(-3. - (9.*(ux - uy))/porosity - (3.*uy)/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17);
 		dist[9*Np+n] = fq;
 
 		// q = 10
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(-3. - (3.*ux)/porosity - (9.*(-ux + uy))/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(-ux + uy))/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17);
 		dist[10*Np+n] = fq;
 
 		// q = 11
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(3. - (3.*ux)/porosity + (9.*(ux + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(ux + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16);
 		dist[11*Np+n] = fq;
 
 		// q = 12
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(Fx+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(-3. - (3.*ux)/porosity - (9.*(-ux - uz))/porosity) + 
-  Fz*(-3. - (9.*(-ux - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18);
 		dist[12*Np+n] = fq;
 
 		// q = 13
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(3. - (3.*ux)/porosity + (9.*(ux - uz))/porosity) + 
-  Fz*(-3. - (9.*(ux - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18);
 		dist[13*Np+n] = fq;
 
 		// q= 14
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(-3. - (3.*ux)/porosity - (9.*(-ux + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(-ux + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18);
 		dist[14*Np+n] = fq;
 
 		// q = 15
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) 
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(uy + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(uy + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18);
 		dist[15*Np+n] = fq;
 
 		// q = 16
-		//fq =  mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
-		fq =  mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. - (3.*uy)/porosity - (9.*(-uy - uz))/porosity) + 
-  Fz*(-3. - (9.*(-uy - uz))/porosity - (3.*uz)/porosity));
+		fq =  mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17);
 		dist[16*Np+n] = fq;
 
 		// q = 17
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(uy - uz))/porosity) + 
-  Fz*(-3. - (9.*(uy - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18);
 		dist[17*Np+n] = fq;
 
 		// q = 18
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. - (3.*uy)/porosity - (9.*(-uy + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(-uy + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18);
 		dist[18*Np+n] = fq;
 		//........................................................................
 
@@ -1258,186 +1202,130 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
         pressure=0.5/porosity*(pressure-0.5*Den*u_mag*u_mag/porosity);
 
 		//..............carry out relaxation process...............................................
-//		m1 = m1 + rlx_setA*((-30*Den+19*(jx*jx+jy*jy+jz*jz)/Den/porosity + 57*pressure*porosity) - m1);
-//		m2 = m2 + rlx_setA*((12*Den - 5.5*(jx*jx+jy*jy+jz*jz)/Den/porosity-27*pressure*porosity) - m2);
-//		m4 = m4 + rlx_setB*((-0.6666666666666666*jx) - m4);
-//		m6 = m6 + rlx_setB*((-0.6666666666666666*jy) - m6);
-//		m8 = m8 + rlx_setB*((-0.6666666666666666*jz) - m8);
-//		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/Den/porosity) - m9);
-//		m10 = m10 + rlx_setA*(-0.5*((2*jx*jx-jy*jy-jz*jz)/Den/porosity)- m10);
-//		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/Den/porosity) - m11);
-//		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/Den/porosity)- m12);
-//		m13 = m13 + rlx_setA*((jx*jy/Den/porosity) - m13);
-//		m14 = m14 + rlx_setA*((jy*jz/Den/porosity) - m14);
-//		m15 = m15 + rlx_setA*((jx*jz/Den/porosity) - m15);
-//		m16 = m16 + rlx_setB*( - m16);
-//		m17 = m17 + rlx_setB*( - m17);
-//		m18 = m18 + rlx_setB*( - m18);
-		//.......................................................................................................
-        
-		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
-		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
-		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4);
-		m6 = m6 + rlx_setB*((-0.6666666666666666*uy*Den) - m6);
-		m8 = m8 + rlx_setB*((-0.6666666666666666*uz*Den) - m8);
-		m9 = m9 + rlx_setA*((Den*(2*ux*ux-uy*uy-uz*uz)/porosity) - m9);
-		m10 = m10 + rlx_setA*(-0.5*Den*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
-		m11 = m11 + rlx_setA*((Den*(uy*uy-uz*uz)/porosity) - m11);
-		m12 = m12 + rlx_setA*(-0.5*(Den*(uy*uy-uz*uz)/porosity)- m12);
-		m13 = m13 + rlx_setA*((Den*ux*uy/porosity) - m13);
-		m14 = m14 + rlx_setA*((Den*uy*uz/porosity) - m14);
-		m15 = m15 + rlx_setA*((Den*ux*uz/porosity) - m15);
+		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
+                + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
+                + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+        jx = jx + Fx;
+		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+        jy = jy + Fy;
+		m6 = m6 + rlx_setB*((-0.6666666666666666*uy*Den) - m6)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+        jz = jz + Fz;
+		m8 = m8 + rlx_setB*((-0.6666666666666666*uz*Den) - m8)
+                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+		m9 = m9 + rlx_setA*((Den*(2*ux*ux-uy*uy-uz*uz)/porosity) - m9)
+                + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+		m10 = m10 + rlx_setA*(-0.5*Den*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+                  + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+		m11 = m11 + rlx_setA*((Den*(uy*uy-uz*uz)/porosity) - m11)
+                  + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+		m12 = m12 + rlx_setA*(-0.5*(Den*(uy*uy-uz*uz)/porosity)- m12)
+                  + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+		m13 = m13 + rlx_setA*((Den*ux*uy/porosity) - m13)
+                  + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+		m14 = m14 + rlx_setA*((Den*uy*uz/porosity) - m14)
+                  + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+		m15 = m15 + rlx_setA*((Den*ux*uz/porosity) - m15)
+                  + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
 		m16 = m16 + rlx_setB*( - m16);
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
 		//.......................................................................................................
-        
-        jx+=0.5*Fx;//There is no collision for momentum, but they must be updated subject to the body force
-        jy+=0.5*Fy;
-        jz+=0.5*Fz;
+       
 		//.................inverse transformation......................................................
 		// q=0
-		//fq = mrt_V1*rho-mrt_V2*m1+mrt_V3*m2;
-		fq = mrt_V1*Den-mrt_V2*m1+mrt_V3*m2 
-                  + 0.3333333333333333*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V2*m1+mrt_V3*m2;
 		dist[n] = fq;
 
 		// q = 1
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) + 0.16666666*Fx;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10) 
-            +0.05555555555555555*(1. - 0.5*rlx)*(Fx*(3. + (6.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jx-m4)+mrt_V6*(m9-m10);
 		nread = neighborList[n+Np];
 		dist[nread] = fq;
 
 		// q=2
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) -  0.16666666*Fx;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10) 
-            +0.05555555555555555*(1. - 0.5*rlx)*(Fx*(-3. + (6.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m4-jx)+mrt_V6*(m9-m10);
 		nread = neighborList[n];
 		dist[nread] = fq;
 
 		// q = 3
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) + 0.16666666*Fy;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. + (6.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jy-m6)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12);
 		nread = neighborList[n+3*Np];
 		dist[nread] = fq;
 
 		// q = 4
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) - 0.16666666*Fy;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. + (6.*uy)/porosity) + Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m6-jy)+mrt_V7*(m10-m9)+mrt_V8*(m11-m12);
 		nread = neighborList[n+2*Np];
 		dist[nread] = fq;
 
 		// q = 5
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) + 0.16666666*Fz;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) 
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(3. + (6.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(jz-m8)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11);
 		nread = neighborList[n+5*Np];
 		dist[nread] = fq;
 
 		// q = 6
-		//fq = mrt_V1*rho-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11) - 0.16666666*Fz;
-		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11)
-				+0.05555555555555555*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(0. - (3.*uy)/porosity) + Fz*(-3. + (6.*uz)/porosity));
+		fq = mrt_V1*Den-mrt_V4*m1-mrt_V5*m2+0.1*(m8-jz)+mrt_V7*(m10-m9)+mrt_V8*(m12-m11);
 		nread = neighborList[n+4*Np];
 		dist[nread] = fq;
 
 		// q = 7
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17) + 0.08333333333*(Fx+Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(3. - (3.*ux)/porosity + (9.*(ux + uy))/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(ux + uy))/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jy)+0.025*(m4+m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m16-m17);
 		nread = neighborList[n+7*Np];
 		dist[nread] = fq;
 
 		// q = 8
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16) - 0.08333333333*(Fx+Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(-3. - (3.*ux)/porosity - (9.*(-ux - uy))/porosity) + Fy*(-3. - (9.*(-ux - uy))/porosity - (3.*uy)/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jy)-0.025*(m4+m6) +mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12+0.25*m13+0.125*(m17-m16);
 		nread = neighborList[n+6*Np];
 		dist[nread] = fq;
 
 		// q = 9
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17) + 0.08333333333*(Fx-Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(3. - (3.*ux)/porosity + (9.*(ux - uy))/porosity) + Fy*(-3. - (9.*(ux - uy))/porosity - (3.*uy)/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jy)+0.025*(m4-m6)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13+0.125*(m16+m17);
 		nread = neighborList[n+9*Np];
 		dist[nread] = fq;
 
 		// q = 10
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)- 0.08333333333*(Fx-Fy);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(-3. - (3.*ux)/porosity - (9.*(-ux + uy))/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(-ux + uy))/porosity) + 
-  Fz*(0. - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jx)+0.025*(m6-m4)+mrt_V7*m9+mrt_V11*m10+mrt_V8*m11+mrt_V12*m12-0.25*m13-0.125*(m16+m17);
 		nread = neighborList[n+8*Np];
 		dist[nread] = fq;
 
 		// q = 11
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16) + 0.08333333333*(Fx+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(3. - (3.*ux)/porosity + (9.*(ux + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(ux + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx+jz)+0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m18-m16);
 		nread = neighborList[n+11*Np];
 		dist[nread] = fq;
 
 		// q = 12
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18) - 0.08333333333*(Fx+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(-3. - (3.*ux)/porosity - (9.*(-ux - uz))/porosity) + 
-  Fz*(-3. - (9.*(-ux - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jx+jz)-0.025*(m4+m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12+0.25*m15+0.125*(m16-m18);
 		nread = neighborList[n+10*Np];
 		dist[nread]= fq;
 
 		// q = 13
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18) + 0.08333333333*(Fx-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(3. - (3.*ux)/porosity + (9.*(ux - uz))/porosity) + 
-  Fz*(-3. - (9.*(ux - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jx-jz)+0.025*(m4-m8)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15-0.125*(m16+m18);
 		nread = neighborList[n+13*Np];
 		dist[nread] = fq;
 
 		// q= 14
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18) - 0.08333333333*(Fx-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fy*(0. - (3.*uy)/porosity) + Fx*(-3. - (3.*ux)/porosity - (9.*(-ux + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(-ux + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jx)+0.025*(m8-m4)+mrt_V7*m9+mrt_V11*m10-mrt_V8*m11-mrt_V12*m12-0.25*m15+0.125*(m16+m18);
 		nread = neighborList[n+12*Np];
 		dist[nread] = fq;
 
 		// q = 15
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) + 0.08333333333*(Fy+Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18) 
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(uy + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(uy + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy+jz)+0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m17-m18);
 		nread = neighborList[n+15*Np];
 		dist[nread] = fq;
 
 		// q = 16
-		//fq =  mrt_V1*rho+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)- 0.08333333333*(Fy+Fz);
-		fq =  mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. - (3.*uy)/porosity - (9.*(-uy - uz))/porosity) + 
-  Fz*(-3. - (9.*(-uy - uz))/porosity - (3.*uz)/porosity));
+		fq =  mrt_V1*Den+mrt_V9*m1+mrt_V10*m2-0.1*(jy+jz)-0.025*(m6+m8)-mrt_V6*m9-mrt_V7*m10+0.25*m14+0.125*(m18-m17);
 		nread = neighborList[n+14*Np];
 		dist[nread] = fq;
 
 		// q = 17
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18) + 0.08333333333*(Fy-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(3. - (3.*uy)/porosity + (9.*(uy - uz))/porosity) + 
-  Fz*(-3. - (9.*(uy - uz))/porosity - (3.*uz)/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jy-jz)+0.025*(m6-m8)-mrt_V6*m9-mrt_V7*m10-0.25*m14+0.125*(m17+m18);
 		nread = neighborList[n+17*Np];
 		dist[nread] = fq;
 
 		// q = 18
-		//fq = mrt_V1*rho+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18) - 0.08333333333*(Fy-Fz);
-		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18)
-				+0.027777777777777776*(1. - 0.5*rlx)*(Fx*(0. - (3.*ux)/porosity) + Fy*(-3. - (3.*uy)/porosity - (9.*(-uy + uz))/porosity) + 
-  Fz*(3. - (3.*uz)/porosity + (9.*(-uy + uz))/porosity));
+		fq = mrt_V1*Den+mrt_V9*m1+mrt_V10*m2+0.1*(jz-jy)+0.025*(m8-m6)-mrt_V6*m9-mrt_V7*m10-0.25*m14-0.125*(m17+m18);
 		nread = neighborList[n+16*Np];
 		dist[nread] = fq;
 		//........................................................................
