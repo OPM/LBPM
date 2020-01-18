@@ -8,7 +8,7 @@ color lattice boltzmann model
 #include <time.h>
 
 ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	SignDist.resize(Nx,Ny,Nz);           
@@ -30,6 +30,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	// set defaults
 	timestepMax = 100000;
 	tau = 1.0;
+    Den = 1.0;//constant density
 	tolerance = 0.01;
 	Fx = Fy = Fz = 0.0;
 	Restart=false;
@@ -37,12 +38,15 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	flux=0.0;
     dp = 10.0; //unit of 'dp': voxel
 	
-	// Color Model parameters
+	// Greyscale Model parameters
 	if (greyscale_db->keyExists( "timestepMax" )){
 		timestepMax = greyscale_db->getScalar<int>( "timestepMax" );
 	}
 	if (greyscale_db->keyExists( "tau" )){
 		tau = greyscale_db->getScalar<double>( "tau" );
+	}
+	if (greyscale_db->keyExists( "Den" )){
+		Den = greyscale_db->getScalar<double>( "Den" );
 	}
 	if (greyscale_db->keyExists( "dp" )){
 		dp = greyscale_db->getScalar<double>( "dp" );
@@ -423,15 +427,19 @@ void ScaLBL_GreyscaleModel::Run(){
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		

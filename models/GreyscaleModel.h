@@ -36,6 +36,7 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tau;
+    double Den;//constant density
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;

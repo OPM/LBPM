@@ -62,6 +62,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity);
 
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,
+                                              double *Poros,double *Perm, double *Velocity,double Den);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz, 
+                                             double *Poros,double *Perm, double *Velocity,double Den);
+
+
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
 		double Fy, double Fz);
