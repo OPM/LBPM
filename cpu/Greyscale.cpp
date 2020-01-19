@@ -391,7 +391,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 	double jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double m3,m5,m7;
     double fq;
 	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double GeoFun;//geometric function from Guo's PRE 66, 036304 (2002)
@@ -851,7 +850,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 	double jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double m3,m5,m7;
     double fq;
 	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double GeoFun;//geometric function from Guo's PRE 66, 036304 (2002)
