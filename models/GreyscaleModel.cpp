@@ -194,10 +194,6 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
-				// fluid labels are reserved / negative labels are immobile
-				if (VALUE == 1) POROSITY=1.0;
-				else if (VALUE == 2) POROSITY=1.0;
-				else if (VALUE < 1)	 POROSITY = 0.0;  
 				int idx = Map(i,j,k);
 				if (!(idx < 0)){
                     if (POROSITY<=0.0){
@@ -228,19 +224,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
 					}
 				}
-				// Permeability of fluid labels are reserved
-                // NOTE: the voxel permeability of apparent pore nodes should be infinity
-                // TODO: Need to revise the PERMEABILITY of nodes whose VALUE=1 and 2
-				if (VALUE == 1) PERMEABILITY=1.0;
-				else if (VALUE == 2) PERMEABILITY=1.0;
-				else if (VALUE < 1)	 PERMEABILITY = 0.0;  
 				int idx = Map(i,j,k);
 				if (!(idx < 0)){
                     if (PERMEABILITY<=0.0){
                         ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
                     }
                     else{
-					    Permeability[idx] = PERMEABILITY;
+					    Permeability[idx] = PERMEABILITY/Dm->voxel_length/Dm->voxel_length;
                     }
                 }
 			}
@@ -254,13 +244,15 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
+        printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
 		printf("Component labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			POROSITY=PorosityList[idx];
 			PERMEABILITY=PermeabilityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d, porosity=%.3g, permeability=%.3g, volume fraction==%.3g\n",VALUE,POROSITY,PERMEABILITY,volume_fraction); 
+			printf("   label=%d, porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
+                    VALUE,POROSITY,PERMEABILITY,PERMEABILITY/Dm->voxel_length/Dm->voxel_length,volume_fraction); 
 		}
 	}
 
