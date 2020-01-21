@@ -1,11 +1,17 @@
 /*
-color lattice boltzmann model
+Greyscale lattice boltzmann model
  */
 #include "models/GreyscaleModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
 #include <stdlib.h>
 #include <time.h>
+
+template<class TYPE>
+void DeleteArray( const TYPE *p )
+{
+    delete [] p;
+}
 
 ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
@@ -117,6 +123,7 @@ void ScaLBL_GreyscaleModel::ReadInput(){
 		Mask->Decomp(Filename);
 	}
 	else{
+        if (rank==0) printf("Filename of input image is not found, reading ID.0* instead.");
 		Mask->ReadIDs();
 	}
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
@@ -357,39 +364,23 @@ void ScaLBL_GreyscaleModel::Create(){
 
 
 void ScaLBL_GreyscaleModel::Initialize(){
-	
 	if (rank==0)	printf ("Initializing distributions \n");
 	ScaLBL_D3Q19_Init(fq, Np);
-	/*
-	 * This function initializes model
-	 */
+
 	if (Restart == true){
 		if (rank==0){
-			printf("Reading restart file! \n");
+			printf("Initializing distributions from Restart! \n");
 		}
-
 		// Read in the restart file to CPU buffers
-		int *TmpMap;
-		TmpMap = new int[Np];
-		
-		double *cDist;
-		cDist = new double[19*Np];
-		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-    	
-		ifstream File(LocalRestartFile,ios::binary);
-		int idx;
-		double value;
-		for (int n=0; n<Np; n++){
-			// Read the distributions
-			for (int q=0; q<19; q++){
-				File.read((char*) &value, sizeof(value));
-				cDist[q*Np+n] = value;
-			}
-		}
-		File.close();
-		
+        std::shared_ptr<double> cfq;
+        cfq = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
+        FILE *File;
+        File=fopen(LocalRestartFile,"rb");
+        fread(cfq.get(),sizeof(double),19*Np,File);
+        fclose(File);
+
 		// Copy the restart data to the GPU
-		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
+		ScaLBL_CopyToDevice(fq,cfq.get(),19*Np*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
 		MPI_Barrier(comm);
@@ -400,6 +391,21 @@ void ScaLBL_GreyscaleModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
+	int analysis_interval = 1000; 	// number of timesteps in between in situ analysis 
+	int visualization_interval = 1000; 	 
+	int restart_interval = 10000; 	// number of timesteps in between in saving distributions for restart 
+	if (analysis_db->keyExists( "analysis_interval" )){
+		analysis_interval = analysis_db->getScalar<int>( "analysis_interval" );
+	}
+	if (analysis_db->keyExists( "visualization_interval" )){
+		visualization_interval = analysis_db->getScalar<int>( "visualization_interval" );
+	}
+	if (analysis_db->keyExists( "restart_interval" )){
+		restart_interval = analysis_db->getScalar<int>( "restart_interval" );
+	}
+	if (greyscale_db->keyExists( "timestep" )){
+		timestep = greyscale_db->getScalar<int>( "timestep" );
+	}
 
 	if (rank==0){
 		printf("********************************************************\n");
@@ -418,8 +424,7 @@ void ScaLBL_GreyscaleModel::Run(){
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
-    //std::shared_ptr<Database> analysis_db;
-	timestep=0;
+	auto current_db = db->cloneDatabase();
 	double rlx = 1.0/tau;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
@@ -443,7 +448,7 @@ void ScaLBL_GreyscaleModel::Run(){
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
-		if (timestep%1000==0){
+		if (timestep%analysis_interval==0){
 			//ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
 			//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
@@ -518,7 +523,7 @@ void ScaLBL_GreyscaleModel::Run(){
                     WriteHeader=true;
                 log_file = fopen("Permeability.csv","a");
                 if (WriteHeader)
-                    fprintf(log_file,"timesteps Fx Fy Fz mu Vs As Hs Xs vax vay vaz absperm \n",
+                    fprintf(log_file,"timestep Fx Fy Fz mu Vs As Hs Xs vax vay vaz AbsPerm \n",
                             timestep,Fx,Fy,Fz,mu,h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz,absperm);
 
                 fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
@@ -526,7 +531,35 @@ void ScaLBL_GreyscaleModel::Run(){
                 fclose(log_file);
             }
 		}
+
+		if (timestep%visualization_interval==0){
+            VelocityField();
+        }
+
+		if (timestep%restart_interval==0){
+            //Use rank=0 write out Restart.db
+            if (rank==0) {
+                greyscale_db->putScalar<int>("timestep",timestep);    		
+                greyscale_db->putScalar<bool>( "Restart", true );
+                current_db->putDatabase("Greyscale", greyscale_db);
+                std::ofstream OutStream("Restart.db");
+                current_db->print(OutStream, "");
+                OutStream.close();
+      
+            }
+            //Write out Restart data.
+            std::shared_ptr<double> cfq;
+            cfq = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
+            ScaLBL_CopyToHost(cfq.get(),fq,19*Np*sizeof(double));// Copy restart data to the CPU
+
+            FILE *RESTARTFILE;
+            RESTARTFILE=fopen(LocalRestartFile,"wb");
+            fwrite(cfq.get(),sizeof(double),19*Np,RESTARTFILE);
+            fclose(RESTARTFILE);
+		    MPI_Barrier(comm);
+        }
 	}
+
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_greyscale_simulator",1);
 	//************************************************************************

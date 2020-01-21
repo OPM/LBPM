@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
 		Greyscale.Run();	 
-		Greyscale.VelocityField();
+		//Greyscale.VelocityField();
 		//Greyscale.WriteDebug();
 	}
 	// ****************************************************
