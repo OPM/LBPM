@@ -41,6 +41,7 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout;
     double dp;//solid particle diameter, unit in voxel
+    double GreyPorosity;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;

@@ -8,7 +8,7 @@ color lattice boltzmann model
 #include <time.h>
 
 ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	SignDist.resize(Nx,Ny,Nz);           
@@ -243,6 +243,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	
 	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
+    //Initialize a weighted porosity after considering grey voxels
+    GreyPorosity=0.0;
+	for (unsigned int idx=0; idx<NLABELS; idx++){
+		double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+        GreyPorosity+=volume_fraction*PorosityList[idx];
+    }
+
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
 		printf("Component labels: %lu \n",NLABELS);
@@ -251,11 +258,12 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 			POROSITY=PorosityList[idx];
 			PERMEABILITY=PermeabilityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d, porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
+			printf("   label=%d: porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
                     VALUE,POROSITY,PERMEABILITY,PERMEABILITY/Dm->voxel_length/Dm->voxel_length,volume_fraction); 
+            printf("             effective porosity=%.3g\n",volume_fraction*POROSITY);
 		}
+        printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
 	}
-
 }
 
 
@@ -497,7 +505,8 @@ void ScaLBL_GreyscaleModel::Run(){
 			Hs=sumReduce( Dm->Comm, Hs);
 			Xs=sumReduce( Dm->Comm, Xs);
 			double h = Dm->voxel_length;
-			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
+			//double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
+			double absperm = h*h*mu*GreyPorosity*flow_rate / force_mag;
 
             if (rank==0){
 				printf("     AbsPerm = %.5g [micron^2]\n",absperm);
