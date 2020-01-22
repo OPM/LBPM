@@ -47,11 +47,7 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Reading the domain information file
 	//.......................................................................
-	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
-	double Lx, Ly, Lz;
-	int64_t Nx,Ny,Nz;
 	int64_t i,j,k,n;
-	int BC=0;
 	int64_t xStart,yStart,zStart;
 	int checkerSize;
 	int inlet_count_x, inlet_count_y, inlet_count_z;
@@ -112,25 +108,25 @@ int main(int argc, char **argv)
 		ReadType = "8bit";
 	}
 
-	nx = size[0];
-	ny = size[1];
-	nz = size[2];
-	nprocx = nproc[0];
-	nprocy = nproc[1];
-	nprocz = nproc[2];
-	Nx = SIZE[0];
-	Ny = SIZE[1];
-	Nz = SIZE[2];
+	int nx = size[0];
+	int ny = size[1];
+	int nz = size[2];
+	int nprocx = nproc[0];
+	int nprocy = nproc[1];
+	int nprocz = nproc[2];
+	long int Nx = SIZE[0];
+	long int Ny = SIZE[1];
+	long int Nz = SIZE[2];
 
 	printf("Input media: %s\n",Filename.c_str());
 	printf("Relabeling %lu values\n",ReadValues.size());
-	for (int idx=0; idx<ReadValues.size(); idx++){
+	for (size_t idx=0; idx<ReadValues.size(); idx++){
 		int oldvalue=ReadValues[idx];
 		int newvalue=WriteValues[idx];
 		printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
 	}
 
-	nprocs=nprocx*nprocy*nprocz;
+	int nprocs=nprocx*nprocy*nprocz;
 
 	char *SegData = NULL;
 	// Rank=0 reads the entire segmented data and distributes to worker processes
@@ -172,7 +168,7 @@ int main(int argc, char **argv)
 				n = k*Nx*Ny+j*Nx+i;
 				//char locval = loc_id[n];
 				char locval = SegData[n];
-				for (int idx=0; idx<ReadValues.size(); idx++){
+				for (size_t idx=0; idx<ReadValues.size(); idx++){
 					signed char oldvalue=ReadValues[idx];
 					signed char newvalue=WriteValues[idx];
 					if (locval == oldvalue){
@@ -185,10 +181,10 @@ int main(int argc, char **argv)
 		}
 	}
 	if (rank==0){
-		for (int idx=0; idx<ReadValues.size(); idx++){
+		for (size_t idx=0; idx<ReadValues.size(); idx++){
 			long int label=ReadValues[idx];
 			long int count=LabelCount[idx];
-			printf("Label=%d, Count=%d \n",label,count);
+			printf("Label=%ld, Count=%ld \n",label,count);
 		}
 	}
 	
@@ -215,7 +211,7 @@ int main(int argc, char **argv)
 		printf("Checkerboard pattern at y inlet for %i layers \n",inlet_count_y);
 		// use checkerboard pattern
 		for (int k = 0; k<Nz; k++){
-			for (int j = yStart; i < yStart+inlet_count_y; j++){
+			for (int j = yStart; j < yStart+inlet_count_y; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize + k/checkerSize)%2 == 0){
 						// void checkers
@@ -272,7 +268,7 @@ int main(int argc, char **argv)
 		printf("Checkerboard pattern at y outlet for %i layers \n",outlet_count_y);
 		// use checkerboard pattern
 		for (int k = 0; k<Nz; k++){
-			for (int j = yStart + ny*nprocy - outlet_count_y; i < yStart + ny*nprocy; j++){
+			for (int j = yStart + ny*nprocy - outlet_count_y; j < yStart + ny*nprocy; j++){
 				for (int i = 0; i<Nx; i++){
 					if ( (i/checkerSize + k/checkerSize)%2 == 0){
 						// void checkers
@@ -305,9 +301,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
-	// Get the rank info
-	int64_t N = (nx+2)*(ny+2)*(nz+2);
 
 	// number of sites to use for periodic boundary condition transition zone
 	int64_t z_transition_size = (nprocz*nz - (Nz - zStart))/2;

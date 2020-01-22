@@ -34,7 +34,6 @@ int main(int argc, char **argv)
 		//.......................................................................
 	        int n, nx, ny, nz;
 		char LocalRankFilename[40];
-		char FILENAME[128];
 
 		string filename;
 		double SW;
@@ -239,10 +238,9 @@ int main(int argc, char **argv)
 		}
 		MPI_Barrier(comm);
 
-		sprintf(FILENAME,READFILE.c_str());
-		sprintf(FILENAME+strlen(FILENAME),".morph.raw");
-		if (rank==0) printf("Writing file to: %s \n", FILENAME);
-		Mask->AggregateLabels(FILENAME);
+        auto filename2 = READFILE + ".morph.raw";
+		if (rank==0) printf("Writing file to: %s \n", filename2.c_str());
+		Mask->AggregateLabels(filename2);
 	}
 
 	MPI_Barrier(comm);

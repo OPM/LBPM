@@ -457,24 +457,16 @@ int main (int argc, char **argv)
 		double *x = new double[1];
 		ASSERT(x!=NULL);
 	}
-
-    // set the error code
-    // Note: the error code should be consistent across all processors
-    int error = 0;
     
     int Np = 1;
-    int Q = 9;
+    //int Q = 9;
 
     double Fx = 1.0;
     double Fy = 1.0;
     double Fz = 1.0;
     
-    double *dist;    
-    double * Velocity;
-    
-    dist = new double [19*Np];
-    Velocity = new double [3*Np];
-
+    auto dist = new double [19*Np];
+    //auto Velocity  = new double [3*Np
 
     for (int n=0; n<Np; n++){
     	dist[n] = 0.3333333333333333;

@@ -60,13 +60,12 @@ int main(int argc, char **argv)
     }
 
     // Get the rank info
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+    auto Dm = std::make_shared<Domain>(db,comm);
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-		std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
+    auto Averages = std::make_shared<TwoPhase>(Dm);
 	Nx += 2;
 	Ny += 2;
 	Nz += 2;
-	int N = Nx*Ny*Nz;
 	//.......................................................................
 	for ( k=1;k<Nz-1;k++){
 		for ( j=1;j<Ny-1;j++){
@@ -142,7 +141,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-    double beta = 0.95;
+    //double beta = 0.95;
 	if (rank==0) printf("initializing the system \n");
 
 	Averages->UpdateSolid();

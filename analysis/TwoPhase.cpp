@@ -204,6 +204,7 @@ TwoPhase::~TwoPhase()
 
 void TwoPhase::ColorToSignedDistance(double Beta, DoubleArray &ColorData, DoubleArray &DistData)
 {
+    NULL_USE( Beta );
   /*double factor,temp,value;
 		factor=0.5/Beta;
 	// Initialize to -1,1 (segmentation)
@@ -627,8 +628,8 @@ void TwoPhase::ComputeLocal()
 
 void TwoPhase::AssignComponentLabels()
 {
-	int LabelNWP=1;
-	int LabelWP=2;
+	//int LabelNWP=1;
+	//int LabelWP=2;
 	// NOTE: labeling the wetting phase components is tricky! One sandstone media had over 800,000 components
 	// NumberComponents_WP = ComputeGlobalPhaseComponent(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->rank_info,PhaseID,LabelWP,Label_WP);
 	// treat all wetting phase is connected
@@ -1172,6 +1173,8 @@ void TwoPhase::Reduce()
 
 void TwoPhase::NonDimensionalize(double D, double viscosity, double IFT)
 {
+    NULL_USE( viscosity );
+    NULL_USE( IFT );
 	awn_global *= D;
 	ans_global *= D;
 	ans_global *= D;

@@ -58,6 +58,9 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
 	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
 	id(NULL)
 {	
+    NULL_USE( rnk );
+    NULL_USE( npy );
+    NULL_USE( npz );
 	// set up the neighbor ranks
     int myrank;
     MPI_Comm_rank( Comm, &myrank );
@@ -241,7 +244,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	INSIST(nprocs == nproc[0]*nproc[1]*nproc[2],"Fatal error in processor count!");
 }
 
-void Domain::Decomp(std::string Filename)
+void Domain::Decomp( const std::string& Filename )
 {
 	//.......................................................................
 	// Reading the domain information file
@@ -251,7 +254,6 @@ void Domain::Decomp(std::string Filename)
 	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
 	int64_t global_Nx,global_Ny,global_Nz;
 	int64_t i,j,k,n;
-	int BC=0;
 	int64_t xStart,yStart,zStart;
 	int checkerSize;
 	//int inlet_layers_x, inlet_layers_y, inlet_layers_z;
@@ -331,7 +333,7 @@ void Domain::Decomp(std::string Filename)
 	if (RANK==0){
 		printf("Input media: %s\n",Filename.c_str());
 		printf("Relabeling %lu values\n",ReadValues.size());
-		for (int idx=0; idx<ReadValues.size(); idx++){
+		for (size_t idx=0; idx<ReadValues.size(); idx++){
 			int oldvalue=ReadValues[idx];
 			int newvalue=WriteValues[idx];
 			printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
@@ -374,7 +376,7 @@ void Domain::Decomp(std::string Filename)
 					n = k*global_Nx*global_Ny+j*global_Nx+i;
 					//char locval = loc_id[n];
 					char locval = SegData[n];
-					for (int idx=0; idx<ReadValues.size(); idx++){
+					for (size_t idx=0; idx<ReadValues.size(); idx++){
 						signed char oldvalue=ReadValues[idx];
 						signed char newvalue=WriteValues[idx];
 						if (locval == oldvalue){
@@ -387,10 +389,10 @@ void Domain::Decomp(std::string Filename)
 			}
 		}
 		if (RANK==0){
-			for (int idx=0; idx<ReadValues.size(); idx++){
+			for (size_t idx=0; idx<ReadValues.size(); idx++){
 				long int label=ReadValues[idx];
 				long int count=LabelCount[idx];
-				printf("Label=%d, Count=%d \n",label,count);
+				printf("Label=%ld, Count=%ld \n",label,count);
 			}
 		}
 
@@ -475,7 +477,7 @@ void Domain::Decomp(std::string Filename)
 			printf("Checkerboard pattern at y outlet for %i layers \n",outlet_layers_y);
 			// use checkerboard pattern
 			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart + ny*nprocy - outlet_layers_y; i < yStart + ny*nprocy; j++){
+				for (int j = yStart + ny*nprocy - outlet_layers_y; j < yStart + ny*nprocy; j++){
 					for (int i = 0; i<global_Nx; i++){
 						if ( (i/checkerSize + k/checkerSize)%2 == 0){
 							// void checkers
@@ -587,7 +589,7 @@ void Domain::Decomp(std::string Filename)
 	MPI_Barrier(Comm);
 }
 
-void Domain::AggregateLabels(char *FILENAME){
+void Domain::AggregateLabels( const std::string& filename ){
 	
 	int nx = Nx;
 	int ny = Ny;
@@ -664,8 +666,7 @@ void Domain::AggregateLabels(char *FILENAME){
 			}
 		}
 		// write the output
-		FILE *OUTFILE;
-		OUTFILE = fopen(FILENAME,"wb");
+		FILE *OUTFILE = fopen(filename.c_str(),"wb");
 		fwrite(FullID,1,full_size,OUTFILE);
 		fclose(OUTFILE);
 	}
@@ -1145,19 +1146,18 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 }
 
 // Ideally stuff below here should be moved somewhere else -- doesn't really belong here
-void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np)
+void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np)
 {
-    int q,n;
     double value;
     ofstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
+    for (size_t n=0; n<Np; n++){
         // Write the two density values
         value = cDen[n];
         File.write((char*) &value, sizeof(value));
         value = cDen[Np+n];
         File.write((char*) &value, sizeof(value));
         // Write the even distributions
-        for (q=0; q<19; q++){
+        for (size_t q=0; q<19; q++){
             value = cfq[q*Np+n];
             File.write((char*) &value, sizeof(value));
         }
@@ -1166,16 +1166,15 @@ void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq
 
 }
 
-void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
+void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, size_t Np)
 {
-    int q=0, n=0;
     double value=0;
     ifstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
+    for (size_t n=0; n<Np; n++){
         File.read((char*) &value, sizeof(value));
         cPhi[n] = value;
         // Read the distributions
-        for (q=0; q<19; q++){
+        for (size_t q=0; q<19; q++){
             File.read((char*) &value, sizeof(value));
             cfq[q*Np+n] = value;
         }
@@ -1183,13 +1182,12 @@ void ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
     File.close();
 }
 
-void ReadBinaryFile(char *FILENAME, double *Data, int N)
+void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
 {
-  int n;
   double value;
   ifstream File(FILENAME,ios::binary);
   if (File.good()){
-    for (n=0; n<N; n++){
+    for (size_t n=0; n<N; n++){
       // Write the two density values                                                                                
       File.read((char*) &value, sizeof(value));
       Data[n] = value;
@@ -1197,7 +1195,7 @@ void ReadBinaryFile(char *FILENAME, double *Data, int N)
     }
   }
   else {
-    for (n=0; n<N; n++) Data[n] = 1.2e-34;
+    for (size_t n=0; n<N; n++) Data[n] = 1.2e-34;
   }
   File.close();
 }

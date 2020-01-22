@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 		//	char value;
 		char *id;
 		id = new char[N];
-		double sum, sum_local;
+		double sum;
 		//...........................................................................
 		if (rank == 0) cout << "Setting up bubble..." << endl;
 	    double BubbleRadius = 15.5; // Radius of the capillary tube
@@ -516,7 +516,7 @@ int main(int argc, char **argv)
 		DoubleArray PhaseField(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
     	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.raw",rank);
+		sprintf(LocalRankFilename,"Phase.raw");
 		OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PhaseField.data(),8,N,OUTFILE);
     	fclose(OUTFILE);

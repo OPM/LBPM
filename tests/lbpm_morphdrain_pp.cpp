@@ -32,10 +32,7 @@ int main(int argc, char **argv)
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int n, nprocx, nprocy, nprocz, nx, ny, nz;
-		char LocalRankString[8];
 		char LocalRankFilename[40];
-		char FILENAME[128];
 
 		string filename;
 		double SW,Rcrit_new;
@@ -43,8 +40,10 @@ int main(int argc, char **argv)
 			filename=argv[1];
 			Rcrit_new=0.f; 
 			//SW=strtod(argv[2],NULL);
-		}
-		else ERROR("No input database provided\n");
+		} else {
+            ERROR("No input database provided\n");
+        }
+        NULL_USE( Rcrit_new );
 		// read the input database 
 		auto db = std::make_shared<Database>( filename );
 		auto domain_db = db->getDatabase( "Domain" );
@@ -62,19 +61,16 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Performing morphological opening with target saturation %f \n", SW);
 		//	GenerateResidual(id,nx,ny,nz,Saturation);
 		
-		nx = size[0];
-		ny = size[1];
-		nz = size[2];
-		nprocx = nproc[0];
-		nprocy = nproc[1];
-		nprocz = nproc[2];
+		int nx = size[0];
+		int ny = size[1];
+		int nz = size[2];
 
-		int N = (nx+2)*(ny+2)*(nz+2);
+		size_t N = (nx+2)*(ny+2)*(nz+2);
 
 		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
 		std::shared_ptr<Domain> Mask (new Domain(domain_db,comm));
 		//		std::shared_ptr<Domain> Dm (new Domain(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC));
-		for (n=0; n<N; n++) Dm->id[n]=1;
+		for (size_t n=0; n<N; n++) Dm->id[n]=1;
 		Dm->CommInit();
 
 		signed char *id;
@@ -116,7 +112,6 @@ int main(int argc, char **argv)
 		for (int k=0;k<nz;k++){
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
-					int n = k*nx*ny+j*nx+i;
 					// Initialize distance to +/- 1
 					SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 				}
@@ -158,7 +153,6 @@ int main(int argc, char **argv)
 			for (int k=0;k<nz;k++){
 				for (int j=0;j<ny;j++){
 					for (int i=0;i<nx;i++){
-						int n = k*nx*ny+j*nx+i;
 						// Initialize distance to +/- 1
 						SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 					}
@@ -204,10 +198,9 @@ int main(int argc, char **argv)
 		}
 		MPI_Barrier(comm);
 
-		sprintf(FILENAME,READFILE.c_str());
-		sprintf(FILENAME+strlen(FILENAME),".morphdrain.raw");
-		if (rank==0) printf("Writing file to: %s \n", FILENAME);
-		Mask->AggregateLabels(FILENAME);
+        auto filename2 = READFILE + ".morphdrain.raw";
+		if (rank==0) printf("Writing file to: %s \n", filename2.data() );
+		Mask->AggregateLabels( filename2 );
 	}
 
 	MPI_Barrier(comm);

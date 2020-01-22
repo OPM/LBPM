@@ -189,6 +189,7 @@ std::vector<size_t> getAttDim( int fid, const std::string& att )
 {
     std::vector<size_t> dim(1,0);
     int err = nc_inq_attlen( fid, NC_GLOBAL, att.c_str(), dim.data() );
+    CHECK_NC_ERR( err );
     return dim;
 }
 std::vector<std::string> getVarNames( int fid )

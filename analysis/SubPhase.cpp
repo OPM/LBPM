@@ -169,7 +169,6 @@ void SubPhase::Basic(){
 	
 	nb.reset(); wb.reset();
 
-	double nA,nB;
 	double count_w = 0.0;
 	double count_n = 0.0;
 	
@@ -297,8 +296,8 @@ void SubPhase::Basic(){
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
-		double total_flow_rate = water_flow_rate + not_water_flow_rate;
-		double fractional_flow= water_flow_rate / total_flow_rate;
+		//double total_flow_rate = water_flow_rate + not_water_flow_rate;
+		//double fractional_flow = water_flow_rate / total_flow_rate;
 
 		double h = Dm->voxel_length;		
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
@@ -697,7 +696,8 @@ void SubPhase::Full(){
 }
 
 
-void SubPhase::AggregateLabels(char *FILENAME){
+void SubPhase::AggregateLabels( const std::string& filename )
+{
 	
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
@@ -721,7 +721,7 @@ void SubPhase::AggregateLabels(char *FILENAME){
 	}
 	MPI_Barrier(Dm->Comm);
 
-	Dm->AggregateLabels(FILENAME);
+	Dm->AggregateLabels( filename );
 
 }
 

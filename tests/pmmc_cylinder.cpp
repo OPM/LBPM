@@ -11,17 +11,11 @@
 
 int main (int argc, char **argv)
 {
-	
 	//  printf("Radius = %s \n,"RADIUS);  
-	int SIZE = N*N*N;
 	int Nx,Ny,Nz;
 	Nx = Ny = Nz = N;
 	int i,j,k,p,q,r;
 	
-//	double *Solid; // cylinder
-//	double *Phase; // region of the cylinder	
-//	Solid = new double [SIZE];
-//	Phase = new double [SIZE];
 	DoubleArray SignDist(Nx,Ny,Nz);
 	DoubleArray Phase(Nx,Ny,Nz);
 	double fluid_isovalue = 0.0;
@@ -36,9 +30,6 @@ int main (int argc, char **argv)
 	//...........................................................................
 	double awn,ans,aws,lwns,nwp_volume;
 	double As;
-	double dEs,dAwn,dAns;			 // Global surface energy (calculated by rank=0)
-	double awn_global,ans_global,aws_global,lwns_global,nwp_volume_global;	
-	double As_global;
 	//	bool add=1;			// Set to false if any corners contain nw-phase ( F > fluid_isovalue)
 	int cube[8][3] = {{0,0,0},{1,0,0},{0,1,0},{1,1,0},{0,0,1},{1,0,1},{0,1,1},{1,1,1}};  // cube corners
 	//	int count_in=0,count_out=0;
@@ -75,7 +66,6 @@ int main (int argc, char **argv)
 	int n_local_nws_pts;
 	
 	int c;
-	int newton_steps = 0;
 	//...........................................................................
 	int ncubes = (Nx-2)*(Ny-2)*(Nz-2);	// Exclude the "upper" halo
 	IntArray cubeList(3,ncubes);

@@ -32,21 +32,14 @@ int main (int argc, char **argv)
 	}
 	{
 	  int i,j,k,n,Np;
-		bool pBC=true;
-		double Lx,Ly,Lz;
-		Lx = Ly = Lz = 1.f;
 		double din,dout;
-		int BC=1;
 
 	    // Load inputs
 	    auto db = loadInputs( nprocs );
 	    int Nx = db->getVector<int>( "n" )[0];
 	    int Ny = db->getVector<int>( "n" )[1];
 	    int Nz = db->getVector<int>( "n" )[2];
-	    int nprocx = db->getVector<int>( "nproc" )[0];
-	    int nprocy = db->getVector<int>( "nproc" )[1];
-	    int nprocz = db->getVector<int>( "nproc" )[2];
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>(db,comm);
 		
 		Nx += 2;   Ny+=2;	Nz += 2;
 		Nx = Ny = Nz;	// Cubic domain
@@ -55,8 +48,7 @@ int main (int argc, char **argv)
 		//.......................................................................
 		// Assign the phase ID
 		//.......................................................................
-		char *id;
-		id = new char[N];
+		auto id = new char[N];
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -160,9 +152,7 @@ int main (int argc, char **argv)
     	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
     	ScaLBL_CopyToHost(&VEL[0],&dvc_vel[0],SIZE);
 
-		double err,value,Q;
-
-    	Q = 0.f;    	
+    	double Q = 0.f;    	
     	k=1;
     	for (j=1;j<Ny-1;j++){
     		for (i=1;i<Nx-1;i++){
@@ -176,7 +166,7 @@ int main (int argc, char **argv)
 
     	// respect backwards read / write!!!
 		printf("Inlet Flux: input=%f, output=%f \n",flux,Q);
-		err = fabs(flux + Q);
+		double err = fabs(flux + Q);
 		if (err > 1e-12){
 			error = 1;
 			printf("  Inlet error %f \n",err);
@@ -185,7 +175,7 @@ int main (int argc, char **argv)
 		// Consider a larger number of timesteps and simulate flow
 		double Fx, Fy, Fz;
 		double tau = 1.0;
-		double mu=(tau-0.5)/3.0;
+		//double mu=(tau-0.5)/3.0;
 		double rlx_setA=1.0/tau;
 		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 		dout=1.f;

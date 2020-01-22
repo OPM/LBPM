@@ -101,7 +101,7 @@ public:
 	void Basic();
 	void Full();
 	void Write(int time);
-    void AggregateLabels(char *FILENAME);
+    void AggregateLabels( const std::string& filename );
 
 private:
 	FILE *TIMELOG;

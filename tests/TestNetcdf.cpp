@@ -14,7 +14,6 @@ void load( const std::string& );
 void test_NETCDF( UnitTest& ut )
 {
     const int rank = comm_rank( MPI_COMM_WORLD );
-    const int size = comm_size( MPI_COMM_WORLD );
     int nprocx = 2;
     int nprocy = 2;
     int nprocz = 2;

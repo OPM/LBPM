@@ -23,9 +23,6 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
@@ -33,10 +30,6 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	{
-		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
-
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Single Phase Permeability Calculation \n");
@@ -44,9 +37,9 @@ int main(int argc, char **argv)
 		}
 		// Initialize compute device
 		int device=ScaLBL_SetDevice(rank);
+        NULL_USE( device );
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
-		
 		
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
 		auto filename = argv[1];

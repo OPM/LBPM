@@ -114,7 +114,6 @@ void ScaLBL_DFHModel::SetDomain(){
 }
 
 void ScaLBL_DFHModel::ReadInput(){
-	size_t readID;
 	//.......................................................................
 	if (rank == 0)    printf("Read input media... \n");
 	//.......................................................................

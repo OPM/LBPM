@@ -94,7 +94,6 @@ void ScaLBL_MRTModel::SetDomain(){
 
 void ScaLBL_MRTModel::ReadInput(){
     int rank=Dm->rank();
-    size_t readID;
     //.......................................................................
     //.......................................................................
     Mask->ReadIDs();
@@ -106,7 +105,6 @@ void ScaLBL_MRTModel::ReadInput(){
 	// Generate the signed distance map
 	// Initialize the domain and communication
 	Array<char> id_solid(Nx,Ny,Nz);
-	int count = 0;
 	// Solve for the position of the solid phase
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -122,7 +120,6 @@ void ScaLBL_MRTModel::ReadInput(){
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
-				int n=k*Nx*Ny+j*Nx+i;
 				// Initialize distance to +/- 1
 				Distance(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 			}
@@ -191,7 +188,6 @@ void ScaLBL_MRTModel::Run(){
 	double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 	
 	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
 
 	if (rank==0){
 		bool WriteHeader=false;

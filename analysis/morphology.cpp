@@ -34,9 +34,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
 	int nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
 	int nprocx = Dm->nprocx();
 	int nprocy = Dm->nprocy();
 	int nprocz = Dm->nprocz();
@@ -122,7 +119,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 
-	int x,y,z;
 	int ii,jj,kk;
 	int Nx = nx;
 	int Ny = ny;
@@ -336,9 +332,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
 	int nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
 	int nprocx = Dm->nprocx();
 	int nprocy = Dm->nprocy();
 	int nprocz = Dm->nprocz();
@@ -427,7 +420,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 
-	int x,y,z;
 	int ii,jj,kk;
 	int Nx = nx;
 	int Ny = ny;
@@ -693,17 +685,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	return final_void_fraction;
 }
 
-double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth){
-	
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth)
+{
 	int Nx = Dm->Nx;
 	int Ny = Dm->Ny;
 	int Nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
-	int nprocx = Dm->nprocx();
-	int nprocy = Dm->nprocy();
-	int nprocz = Dm->nprocz();
 	int rank = Dm->rank();
 	
 	double count=0.0;

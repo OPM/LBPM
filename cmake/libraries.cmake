@@ -305,4 +305,8 @@ MACRO ( CONFIGURE_LBPM )
         SET( CMAKE_BUILD_WITH_INSTALL_RPATH TRUE )
         SET( CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH} "${TIMER_DIRECTORY}" "${LBPM_INSTALL_DIR}/lib" )
     ENDIF()
+    # Suppress some common warnings
+    IF ( USING_GCC )
+        SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder -Wno-unused-parameter")
+    ENDIF()
 ENDMACRO ()

@@ -365,7 +365,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	int idx,i,j,k,n;
 
 	// Check that Map has size matching sub-domain
-	if (Map.size(0) != Nx)
+	if ( (int) Map.size(0) != Nx)
 		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Map array dimensions do not match! \n");
 
 	// Initialize Map
@@ -1480,7 +1480,6 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 
 void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, DoubleArray &regdata){
 	// Gets data from the device and stores in regular layout
-	int i,j,k,n,idx;
 	int Nx = map.size(0);
 	int Ny = map.size(1);
 	int Nz = map.size(2);
@@ -1492,11 +1491,10 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	double value;
 	TmpDat = new double [N];
 	ScaLBL_CopyToHost(&TmpDat[0],&data[0], N*sizeof(double));
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				n=k*Nx*Ny+j*Nx+i;
-				idx=map(i,j,k);
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				auto idx=map(i,j,k);
 				if (!(idx<0)){
 					value=TmpDat[idx];
 					regdata(i,j,k)=value;
@@ -1510,8 +1508,9 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 }
 
 
-void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
-	double Value=(vA-vB)/(vA+vB);
+void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB)
+{
+	//double Value=(vA-vB)/(vA+vB);
 	if (kproc == 0) {
 		// Set the phase indicator field and density on the z inlet
 		ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
@@ -1519,8 +1518,9 @@ void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double 
 	}
 }
 
-void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
-	double Value=(vA-vB)/(vA+vB);
+void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB)
+{
+	//double Value=(vA-vB)/(vA+vB);
 	if (kproc == nprocz-1){
 		// Set the phase indicator field and density on the Z outlet
 		ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
@@ -1528,7 +1528,8 @@ void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double 
 	}
 }
 
-void ScaLBL_Communicator::D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time){
+void ScaLBL_Communicator::D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time)
+{
     //ScaLBL_D3Q19_Pressure_BC_z(int *LIST,fq,din,Nx,Ny,Nz);
 	if (kproc == 0) {
 		if (time%2==0){

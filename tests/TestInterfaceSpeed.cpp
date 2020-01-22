@@ -24,7 +24,7 @@ int main (int argc, char *argv[])
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 
-	int i,j,k,n;
+	int i,j,k;
 
     // Load inputs
 	string FILENAME = argv[1];
@@ -36,7 +36,7 @@ int main (int argc, char *argv[])
     int Ny = domain_db->getVector<int>( "n" )[1];
     int Nz = domain_db->getVector<int>( "n" )[2];
 
-    std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
+    auto Dm = std::make_shared<Domain>(domain_db,comm);
 
     Nx+=2; Ny+=2; Nz+=2;
 
@@ -44,7 +44,7 @@ int main (int argc, char *argv[])
 
 	Dm->CommInit();
 
-	std::shared_ptr<TwoPhase> Averages(new TwoPhase(Dm));
+	auto Averages = std::make_shared<TwoPhase>(Dm);
 	int timestep=0;
 
 	double Cx,Cy,Cz;
