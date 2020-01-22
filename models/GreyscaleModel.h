@@ -71,6 +71,7 @@ public:
     DoubleArray Velocity_x;
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
+    DoubleArray PorosityMap;
 		
 private:
 	MPI_Comm comm;

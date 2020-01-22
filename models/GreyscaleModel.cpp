@@ -99,6 +99,7 @@ void ScaLBL_GreyscaleModel::SetDomain(){
 	Velocity_x.resize(Nx,Ny,Nz);
 	Velocity_y.resize(Nx,Ny,Nz);
 	Velocity_z.resize(Nx,Ny,Nz);
+	PorosityMap.resize(Nx,Ny,Nz);
 
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
@@ -449,37 +450,40 @@ void ScaLBL_GreyscaleModel::Run(){
 		//************************************************************************/
 		
 		if (timestep%analysis_interval==0){
-			//ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-			//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
+			ScaLBL_Comm->RegularLayout(Map,Porosity,PorosityMap);
 			
 			double count_loc=0;
 			double count;
 			double vax,vay,vaz;
-			double vax_loc,vay_loc,vaz_loc;
-			vax_loc = vay_loc = vaz_loc = 0.f;
+            double px_loc,py_loc,pz_loc;
+            double px,py,pz;
+            double mass_loc,mass_glb;
+
+			px_loc = py_loc = pz_loc = 0.f;
+            mass_loc = 0.f;
 			for (int k=1; k<Nz-1; k++){
 				for (int j=1; j<Ny-1; j++){
 					for (int i=1; i<Nx-1; i++){
 						if (SignDist(i,j,k) > 0){
-							vax_loc += Velocity_x(i,j,k);
-							vay_loc += Velocity_y(i,j,k);
-							vaz_loc += Velocity_z(i,j,k);
-							count_loc+=1.0;
+							px_loc   += Velocity_x(i,j,k)*Den*PorosityMap(i,j,k);
+							py_loc   += Velocity_y(i,j,k)*Den*PorosityMap(i,j,k);
+							pz_loc   += Velocity_z(i,j,k)*Den*PorosityMap(i,j,k);
+							mass_loc += Den*PorosityMap(i,j,k);
 						}
 					}
 				}
 			}
-			MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			MPI_Allreduce(&px_loc,  &px,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			MPI_Allreduce(&py_loc,  &py,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			MPI_Allreduce(&pz_loc,  &pz,      1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			MPI_Allreduce(&mass_loc,&mass_glb,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 			
-			vax /= count;
-			vay /= count;
-			vaz /= count;
+			vax = px/mass_glb;
+			vay = py/mass_glb;
+			vaz = pz/mass_glb;
 			
 			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
 			double dir_x = Fx/force_mag;
@@ -492,7 +496,7 @@ void ScaLBL_GreyscaleModel::Run(){
 				dir_z = 1.0;
 				force_mag = 1.0;
 			}
-			double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
+			double flow_rate = (px*dir_x + py*dir_y + pz*dir_z)/mass_glb;
 			
 			error = fabs(flow_rate - flow_rate_previous) / fabs(flow_rate);
 			flow_rate_previous = flow_rate;
