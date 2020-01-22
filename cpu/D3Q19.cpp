@@ -243,8 +243,6 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 	// odd distributions in disteven and even distributions in distodd.
 	int n,N;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double din = 0.f;
 	N = Nx*Ny*Nz;
 
@@ -256,26 +254,26 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 		// Read distributions from "opposite" memory convention
 		//........................................................................
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		double f1 = distodd[n];
+		double f3 = distodd[N+n];
+		//double f5 = distodd[2*N+n];
+		double f7 = distodd[3*N+n];
+		double f9 = distodd[4*N+n];
+		//double f11 = distodd[5*N+n];
+		double f13 = distodd[6*N+n];
+		//double f15 = distodd[7*N+n];
+		double f17 = distodd[8*N+n];
 		//........................................................................
-		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		double f0 = disteven[n];
+		double f2 = disteven[N+n];
+		double f4 = disteven[2*N+n];
+		double f6 = disteven[3*N+n];
+		double f8 = disteven[4*N+n];
+		double f10 = disteven[5*N+n];
+		double f12 = disteven[6*N+n];
+		//double f14 = disteven[7*N+n];
+		double f16 = disteven[8*N+n];
+		//double f18 = disteven[9*N+n];
 		//...................................................
 
 		// Determine the outlet flow velocity
@@ -288,59 +286,58 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_z(double *disteven, double *distodd, doub
 }
 
 extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *d_neighborList, int *list, double *dist, double flux, 
-		double area, int count, int Np){
+		double area, int count, int Np)
+{
 	int idx, n;
 	int nread;
 
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double factor = 1.f/(area);
 	double sum = 0.f;
 	
 	for (idx=0; idx<count; idx++){
 		n = list[idx];
 
-		f0 = dist[n];
+		double f0 = dist[n];
 
 		nread = d_neighborList[n];
-		f1 = dist[nread];
+		double f1 = dist[nread];
 
 		nread = d_neighborList[n+2*Np];
-		f3 = dist[nread];
+		double f3 = dist[nread];
 
 		nread = d_neighborList[n+6*Np];
-		f7 = dist[nread];
+		double f7 = dist[nread];
 
 		nread = d_neighborList[n+8*Np];
-		f9 = dist[nread];
+		double f9 = dist[nread];
 
 		nread = d_neighborList[n+12*Np];
-		f13 = dist[nread];
+		double f13 = dist[nread];
 
 		nread = d_neighborList[n+16*Np];
-		f17 = dist[nread];
+		double f17 = dist[nread];
 
 		nread = d_neighborList[n+Np];
-		f2 = dist[nread];
+		double f2 = dist[nread];
 
 		nread = d_neighborList[n+3*Np];
-		f4 = dist[nread];
+		double f4 = dist[nread];
 
 		nread = d_neighborList[n+5*Np];
-		f6 = dist[nread];
+		double f6 = dist[nread];
 
 		nread = d_neighborList[n+7*Np];
-		f8 = dist[nread];
+		double f8 = dist[nread];
 
 		nread = d_neighborList[n+9*Np];
-		f10 = dist[nread];
+		double f10 = dist[nread];
 
 		nread = d_neighborList[n+11*Np];
-		f12 = dist[nread];
+		double f12 = dist[nread];
 
 		nread = d_neighborList[n+15*Np];
-		f16 = dist[nread];
+		double f16 = dist[nread];
 
 		sum += factor*(f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 	}
@@ -349,30 +346,29 @@ extern "C" double ScaLBL_D3Q19_AAodd_Flux_BC_z(int *d_neighborList, int *list, d
 }
 
 extern "C" double ScaLBL_D3Q19_AAeven_Flux_BC_z(int *list, double *dist, double flux, double area, 
-		 int count, int Np){
+		 int count, int Np)
+{
 	int idx, n;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double factor = 1.f/(area);
 	double sum = 0.f;
 	
 	for (idx=0; idx<count; idx++){
 		n = list[idx];
-		f0 = dist[n];
-		f1 = dist[2*Np+n];
-		f2 = dist[1*Np+n];
-		f3 = dist[4*Np+n];
-		f4 = dist[3*Np+n];
-		f6 = dist[5*Np+n];
-		f7 = dist[8*Np+n];
-		f8 = dist[7*Np+n];
-		f9 = dist[10*Np+n];
-		f10 = dist[9*Np+n];
-		f12 = dist[11*Np+n];
-		f13 = dist[14*Np+n];
-		f16 = dist[15*Np+n];
-		f17 = dist[18*Np+n];
+		double f0 = dist[n];
+		double f1 = dist[2*Np+n];
+		double f2 = dist[1*Np+n];
+		double f3 = dist[4*Np+n];
+		double f4 = dist[3*Np+n];
+		double f6 = dist[5*Np+n];
+		double f7 = dist[8*Np+n];
+		double f8 = dist[7*Np+n];
+		double f9 = dist[10*Np+n];
+		double f10 = dist[9*Np+n];
+		double f12 = dist[11*Np+n];
+		double f13 = dist[14*Np+n];
+		double f16 = dist[15*Np+n];
+		double f17 = dist[18*Np+n];
 		sum += factor*(f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
 	}
 	return sum;
@@ -385,8 +381,6 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	// odd distributions in disteven and even distributions in distodd.
 	int n,N;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double dout = 0.f;
 
 	N = Nx*Ny*Nz;
@@ -399,26 +393,26 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 		//........................................................................
 		// Read distributions from "opposite" memory convention
 		//........................................................................
-		f1 = distodd[n];
-		f3 = distodd[N+n];
-		f5 = distodd[2*N+n];
-		f7 = distodd[3*N+n];
-		f9 = distodd[4*N+n];
-		f11 = distodd[5*N+n];
-		f13 = distodd[6*N+n];
-		f15 = distodd[7*N+n];
-		f17 = distodd[8*N+n];
+		double f1 = distodd[n];
+		double f3 = distodd[N+n];
+		double f5 = distodd[2*N+n];
+		double f7 = distodd[3*N+n];
+		double f9 = distodd[4*N+n];
+		double f11 = distodd[5*N+n];
+		//double f13 = distodd[6*N+n];
+		double f15 = distodd[7*N+n];
+		//double f17 = distodd[8*N+n];
 		//........................................................................
-		f0 = disteven[n];
-		f2 = disteven[N+n];
-		f4 = disteven[2*N+n];
-		f6 = disteven[3*N+n];
-		f8 = disteven[4*N+n];
-		f10 = disteven[5*N+n];
-		f12 = disteven[6*N+n];
-		f14 = disteven[7*N+n];
-		f16 = disteven[8*N+n];
-		f18 = disteven[9*N+n];
+		double f0 = disteven[n];
+		double f2 = disteven[N+n];
+		double f4 = disteven[2*N+n];
+		//double f6 = disteven[3*N+n];
+		double f8 = disteven[4*N+n];
+		double f10 = disteven[5*N+n];
+		//double f12 = disteven[6*N+n];
+		double f14 = disteven[7*N+n];
+		//double f16 = disteven[8*N+n];
+		double f18 = disteven[9*N+n];
 
 		sum += (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
 
@@ -429,28 +423,25 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, double din, int count, int Np)
 {
-	int idx, n;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz,Cyz,Cxz;
 	ux = uy = 0.0;
 	for (int idx=0; idx<count; idx++){
-		n = list[idx];
-		f0 = dist[n];
-		f1 = dist[2*Np+n];
-		f2 = dist[1*Np+n];
-		f3 = dist[4*Np+n];
-		f4 = dist[3*Np+n];
-		f6 = dist[5*Np+n];
-		f7 = dist[8*Np+n];
-		f8 = dist[7*Np+n];
-		f9 = dist[10*Np+n];
-		f10 = dist[9*Np+n];
-		f12 = dist[11*Np+n];
-		f13 = dist[14*Np+n];
-		f16 = dist[15*Np+n];
-		f17 = dist[18*Np+n];
+		int n = list[idx];
+		double f0 = dist[n];
+		double f1 = dist[2*Np+n];
+		double f2 = dist[1*Np+n];
+		double f3 = dist[4*Np+n];
+		double f4 = dist[3*Np+n];
+		double f6 = dist[5*Np+n];
+		double f7 = dist[8*Np+n];
+		double f8 = dist[7*Np+n];
+		double f9 = dist[10*Np+n];
+		double f10 = dist[9*Np+n];
+		double f12 = dist[11*Np+n];
+		double f13 = dist[14*Np+n];
+		double f16 = dist[15*Np+n];
+		double f17 = dist[18*Np+n];
 		//...................................................
 		// Determine the inlet flow velocity
 		//ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
@@ -460,11 +451,11 @@ extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, doubl
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
 		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
 
-		f5 = f6 + 0.33333333333333338*uz;
-		f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
-		f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
-		f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
-		f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
+		double f5 = f6 + 0.33333333333333338*uz;
+		double f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
+		double f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
+		double f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
+		double f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
 
 		dist[6*Np+n] = f5;
 		dist[12*Np+n] = f11;
@@ -476,31 +467,28 @@ extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, doubl
 
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, double dout, int count, int Np)
 {
-	int idx, n;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz,Cyz,Cxz;
 	ux = uy = 0.0;
 	for (int idx=0; idx<count; idx++){
-		n = list[idx];
+		int n = list[idx];
 		//........................................................................
 		// Read distributions 
 		//........................................................................
-		f0 = dist[n];
-		f1 = dist[2*Np+n];
-		f2 = dist[1*Np+n];
-		f3 = dist[4*Np+n];
-		f4 = dist[3*Np+n];
-		f5 = dist[6*Np+n];
-		f7 = dist[8*Np+n];
-		f8 = dist[7*Np+n];
-		f9 = dist[10*Np+n];
-		f10 = dist[9*Np+n];
-		f11 = dist[12*Np+n];
-		f14 = dist[13*Np+n];
-		f15 = dist[16*Np+n];
-		f18 = dist[17*Np+n];
+		double f0 = dist[n];
+		double f1 = dist[2*Np+n];
+		double f2 = dist[1*Np+n];
+		double f3 = dist[4*Np+n];
+		double f4 = dist[3*Np+n];
+		double f5 = dist[6*Np+n];
+		double f7 = dist[8*Np+n];
+		double f8 = dist[7*Np+n];
+		double f9 = dist[10*Np+n];
+		double f10 = dist[9*Np+n];
+		double f11 = dist[12*Np+n];
+		double f14 = dist[13*Np+n];
+		double f15 = dist[16*Np+n];
+		double f18 = dist[17*Np+n];
 		
 		// Determine the outlet flow velocity
 		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
@@ -510,11 +498,11 @@ extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, doubl
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
 		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
 
-		f6 = f5 - 0.33333333333333338*uz;
-		f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
-		f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
-		f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
-		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
+		double f6 = f5 - 0.33333333333333338*uz;
+		double f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
+		double f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
+		double f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
+		double f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
 
 		dist[5*Np+n] = f6;
 		dist[11*Np+n] = f12;
@@ -527,57 +515,54 @@ extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, doubl
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *d_neighborList, int *list, double *dist, double din, int count, int Np)
 {
-	int idx, n;
 	int nread;
 	int nr5,nr11,nr14,nr15,nr18;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz,Cyz,Cxz;
 	ux = uy = 0.0;
 
 	for (int idx=0; idx<count; idx++){
-		n = list[idx];
-		f0 = dist[n];
+		int n = list[idx];
+		double f0 = dist[n];
 
 		nread = d_neighborList[n];
-		f1 = dist[nread];
+		double f1 = dist[nread];
 
 		nread = d_neighborList[n+2*Np];
-		f3 = dist[nread];
+		double f3 = dist[nread];
 
 		nread = d_neighborList[n+6*Np];
-		f7 = dist[nread];
+		double f7 = dist[nread];
 
 		nread = d_neighborList[n+8*Np];
-		f9 = dist[nread];
+		double f9 = dist[nread];
 
 		nread = d_neighborList[n+12*Np];
-		f13 = dist[nread];
+		double f13 = dist[nread];
 
 		nread = d_neighborList[n+16*Np];
-		f17 = dist[nread];
+		double f17 = dist[nread];
 
 		nread = d_neighborList[n+Np];
-		f2 = dist[nread];
+		double f2 = dist[nread];
 
 		nread = d_neighborList[n+3*Np];
-		f4 = dist[nread];
+		double f4 = dist[nread];
 
 		nread = d_neighborList[n+5*Np];
-		f6 = dist[nread];
+		double f6 = dist[nread];
 
 		nread = d_neighborList[n+7*Np];
-		f8 = dist[nread];
+		double f8 = dist[nread];
 
 		nread = d_neighborList[n+9*Np];
-		f10 = dist[nread];
+		double f10 = dist[nread];
 
 		nread = d_neighborList[n+11*Np];
-		f12 = dist[nread];
+		double f12 = dist[nread];
 
 		nread = d_neighborList[n+15*Np];
-		f16 = dist[nread];
+		double f16 = dist[nread];
 
 		// Unknown distributions
 		nr5 = d_neighborList[n+4*Np];
@@ -595,11 +580,11 @@ extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *d_neighborList, int *list,
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
 		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
 
-		f5 = f6 + 0.33333333333333338*uz;
-		f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
-		f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
-		f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
-		f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
+		double f5 = f6 + 0.33333333333333338*uz;
+		double f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
+		double f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
+		double f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
+		double f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
 
 		dist[nr5] = f5;
 		dist[nr11] = f11;
@@ -611,60 +596,58 @@ extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *d_neighborList, int *list,
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *d_neighborList, int *list, double *dist, double dout, int count, int Np)
 {
-	int idx,n,nread;
+	int nread;
 	int nr6,nr12,nr13,nr16,nr17;
 	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz,Cyz,Cxz;
 	ux = uy = 0.0;
 
 	for (int idx=0; idx<count; idx++){
-		n = list[idx];
+		int n = list[idx];
 		//........................................................................
 		// Read distributions 
 		//........................................................................
-		f0 = dist[n];
+		double f0 = dist[n];
 
 		nread = d_neighborList[n];
-		f1 = dist[nread];
+		double f1 = dist[nread];
 
 		nread = d_neighborList[n+2*Np];
-		f3 = dist[nread];
+		double f3 = dist[nread];
 
 		nread = d_neighborList[n+4*Np];
-		f5 = dist[nread];
+		double f5 = dist[nread];
 
 		nread = d_neighborList[n+6*Np];
-		f7 = dist[nread];
+		double f7 = dist[nread];
 
 		nread = d_neighborList[n+8*Np];
-		f9 = dist[nread];
+		double f9 = dist[nread];
 
 		nread = d_neighborList[n+10*Np];
-		f11 = dist[nread];
+		double f11 = dist[nread];
 
 		nread = d_neighborList[n+14*Np];
-		f15 = dist[nread];
+		double f15 = dist[nread];
 
 
 		nread = d_neighborList[n+Np];
-		f2 = dist[nread];
+		double f2 = dist[nread];
 
 		nread = d_neighborList[n+3*Np];
-		f4 = dist[nread];
+		double f4 = dist[nread];
 
 		nread = d_neighborList[n+7*Np];
-		f8 = dist[nread];
+		double f8 = dist[nread];
 
 		nread = d_neighborList[n+9*Np];
-		f10 = dist[nread];
+		double f10 = dist[nread];
 
 		nread = d_neighborList[n+13*Np];
-		f14 = dist[nread];
+		double f14 = dist[nread];
 
 		nread = d_neighborList[n+17*Np];
-		f18 = dist[nread];
+		double f18 = dist[nread];
 		
 		// unknown distributions
 		nr6 = d_neighborList[n+5*Np];
@@ -681,11 +664,11 @@ extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *d_neighborList, int *list,
 		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
 		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
 
-		f6 = f5 - 0.33333333333333338*uz;
-		f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
-		f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
-		f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
-		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
+		double f6 = f5 - 0.33333333333333338*uz;
+		double f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
+		double f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
+		double f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
+		double f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
 
 		//........Store in "opposite" memory location..........
 		dist[nr6] = f6;
@@ -995,35 +978,30 @@ extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np)
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *Pressure, int N)
 {
-	int n;
-	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-
-	for (n=0; n<N; n++){
+	for (int n=0; n<N; n++){
 		//........................................................................
 		// Registers to store the distributions
 		//........................................................................
-		f0 = dist[n];
-		f2 = dist[2*N+n];
-		f4 = dist[4*N+n];
-		f6 = dist[6*N+n];
-		f8 = dist[8*N+n];
-		f10 = dist[10*N+n];
-		f12 = dist[12*N+n];
-		f14 = dist[14*N+n];
-		f16 = dist[16*N+n];
-		f18 = dist[18*N+n];
+		double f0 = dist[n];
+		double f2 = dist[2*N+n];
+		double f4 = dist[4*N+n];
+		double f6 = dist[6*N+n];
+		double f8 = dist[8*N+n];
+		double f10 = dist[10*N+n];
+		double f12 = dist[12*N+n];
+		double f14 = dist[14*N+n];
+		double f16 = dist[16*N+n];
+		double f18 = dist[18*N+n];
 		//........................................................................
-		f1 = dist[N+n];
-		f3 = dist[3*N+n];
-		f5 = dist[5*N+n];
-		f7 = dist[7*N+n];
-		f9 = dist[9*N+n];
-		f11 = dist[11*N+n];
-		f13 = dist[13*N+n];
-		f15 = dist[15*N+n];
-		f17 = dist[17*N+n];
+		double f1 = dist[N+n];
+		double f3 = dist[3*N+n];
+		double f5 = dist[5*N+n];
+		double f7 = dist[7*N+n];
+		double f9 = dist[9*N+n];
+		double f11 = dist[11*N+n];
+		double f13 = dist[13*N+n];
+		double f15 = dist[15*N+n];
+		double f17 = dist[17*N+n];
 		//.................Compute the velocity...................................
 		Pressure[n] = 0.3333333333333333*(f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+
 				f9+f12+f11+f14+f13+f16+f15+f18+f17);
@@ -1031,31 +1009,29 @@ extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *Pressure, int N)
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
-		double Fy, double Fz){
-	int n;
-	double fq,fp;
+		double Fy, double Fz)
+{
 	// conserved momemnts
 	double rho,jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
 
-	const double mrt_V1=0.05263157894736842;
-	const double mrt_V2=0.012531328320802;
-	const double mrt_V3=0.04761904761904762;
-	const double mrt_V4=0.004594820384294068;
-	const double mrt_V5=0.01587301587301587;
-	const double mrt_V6=0.0555555555555555555555555;
-	const double mrt_V7=0.02777777777777778;
-	const double mrt_V8=0.08333333333333333;
-	const double mrt_V9=0.003341687552213868;
-	const double mrt_V10=0.003968253968253968;
-	const double mrt_V11=0.01388888888888889;
-	const double mrt_V12=0.04166666666666666;
-
+	constexpr double mrt_V1=0.05263157894736842;
+	constexpr double mrt_V2=0.012531328320802;
+	constexpr double mrt_V3=0.04761904761904762;
+	constexpr double mrt_V4=0.004594820384294068;
+	constexpr double mrt_V5=0.01587301587301587;
+	constexpr double mrt_V6=0.0555555555555555555555555;
+	constexpr double mrt_V7=0.02777777777777778;
+	constexpr double mrt_V8=0.08333333333333333;
+	constexpr double mrt_V9=0.003341687552213868;
+	constexpr double mrt_V10=0.003968253968253968;
+	constexpr double mrt_V11=0.01388888888888889;
+	constexpr double mrt_V12=0.04166666666666666;
 
 	for (int n=start; n<finish; n++){
 		// q=0
-		fq = dist[n];
+		double fq = dist[n];
 		rho = fq;
 		m1  = -30.0*fq;
 		m2  = 12.0*fq;
@@ -1462,31 +1438,30 @@ extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
-		double Fy, double Fz){
-	int n;
-	double fq,fp;
+		double Fy, double Fz)
+{
 	// conserved momemnts
 	double rho,jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	const double mrt_V1=0.05263157894736842;
-	const double mrt_V2=0.012531328320802;
-	const double mrt_V3=0.04761904761904762;
-	const double mrt_V4=0.004594820384294068;
-	const double mrt_V5=0.01587301587301587;
-	const double mrt_V6=0.0555555555555555555555555;
-	const double mrt_V7=0.02777777777777778;
-	const double mrt_V8=0.08333333333333333;
-	const double mrt_V9=0.003341687552213868;
-	const double mrt_V10=0.003968253968253968;
-	const double mrt_V11=0.01388888888888889;
-	const double mrt_V12=0.04166666666666666;
+	constexpr double mrt_V1=0.05263157894736842;
+	constexpr double mrt_V2=0.012531328320802;
+	constexpr double mrt_V3=0.04761904761904762;
+	constexpr double mrt_V4=0.004594820384294068;
+	constexpr double mrt_V5=0.01587301587301587;
+	constexpr double mrt_V6=0.0555555555555555555555555;
+	constexpr double mrt_V7=0.02777777777777778;
+	constexpr double mrt_V8=0.08333333333333333;
+	constexpr double mrt_V9=0.003341687552213868;
+	constexpr double mrt_V10=0.003968253968253968;
+	constexpr double mrt_V11=0.01388888888888889;
+	constexpr double mrt_V12=0.04166666666666666;
 
 
 	int nread;
 	for (int n=start; n<finish; n++){
 		// q=0
-		fq = dist[n];
+		double fq = dist[n];
 		rho = fq;
 		m1  = -30.0*fq;
 		m2  = 12.0*fq;
@@ -1937,11 +1912,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *neighborList, double *dist, int star
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *dist,  int Np) {
-
-	int n;
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *dist,  int Np)
+{
 
 	for (int n=0; n<Np; n++){
 
@@ -1950,27 +1922,26 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *dist,  int Np) {
 		//              (read from opposite array due to previous swap operation)
 		//........................................................................
 		// even
-		f2 = dist[10*Np+n];
-		f4 = dist[11*Np+n];
-		f6 = dist[12*Np+n];
-		f8 = dist[13*Np+n];
-		f10 = dist[14*Np+n];
-		f12 = dist[15*Np+n];
-		f14 = dist[16*Np+n];
-		f16 = dist[17*Np+n];
-		f18 = dist[18*Np+n];
+		double f2 = dist[10*Np+n];
+		double f4 = dist[11*Np+n];
+		double f6 = dist[12*Np+n];
+		double f8 = dist[13*Np+n];
+		double f10 = dist[14*Np+n];
+		double f12 = dist[15*Np+n];
+		double f14 = dist[16*Np+n];
+		double f16 = dist[17*Np+n];
+		double f18 = dist[18*Np+n];
 
-		f0 = dist[n];
 		// odd
-		f1 = dist[Np+n];
-		f3 = dist[2*Np+n];
-		f5 = dist[3*Np+n];
-		f7 = dist[4*Np+n];
-		f9 = dist[5*Np+n];
-		f11 = dist[6*Np+n];
-		f13 = dist[7*Np+n];
-		f15 = dist[8*Np+n];
-		f17 = dist[9*Np+n];
+		double f1 = dist[Np+n];
+		double f3 = dist[2*Np+n];
+		double f5 = dist[3*Np+n];
+		double f7 = dist[4*Np+n];
+		double f9 = dist[5*Np+n];
+		double f11 = dist[6*Np+n];
+		double f13 = dist[7*Np+n];
+		double f15 = dist[8*Np+n];
+		double f17 = dist[9*Np+n];
 
 		//........................................................................
 		//                                      WRITE THE DISTRIBUTIONS
@@ -2000,71 +1971,69 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *dist,  int Np) {
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Compact(char * ID, int *neighborList, double *dist, int Np) {
-	int n;
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+extern "C" void ScaLBL_D3Q19_AAodd_Compact(char * ID, int *neighborList, double *dist, int Np)
+{
 	int nread;
 
 	for (int n=0; n<Np; n++){
 		//........Get 1-D index for this thread....................
 
-		f0 = dist[n];
+		//double f0 = dist[n];
 
 		nread = neighborList[n]; // + 0*Np
-		f2 = dist[nread];
+		double f2 = dist[nread];
 
 		nread = neighborList[n+2*Np];
-		f4 = dist[nread];
+		double f4 = dist[nread];
 
 		nread = neighborList[n+4*Np];
-		f6 = dist[nread];
+		double f6 = dist[nread];
 
 		nread = neighborList[n+6*Np];
-		f8 = dist[nread];
+		double f8 = dist[nread];
 
 		nread = neighborList[n+8*Np];
-		f10 = dist[nread];
+		double f10 = dist[nread];
 
 		nread = neighborList[n+10*Np];
-		f12 = dist[nread];
+		double f12 = dist[nread];
 
 		nread = neighborList[n+12*Np];
-		f14 = dist[nread];
+		double f14 = dist[nread];
 
 		nread = neighborList[n+14*Np];
-		f16 = dist[nread];
+		double f16 = dist[nread];
 
 		nread = neighborList[n+16*Np];
-		f18 = dist[nread];
+		double f18 = dist[nread];
 
 
 		nread = neighborList[n+Np];
-		f1 = dist[nread];
+		double f1 = dist[nread];
 
 		nread = neighborList[n+3*Np];
-		f3 = dist[nread];
+		double f3 = dist[nread];
 
 		nread = neighborList[n+5*Np];
-		f5 = dist[nread];
+		double f5 = dist[nread];
 
 		nread = neighborList[n+7*Np];
-		f7 = dist[nread];
+		double f7 = dist[nread];
 
 		nread = neighborList[n+9*Np];
-		f9 = dist[nread];
+		double f9 = dist[nread];
 
 		nread = neighborList[n+11*Np];
-		f11 = dist[nread];
+		double f11 = dist[nread];
 
 		nread = neighborList[n+13*Np];
-		f13 = dist[nread];
+		double f13 = dist[nread];
 
 		nread = neighborList[n+15*Np];
-		f15 = dist[nread];
+		double f15 = dist[nread];
 
 		nread = neighborList[n+17*Np];
-		f17 = dist[nread];
+		double f17 = dist[nread];
 
 
 		nread = neighborList[n];
