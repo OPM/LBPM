@@ -793,6 +793,13 @@ public: // Member functions
 
 
     /*!
+     * @brief This function sends and recieves data using a blocking call
+     */
+    template<class type>
+    void sendrecv( const type *sendbuf, int sendcount, int dest, int sendtag, type *recvbuf, int recvcount, int source, int recvtag ) const;
+
+
+    /*!
      * Each processor sends every other processor a single value.
      * @param[in] x      Input value for allGather
      * @return           Output array for allGather

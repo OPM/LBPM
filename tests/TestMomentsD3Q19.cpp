@@ -539,7 +539,7 @@ int main (int argc, char **argv)
 
     error=count;
     // Finished
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm.barrier();
     MPI_Finalize();
     return error; 
 }

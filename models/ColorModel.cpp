@@ -192,12 +192,12 @@ void ScaLBL_ColorModel::ReadInput(){
 	}
 	else if (domain_db->keyExists( "GridFile" )){
         // Read the local domain data
-	    auto input_id = readMicroCT( *domain_db, MPI_COMM_WORLD );
+	    auto input_id = readMicroCT( *domain_db, comm );
         // Fill the halo (assuming GCW of 1)
         array<int,3> size0 = { (int) input_id.size(0), (int) input_id.size(1), (int) input_id.size(2) };
         ArraySize size1 = { (size_t) Mask->Nx, (size_t) Mask->Ny, (size_t) Mask->Nz };
         ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
-        fillHalo<signed char> fill( MPI_COMM_WORLD, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
+        fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
         Array<signed char> id_view;
         id_view.viewRaw( size1, Mask->id );
         fill.copy( input_id, id_view );
@@ -652,7 +652,7 @@ void ScaLBL_ColorModel::Run(){
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
+	starttime = Utilities::MPI::time();
 	//.........................................
 
 	//************ MAIN ITERATION LOOP ***************************************/
@@ -991,7 +991,7 @@ void ScaLBL_ColorModel::Run(){
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	stoptime = MPI_Wtime();
+	stoptime = Utilities::MPI::time();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
 	cputime = (stoptime - starttime)/timestep;

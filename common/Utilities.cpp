@@ -8,7 +8,7 @@
 #endif
 
 #ifdef USE_MPI
-#include "mpi.h"
+#include "common/MPI.h"
 #endif
 
 #include <algorithm>

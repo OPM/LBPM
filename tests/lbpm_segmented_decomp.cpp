@@ -85,23 +85,23 @@ int main(int argc, char **argv)
 		comm.barrier();
 		// Computational domain
 		//.................................................
-		MPI_Bcast(&nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&nx,1,0);
+		comm.bcast(&ny,1,0);
+		comm.bcast(&nz,1,0);
+		comm.bcast(&nprocx,1,0);
+		comm.bcast(&nprocy,1,0);
+		comm.bcast(&nprocz,1,0);
+		comm.bcast(&nspheres,1,0);
+		comm.bcast(&Lx,1,0);
+		comm.bcast(&Ly,1,0);
+		comm.bcast(&Lz,1,0);
 		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&xStart,1,MPI_INT,0,comm);
-		MPI_Bcast(&yStart,1,MPI_INT,0,comm);
-		MPI_Bcast(&zStart,1,MPI_INT,0,comm);
+		comm.bcast(&Nx,1,0);
+		comm.bcast(&Ny,1,0);
+		comm.bcast(&Nz,1,0);
+		comm.bcast(&xStart,1,0);
+		comm.bcast(&yStart,1,0);
+		comm.bcast(&zStart,1,0);
 		//.................................................
 		comm.barrier();
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 						}
 						else{
 							printf("Sending data to process %i \n", rnk);
-							MPI_Send(tmp,N,MPI_CHAR,rnk,15,comm);
+							comm.send(tmp,N,rnk,15);
 						}
 					}
 				}
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 		else{
 			// Recieve the subdomain from rank = 0
 			printf("Ready to recieve data %i at process %i \n", N,rank);
-			MPI_Recv(Dm.id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
+			comm.recv(Dm.id,N,0,15);
 		}
 		comm.barrier();
 
@@ -243,8 +243,8 @@ int main(int argc, char **argv)
 				printf("Original label=%i, New label=%i \n",oldlabel,newlabel);
 			}
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Bcast(LabelList,2*NLABELS,MPI_INT,0,MPI_COMM_WORLD);
+		comm.barrier();
+		comm.bcast(LabelList,2*NLABELS,0);
 		
 		char *newIDs;
 		newIDs= new char [nx*ny*nz];
@@ -278,8 +278,8 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+		countGlobal = comm.sumReduce( count );
+		totalGlobal = comm.sumReduce( total );
 
 
 		float porosity = float(totalGlobal-countGlobal)/totalGlobal;
@@ -321,8 +321,8 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_INT,MPI_SUM,comm);
-		MPI_Allreduce(&total,&totalGlobal,1,MPI_INT,MPI_SUM,comm);
+		countGlobal = comm.sumReduce( count );
+		totalGlobal = comm.sumReduce( total );
 		float saturation = float(countGlobal)/totalGlobal;
 		if (rank==0) printf("wetting phase saturation=%f\n",saturation);
 

@@ -124,8 +124,6 @@ int main(int argc, char **argv)
 		//		int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 		//		int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 		//**********************************
-		MPI_Request req1[18],req2[18];
-		MPI_Status stat1[18],stat2[18];
 
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -428,8 +426,8 @@ int main(int argc, char **argv)
 			}
 		}
 
-		MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);					/*    6     */
-		//MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
+		pore_vol = comm.sumReduce( sum_local );					/*    6     */
+		//porosity = comm.sumReduce( sum_local );
 		porosity = pore_vol*iVol_global;
 
 		if (rank==0) printf("Media porosity = %f \n",porosity);
@@ -574,7 +572,7 @@ int main(int argc, char **argv)
 					timestep=5;
 				}
 			}
-			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+			comm.bcast(&timestep,1,0);
 
 			// Read in the restart file to CPU buffers
 			double *cDen = new double[2*N];
@@ -662,7 +660,7 @@ int main(int argc, char **argv)
 			//.......create and start timer............
 			double starttime,stoptime,cputime;
 			comm.barrier();
-			starttime = MPI_Wtime();
+			starttime = Utilities::MPI::time();
 
 			/*
 			 *  Create the thread pool
@@ -810,7 +808,7 @@ int main(int argc, char **argv)
 			//************************************************************************/
 			ScaLBL_DeviceBarrier();
 			comm.barrier();
-			stoptime = MPI_Wtime();
+			stoptime = Utilities::MPI::time();
 			if (rank==0) printf("-------------------------------------------------------------------\n");
 			// Compute the walltime per timestep
 			cputime = (stoptime - starttime)/timestep;
@@ -830,20 +828,6 @@ int main(int argc, char **argv)
 		MPI_Finalize();
 	 //****************************************************
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

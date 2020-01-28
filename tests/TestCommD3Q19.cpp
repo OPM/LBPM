@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 		comm.barrier();
-		starttime = MPI_Wtime();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 
@@ -403,7 +403,7 @@ int main(int argc, char **argv)
 			//...................................................................
 		}
 		//************************************************************************/
-		stoptime = MPI_Wtime();
+		stoptime = Utilities::MPI::time();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;

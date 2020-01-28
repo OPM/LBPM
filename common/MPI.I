@@ -580,6 +580,39 @@ inline MPI_Request MPI_CLASS::Irecv(
 
 
 /************************************************************************
+ *  sendrecv                                                                 *
+ ************************************************************************/
+#if defined( USE_MPI ) || defined( USE_EXT_MPI )
+template<>
+void MPI_CLASS::sendrecv<char>( const char*, int, int, int, char*, int, int, int ) const;
+template<>
+void MPI_CLASS::sendrecv<int>( const int*, int, int, int, int*, int, int, int ) const;
+template<>
+void MPI_CLASS::sendrecv<float>( const float*, int, int, int, float*, int, int, int ) const;
+template<>
+void MPI_CLASS::sendrecv<double>( const double*, int, int, int, double*, int, int, int ) const;
+template<class TYPE>
+void MPI_CLASS::sendrecv( const TYPE *sendbuf, int sendcount, int dest, int sendtag, 
+                          TYPE *recvbuf, int recvcount, int source, int recvtag ) const
+{
+    ERROR( "Not implimented" );
+}
+#else
+template<class TYPE>
+void MPI_CLASS::sendrecv( const TYPE *sendbuf, int sendcount, int dest, int sendtag, 
+                          TYPE *recvbuf, int recvcount, int source, int recvtag ) const
+{
+    ASSERT( dest == 0 );
+    ASSERT( source == 0 );
+    ASSERT( sendcount == recvcount );
+    ASSERT( sendtag == recvtag );
+    memcpy( recvbuf, sendbuf, sendcount * sizeof( TYPE ) );
+}
+#endif
+
+
+
+/************************************************************************
  *  allGather                                                            *
  ************************************************************************/
 template<class TYPE>

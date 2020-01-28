@@ -387,7 +387,7 @@ int main(int argc, char **argv)
 		double starttime,stoptime,cputime;
 		ScaLBL_DeviceBarrier();
 		comm.barrier();
-		starttime = MPI_Wtime();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 		err = 1.0; 	
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
 		comm.barrier();
-		stoptime = MPI_Wtime();
+		stoptime = Utilities::MPI::time();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;

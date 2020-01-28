@@ -487,7 +487,7 @@ void ScaLBL_DFHModel::Run(){
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
+	starttime = Utilities::MPI::time();
 	//.........................................
 	//************ MAIN ITERATION LOOP ***************************************/
 
@@ -583,7 +583,7 @@ void ScaLBL_DFHModel::Run(){
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	stoptime = MPI_Wtime();
+	stoptime = Utilities::MPI::time();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
 	cputime = (stoptime - starttime)/timestep;

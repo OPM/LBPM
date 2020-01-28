@@ -62,7 +62,6 @@ int main(int argc, char **argv)
     int N_errors = ut.NumFailGlobal();
 
     // Close MPI
-    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return N_errors;
 }

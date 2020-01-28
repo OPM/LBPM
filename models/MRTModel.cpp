@@ -208,7 +208,7 @@ void ScaLBL_MRTModel::Run(){
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
     comm.barrier();
-	starttime = MPI_Wtime();
+	starttime = Utilities::MPI::time();
 	if (rank==0) printf("Beginning AA timesteps, timestepMax = %i \n", timestepMax);
 	if (rank==0) printf("********************************************************\n");
 	timestep=0;
@@ -306,7 +306,7 @@ void ScaLBL_MRTModel::Run(){
 		}
 	}
 	//************************************************************************/
-	stoptime = MPI_Wtime();
+	stoptime = Utilities::MPI::time();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
 	cputime = (stoptime - starttime)/timestep;

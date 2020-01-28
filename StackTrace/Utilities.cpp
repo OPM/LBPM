@@ -14,7 +14,7 @@
 #include <typeinfo>
 
 #ifdef USE_MPI
-#include "mpi.h"
+#include "common/MPI.h"
 #endif
 
 #ifdef USE_TIMER

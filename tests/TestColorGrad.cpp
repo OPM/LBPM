@@ -114,16 +114,16 @@ int main(int argc, char **argv)
 		// Broadcast simulation parameters from rank 0 to all other procs
 		comm.barrier();
 		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&Nx,1,0);
+		comm.bcast(&Ny,1,0);
+		comm.bcast(&Nz,1,0);
+		comm.bcast(&nprocx,1,0);
+		comm.bcast(&nprocy,1,0);
+		comm.bcast(&nprocz,1,0);
+		comm.bcast(&nspheres,1,0);
+		comm.bcast(&Lx,1,0);
+		comm.bcast(&Ly,1,0);
+		comm.bcast(&Lz,1,0);
 		//.................................................
 		comm.barrier();
 		// **************************************************************
