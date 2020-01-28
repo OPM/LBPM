@@ -1,6 +1,6 @@
 #include "IO/netcdf.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 #include "ProfilerApp.h"
 
@@ -116,7 +116,7 @@ std::string VariableTypeName( VariableType type )
 /****************************************************
 * Open/close a file                                 *
 ****************************************************/
-int open( const std::string& filename, FileMode mode, MPI_Comm comm )
+int open( const std::string& filename, FileMode mode, const Utilities::MPI& comm )
 {
     int fid = 0;
     if ( comm == MPI_COMM_NULL ) {
@@ -134,13 +134,13 @@ int open( const std::string& filename, FileMode mode, MPI_Comm comm )
         }
     } else {
         if ( mode == READ ) {
-            int err = nc_open_par( filename.c_str(), NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            int err = nc_open_par( filename.c_str(), NC_MPIPOSIX, comm.getCommunicator(), MPI_INFO_NULL, &fid );
             CHECK_NC_ERR( err );
         } else if ( mode == WRITE ) {
-            int err = nc_open_par( filename.c_str(), NC_WRITE|NC_MPIPOSIX, comm, MPI_INFO_NULL, &fid );
+            int err = nc_open_par( filename.c_str(), NC_WRITE|NC_MPIPOSIX, comm.getCommunicator(), MPI_INFO_NULL, &fid );
             CHECK_NC_ERR( err );
         } else if ( mode == CREATE ) {
-            int err = nc_create_par( filename.c_str(), NC_NETCDF4|NC_MPIIO, comm, MPI_INFO_NULL, &fid );
+            int err = nc_create_par( filename.c_str(), NC_NETCDF4|NC_MPIIO, comm.getCommunicator(), MPI_INFO_NULL, &fid );
             CHECK_NC_ERR( err );
         } else {
             ERROR("Unknown file mode");
@@ -375,7 +375,7 @@ Array<TYPE> getVar( int fid, const std::string& var, const std::vector<int>& sta
     std::vector<size_t> var_size = getVarDim( fid, var );
     for (int d=0; d<(int)var_size.size(); d++) {
         if ( start[d]<0 || start[d]+stride[d]*(count[d]-1)>(int)var_size[d] ) {
-            int rank = comm_rank(MPI_COMM_WORLD);
+            int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
             char tmp[1000];
             sprintf(tmp,"%i: Range exceeded array dimension:\n"
                 "   start[%i]=%i, count[%i]=%i, stride[%i]=%i, var_size[%i]=%i",

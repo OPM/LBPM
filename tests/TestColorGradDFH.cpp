@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -25,15 +25,11 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
@@ -82,7 +78,7 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -105,7 +101,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//......................device distributions.................................
 		int neighborSize=18*Np*sizeof(int);
@@ -211,7 +207,7 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 

@@ -26,7 +26,7 @@ std::shared_ptr<Database> loadInputs( )
 int main(int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
+	Utilities::MPI comm( MPI_COMM_WORLD );
 	int toReturn = 0;
 	{
 		int i,j,k;
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 		if (count_check > 0)  toReturn=2;
 		else printf("Succeeded. \n");
 	}
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	return toReturn;
 }

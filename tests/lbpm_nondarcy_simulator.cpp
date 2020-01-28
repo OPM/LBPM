@@ -9,7 +9,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 //#define WRITE_SURFACES
 
@@ -77,15 +77,11 @@ int main(int argc, char **argv)
 	}
 	else {
 
-		//*****************************************
-		// ***** MPI STUFF ****************
-		//*****************************************
 		// Initialize MPI
-		int rank,nprocs;
 		MPI_Init(&argc,&argv);
-		MPI_Comm comm = MPI_COMM_WORLD;
-		MPI_Comm_rank(comm,&rank);
-		MPI_Comm_size(comm,&nprocs);
+		Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 		{
 			// parallel domain size (# of sub-domains)
 			int nprocx,nprocy,nprocz;
@@ -160,7 +156,7 @@ int main(int argc, char **argv)
 			}
 			// **************************************************************
 			// Broadcast simulation parameters from rank 0 to all other procs
-			MPI_Barrier(comm);
+			comm.barrier();
 			//.................................................
 			MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
 			//MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
@@ -185,7 +181,7 @@ int main(int argc, char **argv)
 			MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 			MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 			//.................................................
-			MPI_Barrier(comm);
+			comm.barrier();
 
 			RESTART_INTERVAL=interval;
 			// **************************************************************
@@ -222,7 +218,7 @@ int main(int argc, char **argv)
 					rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 					rank_yz, rank_YZ, rank_yZ, rank_Yz );
 
-			MPI_Barrier(comm);
+			comm.barrier();
 
 			Nx += 2;	Ny += 2;	Nz += 2;
 
@@ -262,7 +258,7 @@ int main(int argc, char **argv)
 			//	WriteLocalSolidID(LocalRankFilename, id, N);
 			sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 			ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
-			MPI_Barrier(comm);
+			comm.barrier();
 			if (rank == 0) cout << "Domain set." << endl;
 
 			//.......................................................................
@@ -436,7 +432,7 @@ int main(int argc, char **argv)
 
 			//.......create and start timer............
 			double starttime,stoptime,cputime;
-			MPI_Barrier(comm);
+			comm.barrier();
 			starttime = MPI_Wtime();
 			//.........................................
 
@@ -485,7 +481,7 @@ int main(int argc, char **argv)
 					}
 					//...................................................................................
 					ScaLBL_DeviceBarrier();
-					MPI_Barrier(comm);
+					comm.barrier();
 
 
 					// Timestep completed!
@@ -557,7 +553,7 @@ int main(int argc, char **argv)
 			//************************************************************************/
 			fclose(NONDARCY);
 			ScaLBL_DeviceBarrier();
-			MPI_Barrier(comm);
+			comm.barrier();
 			stoptime = MPI_Wtime();
 			if (rank==0) printf("-------------------------------------------------------------------\n");
 			// Compute the walltime per timestep
@@ -575,7 +571,7 @@ int main(int argc, char **argv)
 			NULL_USE(RESTART_INTERVAL);
 		}
 		// ****************************************************
-		MPI_Barrier(comm);
+		comm.barrier();
 		MPI_Finalize();
 		// ****************************************************
 	}

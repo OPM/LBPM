@@ -34,7 +34,7 @@ void initialize( const std::string& path="", const std::string& format="silo", b
  * @param[in] meshData      The data to write
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
-void writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>& meshData, MPI_Comm comm );
+void writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>& meshData, const Utilities::MPI& comm );
 
 
 /*!
@@ -44,7 +44,7 @@ void writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>
  * @param[in] meshData      The data to write
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
-inline void writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, MPI_Comm comm )
+inline void writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, const Utilities::MPI& comm )
 {
     char subdir[100];
     sprintf(subdir,"vis%03i",timestep);

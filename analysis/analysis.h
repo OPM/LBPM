@@ -58,7 +58,7 @@ int ComputeLocalPhaseComponent( const IntArray &PhaseID, int &VALUE, IntArray &C
  */
 int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_info, 
     const DoubleArray& Phase, const DoubleArray& SignDist, double vF, double vS, 
-    BlobIDArray& GlobalBlobID, MPI_Comm comm );
+    BlobIDArray& GlobalBlobID, const Utilities::MPI& comm );
 
 
 /*!
@@ -75,7 +75,7 @@ int ComputeGlobalBlobIDs( int nx, int ny, int nz, const RankInfoStruct& rank_inf
  * @return Return the number of components in the specified phase
  */
 int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& rank_info,
-    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, MPI_Comm comm );
+    const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, const Utilities::MPI& comm );
 
 
 /*!
@@ -87,7 +87,7 @@ int ComputeGlobalPhaseComponent( int nx, int ny, int nz, const RankInfoStruct& r
  * @param[in] nz            Number of elements in the z-direction
  * @param[in/out] ID        The ids of the blobs
  */
-void ReorderBlobIDs( BlobIDArray& ID, MPI_Comm comm );
+void ReorderBlobIDs( BlobIDArray& ID, const Utilities::MPI& comm );
 
 
 typedef std::pair<BlobIDType,std::vector<BlobIDType> > BlobIDSplitStruct;
@@ -120,7 +120,7 @@ struct ID_map_struct {
  * @param[in] ID1           The blob ids at the first timestep
  * @param[in] ID2           The blob ids at the second timestep
  */
-ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, const BlobIDArray& ID2, MPI_Comm comm );
+ID_map_struct computeIDMap( int nx, int ny, int nz, const BlobIDArray& ID1, const BlobIDArray& ID2, const Utilities::MPI& comm );
 
 
 /*!

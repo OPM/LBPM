@@ -18,10 +18,9 @@
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    int rank, nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&nprocs);
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
     /*if ( nprocs != 8 ) {
         printf("This tests requires 8 processors\n");
         return -1;

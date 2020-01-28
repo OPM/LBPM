@@ -12,13 +12,13 @@ Implementation of color lattice boltzmann model
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
@@ -68,7 +68,7 @@ public:
 	double *Pressure;
 		
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;

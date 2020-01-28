@@ -2,9 +2,8 @@
 #define COMMUNICATION_HPP_INC
 
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
-//#include "ProfilerApp.h"
 
 
 /********************************************************
@@ -12,17 +11,19 @@
 ********************************************************/
 template<class TYPE>
 Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src_data,
-    const RankInfoStruct& dst_rank, std::array<int,3> dst_size, MPI_Comm comm )
+    const RankInfoStruct& dst_rank, std::array<int,3> dst_size, const Utilities::MPI& comm )
 {
-#ifdef USE_MPI
+    if ( comm.getSize() == 1 ) {
+        return src_data.subset( { 0, (size_t) dst_size[0]-1, 0, (size_t) dst_size[1]-1, 0, (size_t) dst_size[2]-1 } );
+    }
     // Get the src size
     std::array<int,3> src_size;
     int size0[3] = { (int) src_data.size(0), (int) src_data.size(1), (int) src_data.size(2) };
-    MPI_Allreduce( size0, src_size.data(), 3, MPI_INT, MPI_MAX, comm );
+    comm.maxReduce( size0, src_size.data(), 3 );
     if ( !src_data.empty() )
         ASSERT( src_size[0] == size0[0] && src_size[1] == size0[1] && src_size[2] == size0[2] );
     // Check that dst_size matches on all ranks
-    MPI_Allreduce( dst_size.data(), size0, 3, MPI_INT, MPI_MAX, comm );
+    comm.maxReduce( dst_size.data(), size0, 3 );
     ASSERT( dst_size[0] == size0[0] && dst_size[1] == size0[1] && dst_size[2] == size0[2] );
     // Function to get overlap range
     auto calcOverlap = []( int i1[3], int i2[3], int j1[3], int j2[3] ) {
@@ -60,7 +61,7 @@ Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src
     }
     std::vector<MPI_Request> send_request( send_rank.size() );
     for (size_t i=0; i<send_rank.size(); i++)
-        MPI_Isend( send_data[i].data(), sizeof(TYPE)*send_data[i].length(), MPI_BYTE, send_rank[i], 5462, comm, &send_request[i]);
+        send_request[i] = comm.Isend( send_data[i].data(), send_data[i].length(), send_rank[i], 5462 );
     // Unpack data from the appropriate ranks (including myself)
     Array<TYPE> dst_data( dst_size[0], dst_size[1], dst_size[2] );
     int i1[3] = { dst_size[0] * dst_rank.ix, dst_size[1] * dst_rank.jy, dst_size[2] * dst_rank.kz };
@@ -75,17 +76,14 @@ Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src
                     continue;
                 int rank  = src_rank.getRankForBlock(i,j,k);
                 Array<TYPE> data( index[1] - index[0] + 1, index[3] - index[2] + 1, index[5] - index[4] + 1 );
-                MPI_Recv( data.data(), sizeof(TYPE)*data.length(), MPI_BYTE, rank, 5462, comm, MPI_STATUS_IGNORE );
+                comm.recv( data.data(), data.length(), rank, 5462 );
                 dst_data.copySubset( index, data );
             }
         }
     }
     // Free data
-    MPI_Waitall( send_request.size(), send_request.data(), MPI_STATUSES_IGNORE );
+    comm.waitAll( send_request.size(), send_request.data() );
     return dst_data;
-#else
-    return src_data.subset( { 0, dst_size[0]-1, 0, dst_size[1]-1, 0, dst_size[2]-1 );
-#endif
 }
 
 
@@ -94,27 +92,11 @@ Array<TYPE> redistribute( const RankInfoStruct& src_rank, const Array<TYPE>& src
 *  Structure to fill halo cells                         *
 ********************************************************/
 template<class TYPE>
-fillHalo<TYPE>::fillHalo( MPI_Comm comm_, const RankInfoStruct& info_,
+fillHalo<TYPE>::fillHalo( const Utilities::MPI& comm_, const RankInfoStruct& info_,
     std::array<int,3> n_, std::array<int,3> ng_, int tag0, int depth_,
     std::array<bool,3> fill, std::array<bool,3> periodic ):
     comm(comm_), info(info_), n(n_), ng(ng_), depth(depth_)
 {
-    if ( std::is_same<TYPE,double>() ) {
-        N_type = 1;
-        datatype = MPI_DOUBLE;
-    } else if ( std::is_same<TYPE,float>() ) {
-        N_type = 1;
-        datatype = MPI_FLOAT;
-    } else if ( sizeof(TYPE)%sizeof(double)==0 ) {
-        N_type = sizeof(TYPE) / sizeof(double);
-        datatype = MPI_DOUBLE;
-    } else if ( sizeof(TYPE)%sizeof(float)==0 ) {
-        N_type = sizeof(TYPE) / sizeof(float);
-        datatype = MPI_FLOAT;
-    } else {
-        N_type = sizeof(TYPE);
-        datatype = MPI_BYTE;
-    }
     // Set the fill pattern
     memset(fill_pattern,0,sizeof(fill_pattern));
     if ( fill[0] ) {
@@ -251,8 +233,8 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
             for (int k=0; k<3; k++) {
                 if ( !fill_pattern[i][j][k] )
                     continue;
-                MPI_Irecv( recv[i][j][k], N_type*depth2*N_send_recv[i][j][k], datatype, 
-                    info.rank[i][j][k], tag[2-i][2-j][2-k], comm, &recv_req[i][j][k] );
+                recv_req[i][j][k] = comm.Irecv( recv[i][j][k], depth2*N_send_recv[i][j][k], 
+                    info.rank[i][j][k], tag[2-i][2-j][2-k] );
             }
         }
     }
@@ -263,19 +245,18 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
                 if ( !fill_pattern[i][j][k] )
                     continue;
                 pack( data, i-1, j-1, k-1, send[i][j][k] );
-                MPI_Isend( send[i][j][k], N_type*depth2*N_send_recv[i][j][k], datatype, 
-                    info.rank[i][j][k], tag[i][j][k], comm, &send_req[i][j][k] );
+                send_req[i][j][k] = comm.Isend( send[i][j][k], depth2*N_send_recv[i][j][k], 
+                    info.rank[i][j][k], tag[i][j][k] );
             }
         }
     }
     // Recv the dst data and unpack (we recive in reverse order to match the sends)
-    MPI_Status status;
     for (int i=2; i>=0; i--) {
         for (int j=2; j>=0; j--) {
             for (int k=2; k>=0; k--) {
                 if ( !fill_pattern[i][j][k] )
                     continue;
-                MPI_Wait(&recv_req[i][j][k],&status);
+                comm.wait( recv_req[i][j][k] );
                 unpack( data, i-1, j-1, k-1, recv[i][j][k] );
             }
         }
@@ -286,7 +267,7 @@ void fillHalo<TYPE>::fill( Array<TYPE>& data )
             for (int k=0; k<3; k++) {
                 if ( !fill_pattern[i][j][k] )
                     continue;
-                MPI_Wait(&send_req[i][j][k],&status);
+                comm.wait( send_req[i][j][k] );
             }
         }
     }

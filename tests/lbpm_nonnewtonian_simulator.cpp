@@ -9,7 +9,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "common/TwoPhase.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
@@ -99,21 +99,12 @@ inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	//MPI_Init(&argc,&argv);
-
-	/*
-	 * Definitely seems to be an issue - let's hope James gets back to me...
-	 */
 	int provided_thread_support = -1;
 	MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
-	MPI_Comm comm;
-	MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-	int rank = comm_rank(comm);
-	int nprocs = comm_size(comm);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 
 	if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
 		std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
@@ -214,32 +205,32 @@ int main(int argc, char **argv)
 
 		// **************************************************************
 		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
+		comm.barrier();
 		//.................................................
-		MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
-		//MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
-		//	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
-		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
-		MPI_Bcast(&interval,1,MPI_INT,0,comm);
-		MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&tau,1,0);
+		//comm.bcast(&pBC,1,0);
+		//comm.bcast(&Restart,1,0);
+		comm.bcast(&din,1,0);
+		comm.bcast(&dout,1,0);
+		comm.bcast(&Fx,1,0);
+		comm.bcast(&Fy,1,0);
+		comm.bcast(&Fz,1,0);
+		comm.bcast(&timestepMax,1,0);
+		comm.bcast(&interval,1,0);
+		comm.bcast(&tol,1,0);
 		// Computational domain
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&Nx,1,0);
+		comm.bcast(&Ny,1,0);
+		comm.bcast(&Nz,1,0);
+		comm.bcast(&nprocx,1,0);
+		comm.bcast(&nprocy,1,0);
+		comm.bcast(&nprocz,1,0);
+		comm.bcast(&nspheres,1,0);
+		comm.bcast(&Lx,1,0);
+		comm.bcast(&Ly,1,0);
+		comm.bcast(&Lz,1,0);
 		//.................................................
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//?
 		RESTART_INTERVAL=interval;
@@ -252,7 +243,7 @@ int main(int argc, char **argv)
 
 		const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		/*
 		 * Set up the relaxation rates and STATIC VISCOSITY
@@ -319,7 +310,7 @@ int main(int argc, char **argv)
 		//				rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 		//				rank_yz, rank_YZ, rank_yZ, rank_Yz );
 
-		MPI_Barrier(comm);
+		comm.barrier();
 		Nx+=2; Ny+=2; Nz+=2;
 		int N = Nx*Ny*Nz;
 		int dist_mem_size = N*sizeof(double);
@@ -373,7 +364,7 @@ int main(int argc, char **argv)
 		//	WriteLocalSolidID(LocalRankFilename, id, N);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 		ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;                                               /*    3      */
 
 		//.......................................................................
@@ -598,14 +589,14 @@ int main(int argc, char **argv)
 			delete [] cDen;
 			delete [] cDistEven;
 			delete [] cDistOdd;
-			MPI_Barrier(comm);
+			comm.barrier();
 		}                                                                                   /*  14 */
 
 //		//......................................................................
 //		ScaLBL_D3Q7_Init(ID, A_even, A_odd, &Den[0], Nx, Ny, Nz);
 //		ScaLBL_D3Q7_Init(ID, B_even, B_odd, &Den[N], Nx, Ny, Nz);
 //		ScaLBL_DeviceBarrier();
-//		MPI_Barrier(comm);																/*  15  */
+//		comm.barrier();																/*  15  */
 
 		//.......................................................................
 		// Once phase has been initialized, map solid to account for 'smeared' interface
@@ -631,7 +622,7 @@ int main(int argc, char **argv)
 //		ScaLBL_Comm.SendHalo(Phi);
 //		ScaLBL_Comm.RecvHalo(Phi);
 //		ScaLBL_DeviceBarrier();
-//		MPI_Barrier(comm);
+//		comm.barrier();
 //		//*************************************************************************   /*  18  */
 
 
@@ -670,7 +661,7 @@ int main(int argc, char **argv)
 
 			//.......create and start timer............
 			double starttime,stoptime,cputime;
-			MPI_Barrier(comm);
+			comm.barrier();
 			starttime = MPI_Wtime();
 
 			/*
@@ -804,7 +795,7 @@ int main(int argc, char **argv)
 				}
 				//...................................................................................
 				ScaLBL_DeviceBarrier();
-				MPI_Barrier(comm);
+				comm.barrier();
 
 				// Timestep completed!
 				timestep++;
@@ -818,7 +809,7 @@ int main(int argc, char **argv)
 			}
 			//************************************************************************/
 			ScaLBL_DeviceBarrier();
-			MPI_Barrier(comm);
+			comm.barrier();
 			stoptime = MPI_Wtime();
 			if (rank==0) printf("-------------------------------------------------------------------\n");
 			// Compute the walltime per timestep
@@ -835,7 +826,7 @@ int main(int argc, char **argv)
 
 			NULL_USE(RESTART_INTERVAL);
 		}
-		MPI_Barrier(comm);
+		comm.barrier();
 		MPI_Finalize();
 	 //****************************************************
 }

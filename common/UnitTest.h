@@ -1,13 +1,11 @@
 #ifndef included_UnitTest
 #define included_UnitTest
 
+#include "common/MPI.h"
+
 #include <mutex>
-#include <sstream>
 #include <string>
 #include <vector>
-#ifdef USE_MPI
-#include "mpi.h"
-#endif
 
 
 /*!
@@ -28,47 +26,47 @@
  * \endcode
 
  */
-class UnitTest
+class UnitTest final
 {
 public:
     //! Constructor
     UnitTest();
 
     //! Destructor
-    virtual ~UnitTest();
+    ~UnitTest();
+
+    // Copy constructor
+    UnitTest( const UnitTest & ) = delete;
+
+    // Assignment operator
+    UnitTest &operator=( const UnitTest & ) = delete;
 
     //! Indicate a passed test (thread-safe)
-    virtual void passes( const std::string &in );
+    void passes( std::string in );
 
     //! Indicate a failed test (thread-safe)
-    virtual void failure( const std::string &in );
+    void failure( std::string in );
 
     //! Indicate an expected failed test (thread-safe)
-    virtual void expected_failure( const std::string &in );
+    void expected_failure( std::string in );
 
     //! Return the number of passed tests locally
-    virtual size_t NumPassLocal() const { return pass_messages.size(); }
+    inline size_t NumPassLocal() const { return d_pass.size(); }
 
     //! Return the number of failed tests locally
-    virtual size_t NumFailLocal() const { return fail_messages.size(); }
+    inline size_t NumFailLocal() const { return d_fail.size(); }
 
     //! Return the number of expected failed tests locally
-    virtual size_t NumExpectedFailLocal() const { return expected_fail_messages.size(); }
+    inline size_t NumExpectedFailLocal() const { return d_expected.size(); }
 
     //! Return the number of passed tests locally
-    virtual size_t NumPassGlobal() const;
+    size_t NumPassGlobal() const;
 
     //! Return the number of failed tests locally
-    virtual size_t NumFailGlobal() const;
+    size_t NumFailGlobal() const;
 
     //! Return the number of expected failed tests locally
-    virtual size_t NumExpectedFailGlobal() const;
-
-    //! Return the rank of the current processor
-    int getRank() const;
-
-    //! Return the number of processors
-    int getSize() const;
+    size_t NumExpectedFailGlobal() const;
 
     /*!
      * Print a report of the passed and failed tests.
@@ -77,29 +75,28 @@ public:
      * to print correctly).
      * @param level     Optional integer specifying the level of reporting (default: 1)
      *                  0: Report the number of tests passed, failed, and expected failures.
-     *                  1: Report the number of passed tests (if <=20) or the number passed
-     *                     otherwise, report all failures, report the number of expected
-     *                     failed tests (if <=50) or the number passed otherwise.
+     *                  1: Report the passed tests (if <=20) or number passed,
+     *                     Report all failures,
+     *                     Report the expected failed tests (if <=50) or the number passed.
      *                  2: Report all passed, failed, and expected failed tests.
      */
-    virtual void report( const int level = 1 ) const;
+    void report( const int level = 1 ) const;
 
     //! Clear the messages
     void reset();
 
-protected:
-    std::vector<std::string> pass_messages;
-    std::vector<std::string> fail_messages;
-    std::vector<std::string> expected_fail_messages;
-    mutable std::mutex mutex;
-#ifdef USE_MPI
-    MPI_Comm comm;
-#endif
+    //! Make the unit test operator verbose?
+    void verbose( bool verbose = true ) { d_verbose = verbose; }
 
 private:
-    // Make the copy constructor private
-    UnitTest( const UnitTest & ) {}
+    std::vector<std::string> d_pass;
+    std::vector<std::string> d_fail;
+    std::vector<std::string> d_expected;
+    bool d_verbose;
+    mutable std::mutex d_mutex;
+    Utilities::MPI d_comm;
 
+private:
     // Function to pack the messages into a single data stream and send to the given processor
     // Note: This function does not return until the message stream has been sent
     void pack_message_stream(
@@ -109,9 +106,7 @@ private:
     // Note: This function does not return until the message stream has been received
     std::vector<std::string> unpack_message_stream( const int rank, const int tag ) const;
 
-    // Helper functions
-    inline void barrier() const;
-    inline std::vector<int> allGather( int value ) const;
+    // Gather the messages
     inline std::vector<std::vector<std::string>> gatherMessages(
         const std::vector<std::string> &local_messages, int tag ) const;
 };

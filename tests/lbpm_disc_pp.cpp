@@ -9,7 +9,7 @@
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"    // This includes mpi.h
+#include "common/MPI.h"    // This includes mpi.h
 #include "common/SpherePack.h"
 
 /*
@@ -130,15 +130,11 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -190,7 +186,7 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	MPI_Barrier(comm);
+	comm.barrier();
 	//.................................................
 	// Computational domain
 	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
@@ -204,7 +200,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	MPI_Barrier(comm);
+	comm.barrier();
 
 	// **************************************************************
 	if (argc > 1)	depth=atoi(argv[1]);
@@ -222,7 +218,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 MPI_Barrier(comm);
+	 comm.barrier();
 
 	Nx += 2;
 	Ny += 2;
@@ -277,13 +273,13 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the disc packing \n");
 	if (rank == 0)	ReadDiscPacking(ndiscs,cx,cy,rad);
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,ndiscs,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cy,ndiscs,MPI_DOUBLE,0,comm);
 	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	MPI_Barrier(comm);
+	comm.barrier();
 	if (rank == 0){
 		cout << "Domain set." << endl;
 		printf("************ \n");
@@ -388,7 +384,7 @@ int main(int argc, char **argv)
 	//......................................................................
 
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 }

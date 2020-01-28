@@ -3,7 +3,7 @@
 
 #include "IO/silo.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 #include "ProfilerApp.h"
 

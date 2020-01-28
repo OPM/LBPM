@@ -117,10 +117,14 @@ ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common IO
 
 # Check for CUDA
 CHECK_ENABLE_FLAG( USE_CUDA 0 )
+CHECK_ENABLE_FLAG( USE_HIP 0 )
 NULL_USE( CMAKE_CUDA_FLAGS )
 IF ( USE_CUDA )
     ADD_DEFINITIONS( -DUSE_CUDA )
     ENABLE_LANGUAGE( CUDA )
+ELSEIF ( USE_HIP )
+    FIND_PACKAGE( HIP )
+    MESSAGE( FATAL_ERROR "STOP" )
 ENDIF()
 
 

@@ -12,7 +12,7 @@
 
 #include "common/Array.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Database.h"
 
@@ -63,7 +63,7 @@ private:
 class Domain{
 public:
     //! Default constructor
-    Domain( std::shared_ptr<Database> db, MPI_Comm Communicator);
+    Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator);
 
     //! Obsolete constructor
     Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
@@ -116,7 +116,7 @@ public: // Public variables (need to create accessors instead)
     double porosity;
     RankInfoStruct rank_info;
 
-    MPI_Comm Comm;        // MPI Communicator for this domain
+    Utilities::MPI Comm;        // MPI Communicator for this domain
 
     int BoundaryCondition;
 

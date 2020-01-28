@@ -207,9 +207,8 @@ private:
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator for this domain
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................

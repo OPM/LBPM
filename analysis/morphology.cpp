@@ -58,11 +58,11 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			}
 		}
 	}
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
+	totalGlobal = Dm->Comm.sumReduce( count );
+	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -133,7 +133,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double deltaR=0.05; // amount to change the radius in voxel units
 	double Rcrit_old;
 
-	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	if (ErodeLabel == 1){
@@ -203,41 +202,41 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		PackID(Dm->sendList_YZ, Dm->sendCount_YZ ,sendID_YZ, id);
 		//......................................................................................
 		MPI_Sendrecv(sendID_x,Dm->sendCount_x,MPI_CHAR,Dm->rank_x(),sendtag,
-				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_X,Dm->sendCount_X,MPI_CHAR,Dm->rank_X(),sendtag,
-				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_y,Dm->sendCount_y,MPI_CHAR,Dm->rank_y(),sendtag,
-				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Y,Dm->sendCount_Y,MPI_CHAR,Dm->rank_Y(),sendtag,
-				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_z,Dm->sendCount_z,MPI_CHAR,Dm->rank_z(),sendtag,
-				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Z,Dm->sendCount_Z,MPI_CHAR,Dm->rank_Z(),sendtag,
-				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xy,Dm->sendCount_xy,MPI_CHAR,Dm->rank_xy(),sendtag,
-				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_XY,Dm->sendCount_XY,MPI_CHAR,Dm->rank_XY(),sendtag,
-				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Xy,Dm->sendCount_Xy,MPI_CHAR,Dm->rank_Xy(),sendtag,
-				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xY,Dm->sendCount_xY,MPI_CHAR,Dm->rank_xY(),sendtag,
-				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xz,Dm->sendCount_xz,MPI_CHAR,Dm->rank_xz(),sendtag,
-				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_XZ,Dm->sendCount_XZ,MPI_CHAR,Dm->rank_XZ(),sendtag,
-				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Xz,Dm->sendCount_Xz,MPI_CHAR,Dm->rank_Xz(),sendtag,
-				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xZ,Dm->sendCount_xZ,MPI_CHAR,Dm->rank_xZ(),sendtag,
-				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_yz,Dm->sendCount_yz,MPI_CHAR,Dm->rank_yz(),sendtag,
-				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_YZ,Dm->sendCount_YZ,MPI_CHAR,Dm->rank_YZ(),sendtag,
-				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Yz,Dm->sendCount_Yz,MPI_CHAR,Dm->rank_Yz(),sendtag,
-				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_yZ,Dm->sendCount_yZ,MPI_CHAR,Dm->rank_yZ(),sendtag,
-				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		//......................................................................................
 		UnpackID(Dm->recvList_x, Dm->recvCount_x ,recvID_x, id);
 		UnpackID(Dm->recvList_X, Dm->recvCount_X ,recvID_X, id);
@@ -259,7 +258,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		UnpackID(Dm->recvList_YZ, Dm->recvCount_YZ ,recvID_YZ, id);
 		//......................................................................................
 
-		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		//double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
 
 		count = 0.f;
 		for (int k=1; k<Nz-1; k++){
@@ -272,7 +271,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		countGlobal = Dm->Comm.sumReduce( count );
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 	/*	if (rank==0){
@@ -360,11 +359,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 	}
 
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
+	totalGlobal = Dm->Comm.sumReduce( count );
+	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -434,7 +433,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	double deltaR=0.05; // amount to change the radius in voxel units
 	double Rcrit_old;
 
-	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	double Rcrit_new = maxdistGlobal;
@@ -442,7 +440,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 
 	
 	FILE *DRAIN = fopen("morphdrain.csv","w");
@@ -509,41 +507,41 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		PackID(Dm->sendList_YZ, Dm->sendCount_YZ ,sendID_YZ, id);
 		//......................................................................................
 		MPI_Sendrecv(sendID_x,Dm->sendCount_x,MPI_CHAR,Dm->rank_x(),sendtag,
-				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_X,Dm->sendCount_X,MPI_CHAR,Dm->rank_X(),sendtag,
-				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_y,Dm->sendCount_y,MPI_CHAR,Dm->rank_y(),sendtag,
-				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Y,Dm->sendCount_Y,MPI_CHAR,Dm->rank_Y(),sendtag,
-				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_z,Dm->sendCount_z,MPI_CHAR,Dm->rank_z(),sendtag,
-				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Z,Dm->sendCount_Z,MPI_CHAR,Dm->rank_Z(),sendtag,
-				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xy,Dm->sendCount_xy,MPI_CHAR,Dm->rank_xy(),sendtag,
-				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_XY,Dm->sendCount_XY,MPI_CHAR,Dm->rank_XY(),sendtag,
-				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Xy,Dm->sendCount_Xy,MPI_CHAR,Dm->rank_Xy(),sendtag,
-				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xY,Dm->sendCount_xY,MPI_CHAR,Dm->rank_xY(),sendtag,
-				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xz,Dm->sendCount_xz,MPI_CHAR,Dm->rank_xz(),sendtag,
-				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_XZ,Dm->sendCount_XZ,MPI_CHAR,Dm->rank_XZ(),sendtag,
-				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Xz,Dm->sendCount_Xz,MPI_CHAR,Dm->rank_Xz(),sendtag,
-				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_xZ,Dm->sendCount_xZ,MPI_CHAR,Dm->rank_xZ(),sendtag,
-				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_yz,Dm->sendCount_yz,MPI_CHAR,Dm->rank_yz(),sendtag,
-				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_YZ,Dm->sendCount_YZ,MPI_CHAR,Dm->rank_YZ(),sendtag,
-				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_Yz,Dm->sendCount_Yz,MPI_CHAR,Dm->rank_Yz(),sendtag,
-				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		MPI_Sendrecv(sendID_yZ,Dm->sendCount_yZ,MPI_CHAR,Dm->rank_yZ(),sendtag,
-				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm.getCommunicator(),MPI_STATUS_IGNORE);
 		//......................................................................................
 		UnpackID(Dm->recvList_x, Dm->recvCount_x ,recvID_x, id);
 		UnpackID(Dm->recvList_X, Dm->recvCount_X ,recvID_X, id);
@@ -564,7 +562,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		UnpackID(Dm->recvList_yZ, Dm->recvCount_yZ ,recvID_yZ, id);
 		UnpackID(Dm->recvList_YZ, Dm->recvCount_YZ ,recvID_YZ, id);
 		//......................................................................................
-		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		// double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -583,7 +581,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
+		Dm->Comm.barrier();
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -645,7 +643,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		countGlobal = Dm->Comm.sumReduce( count );
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 		if (rank==0){
@@ -702,7 +700,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			}
 		}
 	}
-	double count_original=sumReduce( Dm->Comm, count);
+	double count_original = Dm->Comm.sumReduce( count);
 
 	// Estimate morph_delta
 	double morph_delta = 0.0;
@@ -732,8 +730,8 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 				}
 			}
 		}
-		count=sumReduce( Dm->Comm, count);
-		MAX_DISPLACEMENT = maxReduce( Dm->Comm, MAX_DISPLACEMENT);
+		count = Dm->Comm.sumReduce( count );
+		MAX_DISPLACEMENT = Dm->Comm.maxReduce( MAX_DISPLACEMENT );
 		GrowthEstimate = count - count_original;
 		ERROR = fabs((GrowthEstimate-TargetGrowth) /TargetGrowth);
 
@@ -776,7 +774,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			}
 		}
 	}
-	count=sumReduce( Dm->Comm, count);
+	count = Dm->Comm.sumReduce( count );
 
 	return count;
 }

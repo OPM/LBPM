@@ -920,21 +920,17 @@ extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
 	char id;
-
-	int idx,n,q,Cqx,Cqy,Cqz;
-	//	int sendLoc;
-
 	double f0,f1,f2,f3,f4,f5,f6;
 	double na,nb,nab;		// density values
 	double ux,uy,uz;	// flow velocity
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
-	double sp,delta;
+	double delta;
 	//double feq[6];		// equilibrium distributions
 	// Set of Discrete velocities for the D3Q19 Model
 	//int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
 
-	for (n=0; n<N; n++){
+	for (int n=0; n<N; n++){
 		id = ID[n];
 		if (id != 0 ){
 
@@ -1224,25 +1220,20 @@ extern "C" void DensityStreamD3Q7(char *ID, double *Den, double *Copy, double *P
 
 extern "C" void ScaLBL_ComputePhaseField(char *ID, double *Phi, double *Den, int N)
 {
-	int n;
-	double Na,Nb;
-	//...................................................................
 	// Update Phi
-	for (n=0; n<N; n++){
+	for (int n=0; n<N; n++){
 
 		if (ID[n] > 0 ){
 			// Get the density value (Streaming already performed)
-			Na = Den[n];
-			Nb = Den[N+n];
+			double Na = Den[n];
+			double Nb = Den[N+n];
 			Phi[n] = (Na-Nb)/(Na+Nb);
 		}
 	}
-	//...................................................................
 }
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice){
-	int n;
-	for (n=Slice*Nx*Ny; n<(Slice+1)*Nx*Ny; n++){
+	for (int n=Slice*Nx*Ny; n<(Slice+1)*Nx*Ny; n++){
 		Phi[n] = value;
 	}
 }
@@ -1255,7 +1246,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
-	int ijk,nn,n;
+	int ijk,nn;
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
@@ -1838,7 +1829,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 		double *Phi, double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 	
-	int n,nn,ijk,nread;
+	int nn,ijk,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 	int nr7,nr8,nr9,nr10;
 	int nr11,nr12,nr13,nr14;
@@ -2492,7 +2483,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double *Aq, double *Bq, 
 			double *Den, double *Phi, int start, int finish, int Np){
 
-	int idx,n,nread;
+	int idx, nread;
 	double fq,nA,nB;
 
 	for (int n=start; n<finish; n++){
@@ -2578,11 +2569,11 @@ extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
-			int start, int finish, int Np){
-	int idx,n,nread;
-	double fq,nA,nB;
+			int start, int finish, int Np)
+{
 	for (int n=start; n<finish; n++){
-		
+		double fq,nA,nB;
+
 		// compute number density for component A
 		// q=0
 		fq = Aq[n];
@@ -2646,27 +2637,25 @@ extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, 
 		Den[Np+n] = nB;
 		
 		// save the phase indicator field
-		idx = Map[n];
+		int idx = Map[n];
 		Phi[idx] = (nA-nB)/(nA+nB); 	
 	}	
 }
 
 extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *phi, double *ColorGrad, int start, int finish, int Np, int Nx, int Ny, int Nz){
-	int idx,n,N,i,j,k,nn;
 	// distributions
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double nx,ny,nz;
-
-	for (idx=0; idx<Np; idx++){
+	for (int idx=0; idx<Np; idx++){
 
 		// Get the 1D index based on regular data layout
-		n = Map[idx];
+		int n = Map[idx];
 		
 		//.......Back out the 3D indices for node n..............
-		k = n/(Nx*Ny);
-		j = (n-Nx*Ny*k)/Nx;
-		i = n-Nx*Ny*k-Nx*j;
+		int k = n/(Nx*Ny);
+		int j = (n-Nx*Ny*k)/Nx;
+		int i = n-Nx*Ny*k-Nx*j;
 		//........................................................................
 		//........Get 1-D index for this thread....................
 		//		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
@@ -2675,7 +2664,7 @@ extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *phi, double *ColorGrad, 
 		//........................................................................
 		//.................Read Phase Indicator Values............................
 		//........................................................................
-		nn = n-1;							// neighbor index (get convention)
+		int nn = n-1;						// neighbor index (get convention)
 		if (i-1<0)		nn += Nx;			// periodic BC along the x-boundary
 		f1 = phi[nn];						// get neighbor for phi - 1
 		//........................................................................

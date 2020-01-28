@@ -9,7 +9,7 @@
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/SpherePack.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 
 /*
@@ -22,15 +22,11 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	// parallel domain size (# of sub-domains)
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
@@ -127,14 +123,14 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	MPI_Barrier(comm);
+	comm.barrier();
 	if (rank == 0) cout << "Domain set." << endl;
 	if (rank == 0){
 		// Compute the Sauter mean diameter
@@ -217,7 +213,7 @@ int main(int argc, char **argv)
 	fclose(ID);
 
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 }
