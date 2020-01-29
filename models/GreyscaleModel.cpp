@@ -44,7 +44,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	flux=0.0;
     dp = 10.0; //unit of 'dp': voxel
 	
-	// Greyscale Model parameters
+	// ---------------------- Greyscale Model parameters -----------------------//
 	if (greyscale_db->keyExists( "timestepMax" )){
 		timestepMax = greyscale_db->getScalar<int>( "timestepMax" );
 	}
@@ -77,10 +77,14 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	if (greyscale_db->keyExists( "tolerance" )){
 		tolerance = greyscale_db->getScalar<double>( "tolerance" );
 	}
+	// ------------------------------------------------------------------------//
+    
+    //------------------------ Other Domain parameters ------------------------//
 	BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
+	// ------------------------------------------------------------------------//
 }
 
 void ScaLBL_GreyscaleModel::SetDomain(){
@@ -366,6 +370,9 @@ void ScaLBL_GreyscaleModel::Create(){
 
 void ScaLBL_GreyscaleModel::Initialize(){
 	if (rank==0)	printf ("Initializing distributions \n");
+    //TODO: for BGK, you need to consider voxel porosity
+    //      for IMRT, the whole set of feq is different
+    //      if in the future you have different collison mode, need to write two set of initialization functions
 	ScaLBL_D3Q19_Init(fq, Np);
 
 	if (Restart == true){
@@ -431,21 +438,36 @@ void ScaLBL_GreyscaleModel::Run(){
 	double flow_rate_previous = 0.0;
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
+		// *************ODD TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		ScaLBL_DeviceBarrier();
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+
+		// *************EVEN TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		//ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		//ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		ScaLBL_DeviceBarrier();
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
+		//ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
@@ -461,12 +483,28 @@ void ScaLBL_GreyscaleModel::Run(){
             double px_loc,py_loc,pz_loc;
             double px,py,pz;
             double mass_loc,mass_glb;
+            
+            //parameters for domain average
+	        int64_t i,j,k,n,imin,jmin,kmin,kmax;
+            // If external boundary conditions are set, do not average over the inlet and outlet
+            kmin=1; kmax=Nz-1;
+            //In case user forgets to specify the inlet/outlet buffer layers for BC>0
+            if (BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
+            if (BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
+
+            imin=jmin=1;
+            // If inlet/outlet layers exist use these as default
+            //if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
+            //if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
+            if (BoundaryCondition > 0 && Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin = 1 + Dm->inlet_layers_z;//"1" indicates the halo layer
+            if (BoundaryCondition > 0 && Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax = Nz-1 - Dm->outlet_layers_z; 
+
 
 			px_loc = py_loc = pz_loc = 0.f;
             mass_loc = 0.f;
-			for (int k=1; k<Nz-1; k++){
-				for (int j=1; j<Ny-1; j++){
-					for (int i=1; i<Nx-1; i++){
+			for (int k=kmin; k<kmax; k++){
+				for (int j=jmin; j<Ny-1; j++){
+					for (int i=imin; i<Nx-1; i++){
 						if (SignDist(i,j,k) > 0){
 							px_loc   += Velocity_x(i,j,k)*Den*PorosityMap(i,j,k);
 							py_loc   += Velocity_y(i,j,k)*Den*PorosityMap(i,j,k);
