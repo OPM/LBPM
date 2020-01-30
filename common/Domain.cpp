@@ -597,8 +597,7 @@ void Domain::Decomp(std::string Filename)
     	if (inlet_layers_z < 4){
             inlet_layers_z=4;
             if(RANK==0){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n");
-                printf("     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i",inlet_layers_z-1,inlet_layers_phase);
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
             } 
         }	
 		for (int k=0; k<inlet_layers_z; k++){
@@ -613,9 +612,8 @@ void Domain::Decomp(std::string Filename)
     if (BoundaryCondition >  0  && kproc() == nprocz-1){
     	if (outlet_layers_z < 4){
             outlet_layers_z=4;
-            if(RANK==0){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n");
-                printf("     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i",outlet_layers_z-1,outlet_layers_phase);
+            if(RANK==nprocs-1){
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
             } 
         }	
  		for (int k=Nz-outlet_layers_z; k<Nz; k++){
