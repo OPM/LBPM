@@ -104,6 +104,7 @@ void ScaLBL_GreyscaleModel::SetDomain(){
 	Velocity_y.resize(Nx,Ny,Nz);
 	Velocity_z.resize(Nx,Ny,Nz);
 	PorosityMap.resize(Nx,Ny,Nz);
+	Pressure.resize(Nx,Ny,Nz);
 
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
@@ -320,7 +321,7 @@ void ScaLBL_GreyscaleModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
-	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Pressure_dvc, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
@@ -441,8 +442,8 @@ void ScaLBL_GreyscaleModel::Run(){
 		// *************ODD TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		//ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set BCs
@@ -450,15 +451,15 @@ void ScaLBL_GreyscaleModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		//ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		//ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		//ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set BCs
@@ -466,8 +467,8 @@ void ScaLBL_GreyscaleModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity);
-		//ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den);
+		//ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
@@ -476,6 +477,7 @@ void ScaLBL_GreyscaleModel::Run(){
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
 			ScaLBL_Comm->RegularLayout(Map,Porosity,PorosityMap);
+			//ScaLBL_Comm->RegularLayout(Map,Pressure_dvc,Pressure);
 			
 			double count_loc=0;
 			double count;
@@ -678,6 +680,7 @@ void ScaLBL_GreyscaleModel::VelocityField(){
 	auto VyVar = std::make_shared<IO::Variable>();
 	auto VzVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
+	auto PressureVar = std::make_shared<IO::Variable>();
 
 	IO::initialize("","silo","false");
 	// Create the MeshDataStruct	
@@ -706,20 +709,34 @@ void ScaLBL_GreyscaleModel::VelocityField(){
 	VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	visData[0].vars.push_back(VzVar);
 	
+	PressureVar->name = "Pressure";
+	PressureVar->type = IO::VariableType::VolumeVariable;
+	PressureVar->dim = 1;
+	PressureVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(PressureVar);
+
 	Array<double>& SignData  = visData[0].vars[0]->data;
 	Array<double>& VelxData = visData[0].vars[1]->data;
 	Array<double>& VelyData = visData[0].vars[2]->data;
 	Array<double>& VelzData = visData[0].vars[3]->data;
+	Array<double>& PressureData = visData[0].vars[4]->data;
 	
     ASSERT(visData[0].vars[0]->name=="SignDist");
     ASSERT(visData[0].vars[1]->name=="Velocity_x");
     ASSERT(visData[0].vars[2]->name=="Velocity_y");
     ASSERT(visData[0].vars[3]->name=="Velocity_z");
+    ASSERT(visData[0].vars[4]->name=="Pressure");
 	
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
+	ScaLBL_Comm->RegularLayout(Map,Pressure_dvc,Pressure);
+
     fillData.copy(SignDist,SignData);
     fillData.copy(Velocity_x,VelxData);
     fillData.copy(Velocity_y,VelyData);
     fillData.copy(Velocity_z,VelzData);
+    fillData.copy(Pressure,PressureData);
 	
     IO::writeData( timestep, visData, Dm->Comm );
 

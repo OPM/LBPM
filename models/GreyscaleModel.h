@@ -65,13 +65,14 @@ public:
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
-	double *Pressure;
+	double *Pressure_dvc;
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
     DoubleArray PorosityMap;
+    DoubleArray Pressure;
 		
 private:
 	MPI_Comm comm;

@@ -1,11 +1,12 @@
 #include <math.h>
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
-                                              double *Poros,double *Perm, double *Velocity){
+                                              double *Poros,double *Perm, double *Velocity, double *Pressure){
 	int n;
 	// conserved momemnts
 	double rho,vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
+    double pressure;
     //double uu;
 	// non-conserved moments
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
@@ -48,6 +49,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
         if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
 		rho = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+        pressure = rho/porosity/3.0;
 		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Gx;
 		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Gy;
 		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Gz;
@@ -159,15 +161,18 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
 		Velocity[0*Np+n] = ux;
 		Velocity[1*Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        //Update pressure on device
+        Pressure[n] = pressure;
 	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz, 
-                                             double *Poros,double *Perm, double *Velocity){
+                                             double *Poros,double *Perm, double *Velocity,double *Pressure){
 	int n;
 	// conserved momemnts
 	double rho,vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
+    double pressure;
     //double uu;
 	// non-conserved moments
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
@@ -266,6 +271,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
         if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
 		rho = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+        pressure = rho/porosity/3.0;
 		vx = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14)/rho+0.5*porosity*Gx;
 		vy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18)/rho+0.5*porosity*Gy;
 		vz = (f5-f6+f11-f12-f13+f14+f15-f16-f17+f18)/rho+0.5*porosity*Gz;
@@ -377,12 +383,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
 		Velocity[0*Np+n] = ux;
 		Velocity[1*Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        //Update pressure on device
+        Pressure[n] = pressure;
 	}
 }
 
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
-                                              double *Poros,double *Perm, double *Velocity, double Den){
+                                              double *Poros,double *Perm, double *Velocity, double Den,double *Pressure){
 	int n;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
@@ -837,11 +845,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 		Velocity[0*Np+n] = ux;
 		Velocity[1*Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        //Update pressure on device
+        Pressure[n] = pressure;
 	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz, 
-                                             double *Poros,double *Perm, double *Velocity, double Den){
+                                             double *Poros,double *Perm, double *Velocity, double Den,double *Pressure){
 	int n, nread;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
@@ -1332,6 +1342,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 		Velocity[0*Np+n] = ux;
 		Velocity[1*Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        //Update pressure on device
+        Pressure[n] = pressure;
 	}
 }
 
