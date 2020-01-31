@@ -43,6 +43,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	din=dout=1.0;
 	flux=0.0;
     dp = 10.0; //unit of 'dp': voxel
+    CollisionType = 1; //1: IMRT; 2: BGK
 	
 	// ---------------------- Greyscale Model parameters -----------------------//
 	if (greyscale_db->keyExists( "timestepMax" )){
@@ -76,6 +77,10 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	}
 	if (greyscale_db->keyExists( "tolerance" )){
 		tolerance = greyscale_db->getScalar<double>( "tolerance" );
+	}
+	auto collision = greyscale_db->getWithDefault<std::string>( "collision", "IMRT" );
+	if (collision == "BGK"){
+        CollisionType=2;
 	}
 	// ------------------------------------------------------------------------//
     
@@ -374,7 +379,20 @@ void ScaLBL_GreyscaleModel::Initialize(){
     //TODO: for BGK, you need to consider voxel porosity
     //      for IMRT, the whole set of feq is different
     //      if in the future you have different collison mode, need to write two set of initialization functions
-	ScaLBL_D3Q19_Init(fq, Np);
+    if (CollisionType==1){
+	    ScaLBL_D3Q19_GreyIMRT_Init(fq, Np, Den);
+        if (rank==0) printf("Collision model: Incompressible MRT.\n");
+    }
+    else if (CollisionType==2){
+	    ScaLBL_D3Q19_Init(fq, Np);
+        if (rank==0) printf("Collision model: BGK.\n");
+    }
+    else{
+        if (rank==0) printf("Unknown collison type! IMRT collision is used.\n"); 
+	    ScaLBL_D3Q19_GreyIMRT_Init(fq, Np, Den);
+        CollisionType=1;
+		greyscale_db->putScalar<std::string>( "collision", "IMRT" );
+    }
 
 	if (Restart == true){
 		if (rank==0){
@@ -442,8 +460,17 @@ void ScaLBL_GreyscaleModel::Run(){
 		// *************ODD TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+        switch (CollisionType){
+            case 1: 
+                    ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+            case 2: 
+                    ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            default: 
+                    ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+        }
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set BCs
@@ -451,25 +478,52 @@ void ScaLBL_GreyscaleModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		//ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-		ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+        switch (CollisionType){
+            case 1: 
+		            ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+            case 2: 
+		            ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            default: 
+		            ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+        }
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		//ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+        switch (CollisionType){
+            case 1: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+            case 2: 
+		            ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            default: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+        }
+        ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
-		//ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-		ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        switch (CollisionType){
+            case 1: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+            case 2: 
+		            ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            default: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
+        }
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
 		if (timestep%analysis_interval==0){

@@ -35,6 +35,7 @@ public:
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
+    int CollisionType;
 	double tau;
     double Den;//constant density
 	double tolerance;
