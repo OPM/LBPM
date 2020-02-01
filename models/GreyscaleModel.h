@@ -37,6 +37,7 @@ public:
 	int BoundaryCondition;
     int CollisionType;
 	double tau;
+    double tau_eff;
     double Den;//constant density
 	double tolerance;
 	double Fx,Fy,Fz,flux;

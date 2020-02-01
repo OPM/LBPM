@@ -3,7 +3,7 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
+__global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz,
                                                   double *Poros,double *Perm, double *Velocity, double *Pressure){
 	int n;
 	// conserved momemnts
@@ -17,7 +17,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int f
     double porosity;
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
-    double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double mu_eff = (1.0/rlx_eff-0.5)/3.0;//kinematic viscosity
     double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -50,7 +50,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int f
         porosity = Poros[n];
         perm = Perm[n];
 
-        c0 = 0.5*(1.0+porosity*0.5*mu/perm);
+        c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
         if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
         GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
         c1 = porosity*0.5*GeoFun/sqrt(perm);
@@ -68,9 +68,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int f
         u_mag=sqrt(ux*ux+uy*uy+uz*uz);
 
         //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
-        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
-        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
+        Fx = -porosity*mu_eff/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
+        Fy = -porosity*mu_eff/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
+        Fz = -porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
         if (porosity==1.0){
             Fx=Gx;
             Fy=Gy;
@@ -176,7 +176,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int f
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
+__global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz,
                                                  double *Poros,double *Perm, double *Velocity, double *Pressure){
 	int n;
 	// conserved momemnts
@@ -191,7 +191,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist
     double porosity;
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
-    double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double mu_eff = (1.0/rlx_eff-0.5)/3.0;//kinematic viscosity
     double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -277,7 +277,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist
         porosity = Poros[n];
         perm = Perm[n];
 
-        c0 = 0.5*(1.0+porosity*0.5*mu/perm);
+        c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
         if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
         GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
         c1 = porosity*0.5*GeoFun/sqrt(perm);
@@ -295,9 +295,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist
         u_mag=sqrt(ux*ux+uy*uy+uz*uz);
 
         //Update the body force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-        Fx = -porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
-        Fy = -porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
-        Fz = -porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
+        Fx = -porosity*mu_eff/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx;
+        Fy = -porosity*mu_eff/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy;
+        Fz = -porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz;
         if (porosity==1.0){
             Fx=Gx;
             Fy=Gy;
@@ -402,7 +402,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
+__global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz,
                                                   double *Poros,double *Perm, double *Velocity, double Den, double *Pressure){
 
 	int n;
@@ -419,7 +419,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, 
     double porosity;
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
-    double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double mu_eff = (1.0/rlx_eff-0.5)/3.0;//kinematic viscosity
     double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
     double rlx_setA = rlx;
     double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
@@ -722,7 +722,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, 
             porosity = Poros[n];
             perm = Perm[n];
 
-            c0 = 0.5*(1.0+porosity*0.5*mu/perm);
+            c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
             if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
             GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
             c1 = porosity*0.5*GeoFun/sqrt(perm);
@@ -738,9 +738,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, 
             u_mag=sqrt(ux*ux+uy*uy+uz*uz);
 
             //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = Den*(-porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx);
-            Fy = Den*(-porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy);
-            Fz = Den*(-porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
+            Fx = Den*(-porosity*mu_eff/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx);
+            Fy = Den*(-porosity*mu_eff/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy);
+            Fz = Den*(-porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
             if (porosity==1.0){
                 Fx=Den*Gx;
                 Fy=Den*Gy;
@@ -873,7 +873,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, 
 }
 
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Gx, double Gy, double Gz,
+__global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz,
                                                  double *Poros,double *Perm, double *Velocity,double Den, double *Pressure){
 
 	int n, nread;
@@ -890,7 +890,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double 
     double porosity;
     double perm;//voxel permeability
     double c0, c1; //Guo's model parameters
-    double mu = (1.0/rlx-0.5)/3.0;//kinematic viscosity
+    double mu_eff = (1.0/rlx_eff-0.5)/3.0;//kinematic viscosity
     double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
     double rlx_setA = rlx;
     double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
@@ -1210,7 +1210,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double 
             porosity = Poros[n];
             perm = Perm[n];
 
-            c0 = 0.5*(1.0+porosity*0.5*mu/perm);
+            c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
             if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
             GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
             c1 = porosity*0.5*GeoFun/sqrt(perm);
@@ -1226,9 +1226,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double 
             u_mag=sqrt(ux*ux+uy*uy+uz*uz);
 
             //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = Den*(-porosity*mu/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx);
-            Fy = Den*(-porosity*mu/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy);
-            Fz = Den*(-porosity*mu/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
+            Fx = Den*(-porosity*mu_eff/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx);
+            Fy = Den*(-porosity*mu_eff/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy);
+            Fz = Den*(-porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
             if (porosity==1.0){
                 Fx=Den*Gx;
                 Fy=Den*Gy;
@@ -1379,9 +1379,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double 
 }
 
 
-extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double *Pressure){
 	
-    dvc_ScaLBL_D3Q19_AAeven_Greyscale<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,Fx,Fy,Fz,Poros,Perm,Velocity,Pressure);
+    dvc_ScaLBL_D3Q19_AAeven_Greyscale<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,rlx_eff,Fx,Fy,Fz,Poros,Perm,Velocity,Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1389,9 +1389,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double *Pressure){
 
-    dvc_ScaLBL_D3Q19_AAodd_Greyscale<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,Fx,Fy,Fz,Poros,Perm,Velocity,Pressure);
+    dvc_ScaLBL_D3Q19_AAodd_Greyscale<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,rlx_eff,Fx,Fy,Fz,Poros,Perm,Velocity,Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1399,9 +1399,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double Den,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double Den,double *Pressure){
 	
-    dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,Fx,Fy,Fz,Poros,Perm,Velocity,Den,Pressure);
+    dvc_ScaLBL_D3Q19_AAeven_Greyscale_IMRT<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,rlx_eff,Fx,Fy,Fz,Poros,Perm,Velocity,Den,Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1409,9 +1409,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double Den,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,double *Poros,double *Perm, double *Velocity,double Den,double *Pressure){
 
-    dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,Fx,Fy,Fz,Poros,Perm,Velocity,Den,Pressure);
+    dvc_ScaLBL_D3Q19_AAodd_Greyscale_IMRT<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,rlx_eff,Fx,Fy,Fz,Poros,Perm,Velocity,Den,Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
