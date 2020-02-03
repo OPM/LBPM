@@ -101,11 +101,6 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double
 
 // BOUNDARY CONDITION ROUTINES
 
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
-//		int Nx, int Ny, int Nz);
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
-//		int Nx, int Ny, int Nz, int outlet);
-
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *neighborList, int *list, double *dist, double din, int count, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *dist, double dout, int count, int Np);
