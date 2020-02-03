@@ -1098,13 +1098,19 @@ void TwoPhase::Reduce()
 	vol_n_global = Dm->Comm.sumReduce( vol_n );
 	paw_global = Dm->Comm.sumReduce( paw );
 	pan_global = Dm->Comm.sumReduce( pan );
-	vaw_global(0) = Dm->Comm.sumReduce( vaw(0) );
-	van_global(0) = Dm->Comm.sumReduce( van(0) );
-	vawn_global(0) = Dm->Comm.sumReduce( vawn(0) );
-	vawns_global(0) = Dm->Comm.sumReduce( vawns(0) );
-	Gwn_global(0) = Dm->Comm.sumReduce( Gwn(0) );
-	Gns_global(0) = Dm->Comm.sumReduce( Gns(0) );
-	Gws_global(0) = Dm->Comm.sumReduce( Gws(0) );
+	for (int idx=0; idx<3; idx++)
+		vaw_global(idx) = Dm->Comm.sumReduce( vaw(idx) );
+	for (int idx=0; idx<3; idx++)
+		van_global(idx) = Dm->Comm.sumReduce( van(idx));
+	for (int idx=0; idx<3; idx++)
+		vawn_global(idx) = Dm->Comm.sumReduce( vawn(idx) );
+	for (int idx=0; idx<3; idx++)
+		vawns_global(idx) = Dm->Comm.sumReduce( vawns(idx) );
+	for (int idx=0; idx<6; idx++){
+		Gwn_global(idx) = Dm->Comm.sumReduce( Gwn(idx) );
+		Gns_global(idx) = Dm->Comm.sumReduce( Gns(idx) );
+		Gws_global(idx) = Dm->Comm.sumReduce( Gws(idx) );
+	}
 	trawn_global = Dm->Comm.sumReduce( trawn );
 	trJwn_global = Dm->Comm.sumReduce( trJwn );
 	trRwn_global = Dm->Comm.sumReduce( trRwn );
