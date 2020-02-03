@@ -16,6 +16,20 @@
 #include <mutex>
 
 
+// OS specific includes / definitions
+// clang-format off
+#if defined( WIN32 ) || defined( _WIN32 ) || defined( WIN64 ) || defined( _WIN64 )
+    #define USE_WINDOWS
+#elif defined( __APPLE__ )
+    #define USE_MAC
+#elif defined( __linux ) || defined( __linux__ ) || defined( __unix ) || defined( __posix )
+    #define USE_LINUX
+#else
+    #error Unknown OS
+#endif
+// clang-format on
+
+
 // Mutex for Utility functions
 static std::mutex Utilities_mutex;
 
