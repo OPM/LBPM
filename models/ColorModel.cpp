@@ -937,7 +937,7 @@ void ScaLBL_ColorModel::Run(){
 				else if (USE_SEED){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
-					//double massChange = SeedPhaseField(seed_water);
+					double massChange = SeedPhaseField(seed_water);
 					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", seed_water, delta_volume, delta_volume_target);
 				}
 				else if (USE_MORPHOPEN_OIL){
