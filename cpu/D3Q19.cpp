@@ -687,7 +687,7 @@ extern "C" void ScaLBL_D3Q19_Pressure_BC_z(int *list, double *dist, double din, 
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	double ux,uy,uz;
-	double Cxz,Cyz;
+	double Cxz,Cyz;	
 
 	for (int idx=0; idx<count; idx++){
 		n = list[idx];

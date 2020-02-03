@@ -93,14 +93,18 @@ void ScaLBL_MRTModel::SetDomain(){
 }
 
 void ScaLBL_MRTModel::ReadInput(){
-    int rank=Dm->rank();
-    //.......................................................................
-    //.......................................................................
-    Mask->ReadIDs();
     
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
+
+	if (domain_db->keyExists( "Filename" )){
+		auto Filename = domain_db->getScalar<std::string>( "Filename" );
+		Mask->Decomp(Filename);
+	}
+	else{
+		Mask->ReadIDs();
+	}
 
 	// Generate the signed distance map
 	// Initialize the domain and communication

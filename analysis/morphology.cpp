@@ -131,7 +131,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
+	double Rcrit_old=0.0;
 
 	int imin,jmin,kmin,imax,jmax,kmax;
 
