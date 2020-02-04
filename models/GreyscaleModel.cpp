@@ -261,7 +261,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(label_count[idx]);
 
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
@@ -595,11 +595,16 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-			MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			//MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			//MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			//MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			//MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
 			
+            vax = Mask->Comm.sumReduce( vax_loc );
+            vay = Mask->Comm.sumReduce( vay_loc );
+            vaz = Mask->Comm.sumReduce( vaz_loc );
+            count = Mask->Comm.sumReduce( count_loc );
+
 			vax /= count;
 			vay /= count;
 			vaz /= count;
@@ -629,10 +634,11 @@ void ScaLBL_GreyscaleModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs=sumReduce( Dm->Comm, Vs);
-			As=sumReduce( Dm->Comm, As);
-			Hs=sumReduce( Dm->Comm, Hs);
-			Xs=sumReduce( Dm->Comm, Xs);
+			Vs = Dm->Comm.sumReduce( Vs);
+			As = Dm->Comm.sumReduce( As);
+			Hs = Dm->Comm.sumReduce( Hs);
+			Xs = Dm->Comm.sumReduce( Xs);
+
 			double h = Dm->voxel_length;
 			//double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			double absperm = h*h*mu*GreyPorosity*flow_rate / force_mag;
