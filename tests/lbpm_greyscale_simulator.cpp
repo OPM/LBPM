@@ -8,7 +8,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/GreyscaleModel.h"
 //#define WRITE_SURFACES
 
@@ -46,7 +46,6 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		
-		
 		ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
 		auto filename = argv[1];
 		Greyscale.ReadParams(filename);
@@ -55,6 +54,8 @@ int main(int argc, char **argv)
 		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
 		Greyscale.Run();	 
+		//Greyscale.VelocityField();
+		//Greyscale.WriteDebug();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);

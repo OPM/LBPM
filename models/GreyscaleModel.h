@@ -10,7 +10,7 @@ Implementation of color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Database.h"
 #include "common/ScaLBL.h"
 #include "ProfilerApp.h"
@@ -30,14 +30,20 @@ public:
 	void Initialize();
 	void Run();
 	void WriteDebug();
+	void VelocityField();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
+    int CollisionType;
 	double tau;
+    double tau_eff;
+    double Den;//constant density
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
+    double dp;//solid particle diameter, unit in voxel
+    double GreyPorosity;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -54,16 +60,21 @@ public:
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
-    IntArray Map;
-    DoubleArray SignDist;
     signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
 	double *fq;
-	double *Permeability;
+	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
-	double *Pressure;
+	double *Pressure_dvc;
+    IntArray Map;
+    DoubleArray SignDist;
+    DoubleArray Velocity_x;
+    DoubleArray Velocity_y;
+    DoubleArray Velocity_z;
+    DoubleArray PorosityMap;
+    DoubleArray Pressure;
 		
 private:
 	MPI_Comm comm;
