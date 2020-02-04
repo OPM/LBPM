@@ -23,18 +23,15 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
 	{
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
 	        int n, nx, ny, nz;
 		char LocalRankFilename[40];
-		char FILENAME[128];
 
 		string filename;
 		double SW;
@@ -128,13 +125,13 @@ int main(int argc, char **argv)
 
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		CalcDist(SignDist,id_solid,*Dm);
-		MPI_Barrier(comm);
+		comm.barrier();
 		
 		// Extract only the connected part of NWP
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
+		Dm->Comm.barrier();
 			
 		int count_connected=0;
 		int count_porespace=0;
@@ -156,9 +153,9 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		count_connected=sumReduce( Dm->Comm, count_connected);
-		count_porespace=sumReduce( Dm->Comm, count_porespace);
-		count_water=sumReduce( Dm->Comm, count_water);
+		count_connected = Dm->Comm.sumReduce( count_connected );
+		count_porespace = Dm->Comm.sumReduce( count_porespace );
+		count_water = Dm->Comm.sumReduce( count_water );
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -216,7 +213,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		count_water=sumReduce( Dm->Comm, count_water);
+		count_water = Dm->Comm.sumReduce( count_water );
 		
 		SW = double(count_water) / count_porespace;
 		if(rank==0) printf("Final saturation: %f \n", SW);
@@ -237,14 +234,13 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Barrier(comm);
+		comm.barrier();
 
-		sprintf(FILENAME,READFILE.c_str());
-		sprintf(FILENAME+strlen(FILENAME),".morph.raw");
-		if (rank==0) printf("Writing file to: %s \n", FILENAME);
-		Mask->AggregateLabels(FILENAME);
+        auto filename2 = READFILE + ".morph.raw";
+		if (rank==0) printf("Writing file to: %s \n", filename2.c_str());
+		Mask->AggregateLabels(filename2);
 	}
 
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 }

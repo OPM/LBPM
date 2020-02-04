@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
@@ -18,9 +18,9 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 int main (int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	int rank = MPI_WORLD_RANK();
-	int nprocs = MPI_WORLD_SIZE();
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 
 	// set the error code
 	// Note: the error code should be consistent across all processors
@@ -32,21 +32,14 @@ int main (int argc, char **argv)
 	}
 	{
 	  int i,j,k,n,Np;
-		bool pBC=true;
-		double Lx,Ly,Lz;
-		Lx = Ly = Lz = 1.f;
 		double din,dout;
-		int BC=1;
 
 	    // Load inputs
 	    auto db = loadInputs( nprocs );
 	    int Nx = db->getVector<int>( "n" )[0];
 	    int Ny = db->getVector<int>( "n" )[1];
 	    int Nz = db->getVector<int>( "n" )[2];
-	    int nprocx = db->getVector<int>( "nproc" )[0];
-	    int nprocy = db->getVector<int>( "nproc" )[1];
-	    int nprocz = db->getVector<int>( "nproc" )[2];
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>(db,comm);
 		
 		Nx += 2;   Ny+=2;	Nz += 2;
 		Nx = Ny = Nz;	// Cubic domain
@@ -55,8 +48,7 @@ int main (int argc, char **argv)
 		//.......................................................................
 		// Assign the phase ID
 		//.......................................................................
-		char *id;
-		id = new char[N];
+		auto id = new char[N];
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
@@ -97,7 +89,7 @@ int main (int argc, char **argv)
 		neighborList= new int[18*Npad];
 
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -157,12 +149,10 @@ int main (int argc, char **argv)
     	double *VEL;
     	VEL= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
-    	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    	ScaLBL_DeviceBarrier(); comm.barrier();
     	ScaLBL_CopyToHost(&VEL[0],&dvc_vel[0],SIZE);
 
-		double err,value,Q;
-
-    	Q = 0.f;    	
+    	double Q = 0.f;    	
     	k=1;
     	for (j=1;j<Ny-1;j++){
     		for (i=1;i<Nx-1;i++){
@@ -176,7 +166,7 @@ int main (int argc, char **argv)
 
     	// respect backwards read / write!!!
 		printf("Inlet Flux: input=%f, output=%f \n",flux,Q);
-		err = fabs(flux + Q);
+		double err = fabs(flux + Q);
 		if (err > 1e-12){
 			error = 1;
 			printf("  Inlet error %f \n",err);
@@ -185,7 +175,7 @@ int main (int argc, char **argv)
 		// Consider a larger number of timesteps and simulate flow
 		double Fx, Fy, Fz;
 		double tau = 1.0;
-		double mu=(tau-0.5)/3.0;
+		//double mu=(tau-0.5)/3.0;
 		double rlx_setA=1.0/tau;
 		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 		dout=1.f;
@@ -202,7 +192,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			timestep++;
 
 			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -211,7 +201,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			timestep++;
 			//************************************************************************/
 
@@ -275,7 +265,7 @@ int main (int argc, char **argv)
 
 	}
 	// Finished
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
     return error; 
 }

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -49,7 +49,7 @@ extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int 
 	{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 	{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 	
-	int q,i,j,k,n,N;
+	int q,i,j,k;
 	int Cqx,Cqy,Cqz; // Discrete velocity
 	int x,y,z;		// Global indices
 	int xn,yn,zn; 	// Global indices of neighbor 
@@ -59,8 +59,6 @@ extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int 
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
     NULL_USE(Z);
-	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
-
 
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
@@ -104,16 +102,13 @@ extern int GlobalCheckDebugDist(double *dist, IntArray Map, int Np, int Nx, int 
 {
 
 	int returnValue = 0;
-	int q,i,j,k,n,N,idx;
-	int Cqx,Cqy,Cqz; // Discrete velocity
+	int q,i,j,k,idx;
 	int x,y,z;		// Global indices
-	int xn,yn,zn; 	// Global indices of neighbor 
 	int X,Y,Z;		// Global size
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
 	NULL_USE(Z);
-	N = (Nx+2)*(Ny+2)*(Nz+2);	// size of the array including halo
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
@@ -168,20 +163,13 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check;
-
 	{
-		MPI_Request req1[18],req2[18];
-		MPI_Status stat1[18],stat2[18];
 
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -191,11 +179,8 @@ int main(int argc, char **argv)
 
 		// BGK Model parameters
 		string FILENAME;
-		unsigned int nBlocks, nthreads;
-		int timestepMax, interval;
-		double tau,Fx,Fy,Fz,tol;
 		// Domain variables
-		int i,j,k,n;
+		int i,j,k;
 
         // Load inputs
         auto db = loadInputs( nprocs );
@@ -223,8 +208,7 @@ int main(int argc, char **argv)
 		char LocalRankFilename[40];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 
-		char *id;
-		id = new char[Nx*Ny*Nz];
+		auto id = new char[Nx*Ny*Nz];
 
 		/*		if (rank==0) printf("Assigning phase ID from file \n");
 		if (rank==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
@@ -237,7 +221,7 @@ int main(int argc, char **argv)
 		for (k=0;k<Nz;k++){
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
-					n = k*Nx*Ny+j*Nx+i;
+					int n = k*Nx*Ny+j*Nx+i;
 					id[n] = 1;
 					Dm->id[n] = id[n];
 				}
@@ -270,7 +254,7 @@ int main(int argc, char **argv)
 		for (k=1;k<Nz-1;k++){
 			for (j=1;j<Ny-1;j++){
 				for (i=1;i<Nx-1;i++){
-					n = k*Nx*Ny+j*Nx+i;
+					int n = k*Nx*Ny+j*Nx+i;
 					if (id[n] == component){
 						sum_local+=1.0;
 					}
@@ -278,14 +262,14 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
+		sum = comm.sumReduce( sum_local );
 		double iVol_global=1.f/double((Nx-2)*(Ny-2)*(Nz-2)*nprocx*nprocy*nprocz);
 	    	porosity = 1.0-sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.......................................................................
 
 		//...........................................................................
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
 
@@ -300,7 +284,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		Map.fill(-2);		
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 		int neighborSize=18*Np*sizeof(int);
 		//......................device distributions.................................
 		dist_mem_size = Np*sizeof(double);
@@ -370,7 +354,7 @@ int main(int argc, char **argv)
 		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2, iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
+		comm.barrier();
 		//*************************************************************************
 		// First timestep
 		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
@@ -393,8 +377,8 @@ int main(int argc, char **argv)
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
-		MPI_Barrier(comm);
-		starttime = MPI_Wtime();
+		comm.barrier();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 
@@ -413,13 +397,13 @@ int main(int argc, char **argv)
 			//*********************************************
 
 			ScaLBL_DeviceBarrier();
-			MPI_Barrier(comm);
+			comm.barrier();
 			// Iteration completed!
 			timestep++;
 			//...................................................................
 		}
 		//************************************************************************/
-		stoptime = MPI_Wtime();
+		stoptime = Utilities::MPI::time();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
@@ -442,7 +426,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 

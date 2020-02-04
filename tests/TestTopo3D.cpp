@@ -26,11 +26,10 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 		if ( rank==0 ) {
@@ -60,12 +59,11 @@ int main(int argc, char **argv)
 		}
 
 		// Get the rank info
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>(db,comm);
 
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
-		int N = Nx*Ny*Nz;
 		//.......................................................................
 		for ( k=1;k<Nz-1;k++){
 			for ( j=1;j<Ny-1;j++){
@@ -227,7 +225,7 @@ int main(int argc, char **argv)
 		IO::writeData( timestep, visData, comm );
 
 	} // Limit scope so variables that contain communicators will free before MPI_Finialize
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	return 0;  
 }

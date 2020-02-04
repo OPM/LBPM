@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
 #include "IO/Mesh.h"
@@ -17,11 +17,10 @@
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  int rank,nprocs;
   MPI_Init(&argc,&argv);
-  MPI_Comm comm = MPI_COMM_WORLD;
-  MPI_Comm_rank(comm,&rank);
-  MPI_Comm_size(comm,&nprocs);
+  Utilities::MPI comm( MPI_COMM_WORLD );
+  int rank = comm.getRank();
+  int nprocs = comm.getSize();
   Utilities::setErrorHandlers();
   PROFILE_ENABLE(2);
   PROFILE_ENABLE_TRACE();
@@ -70,20 +69,20 @@ int main(int argc, char **argv)
 
             i++;
         }
-        MPI_Barrier(comm);
+        comm.barrier();
         PROFILE_STOP("Read");
 
         // Save the mesh data to a new file
         PROFILE_START("Write");
         IO::writeData( timestep, meshData, MPI_COMM_WORLD );
-        MPI_Barrier(comm);
+        comm.barrier();
         PROFILE_STOP("Write");
     }
 
   } // Limit scope
   PROFILE_STOP("Main");
   PROFILE_SAVE("convertData",true);
-  MPI_Barrier(comm);
+  comm.barrier();
   MPI_Finalize();
   return 0;
 }

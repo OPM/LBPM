@@ -12,7 +12,7 @@
 #include "analysis/distance.h"
 #include "analysis/Minkowski.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -101,7 +101,7 @@ public:
 	void Basic();
 	void Full();
 	void Write(int time);
-    void AggregateLabels(char *FILENAME);
+    void AggregateLabels( const std::string& filename );
 
 private:
 	FILE *TIMELOG;

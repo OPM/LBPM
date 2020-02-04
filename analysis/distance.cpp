@@ -176,7 +176,7 @@ void CalcVecDist( Array<Vec> &d, const Array<int> &ID0, const Domain &Dm,
         // Update distance
         double err = calcVecUpdateInterior( d, dx[0], dx[1], dx[2] );
         // Check if we are finished
-        err = maxReduce( Dm.Comm, err );
+        err = Dm.Comm.maxReduce( err );
         if ( err < tol )
             break;
     }

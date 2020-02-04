@@ -115,11 +115,10 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	{	
 		//.......................................................................
 		// Reading the domain information file
@@ -181,7 +180,7 @@ int main(int argc, char **argv)
 			fflush(stdout);
 			porosity = ReadFromBlock(Dm->id,Dm->iproc(),Dm->jproc(),Dm->kproc(),nx,ny,nz);
 			
-			MPI_Barrier(MPI_COMM_WORLD);
+		    comm.barrier();
 			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
 			fflush(stdout);
 			FILE *ID = fopen(LocalRankFilename,"wb");
@@ -231,7 +230,7 @@ int main(int argc, char **argv)
 		fclose(DIST);
 
 	}
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	return 0;
 

@@ -9,7 +9,7 @@
 //#include "common/pmmc.h"
 #include "common/Domain.h"
 #include "common/SpherePack.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 
 /*
@@ -70,8 +70,8 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 		}
 	}
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
-	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
+	totalGlobal = Dm.Comm.sumReduce( count );
+	maxdistGlobal = Dm.Comm.sumReduce( maxdist );
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double porosity=totalGlobal/volume;
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
@@ -145,10 +145,9 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-	double Rcrit_new;
+	double Rcrit_old=0.0;
+	double Rcrit_new=0.0;
 
-	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
@@ -214,42 +213,24 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
         PackID(Dm.sendList_yZ, Dm.sendCount_yZ ,sendID_yZ, id);
         PackID(Dm.sendList_YZ, Dm.sendCount_YZ ,sendID_YZ, id);
         //......................................................................................
-        MPI_Sendrecv(sendID_x,Dm.sendCount_x,MPI_CHAR,Dm.rank_x(),sendtag,
-		     recvID_X,Dm.recvCount_X,MPI_CHAR,Dm.rank_X(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_X,Dm.sendCount_X,MPI_CHAR,Dm.rank_X(),sendtag,
-		     recvID_x,Dm.recvCount_x,MPI_CHAR,Dm.rank_x(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_y,Dm.sendCount_y,MPI_CHAR,Dm.rank_y(),sendtag,
-		     recvID_Y,Dm.recvCount_Y,MPI_CHAR,Dm.rank_Y(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_Y,Dm.sendCount_Y,MPI_CHAR,Dm.rank_Y(),sendtag,
-		     recvID_y,Dm.recvCount_y,MPI_CHAR,Dm.rank_y(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_z,Dm.sendCount_z,MPI_CHAR,Dm.rank_z(),sendtag,
-		     recvID_Z,Dm.recvCount_Z,MPI_CHAR,Dm.rank_Z(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_Z,Dm.sendCount_Z,MPI_CHAR,Dm.rank_Z(),sendtag,
-		     recvID_z,Dm.recvCount_z,MPI_CHAR,Dm.rank_z(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_xy,Dm.sendCount_xy,MPI_CHAR,Dm.rank_xy(),sendtag,
-		     recvID_XY,Dm.recvCount_XY,MPI_CHAR,Dm.rank_XY(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_XY,Dm.sendCount_XY,MPI_CHAR,Dm.rank_XY(),sendtag,
-		     recvID_xy,Dm.recvCount_xy,MPI_CHAR,Dm.rank_xy(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_Xy,Dm.sendCount_Xy,MPI_CHAR,Dm.rank_Xy(),sendtag,
-		     recvID_xY,Dm.recvCount_xY,MPI_CHAR,Dm.rank_xY(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_xY,Dm.sendCount_xY,MPI_CHAR,Dm.rank_xY(),sendtag,
-		     recvID_Xy,Dm.recvCount_Xy,MPI_CHAR,Dm.rank_Xy(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_xz,Dm.sendCount_xz,MPI_CHAR,Dm.rank_xz(),sendtag,
-		     recvID_XZ,Dm.recvCount_XZ,MPI_CHAR,Dm.rank_XZ(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_XZ,Dm.sendCount_XZ,MPI_CHAR,Dm.rank_XZ(),sendtag,
-		     recvID_xz,Dm.recvCount_xz,MPI_CHAR,Dm.rank_xz(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_Xz,Dm.sendCount_Xz,MPI_CHAR,Dm.rank_Xz(),sendtag,
-		     recvID_xZ,Dm.recvCount_xZ,MPI_CHAR,Dm.rank_xZ(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_xZ,Dm.sendCount_xZ,MPI_CHAR,Dm.rank_xZ(),sendtag,
-		     recvID_Xz,Dm.recvCount_Xz,MPI_CHAR,Dm.rank_Xz(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_yz,Dm.sendCount_yz,MPI_CHAR,Dm.rank_yz(),sendtag,
-		     recvID_YZ,Dm.recvCount_YZ,MPI_CHAR,Dm.rank_YZ(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_YZ,Dm.sendCount_YZ,MPI_CHAR,Dm.rank_YZ(),sendtag,
-		     recvID_yz,Dm.recvCount_yz,MPI_CHAR,Dm.rank_yz(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_Yz,Dm.sendCount_Yz,MPI_CHAR,Dm.rank_Yz(),sendtag,
-		     recvID_yZ,Dm.recvCount_yZ,MPI_CHAR,Dm.rank_yZ(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
-        MPI_Sendrecv(sendID_yZ,Dm.sendCount_yZ,MPI_CHAR,Dm.rank_yZ(),sendtag,
-		     recvID_Yz,Dm.recvCount_Yz,MPI_CHAR,Dm.rank_Yz(),recvtag,Dm.Comm,MPI_STATUS_IGNORE);
+        Dm.Comm.sendrecv(sendID_x,Dm.sendCount_x,Dm.rank_x(),sendtag,recvID_X,Dm.recvCount_X,Dm.rank_X(),recvtag);
+        Dm.Comm.sendrecv(sendID_X,Dm.sendCount_X,Dm.rank_X(),sendtag,recvID_x,Dm.recvCount_x,Dm.rank_x(),recvtag);
+        Dm.Comm.sendrecv(sendID_y,Dm.sendCount_y,Dm.rank_y(),sendtag,recvID_Y,Dm.recvCount_Y,Dm.rank_Y(),recvtag);
+        Dm.Comm.sendrecv(sendID_Y,Dm.sendCount_Y,Dm.rank_Y(),sendtag,recvID_y,Dm.recvCount_y,Dm.rank_y(),recvtag);
+        Dm.Comm.sendrecv(sendID_z,Dm.sendCount_z,Dm.rank_z(),sendtag,recvID_Z,Dm.recvCount_Z,Dm.rank_Z(),recvtag);
+        Dm.Comm.sendrecv(sendID_Z,Dm.sendCount_Z,Dm.rank_Z(),sendtag,recvID_z,Dm.recvCount_z,Dm.rank_z(),recvtag);
+        Dm.Comm.sendrecv(sendID_xy,Dm.sendCount_xy,Dm.rank_xy(),sendtag,recvID_XY,Dm.recvCount_XY,Dm.rank_XY(),recvtag);
+        Dm.Comm.sendrecv(sendID_XY,Dm.sendCount_XY,Dm.rank_XY(),sendtag,recvID_xy,Dm.recvCount_xy,Dm.rank_xy(),recvtag);
+        Dm.Comm.sendrecv(sendID_Xy,Dm.sendCount_Xy,Dm.rank_Xy(),sendtag,recvID_xY,Dm.recvCount_xY,Dm.rank_xY(),recvtag);
+        Dm.Comm.sendrecv(sendID_xY,Dm.sendCount_xY,Dm.rank_xY(),sendtag,recvID_Xy,Dm.recvCount_Xy,Dm.rank_Xy(),recvtag);
+        Dm.Comm.sendrecv(sendID_xz,Dm.sendCount_xz,Dm.rank_xz(),sendtag,recvID_XZ,Dm.recvCount_XZ,Dm.rank_XZ(),recvtag);
+        Dm.Comm.sendrecv(sendID_XZ,Dm.sendCount_XZ,Dm.rank_XZ(),sendtag,recvID_xz,Dm.recvCount_xz,Dm.rank_xz(),recvtag);
+        Dm.Comm.sendrecv(sendID_Xz,Dm.sendCount_Xz,Dm.rank_Xz(),sendtag,recvID_xZ,Dm.recvCount_xZ,Dm.rank_xZ(),recvtag);
+        Dm.Comm.sendrecv(sendID_xZ,Dm.sendCount_xZ,Dm.rank_xZ(),sendtag,recvID_Xz,Dm.recvCount_Xz,Dm.rank_Xz(),recvtag);
+        Dm.Comm.sendrecv(sendID_yz,Dm.sendCount_yz,Dm.rank_yz(),sendtag,recvID_YZ,Dm.recvCount_YZ,Dm.rank_YZ(),recvtag);
+        Dm.Comm.sendrecv(sendID_YZ,Dm.sendCount_YZ,Dm.rank_YZ(),sendtag,recvID_yz,Dm.recvCount_yz,Dm.rank_yz(),recvtag);
+        Dm.Comm.sendrecv(sendID_Yz,Dm.sendCount_Yz,Dm.rank_Yz(),sendtag,recvID_yZ,Dm.recvCount_yZ,Dm.rank_yZ(),recvtag);
+        Dm.Comm.sendrecv(sendID_yZ,Dm.sendCount_yZ,Dm.rank_yZ(),sendtag,recvID_Yz,Dm.recvCount_Yz,Dm.rank_Yz(),recvtag);
         //......................................................................................
         UnpackID(Dm.recvList_x, Dm.recvCount_x ,recvID_x, id);
         UnpackID(Dm.recvList_X, Dm.recvCount_X ,recvID_X, id);
@@ -271,7 +252,7 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
         UnpackID(Dm.recvList_YZ, Dm.recvCount_YZ ,recvID_YZ, id);
         //......................................................................................
 
-        MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+        //double GlobalNumber = Dm.Comm.sumReduce( LocalNumber );
 
         count = 0.f;
         for (int k=1; k<Nz-1; k++){
@@ -284,7 +265,7 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
                 }
             }
         }
-        MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+        countGlobal = Dm.Comm.sumReduce( count );
         sw_new = countGlobal/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
         // for test only
@@ -314,15 +295,11 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
@@ -363,7 +340,7 @@ int main(int argc, char **argv)
 	        nspheres = domain_db->getScalar<int>( "nspheres");
 
 		//printf("Set domain \n");
-		int BoundaryCondition=1;
+		//int BoundaryCondition=1;
 		//Nz += 2;
 		//Nx = Ny = Nz;	// Cubic domain
 		int N = Nx*Ny*Nz;
@@ -396,7 +373,7 @@ int main(int argc, char **argv)
 		int sum = 0;
 		double sum_local;
 		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-		double porosity, pore_vol;
+		double porosity;
 		//...........................................................................
 		DoubleArray SignDist(Nx,Ny,Nz);
 		//.......................................................................
@@ -412,14 +389,14 @@ int main(int argc, char **argv)
 		//.......................................................................
 		if (rank == 0)	printf("Reading the sphere packing \n");
 		if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-		MPI_Barrier(comm);
+		comm.barrier();
 		// Broadcast the sphere packing to all processes
-		MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
-		MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
-		MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
-		MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
+		comm.bcast(cx,nspheres,0);
+		comm.bcast(cy,nspheres,0);
+		comm.bcast(cz,nspheres,0);
+		comm.bcast(rad,nspheres,0);
 		//...........................................................................
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank == 0){
 			// Compute the Sauter mean diameter
@@ -433,7 +410,7 @@ int main(int argc, char **argv)
 			D = 6.0*(Nx-2)*nprocx*totVol / totArea / Lx;
 			printf("Sauter Mean Diameter (computed from sphere packing) = %f \n",D);
 		}
-		MPI_Bcast(&D,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&D,1,0);
 
 		//.......................................................................
 		SignedDistance(SignDist.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
@@ -450,7 +427,6 @@ int main(int argc, char **argv)
 			}
 		}
 		sum=0;
-		pore_vol = 0.0;
 		for ( k=1;k<Nz-1;k++){
 			for ( j=1;j<Ny-1;j++){
 				for ( i=1;i<Nx-1;i++){
@@ -466,7 +442,7 @@ int main(int argc, char **argv)
 			}
 		}
 		sum_local = 1.0*sum;
-		MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
+		porosity = comm.sumReduce(sum_local);
 		porosity = porosity*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -499,7 +475,7 @@ int main(int argc, char **argv)
 		//......................................................................
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 }

@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -31,11 +31,10 @@ int main(int argc, char **argv)
 {
 
     // Initialize MPI
-    int rank, nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
     {
         Utilities::setErrorHandlers();
         PROFILE_START("Main");
@@ -61,7 +60,7 @@ int main(int argc, char **argv)
         auto L = domain_db->getVector<double>( "L" );
         auto size = domain_db->getVector<int>( "n" );
         auto nproc = domain_db->getVector<int>( "nproc" );
-        int BoundaryCondition = domain_db->getScalar<int>( "BC" );
+        //int BoundaryCondition = domain_db->getScalar<int>( "BC" );
         int nx = size[0];
         int ny = size[1];
         int nz = size[2];
@@ -91,10 +90,10 @@ int main(int argc, char **argv)
             printf("Number of MPI ranks required: %i \n", nprocx*nprocy*nprocz);
             printf("Number of MPI ranks used: %i \n", nprocs);
             printf("Full domain size: %i x %i x %i  \n",nx*nprocx,ny*nprocy,nz*nprocz);
-	    printf("target value = %f \n",target);
-	    printf("background value = %f \n",background);
-	    printf("cylinder center = %i, %i, %i \n",center[0],center[1],center[2]);
-	    printf("cylinder radius = %f \n",CylRad);
+            printf("target value = %f \n",target);
+            printf("background value = %f \n",background);
+            printf("cylinder center = %i, %i, %i \n",center[0],center[1],center[2]);
+            printf("cylinder radius = %f \n",CylRad);
         }
         if ( nprocs < nprocx*nprocy*nprocz ){
             ERROR("Insufficient number of processors");
@@ -188,7 +187,7 @@ int main(int argc, char **argv)
             fillFloat[0]->fill( LOCVOL[0] );
         }
         netcdf::close( fid );
-        MPI_Barrier(comm);
+        comm.barrier();
         PROFILE_STOP("ReadVolume");
         if (rank==0) printf("Read complete\n");
 
@@ -196,19 +195,19 @@ int main(int argc, char **argv)
         filter_src( *Dm[0], LOCVOL[0] );
 
         // Set up the mask to be distance to cylinder (crop outside cylinder)
-	if (rank==0) printf("Cropping with cylinder: %i, %i, %i, radius=%f \n",Dm[0]->nprocx()*Nx[0],Dm[0]->nprocy()*Ny[0],Dm[0]->nprocz()*Nz[0],CylRad);
+        if (rank==0) printf("Cropping with cylinder: %i, %i, %i, radius=%f \n",Dm[0]->nprocx()*Nx[0],Dm[0]->nprocy()*Ny[0],Dm[0]->nprocz()*Nz[0],CylRad);
         for (int k=0;k<Nz[0]+2;k++) {
             for (int j=0;j<Ny[0]+2;j++) {
                 for (int i=0;i<Nx[0]+2;i++) {
-		  float x= float(Dm[0]->iproc()*Nx[0]+i-1);
-		  float y= float (Dm[0]->jproc()*Ny[0]+j-1);
-		  float z= float(Dm[0]->kproc()*Nz[0]+k-1);
-		  float cx = float(center[0] - offset[0]);
-		  float cy = float(center[1] - offset[1]);
-		  float cz = float(center[2] - offset[2]);
+                  //float x= float(Dm[0]->iproc()*Nx[0]+i-1);
+                  float y= float (Dm[0]->jproc()*Ny[0]+j-1);
+                  float z= float(Dm[0]->kproc()*Nz[0]+k-1);
+                  //float cx = float(center[0] - offset[0]);
+                  float cy = float(center[1] - offset[1]);
+                  float cz = float(center[2] - offset[2]);
                     // distance from the center line 
                     MASK(i,j,k) = sqrt((z-cz)*(z-cz) + (y-cy)*(y-cy));
-		    //if (sqrt(((z-cz)*(z-cz) + (y-cy)*(y-cy)) ) > CylRad) LOCVOL[0](i,j,k)=background;
+                    //if (sqrt(((z-cz)*(z-cz) + (y-cy)*(y-cy)) ) > CylRad) LOCVOL[0](i,j,k)=background;
                 }
             }
         }
@@ -219,18 +218,18 @@ int main(int argc, char **argv)
         float THRESHOLD=0.5*(target+background);
         float mean_plus=0;
         float mean_minus=0;
-	float min_value = LOCVOL[0](0);
-	float max_value = LOCVOL[0](0);
+        float min_value = LOCVOL[0](0);
+        float max_value = LOCVOL[0](0);
         int count_plus=0;
         int count_minus=0;
         for (int k=1;k<Nz[0]+1;k++) {
             for (int j=1;j<Ny[0]+1;j++) {
                 for (int i=1;i<Nx[0]+1;i++) {
 
-		  
-		  //LOCVOL[0](i,j,k) = MASK(i,j,k);
+                  
+                  //LOCVOL[0](i,j,k) = MASK(i,j,k);
                  if (MASK(i,j,k) < CylRad ){
-		      auto tmp = LOCVOL[0](i,j,k);
+                      auto tmp = LOCVOL[0](i,j,k);
                         /*                        if ((tmp-background)*(tmp-target) > 0){
                             // direction to background / target is the same
                             if (fabs(tmp-target) > fabs(tmp-background)) tmp=background; // tmp closer to background
@@ -241,46 +240,46 @@ int main(int argc, char **argv)
                             mean_plus += tmp;
                             count_plus++;
                         } 
-			else {
+                        else {
                             mean_minus += tmp;
                             count_minus++;
                         }
-			if (tmp < min_value) min_value = tmp;
-			if (tmp > max_value) max_value = tmp;
-		    }
+                        if (tmp < min_value) min_value = tmp;
+                        if (tmp > max_value) max_value = tmp;
+                    }
                 }
             }
         }
-	count_plus=sumReduce( Dm[0]->Comm, count_plus);
-	count_minus=sumReduce( Dm[0]->Comm, count_minus);
-      	if (rank==0) printf("minimum value=%f, max value=%f \n",min_value,max_value);
-	if (rank==0) printf("plus=%i, minus=%i \n",count_plus,count_minus);
+        count_plus = Dm[0]->Comm.sumReduce( count_plus);
+        count_minus = Dm[0]->Comm.sumReduce( count_minus);
+              if (rank==0) printf("minimum value=%f, max value=%f \n",min_value,max_value);
+        if (rank==0) printf("plus=%i, minus=%i \n",count_plus,count_minus);
         ASSERT( count_plus > 0 && count_minus > 0 );
-        MPI_Barrier(comm);
-        mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / count_plus;
-        mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / count_minus;
-        MPI_Barrier(comm);
+        comm.barrier();
+        mean_plus = Dm[0]->Comm.sumReduce( mean_plus ) / count_plus;
+        mean_minus = Dm[0]->Comm.sumReduce( mean_minus ) / count_minus;
+        comm.barrier();
         if (rank==0) printf("    Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
-	//if (rank==0) printf("Scale the input data (size = %i) \n",LOCVOL[0].length());
+        //if (rank==0) printf("Scale the input data (size = %i) \n",LOCVOL[0].length());
         for (size_t i=0; i<LOCVOL[0].length(); i++) {
-	    if ( MASK(i) > CylRad ){
-	      LOCVOL[0](i)=background;
+            if ( MASK(i) > CylRad ){
+              LOCVOL[0](i)=background;
             }
             if ( LOCVOL[0](i) >= THRESHOLD ) {
                 auto tmp = LOCVOL[0](i)/ mean_plus;
                 LOCVOL[0](i) = std::min( tmp, 1.0f );
             } 
-	    else {
+            else {
                 auto tmp = -LOCVOL[0](i)/mean_minus;
                 LOCVOL[0](i) = std::max( tmp, -1.0f );
             }
-	    //LOCVOL[0](i) = MASK(i);
+            //LOCVOL[0](i) = MASK(i);
         }
 
         // Fill the source data for the coarse meshes
-	if (rank==0) printf("Coarsen the mesh for N_levels=%i \n",N_levels);
-	MPI_Barrier(comm); 
+        if (rank==0) printf("Coarsen the mesh for N_levels=%i \n",N_levels);
+        comm.barrier(); 
         PROFILE_START("CoarsenMesh");
         for (int i=1; i<N_levels; i++) {
             Array<float> filter(ratio[0],ratio[1],ratio[2]);
@@ -296,7 +295,7 @@ int main(int argc, char **argv)
                 printf("   filter_x=%i, filter_y=%i, filter_z=%i \n",int(filter.size(0)),int(filter.size(1)),int(filter.size(2))  );
                 printf("   ratio= %i,%i,%i \n",int(ratio[0]),int(ratio[1]),int(ratio[2])  );
             }
-            MPI_Barrier(comm);
+            comm.barrier();
         }
         PROFILE_STOP("CoarsenMesh");
 
@@ -308,7 +307,7 @@ int main(int argc, char **argv)
                 NonLocalMean.back(), *fillFloat.back(), *Dm.back(), nprocx, 
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         PROFILE_STOP("Solve coarse mesh");
-        MPI_Barrier(comm);
+        comm.barrier();
 
         // Refine the solution
         PROFILE_START("Refine distance");
@@ -322,7 +321,7 @@ int main(int argc, char **argv)
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         }
         PROFILE_STOP("Refine distance");
-        MPI_Barrier(comm);    
+        comm.barrier();    
 
         // Perform a final filter
         PROFILE_START("Filtering final domains");
@@ -418,14 +417,14 @@ int main(int argc, char **argv)
             meshData[0].vars.push_back(filter_Dist2_var);
             fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
         #endif
-        MPI_Barrier(comm);
+        comm.barrier();
         if (rank==0) printf("Writing output \n");
         // Write visulization data
         IO::writeData( 0, meshData, comm );
         if (rank==0) printf("Finished. \n");
     
         // Compute the Minkowski functionals
-        MPI_Barrier(comm);
+        comm.barrier();
         auto Averages = std::make_shared<Minkowski>(Dm[0]);
         
         Array <char> phase_label(Nx[0]+2,Ny[0]+2,Nz[0]+2);
@@ -457,7 +456,7 @@ int main(int argc, char **argv)
     }
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_uCT_pp",true);
-    MPI_Barrier(comm);
+    comm.barrier();
     MPI_Finalize();
     return 0;
 }

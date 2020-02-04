@@ -12,10 +12,9 @@
 
 #include "common/Array.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Database.h"
-
 
 class Domain;
 template<class TYPE> class PatchData;
@@ -64,7 +63,7 @@ private:
 class Domain{
 public:
     //! Default constructor
-    Domain( std::shared_ptr<Database> db, MPI_Comm Communicator);
+    Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator);
 
     //! Obsolete constructor
     Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
@@ -117,11 +116,9 @@ public: // Public variables (need to create accessors instead)
     double porosity;
     RankInfoStruct rank_info;
 
-    MPI_Comm Comm;        // MPI Communicator for this domain
+    Utilities::MPI Comm;        // MPI Communicator for this domain
 
     int BoundaryCondition;
-
-    MPI_Group Group;    // Group of processors associated with this domain
 
     //**********************************
     // MPI ranks for all 18 neighbors
@@ -178,11 +175,11 @@ public: // Public variables (need to create accessors instead)
     signed char *id;
 
     void ReadIDs();
-    void Decomp(std::string Filename);
+    void Decomp( const std::string& filename );
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();
-    void AggregateLabels(char *FILENAME);
+    void AggregateLabels( const std::string& filename );
 
 private:
 
@@ -192,7 +189,6 @@ private:
     
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
-	MPI_Status stat1[18],stat2[18];
 
     int *sendBuf_x, *sendBuf_y, *sendBuf_z, *sendBuf_X, *sendBuf_Y, *sendBuf_Z;
     int *sendBuf_xy, *sendBuf_yz, *sendBuf_xz, *sendBuf_Xy, *sendBuf_Yz, *sendBuf_xZ;
@@ -245,10 +241,10 @@ private:
 
 };
 
-void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np);
+void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np);
 
-void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, int Np);
+void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, size_t Np);
 
-void ReadBinaryFile(char *FILENAME, double *Data, int N);
+void ReadBinaryFile(char *FILENAME, double *Data, size_t N);
 
 #endif

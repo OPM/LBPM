@@ -23,21 +23,19 @@ inline double rand2()
 
 
 // Test if all ranks agree on a value
-bool allAgree( int x, MPI_Comm comm ) {
+bool allAgree( int x, const Utilities::MPI& comm ) {
     int x2 = x;
-    MPI_Bcast(&x2,1,MPI_INT,0,comm);
+    comm.bcast(&x2,1,0);
     int diff = x==x2 ? 0:1;
-    int diff2 = 0;
-    MPI_Allreduce(&diff,&diff2,1,MPI_INT,MPI_SUM,comm);
+    int diff2 = comm.sumReduce( diff );
     return diff2==0;
 }
 template<class T>
-bool allAgree( const std::vector<T>& x, MPI_Comm comm ) {
+bool allAgree( const std::vector<T>& x, const Utilities::MPI& comm ) {
     std::vector<T> x2 = x;
-    MPI_Bcast(&x2[0],x.size()*sizeof(T)/sizeof(int),MPI_INT,0,comm);
+    comm.bcast(&x2[0],x.size()*sizeof(T)/sizeof(int),0);
     int diff = x==x2 ? 0:1;
-    int diff2 = 0;
-    MPI_Allreduce(&diff,&diff2,1,MPI_INT,MPI_SUM,comm);
+    int diff2 = comm.sumReduce( diff );
     return diff2==0;
 }
 
@@ -74,9 +72,9 @@ struct bubble_struct {
 
 
 // Create a random set of bubles
-std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, double Lz, MPI_Comm comm )
+std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, double Lz, const Utilities::MPI& comm )
 {
-    int rank = comm_rank(comm);
+    int rank = comm.getRank();
     std::vector<bubble_struct> bubbles(N_bubbles);
     if ( rank == 0 ) {
         double R0 = 0.2*Lx*Ly*Lz/pow((double)N_bubbles,0.333);
@@ -91,7 +89,7 @@ std::vector<bubble_struct> create_bubbles( int N_bubbles, double Lx, double Ly, 
         }
     }
     size_t N_bytes = N_bubbles*sizeof(bubble_struct);
-    MPI_Bcast((char*)&bubbles[0],N_bytes,MPI_CHAR,0,comm);
+    comm.bcast((char*)&bubbles[0],N_bytes,0);
     return bubbles;
 }
 
@@ -124,7 +122,7 @@ void fillBubbleData( const std::vector<bubble_struct>& bubbles, DoubleArray& Pha
 
 
 // Shift all of the data by the given number of cells
-void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct& rank_info, MPI_Comm comm )
+void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct& rank_info, const Utilities::MPI& comm )
 {
     int nx = data.size(0)-2;
     int ny = data.size(1)-2;
@@ -154,11 +152,10 @@ void shift_data( DoubleArray& data, int sx, int sy, int sz, const RankInfoStruct
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    int rank, nprocs;
     MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
     PROFILE_ENABLE(1);
     PROFILE_DISABLE_TRACE();
     PROFILE_SYNCHRONIZE();
@@ -297,7 +294,7 @@ int main(int argc, char **argv)
             velocity[i].z = bubbles[i].radius*(2*rand2()-1);
         }
     }
-    MPI_Bcast((char*)&velocity[0],bubbles.size()*sizeof(Point),MPI_CHAR,0,comm);
+    comm.bcast((char*)&velocity[0],bubbles.size()*sizeof(Point),0);
     fillBubbleData( bubbles, Phase, SignDist, Lx, Ly, Lz, rank_info );
     fillData.fill(Phase);
     fillData.fill(SignDist);
@@ -391,8 +388,8 @@ int main(int argc, char **argv)
                 printf("\n");
             }
         }
-        MPI_Bcast(&N1,1,MPI_INT,0,comm);
-        MPI_Bcast(&N2,1,MPI_INT,0,comm);
+        comm.bcast(&N1,1,0);
+        comm.bcast(&N2,1,0);
         if ( N1!=nblobs || N2!=nblobs2 ) {
             if ( rank==0 )
                 printf("Error, blob ids do not map in moving bubble test (%i,%i,%i,%i)\n",
@@ -412,7 +409,7 @@ int main(int argc, char **argv)
     // Finished
     PROFILE_STOP("main");
     PROFILE_SAVE("TestBlobIdentify",false);
-    MPI_Barrier(comm);
+    comm.barrier();
     MPI_Finalize();
     return N_errors;  
 }

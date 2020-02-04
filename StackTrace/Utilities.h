@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <typeinfo>
 
 #include "StackTrace/StackTrace.h"
 #include "StackTrace/string_view.h"
@@ -28,8 +29,13 @@ void abort( const std::string &message, const std::string &filename, const int l
 void setAbortBehavior( bool throwException, int stackType = 2 );
 
 
+//! Function to terminate the application
+void terminate( const StackTrace::abort_error &err );
+
+
 //! Function to set the error handlers
 void setErrorHandlers();
+
 
 //! Function to clear the error handlers
 void clearErrorHandlers();
@@ -90,6 +96,18 @@ void cause_segfault();
  * @return                  Returns string containing the output
  */
 std::string exec( const StackTrace::string_view &cmd, int &exit_code );
+
+
+//! Return the hopefully demangled name of the given type
+std::string getTypeName( const std::type_info &id );
+
+
+//! Return the hopefully demangled name of the given type
+template<class TYPE>
+inline std::string getTypeName()
+{
+    return getTypeName( typeid( TYPE ) );
+}
 
 
 } // namespace Utilities

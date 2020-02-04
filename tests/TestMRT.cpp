@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -488,15 +488,11 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
@@ -582,20 +578,20 @@ int main(int argc, char **argv)
 		}
 		// **************************************************************
 		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
+		comm.barrier();
 		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
+		comm.bcast(&Nx,1,0);
+		comm.bcast(&Ny,1,0);
+		comm.bcast(&Nz,1,0);
+		comm.bcast(&nprocx,1,0);
+		comm.bcast(&nprocy,1,0);
+		comm.bcast(&nprocz,1,0);
+		comm.bcast(&nspheres,1,0);
+		comm.bcast(&Lx,1,0);
+		comm.bcast(&Ly,1,0);
+		comm.bcast(&Lz,1,0);
 		//.................................................
-		MPI_Barrier(comm);
+		comm.barrier();
 		// **************************************************************
 		// **************************************************************
 
@@ -613,7 +609,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 
-		MPI_Barrier(comm);
+		comm.barrier();
 		kproc = rank/(nprocx*nprocy);
 		jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 		iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
@@ -621,7 +617,7 @@ int main(int argc, char **argv)
 		if (rank == 0) {
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 		}
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 1){
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 			printf("\n\n");
@@ -650,7 +646,7 @@ int main(int argc, char **argv)
 		fread(Dm.id,1,N,IDFILE);
 		fclose(IDFILE);
 
-		MPI_Barrier(comm);
+		comm.barrier();
 		Dm.CommInit();
 
 		//.......................................................................
@@ -671,12 +667,12 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Barrier(comm);
-		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
+		comm.barrier();
+		sum = comm.sumReduce( sum_local );
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -706,7 +702,7 @@ int main(int argc, char **argv)
 		neighborList= new int[18*Np];
 
 		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -734,8 +730,8 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-		starttime = MPI_Wtime();
+		ScaLBL_DeviceBarrier(); comm.barrier();
+		starttime = Utilities::MPI::time();
 
 		while (timestep < timesteps) {
 			
@@ -743,20 +739,20 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			timestep++;
 
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
 			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm.next, Np, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm.next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			timestep++;
 			//************************************************************************/
 
 		}
 		//************************************************************************/
-		stoptime = MPI_Wtime();
+		stoptime = Utilities::MPI::time();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
@@ -783,7 +779,7 @@ int main(int argc, char **argv)
     	VEL= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
     	ScaLBL_D3Q19_Momentum(dist,Velocity, Np);
-    	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    	ScaLBL_DeviceBarrier(); comm.barrier();
     	ScaLBL_CopyToHost(&VEL[0],&Velocity[0],SIZE);
 
     	sum_local=0.f;
@@ -799,13 +795,13 @@ int main(int argc, char **argv)
     			}
     		}
     	}
-    	MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
+    	sum = comm.sumReduce( sum_local );
     	double PoreVel = sum*iVol_global;
     	if (rank==0) printf("Velocity = %f \n",PoreVel);
 
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 

@@ -2,7 +2,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/IOHelpers.h"
 #include "IO/silo.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 
 #include <sys/stat.h>
@@ -36,7 +36,7 @@ void IO::initialize( const std::string& path, const std::string& format, bool ap
         global_IO_format = Format::SILO;
     else
         ERROR("Unknown format");
-    int rank = comm_rank(MPI_COMM_WORLD);
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     if ( !append && rank==0 ) {
         mkdir(path.c_str(),S_IRWXU|S_IRGRP);
         std::string filename;
@@ -55,7 +55,7 @@ void IO::initialize( const std::string& path, const std::string& format, bool ap
 // Write the mesh data in the original format
 static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO::MeshDataStruct>& meshData, const std::string& path )
 {
-    int rank = MPI_WORLD_RANK();
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     std::vector<IO::MeshDatabase> meshes_written;
     for (size_t i=0; i<meshData.size(); i++) {
         char domainname[100], filename[100], fullpath[200];
@@ -120,7 +120,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
 // Create the database entry for the mesh data
 static IO::MeshDatabase getDatabase( const std::string& filename, const IO::MeshDataStruct& mesh, int format )
 {
-    int rank = MPI_WORLD_RANK();
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     char domainname[100];
     sprintf(domainname,"%s_%05i",mesh.meshName.c_str(),rank);
     // Create the MeshDatabase
@@ -161,7 +161,7 @@ static IO::MeshDatabase write_domain( FILE *fid, const std::string& filename,
     const IO::MeshDataStruct& mesh, int format )
 {
     const int level = 0;
-    int rank = MPI_WORLD_RANK();
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     // Create the MeshDatabase
     IO::MeshDatabase database = getDatabase( filename, mesh, format );
     // Write the mesh
@@ -399,7 +399,7 @@ void writeSiloSummary( const std::vector<IO::MeshDatabase>& meshes_written, cons
 static std::vector<IO::MeshDatabase> writeMeshesNewFormat( 
     const std::vector<IO::MeshDataStruct>& meshData, const std::string& path, int format )
 {
-    int rank = MPI_WORLD_RANK();
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     std::vector<IO::MeshDatabase> meshes_written;
     char filename[100], fullpath[200];
     sprintf(filename,"%05i",rank);
@@ -419,7 +419,7 @@ static std::vector<IO::MeshDatabase> writeMeshesSilo(
     const std::vector<IO::MeshDataStruct>& meshData, const std::string& path, int format )
 {
 #ifdef USE_SILO
-    int rank = MPI_WORLD_RANK();
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     std::vector<IO::MeshDatabase> meshes_written;
     char filename[100], fullpath[200];
     sprintf(filename,"%05i.silo",rank);
@@ -441,12 +441,12 @@ static std::vector<IO::MeshDatabase> writeMeshesSilo(
 /****************************************************
 * Write the mesh data                               *
 ****************************************************/
-void IO::writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>& meshData, MPI_Comm comm )
+void IO::writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>& meshData, const Utilities::MPI& comm )
 {
     if ( global_IO_path.empty() )
         IO::initialize( );
     PROFILE_START("writeData");
-    int rank = comm_rank(comm);
+    int rank = Utilities::MPI(MPI_COMM_WORLD).getRank();
     // Check the meshData before writing
     for ( const auto& data : meshData ) {
         if ( !data.check() )
@@ -457,7 +457,7 @@ void IO::writeData( const std::string& subdir, const std::vector<IO::MeshDataStr
     if ( rank == 0 ) {
         mkdir(path.c_str(),S_IRWXU|S_IRGRP);
     }
-    MPI_Barrier(comm);
+    comm.barrier();
     // Write the mesh files
     std::vector<IO::MeshDatabase> meshes_written;
     if ( global_IO_format == Format::OLD ) {
