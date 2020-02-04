@@ -524,6 +524,24 @@ void ScaLBL_ColorModel::Run(){
 	int RESCALE_FORCE_COUNT = 0;
 	int RESCALE_FORCE_MAX = 0;
 	
+	/* history for morphological algoirthm */
+	double KRA_MORPH_FACTOR=0.8;
+	double volA_prev = 0.0; 
+	double log_krA_prev = 1.0;
+	double log_krA_target = 1.0;
+	double log_krA = 0.0;
+	double slope_krA_volume = 0.0;
+	if (color_db->keyExists( "vol_A_previous" )){
+		volA_prev  = color_db->getScalar<double>( "vol_A_previous" );
+	}
+	if (color_db->keyExists( "log_krA_previous" )){
+		log_krA_prev  = color_db->getScalar<double>( "log_krA_previous" );
+	}
+	if (color_db->keyExists( "krA_morph_factor" )){
+		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
+	}
+	
+	/* defaults for simulation protocols */
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
 		// Get the list of images
@@ -811,7 +829,17 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					//delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					/** morphological target based on relative permeability for A **/
+					double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+					log_krA = log(krA_TMP);
+					log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+					slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+					delta_volume_target=Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume);
+					log_krA_prev = log_krA;
+					volA_prev = volA;
+					printf("   ",log_krA, log_krA_target, vol_A, );
+					/**  compute averages & write data **/
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -1279,7 +1307,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
 	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double));
-	  ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
+	ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
 
 	return(mass_loss);
 }
