@@ -1,7 +1,7 @@
 // Run the analysis, blob identification, and write restart files
 #include "common/Array.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 
 //#define ANALYSIS_INTERVAL 6
@@ -9,31 +9,14 @@
 #define BLOBID_INTERVAL 1000
 
 
-
-
-
-
 enum AnalysisType{ AnalyzeNone=0, IdentifyBlobs=0x01, CopyPhaseIndicator=0x02, 
 	CopySimState=0x04, ComputeAverages=0x08, CreateRestart=0x10, WriteVis=0x20 };
-
-
-
-
-
-
-
 
 template<class TYPE>
 void DeleteArray( const TYPE *p )
 {
 	delete [] p;
 }
-
-
-
-
-
-
 
 
 // Structure used to store ids
@@ -43,7 +26,6 @@ struct AnalysisWaitIdStruct {
 	ThreadPool::thread_id_t vis;
 	ThreadPool::thread_id_t restart;
 };
-
 
 
 // Helper class to write the restart file from a seperate thread
@@ -84,9 +66,9 @@ typedef std::shared_ptr<std::vector<BlobIDType> > BlobIDList;
 //        timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
 //        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_)
 //        {
-//            MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+//            newcomm = Utilities::MPI(MPI_COMM_WORLD).dup();
 //        }
-//    ~BlobIdentificationWorkItem1() { MPI_Comm_free(&newcomm); }
+//    ~BlobIdentificationWorkItem1() {}
 //    virtual void run() {
 //        // Compute the global blob id and compare to the previous version
 //        PROFILE_START("Identify blobs",1);
@@ -106,7 +88,7 @@ typedef std::shared_ptr<std::vector<BlobIDType> > BlobIDList;
 //    const DoubleArray& dist;
 //    BlobIDstruct last_id, new_index, new_id;
 //    BlobIDList new_list;
-//    MPI_Comm newcomm;
+//    Utilities::MPI newcomm;
 //};
 //
 
@@ -122,9 +104,9 @@ typedef std::shared_ptr<std::vector<BlobIDType> > BlobIDList;
 //        timestep(timestep_), Nx(Nx_), Ny(Ny_), Nz(Nz_), rank_info(rank_info_),
 //        phase(phase_), dist(dist_), last_id(last_id_), new_index(new_index_), new_id(new_id_), new_list(new_list_)
 //        {
-//            MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+//            newcomm = Utilities::MPI(MPI_COMM_WORLD).dup();
 //        }
-//    ~BlobIdentificationWorkItem2() { MPI_Comm_free(&newcomm); }
+//    ~BlobIdentificationWorkItem2() { }
 //    virtual void run() {
 //        // Compute the global blob id and compare to the previous version
 //        PROFILE_START("Identify blobs maps",1);
@@ -158,7 +140,7 @@ typedef std::shared_ptr<std::vector<BlobIDType> > BlobIDList;
 //    const DoubleArray& dist;
 //    BlobIDstruct last_id, new_index, new_id;
 //    BlobIDList new_list;
-//    MPI_Comm newcomm;
+//    Utilities::MPI newcomm;
 //};
 //
 
@@ -171,9 +153,9 @@ public:
 			TwoPhase& Avgerages_, fillHalo<double>& fillData_ ):
 				timestep(timestep_), visData(visData_), Averages(Avgerages_), fillData(fillData_)
 {
-		MPI_Comm_dup(MPI_COMM_WORLD,&newcomm);
+    newcomm = Utilities::MPI(MPI_COMM_WORLD).dup();
 }
-	~WriteVisWorkItem() { MPI_Comm_free(&newcomm); }
+	~WriteVisWorkItem() {}
 	virtual void run() {
 		PROFILE_START("Save Vis",1);
 		ASSERT(visData[0].vars[0]->name=="phase");
@@ -198,7 +180,7 @@ private:
 	std::vector<IO::MeshDataStruct>& visData;
 	TwoPhase& Averages;
 	fillHalo<double>& fillData;
-	MPI_Comm newcomm;
+	Utilities::MPI newcomm;
 };
 
 
@@ -418,7 +400,7 @@ void run_analysis( int timestep, int restart_interval,
 
 	// Spawn a thread to write the restart file
 	if ( (type&CreateRestart) != 0 ) {
-		int rank = MPI_WORLD_RANK();
+		int rank = comm.getRank();
 
 		// Wait for previous restart files to finish writing (not necessary, but helps to ensure memory usage is limited)
 		tpool.wait(wait.restart);

@@ -64,11 +64,11 @@ Array<uint8_t> readMicroCT( const std::string& filename )
 
 
 // Read the compressed micro CT data and distribute
-Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
+Array<uint8_t> readMicroCT( const Database& domain, const Utilities::MPI& comm )
 {
     // Get the local problem info
     auto n = domain.getVector<int>( "n" );
-    int rank = comm_rank(MPI_COMM_WORLD);
+    int rank = comm.getRank();
     auto nproc = domain.getVector<int>( "nproc" );
     RankInfoStruct rankInfo( rank, nproc[0], nproc[1], nproc[2] );
     
@@ -81,22 +81,38 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     Array<uint8_t> data;
     RankInfoStruct srcRankInfo( rank, Nfx, Nfy, Nfz );
     if ( srcRankInfo.ix >= 0 ) {
-        auto filename = domain.getScalar<std::string>( "Filename" );
-        char tmp[100];
-        if ( filename.find( "0x_0y_0z.gbd.gz" ) != std::string::npos ) {
-            sprintf( tmp, "%ix_%iy_%iz.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
-            filename = filename.replace( filename.find( "0x_0y_0z.gbd.gz" ), 15, std::string( tmp ) );
-        } else if ( filename.find( "x0_y0_z0.gbd.gz" ) != std::string::npos ) {
-            sprintf( tmp, "x%i_y%i_z%i.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
-            filename = filename.replace( filename.find( "x0_y0_z0.gbd.gz" ), 15, std::string( tmp ) );
-        } else {
-            ERROR( "Invalid name for first file" );
-        }
-        data = readMicroCT( filename );
+    	auto filename = domain.getScalar<std::string>( "Filename" );
+    	char tmp[100];
+    	if ( filename.find( "0x_0y_0z.gbd.gz" ) != std::string::npos ) {
+    		sprintf( tmp, "%ix_%iy_%iz.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
+    		filename = filename.replace( filename.find( "0x_0y_0z.gbd.gz" ), 15, std::string( tmp ) );
+    	} else if ( filename.find( "x0_y0_z0.gbd.gz" ) != std::string::npos ) {
+    		sprintf( tmp, "x%i_y%i_z%i.gbd.gz", srcRankInfo.ix, srcRankInfo.jy, srcRankInfo.kz );
+    		filename = filename.replace( filename.find( "x0_y0_z0.gbd.gz" ), 15, std::string( tmp ) );
+    	} else {
+    		ERROR( "Invalid name for first file" );
+    	}
+    	data = readMicroCT( filename );
     }
 
     // Redistribute the data
     data = redistribute( srcRankInfo, data, rankInfo, { n[0], n[1], n[2] }, comm );
+
+	// Relabel the data
+    auto ReadValues = domain.getVector<int>( "ReadValues" );
+    auto WriteValues = domain.getVector<int>( "WriteValues" );
+    ASSERT( ReadValues.size() == WriteValues.size() );
+    int readMaxValue = 0;
+    for ( auto v : ReadValues )
+        readMaxValue = std::max( data.max()+1, v );
+    std::vector<int> map( readMaxValue + 1, -1 );
+    for ( size_t i=0; i<ReadValues.size(); i++ )
+        map[ReadValues[i]] = WriteValues[i];
+    for ( size_t i=0; i<data.length(); i++ ) {
+        int t = data(i);
+        ASSERT( t >= 0 && t <= readMaxValue );
+        data(i) = map[t];
+    }
 
     return data;
 }

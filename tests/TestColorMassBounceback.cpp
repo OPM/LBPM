@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -15,15 +15,11 @@ using namespace std;
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
@@ -42,7 +38,7 @@ int main(int argc, char **argv)
         // Initialize compute device
         //        int device=ScaLBL_SetDevice(rank);
         ScaLBL_DeviceBarrier();
-        MPI_Barrier(comm);
+        comm.barrier();
         Utilities::setErrorHandlers();
 
         // Variables that specify the computational domain  
@@ -77,7 +73,7 @@ int main(int argc, char **argv)
         // Get the rank info
         const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-        MPI_Barrier(comm);
+        comm.barrier();
 
         if (nprocs != nprocx*nprocy*nprocz){
             printf("nprocx =  %i \n",nprocx);
@@ -121,7 +117,7 @@ int main(int argc, char **argv)
         std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
         Dm->CommInit();
-        MPI_Barrier(comm);
+        comm.barrier();
 
         Nx+=2; Ny+=2; Nz += 2;
         int N = Nx*Ny*Nz;
@@ -153,7 +149,7 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -170,7 +166,7 @@ int main(int argc, char **argv)
 		Npad=Np+32;
 		neighborList= new int[18*Npad];
 		Np=ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -272,7 +268,7 @@ int main(int argc, char **argv)
 
         ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
                 alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_DeviceBarrier(); comm.barrier();
 
 		timestep++;
 
@@ -332,7 +328,7 @@ int main(int argc, char **argv)
          ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
          ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
                  alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
-         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+         ScaLBL_DeviceBarrier(); comm.barrier();
          timestep++;
          //************************************************************************
 		printf("Check after even time \n");
@@ -415,7 +411,7 @@ int main(int argc, char **argv)
 
         ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
                 alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_DeviceBarrier(); comm.barrier();
 
 		timestep++;
 
@@ -476,7 +472,7 @@ int main(int argc, char **argv)
          ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
          ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, rhoA, rhoB, tauA, tauB,
                  alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
-         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+         ScaLBL_DeviceBarrier(); comm.barrier();
          timestep++;
          //************************************************************************
 		printf("Check after even time \n");
@@ -523,7 +519,7 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 	return check;

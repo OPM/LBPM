@@ -106,11 +106,6 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double
 
 // BOUNDARY CONDITION ROUTINES
 
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
-//		int Nx, int Ny, int Nz);
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
-//		int Nx, int Ny, int Nz, int outlet);
-
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *neighborList, int *list, double *dist, double din, int count, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *dist, double dout, int count, int Np);
@@ -211,10 +206,8 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	MPI_Group Group;	// Group of processors associated with this domain
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator for this domain
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................

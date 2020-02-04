@@ -47,11 +47,10 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 #ifdef PROFILE
 	PROFILE_ENABLE(0);
     PROFILE_DISABLE_TRACE();
@@ -129,7 +128,7 @@ int main(int argc, char **argv)
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
 #endif
-    MPI_Barrier(comm);
+    comm.barrier();
 	MPI_Finalize();
     return 0;  
 }

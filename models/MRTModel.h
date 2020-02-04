@@ -11,13 +11,13 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
 class ScaLBL_MRTModel{
 public:
-	ScaLBL_MRTModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_MRTModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_MRTModel();	
 	
 	// functions in they should be run
@@ -63,7 +63,7 @@ public:
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];

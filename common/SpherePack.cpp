@@ -9,7 +9,6 @@
 
 #include "common/Array.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "common/Database.h"
 #include "common/SpherePack.h"

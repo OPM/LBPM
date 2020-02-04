@@ -8,7 +8,7 @@
 #include <fstream>
 
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/ColorModel.h"
 
 inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){
@@ -66,29 +66,12 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	// parallel domain size (# of sub-domains)
-	int nprocx,nprocy,nprocz;
-	int iproc,jproc,kproc;
-	int sendtag,recvtag;
-	//*****************************************
-	// MPI ranks for all 18 neighbors
-	//**********************************
-	int rank_x,rank_y,rank_z,rank_X,rank_Y,rank_Z;
-	int rank_xy,rank_XY,rank_xY,rank_Xy;
-	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
-	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
-	//**********************************
-	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -110,7 +93,6 @@ int main(int argc, char **argv)
 	Ny = CM.Ny;
 	Nz = CM.Nz;
 	N = Nx*Ny*Nz;
-	int dist_mem_size = N*sizeof(double);
 
 	//CM.ReadInput(); 
 	double radius=0.4*double(Nx);
@@ -142,11 +124,9 @@ int main(int argc, char **argv)
 	CM.Run();
 	int D3Q7[7][3]={{0,0,0},{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
 	// Compare and make sure mass is conserved at every lattice site
-	double *Error;
-	Error = new double [N];
-	double *A_q, *B_q;
-	A_q = new double [7*Np];
-	B_q = new double [7*Np];
+	auto Error = new double[N];
+	auto A_q = new double[7*Np];
+	//auto B_q = new double[7*Np];
 	bool CleanCheck = true;
 	double original,final, sum_q;
 	double total_mass_A_0 = 0.0;
@@ -285,7 +265,7 @@ int main(int argc, char **argv)
 	}
 }
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	// ****************************************************
 }

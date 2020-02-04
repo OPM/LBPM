@@ -9,7 +9,7 @@
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
@@ -29,10 +29,9 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	int provided_thread_support = -1;
 	MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
-	MPI_Comm comm;
-	MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-	int rank = comm_rank(comm);
-	int nprocs = comm_size(comm);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 	int check=0;
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 	  int i,j,k,n,Np;
@@ -45,7 +44,7 @@ int main(int argc, char **argv)
 		int device=ScaLBL_SetDevice(rank);
 		printf("Using GPU ID %i for rank %i \n",device,rank);
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		PROFILE_ENABLE(1);
 		//PROFILE_ENABLE_TRACE();
@@ -72,13 +71,8 @@ int main(int argc, char **argv)
         // Initialize compute device
         //        int device=ScaLBL_SetDevice(rank);
         ScaLBL_DeviceBarrier();
-        MPI_Barrier(comm);
+        comm.barrier();
 
-        PROFILE_ENABLE(1);
-        //PROFILE_ENABLE_TRACE();
-        //PROFILE_ENABLE_MEMORY();
-        PROFILE_SYNCHRONIZE();
-        PROFILE_START("Main");
         Utilities::setErrorHandlers();
 
         // Variables that specify the computational domain  
@@ -123,7 +117,7 @@ int main(int argc, char **argv)
         // Get the rank info
         const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-        MPI_Barrier(comm);
+        comm.barrier();
 
         if (nprocs != nprocx*nprocy*nprocz){
             printf("nprocx =  %i \n",nprocx);
@@ -164,15 +158,15 @@ int main(int argc, char **argv)
             pBC=false;
 
         // Full domain used for averaging (do not use mask for analysis)
-        std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
+        auto Dm = std::make_shared<Domain>(domain_db,comm);
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
-        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+        auto Averages = std::make_shared<TwoPhase>(Dm);
         //   TwoPhase Averages(Dm);
         Dm->CommInit();
 
         // Mask that excludes the solid phase
-        std::shared_ptr<Domain> Mask(new Domain(domain_db,comm));
-        MPI_Barrier(comm);
+        auto Mask = std::make_shared<Domain>(domain_db,comm);
+        comm.barrier();
 
         Nx+=2; Ny+=2; Nz += 2;
         int N = Nx*Ny*Nz;
@@ -191,9 +185,8 @@ int main(int argc, char **argv)
 		//	printf("Local File Name =  %s \n",LocalRankFilename);
 		// .......... READ THE INPUT FILE .......................................
 		//	char value;
-		char *id;
-		id = new char[N];
-		double sum, sum_local;
+		auto id = new char[N];
+		double sum;
 		//...........................................................................
 		if (rank == 0) cout << "Setting up bubble..." << endl;
 	    double BubbleRadius = 15.5; // Radius of the capillary tube
@@ -244,21 +237,19 @@ int main(int argc, char **argv)
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
 		Mask->CommInit();
-		double *PhaseLabel;
-		PhaseLabel = new double[N];
+		auto PhaseLabel = new double[N];
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
-		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Mask));
+		auto ScaLBL_Comm = std::make_shared<ScaLBL_Communicator>(Mask);
 		
 		int Npad=(Np/16 + 2)*16;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
-		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Npad];
+		auto neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		//...........................................................................
 		//				MAIN  VARIABLES ALLOCATED HERE
@@ -395,8 +386,8 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
-		starttime = MPI_Wtime();
+		comm.barrier();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 		err = 1.0; 	
@@ -445,7 +436,7 @@ int main(int argc, char **argv)
 			}
 			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->next, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 
 			// *************EVEN TIMESTEP*************
 			timestep++;
@@ -481,9 +472,9 @@ int main(int argc, char **argv)
 			}
 			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->next, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			//************************************************************************
-			MPI_Barrier(comm);
+			comm.barrier();
 			PROFILE_STOP("Update");
 
 			// Run the analysis
@@ -495,8 +486,8 @@ int main(int argc, char **argv)
 		PROFILE_SAVE("lbpm_color_simulator",1);
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
-		stoptime = MPI_Wtime();
+		comm.barrier();
+		stoptime = Utilities::MPI::time();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
@@ -515,9 +506,8 @@ int main(int argc, char **argv)
 		// Copy back final phase indicator field and convert to regular layout
 		DoubleArray PhaseField(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
-    	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.raw",rank);
-		OUTFILE = fopen(LocalRankFilename,"wb");
+		sprintf(LocalRankFilename,"Phase.raw");
+		auto OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PhaseField.data(),8,N,OUTFILE);
     	fclose(OUTFILE);
     	
@@ -535,9 +525,8 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-    	FILE *GFILE;
 		sprintf(LocalRankFilename,"Gradient.raw");
-		GFILE = fopen(LocalRankFilename,"wb");
+		auto GFILE = fopen(LocalRankFilename,"wb");
     	fwrite(GradNorm.data(),8,N,GFILE);
     	fclose(GFILE);
     	
@@ -545,23 +534,20 @@ int main(int argc, char **argv)
 		DoubleArray Rho2(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map,&Den[0],Rho1);
         ScaLBL_Comm->RegularLayout(Map,&Den[Np],Rho2);
-    	FILE *RFILE1;
 		sprintf(LocalRankFilename,"Rho1.raw");
-		RFILE1 = fopen(LocalRankFilename,"wb");
+		auto RFILE1 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho1.data(),8,N,RFILE1);
     	fclose(RFILE1);
-    	FILE *RFILE2;
 		sprintf(LocalRankFilename,"Rho2.raw");
-		RFILE2 = fopen(LocalRankFilename,"wb");
+		auto RFILE2 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho2.data(),8,N,RFILE2);
     	fclose(RFILE2);
     	
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
 		// ****************************************************
-		MPI_Barrier(comm);
+		comm.barrier();
 	} // Limit scope so variables that contain communicators will free before MPI_Finialize
-	MPI_Comm_free(&comm);
 	MPI_Finalize();
 	return check;
 }

@@ -16,20 +16,18 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 
 	{
 		//.......................................................................
 		// Reading the domain information file
 		//.......................................................................
-		int nprocx, nprocy, nprocz, nx, ny, nz, nspheres;
 		double Lx, Ly, Lz;
+        Lx = Ly = Lz = 1.0;
 		int i,j,k,n;
-		int BC=0;
 
 		string filename;
 		if (argc > 1){
@@ -47,12 +45,12 @@ int main(int argc, char **argv)
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
 		auto WriteValues = domain_db->getVector<char>( "WriteValues" );
 		
-		nx = size[0];
-		ny = size[1];
-		nz = size[2];
-		nprocx = nproc[0];
-		nprocy = nproc[1];
-		nprocz = nproc[2];
+		int nx = size[0];
+		int ny = size[1];
+		int nz = size[2];
+		int nprocx = nproc[0];
+		int nprocy = nproc[1];
+		int nprocz = nproc[2];
 
 		// Check that the number of processors >= the number of ranks
 		if ( rank==0 ) {
@@ -66,10 +64,9 @@ int main(int argc, char **argv)
 
 		char LocalRankFilename[40];
 
-		int rnx,rny,rnz;
-		rnx=2*nx;
-		rny=2*ny;
-		rnz=2*nz;
+		int rnx=2*nx;
+		int rny=2*ny;
+		int rnz=2*nz;
 
 		if (rank==0) printf("Refining mesh to %i x %i x %i \n",rnx,rny,rnz);
 
@@ -128,13 +125,12 @@ int main(int argc, char **argv)
 			}
 		}
 
-		int ri,rj,rk,rn; //refined mesh indices
 		//char *RefineLabel;
 		//RefineLabel = new char [rnx*rny*rnz];
 		Array <char> RefineLabel(rnx,rny,rnz);
-		for (rk=1; rk<rnz-1; rk++){
-			for (rj=1; rj<rny-1; rj++){
-				for (ri=1; ri<rnx-1; ri++){
+		for (int rk=1; rk<rnz-1; rk++){
+			for (int rj=1; rj<rny-1; rj++){
+				for (int ri=1; ri<rnx-1; ri++){
 					n = rk*rnx*rny+rj*rnx+ri;
 					// starting node for each processor matches exactly
 					i = (ri-1)/2+1;
@@ -425,7 +421,7 @@ int main(int argc, char **argv)
 
 
 	}
-	MPI_Barrier(comm);
+	comm.barrier();
 	MPI_Finalize();
 	return 0;
 }

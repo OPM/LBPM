@@ -2,7 +2,7 @@
 #define MeshDatabase_INC
 
 #include "IO/Mesh.h" 
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 #include <iostream>
 #include <memory>
@@ -70,7 +70,7 @@ public:
 
 
 //! Gather the mesh databases from all processors
-std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, MPI_Comm comm );
+std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, const Utilities::MPI& comm );
 
 
 //! Write the mesh databases to a file

@@ -3,7 +3,7 @@
 #include "analysis/analysis.h"
 #include "common/Array.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/ScaLBL.h"
 #include "models/ColorModel.h"
 
@@ -462,7 +462,7 @@ private:
 /******************************************************************
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
-runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
+runAnalysis::commWrapper::commWrapper( int tag_, const Utilities::MPI& comm_, runAnalysis* analysis_ ):
             comm(comm_),
             tag(tag_),
             analysis(analysis_)
@@ -479,7 +479,7 @@ runAnalysis::commWrapper::~commWrapper()
 {
     if ( tag == -1 )
         return;
-    MPI_Barrier( comm );
+    comm.barrier();
     analysis->d_comm_used[tag] = false;
 }
 runAnalysis::commWrapper runAnalysis::getComm( )
@@ -496,10 +496,10 @@ runAnalysis::commWrapper runAnalysis::getComm( )
         if ( tag == -1 )
             ERROR("Unable to get comm");
     }
-    MPI_Bcast( &tag, 1, MPI_INT, 0, d_comm );
+    tag = d_comm.bcast( tag, 0 );
     d_comm_used[tag] = true;
-    if ( d_comms[tag] == MPI_COMM_NULL )
-        MPI_Comm_dup( MPI_COMM_WORLD, &d_comms[tag] );
+    if ( d_comms[tag].isNull() )
+        d_comms[tag] = d_comm.dup();
     return commWrapper(tag,d_comms[tag],this);
 }
 
@@ -507,14 +507,20 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
-        int Np, bool Regular, IntArray Map ):
-            d_Np( Np ),
-            d_regular ( Regular),
-            d_rank_info( rank_info ),
-            d_Map( Map ),
-            d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1),
-            d_ScaLBL_Comm( ScaLBL_Comm)
+runAnalysis::runAnalysis( std::shared_ptr<Database> input_db,
+                          const RankInfoStruct& rank_info,
+                          std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm,
+                          std::shared_ptr <Domain> Dm,
+                          int Np,
+                          bool Regular,
+                          IntArray Map ):
+    d_Np( Np ),
+    d_regular ( Regular),
+    d_rank_info( rank_info ),
+    d_Map( Map ),
+    d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1),
+    d_comm( Utilities::MPI( MPI_COMM_WORLD ).dup() ),
+    d_ScaLBL_Comm( ScaLBL_Comm)
 {
 
 	auto db = input_db->getDatabase( "Analysis" );
@@ -552,7 +558,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     d_restartFile = restart_file + "." + rankString;
     
     
-    d_rank = MPI_WORLD_RANK();
+    d_rank = d_comm.getRank();
     writeIDMap(ID_map_struct(),0,id_map_filename);
     // Initialize IO for silo
     IO::initialize("","silo","false");
@@ -621,11 +627,8 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     
 
     // Initialize the comms
-    MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
-    for (int i=0; i<1024; i++) {
-        d_comms[i] = MPI_COMM_NULL;
+    for (int i=0; i<1024; i++)
         d_comm_used[i] = false;
-    }
     // Initialize the threads
     int N_threads = db->getWithDefault<int>( "N_threads", 4 );
     auto method = db->getWithDefault<std::string>( "load_balance", "default" );
@@ -635,12 +638,6 @@ runAnalysis::~runAnalysis( )
 {
     // Finish processing analysis
     finish();
-    // Clear internal data
-    MPI_Comm_free( &d_comm );
-    for (int i=0; i<1024; i++) {
-        if ( d_comms[i] != MPI_COMM_NULL )
-            MPI_Comm_free(&d_comms[i]);
-    }
 }
 void runAnalysis::finish( )
 {
@@ -654,7 +651,7 @@ void runAnalysis::finish( )
     d_wait_subphase.reset();
     d_wait_restart.reset();
     // Syncronize
-    MPI_Barrier( d_comm );
+    d_comm.barrier();
     PROFILE_STOP("finish");
 }
 
@@ -767,6 +764,8 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
         double *Pressure, double *Velocity, double *fq, double *Den)
 {
     int N = d_N[0]*d_N[1]*d_N[2];
+    NULL_USE( N );
+    NULL_USE( Phi );
     
 	auto db = input_db->getDatabase( "Analysis" );
     //int timestep = db->getWithDefault<int>( "timestep", 0 );
@@ -937,8 +936,6 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
  ******************************************************************/
 void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
-
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
@@ -954,7 +951,7 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         finish();
     }
 
-    PROFILE_START("run");
+    PROFILE_START("basic");
 
     // Copy the appropriate variables to the host (so we can spawn new threads)
     ScaLBL_DeviceBarrier();
@@ -983,7 +980,6 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     }
     PROFILE_STOP("Copy data to host");
 
-    PROFILE_START("run",1);
     // Spawn threads to do the analysis work
     //if (timestep%d_restart_interval==0){
     // if ( matches(type,AnalysisType::ComputeAverages) ) {
@@ -1036,12 +1032,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         d_wait_vis = d_tpool.add_work(work);
     }
 
-    PROFILE_STOP("run");
+    PROFILE_STOP("basic");
 }
 
 void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
     //int timestep = color_db->getWithDefault<int>( "timestep", 0 );
@@ -1068,7 +1063,6 @@ void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db,
     d_wait_vis = d_tpool.add_work(work2);
 
     //Averages.WriteVis = false;
-   // }
     
     PROFILE_STOP("write vis");
 }
