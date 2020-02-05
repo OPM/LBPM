@@ -282,6 +282,36 @@ __global__ void dvc_ScaLBL_D3Q19_Init(double *dist, int Np)
 	}
 }
 
+__global__ void dvc_ScaLBL_D3Q19_GreyIMRT_Init(double *dist, int Np, double Den)
+{
+	int n;
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<Np ){
+			dist[n] = Den - 0.6666666666666667;
+			dist[Np+n] = 0.055555555555555555;		//double(100*n)+1.f;
+			dist[2*Np+n] = 0.055555555555555555;	//double(100*n)+2.f;
+			dist[3*Np+n] = 0.055555555555555555;	//double(100*n)+3.f;
+			dist[4*Np+n] = 0.055555555555555555;	//double(100*n)+4.f;
+			dist[5*Np+n] = 0.055555555555555555;	//double(100*n)+5.f;
+			dist[6*Np+n] = 0.055555555555555555;	//double(100*n)+6.f;
+			dist[7*Np+n] = 0.0277777777777778;   //double(100*n)+7.f;
+			dist[8*Np+n] = 0.0277777777777778;   //double(100*n)+8.f;
+			dist[9*Np+n] = 0.0277777777777778;   //double(100*n)+9.f;
+			dist[10*Np+n] = 0.0277777777777778;  //double(100*n)+10.f;
+			dist[11*Np+n] = 0.0277777777777778;  //double(100*n)+11.f;
+			dist[12*Np+n] = 0.0277777777777778;  //double(100*n)+12.f;
+			dist[13*Np+n] = 0.0277777777777778;  //double(100*n)+13.f;
+			dist[14*Np+n] = 0.0277777777777778;  //double(100*n)+14.f;
+			dist[15*Np+n] = 0.0277777777777778;  //double(100*n)+15.f;
+			dist[16*Np+n] = 0.0277777777777778;  //double(100*n)+16.f;
+			dist[17*Np+n] = 0.0277777777777778;  //double(100*n)+17.f;
+			dist[18*Np+n] = 0.0277777777777778;  //double(100*n)+18.f;
+		}
+	}
+}
 
 //*************************************************************************
 __global__  void dvc_ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, double *distodd, int Np, int q){
@@ -2340,7 +2370,15 @@ extern "C" void ScaLBL_D3Q19_Init(double *dist, int Np){
 	dvc_ScaLBL_D3Q19_Init<<<NBLOCKS,NTHREADS >>>(dist, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AA_Init: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_GreyIMRT_Init(double *dist, int Np, double Den){
+	dvc_ScaLBL_D3Q19_GreyIMRT_Init<<<NBLOCKS,NTHREADS >>>(dist, Np, Den);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_GreyIMRT_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 

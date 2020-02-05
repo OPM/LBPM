@@ -405,7 +405,7 @@ void Domain::Decomp(std::string Filename)
 			for (int idx=0; idx<ReadValues.size(); idx++){
 				long int label=ReadValues[idx];
 				long int count=LabelCount[idx];
-				printf("Label=%d, Count=%d \n",label,count);
+				printf("Label=%ld, Count=%ld \n",label,count);
 			}
 		}
 
@@ -448,7 +448,7 @@ void Domain::Decomp(std::string Filename)
 		}
 
 		if (inlet_layers_z > 0){
-			printf("Checkerboard pattern at z inlet for %i layers \n",inlet_layers_z);
+			printf("Checkerboard pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
 			// use checkerboard pattern
 			for (int k = zStart; k < zStart+inlet_layers_z; k++){
 				for (int j = 0; j<global_Ny; j++){
@@ -507,7 +507,7 @@ void Domain::Decomp(std::string Filename)
 		}
 
 		if (outlet_layers_z > 0){
-			printf("Checkerboard pattern at z outlet for %i layers \n",outlet_layers_z);
+			printf("Checkerboard pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
 			// use checkerboard pattern
 			for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
 				for (int j = 0; j<global_Ny; j++){
@@ -600,6 +600,60 @@ void Domain::Decomp(std::string Filename)
 		MPI_Recv(id,N,MPI_CHAR,0,15,Comm,MPI_STATUS_IGNORE);
 	}
 	MPI_Barrier(Comm);
+
+	// Compute the porosity
+	double sum;
+	double sum_local=0.0;
+	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	//.........................................................
+	// If external boundary conditions are applied remove solid
+	if (BoundaryCondition >  0  && kproc() == 0){
+    	if (inlet_layers_z < 4){
+            inlet_layers_z=4;
+            if(RANK==0){
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
+            } 
+        }	
+		for (int k=0; k<inlet_layers_z; k++){
+			for (int j=0;j<Ny;j++){
+				for (int i=0;i<Nx;i++){
+					int n = k*Nx*Ny+j*Nx+i;
+					id[n] = inlet_layers_phase;
+				}                    
+			}
+ 		}
+ 	}
+    if (BoundaryCondition >  0  && kproc() == nprocz-1){
+    	if (outlet_layers_z < 4){
+            outlet_layers_z=4;
+            if(RANK==nprocs-1){
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
+            } 
+        }	
+ 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
+ 			for (int j=0;j<Ny;j++){
+ 				for (int i=0;i<Nx;i++){
+ 					int n = k*Nx*Ny+j*Nx+i;
+ 					id[n] = outlet_layers_phase;
+ 				}                    
+ 			}
+ 		}
+ 	}
+    for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
+        for (int j=1;j<Ny-1;j++){
+            for (int i=1;i<Nx-1;i++){
+                int n = k*Nx*Ny+j*Nx+i;
+                if (id[n] > 0){
+                    sum_local+=1.0;
+                }
+            }
+        }
+    }
+    MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,Comm);
+    porosity = sum*iVol_global;
+    if (rank()==0) printf("Media porosity = %f \n",porosity);
+ 	//.........................................................
 }
 
 void Domain::AggregateLabels(char *FILENAME){
