@@ -521,8 +521,6 @@ void ScaLBL_ColorModel::Run(){
 	double NOISE_THRESHOLD = 0.0;
 	double BUMP_RATE = 2.0;
 	bool USE_BUMP_RATE = false;
-	int RESCALE_FORCE_COUNT = 0;
-	int RESCALE_FORCE_MAX = 0;
 	
 	/* history for morphological algoirthm */
 	double KRA_MORPH_FACTOR=0.8;
@@ -801,6 +799,20 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
+			if (SET_CAPILLARY_NUMBER && CURRENT_STEADY_TIMESTEPS%MIN_STEADY_TIMESTEPS < analysis_interval ){
+				Fx *= capillary_number / Ca;
+				Fy *= capillary_number / Ca;
+				Fz *= capillary_number / Ca;
+				if (force_mag > 1e-3){
+					Fx *= 1e-3/force_mag;   // impose ceiling for stability
+					Fy *= 1e-3/force_mag;   
+					Fz *= 1e-3/force_mag;   
+				}
+				if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				color_db->putVector<double>("F",{Fx,Fy,Fz});
+			}
+			
 			if ( morph_timesteps > morph_interval ){
 				
 				bool isSteady = false;
@@ -808,23 +820,6 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
-				
-				if (SET_CAPILLARY_NUMBER  && RESCALE_FORCE_COUNT < RESCALE_FORCE_MAX){
-					RESCALE_FORCE_COUNT++;
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
-
-					if (force_mag > 1e-3){
-						Fx *= 1e-3/force_mag;   // impose ceiling for stability
-						Fy *= 1e-3/force_mag;   
-						Fz *= 1e-3/force_mag;   
-					}
-					
-					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					color_db->putVector<double>("F",{Fx,Fy,Fz});
-				}
 
 				if ( isSteady ){
 					MORPH_ADAPT = true;
@@ -913,7 +908,6 @@ void ScaLBL_ColorModel::Run(){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
 						Fz *= capillary_number / Ca;
-						RESCALE_FORCE_COUNT = 1;
 						if (force_mag > 1e-3){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
@@ -933,6 +927,7 @@ void ScaLBL_ColorModel::Run(){
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 						color_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
+					
 					CURRENT_STEADY_TIMESTEPS = 0;
 				}
 				else{
