@@ -838,7 +838,7 @@ void ScaLBL_ColorModel::Run(){
 					delta_volume_target=Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume);
 					log_krA_prev = log_krA;
 					volA_prev = volA;
-					printf("   log(kr)=%f, TARGET log(kr)=%f, volume=%f \n",log_krA, log_krA_target, volA);
+					printf("   log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));
 					/**  compute averages & write data **/
 					Averages->Full();
 					Averages->Write(timestep);
