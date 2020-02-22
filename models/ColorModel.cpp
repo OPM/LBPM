@@ -583,9 +583,9 @@ void ScaLBL_ColorModel::Run(){
 		SET_CAPILLARY_NUMBER=true;
 		//RESCALE_FORCE_MAX = 1;
 	}
-	if (analysis_db->keyExists( "rescale_force_count" )){
-		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
-	}
+//	if (analysis_db->keyExists( "rescale_force_count" )){
+//		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
+//	}
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
 	}
