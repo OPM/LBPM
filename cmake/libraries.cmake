@@ -308,5 +308,6 @@ MACRO ( CONFIGURE_LBPM )
     # Suppress some common warnings
     IF ( USING_GCC )
         SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder -Wno-unused-parameter")
+        SET( CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wno-reorder,-Wno-unused-parameter")
     ENDIF()
 ENDMACRO ()

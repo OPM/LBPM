@@ -521,9 +521,25 @@ void ScaLBL_ColorModel::Run(){
 	double NOISE_THRESHOLD = 0.0;
 	double BUMP_RATE = 2.0;
 	bool USE_BUMP_RATE = false;
-	int RESCALE_FORCE_COUNT = 0;
-	int RESCALE_FORCE_MAX = 0;
 	
+	/* history for morphological algoirthm */
+	double KRA_MORPH_FACTOR=0.8;
+	double volA_prev = 0.0; 
+	double log_krA_prev = 1.0;
+	double log_krA_target = 1.0;
+	double log_krA = 0.0;
+	double slope_krA_volume = 0.0;
+	if (color_db->keyExists( "vol_A_previous" )){
+		volA_prev  = color_db->getScalar<double>( "vol_A_previous" );
+	}
+	if (color_db->keyExists( "log_krA_previous" )){
+		log_krA_prev  = color_db->getScalar<double>( "log_krA_previous" );
+	}
+	if (color_db->keyExists( "krA_morph_factor" )){
+		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
+	}
+	
+	/* defaults for simulation protocols */
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
 		// Get the list of images
@@ -567,9 +583,9 @@ void ScaLBL_ColorModel::Run(){
 		SET_CAPILLARY_NUMBER=true;
 		//RESCALE_FORCE_MAX = 1;
 	}
-	if (analysis_db->keyExists( "rescale_force_count" )){
-		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
-	}
+//	if (analysis_db->keyExists( "rescale_force_count" )){
+//		RESCALE_FORCE_MAX = analysis_db->getScalar<int>( "rescale_force_count" );
+//	}
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
 	}
@@ -783,6 +799,20 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
+			if (SET_CAPILLARY_NUMBER && CURRENT_STEADY_TIMESTEPS%MIN_STEADY_TIMESTEPS < analysis_interval ){
+				Fx *= capillary_number / Ca;
+				Fy *= capillary_number / Ca;
+				Fz *= capillary_number / Ca;
+				if (force_mag > 1e-3){
+					Fx *= 1e-3/force_mag;   // impose ceiling for stability
+					Fy *= 1e-3/force_mag;   
+					Fz *= 1e-3/force_mag;   
+				}
+				if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				color_db->putVector<double>("F",{Fx,Fy,Fz});
+			}
+			
 			if ( morph_timesteps > morph_interval ){
 				
 				bool isSteady = false;
@@ -790,28 +820,21 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
-				
-				if (SET_CAPILLARY_NUMBER  && RESCALE_FORCE_COUNT < RESCALE_FORCE_MAX){
-					RESCALE_FORCE_COUNT++;
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
-
-					if (force_mag > 1e-3){
-						Fx *= 1e-3/force_mag;   // impose ceiling for stability
-						Fy *= 1e-3/force_mag;   
-						Fz *= 1e-3/force_mag;   
-					}
-					
-					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					color_db->putVector<double>("F",{Fx,Fy,Fz});
-				}
 
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					//delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					/** morphological target based on relative permeability for A **/
+					double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+					log_krA = log(krA_TMP);
+					log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+					slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+					delta_volume_target=Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume);
+					log_krA_prev = log_krA;
+					volA_prev = volA;
+					printf("   log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));
+					/**  compute averages & write data **/
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -885,7 +908,6 @@ void ScaLBL_ColorModel::Run(){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
 						Fz *= capillary_number / Ca;
-						RESCALE_FORCE_COUNT = 1;
 						if (force_mag > 1e-3){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
@@ -905,6 +927,7 @@ void ScaLBL_ColorModel::Run(){
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 						color_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
+					
 					CURRENT_STEADY_TIMESTEPS = 0;
 				}
 				else{
@@ -1202,35 +1225,26 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	double mass_loss =0.f;
 	double count =0.f;
 	double *Aq_tmp, *Bq_tmp;
+    double *Vel_tmp;
 	
-	Aq_tmp = new double [7*Np];
-	Bq_tmp = new double [7*Np];
+	Aq_tmp  = new double [7*Np];
+	Bq_tmp  = new double [7*Np];
+    Vel_tmp = new double [3*Np];
 
 	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
 	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
+	ScaLBL_CopyToHost(Vel_tmp, Velocity, 7*Np*sizeof(double));
 	
-/*	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				double random_value = double(rand())/ RAND_MAX;
+    //Extract averged velocity
+	double vx_glb = (Averages->gnb.Px+Averages->gwb.Px)/(Averages->gnb.M+Averages->gwb.M); 
+	double vy_glb = (Averages->gnb.Py+Averages->gwb.Py)/(Averages->gnb.M+Averages->gwb.M); 
+	double vz_glb = (Averages->gnb.Pz+Averages->gwb.Pz)/(Averages->gnb.M+Averages->gwb.M); 
+    double v_mag_glb = sqrt(vx_glb*vx_glb+vy_glb*vy_glb+vz_glb*vz_glb);
 
-				if (Averages->SDs(i,j,k) < 0.f){
-					// skip
-				}
-				else if (phase(i,j,k) > 0.f ){
-					phase(i,j,k) -= random_value*seed_water_in_oil;
-					mass_loss += random_value*seed_water_in_oil;
-					count++;
-				}
-				else {
-
-				}
-			}
-		}
-	}
-	*/
 	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
-		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+        double v_mag_local = sqrt(Vel_tmp[n]*Vel_tmp[n]+Vel_tmp[n+1*Np]*Vel_tmp[n+1*Np]+Vel_tmp[n+2*Np]*Vel_tmp[n+2*Np]);
+        double weight = (v_mag_local<v_mag_glb) ? v_mag_local/v_mag_glb : 1.0;
+		double random_value = weight*seed_water_in_oil*double(rand())/ RAND_MAX;
 		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
 		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		double phase_id = (dA - dB) / (dA + dB);
@@ -1255,7 +1269,9 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	}
 
 	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
-		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+        double v_mag_local = sqrt(Vel_tmp[n]*Vel_tmp[n]+Vel_tmp[n+1*Np]*Vel_tmp[n+1*Np]+Vel_tmp[n+2*Np]*Vel_tmp[n+2*Np]);
+        double weight = (v_mag_local<v_mag_glb) ? v_mag_local/v_mag_glb : 1.0;
+		double random_value = weight*seed_water_in_oil*double(rand())/ RAND_MAX;
 		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
 		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		double phase_id = (dA - dB) / (dA + dB);
@@ -1286,10 +1302,104 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
 	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double));
-	  ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
+	ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
 
 	return(mass_loss);
 }
+
+//double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
+//	srand(time(NULL));
+//	double mass_loss =0.f;
+//	double count =0.f;
+//	double *Aq_tmp, *Bq_tmp;
+//	
+//	Aq_tmp = new double [7*Np];
+//	Bq_tmp = new double [7*Np];
+//
+//	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
+//	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
+//	
+///*	for (int k=1; k<Nz-1; k++){
+//		for (int j=1; j<Ny-1; j++){
+//			for (int i=1; i<Nx-1; i++){
+//				double random_value = double(rand())/ RAND_MAX;
+//
+//				if (Averages->SDs(i,j,k) < 0.f){
+//					// skip
+//				}
+//				else if (phase(i,j,k) > 0.f ){
+//					phase(i,j,k) -= random_value*seed_water_in_oil;
+//					mass_loss += random_value*seed_water_in_oil;
+//					count++;
+//				}
+//				else {
+//
+//				}
+//			}
+//		}
+//	}
+//	*/
+//	for (int n=0; n < ScaLBL_Comm->LastExterior(); n++){
+//		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+//		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+//		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+//		double phase_id = (dA - dB) / (dA + dB);
+//		if (phase_id > 0.0){
+//			Aq_tmp[n] -= 0.3333333333333333*random_value;
+//			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+//			
+//			Bq_tmp[n] += 0.3333333333333333*random_value;
+//			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+//		}
+//		mass_loss += random_value*seed_water_in_oil;
+//	}
+//
+//	for (int n=ScaLBL_Comm->FirstInterior(); n < ScaLBL_Comm->LastInterior(); n++){
+//		double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+//		double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+//		double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+//		double phase_id = (dA - dB) / (dA + dB);
+//		if (phase_id > 0.0){
+//			Aq_tmp[n] -= 0.3333333333333333*random_value;
+//			Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+//			Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+//			
+//			Bq_tmp[n] += 0.3333333333333333*random_value;
+//			Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+//			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+//		}
+//		mass_loss += random_value*seed_water_in_oil;
+//	}
+//
+//	count = Dm->Comm.sumReduce( count );
+//	mass_loss = Dm->Comm.sumReduce( mass_loss );
+//	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+//
+//	// Need to initialize Aq, Bq, Den, Phi directly
+//	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
+//	ScaLBL_CopyToDevice(Aq, Aq_tmp, 7*Np*sizeof(double));
+//	  ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
+//
+//	return(mass_loss);
+//}
 
 double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta_volume){
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);

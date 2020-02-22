@@ -3,6 +3,7 @@
  */
 #include "models/MRTModel.h"
 #include "analysis/distance.h"
+#include "common/ReadMicroCT.h"
 
 ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
@@ -98,15 +99,29 @@ void ScaLBL_MRTModel::ReadInput(){
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 
-	if (domain_db->keyExists( "Filename" )){
-		auto Filename = domain_db->getScalar<std::string>( "Filename" );
-		Mask->Decomp(Filename);
-	}
-	else{
-		Mask->ReadIDs();
-	}
+    
+    if (domain_db->keyExists( "Filename" )){
+    	auto Filename = domain_db->getScalar<std::string>( "Filename" );
+    	Mask->Decomp(Filename);
+    }
+    else if (domain_db->keyExists( "GridFile" )){
+    	// Read the local domain data
+    	auto input_id = readMicroCT( *domain_db, comm );
+    	// Fill the halo (assuming GCW of 1)
+    	array<int,3> size0 = { (int) input_id.size(0), (int) input_id.size(1), (int) input_id.size(2) };
+    	ArraySize size1 = { (size_t) Mask->Nx, (size_t) Mask->Ny, (size_t) Mask->Nz };
+    	ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
+    	fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
+    	Array<signed char> id_view;
+    	id_view.viewRaw( size1, Mask->id );
+    	fill.copy( input_id, id_view );
+    	fill.fill( id_view );
+    }
+    else{
+    	Mask->ReadIDs();
+    }
 
-	// Generate the signed distance map
+    // Generate the signed distance map
 	// Initialize the domain and communication
 	Array<char> id_solid(Nx,Ny,Nz);
 	// Solve for the position of the solid phase
