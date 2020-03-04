@@ -2,6 +2,31 @@ require("ggplot2")
 
 GG_THEME=theme_bw()+theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank())
 
+ReadDatabase<-function(FILE){
+
+    INPUT<-gsub(';','',readLines(FILE))
+
+    S<-gsub('tauA = ','',gsub("\\s+"," ",(grep("tauA",INPUT,value=TRUE))))
+    TAU_A = as.numeric(S)
+    S<-gsub('tauB = ','',gsub("\\s+"," ",(grep("tauB",INPUT,value=TRUE))))
+    TAU_B = as.numeric(S)
+    S<-gsub('rhoA = ','',gsub("\\s+"," ",(grep("rhoA",INPUT,value=TRUE))))
+    RHO_A = as.numeric(S)
+    S<-gsub('rhoB = ','',gsub("\\s+"," ",(grep("rhoB",INPUT,value=TRUE))))
+    RHO_B = as.numeric(S)
+
+    S<-gsub('alpha = ','',gsub("\\s+"," ",(grep("alpha",INPUT,value=TRUE))))
+    ALPHA = as.numeric(S)
+
+    # Read the affinity
+    S<-gsub('ComponentAffinity = ','',gsub("\\s+"," ",(grep("ComponentAffinity",INPUT,value=TRUE))))
+    AFFINITY<-as.numeric(unlist(strsplit(S,", ")))
+
+    PARAMETERS<-c(TAU_A,TAU_B,RHO_A,RHO_B,ALPHA,AFFINITY)
+    
+    return(PARAMETERS)
+}
+
 ReadSubphase<-function(PATH){
   FILE=paste0(PATH,"/subphase.csv")
   S<-read.csv(FILE,head=TRUE,sep=" ")
