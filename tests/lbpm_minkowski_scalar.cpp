@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 		else{
 			// Recieve the subdomain from rank = 0
 			printf("Ready to recieve data %i at process %i \n", N,rank);
-			comm.recv(Dm->id,N,0,15);
+			comm.recv(Dm->id.data(),N,0,15);
 		}
 		comm.barrier();
 		

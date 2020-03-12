@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 		char *ID;
 		ScaLBL_AllocateDeviceMemory((void **) &ID, N);						// Allocate device memory
 		// Copy to the device
-		ScaLBL_CopyToDevice(ID, Dm->id, N);
+		ScaLBL_CopyToDevice(ID, Dm->id.data(), N);
 		//...........................................................................
 
 		if (rank==0){
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 
 		neighborList= new int[18*Np];
-		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
+		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np);
 
 
 	        if (rank == 0) PrintNeighborList(neighborList,Np, rank);

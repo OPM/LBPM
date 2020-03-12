@@ -32,42 +32,42 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	rank_YZ=Dm->rank_YZ();
 	rank_yZ=Dm->rank_yZ();
 	rank_Yz=Dm->rank_Yz();
-	sendCount_x=Dm->sendCount_x;
-	sendCount_y=Dm->sendCount_y;
-	sendCount_z=Dm->sendCount_z;
-	sendCount_X=Dm->sendCount_X;
-	sendCount_Y=Dm->sendCount_Y;
-	sendCount_Z=Dm->sendCount_Z;
-	sendCount_xy=Dm->sendCount_xy;
-	sendCount_yz=Dm->sendCount_yz;
-	sendCount_xz=Dm->sendCount_xz;
-	sendCount_Xy=Dm->sendCount_Xy;
-	sendCount_Yz=Dm->sendCount_Yz;
-	sendCount_xZ=Dm->sendCount_xZ;
-	sendCount_xY=Dm->sendCount_xY;
-	sendCount_yZ=Dm->sendCount_yZ;
-	sendCount_Xz=Dm->sendCount_Xz;
-	sendCount_XY=Dm->sendCount_XY;
-	sendCount_YZ=Dm->sendCount_YZ;
-	sendCount_XZ=Dm->sendCount_XZ;
-	recvCount_x=Dm->recvCount_x;
-	recvCount_y=Dm->recvCount_y;
-	recvCount_z=Dm->recvCount_z;
-	recvCount_X=Dm->recvCount_X;
-	recvCount_Y=Dm->recvCount_Y;
-	recvCount_Z=Dm->recvCount_Z;
-	recvCount_xy=Dm->recvCount_xy;
-	recvCount_yz=Dm->recvCount_yz;
-	recvCount_xz=Dm->recvCount_xz;
-	recvCount_Xy=Dm->recvCount_Xy;
-	recvCount_Yz=Dm->recvCount_Yz;
-	recvCount_xZ=Dm->recvCount_xZ;
-	recvCount_xY=Dm->recvCount_xY;
-	recvCount_yZ=Dm->recvCount_yZ;
-	recvCount_Xz=Dm->recvCount_Xz;
-	recvCount_XY=Dm->recvCount_XY;
-	recvCount_YZ=Dm->recvCount_YZ;
-	recvCount_XZ=Dm->recvCount_XZ;
+	sendCount_x=Dm->sendCount("x");
+	sendCount_y=Dm->sendCount("y");
+	sendCount_z=Dm->sendCount("z");
+	sendCount_X=Dm->sendCount("X");
+	sendCount_Y=Dm->sendCount("Y");
+	sendCount_Z=Dm->sendCount("Z");
+	sendCount_xy=Dm->sendCount("xy");
+	sendCount_yz=Dm->sendCount("yz");
+	sendCount_xz=Dm->sendCount("xz");
+	sendCount_Xy=Dm->sendCount("Xy");
+	sendCount_Yz=Dm->sendCount("Yz");
+	sendCount_xZ=Dm->sendCount("xZ");
+	sendCount_xY=Dm->sendCount("xY");
+	sendCount_yZ=Dm->sendCount("yZ");
+	sendCount_Xz=Dm->sendCount("Xz");
+	sendCount_XY=Dm->sendCount("XY");
+	sendCount_YZ=Dm->sendCount("YZ");
+	sendCount_XZ=Dm->sendCount("XZ");
+	recvCount_x=Dm->recvCount("x");
+	recvCount_y=Dm->recvCount("y");
+	recvCount_z=Dm->recvCount("z");
+	recvCount_X=Dm->recvCount("X");
+	recvCount_Y=Dm->recvCount("Y");
+	recvCount_Z=Dm->recvCount("Z");
+	recvCount_xy=Dm->recvCount("xy");
+	recvCount_yz=Dm->recvCount("yz");
+	recvCount_xz=Dm->recvCount("xz");
+	recvCount_Xy=Dm->recvCount("Xy");
+	recvCount_Yz=Dm->recvCount("Yz");
+	recvCount_xZ=Dm->recvCount("xZ");
+	recvCount_xY=Dm->recvCount("xY");
+	recvCount_yZ=Dm->recvCount("yZ");
+	recvCount_Xz=Dm->recvCount("Xz");
+	recvCount_XY=Dm->recvCount("XY");
+	recvCount_YZ=Dm->recvCount("YZ");
+	recvCount_XZ=Dm->recvCount("XZ");
 	
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
@@ -174,43 +174,43 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
 
-	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList_x,sendCount_x*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList_X,sendCount_X*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_y,Dm->sendList_y,sendCount_y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Y,Dm->sendList_Y,sendCount_Y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_z,Dm->sendList_z,sendCount_z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Z,Dm->sendList_Z,sendCount_Z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xy,Dm->sendList_xy,sendCount_xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_XY,Dm->sendList_XY,sendCount_XY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xY,Dm->sendList_xY,sendCount_xY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Xy,Dm->sendList_Xy,sendCount_Xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xz,Dm->sendList_xz,sendCount_xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_XZ,Dm->sendList_XZ,sendCount_XZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xZ,Dm->sendList_xZ,sendCount_xZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Xz,Dm->sendList_Xz,sendCount_Xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_yz,Dm->sendList_yz,sendCount_yz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_YZ,Dm->sendList_YZ,sendCount_YZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_yZ,Dm->sendList_yZ,sendCount_yZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Yz,Dm->sendList_Yz,sendCount_Yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList("x"),sendCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList("X"),sendCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_y,Dm->sendList("y"),sendCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Y,Dm->sendList("Y"),sendCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_z,Dm->sendList("z"),sendCount_z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Z,Dm->sendList("Z"),sendCount_Z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xy,Dm->sendList("xy"),sendCount_xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_XY,Dm->sendList("XY"),sendCount_XY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xY,Dm->sendList("xY"),sendCount_xY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Xy,Dm->sendList("Xy"),sendCount_Xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xz,Dm->sendList("xz"),sendCount_xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_XZ,Dm->sendList("XZ"),sendCount_XZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xZ,Dm->sendList("xZ"),sendCount_xZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Xz,Dm->sendList("Xz"),sendCount_Xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_yz,Dm->sendList("yz"),sendCount_yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_YZ,Dm->sendList("YZ"),sendCount_YZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_yZ,Dm->sendList("yZ"),sendCount_yZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Yz,Dm->sendList("Yz"),sendCount_Yz*sizeof(int));
 	//......................................................................................
-	ScaLBL_CopyToZeroCopy(dvcRecvList_x,Dm->recvList_x,recvCount_x*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_X,Dm->recvList_X,recvCount_X*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_y,Dm->recvList_y,recvCount_y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,Dm->recvList_Y,recvCount_Y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_z,Dm->recvList_z,recvCount_z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Z,Dm->recvList_Z,recvCount_Z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xy,Dm->recvList_xy,recvCount_xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_XY,Dm->recvList_XY,recvCount_XY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xY,Dm->recvList_xY,recvCount_xY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Xy,Dm->recvList_Xy,recvCount_Xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xz,Dm->recvList_xz,recvCount_xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_XZ,Dm->recvList_XZ,recvCount_XZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xZ,Dm->recvList_xZ,recvCount_xZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Xz,Dm->recvList_Xz,recvCount_Xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_yz,Dm->recvList_yz,recvCount_yz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_YZ,Dm->recvList_YZ,recvCount_YZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_yZ,Dm->recvList_yZ,recvCount_yZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Yz,Dm->recvList_Yz,recvCount_Yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_x,Dm->recvList("x"),recvCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_X,Dm->recvList("X"),recvCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_y,Dm->recvList("y"),recvCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,Dm->recvList("Y"),recvCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_z,Dm->recvList("z"),recvCount_z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Z,Dm->recvList("Z"),recvCount_Z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xy,Dm->recvList("xy"),recvCount_xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_XY,Dm->recvList("XY"),recvCount_XY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xY,Dm->recvList("xY"),recvCount_xY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Xy,Dm->recvList("Xy"),recvCount_Xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xz,Dm->recvList("xz"),recvCount_xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_XZ,Dm->recvList("XZ"),recvCount_XZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xZ,Dm->recvList("xZ"),recvCount_xZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Xz,Dm->recvList("Xz"),recvCount_Xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_yz,Dm->recvList("yz"),recvCount_yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_YZ,Dm->recvList("YZ"),recvCount_YZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_yZ,Dm->recvList("yZ"),recvCount_yZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Yz,Dm->recvList("Yz"),recvCount_Yz*sizeof(int));
 	//......................................................................................
 
 	MPI_COMM_SCALBL.barrier();
@@ -219,70 +219,70 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	// Set up the recieve distribution lists
 	//...................................................................................
 	//...Map recieve list for the X face: q=2,8,10,12,14 .................................
-	D3Q19_MapRecv(-1,0,0,Dm->recvList_X,0,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList_X,recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,1,0,Dm->recvList_X,2*recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList_X,3*recvCount_X,recvCount_X,dvcRecvDist_X);
-	D3Q19_MapRecv(-1,0,1,Dm->recvList_X,4*recvCount_X,recvCount_X,dvcRecvDist_X);
+	D3Q19_MapRecv(-1,0,0, Dm->recvList("X"),0,recvCount_X,dvcRecvDist_X);
+	D3Q19_MapRecv(-1,-1,0,Dm->recvList("X"),recvCount_X,recvCount_X,dvcRecvDist_X);
+	D3Q19_MapRecv(-1,1,0, Dm->recvList("X"),2*recvCount_X,recvCount_X,dvcRecvDist_X);
+	D3Q19_MapRecv(-1,0,-1,Dm->recvList("X"),3*recvCount_X,recvCount_X,dvcRecvDist_X);
+	D3Q19_MapRecv(-1,0,1, Dm->recvList("X"),4*recvCount_X,recvCount_X,dvcRecvDist_X);
 	//...................................................................................
 	//...Map recieve list for the x face: q=1,7,9,11,13..................................
-	D3Q19_MapRecv(1,0,0,Dm->recvList_x,0,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,1,0,Dm->recvList_x,recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,-1,0,Dm->recvList_x,2*recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,0,1,Dm->recvList_x,3*recvCount_x,recvCount_x,dvcRecvDist_x);
-	D3Q19_MapRecv(1,0,-1,Dm->recvList_x,4*recvCount_x,recvCount_x,dvcRecvDist_x);
+	D3Q19_MapRecv(1,0,0, Dm->recvList("x"),0,recvCount_x,dvcRecvDist_x);
+	D3Q19_MapRecv(1,1,0, Dm->recvList("x"),recvCount_x,recvCount_x,dvcRecvDist_x);
+	D3Q19_MapRecv(1,-1,0,Dm->recvList("x"),2*recvCount_x,recvCount_x,dvcRecvDist_x);
+	D3Q19_MapRecv(1,0,1, Dm->recvList("x"),3*recvCount_x,recvCount_x,dvcRecvDist_x);
+	D3Q19_MapRecv(1,0,-1,Dm->recvList("x"),4*recvCount_x,recvCount_x,dvcRecvDist_x);
 	//...................................................................................
 	//...Map recieve list for the y face: q=4,8,9,16,18 ...................................
-	D3Q19_MapRecv(0,-1,0,Dm->recvList_Y,0,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList_Y,recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(1,-1,0,Dm->recvList_Y,2*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList_Y,3*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
-	D3Q19_MapRecv(0,-1,1,Dm->recvList_Y,4*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
+	D3Q19_MapRecv(0,-1,0, Dm->recvList("Y"),0,recvCount_Y,dvcRecvDist_Y);
+	D3Q19_MapRecv(-1,-1,0,Dm->recvList("Y"),recvCount_Y,recvCount_Y,dvcRecvDist_Y);
+	D3Q19_MapRecv(1,-1,0, Dm->recvList("Y"),2*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
+	D3Q19_MapRecv(0,-1,-1,Dm->recvList("Y"),3*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
+	D3Q19_MapRecv(0,-1,1, Dm->recvList("Y"),4*recvCount_Y,recvCount_Y,dvcRecvDist_Y);
 	//...................................................................................
 	//...Map recieve list for the Y face: q=3,7,10,15,17 ..................................
-	D3Q19_MapRecv(0,1,0,Dm->recvList_y,0,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(1,1,0,Dm->recvList_y,recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(-1,1,0,Dm->recvList_y,2*recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(0,1,1,Dm->recvList_y,3*recvCount_y,recvCount_y,dvcRecvDist_y);
-	D3Q19_MapRecv(0,1,-1,Dm->recvList_y,4*recvCount_y,recvCount_y,dvcRecvDist_y);
+	D3Q19_MapRecv(0,1,0, Dm->recvList("y"),0,recvCount_y,dvcRecvDist_y);
+	D3Q19_MapRecv(1,1,0, Dm->recvList("y"),recvCount_y,recvCount_y,dvcRecvDist_y);
+	D3Q19_MapRecv(-1,1,0,Dm->recvList("y"),2*recvCount_y,recvCount_y,dvcRecvDist_y);
+	D3Q19_MapRecv(0,1,1, Dm->recvList("y"),3*recvCount_y,recvCount_y,dvcRecvDist_y);
+	D3Q19_MapRecv(0,1,-1,Dm->recvList("y"),4*recvCount_y,recvCount_y,dvcRecvDist_y);
 	//...................................................................................
 	//...Map recieve list for the z face<<<6,12,13,16,17)..............................................
-	D3Q19_MapRecv(0,0,-1,Dm->recvList_Z,0,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList_Z,recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(1,0,-1,Dm->recvList_Z,2*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList_Z,3*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
-	D3Q19_MapRecv(0,1,-1,Dm->recvList_Z,4*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
+	D3Q19_MapRecv(0,0,-1, Dm->recvList("Z"),0,recvCount_Z,dvcRecvDist_Z);
+	D3Q19_MapRecv(-1,0,-1,Dm->recvList("Z"),recvCount_Z,recvCount_Z,dvcRecvDist_Z);
+	D3Q19_MapRecv(1,0,-1, Dm->recvList("Z"),2*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
+	D3Q19_MapRecv(0,-1,-1,Dm->recvList("Z"),3*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
+	D3Q19_MapRecv(0,1,-1, Dm->recvList("Z"),4*recvCount_Z,recvCount_Z,dvcRecvDist_Z);
 	//...Map recieve list for the Z face<<<5,11,14,15,18)..............................................
-	D3Q19_MapRecv(0,0,1,Dm->recvList_z,0,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(1,0,1,Dm->recvList_z,recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(-1,0,1,Dm->recvList_z,2*recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(0,1,1,Dm->recvList_z,3*recvCount_z,recvCount_z,dvcRecvDist_z);
-	D3Q19_MapRecv(0,-1,1,Dm->recvList_z,4*recvCount_z,recvCount_z,dvcRecvDist_z);
+	D3Q19_MapRecv(0,0,1, Dm->recvList("z"),0,recvCount_z,dvcRecvDist_z);
+	D3Q19_MapRecv(1,0,1, Dm->recvList("z"),recvCount_z,recvCount_z,dvcRecvDist_z);
+	D3Q19_MapRecv(-1,0,1,Dm->recvList("z"),2*recvCount_z,recvCount_z,dvcRecvDist_z);
+	D3Q19_MapRecv(0,1,1, Dm->recvList("z"),3*recvCount_z,recvCount_z,dvcRecvDist_z);
+	D3Q19_MapRecv(0,-1,1,Dm->recvList("z"),4*recvCount_z,recvCount_z,dvcRecvDist_z);
 	//..................................................................................
 	//...Map recieve list for the xy edge <<<8)................................
-	D3Q19_MapRecv(-1,-1,0,Dm->recvList_XY,0,recvCount_XY,dvcRecvDist_XY);
+	D3Q19_MapRecv(-1,-1,0,Dm->recvList("XY"),0,recvCount_XY,dvcRecvDist_XY);
 	//...Map recieve list for the Xy edge <<<9)................................
-	D3Q19_MapRecv(1,-1,0,Dm->recvList_xY,0,recvCount_xY,dvcRecvDist_xY);
+	D3Q19_MapRecv(1,-1,0,Dm->recvList("xY"),0,recvCount_xY,dvcRecvDist_xY);
 	//...Map recieve list for the xY edge <<<10)................................
-	D3Q19_MapRecv(-1,1,0,Dm->recvList_Xy,0,recvCount_Xy,dvcRecvDist_Xy);
+	D3Q19_MapRecv(-1,1,0,Dm->recvList("Xy"),0,recvCount_Xy,dvcRecvDist_Xy);
 	//...Map recieve list for the XY edge <<<7)................................
-	D3Q19_MapRecv(1,1,0,Dm->recvList_xy,0,recvCount_xy,dvcRecvDist_xy);
+	D3Q19_MapRecv(1,1,0,Dm->recvList("xy"),0,recvCount_xy,dvcRecvDist_xy);
 	//...Map recieve list for the xz edge <<<12)................................
-	D3Q19_MapRecv(-1,0,-1,Dm->recvList_XZ,0,recvCount_XZ,dvcRecvDist_XZ);
+	D3Q19_MapRecv(-1,0,-1,Dm->recvList("XZ"),0,recvCount_XZ,dvcRecvDist_XZ);
 	//...Map recieve list for the xZ edge <<<14)................................
-	D3Q19_MapRecv(-1,0,1,Dm->recvList_Xz,0,recvCount_Xz,dvcRecvDist_Xz);
+	D3Q19_MapRecv(-1,0,1,Dm->recvList("Xz"),0,recvCount_Xz,dvcRecvDist_Xz);
 	//...Map recieve list for the Xz edge <<<13)................................
-	D3Q19_MapRecv(1,0,-1,Dm->recvList_xZ,0,recvCount_xZ,dvcRecvDist_xZ);
+	D3Q19_MapRecv(1,0,-1,Dm->recvList("xZ"),0,recvCount_xZ,dvcRecvDist_xZ);
 	//...Map recieve list for the XZ edge <<<11)................................
-	D3Q19_MapRecv(1,0,1,Dm->recvList_xz,0,recvCount_xz,dvcRecvDist_xz);
+	D3Q19_MapRecv(1,0,1,Dm->recvList("xz"),0,recvCount_xz,dvcRecvDist_xz);
 	//...Map recieve list for the yz edge <<<16)................................
-	D3Q19_MapRecv(0,-1,-1,Dm->recvList_YZ,0,recvCount_YZ,dvcRecvDist_YZ);
+	D3Q19_MapRecv(0,-1,-1,Dm->recvList("YZ"),0,recvCount_YZ,dvcRecvDist_YZ);
 	//...Map recieve list for the yZ edge <<<18)................................
-	D3Q19_MapRecv(0,-1,1,Dm->recvList_Yz,0,recvCount_Yz,dvcRecvDist_Yz);
+	D3Q19_MapRecv(0,-1,1,Dm->recvList("Yz"),0,recvCount_Yz,dvcRecvDist_Yz);
 	//...Map recieve list for the Yz edge <<<17)................................
-	D3Q19_MapRecv(0,1,-1,Dm->recvList_yZ,0,recvCount_yZ,dvcRecvDist_yZ);
+	D3Q19_MapRecv(0,1,-1,Dm->recvList("yZ"),0,recvCount_yZ,dvcRecvDist_yZ);
 	//...Map recieve list for the YZ edge <<<15)................................
-	D3Q19_MapRecv(0,1,1,Dm->recvList_yz,0,recvCount_yz,dvcRecvDist_yz);
+	D3Q19_MapRecv(0,1,1,Dm->recvList("yz"),0,recvCount_yz,dvcRecvDist_yz);
 	//...................................................................................
 
 	//......................................................................................
@@ -319,7 +319,7 @@ int ScaLBL_Communicator::LastInterior(){
 	return last_interior;
 }
 
-void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count,
 		int *d3q19_recvlist){
 	int i,j,k,n,nn,idx;
 	int * ReturnDist;

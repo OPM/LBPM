@@ -102,7 +102,7 @@ private:
 
 
 //***************************************************************************************
-inline void PackMeshData(int *list, int count, double *sendbuf, double *data){
+inline void PackMeshData(const int *list, int count, double *sendbuf, double *data){
 	// Fill in the phase ID values from neighboring processors
 	// This packs up the values that need to be sent from one processor to another
 	int idx,n;
@@ -111,7 +111,7 @@ inline void PackMeshData(int *list, int count, double *sendbuf, double *data){
 		sendbuf[idx] = data[n];
 	}
 }
-inline void UnpackMeshData(int *list, int count, double *recvbuf, double *data){
+inline void UnpackMeshData(const int *list, int count, double *recvbuf, double *data){
 	// Fill in the phase ID values from neighboring processors
 	// This unpacks the values once they have been recieved from neighbors
 	int idx,n;

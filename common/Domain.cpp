@@ -23,40 +23,15 @@ static inline void fgetl( char * str, int num, FILE * stream )
 }
 
 /********************************************************
- * Constructors/Destructor                               *
+ * Constructors                                          *
  ********************************************************/
 Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
                double lx, double ly, double lz, int BC):
-	database(NULL), Nx(0), Ny(0), Nz(0), 
+	database(nullptr), Nx(0), Ny(0), Nz(0), 
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0), voxel_length(1),
-	Comm(MPI_COMM_WORLD),
+	Comm( Utilities::MPI( MPI_COMM_WORLD).dup() ),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
-    inlet_layers_phase(1),outlet_layers_phase(2),
-	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
-	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
-	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
-	sendList_x(NULL), sendList_y(NULL), sendList_z(NULL), sendList_X(NULL), sendList_Y(NULL), sendList_Z(NULL),
-	sendList_xy(NULL), sendList_yz(NULL), sendList_xz(NULL), sendList_Xy(NULL), sendList_Yz(NULL), sendList_xZ(NULL),
-	sendList_xY(NULL), sendList_yZ(NULL), sendList_Xz(NULL), sendList_XY(NULL), sendList_YZ(NULL), sendList_XZ(NULL),
-	sendBuf_x(NULL), sendBuf_y(NULL), sendBuf_z(NULL), sendBuf_X(NULL), sendBuf_Y(NULL), sendBuf_Z(NULL),
-	sendBuf_xy(NULL), sendBuf_yz(NULL), sendBuf_xz(NULL), sendBuf_Xy(NULL), sendBuf_Yz(NULL), sendBuf_xZ(NULL),
-	sendBuf_xY(NULL), sendBuf_yZ(NULL), sendBuf_Xz(NULL), sendBuf_XY(NULL), sendBuf_YZ(NULL), sendBuf_XZ(NULL),
-	recvCount_x(0), recvCount_y(0), recvCount_z(0), recvCount_X(0), recvCount_Y(0), recvCount_Z(0),
-	recvCount_xy(0), recvCount_yz(0), recvCount_xz(0), recvCount_Xy(0), recvCount_Yz(0), recvCount_xZ(0),
-	recvCount_xY(0), recvCount_yZ(0), recvCount_Xz(0), recvCount_XY(0), recvCount_YZ(0), recvCount_XZ(0),
-	recvList_x(NULL), recvList_y(NULL), recvList_z(NULL), recvList_X(NULL), recvList_Y(NULL), recvList_Z(NULL),
-	recvList_xy(NULL), recvList_yz(NULL), recvList_xz(NULL), recvList_Xy(NULL), recvList_Yz(NULL), recvList_xZ(NULL),
-	recvList_xY(NULL), recvList_yZ(NULL), recvList_Xz(NULL), recvList_XY(NULL), recvList_YZ(NULL), recvList_XZ(NULL),
-	recvBuf_x(NULL), recvBuf_y(NULL), recvBuf_z(NULL), recvBuf_X(NULL), recvBuf_Y(NULL), recvBuf_Z(NULL),
-	recvBuf_xy(NULL), recvBuf_yz(NULL), recvBuf_xz(NULL), recvBuf_Xy(NULL), recvBuf_Yz(NULL), recvBuf_xZ(NULL),
-	recvBuf_xY(NULL), recvBuf_yZ(NULL), recvBuf_Xz(NULL), recvBuf_XY(NULL), recvBuf_YZ(NULL), recvBuf_XZ(NULL),
-	sendData_x(NULL), sendData_y(NULL), sendData_z(NULL), sendData_X(NULL), sendData_Y(NULL), sendData_Z(NULL),
-	sendData_xy(NULL), sendData_yz(NULL), sendData_xz(NULL), sendData_Xy(NULL), sendData_Yz(NULL), sendData_xZ(NULL),
-	sendData_xY(NULL), sendData_yZ(NULL), sendData_Xz(NULL), sendData_XY(NULL), sendData_YZ(NULL), sendData_XZ(NULL),
-	recvData_x(NULL), recvData_y(NULL), recvData_z(NULL), recvData_X(NULL), recvData_Y(NULL), recvData_Z(NULL),
-	recvData_xy(NULL), recvData_yz(NULL), recvData_xz(NULL), recvData_Xy(NULL), recvData_Yz(NULL), recvData_xZ(NULL),
-	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
-	id(NULL)
+    inlet_layers_phase(1),outlet_layers_phase(2)
 {	
     NULL_USE( rnk );
     NULL_USE( npy );
@@ -80,32 +55,7 @@ Domain::Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator
 	Lx(0), Ly(0), Lz(0), Volume(0), BoundaryCondition(0),
 	inlet_layers_x(0), inlet_layers_y(0), inlet_layers_z(0),
 	outlet_layers_x(0), outlet_layers_y(0), outlet_layers_z(0),
-    inlet_layers_phase(1),outlet_layers_phase(2),
-	sendCount_x(0), sendCount_y(0), sendCount_z(0), sendCount_X(0), sendCount_Y(0), sendCount_Z(0),
-	sendCount_xy(0), sendCount_yz(0), sendCount_xz(0), sendCount_Xy(0), sendCount_Yz(0), sendCount_xZ(0),
-	sendCount_xY(0), sendCount_yZ(0), sendCount_Xz(0), sendCount_XY(0), sendCount_YZ(0), sendCount_XZ(0),
-	sendList_x(NULL), sendList_y(NULL), sendList_z(NULL), sendList_X(NULL), sendList_Y(NULL), sendList_Z(NULL),
-	sendList_xy(NULL), sendList_yz(NULL), sendList_xz(NULL), sendList_Xy(NULL), sendList_Yz(NULL), sendList_xZ(NULL),
-	sendList_xY(NULL), sendList_yZ(NULL), sendList_Xz(NULL), sendList_XY(NULL), sendList_YZ(NULL), sendList_XZ(NULL),
-	sendBuf_x(NULL), sendBuf_y(NULL), sendBuf_z(NULL), sendBuf_X(NULL), sendBuf_Y(NULL), sendBuf_Z(NULL),
-	sendBuf_xy(NULL), sendBuf_yz(NULL), sendBuf_xz(NULL), sendBuf_Xy(NULL), sendBuf_Yz(NULL), sendBuf_xZ(NULL),
-	sendBuf_xY(NULL), sendBuf_yZ(NULL), sendBuf_Xz(NULL), sendBuf_XY(NULL), sendBuf_YZ(NULL), sendBuf_XZ(NULL),
-	recvCount_x(0), recvCount_y(0), recvCount_z(0), recvCount_X(0), recvCount_Y(0), recvCount_Z(0),
-	recvCount_xy(0), recvCount_yz(0), recvCount_xz(0), recvCount_Xy(0), recvCount_Yz(0), recvCount_xZ(0),
-	recvCount_xY(0), recvCount_yZ(0), recvCount_Xz(0), recvCount_XY(0), recvCount_YZ(0), recvCount_XZ(0),
-	recvList_x(NULL), recvList_y(NULL), recvList_z(NULL), recvList_X(NULL), recvList_Y(NULL), recvList_Z(NULL),
-	recvList_xy(NULL), recvList_yz(NULL), recvList_xz(NULL), recvList_Xy(NULL), recvList_Yz(NULL), recvList_xZ(NULL),
-	recvList_xY(NULL), recvList_yZ(NULL), recvList_Xz(NULL), recvList_XY(NULL), recvList_YZ(NULL), recvList_XZ(NULL),
-	recvBuf_x(NULL), recvBuf_y(NULL), recvBuf_z(NULL), recvBuf_X(NULL), recvBuf_Y(NULL), recvBuf_Z(NULL),
-	recvBuf_xy(NULL), recvBuf_yz(NULL), recvBuf_xz(NULL), recvBuf_Xy(NULL), recvBuf_Yz(NULL), recvBuf_xZ(NULL),
-	recvBuf_xY(NULL), recvBuf_yZ(NULL), recvBuf_Xz(NULL), recvBuf_XY(NULL), recvBuf_YZ(NULL), recvBuf_XZ(NULL),
-	sendData_x(NULL), sendData_y(NULL), sendData_z(NULL), sendData_X(NULL), sendData_Y(NULL), sendData_Z(NULL),
-	sendData_xy(NULL), sendData_yz(NULL), sendData_xz(NULL), sendData_Xy(NULL), sendData_Yz(NULL), sendData_xZ(NULL),
-	sendData_xY(NULL), sendData_yZ(NULL), sendData_Xz(NULL), sendData_XY(NULL), sendData_YZ(NULL), sendData_XZ(NULL),
-	recvData_x(NULL), recvData_y(NULL), recvData_z(NULL), recvData_X(NULL), recvData_Y(NULL), recvData_Z(NULL),
-	recvData_xy(NULL), recvData_yz(NULL), recvData_xz(NULL), recvData_Xy(NULL), recvData_Yz(NULL), recvData_xZ(NULL),
-	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
-	id(NULL)
+    inlet_layers_phase(1),outlet_layers_phase(2)
 {
     Comm = Communicator.dup();
 
@@ -116,54 +66,18 @@ Domain::Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator
     Comm.barrier();
 }
 
+
+/********************************************************
+ * Destructor                                            *
+ ********************************************************/
 Domain::~Domain()
 {
-	// Free sendList
-	delete [] sendList_x;   delete [] sendList_y;   delete [] sendList_z;
-	delete [] sendList_X;   delete [] sendList_Y;   delete [] sendList_Z;
-	delete [] sendList_xy;  delete [] sendList_yz;  delete [] sendList_xz;
-	delete [] sendList_Xy;  delete [] sendList_Yz;  delete [] sendList_xZ;
-	delete [] sendList_xY;  delete [] sendList_yZ;  delete [] sendList_Xz;
-	delete [] sendList_XY;  delete [] sendList_YZ;  delete [] sendList_XZ;
-	// Free sendBuf
-	delete [] sendBuf_x;    delete [] sendBuf_y;    delete [] sendBuf_z;
-	delete [] sendBuf_X;    delete [] sendBuf_Y;    delete [] sendBuf_Z;
-	delete [] sendBuf_xy;   delete [] sendBuf_yz;   delete [] sendBuf_xz;
-	delete [] sendBuf_Xy;   delete [] sendBuf_Yz;   delete [] sendBuf_xZ;
-	delete [] sendBuf_xY;   delete [] sendBuf_yZ;   delete [] sendBuf_Xz;
-	delete [] sendBuf_XY;   delete [] sendBuf_YZ;   delete [] sendBuf_XZ;
-	// Free recvList
-	delete [] recvList_x;   delete [] recvList_y;   delete [] recvList_z;
-	delete [] recvList_X;   delete [] recvList_Y;   delete [] recvList_Z;
-	delete [] recvList_xy;  delete [] recvList_yz;  delete [] recvList_xz;
-	delete [] recvList_Xy;  delete [] recvList_Yz;  delete [] recvList_xZ;
-	delete [] recvList_xY;  delete [] recvList_yZ;  delete [] recvList_Xz;
-	delete [] recvList_XY;  delete [] recvList_YZ;  delete [] recvList_XZ;
-	// Free recvBuf
-	delete [] recvBuf_x;    delete [] recvBuf_y;    delete [] recvBuf_z;
-	delete [] recvBuf_X;    delete [] recvBuf_Y;    delete [] recvBuf_Z;
-	delete [] recvBuf_xy;   delete [] recvBuf_yz;   delete [] recvBuf_xz;
-	delete [] recvBuf_Xy;   delete [] recvBuf_Yz;   delete [] recvBuf_xZ;
-	delete [] recvBuf_xY;   delete [] recvBuf_yZ;   delete [] recvBuf_Xz;
-	delete [] recvBuf_XY;   delete [] recvBuf_YZ;   delete [] recvBuf_XZ;
-	// Free sendData
-	delete [] sendData_x;   delete [] sendData_y;   delete [] sendData_z;
-	delete [] sendData_X;   delete [] sendData_Y;   delete [] sendData_Z;
-	delete [] sendData_xy;  delete [] sendData_xY;  delete [] sendData_Xy;
-	delete [] sendData_XY;  delete [] sendData_xz;  delete [] sendData_xZ;
-	delete [] sendData_Xz;  delete [] sendData_XZ;  delete [] sendData_yz;
-	delete [] sendData_yZ;  delete [] sendData_Yz;  delete [] sendData_YZ;
-	// Free recvData
-	delete [] recvData_x;   delete [] recvData_y;   delete [] recvData_z;
-	delete [] recvData_X;   delete [] recvData_Y;   delete [] recvData_Z;
-	delete [] recvData_xy;  delete [] recvData_xY;  delete [] recvData_Xy;
-	delete [] recvData_XY;  delete [] recvData_xz;  delete [] recvData_xZ;
-	delete [] recvData_Xz;  delete [] recvData_XZ;  delete [] recvData_yz;
-	delete [] recvData_yZ;  delete [] recvData_Yz;  delete [] recvData_YZ;
-	// Free id
-	delete [] id;
 }
 
+
+/********************************************************
+ * Initialization                                        *
+ ********************************************************/
 void Domain::initialize( std::shared_ptr<Database> db )
 {	
     d_db = db;
@@ -228,13 +142,115 @@ void Domain::initialize( std::shared_ptr<Database> db )
 
 	if (myrank==0) printf("voxel length = %f micron \n", voxel_length);
 
-	id = new signed char[N];
-	memset(id,0,N);
+	id = std::vector<signed char>( N, 0 );
 	BoundaryCondition = d_db->getScalar<int>("BC");
     int nprocs = Comm.getSize();
 	INSIST(nprocs == nproc[0]*nproc[1]*nproc[2],"Fatal error in processor count!");
 }
 
+
+/********************************************************
+ * Get send/recv lists                                   *
+ ********************************************************/
+const std::vector<int>& Domain::getRecvList( const char* dir ) const
+{
+    if ( dir[0] == 'x' ) {
+        if ( dir[1] == 0 )
+            return recvList_x;
+        else if ( dir[1] == 'y' )
+            return recvList_xy;
+        else if ( dir[1] == 'Y' )
+            return recvList_xY;
+        else if ( dir[1] == 'z' )
+            return recvList_xz;
+        else if ( dir[1] == 'Z' )
+            return recvList_xZ;
+    } else if ( dir[0] == 'y' ) {
+        if ( dir[1] == 0 )
+            return recvList_y;
+        else if ( dir[1] == 'z' )
+            return recvList_yz;
+        else if ( dir[1] == 'Z' )
+            return recvList_yZ;
+    } else if ( dir[0] == 'z' ) {
+        if ( dir[1] == 0 )
+            return recvList_z;
+    } else if ( dir[0] == 'X' ) {
+        if ( dir[1] == 0 )
+            return recvList_X;
+        else if ( dir[1] == 'y' )
+            return recvList_Xy;
+        else if ( dir[1] == 'Y' )
+            return recvList_XY;
+        else if ( dir[1] == 'z' )
+            return recvList_Xz;
+        else if ( dir[1] == 'Z' )
+            return recvList_XZ;
+    } else if ( dir[0] == 'Y' ) {
+        if ( dir[1] == 0 )
+            return recvList_Y;
+        else if ( dir[1] == 'z' )
+            return recvList_Yz;
+        else if ( dir[1] == 'Z' )
+            return recvList_YZ;
+    } else if ( dir[0] == 'Z' ) {
+        if ( dir[1] == 0 )
+            return recvList_Z;
+    }
+    throw std::logic_error("Internal error");
+}
+const std::vector<int>& Domain::getSendList( const char* dir ) const
+{
+    if ( dir[0] == 'x' ) {
+        if ( dir[1] == 0 )
+            return sendList_x;
+        else if ( dir[1] == 'y' )
+            return sendList_xy;
+        else if ( dir[1] == 'Y' )
+            return sendList_xY;
+        else if ( dir[1] == 'z' )
+            return sendList_xz;
+        else if ( dir[1] == 'Z' )
+            return sendList_xZ;
+    } else if ( dir[0] == 'y' ) {
+        if ( dir[1] == 0 )
+            return sendList_y;
+        else if ( dir[1] == 'z' )
+            return sendList_yz;
+        else if ( dir[1] == 'Z' )
+            return sendList_yZ;
+    } else if ( dir[0] == 'z' ) {
+        if ( dir[1] == 0 )
+            return sendList_z;
+    } else if ( dir[0] == 'X' ) {
+        if ( dir[1] == 0 )
+            return sendList_X;
+        else if ( dir[1] == 'y' )
+            return sendList_Xy;
+        else if ( dir[1] == 'Y' )
+            return sendList_XY;
+        else if ( dir[1] == 'z' )
+            return sendList_Xz;
+        else if ( dir[1] == 'Z' )
+            return sendList_XZ;
+    } else if ( dir[0] == 'Y' ) {
+        if ( dir[1] == 0 )
+            return sendList_Y;
+        else if ( dir[1] == 'z' )
+            return sendList_Yz;
+        else if ( dir[1] == 'Z' )
+            return sendList_YZ;
+    } else if ( dir[0] == 'Z' ) {
+        if ( dir[1] == 0 )
+            return sendList_Z;
+    }
+    throw std::logic_error("Internal error");
+}
+
+
+/********************************************************
+ * Decomp                                                *
+ ********************************************************/
 void Domain::Decomp( const std::string& Filename )
 {
 	//.......................................................................
@@ -319,7 +335,7 @@ void Domain::Decomp( const std::string& Filename )
 	global_Ny = SIZE[1];
 	global_Nz = SIZE[2];
 	nprocs=nprocx*nprocy*nprocz;
-	char *SegData = NULL;
+	char *SegData = nullptr;
 	
 	if (RANK==0){
 		printf("Input media: %s\n",Filename.c_str());
@@ -337,7 +353,7 @@ void Domain::Decomp( const std::string& Filename )
 		if (ReadType == "8bit"){
 			printf("Reading 8-bit input data \n");
 			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
+			if (!SEGDAT) ERROR("Domain.cpp: Error reading segmented data");
 			size_t ReadSeg;
 			ReadSeg=fread(SegData,1,SIZE,SEGDAT);
 			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
@@ -348,7 +364,7 @@ void Domain::Decomp( const std::string& Filename )
 			short int *InputData;
 			InputData = new short int[SIZE];
 			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading segmented data");
+			if (!SEGDAT) ERROR("Domain.cpp: Error reading segmented data");
 			size_t ReadSeg;
 			ReadSeg=fread(InputData,2,SIZE,SEGDAT);
 			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading segmented data \n");
@@ -575,7 +591,7 @@ void Domain::Decomp( const std::string& Filename )
 	else{
 		// Recieve the subdomain from rank = 0
 		//printf("Ready to recieve data %i at process %i \n", N,rank);
-		Comm.recv(id,N,0,15);
+		Comm.recv(id.data(),N,0,15);
 	}
 	Comm.barrier();
 }
@@ -680,6 +696,9 @@ void Domain::CommInit()
 	int sendtag = 21;
 	int recvtag = 21;
 	//......................................................................................
+	int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
+	int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
+	int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
 	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
 	sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
@@ -717,24 +736,24 @@ void Domain::CommInit()
 	}
 
 	// allocate send lists
-	sendList_x = new int [sendCount_x];
-	sendList_y = new int [sendCount_y];
-	sendList_z = new int [sendCount_z];
-	sendList_X = new int [sendCount_X];
-	sendList_Y = new int [sendCount_Y];
-	sendList_Z = new int [sendCount_Z];
-	sendList_xy = new int [sendCount_xy];
-	sendList_yz = new int [sendCount_yz];
-	sendList_xz = new int [sendCount_xz];
-	sendList_Xy = new int [sendCount_Xy];
-	sendList_Yz = new int [sendCount_Yz];
-	sendList_xZ = new int [sendCount_xZ];
-	sendList_xY = new int [sendCount_xY];
-	sendList_yZ = new int [sendCount_yZ];
-	sendList_Xz = new int [sendCount_Xz];
-	sendList_XY = new int [sendCount_XY];
-	sendList_YZ = new int [sendCount_YZ];
-	sendList_XZ = new int [sendCount_XZ];
+	sendList_x.resize( sendCount_x, 0 );
+	sendList_y.resize( sendCount_y, 0 );
+	sendList_z.resize( sendCount_z, 0 );
+	sendList_X.resize( sendCount_X, 0 );
+	sendList_Y.resize( sendCount_Y, 0 );
+	sendList_Z.resize( sendCount_Z, 0 );
+	sendList_xy.resize( sendCount_xy, 0 );
+	sendList_yz.resize( sendCount_yz, 0 );
+	sendList_xz.resize( sendCount_xz, 0 );
+	sendList_Xy.resize( sendCount_Xy, 0 );
+	sendList_Yz.resize( sendCount_Yz, 0 );
+	sendList_xZ.resize( sendCount_xZ, 0 );
+	sendList_xY.resize( sendCount_xY, 0 );
+	sendList_yZ.resize( sendCount_yZ, 0 );
+	sendList_Xz.resize( sendCount_Xz, 0 );
+	sendList_XY.resize( sendCount_XY, 0 );
+	sendList_YZ.resize( sendCount_YZ, 0 );
+	sendList_XZ.resize( sendCount_XZ, 0 );
 	// Populate the send list
 	sendCount_x = sendCount_y = sendCount_z = sendCount_X = sendCount_Y = sendCount_Z = 0;
 	sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
@@ -772,26 +791,10 @@ void Domain::CommInit()
 		}
 	}
 
-	// allocate send buffers
-	sendBuf_x = new int [sendCount_x];
-	sendBuf_y = new int [sendCount_y];
-	sendBuf_z = new int [sendCount_z];
-	sendBuf_X = new int [sendCount_X];
-	sendBuf_Y = new int [sendCount_Y];
-	sendBuf_Z = new int [sendCount_Z];
-	sendBuf_xy = new int [sendCount_xy];
-	sendBuf_yz = new int [sendCount_yz];
-	sendBuf_xz = new int [sendCount_xz];
-	sendBuf_Xy = new int [sendCount_Xy];
-	sendBuf_Yz = new int [sendCount_Yz];
-	sendBuf_xZ = new int [sendCount_xZ];
-	sendBuf_xY = new int [sendCount_xY];
-	sendBuf_yZ = new int [sendCount_yZ];
-	sendBuf_Xz = new int [sendCount_Xz];
-	sendBuf_XY = new int [sendCount_XY];
-	sendBuf_YZ = new int [sendCount_YZ];
-	sendBuf_XZ = new int [sendCount_XZ];
 	//......................................................................................
+	int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
+	int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
+	int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
 	req1[0] = Comm.Isend(&sendCount_x,1,rank_x(),sendtag+0);
 	req2[0] = Comm.Irecv(&recvCount_X,1,rank_X(),recvtag+0);
 	req1[1] = Comm.Isend(&sendCount_X,1,rank_X(),sendtag+1);
@@ -831,63 +834,62 @@ void Domain::CommInit()
 	Comm.waitAll(18,req1);
 	Comm.waitAll(18,req2);
 	Comm.barrier();
+	// allocate recv lists
+	recvList_x.resize( recvCount_x, 0 );
+	recvList_y.resize( recvCount_y, 0 );
+	recvList_z.resize( recvCount_z, 0 );
+	recvList_X.resize( recvCount_X, 0 );
+	recvList_Y.resize( recvCount_Y, 0 );
+	recvList_Z.resize( recvCount_Z, 0 );
+	recvList_xy.resize( recvCount_xy, 0 );
+	recvList_yz.resize( recvCount_yz, 0 );
+	recvList_xz.resize( recvCount_xz, 0 );
+	recvList_Xy.resize( recvCount_Xy, 0 );
+	recvList_Yz.resize( recvCount_Yz, 0 );
+	recvList_xZ.resize( recvCount_xZ, 0 );
+	recvList_xY.resize( recvCount_xY, 0 );
+	recvList_yZ.resize( recvCount_yZ, 0 );
+	recvList_Xz.resize( recvCount_Xz, 0 );
+	recvList_XY.resize( recvCount_XY, 0 );
+	recvList_YZ.resize( recvCount_YZ, 0 );
+	recvList_XZ.resize( recvCount_XZ, 0 );
 	//......................................................................................
-	// recv buffers
-	recvList_x = new int [recvCount_x];
-	recvList_y = new int [recvCount_y];
-	recvList_z = new int [recvCount_z];
-	recvList_X = new int [recvCount_X];
-	recvList_Y = new int [recvCount_Y];
-	recvList_Z = new int [recvCount_Z];
-	recvList_xy = new int [recvCount_xy];
-	recvList_yz = new int [recvCount_yz];
-	recvList_xz = new int [recvCount_xz];
-	recvList_Xy = new int [recvCount_Xy];
-	recvList_Yz = new int [recvCount_Yz];
-	recvList_xZ = new int [recvCount_xZ];
-	recvList_xY = new int [recvCount_xY];
-	recvList_yZ = new int [recvCount_yZ];
-	recvList_Xz = new int [recvCount_Xz];
-	recvList_XY = new int [recvCount_XY];
-	recvList_YZ = new int [recvCount_YZ];
-	recvList_XZ = new int [recvCount_XZ];
-	//......................................................................................
-	req1[0] = Comm.Isend(sendList_x,sendCount_x,rank_x(),sendtag);
-	req2[0] = Comm.Irecv(recvList_X,recvCount_X,rank_X(),recvtag);
-	req1[1] = Comm.Isend(sendList_X,sendCount_X,rank_X(),sendtag);
-	req2[1] = Comm.Irecv(recvList_x,recvCount_x,rank_x(),recvtag);
-	req1[2] = Comm.Isend(sendList_y,sendCount_y,rank_y(),sendtag);
-	req2[2] = Comm.Irecv(recvList_Y,recvCount_Y,rank_Y(),recvtag);
-	req1[3] = Comm.Isend(sendList_Y,sendCount_Y,rank_Y(),sendtag);
-	req2[3] = Comm.Irecv(recvList_y,recvCount_y,rank_y(),recvtag);
-	req1[4] = Comm.Isend(sendList_z,sendCount_z,rank_z(),sendtag);
-	req2[4] = Comm.Irecv(recvList_Z,recvCount_Z,rank_Z(),recvtag);
-	req1[5] = Comm.Isend(sendList_Z,sendCount_Z,rank_Z(),sendtag);
-	req2[5] = Comm.Irecv(recvList_z,recvCount_z,rank_z(),recvtag);
-	req1[6] = Comm.Isend(sendList_xy,sendCount_xy,rank_xy(),sendtag);
-	req2[6] = Comm.Irecv(recvList_XY,recvCount_XY,rank_XY(),recvtag);
-	req1[7] = Comm.Isend(sendList_XY,sendCount_XY,rank_XY(),sendtag);
-	req2[7] = Comm.Irecv(recvList_xy,recvCount_xy,rank_xy(),recvtag);
-	req1[8] = Comm.Isend(sendList_Xy,sendCount_Xy,rank_Xy(),sendtag);
-	req2[8] = Comm.Irecv(recvList_xY,recvCount_xY,rank_xY(),recvtag);
-	req1[9] = Comm.Isend(sendList_xY,sendCount_xY,rank_xY(),sendtag);
-	req2[9] = Comm.Irecv(recvList_Xy,recvCount_Xy,rank_Xy(),recvtag);
-	req1[10] = Comm.Isend(sendList_xz,sendCount_xz,rank_xz(),sendtag);
-	req2[10] = Comm.Irecv(recvList_XZ,recvCount_XZ,rank_XZ(),recvtag);
-	req1[11] = Comm.Isend(sendList_XZ,sendCount_XZ,rank_XZ(),sendtag);
-	req2[11] = Comm.Irecv(recvList_xz,recvCount_xz,rank_xz(),recvtag);
-	req1[12] = Comm.Isend(sendList_Xz,sendCount_Xz,rank_Xz(),sendtag);
-	req2[12] = Comm.Irecv(recvList_xZ,recvCount_xZ,rank_xZ(),recvtag);
-	req1[13] = Comm.Isend(sendList_xZ,sendCount_xZ,rank_xZ(),sendtag);
-	req2[13] = Comm.Irecv(recvList_Xz,recvCount_Xz,rank_Xz(),recvtag);
-	req1[14] = Comm.Isend(sendList_yz,sendCount_yz,rank_yz(),sendtag);
-	req2[14] = Comm.Irecv(recvList_YZ,recvCount_YZ,rank_YZ(),recvtag);
-	req1[15] = Comm.Isend(sendList_YZ,sendCount_YZ,rank_YZ(),sendtag);
-	req2[15] = Comm.Irecv(recvList_yz,recvCount_yz,rank_yz(),recvtag);
-	req1[16] = Comm.Isend(sendList_Yz,sendCount_Yz,rank_Yz(),sendtag);
-	req2[16] = Comm.Irecv(recvList_yZ,recvCount_yZ,rank_yZ(),recvtag);
-	req1[17] = Comm.Isend(sendList_yZ,sendCount_yZ,rank_yZ(),sendtag);
-	req2[17] = Comm.Irecv(recvList_Yz,recvCount_Yz,rank_Yz(),recvtag);
+	req1[0] = Comm.Isend(sendList_x.data(),sendCount_x,rank_x(),sendtag);
+	req2[0] = Comm.Irecv(recvList_X.data(),recvCount_X,rank_X(),recvtag);
+	req1[1] = Comm.Isend(sendList_X.data(),sendCount_X,rank_X(),sendtag);
+	req2[1] = Comm.Irecv(recvList_x.data(),recvCount_x,rank_x(),recvtag);
+	req1[2] = Comm.Isend(sendList_y.data(),sendCount_y,rank_y(),sendtag);
+	req2[2] = Comm.Irecv(recvList_Y.data(),recvCount_Y,rank_Y(),recvtag);
+	req1[3] = Comm.Isend(sendList_Y.data(),sendCount_Y,rank_Y(),sendtag);
+	req2[3] = Comm.Irecv(recvList_y.data(),recvCount_y,rank_y(),recvtag);
+	req1[4] = Comm.Isend(sendList_z.data(),sendCount_z,rank_z(),sendtag);
+	req2[4] = Comm.Irecv(recvList_Z.data(),recvCount_Z,rank_Z(),recvtag);
+	req1[5] = Comm.Isend(sendList_Z.data(),sendCount_Z,rank_Z(),sendtag);
+	req2[5] = Comm.Irecv(recvList_z.data(),recvCount_z,rank_z(),recvtag);
+	req1[6] = Comm.Isend(sendList_xy.data(),sendCount_xy,rank_xy(),sendtag);
+	req2[6] = Comm.Irecv(recvList_XY.data(),recvCount_XY,rank_XY(),recvtag);
+	req1[7] = Comm.Isend(sendList_XY.data(),sendCount_XY,rank_XY(),sendtag);
+	req2[7] = Comm.Irecv(recvList_xy.data(),recvCount_xy,rank_xy(),recvtag);
+	req1[8] = Comm.Isend(sendList_Xy.data(),sendCount_Xy,rank_Xy(),sendtag);
+	req2[8] = Comm.Irecv(recvList_xY.data(),recvCount_xY,rank_xY(),recvtag);
+	req1[9] = Comm.Isend(sendList_xY.data(),sendCount_xY,rank_xY(),sendtag);
+	req2[9] = Comm.Irecv(recvList_Xy.data(),recvCount_Xy,rank_Xy(),recvtag);
+	req1[10] = Comm.Isend(sendList_xz.data(),sendCount_xz,rank_xz(),sendtag);
+	req2[10] = Comm.Irecv(recvList_XZ.data(),recvCount_XZ,rank_XZ(),recvtag);
+	req1[11] = Comm.Isend(sendList_XZ.data(),sendCount_XZ,rank_XZ(),sendtag);
+	req2[11] = Comm.Irecv(recvList_xz.data(),recvCount_xz,rank_xz(),recvtag);
+	req1[12] = Comm.Isend(sendList_Xz.data(),sendCount_Xz,rank_Xz(),sendtag);
+	req2[12] = Comm.Irecv(recvList_xZ.data(),recvCount_xZ,rank_xZ(),recvtag);
+	req1[13] = Comm.Isend(sendList_xZ.data(),sendCount_xZ,rank_xZ(),sendtag);
+	req2[13] = Comm.Irecv(recvList_Xz.data(),recvCount_Xz,rank_Xz(),recvtag);
+	req1[14] = Comm.Isend(sendList_yz.data(),sendCount_yz,rank_yz(),sendtag);
+	req2[14] = Comm.Irecv(recvList_YZ.data(),recvCount_YZ,rank_YZ(),recvtag);
+	req1[15] = Comm.Isend(sendList_YZ.data(),sendCount_YZ,rank_YZ(),sendtag);
+	req2[15] = Comm.Irecv(recvList_yz.data(),recvCount_yz,rank_yz(),recvtag);
+	req1[16] = Comm.Isend(sendList_Yz.data(),sendCount_Yz,rank_Yz(),sendtag);
+	req2[16] = Comm.Irecv(recvList_yZ.data(),recvCount_yZ,rank_yZ(),recvtag);
+	req1[17] = Comm.Isend(sendList_yZ.data(),sendCount_yZ,rank_yZ(),sendtag);
+	req2[17] = Comm.Irecv(recvList_Yz.data(),recvCount_Yz,rank_Yz(),recvtag);
 	Comm.waitAll(18,req1);
 	Comm.waitAll(18,req2);
 	//......................................................................................
@@ -910,65 +912,7 @@ void Domain::CommInit()
 	for (int idx=0; idx<recvCount_yZ; idx++)    recvList_yZ[idx] -= (Ny-2)*Nx - (Nz-2)*Nx*Ny;
 	for (int idx=0; idx<recvCount_Yz; idx++)    recvList_Yz[idx] += (Ny-2)*Nx - (Nz-2)*Nx*Ny;
 	//......................................................................................
-	// allocate recv buffers
-	recvBuf_x = new int [recvCount_x];
-	recvBuf_y = new int [recvCount_y];
-	recvBuf_z = new int [recvCount_z];
-	recvBuf_X = new int [recvCount_X];
-	recvBuf_Y = new int [recvCount_Y];
-	recvBuf_Z = new int [recvCount_Z];
-	recvBuf_xy = new int [recvCount_xy];
-	recvBuf_yz = new int [recvCount_yz];
-	recvBuf_xz = new int [recvCount_xz];
-	recvBuf_Xy = new int [recvCount_Xy];
-	recvBuf_Yz = new int [recvCount_Yz];
-	recvBuf_xZ = new int [recvCount_xZ];
-	recvBuf_xY = new int [recvCount_xY];
-	recvBuf_yZ = new int [recvCount_yZ];
-	recvBuf_Xz = new int [recvCount_Xz];
-	recvBuf_XY = new int [recvCount_XY];
-	recvBuf_YZ = new int [recvCount_YZ];
-	recvBuf_XZ = new int [recvCount_XZ];
-	//......................................................................................
-	// send buffers
-	sendData_x = new double [sendCount_x];
-	sendData_y = new double [sendCount_y];
-	sendData_z = new double [sendCount_z];
-	sendData_X = new double [sendCount_X];
-	sendData_Y = new double [sendCount_Y];
-	sendData_Z = new double [sendCount_Z];
-	sendData_xy = new double [sendCount_xy];
-	sendData_yz = new double [sendCount_yz];
-	sendData_xz = new double [sendCount_xz];
-	sendData_Xy = new double [sendCount_Xy];
-	sendData_Yz = new double [sendCount_Yz];
-	sendData_xZ = new double [sendCount_xZ];
-	sendData_xY = new double [sendCount_xY];
-	sendData_yZ = new double [sendCount_yZ];
-	sendData_Xz = new double [sendCount_Xz];
-	sendData_XY = new double [sendCount_XY];
-	sendData_YZ = new double [sendCount_YZ];
-	sendData_XZ = new double [sendCount_XZ];
-	//......................................................................................
-	// recv buffers
-	recvData_x = new double [recvCount_x];
-	recvData_y = new double [recvCount_y];
-	recvData_z = new double [recvCount_z];
-	recvData_X = new double [recvCount_X];
-	recvData_Y = new double [recvCount_Y];
-	recvData_Z = new double [recvCount_Z];
-	recvData_xy = new double [recvCount_xy];
-	recvData_yz = new double [recvCount_yz];
-	recvData_xz = new double [recvCount_xz];
-	recvData_Xy = new double [recvCount_Xy];
-	recvData_xZ = new double [recvCount_xZ];
-	recvData_xY = new double [recvCount_xY];
-	recvData_yZ = new double [recvCount_yZ];
-	recvData_Yz = new double [recvCount_Yz];
-	recvData_Xz = new double [recvCount_Xz];
-	recvData_XY = new double [recvCount_XY];
-	recvData_YZ = new double [recvCount_YZ];
-	recvData_XZ = new double [recvCount_XZ];
+
 	//......................................................................................
 
 }
@@ -988,8 +932,8 @@ void Domain::ReadIDs(){
 	if (rank()==0) printf("Initialize from segmented data: solid=0, NWP=1, WP=2 \n");
 	sprintf(LocalRankFilename,"ID.%05i",rank());
 	FILE *IDFILE = fopen(LocalRankFilename,"rb");
-	if (IDFILE==NULL) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
-	readID=fread(id,1,N,IDFILE);
+	if (!IDFILE) ERROR("Domain::ReadIDs --  Error opening file: ID.xxxxx");
+	readID=fread(id.data(),1,N,IDFILE);
 	if (readID != size_t(N)) printf("Domain::ReadIDs -- Error reading ID (rank=%i) \n",rank());
 	fclose(IDFILE);
 
@@ -1060,62 +1004,115 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	int sendtag, recvtag;
 	sendtag = recvtag = 7;
 	double *MeshData = Mesh.data();
-	PackMeshData(sendList_x, sendCount_x ,sendData_x, MeshData);
-	PackMeshData(sendList_X, sendCount_X ,sendData_X, MeshData);
-	PackMeshData(sendList_y, sendCount_y ,sendData_y, MeshData);
-	PackMeshData(sendList_Y, sendCount_Y ,sendData_Y, MeshData);
-	PackMeshData(sendList_z, sendCount_z ,sendData_z, MeshData);
-	PackMeshData(sendList_Z, sendCount_Z ,sendData_Z, MeshData);
-	PackMeshData(sendList_xy, sendCount_xy ,sendData_xy, MeshData);
-	PackMeshData(sendList_Xy, sendCount_Xy ,sendData_Xy, MeshData);
-	PackMeshData(sendList_xY, sendCount_xY ,sendData_xY, MeshData);
-	PackMeshData(sendList_XY, sendCount_XY ,sendData_XY, MeshData);
-	PackMeshData(sendList_xz, sendCount_xz ,sendData_xz, MeshData);
-	PackMeshData(sendList_Xz, sendCount_Xz ,sendData_Xz, MeshData);
-	PackMeshData(sendList_xZ, sendCount_xZ ,sendData_xZ, MeshData);
-	PackMeshData(sendList_XZ, sendCount_XZ ,sendData_XZ, MeshData);
-	PackMeshData(sendList_yz, sendCount_yz ,sendData_yz, MeshData);
-	PackMeshData(sendList_Yz, sendCount_Yz ,sendData_Yz, MeshData);
-	PackMeshData(sendList_yZ, sendCount_yZ ,sendData_yZ, MeshData);
-	PackMeshData(sendList_YZ, sendCount_YZ ,sendData_YZ, MeshData);
-	//......................................................................................
-	Comm.sendrecv(sendData_x,sendCount_x,rank_x(),sendtag,recvData_X,recvCount_X,rank_X(),recvtag);
-	Comm.sendrecv(sendData_X,sendCount_X,rank_X(),sendtag,recvData_x,recvCount_x,rank_x(),recvtag);
-	Comm.sendrecv(sendData_y,sendCount_y,rank_y(),sendtag,recvData_Y,recvCount_Y,rank_Y(),recvtag);
-	Comm.sendrecv(sendData_Y,sendCount_Y,rank_Y(),sendtag,recvData_y,recvCount_y,rank_y(),recvtag);
-	Comm.sendrecv(sendData_z,sendCount_z,rank_z(),sendtag,recvData_Z,recvCount_Z,rank_Z(),recvtag);
-	Comm.sendrecv(sendData_Z,sendCount_Z,rank_Z(),sendtag,recvData_z,recvCount_z,rank_z(),recvtag);
-	Comm.sendrecv(sendData_xy,sendCount_xy,rank_xy(),sendtag,recvData_XY,recvCount_XY,rank_XY(),recvtag);
-	Comm.sendrecv(sendData_XY,sendCount_XY,rank_XY(),sendtag,recvData_xy,recvCount_xy,rank_xy(),recvtag);
-	Comm.sendrecv(sendData_Xy,sendCount_Xy,rank_Xy(),sendtag,recvData_xY,recvCount_xY,rank_xY(),recvtag);
-	Comm.sendrecv(sendData_xY,sendCount_xY,rank_xY(),sendtag,recvData_Xy,recvCount_Xy,rank_Xy(),recvtag);
-	Comm.sendrecv(sendData_xz,sendCount_xz,rank_xz(),sendtag,recvData_XZ,recvCount_XZ,rank_XZ(),recvtag);
-	Comm.sendrecv(sendData_XZ,sendCount_XZ,rank_XZ(),sendtag,recvData_xz,recvCount_xz,rank_xz(),recvtag);
-	Comm.sendrecv(sendData_Xz,sendCount_Xz,rank_Xz(),sendtag,recvData_xZ,recvCount_xZ,rank_xZ(),recvtag);
-	Comm.sendrecv(sendData_xZ,sendCount_xZ,rank_xZ(),sendtag,recvData_Xz,recvCount_Xz,rank_Xz(),recvtag);
-	Comm.sendrecv(sendData_yz,sendCount_yz,rank_yz(),sendtag,recvData_YZ,recvCount_YZ,rank_YZ(),recvtag);
-	Comm.sendrecv(sendData_YZ,sendCount_YZ,rank_YZ(),sendtag,recvData_yz,recvCount_yz,rank_yz(),recvtag);
-	Comm.sendrecv(sendData_Yz,sendCount_Yz,rank_Yz(),sendtag,recvData_yZ,recvCount_yZ,rank_yZ(),recvtag);
-	Comm.sendrecv(sendData_yZ,sendCount_yZ,rank_yZ(),sendtag,recvData_Yz,recvCount_Yz,rank_Yz(),recvtag);
-	//........................................................................................
-	UnpackMeshData(recvList_x, recvCount_x ,recvData_x, MeshData);
-	UnpackMeshData(recvList_X, recvCount_X ,recvData_X, MeshData);
-	UnpackMeshData(recvList_y, recvCount_y ,recvData_y, MeshData);
-	UnpackMeshData(recvList_Y, recvCount_Y ,recvData_Y, MeshData);
-	UnpackMeshData(recvList_z, recvCount_z ,recvData_z, MeshData);
-	UnpackMeshData(recvList_Z, recvCount_Z ,recvData_Z, MeshData);
-	UnpackMeshData(recvList_xy, recvCount_xy ,recvData_xy, MeshData);
-	UnpackMeshData(recvList_Xy, recvCount_Xy ,recvData_Xy, MeshData);
-	UnpackMeshData(recvList_xY, recvCount_xY ,recvData_xY, MeshData);
-	UnpackMeshData(recvList_XY, recvCount_XY ,recvData_XY, MeshData);
-	UnpackMeshData(recvList_xz, recvCount_xz ,recvData_xz, MeshData);
-	UnpackMeshData(recvList_Xz, recvCount_Xz ,recvData_Xz, MeshData);
-	UnpackMeshData(recvList_xZ, recvCount_xZ ,recvData_xZ, MeshData);
-	UnpackMeshData(recvList_XZ, recvCount_XZ ,recvData_XZ, MeshData);
-	UnpackMeshData(recvList_yz, recvCount_yz ,recvData_yz, MeshData);
-	UnpackMeshData(recvList_Yz, recvCount_Yz ,recvData_Yz, MeshData);
-	UnpackMeshData(recvList_yZ, recvCount_yZ ,recvData_yZ, MeshData);
-	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
+	// send buffers
+	auto sendData_x = new double [sendCount("x")];
+	auto sendData_y = new double [sendCount("y")];
+	auto sendData_z = new double [sendCount("z")];
+	auto sendData_X = new double [sendCount("X")];
+	auto sendData_Y = new double [sendCount("Y")];
+	auto sendData_Z = new double [sendCount("Z")];
+	auto sendData_xy = new double [sendCount("xy")];
+	auto sendData_yz = new double [sendCount("yz")];
+	auto sendData_xz = new double [sendCount("xz")];
+	auto sendData_Xy = new double [sendCount("Xy")];
+	auto sendData_Yz = new double [sendCount("Yz")];
+	auto sendData_xZ = new double [sendCount("xZ")];
+	auto sendData_xY = new double [sendCount("xY")];
+	auto sendData_yZ = new double [sendCount("yZ")];
+	auto sendData_Xz = new double [sendCount("Xz")];
+	auto sendData_XY = new double [sendCount("XY")];
+	auto sendData_YZ = new double [sendCount("YZ")];
+	auto sendData_XZ = new double [sendCount("XZ")];
+	// recv buffers
+	auto recvData_x = new double [recvCount("x")];
+	auto recvData_y = new double [recvCount("y")];
+	auto recvData_z = new double [recvCount("z")];
+	auto recvData_X = new double [recvCount("X")];
+	auto recvData_Y = new double [recvCount("Y")];
+	auto recvData_Z = new double [recvCount("Z")];
+	auto recvData_xy = new double [recvCount("xy")];
+	auto recvData_yz = new double [recvCount("yz")];
+	auto recvData_xz = new double [recvCount("xz")];
+	auto recvData_Xy = new double [recvCount("Xy")];
+	auto recvData_xZ = new double [recvCount("xZ")];
+	auto recvData_xY = new double [recvCount("xY")];
+	auto recvData_yZ = new double [recvCount("yZ")];
+	auto recvData_Yz = new double [recvCount("Yz")];
+	auto recvData_Xz = new double [recvCount("Xz")];
+	auto recvData_XY = new double [recvCount("XY")];
+	auto recvData_YZ = new double [recvCount("YZ")];
+	auto recvData_XZ = new double [recvCount("XZ")];
+	// Pack data
+	PackMeshData(sendList("x"), sendCount("x"), sendData_x, MeshData);
+	PackMeshData(sendList("X"), sendCount("X"), sendData_X, MeshData);
+	PackMeshData(sendList("y"), sendCount("y"), sendData_y, MeshData);
+	PackMeshData(sendList("Y"), sendCount("Y"), sendData_Y, MeshData);
+	PackMeshData(sendList("z"), sendCount("z"), sendData_z, MeshData);
+	PackMeshData(sendList("Z"), sendCount("Z"), sendData_Z, MeshData);
+	PackMeshData(sendList("xy"), sendCount("xy"), sendData_xy, MeshData);
+	PackMeshData(sendList("Xy"), sendCount("Xy"), sendData_Xy, MeshData);
+	PackMeshData(sendList("xY"), sendCount("xY"), sendData_xY, MeshData);
+	PackMeshData(sendList("XY"), sendCount("XY"), sendData_XY, MeshData);
+	PackMeshData(sendList("xz"), sendCount("xz"), sendData_xz, MeshData);
+	PackMeshData(sendList("Xz"), sendCount("Xz"), sendData_Xz, MeshData);
+	PackMeshData(sendList("xZ"), sendCount("xZ"), sendData_xZ, MeshData);
+	PackMeshData(sendList("XZ"), sendCount("XZ"), sendData_XZ, MeshData);
+	PackMeshData(sendList("yz"), sendCount("yz"), sendData_yz, MeshData);
+	PackMeshData(sendList("Yz"), sendCount("Yz"), sendData_Yz, MeshData);
+	PackMeshData(sendList("yZ"), sendCount("yZ"), sendData_yZ, MeshData);
+	PackMeshData(sendList("YZ"), sendCount("YZ"), sendData_YZ, MeshData);
+	// send/recv
+	Comm.sendrecv(sendData_x,sendCount("x"),rank_x(),sendtag,recvData_X,recvCount("X"),rank_X(),recvtag);
+	Comm.sendrecv(sendData_X,sendCount("X"),rank_X(),sendtag,recvData_x,recvCount("x"),rank_x(),recvtag);
+	Comm.sendrecv(sendData_y,sendCount("y"),rank_y(),sendtag,recvData_Y,recvCount("Y"),rank_Y(),recvtag);
+	Comm.sendrecv(sendData_Y,sendCount("Y"),rank_Y(),sendtag,recvData_y,recvCount("y"),rank_y(),recvtag);
+	Comm.sendrecv(sendData_z,sendCount("z"),rank_z(),sendtag,recvData_Z,recvCount("Z"),rank_Z(),recvtag);
+	Comm.sendrecv(sendData_Z,sendCount("Z"),rank_Z(),sendtag,recvData_z,recvCount("z"),rank_z(),recvtag);
+	Comm.sendrecv(sendData_xy,sendCount("xy"),rank_xy(),sendtag,recvData_XY,recvCount("XY"),rank_XY(),recvtag);
+	Comm.sendrecv(sendData_XY,sendCount("XY"),rank_XY(),sendtag,recvData_xy,recvCount("xy"),rank_xy(),recvtag);
+	Comm.sendrecv(sendData_Xy,sendCount("Xy"),rank_Xy(),sendtag,recvData_xY,recvCount("xY"),rank_xY(),recvtag);
+	Comm.sendrecv(sendData_xY,sendCount("xY"),rank_xY(),sendtag,recvData_Xy,recvCount("Xy"),rank_Xy(),recvtag);
+	Comm.sendrecv(sendData_xz,sendCount("xz"),rank_xz(),sendtag,recvData_XZ,recvCount("XZ"),rank_XZ(),recvtag);
+	Comm.sendrecv(sendData_XZ,sendCount("XZ"),rank_XZ(),sendtag,recvData_xz,recvCount("xz"),rank_xz(),recvtag);
+	Comm.sendrecv(sendData_Xz,sendCount("Xz"),rank_Xz(),sendtag,recvData_xZ,recvCount("xZ"),rank_xZ(),recvtag);
+	Comm.sendrecv(sendData_xZ,sendCount("xZ"),rank_xZ(),sendtag,recvData_Xz,recvCount("Xz"),rank_Xz(),recvtag);
+	Comm.sendrecv(sendData_yz,sendCount("yz"),rank_yz(),sendtag,recvData_YZ,recvCount("YZ"),rank_YZ(),recvtag);
+	Comm.sendrecv(sendData_YZ,sendCount("YZ"),rank_YZ(),sendtag,recvData_yz,recvCount("yz"),rank_yz(),recvtag);
+	Comm.sendrecv(sendData_Yz,sendCount("Yz"),rank_Yz(),sendtag,recvData_yZ,recvCount("yZ"),rank_yZ(),recvtag);
+	Comm.sendrecv(sendData_yZ,sendCount("yZ"),rank_yZ(),sendtag,recvData_Yz,recvCount("Yz"),rank_Yz(),recvtag);
+	// unpack data
+	UnpackMeshData(recvList("x"), recvCount("x") ,recvData_x, MeshData);
+	UnpackMeshData(recvList("X"), recvCount("X") ,recvData_X, MeshData);
+	UnpackMeshData(recvList("y"), recvCount("y") ,recvData_y, MeshData);
+	UnpackMeshData(recvList("Y"), recvCount("Y") ,recvData_Y, MeshData);
+	UnpackMeshData(recvList("z"), recvCount("z") ,recvData_z, MeshData);
+	UnpackMeshData(recvList("Z"), recvCount("Z") ,recvData_Z, MeshData);
+	UnpackMeshData(recvList("xy"), recvCount("xy") ,recvData_xy, MeshData);
+	UnpackMeshData(recvList("Xy"), recvCount("Xy") ,recvData_Xy, MeshData);
+	UnpackMeshData(recvList("xY"), recvCount("xY") ,recvData_xY, MeshData);
+	UnpackMeshData(recvList("XY"), recvCount("XY") ,recvData_XY, MeshData);
+	UnpackMeshData(recvList("xz"), recvCount("xz") ,recvData_xz, MeshData);
+	UnpackMeshData(recvList("Xz"), recvCount("Xz") ,recvData_Xz, MeshData);
+	UnpackMeshData(recvList("xZ"), recvCount("xZ") ,recvData_xZ, MeshData);
+	UnpackMeshData(recvList("XZ"), recvCount("XZ") ,recvData_XZ, MeshData);
+	UnpackMeshData(recvList("yz"), recvCount("yz") ,recvData_yz, MeshData);
+	UnpackMeshData(recvList("Yz"), recvCount("Yz") ,recvData_Yz, MeshData);
+	UnpackMeshData(recvList("yZ"), recvCount("yZ") ,recvData_yZ, MeshData);
+	UnpackMeshData(recvList("YZ"), recvCount("YZ") ,recvData_YZ, MeshData);
+	// Free sendData
+	delete [] sendData_x;   delete [] sendData_y;   delete [] sendData_z;
+	delete [] sendData_X;   delete [] sendData_Y;   delete [] sendData_Z;
+	delete [] sendData_xy;  delete [] sendData_xY;  delete [] sendData_Xy;
+	delete [] sendData_XY;  delete [] sendData_xz;  delete [] sendData_xZ;
+	delete [] sendData_Xz;  delete [] sendData_XZ;  delete [] sendData_yz;
+	delete [] sendData_yZ;  delete [] sendData_Yz;  delete [] sendData_YZ;
+	// Free recvData
+	delete [] recvData_x;   delete [] recvData_y;   delete [] recvData_z;
+	delete [] recvData_X;   delete [] recvData_Y;   delete [] recvData_Z;
+	delete [] recvData_xy;  delete [] recvData_xY;  delete [] recvData_Xy;
+	delete [] recvData_XY;  delete [] recvData_xz;  delete [] recvData_xZ;
+	delete [] recvData_Xz;  delete [] recvData_XZ;  delete [] recvData_yz;
+	delete [] recvData_yZ;  delete [] recvData_Yz;  delete [] recvData_YZ;
 }
 
 // Ideally stuff below here should be moved somewhere else -- doesn't really belong here

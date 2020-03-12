@@ -3491,7 +3491,8 @@ void MPI_CLASS::wait( MPI_Request request )
 {
     PROFILE_START( "wait", profile_level );
     MPI_Status status;
-    int flag = 0;
+    MPI_Wait( &request, &status );
+    /*int flag = 0;
     int err  = MPI_Test( &request, &flag, &status );
     MPI_ASSERT( err == MPI_SUCCESS ); // Check that the first call is valid
     while ( !flag ) {
@@ -3499,7 +3500,7 @@ void MPI_CLASS::wait( MPI_Request request )
         sched_yield();
         // Check if the request has finished
         MPI_Test( &request, &flag, &status );
-    }
+    }*/
     PROFILE_STOP( "wait", profile_level );
 }
 int MPI_CLASS::waitAny( int count, MPI_Request *request )
@@ -3508,8 +3509,9 @@ int MPI_CLASS::waitAny( int count, MPI_Request *request )
         return -1;
     PROFILE_START( "waitAny", profile_level );
     int index   = -1;
-    int flag    = 0;
     auto status = new MPI_Status[count];
+    MPI_Waitany( count, request, &index, status );
+    /*int flag    = 0;
     int err     = MPI_Testany( count, request, &index, &flag, status );
     MPI_ASSERT( err == MPI_SUCCESS ); // Check that the first call is valid
     while ( !flag ) {
@@ -3518,7 +3520,7 @@ int MPI_CLASS::waitAny( int count, MPI_Request *request )
         // Check if the request has finished
         MPI_Testany( count, request, &index, &flag, status );
     }
-    MPI_ASSERT( index >= 0 ); // Check that the index is valid
+    MPI_ASSERT( index >= 0 ); // Check that the index is valid*/
     delete[] status;
     PROFILE_STOP( "waitAny", profile_level );
     return index;
@@ -3528,8 +3530,9 @@ void MPI_CLASS::waitAll( int count, MPI_Request *request )
     if ( count == 0 )
         return;
     PROFILE_START( "waitAll", profile_level );
-    int flag    = 0;
     auto status = new MPI_Status[count];
+    MPI_Waitall( count, request, status );
+    /*int flag    = 0;
     int err     = MPI_Testall( count, request, &flag, status );
     MPI_ASSERT( err == MPI_SUCCESS ); // Check that the first call is valid
     while ( !flag ) {
@@ -3537,7 +3540,7 @@ void MPI_CLASS::waitAll( int count, MPI_Request *request )
         sched_yield();
         // Check if the request has finished
         MPI_Testall( count, request, &flag, status );
-    }
+    }*/
     PROFILE_STOP( "waitAll", profile_level );
     delete[] status;
 }
@@ -3549,7 +3552,8 @@ std::vector<int> MPI_CLASS::waitSome( int count, MPI_Request *request )
     std::vector<int> indicies( count, -1 );
     auto *status = new MPI_Status[count];
     int outcount = 0;
-    int err      = MPI_Testsome( count, request, &outcount, &indicies[0], status );
+    MPI_Waitsome( count, request, &outcount, indicies.data(), status );
+    /*int err      = MPI_Testsome( count, request, &outcount, &indicies[0], status );
     MPI_ASSERT( err == MPI_SUCCESS );        // Check that the first call is valid
     MPI_ASSERT( outcount != MPI_UNDEFINED ); // Check that the first call is valid
     while ( outcount == 0 ) {
@@ -3557,7 +3561,7 @@ std::vector<int> MPI_CLASS::waitSome( int count, MPI_Request *request )
         sched_yield();
         // Check if the request has finished
         MPI_Testsome( count, request, &outcount, &indicies[0], status );
-    }
+    }*/
     indicies.resize( outcount );
     delete[] status;
     PROFILE_STOP( "waitSome", profile_level );
