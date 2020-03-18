@@ -2805,54 +2805,6 @@ MPI_Request MPI_CLASS::IrecvBytes(
 }
 
 
-
-/************************************************************************
- *  sendrecv                                                             *
- ************************************************************************/
-#if defined( USE_MPI ) || defined( USE_EXT_MPI )
-template<>
-void MPI_CLASS::sendrecv<char>( const char* sendbuf, int sendcount, int dest, int sendtag,
-                                char* recvbuf, int recvcount, int source, int recvtag ) const
-{
-    PROFILE_START( "sendrecv<char>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_CHAR, dest, sendtag, 
-                  recvbuf, recvcount, MPI_CHAR, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
-    PROFILE_STOP( "sendrecv<char>", profile_level );
-}
-template<>
-void MPI_CLASS::sendrecv<int>( const int* sendbuf, int sendcount, int dest, int sendtag,
-                               int* recvbuf, int recvcount, int source, int recvtag ) const
-{
-    PROFILE_START( "sendrecv<int>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_INT, dest, sendtag, 
-                  recvbuf, recvcount, MPI_INT, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
-    PROFILE_STOP( "sendrecv<int>", profile_level );
-}
-template<>
-void MPI_CLASS::sendrecv<float>( const float* sendbuf, int sendcount, int dest, int sendtag,
-                                 float* recvbuf, int recvcount, int source, int recvtag ) const
-{
-    PROFILE_START( "sendrecv<float>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_FLOAT, dest, sendtag, 
-                  recvbuf, recvcount, MPI_FLOAT, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
-    PROFILE_STOP( "sendrecv<float>", profile_level );
-}
-template<>
-void MPI_CLASS::sendrecv<double>( const double* sendbuf, int sendcount, int dest, int sendtag,
-                                  double* recvbuf, int recvcount, int source, int recvtag ) const
-{
-    PROFILE_START( "sendrecv<double>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_DOUBLE, dest, sendtag, 
-                  recvbuf, recvcount, MPI_DOUBLE, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
-    PROFILE_STOP( "sendrecv<double>", profile_level );
-}
-#endif
-
-
 /************************************************************************
  *  allGather                                                            *
  *  Note: these specializations are only called when using MPI.          *

@@ -120,6 +120,8 @@ public: // Public variables (need to create accessors instead)
 
     int BoundaryCondition;
 
+    MPI_Group Group;    // Group of processors associated with this domain
+
     //**********************************
     // MPI ranks for all 18 neighbors
     //**********************************
@@ -189,6 +191,7 @@ private:
     
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
+	MPI_Status stat1[18],stat2[18];
 
     int *sendBuf_x, *sendBuf_y, *sendBuf_z, *sendBuf_X, *sendBuf_Y, *sendBuf_Z;
     int *sendBuf_xy, *sendBuf_yz, *sendBuf_xz, *sendBuf_Xy, *sendBuf_Yz, *sendBuf_xZ;

@@ -580,16 +580,16 @@ int main(int argc, char **argv)
 		// Broadcast simulation parameters from rank 0 to all other procs
 		comm.barrier();
 		//.................................................
-		comm.bcast(&Nx,1,0);
-		comm.bcast(&Ny,1,0);
-		comm.bcast(&Nz,1,0);
-		comm.bcast(&nprocx,1,0);
-		comm.bcast(&nprocy,1,0);
-		comm.bcast(&nprocz,1,0);
-		comm.bcast(&nspheres,1,0);
-		comm.bcast(&Lx,1,0);
-		comm.bcast(&Ly,1,0);
-		comm.bcast(&Lz,1,0);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
 		comm.barrier();
 		// **************************************************************
@@ -668,7 +668,7 @@ int main(int argc, char **argv)
 			}
 		}
 		comm.barrier();
-		sum = comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -731,7 +731,7 @@ int main(int argc, char **argv)
 		double starttime,stoptime,cputime;
 
 		ScaLBL_DeviceBarrier(); comm.barrier();
-		starttime = Utilities::MPI::time();
+		starttime = MPI_Wtime();
 
 		while (timestep < timesteps) {
 			
@@ -752,7 +752,7 @@ int main(int argc, char **argv)
 
 		}
 		//************************************************************************/
-		stoptime = Utilities::MPI::time();
+		stoptime = MPI_Wtime();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
@@ -795,7 +795,7 @@ int main(int argc, char **argv)
     			}
     		}
     	}
-    	sum = comm.sumReduce( sum_local );
+    	MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
     	double PoreVel = sum*iVol_global;
     	if (rank==0) printf("Velocity = %f \n",PoreVel);
 

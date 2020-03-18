@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 		double starttime,stoptime,cputime;
 
 		ScaLBL_DeviceBarrier(); comm.barrier();
-		starttime = Utilities::MPI::time();
+		starttime = MPI_Wtime();
 
 		/************ MAIN ITERATION LOOP (timing communications)***************************************/
 		//ScaLBL_Comm->SendD3Q19(dist, &dist[10*Np]);
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 
 
 		//************************************************************************/
-		stoptime = Utilities::MPI::time();
+		stoptime = MPI_Wtime();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;

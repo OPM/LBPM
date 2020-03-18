@@ -9,7 +9,7 @@
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI.h"    // This includes mpi.h
 #include "common/SpherePack.h"
 
 /*
@@ -147,6 +147,8 @@ int main(int argc, char **argv)
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
+	MPI_Request req1[18],req2[18];
+	MPI_Status stat1[18],stat2[18];
 
 	int depth;
 
@@ -187,16 +189,16 @@ int main(int argc, char **argv)
 	comm.barrier();
 	//.................................................
 	// Computational domain
-	comm.bcast(&Nx,1,0);
-	comm.bcast(&Ny,1,0);
-	comm.bcast(&Nz,1,0);
-	comm.bcast(&nprocx,1,0);
-	comm.bcast(&nprocy,1,0);
-	comm.bcast(&nprocz,1,0);
-	comm.bcast(&ndiscs,1,0);
-	comm.bcast(&Lx,1,0);
-	comm.bcast(&Ly,1,0);
-	comm.bcast(&Lz,1,0);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&ndiscs,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
 	comm.barrier();
 
@@ -273,9 +275,9 @@ int main(int argc, char **argv)
 	if (rank == 0)	ReadDiscPacking(ndiscs,cx,cy,rad);
 	comm.barrier();
 	// Broadcast the sphere packing to all processes
-	comm.bcast(cx,ndiscs,0);
-	comm.bcast(cy,ndiscs,0);
-	comm.bcast(rad,ndiscs,0);
+	MPI_Bcast(cx,ndiscs,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cy,ndiscs,MPI_DOUBLE,0,comm);
+	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,comm);
 	//...........................................................................
 	comm.barrier();
 	if (rank == 0){
@@ -344,7 +346,7 @@ int main(int argc, char **argv)
 		}
 	}
 	sum_local = 1.0*sum;
-	porosity = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -360,7 +362,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	pore_vol = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
 	
 	//.........................................................
 	// don't perform computations at the eight corners

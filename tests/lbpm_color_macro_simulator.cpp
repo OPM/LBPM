@@ -39,6 +39,9 @@ int main(int argc, char **argv)
 		int nprocx,nprocy,nprocz;
 		int iproc,jproc,kproc;
 
+		MPI_Request req1[18],req2[18];
+		MPI_Status stat1[18],stat2[18];
+
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Color LBM	\n");
@@ -169,32 +172,32 @@ int main(int argc, char **argv)
 		// Broadcast simulation parameters from rank 0 to all other procs
 		comm.barrier();
 		//.................................................
-		comm.bcast(&tauA,1,0);
-		comm.bcast(&tauB,1,0);
-		comm.bcast(&rhoA,1,0);
-		comm.bcast(&rhoB,1,0);
-		comm.bcast(&alpha,1,0);
-		comm.bcast(&beta,1,0);
-		comm.bcast(&BoundaryCondition,1,0);
-		comm.bcast(&InitialCondition,1,0);
-		comm.bcast(&din,1,0);
-		comm.bcast(&dout,1,0);
-		comm.bcast(&Fx,1,0);
-		comm.bcast(&Fy,1,0);
-		comm.bcast(&Fz,1,0);
-		comm.bcast(&timestepMax,1,0);
-		comm.bcast(&RESTART_INTERVAL,1,0);
-		comm.bcast(&tol,1,0);
+		MPI_Bcast(&tauA,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&tauB,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&rhoA,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&rhoB,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&BoundaryCondition,1,MPI_INT,0,comm);
+		MPI_Bcast(&InitialCondition,1,MPI_INT,0,comm);
+		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+		MPI_Bcast(&RESTART_INTERVAL,1,MPI_INT,0,comm);
+		MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 		// Computational domain
-		comm.bcast(&Nx,1,0);
-		comm.bcast(&Ny,1,0);
-		comm.bcast(&Nz,1,0);
-		comm.bcast(&nprocx,1,0);
-		comm.bcast(&nprocy,1,0);
-		comm.bcast(&nprocz,1,0);
-		comm.bcast(&Lx,1,0);
-		comm.bcast(&Ly,1,0);
-		comm.bcast(&Lz,1,0);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
 
 		flux = 0.f;
@@ -319,7 +322,7 @@ int main(int argc, char **argv)
 					timestep=0;
 				}
 			}
-			comm.bcast(&timestep,1,0);
+			MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 			FILE *RESTART = fopen(LocalRestartFile,"rb");
 			if (IDFILE==NULL) ERROR("lbpm_color_simulator: Error opening file: Restart.xxxxx");
 			readID=fread(id,1,N,RESTART);
@@ -358,7 +361,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sum - comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.........................................................
@@ -534,7 +537,7 @@ int main(int argc, char **argv)
 		double starttime,stoptime,cputime;
 		ScaLBL_DeviceBarrier();
 		comm.barrier();
-		starttime = Utilities::MPI::time();
+		starttime = MPI_Wtime();
 		//.........................................
 
 		err = 1.0; 	
@@ -634,7 +637,7 @@ int main(int argc, char **argv)
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
 		comm.barrier();
-		stoptime = Utilities::MPI::time();
+		stoptime = MPI_Wtime();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;

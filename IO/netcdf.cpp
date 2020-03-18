@@ -119,7 +119,7 @@ std::string VariableTypeName( VariableType type )
 int open( const std::string& filename, FileMode mode, const Utilities::MPI& comm )
 {
     int fid = 0;
-    if ( comm.isNull() ) {
+    if ( comm == MPI_COMM_NULL ) {
         if ( mode == READ ) {
             int err = nc_open( filename.c_str(), NC_NOWRITE, &fid );
             CHECK_NC_ERR( err );

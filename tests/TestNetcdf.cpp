@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     PROFILE_SAVE("TestNetcdf");
 
     // Close MPI
-    comm.barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return N_errors;
 }

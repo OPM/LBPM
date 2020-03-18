@@ -100,10 +100,10 @@ int main(int argc, char **argv)
     comm.barrier();
     if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
 
-    double t1 = Utilities::MPI::time();
+    double t1 = MPI_Wtime();
     DoubleArray Distance(nx,ny,nz);
     CalcDist(Distance,id,Dm,{false,false,false});
-    double t2 = Utilities::MPI::time();
+    double t2 = MPI_Wtime();
     if (rank==0)
         printf("Total time: %f seconds \n",t2-t1);
 

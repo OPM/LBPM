@@ -292,18 +292,18 @@ int main(int argc, char **argv)
 
 		//...................................................................................
 		// Send all the distributions
-		req1[0] = comm.Isend(sendbuf_x,2*sendCount_x,rank_x,sendtag);
-		req2[0] = comm.Irecv(recvbuf_X,2*recvCount_X,rank_X,recvtag);
-		req1[1] = comm.Isend(sendbuf_X,2*sendCount_X,rank_X,sendtag);
-		req2[1] = comm.Irecv(recvbuf_x,2*recvCount_x,rank_x,recvtag);
-		req1[2] = comm.Isend(sendbuf_y,2*sendCount_y,rank_y,sendtag);
-		req2[2] = comm.Irecv(recvbuf_Y,2*recvCount_Y,rank_Y,recvtag);
-		req1[3] = comm.Isend(sendbuf_Y,2*sendCount_Y,rank_Y,sendtag);
-		req2[3] = comm.Irecv(recvbuf_y,2*recvCount_y,rank_y,recvtag);
-		req1[4] = comm.Isend(sendbuf_z,2*sendCount_z,rank_z,sendtag);
-		req2[4] = comm.Irecv(recvbuf_Z,2*recvCount_Z,rank_Z,recvtag);
-		req1[5] = comm.Isend(sendbuf_Z,2*sendCount_Z,rank_Z,sendtag);
-		req2[5] = comm.Irecv(recvbuf_z,2*recvCount_z,rank_z,recvtag);
+		MPI_Isend(sendbuf_x, 2*sendCount_x,MPI_DOUBLE,rank_x,sendtag,comm,&req1[0]);
+		MPI_Irecv(recvbuf_X, 2*recvCount_X,MPI_DOUBLE,rank_X,recvtag,comm,&req2[0]);
+		MPI_Isend(sendbuf_X, 2*sendCount_X,MPI_DOUBLE,rank_X,sendtag,comm,&req1[1]);
+		MPI_Irecv(recvbuf_x, 2*recvCount_x,MPI_DOUBLE,rank_x,recvtag,comm,&req2[1]);
+		MPI_Isend(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_y,sendtag,comm,&req1[2]);
+		MPI_Irecv(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,comm,&req2[2]);
+		MPI_Isend(sendbuf_Y, 2*sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,comm,&req1[3]);
+		MPI_Irecv(recvbuf_y, 2*recvCount_y,MPI_DOUBLE,rank_y,recvtag,comm,&req2[3]);
+		MPI_Isend(sendbuf_z, 2*sendCount_z,MPI_DOUBLE,rank_z,sendtag,comm,&req1[4]);
+		MPI_Irecv(recvbuf_Z, 2*recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,comm,&req2[4]);
+		MPI_Isend(sendbuf_Z, 2*sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,comm,&req1[5]);
+		MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
 */		//...................................................................................
 		
 		ScaLBL_D3Q7_Swap(ID, &packed_even[0], &packed_odd[0], Nx, Ny, Nz);
@@ -311,8 +311,8 @@ int main(int argc, char **argv)
 		
 /*		//...................................................................................
 		// Wait for completion of D3Q19 communication
-		comm.waitAll(6,req1);
-		comm.waitAll(6,req2);
+		MPI_Waitall(6,req1,stat1);
+		MPI_Waitall(6,req2,stat2);
 		//...................................................................................
 		// Unpack the distributions on the device
 		//...................................................................................
@@ -358,7 +358,7 @@ int main(int argc, char **argv)
 	fclose(PHASE);
     
     // Close MPI
-    comm.barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
 }

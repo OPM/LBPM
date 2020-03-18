@@ -138,16 +138,16 @@ int main(int argc, char **argv)
     }
 	comm.barrier();
 	// Computational domain
-	comm.bcast(&nx,1,0);
-	comm.bcast(&ny,1,0);
-	comm.bcast(&nz,1,0);
-	comm.bcast(&nprocx,1,0);
-	comm.bcast(&nprocy,1,0);
-	comm.bcast(&nprocz,1,0);
-	comm.bcast(&nspheres,1,0);
-	comm.bcast(&Lx,1,0);
-	comm.bcast(&Ly,1,0);
-	comm.bcast(&Lz,1,0);
+	MPI_Bcast(&nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
 	comm.barrier();
 
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
     }
     Dm.CommInit(); // Initialize communications for domains
 
-    sum_global = comm.sumReduce( sum );
+    MPI_Allreduce(&sum,&sum_global,1,MPI_DOUBLE,MPI_SUM,comm);
     porosity = sum_global/Dm.Volume;
     if (rank==0) printf("Porosity = %f \n",porosity);
 

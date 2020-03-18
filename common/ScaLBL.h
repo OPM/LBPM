@@ -201,6 +201,7 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
+	MPI_Group Group;	// Group of processors associated with this domain
 	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
 	//......................................................................................

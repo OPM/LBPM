@@ -45,6 +45,7 @@ int main(int argc, char **argv)
     int nprocx,nprocy,nprocz;
 
     MPI_Request req1[18],req2[18];
+    MPI_Status stat1[18],stat2[18];
 
     if (rank == 0){
         printf("********************************************************\n");
@@ -433,7 +434,7 @@ int main(int argc, char **argv)
     //.......create and start timer............
     double starttime,stoptime,cputime;
     comm.barrier();
-    starttime = Utilities::MPI::time();
+    starttime = MPI_Wtime();
     //.........................................
     //...........................................................................
     //                MAIN  VARIABLES INITIALIZED HERE
@@ -808,25 +809,25 @@ int main(int argc, char **argv)
         }
         //...........................................................................
         comm.barrier();
-        nwp_volume_global = comm.sumReduce( nwp_volume );
-        awn_global = comm.sumReduce( awn );
-        ans_global = comm.sumReduce( ans );
-        aws_global = comm.sumReduce( aws );
-        lwns_global = comm.sumReduce( lwns );
-        As_global  = comm.sumReduce( As );
-        Jwn_global = comm.sumReduce( Jwn );
-        efawns_global = comm.sumReduce( efawns );
+        MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,comm);
         // Phase averages
-        vol_w_global = comm.sumReduce( vol_w );
-        vol_n_global = comm.sumReduce( vol_n );
-        paw_global   = comm.sumReduce( paw );
-        pan_global   = comm.sumReduce( pan );
-        vaw_global(0) = comm.sumReduce( vaw(0) );
-        van_global(0) = comm.sumReduce( van(0) );
-        vawn_global(0) = comm.sumReduce( vawn(0) );
-        Gwn_global(0) = comm.sumReduce( Gwn(0) );
-        Gns_global(0) = comm.sumReduce( Gns(0) );
-        Gws_global(0) = comm.sumReduce( Gws(0) );
+        MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
+        MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
         comm.barrier();
         //.........................................................................
         // Compute the change in the total surface energy based on the defined interval
@@ -951,7 +952,7 @@ int main(int argc, char **argv)
     //************************************************************************/
     ScaLBL_DeviceBarrier();
     comm.barrier();
-    stoptime = Utilities::MPI::time();
+    stoptime = MPI_Wtime();
     if (rank==0) printf("-------------------------------------------------------------------\n");
     // Compute the walltime per timestep
     cputime = (stoptime - starttime)/timestep;

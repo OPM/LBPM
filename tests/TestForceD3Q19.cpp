@@ -450,7 +450,7 @@ int main (int argc, char **argv)
 	for (int i=0; i<nprocs; i++) {
 		if ( rank==i )
 			printf("%i of %i: Testing force term \n",rank,nprocs);
-	    comm.barrier();
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 	// Create a memory leak for valgrind to find
@@ -540,6 +540,6 @@ int main (int argc, char **argv)
     printf("Fy = %f; Computed vy=%f \n",Fy,vel[Np+0]);
     printf("Fz = %f; Computed vz=%f \n",Fz,vel[2*Np+0]);
     
-    comm.barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 }

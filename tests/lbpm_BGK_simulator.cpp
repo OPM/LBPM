@@ -97,28 +97,28 @@ int main(int argc, char **argv)
 		// Broadcast simulation parameters from rank 0 to all other procs
 		comm.barrier();
 		//.................................................
-		comm.bcast(&tau,1,0);
-		//comm.bcast(&pBC,1,0);
-		//comm.bcast(&Restart,1,0);
-		comm.bcast(&din,1,0);
-		comm.bcast(&dout,1,0);
-		comm.bcast(&Fx,1,0);
-		comm.bcast(&Fy,1,0);
-		comm.bcast(&Fz,1,0);
-		comm.bcast(&timestepMax,1,0);
-		comm.bcast(&interval,1,0);
-		comm.bcast(&tol,1,0);
+		MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+		//MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+		//	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
+		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+		MPI_Bcast(&interval,1,MPI_INT,0,comm);
+		MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 		// Computational domain
-		comm.bcast(&Nx,1,0);
-		comm.bcast(&Ny,1,0);
-		comm.bcast(&Nz,1,0);
-		comm.bcast(&nprocx,1,0);
-		comm.bcast(&nprocy,1,0);
-		comm.bcast(&nprocz,1,0);
-		//comm.bcast(&nspheres,1,0);
-		comm.bcast(&Lx,1,0);
-		comm.bcast(&Ly,1,0);
-		comm.bcast(&Lz,1,0);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		//MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
 		comm.barrier();
 
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sum = comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 		comm.barrier();
-		starttime = Utilities::MPI::time();
+		starttime = MPI_Wtime();
 		//.........................................
 
 		double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 		//************************************************************************/
 		ScaLBL_DeviceBarrier();
 		comm.barrier();
-		stoptime = Utilities::MPI::time();
+		stoptime = MPI_Wtime();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
