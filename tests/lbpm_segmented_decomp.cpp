@@ -18,10 +18,12 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
+	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	{
 
 
@@ -82,7 +84,7 @@ int main(int argc, char **argv)
 			image >> zStart;
 
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 		// Computational domain
 		//.................................................
 		MPI_Bcast(&nx,1,MPI_INT,0,comm);
@@ -103,7 +105,7 @@ int main(int argc, char **argv)
 		MPI_Bcast(&yStart,1,MPI_INT,0,comm);
 		MPI_Bcast(&zStart,1,MPI_INT,0,comm);
 		//.................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Check that the number of processors >= the number of ranks
 		if ( rank==0 ) {
@@ -127,7 +129,7 @@ int main(int argc, char **argv)
 			fclose(SEGDAT);
 			printf("Read segmented data from %s \n",Filename);
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Get the rank info
 		int N = (nx+2)*(ny+2)*(nz+2);
@@ -202,7 +204,7 @@ int main(int argc, char **argv)
 			printf("Ready to recieve data %i at process %i \n", N,rank);
 			MPI_Recv(Dm.id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		nx+=2; ny+=2; nz+=2;
 		N=nx*ny*nz;
@@ -338,7 +340,7 @@ int main(int argc, char **argv)
 		if (!MULTINPUT){
 
 			if (rank==0) printf("Writing symmetric domain reflection\n");
-			comm.barrier();
+			MPI_Barrier(comm);
 			int symrank,sympz;
 			sympz = 2*nprocz - Dm.kproc() -1;
 			symrank = sympz*nprocx*nprocy + Dm.jproc()*nprocx + Dm.iproc();
@@ -364,6 +366,6 @@ int main(int argc, char **argv)
 			fclose(SYMID);
 		}
 	}
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 }

@@ -12,7 +12,7 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "Communication.h"
 
 #define WRITE_SURFACES
@@ -96,11 +96,15 @@ inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -205,7 +209,7 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	comm.barrier();
+	MPI_Barrier(comm);
 	//.................................................
 	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
@@ -238,7 +242,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	
 	RESTART_INTERVAL=interval;
 	// **************************************************************
@@ -280,7 +284,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 comm.barrier();
+	 MPI_Barrier(comm);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -397,14 +401,14 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	if (rank == 0){
 		// Compute the Sauter mean diameter
@@ -592,7 +596,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank==0)	printf ("SendLists are ready on host\n");
 	//......................................................................................
 	// Use MPI to fill in the recvCounts form the associated processes
@@ -779,7 +783,7 @@ int main(int argc, char **argv)
 	ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank==0)	printf ("Prepare to copy send/recv Lists to device \n");
 	ScaLBL_CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
 	ScaLBL_CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
@@ -989,7 +993,7 @@ int main(int argc, char **argv)
 	recvMeshData_YZ = new double [recvCount_YZ];
 	recvMeshData_XZ = new double [recvCount_XZ];
 	if (rank==0)	printf ("Devices are ready to communicate. \n");
-	comm.barrier();
+	MPI_Barrier(comm);
 
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
@@ -1216,7 +1220,7 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
 		ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
 		ScaLBL_DeviceBarrier();
-		comm.barrier();
+		MPI_Barrier(comm);
 	}
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
@@ -1483,7 +1487,7 @@ int main(int argc, char **argv)
 	ScaLBL_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
 	ScaLBL_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
 	ScaLBL_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
-	comm.barrier();
+	MPI_Barrier(comm);
 	//...........................................................................
 	
 	int timestep = 0;
@@ -1496,7 +1500,7 @@ int main(int argc, char **argv)
 	
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	comm.barrier();
+	MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	//.........................................
 	
@@ -1911,7 +1915,7 @@ int main(int argc, char **argv)
 		
 		//...................................................................................
 
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Timestep completed!
 		timestep++;
@@ -1936,7 +1940,7 @@ int main(int argc, char **argv)
 			ScaLBL_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
 			ScaLBL_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
 			ScaLBL_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
-			comm.barrier();
+			MPI_Barrier(comm);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
@@ -2441,7 +2445,7 @@ int main(int argc, char **argv)
 			}
 			
 			//...........................................................................
-			comm.barrier();
+			MPI_Barrier(comm);
 			MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,comm);
 			MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,comm);
 			MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,comm);
@@ -2464,7 +2468,7 @@ int main(int argc, char **argv)
 			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
 			MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,comm);
 			MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,comm);
-			comm.barrier();
+			MPI_Barrier(comm);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
 			// See McClure, Prins and Miller (2014) 
@@ -2543,7 +2547,7 @@ int main(int argc, char **argv)
 			if (rank==0){
 				mkdir(tmpstr,0777);
 			}
-			comm.barrier();
+			MPI_Barrier(comm);
 			
 			FILE *WN_TRIS;
 			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wn-tris.",LocalRankString);
@@ -2688,7 +2692,7 @@ int main(int argc, char **argv)
 	}
 	//************************************************************************/
 	ScaLBL_DeviceBarrier();
-	comm.barrier();
+	MPI_Barrier(comm);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -2812,7 +2816,7 @@ int main(int argc, char **argv)
 */	//************************************************************************/
 
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

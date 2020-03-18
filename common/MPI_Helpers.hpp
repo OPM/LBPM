@@ -1,9 +1,8 @@
-// This file functions to pack/unpack data structures
-#ifndef included_PackData_hpp
-#define included_PackData_hpp
+// This file contains wrappers for MPI routines and functions to pack/unpack data structures
+#ifndef MPI_WRAPPERS_HPP
+#define MPI_WRAPPERS_HPP
 
-#include "IO/PackData.h"
-
+#include "common/MPI_Helpers.h"
 #include <string.h>
 #include <vector>
 #include <set>

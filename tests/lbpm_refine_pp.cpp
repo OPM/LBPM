@@ -16,10 +16,11 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
+	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 
 	{
 		//.......................................................................
@@ -421,7 +422,7 @@ int main(int argc, char **argv)
 
 
 	}
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;
 }

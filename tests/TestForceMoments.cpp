@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 
@@ -46,11 +46,15 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
@@ -94,7 +98,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 
-		comm.barrier();
+		MPI_Barrier(comm);
 		kproc = rank/(nprocx*nprocy);
 		jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 		iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
@@ -102,7 +106,7 @@ int main(int argc, char **argv)
 		if (rank == 0) {
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 1){
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 			printf("\n\n");
@@ -139,7 +143,7 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
 		int Np=0;  // number of local pore nodes
@@ -184,7 +188,7 @@ int main(int argc, char **argv)
 
 	        if (rank == 0) PrintNeighborList(neighborList,Np, rank);
 
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -209,13 +213,13 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 
-		ScaLBL_DeviceBarrier(); comm.barrier();
+		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		starttime = MPI_Wtime();
 
 		/************ MAIN ITERATION LOOP (timing communications)***************************************/
 		//ScaLBL_Comm->SendD3Q19(dist, &dist[10*Np]);
 		//ScaLBL_Comm->RecvD3Q19(dist, &dist[10*Np]);
-		ScaLBL_DeviceBarrier(); comm.barrier();
+		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		if (rank==0) printf("Beginning AA timesteps...\n");
 		if (rank==0) printf("********************************************************\n");
@@ -227,14 +231,14 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist,  ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
 			ScaLBL_Comm->SendD3Q19AA(dist); //READ FORM NORMAL
 			ScaLBL_D3Q19_AAeven_MRT(dist, ScaLBL_Comm->first_interior, ScaLBL_Comm->last_interior, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 			ScaLBL_Comm->RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_MRT(dist, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 			//************************************************************************/
 			
@@ -327,7 +331,7 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 

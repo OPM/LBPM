@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 #include <math.h>
 
@@ -443,9 +443,8 @@ inline void MRT_Transform(double *dist, int Np, double Fx, double Fy, double Fz)
 int main (int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-	int rank = comm.getRank();
-	int nprocs = comm.getSize();
+	int rank = MPI_WORLD_RANK();
+	int nprocs = MPI_WORLD_SIZE();
 
 	for (int i=0; i<nprocs; i++) {
 		if ( rank==i )

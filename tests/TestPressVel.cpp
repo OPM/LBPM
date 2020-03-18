@@ -7,16 +7,21 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	int check=0;
 	{
 		if (rank == 0){
@@ -45,7 +50,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 
-		comm.barrier();
+		MPI_Barrier(comm);
 		int kproc = rank/(nprocx*nprocy);
 		int jproc = (rank-nprocx*nprocy*kproc)/nprocx;
 		int iproc = rank-nprocx*nprocy*kproc-nprocz*jproc;
@@ -53,7 +58,7 @@ int main(int argc, char **argv)
 		if (rank == 0) {
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 1){
 			printf("i,j,k proc=%d %d %d \n",iproc,jproc,kproc);
 			printf("\n\n");
@@ -97,11 +102,11 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-        sum = comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -128,7 +133,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		if (rank==0)	printf ("Allocating distributions \n");
@@ -189,7 +194,7 @@ int main(int argc, char **argv)
 	   }
 	}
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 	return check;

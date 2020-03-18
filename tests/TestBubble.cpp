@@ -7,7 +7,7 @@
 
 #include "analysis/pmmc.h"
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -32,14 +32,13 @@ int main(int argc, char **argv)
   // Initialize MPI
   int provided_thread_support = -1;
   MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
-
+  MPI_Comm comm;
+  MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+  int rank = comm_rank(comm);
+  int nprocs = comm_size(comm);
+  if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
+    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
-
-    auto comm = Utilities::MPI( MPI_COMM_WORLD ).dup();
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
-    if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
-      std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
 
     // parallel domain size (# of sub-domains)
     int nprocx,nprocy,nprocz;
@@ -120,7 +119,7 @@ int main(int argc, char **argv)
     int jproc = rank_info.jy;
     int kproc = rank_info.kz;
 
-    comm.barrier();
+    MPI_Barrier(comm);
     // **************************************************************
     // **************************************************************
     double Ps = -(das-dbs)/(das+dbs);
@@ -163,7 +162,7 @@ int main(int argc, char **argv)
     // Mask that excludes the solid phase
     Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,pBC);
      
-     comm.barrier();
+     MPI_Barrier(comm);
 
     Nx+=2; Ny+=2; Nz += 2;
 
@@ -433,7 +432,7 @@ int main(int argc, char **argv)
 
     //.......create and start timer............
     double starttime,stoptime,cputime;
-    comm.barrier();
+    MPI_Barrier(comm);
     starttime = MPI_Wtime();
     //.........................................
     //...........................................................................
@@ -518,7 +517,7 @@ int main(int argc, char **argv)
             ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
             ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
             ScaLBL_DeviceBarrier();
-            comm.barrier();
+            MPI_Barrier(comm);
         }
 
         //*************************************************************************
@@ -530,7 +529,7 @@ int main(int argc, char **argv)
         ScaLBL_Comm.SendHalo(Phi);
         ScaLBL_Comm.RecvHalo(Phi);
         ScaLBL_DeviceBarrier();
-        comm.barrier();
+        MPI_Barrier(comm);
         //*************************************************************************
 
         if (rank==0 && pBC){
@@ -561,7 +560,7 @@ int main(int argc, char **argv)
         ScaLBL_D3Q19_Pressure(ID,f_even,f_odd,Pressure,Nx,Ny,Nz);
         ScaLBL_CopyToHost(Phase.data(),Phi,N*sizeof(double));
         ScaLBL_CopyToHost(Press.data(),Pressure,N*sizeof(double));
-        comm.barrier();
+        MPI_Barrier(comm);
         //...........................................................................
         
         int timestep = 0;
@@ -592,7 +591,7 @@ int main(int argc, char **argv)
             //*************************************************************************
 
             ScaLBL_DeviceBarrier();
-            comm.barrier();
+            MPI_Barrier(comm);
             //*************************************************************************
             //         Swap the distributions for momentum transport
             //*************************************************************************
@@ -600,7 +599,7 @@ int main(int argc, char **argv)
             //*************************************************************************
 
             ScaLBL_DeviceBarrier();
-            comm.barrier();
+            MPI_Barrier(comm);
             //*************************************************************************
             // Wait for communications to complete and unpack the distributions
             ScaLBL_Comm.RecvD3Q19(f_even, f_odd);
@@ -617,7 +616,7 @@ int main(int argc, char **argv)
             ScaLBL_D3Q7_Swap(ID, B_even, B_odd, Nx, Ny, Nz);
 
             ScaLBL_DeviceBarrier();
-            comm.barrier();
+            MPI_Barrier(comm);
 
             //*************************************************************************
             // Wait for communication and unpack the D3Q7 distributions
@@ -634,7 +633,7 @@ int main(int argc, char **argv)
             //*************************************************************************
             // ScaLBL_ComputePhaseField(ID, Phi, Copy, Den, N);
             ScaLBL_DeviceBarrier();
-            comm.barrier();
+            MPI_Barrier(comm);
         
             ScaLBL_ComputePhaseField(ID, Phi, Den, N);
             //*************************************************************************
@@ -660,7 +659,7 @@ int main(int argc, char **argv)
             
             //...................................................................................
 
-            comm.barrier();
+            MPI_Barrier(comm);
 
             // Timestep completed!
             timestep++;
@@ -808,7 +807,7 @@ int main(int argc, char **argv)
             //...........................................................................
         }
         //...........................................................................
-        comm.barrier();
+        MPI_Barrier(comm);
         MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,comm);
         MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,comm);
         MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,comm);
@@ -828,7 +827,7 @@ int main(int argc, char **argv)
         MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
         MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
         MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
-        comm.barrier();
+        MPI_Barrier(comm);
         //.........................................................................
         // Compute the change in the total surface energy based on the defined interval
         // See McClure, Prins and Miller (2013) 
@@ -951,7 +950,7 @@ int main(int argc, char **argv)
 
     //************************************************************************/
     ScaLBL_DeviceBarrier();
-    comm.barrier();
+    MPI_Barrier(comm);
     stoptime = MPI_Wtime();
     if (rank==0) printf("-------------------------------------------------------------------\n");
     // Compute the walltime per timestep
@@ -990,8 +989,9 @@ int main(int argc, char **argv)
     PROFILE_SAVE("TestBubble");
     
     // ****************************************************
-    comm.barrier();
+    MPI_Barrier(comm);
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
+  MPI_Comm_free(&comm);
   MPI_Finalize();
   return 0;
 }

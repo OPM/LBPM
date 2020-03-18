@@ -1,8 +1,7 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
-#include "IO/PackData.h"
 #include "IO/IOHelpers.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 
 #include <vector>
@@ -14,6 +13,8 @@
 
 
 
+/****************************************************
+****************************************************/
 // MeshType
 template<>
 size_t packsize<IO::MeshType>( const IO::MeshType& rhs )
@@ -246,76 +247,80 @@ void DatabaseEntry::read( const std::string& line )
 
 // Gather the mesh databases from all processors
 inline int tod( int N ) { return (N+7)/sizeof(double); }
-std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, const Utilities::MPI& comm )
+std::vector<MeshDatabase> gatherAll( const std::vector<MeshDatabase>& meshes, MPI_Comm comm )
 {
-    if ( comm.getSize() == 1 )
-        return meshes;
-    PROFILE_START("gatherAll");
-    PROFILE_START("gatherAll-pack",2);
-    int size = comm.getSize();
-    // First pack the mesh data to local buffers
-    int localsize = 0;
-    for (size_t i=0; i<meshes.size(); i++)
-        localsize += tod(packsize(meshes[i]));
-    auto localbuf = new double[localsize];
-    int pos = 0;
-    for (size_t i=0; i<meshes.size(); i++) {
-        pack( meshes[i], (char*) &localbuf[pos] );
-        pos += tod(packsize(meshes[i]));
-    }
-    PROFILE_STOP("gatherAll-pack",2);
-    // Get the number of bytes each processor will be sending/recieving
-    PROFILE_START("gatherAll-send1",2);
-    auto recvsize = comm.allGather( localsize );
-    int globalsize = recvsize[0];
-    auto disp = new int[size];
-    disp[0] = 0;
-    for (int i=1; i<size; i++) {
-        disp[i] = disp[i-1] + recvsize[i];
-        globalsize += recvsize[i];
-    }
-    PROFILE_STOP("gatherAll-send1",2);
-    // Send/recv the global data
-    PROFILE_START("gatherAll-send2",2);
-    auto globalbuf = new double[globalsize];
-    comm.allGather(localbuf,localsize,globalbuf,recvsize.data(),disp,true);
-    PROFILE_STOP("gatherAll-send2",2);
-    // Unpack the data
-    PROFILE_START("gatherAll-unpack",2);
-    std::map<std::string,MeshDatabase> data;
-    pos = 0;
-    while ( pos < globalsize ) {
-        MeshDatabase tmp;
-        unpack(tmp,(char*)&globalbuf[pos]);
-        pos += tod(packsize(tmp));
-        std::map<std::string,MeshDatabase>::iterator it = data.find(tmp.name);
-        if ( it==data.end() ) {
-            data[tmp.name] = tmp;
-        } else {
-            for (size_t i=0; i<tmp.domains.size(); i++)
-                it->second.domains.push_back(tmp.domains[i]);
-            for (size_t i=0; i<tmp.variables.size(); i++)
-                it->second.variables.push_back(tmp.variables[i]);
-            it->second.variable_data.insert(tmp.variable_data.begin(),tmp.variable_data.end());
+    #ifdef USE_MPI
+        PROFILE_START("gatherAll");
+        PROFILE_START("gatherAll-pack",2);
+        int size = MPI_WORLD_SIZE();
+        // First pack the mesh data to local buffers
+        int localsize = 0;
+        for (size_t i=0; i<meshes.size(); i++)
+            localsize += tod(packsize(meshes[i]));
+        auto localbuf = new double[localsize];
+        int pos = 0;
+        for (size_t i=0; i<meshes.size(); i++) {
+            pack( meshes[i], (char*) &localbuf[pos] );
+            pos += tod(packsize(meshes[i]));
         }
-    }
-    for (auto it=data.begin(); it!=data.end(); ++it) {
-        // Get the unique variables
-        std::set<VariableDatabase> data2(it->second.variables.begin(),it->second.variables.end());
-        it->second.variables = std::vector<VariableDatabase>(data2.begin(),data2.end());
-    }
-    // Free temporary memory
-    delete [] localbuf;
-    delete [] disp;
-    delete [] globalbuf;
-    // Return the results
-    std::vector<MeshDatabase> data2(data.size());
-    size_t i=0; 
-    for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it, ++i)
-        data2[i] = it->second;
-    PROFILE_STOP("gatherAll-unpack",2);
-    PROFILE_STOP("gatherAll");
-    return data2;
+        PROFILE_STOP("gatherAll-pack",2);
+        // Get the number of bytes each processor will be sending/recieving
+        PROFILE_START("gatherAll-send1",2);
+        auto recvsize = new int[size];
+        MPI_Allgather(&localsize,1,MPI_INT,recvsize,1,MPI_INT,comm);
+        int globalsize = recvsize[0];
+        auto disp = new int[size];
+        disp[0] = 0;
+        for (int i=1; i<size; i++) {
+            disp[i] = disp[i-1] + recvsize[i];
+            globalsize += recvsize[i];
+        }
+        PROFILE_STOP("gatherAll-send1",2);
+        // Send/recv the global data
+        PROFILE_START("gatherAll-send2",2);
+        auto globalbuf = new double[globalsize];
+        MPI_Allgatherv(localbuf,localsize,MPI_DOUBLE,globalbuf,recvsize,disp,MPI_DOUBLE,comm);
+        PROFILE_STOP("gatherAll-send2",2);
+        // Unpack the data
+        PROFILE_START("gatherAll-unpack",2);
+        std::map<std::string,MeshDatabase> data;
+        pos = 0;
+        while ( pos < globalsize ) {
+            MeshDatabase tmp;
+            unpack(tmp,(char*)&globalbuf[pos]);
+            pos += tod(packsize(tmp));
+            std::map<std::string,MeshDatabase>::iterator it = data.find(tmp.name);
+            if ( it==data.end() ) {
+                data[tmp.name] = tmp;
+            } else {
+                for (size_t i=0; i<tmp.domains.size(); i++)
+                    it->second.domains.push_back(tmp.domains[i]);
+                for (size_t i=0; i<tmp.variables.size(); i++)
+                    it->second.variables.push_back(tmp.variables[i]);
+                it->second.variable_data.insert(tmp.variable_data.begin(),tmp.variable_data.end());
+            }
+        }
+        for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it) {
+            // Get the unique variables
+            std::set<VariableDatabase> data2(it->second.variables.begin(),it->second.variables.end());
+            it->second.variables = std::vector<VariableDatabase>(data2.begin(),data2.end());
+        }
+        // Free temporary memory
+        delete [] localbuf;
+        delete [] recvsize;
+        delete [] disp;
+        delete [] globalbuf;
+        // Return the results
+        std::vector<MeshDatabase> data2(data.size());
+        size_t i=0; 
+        for (std::map<std::string,MeshDatabase>::iterator it=data.begin(); it!=data.end(); ++it, ++i)
+            data2[i] = it->second;
+        PROFILE_STOP("gatherAll-unpack",2);
+        PROFILE_STOP("gatherAll");
+        return data2;
+    #else
+        return meshes;
+    #endif
 }
 
 

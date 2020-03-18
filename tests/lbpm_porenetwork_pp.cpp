@@ -9,15 +9,19 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	{
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
@@ -65,7 +69,7 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Computational domain
 	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
 	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
@@ -78,7 +82,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	
 	// **************************************************************
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -104,7 +108,7 @@ int main(int argc, char **argv)
 	Dm->CommInit();
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
-	comm.barrier();
+	MPI_Barrier(comm);
 
 	Nx += 2; Ny += 2; Nz += 2;
 
@@ -289,7 +293,7 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

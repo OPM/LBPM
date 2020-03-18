@@ -127,10 +127,11 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 int main(int argc, char **argv)
 {
   // Initialize MPI
+  int rank, nprocs;
   MPI_Init(&argc,&argv);
-  Utilities::MPI comm( MPI_COMM_WORLD );
-  int rank = comm.getRank();
-  int nprocs = comm.getSize();
+  MPI_Comm comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(comm,&rank);
+  MPI_Comm_size(comm,&nprocs);
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
     if ( rank==0 ) {
@@ -188,7 +189,7 @@ int main(int argc, char **argv)
     		Lx=Ly=Lz=1;
     	}
     }
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Computational domain
 	MPI_Bcast(&nx,1,MPI_INT,0,comm);
 	MPI_Bcast(&ny,1,MPI_INT,0,comm);
@@ -201,7 +202,7 @@ int main(int argc, char **argv)
 	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
 	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 
     // Check that the number of processors >= the number of ranks
     if ( rank==0 ) {
@@ -253,14 +254,14 @@ int main(int argc, char **argv)
 	cz[0]=0.25*Lz; cx[1]=0.75*Lz; cx[2]=0.25*Lz; cx[3]=0.25*Lz;
 	rad[0]=rad[1]=rad[2]=rad[3]=0.1*Lx;
 
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
 	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
 	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	//.......................................................................
 	SignedDistance(Averages.Phase.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
 		       Dm->iproc(),Dm->jproc(),Dm->kproc(),Dm->nprocx(),Dm->nprocy(),Dm->nprocz());
@@ -316,7 +317,7 @@ int main(int argc, char **argv)
 	delete [] rad;
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
-  comm.barrier();
+  MPI_Barrier(comm);
   MPI_Finalize();
   return 0;  
 }
