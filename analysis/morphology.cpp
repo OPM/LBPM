@@ -685,15 +685,13 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	return final_void_fraction;
 }
 
-double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth)
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth, double WallFactor)
 {
 	int Nx = Dm->Nx;
 	int Ny = Dm->Ny;
 	int Nz = Dm->Nz;
 	int rank = Dm->rank();
-	
-	double WALL_FACTOR = 0.0; // 1.0 if you want to penalize movements close to solid
-	
+		
 	double count=0.0;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -724,7 +722,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					double walldist=BoundaryDist(i,j,k);
-					double wallweight = WALL_FACTOR/ (1+exp(-5.f*(walldist-1.f))); 
+					double wallweight = WallFactor/ (1+exp(-5.f*(walldist-1.f))); 
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
 					
 					if (Dist(i,j,k) - wallweight*morph_delta < 0.0){
@@ -770,7 +768,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double walldist=BoundaryDist(i,j,k);
-				double wallweight = WALL_FACTOR / (1+exp(-5.f*(walldist-1.f))); 
+				double wallweight = WallFactor / (1+exp(-5.f*(walldist-1.f))); 
 				//wallweight = 1.0;
 				Dist(i,j,k) -= wallweight*morph_delta;
 				if (Dist(i,j,k) < 0.0)	count+=1.0;

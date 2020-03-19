@@ -1296,6 +1296,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	double vF = 0.f;
 	double vS = 0.f;
 	double delta_volume;
+	double WallFactor = 0.0;
 
 	DoubleArray phase(Nx,Ny,Nz);
 	IntArray phase_label(Nx,Ny,Nz);;
@@ -1395,7 +1396,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		double target_delta_volume_incremental = target_delta_volume;
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
 			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental);
+		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental, WallFactor);
 
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
