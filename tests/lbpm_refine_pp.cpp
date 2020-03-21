@@ -52,6 +52,7 @@ int main(int argc, char **argv)
 		int nprocx = nproc[0];
 		int nprocy = nproc[1];
 		int nprocz = nproc[2];
+		int BoundaryCondition=0;
 
 		// Check that the number of processors >= the number of ranks
 		if ( rank==0 ) {
@@ -63,15 +64,26 @@ int main(int argc, char **argv)
 			ERROR("Insufficient number of processors");
 		}
 
-		char LocalRankFilename[40];
+		//Domain Mask(nx,ny,nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		Domain Mask(domain_db,MPI_COMM_WORLD);
+		if (domain_db->keyExists( "Filename" )){
+			auto Filename = domain_db->getScalar<std::string>( "Filename" );
+		        if (rank==0) printf("Reading domain from %s \n",Filename.c_str());
+			Mask.Decomp(Filename);
+			if (rank==0) printf("Complete. \n");
+		}
+		else{
+			Mask.ReadIDs();
+		}
+		Mask.CommInit();
 
+		char LocalRankFilename[40];
 		int rnx=2*nx;
 		int rny=2*ny;
 		int rnz=2*nz;
 
 		if (rank==0) printf("Refining mesh to %i x %i x %i \n",rnx,rny,rnz);
 
-		int BoundaryCondition=0;
 		Domain Dm(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
 
 		// Communication the halos
@@ -83,6 +95,7 @@ int main(int argc, char **argv)
 		int N = nx*ny*nz;
 
 		// Define communication sub-domain -- everywhere
+		if (rank==0) printf("Initialize refined domain \n");
 		for (int k=0; k<rnz; k++){
 			for (int j=0; j<rny; j++){
 				for (int i=0; i<rnx; i++){
@@ -93,16 +106,6 @@ int main(int argc, char **argv)
 		}
 		Dm.CommInit();
 		
-		Domain Mask(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-		if (domain_db->keyExists( "Filename" )){
-			auto Filename = domain_db->getScalar<std::string>( "Filename" );
-			Mask.Decomp(Filename);
-		}
-		else{
-			Mask.ReadIDs();
-		}
-		Mask.CommInit();
-
 		// Generate the signed distance map
 		// Initialize the domain and communication
 		Array<char> Labels(nx,ny,nz);
@@ -133,7 +136,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		CalcDist(SignDist,Labels,Mask);
 		
-		// Read the signed distance from file
+		/*		// Read the signed distance from file
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
 		FILE *DIST = fopen(LocalRankFilename,"rb");
 		size_t ReadSignDist;
@@ -141,7 +144,7 @@ int main(int argc, char **argv)
 		if (ReadSignDist != size_t(N)) printf("lbpm_refine_pp: Error reading signed distance function (rank=%i)\n",rank);
 		fclose(DIST);
 		
-	/*	char *Labels;
+		char *Labels;
 		Labels = new char[N];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		FILE *LABELS = fopen(LocalRankFilename,"rb");
