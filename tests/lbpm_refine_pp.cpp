@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 			auto Filename = domain_db->getScalar<std::string>( "Filename" );
 			if ( rank==0 )   printf("Write output \n");
 			sprintf(LocalRankFilename,Filename.c_str(),".refine");
-			WRITEID = fopen(LocalRankFilename,"wb");
+			FILE *WRITEID = fopen("refine.raw","wb");
 			fwrite(RefineLabel.data(),1,rnx*rny*rnz,WRITEID);
 			fclose(WRITEID);
 		}
