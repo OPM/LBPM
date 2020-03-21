@@ -187,7 +187,8 @@ int main(int argc, char **argv)
 					pt.y=0.5*(rj-1)+1.f;
 					pt.z=0.5*(rk-1)+1.f;
 					RefinedSignDist(ri,rj,rk) = LocalApprox.eval(pt);
-					RefineLabel(ri,rj,rk) = Labels(i,j,k); 
+					RefineLabel(ri,rj,rk) = Labels(i,j,k);
+					Dm.id[n] = Labels(i,j,k);
 				}
 			}
 		}
@@ -197,10 +198,11 @@ int main(int argc, char **argv)
 		if (domain_db->keyExists( "Filename" )){
 			auto Filename = domain_db->getScalar<std::string>( "Filename" );
 			if ( rank==0 )   printf("Write output \n");
-			sprintf(LocalRankFilename,Filename.c_str(),".refine");
-			FILE *WRITEID = fopen("refine.raw","wb");
-			fwrite(RefineLabel.data(),1,rnx*rny*rnz,WRITEID);
-			fclose(WRITEID);
+			Dm.AggregateLabels("id_2x.raw");
+			Mask.AggregateLabels("id.raw");
+			//FILE *WRITEID = fopen("refine.raw","wb");
+			//fwrite(RefineLabel.data(),1,rnx*rny*rnz,WRITEID);
+			//fclose(WRITEID);
 		}
 		else{
 			DoubleArray BlockDist(nx,ny,nz);
