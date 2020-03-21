@@ -40,7 +40,6 @@ int main(int argc, char **argv)
 		auto domain_db = db->getDatabase( "Domain" );
 
 		// Read domain parameters
-		auto L = domain_db->getVector<double>( "L" );
 		auto size = domain_db->getVector<int>( "n" );
 		auto nproc = domain_db->getVector<int>( "nproc" );
 		auto ReadValues = domain_db->getVector<char>( "ReadValues" );
@@ -92,8 +91,42 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm.CommInit();
-
+		
+		Domain Mask(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+		Mask->ReadIDs();
+		Mask.CommInit();
+		for (int i=0; i<nx*ny*nz; i++) id[i] = Mask->id[i];  // save what was read
+		
+		// Generate the signed distance map
+		// Initialize the domain and communication
+		Array<char> Labels(nx,ny,nz);
 		DoubleArray SignDist(nx,ny,nz);
+
+		// Solve for the position of the solid phase
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){
+				for (int i=0;i<nx;i++){
+					int n = k*nx*ny+j*nx+i;
+					// Initialize the solid phase
+					signed char label = Mask->id[n];
+					if (label > 0)		Labels(i,j,k) = 1;
+					else	     		Labels(i,j,k) = 0;
+				}
+			}
+		}
+		// Initialize the signed distance function
+		for (int k=0;k<nz;k++){
+			for (int j=0;j<ny;j++){
+				for (int i=0;i<nx;i++){
+					// Initialize distance to +/- 1
+					Averages->SDs(i,j,k) = 2.0*double(Labels(i,j,k))-1.0;
+				}
+			}
+		}
+	//	MeanFilter(Averages->SDs);
+		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+		CalcDist(SignDist,Labels,*Mask);
+		
 		// Read the signed distance from file
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
 		FILE *DIST = fopen(LocalRankFilename,"rb");
@@ -102,7 +135,7 @@ int main(int argc, char **argv)
 		if (ReadSignDist != size_t(N)) printf("lbpm_refine_pp: Error reading signed distance function (rank=%i)\n",rank);
 		fclose(DIST);
 		
-		char *Labels;
+	/*	char *Labels;
 		Labels = new char[N];
 		sprintf(LocalRankFilename,"ID.%05i",rank);
 		FILE *LABELS = fopen(LocalRankFilename,"rb");
@@ -110,7 +143,7 @@ int main(int argc, char **argv)
 		ReadLabels=fread(Labels,1,N,LABELS);
 		if (ReadLabels != size_t(N)) printf("lbpm_refine_pp: Error reading ID  (rank=%i)\n",rank);
 		fclose(LABELS);
-
+*/
 		if ( rank==0 )   printf("Set up Domain, read input distance \n");
 
 		DoubleArray RefinedSignDist(rnx,rny,rnz);
