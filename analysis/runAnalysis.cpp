@@ -907,9 +907,8 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-
+		input_db->putScalar<bool>( "Restart", true );
     	if (d_rank==0) {
-    		input_db->putScalar<bool>( "Restart", true );
     		std::ofstream OutStream("Restart.db");
     		input_db->print(OutStream, "");
     		OutStream.close();
@@ -1010,10 +1009,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
 
+		color_db->putScalar<int>("timestep",timestep);    		
+		color_db->putScalar<bool>( "Restart", true );
+		input_db->putDatabase("Color", color_db);
+		
     	if (d_rank==0) {
-    		color_db->putScalar<int>("timestep",timestep);    		
-    		color_db->putScalar<bool>( "Restart", true );
-    		input_db->putDatabase("Color", color_db);
     		std::ofstream OutStream("Restart.db");
     		input_db->print(OutStream, "");
     		OutStream.close();
