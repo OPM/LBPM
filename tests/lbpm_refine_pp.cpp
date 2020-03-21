@@ -12,6 +12,7 @@
 #include "common/Communication.h"
 #include "common/Domain.h"
 #include "analysis/pmmc.h"
+#include "analysis/distance.h"
 
 int main(int argc, char **argv)
 {
@@ -93,10 +94,9 @@ int main(int argc, char **argv)
 		Dm.CommInit();
 		
 		Domain Mask(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-		Mask->ReadIDs();
+		Mask.ReadIDs();
 		Mask.CommInit();
-		for (int i=0; i<nx*ny*nz; i++) id[i] = Mask->id[i];  // save what was read
-		
+
 		// Generate the signed distance map
 		// Initialize the domain and communication
 		Array<char> Labels(nx,ny,nz);
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 				for (int i=0;i<nx;i++){
 					int n = k*nx*ny+j*nx+i;
 					// Initialize the solid phase
-					signed char label = Mask->id[n];
+					signed char label = Mask.id[n];
 					if (label > 0)		Labels(i,j,k) = 1;
 					else	     		Labels(i,j,k) = 0;
 				}
@@ -119,13 +119,13 @@ int main(int argc, char **argv)
 			for (int j=0;j<ny;j++){
 				for (int i=0;i<nx;i++){
 					// Initialize distance to +/- 1
-					Averages->SDs(i,j,k) = 2.0*double(Labels(i,j,k))-1.0;
+					SignDist(i,j,k) = 2.0*double(Labels(i,j,k))-1.0;
 				}
 			}
 		}
 	//	MeanFilter(Averages->SDs);
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-		CalcDist(SignDist,Labels,*Mask);
+		CalcDist(SignDist,Labels,Mask);
 		
 		// Read the signed distance from file
 		sprintf(LocalRankFilename,"SignDist.%05i",rank);
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 					pt.y=0.5*(rj-1)+1.f;
 					pt.z=0.5*(rk-1)+1.f;
 					RefinedSignDist(ri,rj,rk) = LocalApprox.eval(pt);
-					RefineLabel(ri,rj,rk) = Labels[k*nx*ny+j*nx+i]; 
+					RefineLabel(ri,rj,rk) = Labels(i,j,k); 
 				}
 			}
 		}
