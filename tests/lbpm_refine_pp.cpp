@@ -94,7 +94,13 @@ int main(int argc, char **argv)
 		Dm.CommInit();
 		
 		Domain Mask(rnx,rny,rnz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-		Mask.ReadIDs();
+		if (domain_db->keyExists( "Filename" )){
+			auto Filename = domain_db->getScalar<std::string>( "Filename" );
+			Mask.Decomp(Filename);
+		}
+		else{
+			Mask.ReadIDs();
+		}
 		Mask.CommInit();
 
 		// Generate the signed distance map
