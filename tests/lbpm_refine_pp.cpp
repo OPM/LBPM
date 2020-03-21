@@ -192,277 +192,190 @@ int main(int argc, char **argv)
 			}
 		}
 		fillData.fill(RefinedSignDist);
-		//	sprintf(LocalRankFilename,"ID.%05i",rank);
-		//FILE *ID = fopen(LocalRankFilename,"wb");
-		//fwrite(id,1,N,ID);
-		//fclose(ID);
-/*
-		sprintf(LocalRankFilename,"RefineDist.%05i",rank);
-		FILE *REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(RefinedSignDist.data(),8,rnx*rny*rnz,REFINEDIST);
-		fclose(REFINEDIST);
-*/
-		if ( rank==0 )   printf("Write output \n");
 
-		DoubleArray BlockDist(nx,ny,nz);
-		FILE *WRITEID, *REFINEDIST;
-		char * id;
-		id = new char [N];
-		int writerank;
 
-		// Write output blocks with the same sub-domain size as origina
-		// refinement increases the size of the process grid
- 		writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc();
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j,k);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j,k);
+		if (domain_db->keyExists( "Filename" )){
+			auto Filename = domain_db->getScalar<std::string>( "Filename" );
+			if ( rank==0 )   printf("Write output \n");
+			sprintf(LocalRankFilename,Filename.c_str(),".refine");
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(RefineLabel.data(),1,rnx*rny*rnz,WRITEID);
+			fclose(WRITEID);
+		}
+		else{
+			DoubleArray BlockDist(nx,ny,nz);
+			FILE *WRITEID, *REFINEDIST;
+			char * id;
+			id = new char [N];
+			int writerank;
+
+			// Write output blocks with the same sub-domain size as origina
+			// refinement increases the size of the process grid
+			writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc();
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i,j,k);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j,k);
+					}
 				}
 			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-
-/*		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]= 0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc()+1;
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j,k);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-
-/*		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
 
 
-		writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j+ny-2,k);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
 
-/*		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
+			writerank = 8*Dm.kproc()*nprocx*nprocy + 4*Dm.jproc()*nprocx + 2*Dm.iproc()+1;
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j,k);
+					}
 				}
 			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j+ny-2,k);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-/*
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc();
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j,k+nz-2);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j,k+nz-2);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-/*
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc()+1;
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k+nz-2);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j,k+nz-2);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-
-/*		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k+nz-2);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j+ny-2,k+nz-2);
-				}
-			}
-		}
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-/*
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
-
-		writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k+nz-2);
-					if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
-					else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j+ny-2,k+nz-2);
-				}
-			}
-		}
-
-		sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
-		REFINEDIST = fopen(LocalRankFilename,"wb");
-		fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
-		fclose(REFINEDIST);
-		
-/*		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					if (BlockDist(i,j,k) > 0.f)
-						id[k*nx*ny + j*nx + i]=2;
-					else
-						id[k*nx*ny + j*nx + i]=0;
-				}
-			}
-		}
-		*/
-		sprintf(LocalRankFilename,"RefineID.%05i",writerank);
-		WRITEID = fopen(LocalRankFilename,"wb");
-		fwrite(id,1,nx*ny*nz,WRITEID);
-		fclose(WRITEID);
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
 
 
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+
+			writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j+ny-2,k);
+					}
+				}
+			}
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+			writerank = (2*Dm.kproc())*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j+ny-2,k);
+					}
+				}
+			}
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+			writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc();
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i,j,k+nz-2);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j,k+nz-2);
+					}
+				}
+			}
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+			writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc())*2*nprocx + 2*Dm.iproc()+1;
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j,k+nz-2);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j,k+nz-2);
+					}
+				}
+			}
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+			writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc();
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i,j+ny-2,k+nz-2);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i,j+ny-2,k+nz-2);
+					}
+				}
+			}
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+
+			writerank = (2*Dm.kproc()+1)*4*nprocx*nprocy + (2*Dm.jproc()+1)*2*nprocx + 2*Dm.iproc()+1;
+			for (int k=0; k<nz; k++){
+				for (int j=0; j<ny; j++){
+					for (int i=0; i<nx; i++){
+						BlockDist(i,j,k) = RefinedSignDist(i+nx-2,j+ny-2,k+nz-2);
+						if (BlockDist(i,j,k) > 0) 	id[k*nx*ny + j*nx + i]=2;
+						else 						id[k*nx*ny + j*nx + i] = RefineLabel(i+nx-2,j+ny-2,k+nz-2);
+					}
+				}
+			}
+
+			sprintf(LocalRankFilename,"RefineDist.%05i",writerank);
+			REFINEDIST = fopen(LocalRankFilename,"wb");
+			fwrite(BlockDist.data(),8,nx*ny*nz,REFINEDIST);
+			fclose(REFINEDIST);
+
+			sprintf(LocalRankFilename,"RefineID.%05i",writerank);
+			WRITEID = fopen(LocalRankFilename,"wb");
+			fwrite(id,1,nx*ny*nz,WRITEID);
+			fclose(WRITEID);
+		}
 	}
 	MPI_Barrier(comm);
 	MPI_Finalize();
