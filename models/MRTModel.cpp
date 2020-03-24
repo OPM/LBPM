@@ -383,7 +383,9 @@ void ScaLBL_MRTModel::VelocityField(){
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
 						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
 						*/
-	
+        vis_db = db->getDatabase( "Visualization" );
+	if (vis_db->getWithDefault<bool>( "write_silo", false )){
+  
 	std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
 
@@ -435,5 +437,5 @@ void ScaLBL_MRTModel::VelocityField(){
     fillData.copy(Velocity_z,VelzData);
 	
     IO::writeData( timestep, visData, Dm->Comm );
-
+    }
 }
