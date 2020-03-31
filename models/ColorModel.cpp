@@ -1327,6 +1327,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	*/
 	// 2. Identify connected components of phase field -> phase_label
 	
+	double volume_connected = 0.0;
+       	double second_biggest = 0.0;
 	if (USE_CONNECTED_NWP){
 		BlobIDstruct new_index;
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
@@ -1334,7 +1336,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 		// only operate on component "0"
 		count = 0.0;
-		double second_biggest = 0.0;
 
 		for (int k=0; k<Nz; k++){
 			for (int j=0; j<Ny; j++){
@@ -1352,7 +1353,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 				}
 			}
 		}	
-		double volume_connected = sumReduce( Dm->Comm, count);
+		volume_connected = sumReduce( Dm->Comm, count);
 		second_biggest = sumReduce( Dm->Comm, second_biggest);
 	}
 	else {
@@ -1409,13 +1410,16 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 
+	if (USE_CONNECTED_NWP){
 	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
 		// if connected volume is less than 2% just delete the whole thing
 		if (rank==0) printf("Connected region has shrunk! \n");
 		REVERSE_FLOW_DIRECTION = true;
 	}
+	
 /*	else{*/
 		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
+	}
 		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
 		double target_delta_volume_incremental = target_delta_volume;
 		if (fabs(target_delta_volume) > 0.01*volume_initial)  
