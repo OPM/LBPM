@@ -907,12 +907,12 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-    	auto Restart_db = input_db->clone();
-		input_db->putScalar<bool>( "Restart", true );
+    	auto Restart_db = input_db->cloneDatabase();
+	//	Restart_db->putScalar<bool>( "Restart", true );
     	if (d_rank==0) {
-    		std::ofstream OutStream("Restart.db");
-    		Restart_db->print(OutStream, "");
-    		OutStream.close();
+	  //	std::ofstream OutStream("Restart.db");
+	  //	Restart_db->print(OutStream, "");
+	  //	OutStream.close();
     	}
     	// Write the restart file (using a seperate thread)
         auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
@@ -1010,14 +1010,14 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
     	// clone the input database to avoid modifying shared data
-    	auto Restart_db = input_db->clone();
-    	auto tmp_color_db =  Restart_db.getDatabase( "Color" );
-    	tmp_color_db.putScalar<int>("timestep",timestep);    		
-    	tmp_color_db.putScalar<bool>( "Restart", true );
-    	Restart_db.putDatabase("Color", tmp_color_db);
+    	auto Restart_db = input_db->cloneDatabase();
+    	auto tmp_color_db =  Restart_db->getDatabase( "Color" );
+    	tmp_color_db->putScalar<int>("timestep",timestep);    		
+    	tmp_color_db->putScalar<bool>( "Restart", true );
+    	Restart_db->putDatabase("Color", tmp_color_db);
     	if (d_rank==0) {
     		std::ofstream OutStream("Restart.db");
-    		Restart_db.print(OutStream, "");
+    		Restart_db->print(OutStream, "");
     		OutStream.close();
     	}
     	// Write the restart file (using a seperate thread)
