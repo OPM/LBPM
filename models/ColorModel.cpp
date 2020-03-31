@@ -1297,6 +1297,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	double vS = 0.f;
 	double delta_volume;
 	double WallFactor = 0.0;
+	bool USE_CONNECTED_NWP = false;
 
 	DoubleArray phase(Nx,Ny,Nz);
 	IntArray phase_label(Nx,Ny,Nz);;
@@ -1325,32 +1326,55 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	fclose(INPUT);
 	*/
 	// 2. Identify connected components of phase field -> phase_label
-	BlobIDstruct new_index;
-	ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-	MPI_Barrier(comm);
 	
-	// only operate on component "0"
-	count = 0.0;
-	double second_biggest = 0.0;
+	if (USE_CONNECTED_NWP){
+		BlobIDstruct new_index;
+		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
+		MPI_Barrier(comm);
 
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				int label = phase_label(i,j,k);
-				if (label == 0 ){
-					phase_id(i,j,k) = 0;
-					count += 1.0;
+		// only operate on component "0"
+		count = 0.0;
+		double second_biggest = 0.0;
+
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					int label = phase_label(i,j,k);
+					if (label == 0 ){
+						phase_id(i,j,k) = 0;
+						count += 1.0;
+					}
+					else 		
+						phase_id(i,j,k) = 1;
+					if (label == 1 ){
+						second_biggest += 1.0;
+					}
 				}
-				else 		
-					phase_id(i,j,k) = 1;
-				if (label == 1 ){
-					second_biggest += 1.0;
+			}
+		}	
+		double volume_connected = sumReduce( Dm->Comm, count);
+		second_biggest = sumReduce( Dm->Comm, second_biggest);
+	}
+	else {
+		// use the whole NWP 
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (phase(i,j,k) > 0.f ){
+							phase_id(i,j,k) = 0;
+						}
+						else {
+							phase_id(i,j,k) = 1;
+						}
+					}
+					else {
+						phase_id(i,j,k) = 1;
+					}
 				}
 			}
 		}
-	}	
-	double volume_connected = sumReduce( Dm->Comm, count);
-	second_biggest = sumReduce( Dm->Comm, second_biggest);
+	}
 
 	/*int reach_x, reach_y, reach_z;
 	for (int k=0; k<Nz; k++){
