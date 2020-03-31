@@ -12,7 +12,7 @@
 #include "D3Q19.h"
 #include "D3Q7.h"
 #include "Color.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "Communication.h"
 
 #define WRITE_SURFACES
@@ -96,11 +96,15 @@ inline void ZeroHalo(double *Data, int Nx, int Ny, int Nz)
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -114,6 +118,7 @@ int main(int argc, char **argv)
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
 	MPI_Request req1[18],req2[18];
+	MPI_Status stat1[18],stat2[18];
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -204,40 +209,40 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	comm.barrier();
+	MPI_Barrier(comm);
 	//.................................................
-	comm.bcast(&tau,1,0);
-	comm.bcast(&alpha,1,0);
-	comm.bcast(&beta,1,0);
-	comm.bcast(&das,1,0);
-	comm.bcast(&dbs,1,0);
-	comm.bcast(&phi_s,1,0);
-	comm.bcast(&wp_saturation,1,0);
-	comm.bcast(&pBC,1,0);
-	comm.bcast(&Restart,1,0);
-	comm.bcast(&din,1,0);
-	comm.bcast(&dout,1,0);
-	comm.bcast(&Fx,1,0);
-	comm.bcast(&Fy,1,0);
-	comm.bcast(&Fz,1,0);
-	comm.bcast(&timestepMax,1,0);
-	comm.bcast(&interval,1,0);
-	comm.bcast(&tol,1,0);
+	MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&alpha,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&beta,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&das,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dbs,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&phi_s,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&wp_saturation,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
+	MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+	MPI_Bcast(&interval,1,MPI_INT,0,comm);
+	MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 	// Computational domain
-	comm.bcast(&Nx,1,0);
-	comm.bcast(&Ny,1,0);
-	comm.bcast(&Nz,1,0);
-//	comm.bcast(&nBlocks,1,0);
-//	comm.bcast(&nthreads,1,0);
-	comm.bcast(&nprocx,1,0);
-	comm.bcast(&nprocy,1,0);
-	comm.bcast(&nprocz,1,0);
-	comm.bcast(&nspheres,1,0);
-	comm.bcast(&Lx,1,0);
-	comm.bcast(&Ly,1,0);
-	comm.bcast(&Lz,1,0);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+//	MPI_Bcast(&nBlocks,1,MPI_INT,0,comm);
+//	MPI_Bcast(&nthreads,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	
 	RESTART_INTERVAL=interval;
 	// **************************************************************
@@ -279,7 +284,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 	 
-	 comm.barrier();
+	 MPI_Barrier(comm);
 
 	Nz += 2;
 	Nx = Ny = Nz;	// Cubic domain
@@ -396,14 +401,14 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
-	comm.bcast(cx,nspheres,0);
-	comm.bcast(cy,nspheres,0);
-	comm.bcast(cz,nspheres,0);
-	comm.bcast(rad,nspheres,0);
+	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	if (rank == 0){
 		// Compute the Sauter mean diameter
@@ -417,7 +422,7 @@ int main(int argc, char **argv)
 		D = 6.0*(Nx-2)*nprocx*totVol / totArea / Lx;
 		printf("Sauter Mean Diameter (computed from sphere packing) = %f \n ",D);
 	}
-	comm.bcast(&D,1,0);
+	MPI_Bcast(&D,1,MPI_DOUBLE,0,comm);
 
 	//.......................................................................
 //	sprintf(LocalRankString,"%05d",rank);
@@ -477,7 +482,7 @@ int main(int argc, char **argv)
 	id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 	//.........................................................
 	sum_local = 1.0*sum;
-	porosity = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -591,7 +596,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank==0)	printf ("SendLists are ready on host\n");
 	//......................................................................................
 	// Use MPI to fill in the recvCounts form the associated processes
@@ -778,7 +783,7 @@ int main(int argc, char **argv)
 	ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateDeviceMemory((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank==0)	printf ("Prepare to copy send/recv Lists to device \n");
 	ScaLBL_CopyToDevice(dvcSendList_x,sendList_x,sendCount_x*sizeof(int));
 	ScaLBL_CopyToDevice(dvcSendList_X,sendList_X,sendCount_X*sizeof(int));
@@ -885,24 +890,42 @@ int main(int argc, char **argv)
 	PackID(sendList_yZ, sendCount_yZ ,sendID_yZ, id);
 	PackID(sendList_YZ, sendCount_YZ ,sendID_YZ, id);
 	//......................................................................................
-	comm.sendrecv(sendID_x,sendCount_x,rank_x,sendtag,recvID_X,recvCount_X,rank_X,recvtag);
-	comm.sendrecv(sendID_X,sendCount_X,rank_X,sendtag,recvID_x,recvCount_x,rank_x,recvtag);
-	comm.sendrecv(sendID_y,sendCount_y,rank_y,sendtag,recvID_Y,recvCount_Y,rank_Y,recvtag);
-	comm.sendrecv(sendID_Y,sendCount_Y,rank_Y,sendtag,recvID_y,recvCount_y,rank_y,recvtag);
-	comm.sendrecv(sendID_z,sendCount_z,rank_z,sendtag,recvID_Z,recvCount_Z,rank_Z,recvtag);
-	comm.sendrecv(sendID_Z,sendCount_Z,rank_Z,sendtag,recvID_z,recvCount_z,rank_z,recvtag);
-	comm.sendrecv(sendID_xy,sendCount_xy,rank_xy,sendtag,recvID_XY,recvCount_XY,rank_XY,recvtag);
-	comm.sendrecv(sendID_XY,sendCount_XY,rank_XY,sendtag,recvID_xy,recvCount_xy,rank_xy,recvtag);
-	comm.sendrecv(sendID_Xy,sendCount_Xy,rank_Xy,sendtag,recvID_xY,recvCount_xY,rank_xY,recvtag);
-	comm.sendrecv(sendID_xY,sendCount_xY,rank_xY,sendtag,recvID_Xy,recvCount_Xy,rank_Xy,recvtag);
-	comm.sendrecv(sendID_xz,sendCount_xz,rank_xz,sendtag,recvID_XZ,recvCount_XZ,rank_XZ,recvtag);
-	comm.sendrecv(sendID_XZ,sendCount_XZ,rank_XZ,sendtag,recvID_xz,recvCount_xz,rank_xz,recvtag);
-	comm.sendrecv(sendID_Xz,sendCount_Xz,rank_Xz,sendtag,recvID_xZ,recvCount_xZ,rank_xZ,recvtag);
-	comm.sendrecv(sendID_xZ,sendCount_xZ,rank_xZ,sendtag,recvID_Xz,recvCount_Xz,rank_Xz,recvtag);
-	comm.sendrecv(sendID_yz,sendCount_yz,rank_yz,sendtag,recvID_YZ,recvCount_YZ,rank_YZ,recvtag);
-	comm.sendrecv(sendID_YZ,sendCount_YZ,rank_YZ,sendtag,recvID_yz,recvCount_yz,rank_yz,recvtag);
-	comm.sendrecv(sendID_Yz,sendCount_Yz,rank_Yz,sendtag,recvID_yZ,recvCount_yZ,rank_yZ,recvtag);
-	comm.sendrecv(sendID_yZ,sendCount_yZ,rank_yZ,sendtag,recvID_Yz,recvCount_Yz,rank_Yz,recvtag);
+	MPI_Sendrecv(sendID_x,sendCount_x,MPI_CHAR,rank_x,sendtag,
+			recvID_X,recvCount_X,MPI_CHAR,rank_X,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_X,sendCount_X,MPI_CHAR,rank_X,sendtag,
+			recvID_x,recvCount_x,MPI_CHAR,rank_x,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_y,sendCount_y,MPI_CHAR,rank_y,sendtag,
+			recvID_Y,recvCount_Y,MPI_CHAR,rank_Y,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Y,sendCount_Y,MPI_CHAR,rank_Y,sendtag,
+			recvID_y,recvCount_y,MPI_CHAR,rank_y,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_z,sendCount_z,MPI_CHAR,rank_z,sendtag,
+			recvID_Z,recvCount_Z,MPI_CHAR,rank_Z,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Z,sendCount_Z,MPI_CHAR,rank_Z,sendtag,
+			recvID_z,recvCount_z,MPI_CHAR,rank_z,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xy,sendCount_xy,MPI_CHAR,rank_xy,sendtag,
+			recvID_XY,recvCount_XY,MPI_CHAR,rank_XY,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XY,sendCount_XY,MPI_CHAR,rank_XY,sendtag,
+			recvID_xy,recvCount_xy,MPI_CHAR,rank_xy,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xy,sendCount_Xy,MPI_CHAR,rank_Xy,sendtag,
+			recvID_xY,recvCount_xY,MPI_CHAR,rank_xY,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xY,sendCount_xY,MPI_CHAR,rank_xY,sendtag,
+			recvID_Xy,recvCount_Xy,MPI_CHAR,rank_Xy,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xz,sendCount_xz,MPI_CHAR,rank_xz,sendtag,
+			recvID_XZ,recvCount_XZ,MPI_CHAR,rank_XZ,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_XZ,sendCount_XZ,MPI_CHAR,rank_XZ,sendtag,
+			recvID_xz,recvCount_xz,MPI_CHAR,rank_xz,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Xz,sendCount_Xz,MPI_CHAR,rank_Xz,sendtag,
+			recvID_xZ,recvCount_xZ,MPI_CHAR,rank_xZ,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_xZ,sendCount_xZ,MPI_CHAR,rank_xZ,sendtag,
+			recvID_Xz,recvCount_Xz,MPI_CHAR,rank_Xz,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yz,sendCount_yz,MPI_CHAR,rank_yz,sendtag,
+			recvID_YZ,recvCount_YZ,MPI_CHAR,rank_YZ,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_YZ,sendCount_YZ,MPI_CHAR,rank_YZ,sendtag,
+			recvID_yz,recvCount_yz,MPI_CHAR,rank_yz,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_Yz,sendCount_Yz,MPI_CHAR,rank_Yz,sendtag,
+			recvID_yZ,recvCount_yZ,MPI_CHAR,rank_yZ,recvtag,comm,MPI_STATUS_IGNORE);
+	MPI_Sendrecv(sendID_yZ,sendCount_yZ,MPI_CHAR,rank_yZ,sendtag,
+			recvID_Yz,recvCount_Yz,MPI_CHAR,rank_Yz,recvtag,comm,MPI_STATUS_IGNORE);
 	//......................................................................................
 	UnpackID(recvList_x, recvCount_x ,recvID_x, id);
 	UnpackID(recvList_X, recvCount_X ,recvID_X, id);
@@ -970,7 +993,7 @@ int main(int argc, char **argv)
 	recvMeshData_YZ = new double [recvCount_YZ];
 	recvMeshData_XZ = new double [recvCount_XZ];
 	if (rank==0)	printf ("Devices are ready to communicate. \n");
-	comm.barrier();
+	MPI_Barrier(comm);
 
 	//...........device phase ID.................................................
 	if (rank==0)	printf ("Copying phase ID to device \n");
@@ -1197,7 +1220,7 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(f_odd,cDistOdd,9*N*sizeof(double));
 		ScaLBL_CopyToDevice(Den,cDen,2*N*sizeof(double));
 		ScaLBL_DeviceBarrier();
-		comm.barrier();
+		MPI_Barrier(comm);
 	}
 	// Set up the cube list (very regular in this case due to lack of blob-ID)
 	// Set up kstart, kfinish so that the reservoirs are excluded from averaging
@@ -1361,48 +1384,48 @@ int main(int argc, char **argv)
 	//...................................................................................
 	// Send / Recv all the phase indcator field values
 	//...................................................................................
-	req1[0] = comm.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
-	req2[0] = comm.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
-	req1[1] = comm.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
-	req2[1] = comm.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
-	req1[2] = comm.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
-	req2[2] = comm.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
-	req1[3] = comm.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
-	req2[3] = comm.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
-	req1[4] = comm.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
-	req2[4] = comm.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
-	req1[5] = comm.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5] = comm.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
-	req1[6] = comm.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-	req2[6] = comm.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
-	req1[7] = comm.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-	req2[7] = comm.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
-	req1[8] = comm.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-	req2[8] = comm.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
-	req1[9] = comm.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-	req2[9] = comm.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
-	req1[10] = comm.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-	req2[10] = comm.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
-	req1[11] = comm.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-	req2[11] = comm.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
-	req1[12] = comm.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-	req2[12] = comm.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
-	req1[13] = comm.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-	req2[13] = comm.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
-	req1[14] = comm.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-	req2[14] = comm.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
-	req1[15] = comm.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-	req2[15] = comm.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
-	req1[16] = comm.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-	req2[16] = comm.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
-	req1[17] = comm.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-	req2[17] = comm.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+	MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_x,sendtag,comm,&req1[0]);
+	MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_X,recvtag,comm,&req2[0]);
+	MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_X,sendtag,comm,&req1[1]);
+	MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_x,recvtag,comm,&req2[1]);
+	MPI_Isend(sendbuf_y, sendCount_y,MPI_DOUBLE,rank_y,sendtag,comm,&req1[2]);
+	MPI_Irecv(recvbuf_Y, recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,comm,&req2[2]);
+	MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,comm,&req1[3]);
+	MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_y,recvtag,comm,&req2[3]);
+	MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_z,sendtag,comm,&req1[4]);
+	MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,comm,&req2[4]);
+	MPI_Isend(sendbuf_Z, sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,comm,&req1[5]);
+	MPI_Irecv(recvbuf_z, recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
+	MPI_Isend(sendbuf_xy, sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,comm,&req1[6]);
+	MPI_Irecv(recvbuf_XY, recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,comm,&req2[6]);
+	MPI_Isend(sendbuf_XY, sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,comm,&req1[7]);
+	MPI_Irecv(recvbuf_xy, recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,comm,&req2[7]);
+	MPI_Isend(sendbuf_Xy, sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,comm,&req1[8]);
+	MPI_Irecv(recvbuf_xY, recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,comm,&req2[8]);
+	MPI_Isend(sendbuf_xY, sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,comm,&req1[9]);
+	MPI_Irecv(recvbuf_Xy, recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,comm,&req2[9]);
+	MPI_Isend(sendbuf_xz, sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,comm,&req1[10]);
+	MPI_Irecv(recvbuf_XZ, recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,comm,&req2[10]);
+	MPI_Isend(sendbuf_XZ, sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,comm,&req1[11]);
+	MPI_Irecv(recvbuf_xz, recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,comm,&req2[11]);
+	MPI_Isend(sendbuf_Xz, sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,comm,&req1[12]);
+	MPI_Irecv(recvbuf_xZ, recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,comm,&req2[12]);
+	MPI_Isend(sendbuf_xZ, sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,comm,&req1[13]);
+	MPI_Irecv(recvbuf_Xz, recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,comm,&req2[13]);
+	MPI_Isend(sendbuf_yz, sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,comm,&req1[14]);
+	MPI_Irecv(recvbuf_YZ, recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,comm,&req2[14]);
+	MPI_Isend(sendbuf_YZ, sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,comm,&req1[15]);
+	MPI_Irecv(recvbuf_yz, recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,comm,&req2[15]);
+	MPI_Isend(sendbuf_Yz, sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,comm,&req1[16]);
+	MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,comm,&req2[16]);
+	MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,comm,&req1[17]);
+	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,comm,&req2[17]);
 	//...................................................................................
 	//...................................................................................
 	// Wait for completion of Indicator Field communication
 	//...................................................................................
-	comm.waitAll(18,req1);
-	comm.waitAll(18,req2);
+	MPI_Waitall(18,req1,stat1);
+	MPI_Waitall(18,req2,stat2);
 	ScaLBL_DeviceBarrier();
 	//...................................................................................
 	//...................................................................................
@@ -1464,7 +1487,7 @@ int main(int argc, char **argv)
 	ScaLBL_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
 	ScaLBL_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
 	ScaLBL_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
-	comm.barrier();
+	MPI_Barrier(comm);
 	//...........................................................................
 	
 	int timestep = 0;
@@ -1477,8 +1500,8 @@ int main(int argc, char **argv)
 	
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	comm.barrier();
-	starttime = Utilities::MPI::time();
+	MPI_Barrier(comm);
+	starttime = MPI_Wtime();
 	//.........................................
 	
 	sendtag = recvtag = 5;
@@ -1574,42 +1597,42 @@ int main(int argc, char **argv)
 
 		//...................................................................................
 		// Send all the distributions
-		req1[0] = comm.Isend(sendbuf_x, 5*sendCount_x,rank_x,sendtag);
-		req2[0] = comm.Irecv(recvbuf_X, 5*recvCount_X,rank_X,recvtag);
-		req1[1] = comm.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag);
-		req2[1] = comm.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag);
-		req1[2] = comm.Isend(sendbuf_y, 5*sendCount_y,rank_y,sendtag);
-		req2[2] = comm.Irecv(recvbuf_Y, 5*recvCount_Y,rank_Y,recvtag);
-		req1[3] = comm.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag);
-		req2[3] = comm.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag);
-		req1[4] = comm.Isend(sendbuf_z, 5*sendCount_z,rank_z,sendtag);
-		req2[4] = comm.Irecv(recvbuf_Z, 5*recvCount_Z,rank_Z,recvtag);
-		req1[5] = comm.Isend(sendbuf_Z, 5*sendCount_Z,rank_Z,sendtag);
-		req2[5] = comm.Irecv(recvbuf_z, 5*recvCount_z,rank_z,recvtag);
-		req1[6] = comm.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-		req2[6] = comm.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
-		req1[7] = comm.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-		req2[7] = comm.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
-		req1[8] = comm.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-		req2[8] = comm.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
-		req1[9] = comm.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-		req2[9] = comm.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
-		req1[10] = comm.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-		req2[10] = comm.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
-		req1[11] = comm.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-		req2[11] = comm.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
-		req1[12] = comm.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-		req2[12] = comm.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
-		req1[13] = comm.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-		req2[13] = comm.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
-		req1[14] = comm.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-		req2[14] = comm.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
-		req1[15] = comm.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-		req2[15] = comm.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
-		req1[16] = comm.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-		req2[16] = comm.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
-		req1[17] = comm.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-		req2[17] = comm.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+		MPI_Isend(sendbuf_x, 5*sendCount_x,MPI_DOUBLE,rank_x,sendtag,comm,&req1[0]);
+		MPI_Irecv(recvbuf_X, 5*recvCount_X,MPI_DOUBLE,rank_X,recvtag,comm,&req2[0]);
+		MPI_Isend(sendbuf_X, 5*sendCount_X,MPI_DOUBLE,rank_X,sendtag,comm,&req1[1]);
+		MPI_Irecv(recvbuf_x, 5*recvCount_x,MPI_DOUBLE,rank_x,recvtag,comm,&req2[1]);
+		MPI_Isend(sendbuf_y, 5*sendCount_y,MPI_DOUBLE,rank_y,sendtag,comm,&req1[2]);
+		MPI_Irecv(recvbuf_Y, 5*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,comm,&req2[2]);
+		MPI_Isend(sendbuf_Y, 5*sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,comm,&req1[3]);
+		MPI_Irecv(recvbuf_y, 5*recvCount_y,MPI_DOUBLE,rank_y,recvtag,comm,&req2[3]);
+		MPI_Isend(sendbuf_z, 5*sendCount_z,MPI_DOUBLE,rank_z,sendtag,comm,&req1[4]);
+		MPI_Irecv(recvbuf_Z, 5*recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,comm,&req2[4]);
+		MPI_Isend(sendbuf_Z, 5*sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,comm,&req1[5]);
+		MPI_Irecv(recvbuf_z, 5*recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
+		MPI_Isend(sendbuf_xy, sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,comm,&req1[6]);
+		MPI_Irecv(recvbuf_XY, recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,comm,&req2[6]);
+		MPI_Isend(sendbuf_XY, sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,comm,&req1[7]);
+		MPI_Irecv(recvbuf_xy, recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,comm,&req2[7]);
+		MPI_Isend(sendbuf_Xy, sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,comm,&req1[8]);
+		MPI_Irecv(recvbuf_xY, recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,comm,&req2[8]);
+		MPI_Isend(sendbuf_xY, sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,comm,&req1[9]);
+		MPI_Irecv(recvbuf_Xy, recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,comm,&req2[9]);
+		MPI_Isend(sendbuf_xz, sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,comm,&req1[10]);
+		MPI_Irecv(recvbuf_XZ, recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,comm,&req2[10]);
+		MPI_Isend(sendbuf_XZ, sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,comm,&req1[11]);
+		MPI_Irecv(recvbuf_xz, recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,comm,&req2[11]);
+		MPI_Isend(sendbuf_Xz, sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,comm,&req1[12]);
+		MPI_Irecv(recvbuf_xZ, recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,comm,&req2[12]);
+		MPI_Isend(sendbuf_xZ, sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,comm,&req1[13]);
+		MPI_Irecv(recvbuf_Xz, recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,comm,&req2[13]);
+		MPI_Isend(sendbuf_yz, sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,comm,&req1[14]);
+		MPI_Irecv(recvbuf_YZ, recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,comm,&req2[14]);
+		MPI_Isend(sendbuf_YZ, sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,comm,&req1[15]);
+		MPI_Irecv(recvbuf_yz, recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,comm,&req2[15]);
+		MPI_Isend(sendbuf_Yz, sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,comm,&req1[16]);
+		MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,comm,&req2[16]);
+		MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,comm,&req1[17]);
+		MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,comm,&req2[17]);
 		//...................................................................................
 
 		//*************************************************************************
@@ -1629,8 +1652,8 @@ int main(int argc, char **argv)
 
 		//...................................................................................
 		// Wait for completion of D3Q19 communication
-		comm.waitAll(18,req1);
-		comm.waitAll(18,req2);
+		MPI_Waitall(18,req1,stat1);
+		MPI_Waitall(18,req2,stat2);
 
 		//...................................................................................
 		// Unpack the distributions on the device
@@ -1724,18 +1747,18 @@ int main(int argc, char **argv)
 
 		//...................................................................................
 		// Send all the distributions
-		req1[0] = comm.Isend(sendbuf_x, 2*sendCount_x,rank_x,sendtag);
-		req2[0] = comm.Irecv(recvbuf_X, 2*recvCount_X,rank_X,recvtag);
-		req1[1] = comm.Isend(sendbuf_X, 2*sendCount_X,rank_X,sendtag);
-		req2[1] = comm.Irecv(recvbuf_x, 2*recvCount_x,rank_x,recvtag);
-		req1[2] = comm.Isend(sendbuf_y, 2*sendCount_y,rank_y,sendtag);
-		req2[2] = comm.Irecv(recvbuf_Y, 2*recvCount_Y,rank_Y,recvtag);
-		req1[3] = comm.Isend(sendbuf_Y, 2*sendCount_Y,rank_Y,sendtag);
-		req2[3] = comm.Irecv(recvbuf_y, 2*recvCount_y,rank_y,recvtag);
-		req1[4] = comm.Isend(sendbuf_z, 2*sendCount_z,rank_z,sendtag);
-		req2[4] = comm.Irecv(recvbuf_Z, 2*recvCount_Z,rank_Z,recvtag);
-		req1[5] = comm.Isend(sendbuf_Z, 2*sendCount_Z,rank_Z,sendtag);
-		req2[5] = comm.Irecv(recvbuf_z, 2*recvCount_z,rank_z,recvtag);
+		MPI_Isend(sendbuf_x, 2*sendCount_x,MPI_DOUBLE,rank_x,sendtag,comm,&req1[0]);
+		MPI_Irecv(recvbuf_X, 2*recvCount_X,MPI_DOUBLE,rank_X,recvtag,comm,&req2[0]);
+		MPI_Isend(sendbuf_X, 2*sendCount_X,MPI_DOUBLE,rank_X,sendtag,comm,&req1[1]);
+		MPI_Irecv(recvbuf_x, 2*recvCount_x,MPI_DOUBLE,rank_x,recvtag,comm,&req2[1]);
+		MPI_Isend(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_y,sendtag,comm,&req1[2]);
+		MPI_Irecv(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,comm,&req2[2]);
+		MPI_Isend(sendbuf_Y, 2*sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,comm,&req1[3]);
+		MPI_Irecv(recvbuf_y, 2*recvCount_y,MPI_DOUBLE,rank_y,recvtag,comm,&req2[3]);
+		MPI_Isend(sendbuf_z, 2*sendCount_z,MPI_DOUBLE,rank_z,sendtag,comm,&req1[4]);
+		MPI_Irecv(recvbuf_Z, 2*recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,comm,&req2[4]);
+		MPI_Isend(sendbuf_Z, 2*sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,comm,&req1[5]);
+		MPI_Irecv(recvbuf_z, 2*recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
 		//...................................................................................
 		
 		ScaLBL_D3Q7_Swap(ID, A_even, A_odd, Nx, Ny, Nz);
@@ -1743,8 +1766,8 @@ int main(int argc, char **argv)
 		
 		//...................................................................................
 		// Wait for completion of D3Q19 communication
-		comm.waitAll(6,req1);
-		comm.waitAll(6,req2);
+		MPI_Waitall(6,req1,stat1);
+		MPI_Waitall(6,req2,stat2);
 		//...................................................................................
 		// Unpack the distributions on the device
 		//...................................................................................
@@ -1805,48 +1828,48 @@ int main(int argc, char **argv)
 		//...................................................................................
 		// Send / Recv all the phase indcator field values
 		//...................................................................................
-		req1[0] = comm.Isend(sendbuf_x, sendCount_x,rank_x,sendtag,comm,&req1[0]);
-		req2[0] = comm.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag,comm,&req2[0]);
-		req1[1] = comm.Isend(sendbuf_X, sendCount_X,rank_X,sendtag,comm,&req1[1]);
-		req2[1] = comm.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag,comm,&req2[1]);
-		req1[2] = comm.Isend(sendbuf_y, sendCount_y,rank_y,sendtag,comm,&req1[2]);
-		req2[2] = comm.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag,comm,&req2[2]);
-		req1[3] = comm.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag,comm,&req1[3]);
-		req2[3] = comm.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag,comm,&req2[3]);
-		req1[4] = comm.Isend(sendbuf_z, sendCount_z,rank_z,sendtag,comm,&req1[4]);
-		req2[4] = comm.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag,comm,&req2[4]);
-		req1[5] = comm.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag,comm,&req1[5]);
-		req2[5] = comm.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag,comm,&req2[5]);
-		req1[6] = comm.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag,comm,&req1[6]);
-		req2[6] = comm.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag,comm,&req2[6]);
-		req1[7] = comm.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag,comm,&req1[7]);
-		req2[7] = comm.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag,comm,&req2[7]);
-		req1[8] = comm.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag,comm,&req1[8]);
-		req2[8] = comm.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag,comm,&req2[8]);
-		req1[9] = comm.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag,comm,&req1[9]);
-		req2[9] = comm.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag,comm,&req2[9]);
-		req1[10] = comm.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag,comm,&req1[10]);
-		req2[10] = comm.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag,comm,&req2[10]);
-		req1[11] = comm.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag,comm,&req1[11]);
-		req2[11] = comm.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag,comm,&req2[11]);
-		req1[12] = comm.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag,comm,&req1[12]);
-		req2[12] = comm.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag,comm,&req2[12]);
-		req1[13] = comm.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag,comm,&req1[13]);
-		req2[13] = comm.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag,comm,&req2[13]);
-		req1[14] = comm.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag,comm,&req1[14]);
-		req2[14] = comm.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag,comm,&req2[14]);
-		req1[15] = comm.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag,comm,&req1[15]);
-		req2[15] = comm.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag,comm,&req2[15]);
-		req1[16] = comm.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag,comm,&req1[16]);
-		req2[16] = comm.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag,comm,&req2[16]);
-		req1[17] = comm.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag,comm,&req1[17]);
-		req2[17] = comm.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag,comm,&req2[17]);
+		MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_x,sendtag,comm,&req1[0]);
+		MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_X,recvtag,comm,&req2[0]);
+		MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_X,sendtag,comm,&req1[1]);
+		MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_x,recvtag,comm,&req2[1]);
+		MPI_Isend(sendbuf_y, sendCount_y,MPI_DOUBLE,rank_y,sendtag,comm,&req1[2]);
+		MPI_Irecv(recvbuf_Y, recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,comm,&req2[2]);
+		MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,comm,&req1[3]);
+		MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_y,recvtag,comm,&req2[3]);
+		MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_z,sendtag,comm,&req1[4]);
+		MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,comm,&req2[4]);
+		MPI_Isend(sendbuf_Z, sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,comm,&req1[5]);
+		MPI_Irecv(recvbuf_z, recvCount_z,MPI_DOUBLE,rank_z,recvtag,comm,&req2[5]);
+		MPI_Isend(sendbuf_xy, sendCount_xy,MPI_DOUBLE,rank_xy,sendtag,comm,&req1[6]);
+		MPI_Irecv(recvbuf_XY, recvCount_XY,MPI_DOUBLE,rank_XY,recvtag,comm,&req2[6]);
+		MPI_Isend(sendbuf_XY, sendCount_XY,MPI_DOUBLE,rank_XY,sendtag,comm,&req1[7]);
+		MPI_Irecv(recvbuf_xy, recvCount_xy,MPI_DOUBLE,rank_xy,recvtag,comm,&req2[7]);
+		MPI_Isend(sendbuf_Xy, sendCount_Xy,MPI_DOUBLE,rank_Xy,sendtag,comm,&req1[8]);
+		MPI_Irecv(recvbuf_xY, recvCount_xY,MPI_DOUBLE,rank_xY,recvtag,comm,&req2[8]);
+		MPI_Isend(sendbuf_xY, sendCount_xY,MPI_DOUBLE,rank_xY,sendtag,comm,&req1[9]);
+		MPI_Irecv(recvbuf_Xy, recvCount_Xy,MPI_DOUBLE,rank_Xy,recvtag,comm,&req2[9]);
+		MPI_Isend(sendbuf_xz, sendCount_xz,MPI_DOUBLE,rank_xz,sendtag,comm,&req1[10]);
+		MPI_Irecv(recvbuf_XZ, recvCount_XZ,MPI_DOUBLE,rank_XZ,recvtag,comm,&req2[10]);
+		MPI_Isend(sendbuf_XZ, sendCount_XZ,MPI_DOUBLE,rank_XZ,sendtag,comm,&req1[11]);
+		MPI_Irecv(recvbuf_xz, recvCount_xz,MPI_DOUBLE,rank_xz,recvtag,comm,&req2[11]);
+		MPI_Isend(sendbuf_Xz, sendCount_Xz,MPI_DOUBLE,rank_Xz,sendtag,comm,&req1[12]);
+		MPI_Irecv(recvbuf_xZ, recvCount_xZ,MPI_DOUBLE,rank_xZ,recvtag,comm,&req2[12]);
+		MPI_Isend(sendbuf_xZ, sendCount_xZ,MPI_DOUBLE,rank_xZ,sendtag,comm,&req1[13]);
+		MPI_Irecv(recvbuf_Xz, recvCount_Xz,MPI_DOUBLE,rank_Xz,recvtag,comm,&req2[13]);
+		MPI_Isend(sendbuf_yz, sendCount_yz,MPI_DOUBLE,rank_yz,sendtag,comm,&req1[14]);
+		MPI_Irecv(recvbuf_YZ, recvCount_YZ,MPI_DOUBLE,rank_YZ,recvtag,comm,&req2[14]);
+		MPI_Isend(sendbuf_YZ, sendCount_YZ,MPI_DOUBLE,rank_YZ,sendtag,comm,&req1[15]);
+		MPI_Irecv(recvbuf_yz, recvCount_yz,MPI_DOUBLE,rank_yz,recvtag,comm,&req2[15]);
+		MPI_Isend(sendbuf_Yz, sendCount_Yz,MPI_DOUBLE,rank_Yz,sendtag,comm,&req1[16]);
+		MPI_Irecv(recvbuf_yZ, recvCount_yZ,MPI_DOUBLE,rank_yZ,recvtag,comm,&req2[16]);
+		MPI_Isend(sendbuf_yZ, sendCount_yZ,MPI_DOUBLE,rank_yZ,sendtag,comm,&req1[17]);
+		MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,comm,&req2[17]);
 		//...................................................................................
 		//...................................................................................
 		// Wait for completion of Indicator Field communication
 		//...................................................................................
-		comm.waitAll(18,req1);
-		comm.waitAll(18,req2);
+		MPI_Waitall(18,req1,stat1);
+		MPI_Waitall(18,req2,stat2);
 		ScaLBL_DeviceBarrier();
 		//...................................................................................
 		//...................................................................................
@@ -1892,7 +1915,7 @@ int main(int argc, char **argv)
 		
 		//...................................................................................
 
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Timestep completed!
 		timestep++;
@@ -1917,7 +1940,7 @@ int main(int argc, char **argv)
 			ScaLBL_CopyToHost(Vel_x.data,&Velocity[0],N*sizeof(double));
 			ScaLBL_CopyToHost(Vel_y.data,&Velocity[N],N*sizeof(double));
 			ScaLBL_CopyToHost(Vel_z.data,&Velocity[2*N],N*sizeof(double));
-			comm.barrier();
+			MPI_Barrier(comm);
 		}
 		if (timestep%1000 == 5){
 			//...........................................................................
@@ -2422,30 +2445,30 @@ int main(int argc, char **argv)
 			}
 			
 			//...........................................................................
-			comm.barrier();
-			nwp_volume_global = comm.sumReduce( nwp_volume );
-			awn_global = comm.sumReduce( awn );
-			ans_global = comm.sumReduce( ans );
-			aws_global = comm.sumReduce( aws );
-			lwns_global = comm.sumReduce( lwns );
-			As_global  = comm.sumReduce( As );
-			Jwn_global = comm.sumReduce( Jwn );
-			Kwn_global = comm.sumReduce( Kwn );
-			efawns_global = comm.sumReduce( efawns );
+			MPI_Barrier(comm);
+			MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,comm);
 			// Phase averages
-			vol_w_global = comm.sumReduce( vol_w );
-			vol_n_global = comm.sumReduce( vol_n );
-			paw_global   = comm.sumReduce( paw );
-			pan_global   = comm.sumReduce( pan );
-			vaw_global(0) = comm.sumReduce( vaw(0) );
-			van_global(0) = comm.sumReduce( van(0) );
-			vawn_global(0) = comm.sumReduce( vawn(0) );
-			Gwn_global(0) = comm.sumReduce( Gwn(0) );
-			Gns_global(0) = comm.sumReduce( Gns(0) );
-			Gws_global(0) = comm.sumReduce( Gws(0) );
-			trawn_global = comm.sumReduce( trawn );
-			trJwn_global = comm.sumReduce( trJwn );
-			comm.barrier();
+			MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,comm);
+			MPI_Barrier(comm);
 			//.........................................................................
 			// Compute the change in the total surface energy based on the defined interval
 			// See McClure, Prins and Miller (2014) 
@@ -2524,7 +2547,7 @@ int main(int argc, char **argv)
 			if (rank==0){
 				mkdir(tmpstr,0777);
 			}
-			comm.barrier();
+			MPI_Barrier(comm);
 			
 			FILE *WN_TRIS;
 			sprintf(LocalRankFilename,"%s/%s%s",tmpstr,"wn-tris.",LocalRankString);
@@ -2669,8 +2692,8 @@ int main(int argc, char **argv)
 	}
 	//************************************************************************/
 	ScaLBL_DeviceBarrier();
-	comm.barrier();
-	stoptime = Utilities::MPI::time();
+	MPI_Barrier(comm);
+	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
 	cputime = (stoptime - starttime)/timestep;
@@ -2793,7 +2816,7 @@ int main(int argc, char **argv)
 */	//************************************************************************/
 
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

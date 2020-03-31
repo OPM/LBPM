@@ -9,7 +9,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 //#define WRITE_SURFACES
 
@@ -23,12 +23,15 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
@@ -95,32 +98,32 @@ int main(int argc, char **argv)
 		}
 		// **************************************************************
 		// Broadcast simulation parameters from rank 0 to all other procs
-		comm.barrier();
+		MPI_Barrier(comm);
 		//.................................................
-		comm.bcast(&tau,1,0);
-		//comm.bcast(&pBC,1,0);
-		//comm.bcast(&Restart,1,0);
-		comm.bcast(&din,1,0);
-		comm.bcast(&dout,1,0);
-		comm.bcast(&Fx,1,0);
-		comm.bcast(&Fy,1,0);
-		comm.bcast(&Fz,1,0);
-		comm.bcast(&timestepMax,1,0);
-		comm.bcast(&interval,1,0);
-		comm.bcast(&tol,1,0);
+		MPI_Bcast(&tau,1,MPI_DOUBLE,0,comm);
+		//MPI_Bcast(&pBC,1,MPI_LOGICAL,0,comm);
+		//	MPI_Bcast(&Restart,1,MPI_LOGICAL,0,comm);
+		MPI_Bcast(&din,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&dout,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fy,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Fz,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&timestepMax,1,MPI_INT,0,comm);
+		MPI_Bcast(&interval,1,MPI_INT,0,comm);
+		MPI_Bcast(&tol,1,MPI_DOUBLE,0,comm);
 		// Computational domain
-		comm.bcast(&Nx,1,0);
-		comm.bcast(&Ny,1,0);
-		comm.bcast(&Nz,1,0);
-		comm.bcast(&nprocx,1,0);
-		comm.bcast(&nprocy,1,0);
-		comm.bcast(&nprocz,1,0);
-		//comm.bcast(&nspheres,1,0);
-		comm.bcast(&Lx,1,0);
-		comm.bcast(&Ly,1,0);
-		comm.bcast(&Lz,1,0);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		//MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		RESTART_INTERVAL=interval;
 		// **************************************************************
@@ -155,7 +158,7 @@ int main(int argc, char **argv)
 
 		// Mask that excludes the solid phase
 		Domain Mask(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BC);
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		Nx += 2;	Ny += 2;	Nz += 2;
 		int N = Nx*Ny*Nz;
@@ -191,7 +194,7 @@ int main(int argc, char **argv)
 		sprintf(LocalRankString,"%05d",rank);
 		sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 		ReadBinaryFile(LocalRankFilename, Averages.SDs.data(), N);
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 
 		//.......................................................................
@@ -249,7 +252,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sum = comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -258,7 +261,7 @@ int main(int argc, char **argv)
 		id[0] = id[Nx-1] = id[(Ny-1)*Nx] = id[(Ny-1)*Nx + Nx-1] = 0;
 		id[(Nz-1)*Nx*Ny] = id[(Nz-1)*Nx*Ny+Nx-1] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx] = id[(Nz-1)*Nx*Ny+(Ny-1)*Nx + Nx-1] = 0;
 		//.........................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask.Nx*Mask.Ny*Mask.Nz; i++) Mask.id[i] = id[i];
@@ -274,7 +277,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Mask.id,Np);
-		comm.barrier();
+		MPI_Barrier(comm);
 		
 		// LBM variables
 		if (rank==0)	printf ("Allocating distributions \n");
@@ -330,8 +333,8 @@ int main(int argc, char **argv)
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
-		comm.barrier();
-		starttime = Utilities::MPI::time();
+		MPI_Barrier(comm);
+		starttime = MPI_Wtime();
 		//.........................................
 
 		double D32,Fo,Re,velocity,err1D,mag_force,vel_prev;
@@ -345,14 +348,14 @@ int main(int argc, char **argv)
 			ScaLBL_D3Q19_AAodd_BGK(NeighborList, dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAodd_BGK(NeighborList, dist, 0, ScaLBL_Comm.next, Np, rlx, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 			timestep++;
 			ScaLBL_Comm.SendD3Q19AA(dist); //READ FORM NORMAL
 			ScaLBL_D3Q19_AAeven_BGK(dist, ScaLBL_Comm.first_interior, ScaLBL_Comm.last_interior, Np, rlx, Fx, Fy, Fz);
 			ScaLBL_Comm.RecvD3Q19AA(dist); //WRITE INTO OPPOSITE
 			ScaLBL_D3Q19_AAeven_BGK(dist, 0, ScaLBL_Comm.next, Np, rlx, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			//************************************************************************/
 
 			if (timestep%500 == 0){
@@ -409,8 +412,8 @@ int main(int argc, char **argv)
 		}
 		//************************************************************************/
 		ScaLBL_DeviceBarrier();
-		comm.barrier();
-		stoptime = Utilities::MPI::time();
+		MPI_Barrier(comm);
+		stoptime = MPI_Wtime();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
@@ -427,7 +430,7 @@ int main(int argc, char **argv)
 		NULL_USE(RESTART_INTERVAL);
 	}
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

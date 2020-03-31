@@ -1,6 +1,6 @@
 #include "IO/silo.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 #include "ProfilerApp.h"
 

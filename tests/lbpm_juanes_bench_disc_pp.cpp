@@ -9,7 +9,7 @@
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"    // This includes mpi.h
 #include "common/SpherePack.h"
 
 /*
@@ -130,11 +130,15 @@ inline void SignedDistanceDiscPack(double *Distance, int ndiscs, double *List_cx
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
+	int rank,nprocs;
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
@@ -147,6 +151,9 @@ int main(int argc, char **argv)
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
+	MPI_Request req1[18],req2[18];
+	MPI_Status stat1[18],stat2[18];
+
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -187,21 +194,21 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	comm.barrier();
+	MPI_Barrier(comm);
 	//.................................................
 	// Computational domain
-	comm.bcast(&Nx,1,0);
-	comm.bcast(&Ny,1,0);
-	comm.bcast(&Nz,1,0);
-	comm.bcast(&nprocx,1,0);
-	comm.bcast(&nprocy,1,0);
-	comm.bcast(&nprocz,1,0);
-	comm.bcast(&ndiscs,1,0);
-	comm.bcast(&Lx,1,0);
-	comm.bcast(&Ly,1,0);
-	comm.bcast(&Lz,1,0);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&ndiscs,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 
 	// **************************************************************
 	double Rin,Rout;
@@ -233,7 +240,7 @@ int main(int argc, char **argv)
 			 	 	 rank_xy, rank_XY, rank_xY, rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz,
 			 	 	 rank_yz, rank_YZ, rank_yZ, rank_Yz );
 
-	 comm.barrier();
+	 MPI_Barrier(comm);
 	Nx += 2;	Ny += 2;	Nz += 2;
 
 	int N = Nx*Ny*Nz;
@@ -287,13 +294,13 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the disc packing \n");
 	if (rank == 0)	ReadDiscPacking(ndiscs,cx,cy,rad);
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
-	comm.bcast(cx,ndiscs,0);
-	comm.bcast(cy,ndiscs,0);
-	comm.bcast(rad,ndiscs,0);
+	MPI_Bcast(cx,ndiscs,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cy,ndiscs,MPI_DOUBLE,0,comm);
+	MPI_Bcast(rad,ndiscs,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	/*	if (rank == 0){
 		cout << "Domain set." << endl;
 		printf("************ \n");
@@ -305,7 +312,7 @@ int main(int argc, char **argv)
 	}
 	*/
 
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (nprocz > 1 && rank==0) printf("Disc packs are 2D -- are you sure you want nprocz > 1? \n");
 	if (rank ==0) printf("Compute the signed distance part I \n");
 	//.......................................................................
@@ -433,7 +440,7 @@ int main(int argc, char **argv)
 		}
 	}
 	sum_local = 1.0*sum;
-	porosity = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -449,7 +456,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	pore_vol = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
 
 	//.........................................................
 	// don't perform computations at the eight corners
@@ -483,7 +490,7 @@ int main(int argc, char **argv)
 	//......................................................................
 
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	// ****************************************************
 }

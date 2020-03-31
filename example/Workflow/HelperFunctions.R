@@ -7,19 +7,20 @@ ReadDatabase<-function(FILE){
     INPUT<-gsub(';','',readLines(FILE))
 
     S<-gsub('tauA = ','',gsub("\\s+"," ",(grep("tauA",INPUT,value=TRUE))))
-    TAU_A = as.numeric(S)
+    TAU_A = as.numeric(gsub("/.*","",S))
     S<-gsub('tauB = ','',gsub("\\s+"," ",(grep("tauB",INPUT,value=TRUE))))
-    TAU_B = as.numeric(S)
+    TAU_B = as.numeric(gsub("/.*","",S))
     S<-gsub('rhoA = ','',gsub("\\s+"," ",(grep("rhoA",INPUT,value=TRUE))))
-    RHO_A = as.numeric(S)
+    RHO_A = as.numeric(gsub("/.*","",S))
     S<-gsub('rhoB = ','',gsub("\\s+"," ",(grep("rhoB",INPUT,value=TRUE))))
-    RHO_B = as.numeric(S)
+    RHO_B = as.numeric(gsub("/.*","",S))
 
     S<-gsub('alpha = ','',gsub("\\s+"," ",(grep("alpha",INPUT,value=TRUE))))
-    ALPHA = as.numeric(S)
+    ALPHA = as.numeric(gsub("/.*","",S))
 
     # Read the affinity
     S<-gsub('ComponentAffinity = ','',gsub("\\s+"," ",(grep("ComponentAffinity",INPUT,value=TRUE))))
+    S<-gsub("/.*","",S)
     AFFINITY<-as.numeric(unlist(strsplit(S,", ")))
 
     PARAMETERS<-c(TAU_A,TAU_B,RHO_A,RHO_B,ALPHA,AFFINITY)

@@ -14,49 +14,44 @@
 /********************************************************************
  *  Constructor/Destructor                                           *
  ********************************************************************/
-UnitTest::UnitTest() : d_verbose( false ), d_comm( MPI_COMM_SELF )
+UnitTest::UnitTest()
 {
-    if ( Utilities::MPI::MPI_active() )
-        d_comm = MPI_COMM_WORLD;
+#ifdef USE_MPI
+    comm = MPI_COMM_WORLD;
+#endif
 }
 UnitTest::~UnitTest() { reset(); }
 void UnitTest::reset()
 {
-    d_mutex.lock();
+    mutex.lock();
     // Clear the data forcing a reallocation
-    std::vector<std::string>().swap( d_pass );
-    std::vector<std::string>().swap( d_fail );
-    std::vector<std::string>().swap( d_expected );
-    d_mutex.unlock();
+    std::vector<std::string>().swap( pass_messages );
+    std::vector<std::string>().swap( fail_messages );
+    std::vector<std::string>().swap( expected_fail_messages );
+    mutex.unlock();
 }
 
 
 /********************************************************************
  *  Add a pass, fail, expected failure message in a thread-safe way  *
  ********************************************************************/
-void UnitTest::passes( std::string in )
+void UnitTest::passes( const std::string &in )
 {
-    d_mutex.lock();
-    if ( d_verbose )
-        printf( "UnitTest: %i passes: %s\n", d_comm.getRank(), in.data() );
-    d_pass.emplace_back( std::move( in ) );
-    d_mutex.unlock();
+    mutex.lock();
+    pass_messages.push_back( in );
+    mutex.unlock();
 }
-void UnitTest::failure( std::string in )
+void UnitTest::failure( const std::string &in )
 {
-    d_mutex.lock();
-    if ( d_verbose )
-        printf( "UnitTest: %i failed: %s\n", d_comm.getRank(), in.data() );
-    d_fail.emplace_back( std::move( in ) );
-    d_mutex.unlock();
+    mutex.lock();
+    fail_messages.push_back( in );
+    mutex.unlock();
 }
-void UnitTest::expected_failure( std::string in )
+void UnitTest::expected_failure( const std::string &in )
 {
-    d_mutex.lock();
-    if ( d_verbose )
-        printf( "UnitTest: %i expected_failure: %s\n", d_comm.getRank(), in.data() );
-    d_expected.emplace_back( std::move( in ) );
-    d_mutex.unlock();
+    mutex.lock();
+    expected_fail_messages.push_back( in );
+    mutex.unlock();
 }
 
 
@@ -64,6 +59,23 @@ void UnitTest::expected_failure( std::string in )
  *  Print a global report                                            *
  *  Note: only rank 0 will print, all messages will be aggregated    *
  ********************************************************************/
+inline std::vector<int> UnitTest::allGather( int value ) const
+{
+    int size = getSize();
+    std::vector<int> data( size, value );
+#ifdef USE_MPI
+    if ( size > 1 )
+        MPI_Allgather( &value, 1, MPI_INT, data.data(), 1, MPI_INT, comm );
+#endif
+    return data;
+}
+inline void UnitTest::barrier() const
+{
+#ifdef USE_MPI
+    if ( getSize() > 1 )
+        MPI_Barrier( comm );
+#endif
+}
 static inline void print_messages( const std::vector<std::vector<std::string>> &messages )
 {
     if ( messages.size() > 1 ) {
@@ -81,27 +93,28 @@ static inline void print_messages( const std::vector<std::vector<std::string>> &
 }
 void UnitTest::report( const int level0 ) const
 {
-    d_mutex.lock();
-    int size = d_comm.getSize();
-    int rank = d_comm.getRank();
-    // Give all processors a chance to print any remaining messages
-    d_comm.barrier();
-    Utilities::sleep_ms( 10 );
+    mutex.lock();
+    int size = getSize();
+    int rank = getRank();
     // Broadcast the print level from rank 0
-    int level = d_comm.bcast( level0, 0 );
+    int level = level0;
+#ifdef USE_MPI
+    if ( getSize() > 1 )
+        MPI_Bcast( &level, 1, MPI_INT, 0, comm );
+#endif
     if ( level < 0 || level > 2 )
         ERROR( "Invalid print level" );
     // Perform a global all gather to get the number of failures per processor
-    auto N_pass        = d_comm.allGather<int>( d_pass.size() );
-    auto N_fail        = d_comm.allGather<int>( d_fail.size() );
-    auto N_expected    = d_comm.allGather<int>( d_expected.size() );
-    int N_pass_tot     = 0;
-    int N_fail_tot     = 0;
-    int N_expected_tot = 0;
+    auto N_pass             = allGather( pass_messages.size() );
+    auto N_fail             = allGather( fail_messages.size() );
+    auto N_expected_fail    = allGather( expected_fail_messages.size() );
+    int N_pass_tot          = 0;
+    int N_fail_tot          = 0;
+    int N_expected_fail_tot = 0;
     for ( int i = 0; i < size; i++ ) {
         N_pass_tot += N_pass[i];
         N_fail_tot += N_fail[i];
-        N_expected_tot += N_expected[i];
+        N_expected_fail_tot += N_expected_fail[i];
     }
     // Send all messages to rank 0 (if needed)
     std::vector<std::vector<std::string>> pass_messages_rank( size );
@@ -109,13 +122,13 @@ void UnitTest::report( const int level0 ) const
     std::vector<std::vector<std::string>> expected_fail_rank( size );
     // Get the pass messages
     if ( ( level == 1 && N_pass_tot <= 20 ) || level == 2 )
-        pass_messages_rank = UnitTest::gatherMessages( d_pass, 1 );
+        pass_messages_rank = UnitTest::gatherMessages( pass_messages, 1 );
     // Get the fail messages
     if ( level == 1 || level == 2 )
-        fail_messages_rank = UnitTest::gatherMessages( d_fail, 2 );
+        fail_messages_rank = UnitTest::gatherMessages( fail_messages, 2 );
     // Get the expected_fail messages
-    if ( ( level == 1 && N_expected_tot <= 50 ) || level == 2 )
-        expected_fail_rank = UnitTest::gatherMessages( d_expected, 2 );
+    if ( ( level == 1 && N_expected_fail_tot <= 50 ) || level == 2 )
+        expected_fail_rank = UnitTest::gatherMessages( expected_fail_messages, 2 );
     // Print the results of all messages (only rank 0 will print)
     if ( rank == 0 ) {
         pout << std::endl;
@@ -161,31 +174,31 @@ void UnitTest::report( const int level0 ) const
         pout << std::endl;
         // Print the tests that expected failed
         pout << "Tests expected failed" << std::endl;
-        if ( level == 0 || ( level == 1 && N_expected_tot > 50 ) ) {
+        if ( level == 0 || ( level == 1 && N_expected_fail_tot > 50 ) ) {
             // We want to print a summary
             if ( size > 8 ) {
                 // Print 1 summary for all processors
                 printp( "     %i tests expected failed (use report level 2 for more detail)\n",
-                    N_expected_tot );
+                    N_expected_fail_tot );
             } else {
                 // Print a summary for each processor
                 for ( int i = 0; i < size; i++ )
                     printp( "     %i tests expected failed (proc %i) (use report level 2 for more "
                             "detail)\n",
-                        N_expected[i], i );
+                        N_expected_fail[i], i );
             }
         } else {
             // We want to print all messages
             for ( int i = 0; i < size; i++ )
-                ASSERT( (int) expected_fail_rank[i].size() == N_expected[i] );
+                ASSERT( (int) expected_fail_rank[i].size() == N_expected_fail[i] );
             print_messages( expected_fail_rank );
         }
         pout << std::endl;
     }
     // Add a barrier to synchronize all processors (rank 0 is much slower)
-    d_comm.barrier();
+    barrier();
     Utilities::sleep_ms( 10 ); // Need a brief pause to allow any printing to finish
-    d_mutex.unlock();
+    mutex.unlock();
 }
 
 
@@ -195,8 +208,8 @@ void UnitTest::report( const int level0 ) const
 std::vector<std::vector<std::string>> UnitTest::gatherMessages(
     const std::vector<std::string> &local_messages, int tag ) const
 {
-    const int rank = d_comm.getRank();
-    const int size = d_comm.getSize();
+    const int rank = getRank();
+    const int size = getSize();
     std::vector<std::vector<std::string>> messages( size );
     if ( rank == 0 ) {
         // Rank 0 should receive all messages
@@ -220,6 +233,7 @@ std::vector<std::vector<std::string>> UnitTest::gatherMessages(
 void UnitTest::pack_message_stream(
     const std::vector<std::string> &messages, const int rank, const int tag ) const
 {
+#ifdef USE_MPI
     // Get the size of the messages
     auto N_messages  = (int) messages.size();
     auto *msg_size   = new int[N_messages];
@@ -240,11 +254,18 @@ void UnitTest::pack_message_stream(
         k += msg_size[i];
     }
     // Send the message stream (using a non-blocking send)
-    auto request = d_comm.Isend( data, size_data, rank, tag );
+    MPI_Request request;
+    MPI_Isend( data, size_data, MPI_CHAR, rank, tag, comm, &request );
     // Wait for the communication to send and free the temporary memory
-    d_comm.wait( request );
+    MPI_Status status;
+    MPI_Wait( &request, &status );
     delete[] data;
     delete[] msg_size;
+#else
+    NULL_USE( messages );
+    NULL_USE( rank );
+    NULL_USE( tag );
+#endif
 }
 
 
@@ -253,15 +274,20 @@ void UnitTest::pack_message_stream(
  ********************************************************************/
 std::vector<std::string> UnitTest::unpack_message_stream( const int rank, const int tag ) const
 {
+#ifdef USE_MPI
     // Probe the message to get the message size
-    int size_data = d_comm.probe( rank, tag );
+    MPI_Status status;
+    MPI_Probe( rank, tag, comm, &status );
+    int size_data = -1;
+    MPI_Get_count( &status, MPI_BYTE, &size_data );
     ASSERT( size_data >= 0 );
     // Allocate memory to receive the data
     auto *data = new char[size_data];
     // receive the data (using a non-blocking receive)
-    auto request = d_comm.Irecv( data, size_data, rank, tag );
+    MPI_Request request;
+    MPI_Irecv( data, size_data, MPI_CHAR, rank, tag, comm, &request );
     // Wait for the communication to be received
-    d_comm.wait( request );
+    MPI_Wait( &request, &status );
     // Unpack the message stream
     int N_messages = 0;
     memcpy( &N_messages, data, sizeof( int ) );
@@ -277,16 +303,77 @@ std::vector<std::string> UnitTest::unpack_message_stream( const int rank, const 
         messages[i] = std::string( &data[k], msg_size[i] );
         k += msg_size[i];
     }
-    // Delete the temporary memory
     delete[] data;
     return messages;
+#else
+    NULL_USE( rank );
+    NULL_USE( tag );
+    return std::vector<std::string>();
+#endif
 }
 
 
 /********************************************************************
  *  Other functions                                                  *
  ********************************************************************/
-size_t UnitTest::NumPassGlobal() const { return d_comm.sumReduce( d_pass.size() ); }
-size_t UnitTest::NumFailGlobal() const { return d_comm.sumReduce( d_fail.size() ); }
-size_t UnitTest::NumExpectedFailGlobal() const { return d_comm.sumReduce( d_expected.size() ); }
-
+int UnitTest::getRank() const
+{
+    int rank = 0;
+#ifdef USE_MPI
+    int flag = 0;
+    MPI_Initialized( &flag );
+    if ( flag )
+        MPI_Comm_rank( comm, &rank );
+#endif
+    return rank;
+}
+int UnitTest::getSize() const
+{
+    int size = 1;
+#ifdef USE_MPI
+    int flag = 0;
+    MPI_Initialized( &flag );
+    if ( flag )
+        MPI_Comm_size( comm, &size );
+#endif
+    return size;
+}
+size_t UnitTest::NumPassGlobal() const
+{
+    size_t num = pass_messages.size();
+#ifdef USE_MPI
+    if ( getSize() > 1 ) {
+        auto send = static_cast<int>( num );
+        int sum   = 0;
+        MPI_Allreduce( &send, &sum, 1, MPI_INT, MPI_SUM, comm );
+        num = static_cast<size_t>( sum );
+    }
+#endif
+    return num;
+}
+size_t UnitTest::NumFailGlobal() const
+{
+    size_t num = fail_messages.size();
+#ifdef USE_MPI
+    if ( getSize() > 1 ) {
+        auto send = static_cast<int>( num );
+        int sum   = 0;
+        MPI_Allreduce( &send, &sum, 1, MPI_INT, MPI_SUM, comm );
+        num = static_cast<size_t>( sum );
+    }
+#endif
+    return num;
+}
+size_t UnitTest::NumExpectedFailGlobal() const
+{
+    size_t num = expected_fail_messages.size();
+#ifdef USE_MPI
+    if ( getSize() > 1 ) {
+        auto send = static_cast<int>( num );
+        int sum   = 0;
+        MPI_Allreduce( &send, &sum, 1, MPI_INT, MPI_SUM, comm );
+        num = static_cast<size_t>( sum );
+    }
+#endif
+    return num;
+}

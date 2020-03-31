@@ -26,9 +26,9 @@ std::shared_ptr<Database> loadInputs( )
 int main(int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-	//int rank = comm.getRank();
-	//int nprocs = comm.getSize();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	//int rank = MPI_WORLD_RANK();
+	//int nprocs = MPI_WORLD_SIZE();
 	int toReturn = 0;
 	{
 		int i,j,k;
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 		
 	}
     PROFILE_SAVE("test_dcel_minkowski");
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	return toReturn;
 }

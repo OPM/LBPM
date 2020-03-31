@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -30,11 +30,13 @@
 
 int main(int argc, char **argv)
 {
+
 	// Initialize MPI
+	int rank, nprocs;
 	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+	MPI_Comm comm = MPI_COMM_WORLD;
+	MPI_Comm_rank(comm,&rank);
+	MPI_Comm_size(comm,&nprocs);
     Utilities::setErrorHandlers();
 	PROFILE_START("Main");
 
@@ -149,7 +151,7 @@ int main(int argc, char **argv)
       
     }
     netcdf::close( distid );
-	comm.barrier();
+	MPI_Barrier(comm);
 	PROFILE_STOP("ReadDistance");
 	if (rank==0) printf("Finished reading distance =\n");
 
@@ -182,7 +184,7 @@ int main(int argc, char **argv)
         fillFloat[0]->fill( LOCVOL[0] );
     }
     netcdf::close( fid );
-	comm.barrier();
+	MPI_Barrier(comm);
 	PROFILE_STOP("ReadVolume");
 	if (rank==0) printf("Read complete\n");
 
@@ -445,7 +447,7 @@ int main(int argc, char **argv)
 
 	PROFILE_STOP("Main");
 	PROFILE_SAVE("lbpm_uCT_maskfilter",true);
-	comm.barrier();
+	MPI_Barrier(comm);
 	MPI_Finalize();
 	return 0;
 }

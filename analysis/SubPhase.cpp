@@ -229,25 +229,25 @@ void SubPhase::Basic(){
 			}
 		}
 	}
-	gwb.V = Dm->Comm.sumReduce( wb.V);
-	gnb.V = Dm->Comm.sumReduce( nb.V);
-	gwb.M = Dm->Comm.sumReduce( wb.M);
-	gnb.M = Dm->Comm.sumReduce( nb.M);
-	gwb.Px = Dm->Comm.sumReduce( wb.Px);
-	gwb.Py = Dm->Comm.sumReduce( wb.Py);
-	gwb.Pz = Dm->Comm.sumReduce( wb.Pz);
-	gnb.Px = Dm->Comm.sumReduce( nb.Px);
-	gnb.Py = Dm->Comm.sumReduce( nb.Py);
-	gnb.Pz = Dm->Comm.sumReduce( nb.Pz);
+	gwb.V=sumReduce( Dm->Comm, wb.V);
+	gnb.V=sumReduce( Dm->Comm, nb.V);
+	gwb.M=sumReduce( Dm->Comm, wb.M);
+	gnb.M=sumReduce( Dm->Comm, nb.M);
+	gwb.Px=sumReduce( Dm->Comm, wb.Px);
+	gwb.Py=sumReduce( Dm->Comm, wb.Py);
+	gwb.Pz=sumReduce( Dm->Comm, wb.Pz);
+	gnb.Px=sumReduce( Dm->Comm, nb.Px);
+	gnb.Py=sumReduce( Dm->Comm, nb.Py);
+	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
 	
-	count_w = Dm->Comm.sumReduce( count_w);
-	count_n = Dm->Comm.sumReduce( count_n);
+	count_w=sumReduce( Dm->Comm, count_w);
+	count_n=sumReduce( Dm->Comm, count_n);
 	if (count_w > 0.0)
-		gwb.p = Dm->Comm.sumReduce(wb.p) / count_w;
+		gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
 	else 
 		gwb.p = 0.0;
 	if (count_n > 0.0)
-		gnb.p = Dm->Comm.sumReduce( nb.p) / count_n;
+		gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
 	else 
 		gnb.p = 0.0;
 
@@ -444,14 +444,14 @@ void SubPhase::Full(){
 	nd.X -= nc.X;
 
 	// compute global entities
-	gnc.V = Dm->Comm.sumReduce( nc.V );
-	gnc.A = Dm->Comm.sumReduce( nc.A );
-	gnc.H = Dm->Comm.sumReduce( nc.H );
-	gnc.X = Dm->Comm.sumReduce( nc.X );
-	gnd.V = Dm->Comm.sumReduce( nd.V );
-	gnd.A = Dm->Comm.sumReduce( nd.A );
-	gnd.H = Dm->Comm.sumReduce( nd.H );
-	gnd.X = Dm->Comm.sumReduce( nd.X );
+	gnc.V=sumReduce( Dm->Comm, nc.V);
+	gnc.A=sumReduce( Dm->Comm, nc.A);
+	gnc.H=sumReduce( Dm->Comm, nc.H);
+	gnc.X=sumReduce( Dm->Comm, nc.X);
+	gnd.V=sumReduce( Dm->Comm, nd.V);
+	gnd.A=sumReduce( Dm->Comm, nd.A);
+	gnd.H=sumReduce( Dm->Comm, nd.H);
+	gnd.X=sumReduce( Dm->Comm, nd.X);
 	gnd.Nc = nd.Nc;
  	// wetting
 	for (k=0; k<Nz; k++){
@@ -491,14 +491,14 @@ void SubPhase::Full(){
 	wd.H -= wc.H;
 	wd.X -= wc.X;
 	// compute global entities
-	gwc.V = Dm->Comm.sumReduce( wc.V );
-	gwc.A = Dm->Comm.sumReduce( wc.A );
-	gwc.H = Dm->Comm.sumReduce( wc.H );
-	gwc.X = Dm->Comm.sumReduce( wc.X );
-	gwd.V = Dm->Comm.sumReduce( wd.V );
-	gwd.A = Dm->Comm.sumReduce( wd.A );
-	gwd.H = Dm->Comm.sumReduce( wd.H );
-	gwd.X = Dm->Comm.sumReduce( wd.X );
+	gwc.V=sumReduce( Dm->Comm, wc.V);
+	gwc.A=sumReduce( Dm->Comm, wc.A);
+	gwc.H=sumReduce( Dm->Comm, wc.H);
+	gwc.X=sumReduce( Dm->Comm, wc.X);
+	gwd.V=sumReduce( Dm->Comm, wd.V);
+	gwd.A=sumReduce( Dm->Comm, wd.A);
+	gwd.H=sumReduce( Dm->Comm, wd.H);
+	gwd.X=sumReduce( Dm->Comm, wd.X);
 	gwd.Nc = wd.Nc;
 	
  	/*  Set up geometric analysis of interface region */
@@ -526,20 +526,20 @@ void SubPhase::Full(){
 	iwn.A = morph_i->A(); 
 	iwn.H = morph_i->H(); 
 	iwn.X = morph_i->X(); 
-	giwn.V = Dm->Comm.sumReduce( iwn.V );
-	giwn.A = Dm->Comm.sumReduce( iwn.A );
-	giwn.H = Dm->Comm.sumReduce( iwn.H );
-	giwn.X = Dm->Comm.sumReduce( iwn.X );
+	giwn.V=sumReduce( Dm->Comm, iwn.V);
+	giwn.A=sumReduce( Dm->Comm, iwn.A);
+	giwn.H=sumReduce( Dm->Comm, iwn.H);
+	giwn.X=sumReduce( Dm->Comm, iwn.X);
 	// measure only the connected part
 	iwnc.Nc = morph_i->MeasureConnectedPathway();
 	iwnc.V = morph_i->V(); 
 	iwnc.A = morph_i->A(); 
 	iwnc.H = morph_i->H(); 
 	iwnc.X = morph_i->X(); 
-	giwnc.V = Dm->Comm.sumReduce( iwnc.V );
-	giwnc.A = Dm->Comm.sumReduce( iwnc.A );
-	giwnc.H = Dm->Comm.sumReduce( iwnc.H );
-	giwnc.X = Dm->Comm.sumReduce( iwnc.X );
+	giwnc.V=sumReduce( Dm->Comm, iwnc.V);
+	giwnc.A=sumReduce( Dm->Comm, iwnc.A);
+	giwnc.H=sumReduce( Dm->Comm, iwnc.H);
+	giwnc.X=sumReduce( Dm->Comm, iwnc.X);
 	giwnc.Nc = iwnc.Nc;
 
 	double vol_nc_bulk = 0.0;
@@ -630,46 +630,46 @@ void SubPhase::Full(){
 		}
 	}
 
-	gnd.M = Dm->Comm.sumReduce( nd.M );
-	gnd.Px = Dm->Comm.sumReduce( nd.Px );
-	gnd.Py = Dm->Comm.sumReduce( nd.Py );
-	gnd.Pz = Dm->Comm.sumReduce( nd.Pz );
-	gnd.K = Dm->Comm.sumReduce( nd.K );
+	gnd.M=sumReduce( Dm->Comm, nd.M);
+	gnd.Px=sumReduce( Dm->Comm, nd.Px);
+	gnd.Py=sumReduce( Dm->Comm, nd.Py);
+	gnd.Pz=sumReduce( Dm->Comm, nd.Pz);
+	gnd.K=sumReduce( Dm->Comm, nd.K);
 
-	gwd.M = Dm->Comm.sumReduce( wd.M );
-	gwd.Px = Dm->Comm.sumReduce( wd.Px );
-	gwd.Py = Dm->Comm.sumReduce( wd.Py );
-	gwd.Pz = Dm->Comm.sumReduce( wd.Pz );
-	gwd.K = Dm->Comm.sumReduce( wd.K );
+	gwd.M=sumReduce( Dm->Comm, wd.M);
+	gwd.Px=sumReduce( Dm->Comm, wd.Px);
+	gwd.Py=sumReduce( Dm->Comm, wd.Py);
+	gwd.Pz=sumReduce( Dm->Comm, wd.Pz);
+	gwd.K=sumReduce( Dm->Comm, wd.K);
 	
-	gnc.M = Dm->Comm.sumReduce( nc.M );
-	gnc.Px = Dm->Comm.sumReduce( nc.Px );
-	gnc.Py = Dm->Comm.sumReduce( nc.Py );
-	gnc.Pz = Dm->Comm.sumReduce( nc.Pz );
-	gnc.K = Dm->Comm.sumReduce( nc.K );
+	gnc.M=sumReduce( Dm->Comm, nc.M);
+	gnc.Px=sumReduce( Dm->Comm, nc.Px);
+	gnc.Py=sumReduce( Dm->Comm, nc.Py);
+	gnc.Pz=sumReduce( Dm->Comm, nc.Pz);
+	gnc.K=sumReduce( Dm->Comm, nc.K);
 
-	gwc.M = Dm->Comm.sumReduce( wc.M );
-	gwc.Px = Dm->Comm.sumReduce( wc.Px );
-	gwc.Py = Dm->Comm.sumReduce( wc.Py );
-	gwc.Pz = Dm->Comm.sumReduce( wc.Pz );
-	gwc.K = Dm->Comm.sumReduce( wc.K );
+	gwc.M=sumReduce( Dm->Comm, wc.M);
+	gwc.Px=sumReduce( Dm->Comm, wc.Px);
+	gwc.Py=sumReduce( Dm->Comm, wc.Py);
+	gwc.Pz=sumReduce( Dm->Comm, wc.Pz);
+	gwc.K=sumReduce( Dm->Comm, wc.K);
 	
-	giwn.Mn = Dm->Comm.sumReduce( iwn.Mn );
-	giwn.Pnx = Dm->Comm.sumReduce( iwn.Pnx );
-	giwn.Pny = Dm->Comm.sumReduce( iwn.Pny );
-	giwn.Pnz = Dm->Comm.sumReduce( iwn.Pnz );
-	giwn.Kn = Dm->Comm.sumReduce( iwn.Kn );
-	giwn.Mw = Dm->Comm.sumReduce( iwn.Mw );
-	giwn.Pwx = Dm->Comm.sumReduce( iwn.Pwx );
-	giwn.Pwy = Dm->Comm.sumReduce( iwn.Pwy );
-	giwn.Pwz = Dm->Comm.sumReduce( iwn.Pwz );
-	giwn.Kw = Dm->Comm.sumReduce( iwn.Kw );
+	giwn.Mn=sumReduce( Dm->Comm, iwn.Mn);
+	giwn.Pnx=sumReduce( Dm->Comm, iwn.Pnx);
+	giwn.Pny=sumReduce( Dm->Comm, iwn.Pny);
+	giwn.Pnz=sumReduce( Dm->Comm, iwn.Pnz);
+	giwn.Kn=sumReduce( Dm->Comm, iwn.Kn);
+	giwn.Mw=sumReduce( Dm->Comm, iwn.Mw);
+	giwn.Pwx=sumReduce( Dm->Comm, iwn.Pwx);
+	giwn.Pwy=sumReduce( Dm->Comm, iwn.Pwy);
+	giwn.Pwz=sumReduce( Dm->Comm, iwn.Pwz);
+	giwn.Kw=sumReduce( Dm->Comm, iwn.Kw);
 	
 	// pressure averaging
-	gnc.p = Dm->Comm.sumReduce( nc.p );
-	gnd.p = Dm->Comm.sumReduce( nd.p );
-	gwc.p = Dm->Comm.sumReduce( wc.p );
-	gwd.p = Dm->Comm.sumReduce( wd.p );
+	gnc.p=sumReduce( Dm->Comm, nc.p);
+	gnd.p=sumReduce( Dm->Comm, nd.p);
+	gwc.p=sumReduce( Dm->Comm, wc.p);
+	gwd.p=sumReduce( Dm->Comm, wd.p);
 
 	if (vol_wc_bulk > 0.0)
 		wc.p = wc.p /vol_wc_bulk;
@@ -680,10 +680,10 @@ void SubPhase::Full(){
 	if (vol_nd_bulk > 0.0)
 		nd.p = nd.p /vol_nd_bulk;
 
-	vol_wc_bulk = Dm->Comm.sumReduce( vol_wc_bulk );
-	vol_wd_bulk = Dm->Comm.sumReduce( vol_wd_bulk );
-	vol_nc_bulk = Dm->Comm.sumReduce( vol_nc_bulk );
-	vol_nd_bulk = Dm->Comm.sumReduce( vol_nd_bulk );
+	vol_wc_bulk=sumReduce( Dm->Comm, vol_wc_bulk);
+	vol_wd_bulk=sumReduce( Dm->Comm, vol_wd_bulk);
+	vol_nc_bulk=sumReduce( Dm->Comm, vol_nc_bulk);
+	vol_nd_bulk=sumReduce( Dm->Comm, vol_nd_bulk);
 	
 	if (vol_wc_bulk > 0.0)
 		gwc.p = gwc.p /vol_wc_bulk;
@@ -719,7 +719,7 @@ void SubPhase::AggregateLabels( const std::string& filename )
 			}
 		}
 	}
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 
 	Dm->AggregateLabels( filename );
 

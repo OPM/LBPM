@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 #include <math.h>
 
@@ -443,14 +443,13 @@ inline void MRT_Transform(double *dist, int Np, double Fx, double Fy, double Fz)
 int main (int argc, char **argv)
 {
 	MPI_Init(&argc,&argv);
-    Utilities::MPI comm( MPI_COMM_WORLD );
-	int rank = comm.getRank();
-	int nprocs = comm.getSize();
+	int rank = MPI_WORLD_RANK();
+	int nprocs = MPI_WORLD_SIZE();
 
 	for (int i=0; i<nprocs; i++) {
 		if ( rank==i )
 			printf("%i of %i: Testing force term \n",rank,nprocs);
-	    comm.barrier();
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
 	// Create a memory leak for valgrind to find
@@ -540,6 +539,6 @@ int main (int argc, char **argv)
     printf("Fy = %f; Computed vy=%f \n",Fy,vel[Np+0]);
     printf("Fz = %f; Computed vz=%f \n",Fz,vel[2*Np+0]);
     
-    comm.barrier();
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 }

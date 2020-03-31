@@ -3,7 +3,7 @@
 #include "analysis/analysis.h"
 #include "common/Array.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/ScaLBL.h"
 #include "models/ColorModel.h"
 
@@ -462,7 +462,7 @@ private:
 /******************************************************************
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
-runAnalysis::commWrapper::commWrapper( int tag_, const Utilities::MPI& comm_, runAnalysis* analysis_ ):
+runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
             comm(comm_),
             tag(tag_),
             analysis(analysis_)
@@ -479,7 +479,7 @@ runAnalysis::commWrapper::~commWrapper()
 {
     if ( tag == -1 )
         return;
-    comm.barrier();
+    MPI_Barrier( comm );
     analysis->d_comm_used[tag] = false;
 }
 runAnalysis::commWrapper runAnalysis::getComm( )
@@ -496,10 +496,10 @@ runAnalysis::commWrapper runAnalysis::getComm( )
         if ( tag == -1 )
             ERROR("Unable to get comm");
     }
-    tag = d_comm.bcast( tag, 0 );
+    MPI_Bcast( &tag, 1, MPI_INT, 0, d_comm );
     d_comm_used[tag] = true;
-    if ( d_comms[tag].isNull() )
-        d_comms[tag] = d_comm.dup();
+    if ( d_comms[tag] == MPI_COMM_NULL )
+        MPI_Comm_dup( MPI_COMM_WORLD, &d_comms[tag] );
     return commWrapper(tag,d_comms[tag],this);
 }
 
@@ -507,20 +507,14 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis( std::shared_ptr<Database> input_db,
-                          const RankInfoStruct& rank_info,
-                          std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm,
-                          std::shared_ptr <Domain> Dm,
-                          int Np,
-                          bool Regular,
-                          IntArray Map ):
-    d_Np( Np ),
-    d_regular ( Regular),
-    d_rank_info( rank_info ),
-    d_Map( Map ),
-    d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1),
-    d_comm( Utilities::MPI( MPI_COMM_WORLD ).dup() ),
-    d_ScaLBL_Comm( ScaLBL_Comm)
+runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
+        int Np, bool Regular, IntArray Map ):
+            d_Np( Np ),
+            d_regular ( Regular),
+            d_rank_info( rank_info ),
+            d_Map( Map ),
+            d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1),
+            d_ScaLBL_Comm( ScaLBL_Comm)
 {
 
 	auto db = input_db->getDatabase( "Analysis" );
@@ -558,7 +552,7 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db,
     d_restartFile = restart_file + "." + rankString;
     
     
-    d_rank = d_comm.getRank();
+    d_rank = MPI_WORLD_RANK();
     writeIDMap(ID_map_struct(),0,id_map_filename);
     // Initialize IO for silo
     IO::initialize("","silo","false");
@@ -627,8 +621,11 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db,
     
 
     // Initialize the comms
-    for (int i=0; i<1024; i++)
+    MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
+    for (int i=0; i<1024; i++) {
+        d_comms[i] = MPI_COMM_NULL;
         d_comm_used[i] = false;
+    }
     // Initialize the threads
     int N_threads = db->getWithDefault<int>( "N_threads", 4 );
     auto method = db->getWithDefault<std::string>( "load_balance", "default" );
@@ -638,6 +635,12 @@ runAnalysis::~runAnalysis( )
 {
     // Finish processing analysis
     finish();
+    // Clear internal data
+    MPI_Comm_free( &d_comm );
+    for (int i=0; i<1024; i++) {
+        if ( d_comms[i] != MPI_COMM_NULL )
+            MPI_Comm_free(&d_comms[i]);
+    }
 }
 void runAnalysis::finish( )
 {
@@ -651,7 +654,7 @@ void runAnalysis::finish( )
     d_wait_subphase.reset();
     d_wait_restart.reset();
     // Syncronize
-    d_comm.barrier();
+    MPI_Barrier( d_comm );
     PROFILE_STOP("finish");
 }
 
@@ -904,9 +907,8 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-
+		input_db->putScalar<bool>( "Restart", true );
     	if (d_rank==0) {
-    		input_db->putScalar<bool>( "Restart", true );
     		std::ofstream OutStream("Restart.db");
     		input_db->print(OutStream, "");
     		OutStream.close();
@@ -1007,10 +1009,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
 
+		color_db->putScalar<int>("timestep",timestep);    		
+		color_db->putScalar<bool>( "Restart", true );
+		input_db->putDatabase("Color", color_db);
+		
     	if (d_rank==0) {
-    		color_db->putScalar<int>("timestep",timestep);    		
-    		color_db->putScalar<bool>( "Restart", true );
-    		input_db->putDatabase("Color", color_db);
     		std::ofstream OutStream("Restart.db");
     		input_db->print(OutStream, "");
     		OutStream.close();
