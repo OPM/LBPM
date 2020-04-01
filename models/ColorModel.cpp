@@ -782,6 +782,20 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
+			if (SET_CAPILLARY_NUMBER && CURRENT_STEADY_TIMESTEPS%MIN_STEADY_TIMESTEPS < analysis_interval ){
+				Fx *= capillary_number / Ca;
+				Fy *= capillary_number / Ca;
+				Fz *= capillary_number / Ca;
+				if (force_mag > 1e-3){
+					Fx *= 1e-3/force_mag;   // impose ceiling for stability
+					Fy *= 1e-3/force_mag;   
+					Fz *= 1e-3/force_mag;   
+				}
+				if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				color_db->putVector<double>("F",{Fx,Fy,Fz});
+			}
+			
 			if ( morph_timesteps > morph_interval ){
 				
 				bool isSteady = false;
@@ -789,28 +803,21 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
-				
-				if (SET_CAPILLARY_NUMBER  && RESCALE_FORCE_COUNT < RESCALE_FORCE_MAX){
-					RESCALE_FORCE_COUNT++;
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
-
-					if (force_mag > 1e-3){
-						Fx *= 1e-3/force_mag;   // impose ceiling for stability
-						Fy *= 1e-3/force_mag;   
-						Fz *= 1e-3/force_mag;   
-					}
-					
-					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					color_db->putVector<double>("F",{Fx,Fy,Fz});
-				}
 
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					//delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					/** morphological target based on relative permeability for A **/
+					double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+					log_krA = log(krA_TMP);
+					log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+					slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+					delta_volume_target=Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume);
+					log_krA_prev = log_krA;
+					volA_prev = volA;
+					printf("   log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));
+					/**  compute averages & write data **/
 					Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
@@ -884,7 +891,6 @@ void ScaLBL_ColorModel::Run(){
 						Fx *= capillary_number / Ca;
 						Fy *= capillary_number / Ca;
 						Fz *= capillary_number / Ca;
-						RESCALE_FORCE_COUNT = 1;
 						if (force_mag > 1e-3){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
@@ -904,6 +910,7 @@ void ScaLBL_ColorModel::Run(){
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 						color_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
+					
 					CURRENT_STEADY_TIMESTEPS = 0;
 				}
 				else{
@@ -979,7 +986,7 @@ void ScaLBL_ColorModel::Run(){
 					//morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
-				MPI_Barrier(comm);
+				comm.barrier();
 			}
 			morph_timesteps += analysis_interval;
 		}
