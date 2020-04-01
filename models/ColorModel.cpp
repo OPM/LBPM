@@ -1002,7 +1002,7 @@ void ScaLBL_ColorModel::Run(){
 					//morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
-				comm.barrier();
+				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
 		}
