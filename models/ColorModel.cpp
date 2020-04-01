@@ -716,7 +716,8 @@ void ScaLBL_ColorModel::Run(){
 		}
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); 
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -751,10 +752,9 @@ void ScaLBL_ColorModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); 
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		//************************************************************************
-		
-		MPI_Barrier(comm);
 		PROFILE_STOP("Update");
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
@@ -763,7 +763,6 @@ void ScaLBL_ColorModel::Run(){
 		// Run the analysis
 		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 
-		
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
 			analysis.finish();
@@ -1002,17 +1001,17 @@ void ScaLBL_ColorModel::Run(){
 					//morph_delta *= (-1.0);
 					REVERSE_FLOW_DIRECTION = false;
 				}
-				MPI_Barrier(comm);
 			}
 			morph_timesteps += analysis_interval;
 		}
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -1062,12 +1061,12 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	
 	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
-	MPI_Barrier(comm);
+	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	MPI_Barrier(comm);
+	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
@@ -1442,7 +1441,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	if (USE_CONNECTED_NWP){
 		BlobIDstruct new_index;
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-		MPI_Barrier(comm);
+		MPI_Barrier(Dm->comm);
 
 		// only operate on component "0"
 		count = 0.0;
