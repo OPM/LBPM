@@ -717,7 +717,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); 
-		;
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -753,6 +753,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); 
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		//************************************************************************
 		PROFILE_STOP("Update");
 
@@ -1010,6 +1011,7 @@ void ScaLBL_ColorModel::Run(){
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
+	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep

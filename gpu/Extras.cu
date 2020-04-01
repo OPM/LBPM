@@ -59,5 +59,4 @@ extern "C" void ScaLBL_CopyToHost(void* dest, const void* source, size_t size){
 
 extern "C" void ScaLBL_DeviceBarrier(){
 	cudaDeviceSynchronize();
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL)
 }
