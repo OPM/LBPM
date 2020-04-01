@@ -1441,7 +1441,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	if (USE_CONNECTED_NWP){
 		BlobIDstruct new_index;
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-		MPI_Barrier(Dm->comm);
+		MPI_Barrier(Dm->Comm);
 
 		// only operate on component "0"
 		count = 0.0;
