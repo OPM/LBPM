@@ -8,7 +8,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "models/GreyscaleModel.h"
 //#define WRITE_SURFACES
 
@@ -33,8 +33,6 @@ int main(int argc, char **argv)
 	MPI_Comm_size(comm,&nprocs);
 	{
 		// parallel domain size (# of sub-domains)
-		int nprocx,nprocy,nprocz;
-		int iproc,jproc,kproc;
 
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -43,6 +41,7 @@ int main(int argc, char **argv)
 		}
 		// Initialize compute device
 		int device=ScaLBL_SetDevice(rank);
+		NULL_USE(device);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		
