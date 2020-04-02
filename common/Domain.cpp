@@ -435,7 +435,7 @@ void Domain::Decomp( const std::string& Filename )
 		}
 
 		if (inlet_layers_z > 0){
-			printf("Checkerboard pattern at z inlet for %i layers \n",inlet_layers_z);
+			printf("Checkerboard pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
 			// use checkerboard pattern
 			for (int k = zStart; k < zStart+inlet_layers_z; k++){
 				for (int j = 0; j<global_Ny; j++){
@@ -494,7 +494,7 @@ void Domain::Decomp( const std::string& Filename )
 		}
 
 		if (outlet_layers_z > 0){
-			printf("Checkerboard pattern at z outlet for %i layers \n",outlet_layers_z);
+			printf("Checkerboard pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
 			// use checkerboard pattern
 			for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
 				for (int j = 0; j<global_Ny; j++){
@@ -596,23 +596,33 @@ void Domain::Decomp( const std::string& Filename )
 	//.........................................................
 	// If external boundary conditions are applied remove solid
 	if (BoundaryCondition >  0  && kproc() == 0){
-    	if (inlet_layers_z < 4)	inlet_layers_z=4;
+    	if (inlet_layers_z < 4){
+            inlet_layers_z=4;
+            if(RANK==0){
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
+            } 
+        }	
 		for (int k=0; k<inlet_layers_z; k++){
 			for (int j=0;j<Ny;j++){
 				for (int i=0;i<Nx;i++){
 					int n = k*Nx*Ny+j*Nx+i;
-					id[n] = 1;
+					id[n] = inlet_layers_phase;
 				}                    
 			}
  		}
  	}
     if (BoundaryCondition >  0  && kproc() == nprocz-1){
-    	if (outlet_layers_z < 4)	outlet_layers_z=4;
+    	if (outlet_layers_z < 4){
+            outlet_layers_z=4;
+            if(RANK==nprocs-1){
+                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
+            } 
+        }	
  		for (int k=Nz-outlet_layers_z; k<Nz; k++){
  			for (int j=0;j<Ny;j++){
  				for (int i=0;i<Nx;i++){
  					int n = k*Nx*Ny+j*Nx+i;
- 					id[n] = 2;
+ 					id[n] = outlet_layers_phase;
  				}                    
  			}
  		}
@@ -632,7 +642,6 @@ void Domain::Decomp( const std::string& Filename )
     porosity = sum*iVol_global;
     if (rank()==0) printf("Media porosity = %f \n",porosity);
  	//.........................................................
-
 }
 
 void Domain::AggregateLabels( const std::string& filename ){
