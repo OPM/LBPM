@@ -10,7 +10,6 @@ Implementation of color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-//#include "common/MPI.h"
 #include "common/MPI_Helpers.h"
 #include "common/Database.h"
 #include "common/ScaLBL.h"

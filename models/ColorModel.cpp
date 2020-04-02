@@ -500,6 +500,7 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_SEED = false;
 	bool USE_DIRECT = false;
 	bool USE_MORPHOPEN_OIL = false;
+	bool USE_TARGET_VOLUME_CHANGE = false;
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
@@ -523,11 +524,11 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_BUMP_RATE = false;
 	
 	/* history for morphological algoirthm */
-	double KRA_MORPH_FACTOR=0.8;
+	double KRA_MORPH_FACTOR=0.5;
 	double volA_prev = 0.0; 
 	double log_krA_prev = 1.0;
 	double log_krA_target = 1.0;
-	double log_krA = 0.0;
+	double log_krA = 1.0;
 	double slope_krA_volume = 0.0;
 	if (color_db->keyExists( "vol_A_previous" )){
 		volA_prev  = color_db->getScalar<double>( "vol_A_previous" );
@@ -555,17 +556,19 @@ void ScaLBL_ColorModel::Run(){
 		seed_water = 0.01;
 		USE_SEED = true;
 		USE_MORPH = true;
+		USE_TARGET_VOLUME_CHANGE = true;
 	}
 	else if (protocol == "open connected oil"){
 		morph_delta = 0.05;
 		USE_MORPH = true;
 		USE_MORPHOPEN_OIL = true;
+		USE_TARGET_VOLUME_CHANGE = true;
 	}
 	else if (protocol == "shell aggregation"){
 		morph_delta = 0.05;
 		USE_MORPH = true;
+		USE_TARGET_VOLUME_CHANGE = true;
 	}  
-	
 	if (color_db->keyExists( "residual_endpoint_threshold" )){
 		RESIDUAL_ENDPOINT_THRESHOLD = color_db->getScalar<double>( "residual_endpoint_threshold" );
 	}
@@ -822,16 +825,28 @@ void ScaLBL_ColorModel::Run(){
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
-					//delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
-					/** morphological target based on relative permeability for A **/
+					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					//****** ENDPOINT ADAPTATION ********/
 					double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+					double krB_TMP= fabs(muB*flow_rate_B / force_mag);
 					log_krA = log(krA_TMP);
-					log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
-					slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
-					delta_volume_target=Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume);
+					if (krA_TMP < 0.0){
+						// cannot do endpoint adaptation if kr is negative
+						log_krA = log_krA_prev;
+					}
+					else if (krA_TMP < krB_TMP && morph_delta > 0.0){
+						/** morphological target based on relative permeability for A **/
+						log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+						slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+						delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
+						if (rank==0){
+							printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
+							printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
+						}
+					}
 					log_krA_prev = log_krA;
 					volA_prev = volA;
-					printf("   log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));
+					//******************************** **/
 					/**  compute averages & write data **/
 					Averages->Full();
 					Averages->Write(timestep);
@@ -977,29 +992,12 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_STEADY_TIMESTEPS=0;
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
-					if (USE_DIRECT){
-						//BoundaryCondition = 0;
-						//ScaLBL_Comm->BoundaryCondition = 0;
-						//ScaLBL_Comm_Regular->BoundaryCondition = 0;
-						//Fx = capillary_number*dir_x*force_mag / Ca;
-						//Fy = capillary_number*dir_y*force_mag / Ca;
-						//Fz = capillary_number*dir_z*force_mag / Ca;
-					}
 				}
 				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
-				}
-				if ( REVERSE_FLOW_DIRECTION ){
-					//if (rank==0) printf("*****REVERSE FLOW DIRECTION***** \n");
-					delta_volume = 0.0;
-					// flow direction will reverse after next steady point
-					MORPH_ADAPT = false;
-					CURRENT_STEADY_TIMESTEPS=0;
-					//morph_delta *= (-1.0);
-					REVERSE_FLOW_DIRECTION = false;
 				}
 			}
 			morph_timesteps += analysis_interval;
