@@ -551,18 +551,15 @@ void ScaLBL_ColorModel::Run(){
 		seed_water = 0.01;
 		USE_SEED = true;
 		USE_MORPH = true;
-		USE_TARGET_VOLUME_CHANGE = true;
 	}
 	else if (protocol == "open connected oil"){
 		morph_delta = 0.05;
 		USE_MORPH = true;
 		USE_MORPHOPEN_OIL = true;
-		USE_TARGET_VOLUME_CHANGE = true;
 	}
 	else if (protocol == "shell aggregation"){
 		morph_delta = 0.05;
 		USE_MORPH = true;
-		USE_TARGET_VOLUME_CHANGE = true;
 	}  
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
