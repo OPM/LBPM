@@ -448,6 +448,42 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	return dout;
 }
 
+extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		
+		double f5 = 0.111111111111111111111111 - dist[6*Np+n];
+		double f11 = 0.05555555555555555555556 - dist[12*Np+n];
+		double f14 = 0.05555555555555555555556 - dist[13*Np+n];
+		double f15 = 0.05555555555555555555556 - dist[16*Np+n];
+		double f18 = 0.05555555555555555555556 - dist[17*Np+n];
+		
+		dist[6*Np+n] = f5;
+		dist[12*Np+n] = f11;
+		dist[13*Np+n] = f14;
+		dist[16*Np+n] = f15;
+		dist[17*Np+n] = f18;
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		
+		double f6 = 0.111111111111111111111111 - dist[5*Np+n];
+		double f12 = 0.05555555555555555555556 - dist[11*Np+n];
+		double f13 = 0.05555555555555555555556 - dist[14*Np+n] ;
+		double f16 = 0.05555555555555555555556 - dist[15*Np+n];
+		double f17 = 0.05555555555555555555556 - dist[18*Np+n];
+		
+		dist[5*Np+n] = f6;
+		dist[11*Np+n] = f12;
+		dist[14*Np+n] = f13;
+		dist[15*Np+n] = f16;
+		dist[18*Np+n] = f17;
+	}
+}
+
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, double din, int count, int Np)
 {
 	// distributions

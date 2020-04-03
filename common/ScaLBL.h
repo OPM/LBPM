@@ -137,6 +137,10 @@ extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den,
 
 extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
 
+extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_z(int *list, double *dist, int count, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_Z(int *list, double *dist, int count, int Np);
+
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
 class ScaLBL_Communicator{
@@ -189,6 +193,8 @@ public:
 	void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);
 	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
+	void D3Q19_Reflection_BC_z(int *neighborList, double *fq);
+	void D3Q19_Reflection_BC_Z(int *neighborList, double *fq);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
 
 	// Debugging and unit testing functions

@@ -1633,6 +1633,17 @@ double ScaLBL_Communicator::D3Q19_Flux_BC_z(int *neighborList, double *fq, doubl
 	return din;
 }
 
+void ScaLBL_Communicator::D3Q19_Reflection_BC_z(int *neighborList, double *fq){
+	if (kproc == 0)
+		ScaLBL_D3Q19_AAeven_Reflection_BC_z(dvcSendList_z, fq, sendCount_z, N);
+	
+}
+
+void ScaLBL_Communicator::D3Q19_Reflection_BC_Z(int *neighborList, double *fq){
+	if (kproc == nprocz-1)
+		ScaLBL_D3Q19_AAeven_Reflection_BC_Z(dvcSendList_Z, fq, sendCount_Z, N);
+}
+
 void ScaLBL_Communicator::PrintD3Q19(){
 	printf("Printing D3Q19 communication buffer contents \n");
 
