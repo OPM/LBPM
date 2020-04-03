@@ -137,9 +137,9 @@ extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den,
 
 extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
 
-extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_z(int *list, double *dist, int count, int Np);
+extern "C" void ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np);
 
-extern "C" void ScaLBL_D3Q19_AAeven_Reflection_BC_Z(int *list, double *dist, int count, int Np);
+extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np);
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
