@@ -193,8 +193,8 @@ public:
 	void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);
 	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
-	void D3Q19_Reflection_BC_z(int *neighborList, double *fq);
-	void D3Q19_Reflection_BC_Z(int *neighborList, double *fq);
+	void D3Q19_Reflection_BC_z(double *fq);
+	void D3Q19_Reflection_BC_Z(double *fq);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
 
 	// Debugging and unit testing functions
