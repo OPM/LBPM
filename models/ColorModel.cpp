@@ -500,7 +500,6 @@ void ScaLBL_ColorModel::Run(){
 	bool USE_SEED = false;
 	bool USE_DIRECT = false;
 	bool USE_MORPHOPEN_OIL = false;
-	bool USE_TARGET_VOLUME_CHANGE = false;
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
@@ -518,10 +517,6 @@ void ScaLBL_ColorModel::Run(){
 	double initial_volume = 0.0;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
-	double RESIDUAL_ENDPOINT_THRESHOLD = 0.04;
-	double NOISE_THRESHOLD = 0.0;
-	double BUMP_RATE = 2.0;
-	bool USE_BUMP_RATE = false;
 	
 	/* history for morphological algoirthm */
 	double KRA_MORPH_FACTOR=0.5;
@@ -569,18 +564,6 @@ void ScaLBL_ColorModel::Run(){
 		USE_MORPH = true;
 		USE_TARGET_VOLUME_CHANGE = true;
 	}  
-	if (color_db->keyExists( "residual_endpoint_threshold" )){
-		RESIDUAL_ENDPOINT_THRESHOLD = color_db->getScalar<double>( "residual_endpoint_threshold" );
-	}
-    NULL_USE( RESIDUAL_ENDPOINT_THRESHOLD );
-	if (color_db->keyExists( "noise_threshold" )){
-		NOISE_THRESHOLD  = color_db->getScalar<double>( "noise_threshold" );
-		USE_BUMP_RATE = true;
-	}
-	if (color_db->keyExists( "bump_rate" )){
-		BUMP_RATE  = color_db->getScalar<double>( "bump_rate" );
-		USE_BUMP_RATE = true;
-	}
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -1269,7 +1252,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 
 	count= sumReduce( Dm->Comm, count);
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
-	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_lojavascript:void(0)ss,count);
+	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
 
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
