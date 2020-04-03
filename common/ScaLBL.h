@@ -119,11 +119,6 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double
 
 // BOUNDARY CONDITION ROUTINES
 
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
-//		int Nx, int Ny, int Nz);
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
-//		int Nx, int Ny, int Nz, int outlet);
-
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *neighborList, int *list, double *dist, double din, int count, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *dist, double dout, int count, int Np);
@@ -178,18 +173,8 @@ public:
 	int LastInterior();
 	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
-//	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryDenseLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-//	void SendD3Q19(double *f_even, double *f_odd);
-//	void RecvD3Q19(double *f_even, double *f_odd);
-//	void SendD3Q19AA(double *f_even, double *f_odd);
-//	void RecvD3Q19AA(double *f_even, double *f_odd);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
-//	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
-//	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
@@ -205,9 +190,6 @@ public:
 	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
-
-//	void TestSendD3Q19(double *f_even, double *f_odd);
-//	void TestRecvD3Q19(double *f_even, double *f_odd);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();
