@@ -1190,7 +1190,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 
 	ScaLBL_CopyToHost(Aq_tmp, Aq, 7*Np*sizeof(double));
 	ScaLBL_CopyToHost(Bq_tmp, Bq, 7*Np*sizeof(double));
-	ScaLBL_CopyToHost(Vel_tmp, Velocity, 7*Np*sizeof(double));
+	ScaLBL_CopyToHost(Vel_tmp, Velocity, 3*Np*sizeof(double));
 	
     //Extract averged velocity
 	double vx_glb = (Averages->gnb.Px+Averages->gwb.Px)/(Averages->gnb.M+Averages->gwb.M); 
