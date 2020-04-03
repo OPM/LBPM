@@ -800,20 +800,6 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
 			
-			if (SET_CAPILLARY_NUMBER && CURRENT_STEADY_TIMESTEPS%MIN_STEADY_TIMESTEPS < analysis_interval ){
-				Fx *= capillary_number / Ca;
-				Fy *= capillary_number / Ca;
-				Fz *= capillary_number / Ca;
-				if (force_mag > 1e-3){
-					Fx *= 1e-3/force_mag;   // impose ceiling for stability
-					Fy *= 1e-3/force_mag;   
-					Fz *= 1e-3/force_mag;   
-				}
-				if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-				Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-				color_db->putVector<double>("F",{Fx,Fy,Fz});
-			}
-			
 			if ( morph_timesteps > morph_interval ){
 				
 				bool isSteady = false;
@@ -925,16 +911,6 @@ void ScaLBL_ColorModel::Run(){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
-						}
-						if (flow_rate_A < NOISE_THRESHOLD && USE_BUMP_RATE){
-							if (rank==0) printf("Hit noise threshold (%f): bumping capillary number by %f X \n",NOISE_THRESHOLD,BUMP_RATE);
-							Fx *= BUMP_RATE;   // impose bump condition
-							Fy *= BUMP_RATE;   
-							Fz *= BUMP_RATE;   
-							capillary_number *= BUMP_RATE;
-							color_db->putScalar<int>("capillary_number",capillary_number);
-							current_db->putDatabase("Color", color_db);
-							MORPH_ADAPT = false; // re-run current point if below noise threshold
 						}
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
@@ -1293,7 +1269,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 
 	count= sumReduce( Dm->Comm, count);
 	mass_loss= sumReduce( Dm->Comm, mass_loss);
-	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+	if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_lojavascript:void(0)ss,count);
 
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
