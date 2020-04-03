@@ -1520,7 +1520,7 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 
 void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, DoubleArray &regdata){
 	// Gets data from the device and stores in regular layout
-	int i,j,k,n,idx;
+	int i,j,k,idx;
 	int Nx = map.size(0);
 	int Ny = map.size(1);
 	int Nz = map.size(2);
@@ -1551,7 +1551,6 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 
 
 void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
-	double Value=(vA-vB)/(vA+vB);
 	if (kproc == 0) {
 		// Set the phase indicator field and density on the z inlet
 		ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
@@ -1560,7 +1559,6 @@ void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double 
 }
 
 void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
-	double Value=(vA-vB)/(vA+vB);
 	if (kproc == nprocz-1){
 		// Set the phase indicator field and density on the Z outlet
 		ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
