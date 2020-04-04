@@ -1552,7 +1552,7 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == 0) {
 		if (BoundaryCondition == 5){
-			ScaLBL_CopySlice_z(Phi,Value,Nx,Ny,Nz,1,0);
+			ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,1,0);
 		}
 		else {
 			// Set the phase indicator field and density on the z inlet
@@ -1565,7 +1565,7 @@ void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double 
 void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == nprocz-1){
 		if (BoundaryCondition == 5){
-			ScaLBL_CopySlice_z(Phi,Value,Nx,Ny,Nz,Nz-2,Nz-1);
+			ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,Nz-2,Nz-1);
 		}
 		else {
 		// Set the phase indicator field and density on the Z outlet
