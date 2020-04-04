@@ -1549,21 +1549,30 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	delete [] TmpDat;
 }
 
-
 void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == 0) {
-		// Set the phase indicator field and density on the z inlet
-		ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
+		if (BoundaryCondition == 5){
+			ScaLBL_CopySlice_z(Phi,Value,Nx,Ny,Nz,1,0);
+		}
+		else {
+			// Set the phase indicator field and density on the z inlet
+			ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
+		}
 		//ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,0);
 	}
 }
 
 void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == nprocz-1){
+		if (BoundaryCondition == 5){
+			ScaLBL_CopySlice_z(Phi,Value,Nx,Ny,Nz,Nz-2,Nz-1);
+		}
+		else {
 		// Set the phase indicator field and density on the Z outlet
-		ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
-		//ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,Nz-1);
+			ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
+		}
 	}
+
 }
 
 void ScaLBL_Communicator::D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time){

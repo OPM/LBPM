@@ -1869,7 +1869,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 	const double mrt_V12=0.04166666666666666;
 
 	for (int n=start; n<finish; n++){
-		
+	
 		// read the component number densities
 		nA = Den[n];
 		nB = Den[Np + n];
@@ -2807,6 +2807,14 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 		Bq[4*Np+idx]=0.1111111111111111*nB;
 		Bq[5*Np+idx]=0.1111111111111111*nB;
 		Bq[6*Np+idx]=0.1111111111111111*nB;
+	}
+}
+
+extern "C" void ScaLBL_CopySlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Source, int Dest){
+	int n; double value;
+	for (n=0; n<Nx*Ny; n++){
+		value = Phi[Source*Nx*Ny+n];
+		Phi[Dest*Nx*Ny+n] = value;
 	}
 }
 
