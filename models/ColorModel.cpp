@@ -760,7 +760,7 @@ void ScaLBL_ColorModel::Run(){
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
 			volB /= Dm->Volume;;
-			initial_volume = volA*Dm->Volume;
+			//initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
 			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
@@ -1221,6 +1221,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
 			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
 			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+			count += 1.0;
 		}
 		mass_loss += random_value*seed_water_in_oil;
 	}
@@ -1248,6 +1249,7 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
 			Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
 			Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
 			Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+			count += 1.0;
 		}
 		mass_loss += random_value*seed_water_in_oil;
 	}
