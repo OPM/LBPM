@@ -2810,7 +2810,7 @@ extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, doubl
 	}
 }
 
-extern "C" void ScaLBL_CopySlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Source, int Dest){
+extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Dest){
 	int n; double value;
 	for (n=0; n<Nx*Ny; n++){
 		value = Phi[Source*Nx*Ny+n];

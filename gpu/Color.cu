@@ -1240,7 +1240,7 @@ __global__  void dvc_ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny
 }
 
 
-__global__  void dvc_ScaLBL_CopySlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Source, int Dest){
+__global__  void dvc_ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Dest){
 	int n; double value;
 	int n =  blockIdx.x*blockDim.x + threadIdx.x;
 	if (n < Nx*Ny){
@@ -4143,9 +4143,9 @@ extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den,
 	}
 }
 
-extern "C" void ScaLBL_CopySlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Source, int Dest){
+extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Dest){
 	int GRID = Nx*Ny / 512 + 1;
-	dvc_ScaLBL_CopySlice_z<<<GRID,512>>>(Phi,value,Nx,Ny,Nz,Slice,Dest);
+	dvc_ScaLBL_CopySlice_z<<<GRID,512>>>(Phi,Nx,Ny,Nz,Slice,Dest);
 }
 
 

@@ -143,7 +143,7 @@ extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count,
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
-extern "C" void ScaLBL_CopySlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Source, int Destination);
+extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Destination);
 
 class ScaLBL_Communicator{
 public:
