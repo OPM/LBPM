@@ -567,8 +567,8 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
 	}
-	if (BoundaryCondition != 0 && SET_CAPILLARY_NUMBER==true){
-		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 \n");
+	if (BoundaryCondition != 0 && BoundaryCondition != 5 && SET_CAPILLARY_NUMBER==true){
+		if (rank == 0) printf("WARINING: capillary number target only supported for BC = 0 or 5 \n");
 		SET_CAPILLARY_NUMBER=false;
 	}
 	if (analysis_db->keyExists( "seed_water" )){
