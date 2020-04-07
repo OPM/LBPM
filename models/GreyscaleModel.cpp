@@ -324,7 +324,6 @@ void ScaLBL_GreyscaleModel::Create(){
 	neighborSize=18*(Np*sizeof(int));
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
-	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
@@ -332,38 +331,8 @@ void ScaLBL_GreyscaleModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
-	if (rank==0)	printf ("Setting up device map and neighbor list \n");
+	if (rank==0)	printf ("Setting up device neighbor list \n");
 	fflush(stdout);
-	int *TmpMap;
-	TmpMap=new int[Np];
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				int idx=Map(i,j,k);
-				if (!(idx < 0))
-					TmpMap[idx] = k*Nx*Ny+j*Nx+i;
-			}
-		}
-	}
-	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
-		int n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
-			printf("Bad value! idx=%i \n");
-			TmpMap[idx] = Nx*Ny*Nz-1;
-		}
-	}
-	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
-		int n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
-			printf("Bad value! idx=%i \n");
-			TmpMap[idx] = Nx*Ny*Nz-1;
-		}
-	}
-	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-	ScaLBL_DeviceBarrier();
-	delete [] TmpMap;
-	
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	// initialize phi based on PhaseLabel (include solid component labels)

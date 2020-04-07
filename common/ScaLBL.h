@@ -72,6 +72,27 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
 
+// GREYSCALE COLOR MODEL
+
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq, double *Bq, double *Den,
+                double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure);
+
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
+                double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure);
+
+extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,

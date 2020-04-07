@@ -1,5 +1,5 @@
 /*
-Implementation of color lattice boltzmann model
+Implementation of multicomponent greyscale lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_GreyscaleModel{
+class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_GreyscaleModel();	
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -35,15 +35,15 @@ public:
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
-    int CollisionType;
-	double tau;
-    double tau_eff;
-    double Den;//constant density
+	double tauA,tauB;
+    double tauA_eff,tauB_eff;
+    double rhoA,rhoB;
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
     double dp;//solid particle diameter, unit in voxel
     double GreyPorosity;
+    double Gsc;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -56,18 +56,21 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> greyscale_db;
+    std::shared_ptr<Database> greyscaleColor_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
     signed char *id;    
 	int *NeighborList;
-	int *dvcMap;
-	double *fq;
+	double *fq,*Aq,*Bq;
+    double *Den;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
 	double *Pressure_dvc;
+    double *SolidForce;
+    double *DenGradA;
+    double *DenGradB;
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;
@@ -86,7 +89,9 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
    
-    void AssignComponentLabels(double *Porosity, double *Permeablity);
-    
+    void AssignComponentLabels(double *Porosity, double *Permeablity, double *SolidPotential);
+    void AssignSolidForce(double *SolidPotential, double *SolidForce);
+    void DensityField_Init();
+
 };
 
