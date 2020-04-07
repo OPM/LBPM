@@ -1,4 +1,5 @@
 // GPU Functions for D3Q7 Lattice Boltzmann Methods
+#include <stdio.h>
 
 #define NBLOCKS 560
 #define NTHREADS 128
