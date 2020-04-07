@@ -1286,7 +1286,16 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,Aq,N);
 		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,Bq,N);
 	}
-	
+	if (BoundaryCondition == 5){
+		if (kproc == 0){
+			ScaLBL_D3Q7_Reflection_BC_z(dvcSendList_z, Aq, sendCount_z, N);
+			ScaLBL_D3Q7_Reflection_BC_z(dvcSendList_z, Bq, sendCount_z, N);
+		}
+		if (kproc == nprocz-1){
+			ScaLBL_D3Q7_Reflection_BC_Z(dvcSendList_Z, Aq, sendCount_Z, N);
+			ScaLBL_D3Q7_Reflection_BC_Z(dvcSendList_Z, Bq, sendCount_Z, N);
+		}
+	}
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
