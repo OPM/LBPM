@@ -592,10 +592,10 @@ void Domain::Decomp( const std::string& Filename )
 	double sum;
 	double sum_local=0.0;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0  && kproc() == 0){
+	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
     	if (inlet_layers_z < 4){
             inlet_layers_z=4;
             if(RANK==0){
@@ -611,7 +611,7 @@ void Domain::Decomp( const std::string& Filename )
 			}
  		}
  	}
-    if (BoundaryCondition >  0  && kproc() == nprocz-1){
+    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz-1){
     	if (outlet_layers_z < 4){
             outlet_layers_z=4;
             if(RANK==nprocs-1){
@@ -1061,10 +1061,10 @@ void Domain::ReadIDs(){
 	double sum;
 	double sum_local=0.0;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (BoundaryCondition > 0) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
+	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0  && kproc() == 0){
+	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
     	if (inlet_layers_z < 4)	inlet_layers_z=4;
 		for (int k=0; k<inlet_layers_z; k++){
 			for (int j=0;j<Ny;j++){
@@ -1075,7 +1075,7 @@ void Domain::ReadIDs(){
 			}
  		}
  	}
-    if (BoundaryCondition >  0  && kproc() == nprocz()-1){
+    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz()-1){
     	if (outlet_layers_z < 4)	outlet_layers_z=4;
  		for (int k=Nz-outlet_layers_z; k<Nz; k++){
  			for (int j=0;j<Ny;j++){
