@@ -437,10 +437,20 @@ void ScaLBL_GreyscaleColorModel::DensityField_Init(){
 
 	size_t NLABELS=0;
 	signed char VALUE=0;
-    //Read all greyscale node labels and their conrresponding initial saturaiton
-    //TODO make something default, LabelList=1,2, SwList=0.0, 1.0
-	auto LabelList = greyscaleColor_db->getVector<int>( "GreyNodeLabels" );
-	auto SwList = greyscaleColor_db->getVector<double>( "GreyNodeSw" );
+
+	if (greyscaleColor_db->keyExists( "GreyNodeLabels" )){
+	    auto LabelList = greyscaleColor_db->getVector<int>( "GreyNodeLabels" );
+	}
+    else{
+        vector<int> LabelList{1,2}; 
+    }
+	if (greyscaleColor_db->keyExists( "GreyNodeSw" )){
+	    auto SwList = greyscaleColor_db->getVector<double>( "GreyNodeSw" );
+	}
+    else{
+        vector<double> SwList{0.0,1.0}; 
+    }
+
 	NLABELS=LabelList.size();
 	if (NLABELS != SwList.size()){
 		ERROR("Error: GreyNodeLabels and GreyNodeSw must be the same length! \n");
