@@ -357,9 +357,12 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq,
 
             //---------------- Calculate SC fluid-fluid and fluid-solid forces ---------------//
             // fluid-fluid force
-            Gff_x = -Gsc*nA*nB_gradx*int(phi>0.0)-Gsc*nB*nA_gradx*int(phi<0.0);
-            Gff_y = -Gsc*nA*nB_grady*int(phi>0.0)-Gsc*nB*nA_grady*int(phi<0.0);
-            Gff_z = -Gsc*nA*nB_gradz*int(phi>0.0)-Gsc*nB*nA_gradz*int(phi<0.0);
+//            Gff_x = -Gsc*nA*nB_gradx*int(phi>0.0)-Gsc*nB*nA_gradx*int(phi<0.0);
+//            Gff_y = -Gsc*nA*nB_grady*int(phi>0.0)-Gsc*nB*nA_grady*int(phi<0.0);
+//            Gff_z = -Gsc*nA*nB_gradz*int(phi>0.0)-Gsc*nB*nA_gradz*int(phi<0.0);
+            Gff_x = -Gsc*(nA*nB_gradx+nB*nA_gradx);
+            Gff_y = -Gsc*(nA*nB_grady+nB*nA_grady);
+            Gff_z = -Gsc*(nA*nB_gradz+nB*nA_gradz);
             // fluid-solid force
             Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
             Gfs_y = (nA-nB)*SolidForce[n+1*Np];    
@@ -978,9 +981,12 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double 
 
             //---------------- Calculate SC fluid-fluid and fluid-solid forces ---------------//
             // fluid-fluid force
-            Gff_x = -Gsc*nA*nB_gradx*int(phi>0.0)-Gsc*nB*nA_gradx*int(phi<0.0);
-            Gff_y = -Gsc*nA*nB_grady*int(phi>0.0)-Gsc*nB*nA_grady*int(phi<0.0);
-            Gff_z = -Gsc*nA*nB_gradz*int(phi>0.0)-Gsc*nB*nA_gradz*int(phi<0.0);
+//            Gff_x = -Gsc*nA*nB_gradx*int(phi>0.0)-Gsc*nB*nA_gradx*int(phi<0.0);
+//            Gff_y = -Gsc*nA*nB_grady*int(phi>0.0)-Gsc*nB*nA_grady*int(phi<0.0);
+//            Gff_z = -Gsc*nA*nB_gradz*int(phi>0.0)-Gsc*nB*nA_gradz*int(phi<0.0);
+            Gff_x = -Gsc*(nA*nB_gradx+nB*nA_gradx);
+            Gff_y = -Gsc*(nA*nB_grady+nB*nA_grady);
+            Gff_z = -Gsc*(nA*nB_gradz+nB*nA_gradz);
             // fluid-solid force
             Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
             Gfs_y = (nA-nB)*SolidForce[n+1*Np];    

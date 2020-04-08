@@ -438,18 +438,17 @@ void ScaLBL_GreyscaleColorModel::DensityField_Init(){
 	size_t NLABELS=0;
 	signed char VALUE=0;
 
+    vector<int> LabelList{1,2};
+    vector<double> SwList{0.0,1.0}; 
+
 	if (greyscaleColor_db->keyExists( "GreyNodeLabels" )){
-	    auto LabelList = greyscaleColor_db->getVector<int>( "GreyNodeLabels" );
+        LabelList.clear();
+	    LabelList = greyscaleColor_db->getVector<int>( "GreyNodeLabels" );
 	}
-    else{
-        vector<int> LabelList{1,2}; 
-    }
 	if (greyscaleColor_db->keyExists( "GreyNodeSw" )){
-	    auto SwList = greyscaleColor_db->getVector<double>( "GreyNodeSw" );
+        SwList.clear();
+	    SwList = greyscaleColor_db->getVector<double>( "GreyNodeSw" );
 	}
-    else{
-        vector<double> SwList{0.0,1.0}; 
-    }
 
 	NLABELS=LabelList.size();
 	if (NLABELS != SwList.size()){
