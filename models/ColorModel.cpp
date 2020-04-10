@@ -470,7 +470,8 @@ void ScaLBL_ColorModel::Initialize(){
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
-	if (BoundaryCondition >0 ){
+	// establish reservoirs for external bC
+	if (BoundaryCondition == 1 || BoundaryCondition == 2 ||  BoundaryCondition == 3 || BoundaryCondition == 4 ){
 		if (Dm->kproc()==0){
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
@@ -743,7 +744,7 @@ void ScaLBL_ColorModel::Run(){
 		//************************************************************************
 		PROFILE_STOP("Update");
 
-		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition > 0){
+		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition == 4){
 			printf("%i %f \n",timestep,din);
 		}
 		// Run the analysis
@@ -1159,7 +1160,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		if (BoundaryCondition >0 ){
+		if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
 			if (Dm->kproc()==0){
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
@@ -1447,7 +1448,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	// 7. Re-initialize phase field and density
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition >0 ){
+	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
 		if (Dm->kproc()==0){
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
 			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
@@ -1516,25 +1517,25 @@ void ScaLBL_ColorModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
-//	FILE *CGX_FILE;
-//	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
-//	CGX_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGX_FILE);
-//	fclose(CGX_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
-//	FILE *CGY_FILE;
-//	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
-//	CGY_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGY_FILE);
-//	fclose(CGY_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
-//	FILE *CGZ_FILE;
-//	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
-//	CGZ_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGZ_FILE);
-//	fclose(CGZ_FILE);
+/*	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
+	FILE *CGX_FILE;
+	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
+	CGX_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGX_FILE);
+	fclose(CGX_FILE);
 
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
+	FILE *CGY_FILE;
+	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
+	CGY_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGY_FILE);
+	fclose(CGY_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
+	FILE *CGZ_FILE;
+	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
+	CGZ_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGZ_FILE);
+	fclose(CGZ_FILE);
+*/
 }

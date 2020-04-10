@@ -280,7 +280,7 @@ void SubPhase::Basic(){
 			dir_y = 0.0;
 			dir_z = 1.0;
 		}
-		if (Dm->BoundaryCondition > 0 ){
+		if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 || Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4 ){
 			// compute the pressure drop
 			double pressure_drop = (Pressure(Nx*Ny + Nx + 1) - 1.0) / 3.0;
 			double length = ((Nz-2)*Dm->nprocz());
@@ -376,8 +376,8 @@ void SubPhase::Full(){
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
+	if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == 0) kmin=4;
+	if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
 
 	imin=jmin=1;
 	// If inlet layers exist use these as default

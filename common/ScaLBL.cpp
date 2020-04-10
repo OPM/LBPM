@@ -1286,7 +1286,7 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,Aq,N);
 		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,recvCount_Z,recvCount_Z,recvbuf_Z,Bq,N);
 	}
-	if (BoundaryCondition == 5){
+/*	if (BoundaryCondition == 5){
 		if (kproc == 0){
 			ScaLBL_D3Q7_Reflection_BC_z(dvcSendList_z, Aq, sendCount_z, N);
 			ScaLBL_D3Q7_Reflection_BC_z(dvcSendList_z, Bq, sendCount_z, N);
@@ -1296,6 +1296,7 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 			ScaLBL_D3Q7_Reflection_BC_Z(dvcSendList_Z, Bq, sendCount_Z, N);
 		}
 	}
+	*/
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
@@ -1543,10 +1544,15 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 		ScaLBL_Scalar_Unpack(dvcRecvList_yZ, recvCount_yZ,recvbuf_yZ, data, N);
 		ScaLBL_Scalar_Unpack(dvcRecvList_YZ, recvCount_YZ,recvbuf_YZ, data, N);
 	}
-
 	//...................................................................................
 	Lock=false; // unlock the communicator after communications complete
 	//...................................................................................
+	if (BoundaryCondition == 5 && kproc == 0){
+		ScaLBL_CopySlice_z(data,Nx,Ny,Nz,1,0);
+	}
+	if (BoundaryCondition == 5 && kproc == nprocz-1){
+		ScaLBL_CopySlice_z(data,Nx,Ny,Nz,Nz-2,Nz-1);
+	}	
 }
 
 void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, DoubleArray &regdata){
@@ -1583,7 +1589,7 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == 0) {
 		if (BoundaryCondition == 5){
-			ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,1,0);
+			//ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,1,0);
 		}
 		else {
 			// Set the phase indicator field and density on the z inlet
@@ -1596,7 +1602,7 @@ void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double 
 void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == nprocz-1){
 		if (BoundaryCondition == 5){
-			ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,Nz-2,Nz-1);
+			//ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,Nz-2,Nz-1);
 		}
 		else {
 		// Set the phase indicator field and density on the Z outlet
