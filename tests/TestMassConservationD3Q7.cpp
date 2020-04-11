@@ -41,7 +41,7 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 				int jglobal= j+(Ny-2)*ColorModel.Mask->jproc();
 				int kglobal= k+(Nz-2)*ColorModel.Mask->kproc();
 				// Initialize phase position field for parallel bubble test
-				if (jglobal < 40){
+				if (kglobal < 40){
 					ColorModel.Mask->id[n] = 0;
 				}
 				else if ((iglobal-0.5*(Nx-2)*nprocx)*(iglobal-0.5*(Nx-2)*nprocx)
@@ -183,15 +183,15 @@ int main(int argc, char **argv)
 						original = DenOriginal[Np+idx];
 						total_mass_B_0 += original;
 						total_mass_B_1 += final;
-						if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
+						/*if (fabs(DenFinal[Np+idx] - DenOriginal[Np+idx]) > 1e-15){
 							//if (CM.Dm->id[n] == 0) printf("Solid phase! \n");
 							//if (CM.Dm->id[n] == 1) printf("Wetting phase! \n");
 							//if (CM.Dm->id[n] == 2) printf("Non-wetting phase! \n");
 							//printf("Mass not conserved: NWP density, site=%i,%i,%i, original = %f, final = %f \n",i,j,k,original,final);
 							CleanCheck=false;
 							Error[n] += final-original;
-
-						}
+						} 
+						*/
 					}
 				}
 			}
