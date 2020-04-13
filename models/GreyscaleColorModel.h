@@ -44,6 +44,8 @@ public:
     double dp;//solid particle diameter, unit in voxel
     double GreyPorosity;
     double Gsc;
+    double gamma;
+    double kappa,lambda;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -71,6 +73,8 @@ public:
     double *SolidForce;
     double *DenGradA;
     double *DenGradB;
+    double *DenLapA;
+    double *DenLapB;
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;
