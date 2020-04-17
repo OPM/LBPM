@@ -84,27 +84,33 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double *dis
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure);
 
-extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB, double *DenLapA, double *DenLapB, double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda, double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure);
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap);
 
-extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB,  double *DenLapA, double *DenLapB,double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda,double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure);
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap);
 
-extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, double *Phi, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *Den, double *Porosity,double *Velocity,
+                double *Pressure, double rhoA,double rhoB, int Np);
+
+extern "C" void ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborList, double *Phi, double *PressTensor, double *PhiLap,
+      		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,

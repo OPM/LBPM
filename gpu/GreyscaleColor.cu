@@ -3,6 +3,69 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
+__global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *Den, double *Poros,double *Velocity,
+                double *Pressure, double rhoA,double rhoB, int N){
+
+	int n;
+    double ux,uy,uz,u_mag;
+    double pressure;
+    double porosity;
+    double rho0;
+    double phi;
+    double nA,nB;
+
+	int S = N/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+	    //........Get 1-D index for this thread....................
+	    n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+
+		if (n<N){		
+
+            // initialize pressure value
+            pressure = 0.0;
+            pressure +=dist[1*N+n];
+            pressure +=dist[2*N+n];
+            pressure +=dist[3*N+n];
+            pressure +=dist[4*N+n];
+            pressure +=dist[5*N+n];
+            pressure +=dist[6*N+n];
+            pressure +=dist[7*N+n];
+            pressure +=dist[8*N+n];
+            pressure +=dist[9*N+n];
+            pressure +=dist[10*N+n];
+            pressure +=dist[11*N+n];
+            pressure +=dist[12*N+n];
+            pressure +=dist[13*N+n];
+            pressure +=dist[14*N+n];
+            pressure +=dist[15*N+n];
+            pressure +=dist[16*N+n];
+            pressure +=dist[17*N+n];
+            pressure +=dist[18*N+n];
+
+			// read the component number densities
+			nA = Den[n];
+			nB = Den[N + n];
+			// compute phase indicator field
+			phi=(nA-nB)/(nA+nB);
+			// local density
+			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+            // read voxel porosity 
+            porosity = Poros[n];
+            // read velocity
+            ux = Velocity[0*N+n]; 
+            uy = Velocity[1*N+n];
+            uz = Velocity[2*N+n];
+            u_mag=sqrt(ux*ux+uy*uy+uz*uz);
+
+            //Calculate pressure for Incompressible-MRT model
+            pressure=0.5/porosity*(pressure-0.5*rho0*u_mag*u_mag/porosity);
+            //Update pressure on device
+            Pressure[n] = pressure;
+		}
+	}
+}
+
+
 __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
@@ -1266,11 +1329,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double 
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB, double *DenLapA, double *DenLapB, double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda, double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure){
-
+__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 	int n;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
@@ -1290,17 +1352,19 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
     double mu_eff;//effective kinematic viscosity for Darcy term
     double rho0;
     double phi;
+    double phi_lap;//laplacian of phase field
     double nA,nB;
-    double nA_sum_tmp,nB_sum_tmp;
 	double a1,b1,a2,b2;
-    double nA_gradx,nA_grady,nA_gradz;
-    double nB_gradx,nB_grady,nB_gradz;
-    double Gff_x,Gff_y,Gff_z;
     double Gfs_x,Gfs_y,Gfs_z;
-    double Gsc = 1.f/3.f*sqrt(kappa*lambda);
-    double nA_lap,nB_lap;
+    double Gff_x,Gff_y,Gff_z;
     double chem_a,chem_b;
     double rlx_massA,rlx_massB;
+    // *---------------------------------Pressure Tensor Gradient------------------------------------*//
+    double Pxx_x,Pyy_y,Pzz_z;
+    double Pxy_x,Pxy_y;
+    double Pyz_y,Pyz_z;
+    double Pxz_x,Pxz_z;
+    double px,py,pz; //pressure gradient
 
 
 	const double mrt_V1=0.05263157894736842;
@@ -1327,17 +1391,58 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
-			nA_gradx = DenGradA[n+0*Np];
-			nA_grady = DenGradA[n+1*Np];
-			nA_gradz = DenGradA[n+2*Np];
-			nB_gradx = DenGradB[n+0*Np];
-			nB_grady = DenGradB[n+1*Np];
-			nB_gradz = DenGradB[n+2*Np];
-            nA_lap = DenLapA[n];//laplacian of denA
-            nB_lap = DenLapB[n];
-
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
+            // load laplacian of phase field
+            phi_lap = PhiLap[n];
+            // Load voxel porosity and perm
+            porosity = Poros[n];
+            // use local saturation as an estimation of effective relperm values
+            perm = Perm[n]*nA/(nA+nB)*int(phi>0.0)+Perm[n]*nB/(nA+nB)*int(phi<0.0);
+
+            //Load pressure gradient
+            px=PressureGrad[0*Np+n];
+            py=PressureGrad[1*Np+n];
+            pz=PressureGrad[2*Np+n];
+
+            //Load pressure tensor gradient
+            //For reference full list of PressTensorGrad
+            //PressTensorGrad[n+0*Np]  = Pxx_x
+            //PressTensorGrad[n+1*Np]  = Pxx_y
+            //PressTensorGrad[n+2*Np]  = Pxx_z
+            //PressTensorGrad[n+3*Np]  = Pyy_x
+            //PressTensorGrad[n+4*Np]  = Pyy_y
+            //PressTensorGrad[n+5*Np]  = Pyy_z
+            //PressTensorGrad[n+6*Np]  = Pzz_x
+            //PressTensorGrad[n+7*Np]  = Pzz_y
+            //PressTensorGrad[n+8*Np]  = Pzz_z
+            //PressTensorGrad[n+9*Np]  = Pxy_x
+            //PressTensorGrad[n+10*Np] = Pxy_y
+            //PressTensorGrad[n+11*Np] = Pxy_z
+            //PressTensorGrad[n+12*Np] = Pyz_x
+            //PressTensorGrad[n+13*Np] = Pyz_y
+            //PressTensorGrad[n+14*Np] = Pyz_z
+            //PressTensorGrad[n+15*Np] = Pxz_x
+            //PressTensorGrad[n+16*Np] = Pxz_y
+            //PressTensorGrad[n+17*Np] = Pxz_z
+            Pxx_x = PressTensorGrad[0*Np+n];
+            Pyy_y = PressTensorGrad[4*Np+n];
+            Pzz_z = PressTensorGrad[8*Np+n];
+            Pxy_x = PressTensorGrad[9*Np+n];
+            Pxz_x = PressTensorGrad[15*Np+n];
+		    Pxy_y = PressTensorGrad[10*Np+n];
+		    Pyz_y = PressTensorGrad[13*Np+n];
+		    Pyz_z = PressTensorGrad[14*Np+n];
+		    Pxz_z = PressTensorGrad[17*Np+n];
+		    //............Compute the fluid-fluid force (gfx,gfy,gfz)...................................
+            //TODO double check if you need porosity as a fre-factor
+            Gff_x = porosity*px-(Pxx_x+Pxy_y+Pxz_z);
+            Gff_y = porosity*py-(Pxy_x+Pyy_y+Pyz_z);
+            Gff_z = porosity*pz-(Pxz_x+Pyz_y+Pzz_z);
+            // fluid-solid force
+            Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
+            Gfs_y = (nA-nB)*SolidForce[n+1*Np];    
+            Gfs_z = (nA-nB)*SolidForce[n+2*Np];    
 
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
@@ -1623,20 +1728,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
             m18 -= fq;
             //---------------------------------------------------------------------//
 
-            //---------------- Calculate SC fluid-fluid and fluid-solid forces ---------------//
-            // fluid-fluid force
-            Gff_x = -Gsc*(nA*nB_gradx+nB*nA_gradx);
-            Gff_y = -Gsc*(nA*nB_grady+nB*nA_grady);
-            Gff_z = -Gsc*(nA*nB_gradz+nB*nA_gradz);
-            // fluid-solid force
-            Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
-            Gfs_y = (nA-nB)*SolidForce[n+1*Np];    
-            Gfs_z = (nA-nB)*SolidForce[n+2*Np];    
-
-            porosity = Poros[n];
-            // use local saturation as an estimation of effective relperm values
-            perm = Perm[n]*nA/(nA+nB)*int(phi>0.0)+Perm[n]*nB/(nA+nB)*int(phi<0.0);
-
             c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
             if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
             //GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
@@ -1810,10 +1901,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
-            chem_a = lambda*(nA*nA*nA-1.5*nA*nA+0.5*nA)-kappa*nA_lap;
-            chem_b = lambda*(nB*nB*nB-1.5*nB*nB+0.5*nB)-kappa*nB_lap;
-            nA_sum_tmp = 0.0;
-            nB_sum_tmp = 0.0;
+            chem_a = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-0.25*kappaA*phi_lap;
+            chem_b = lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
             rlx_massA = 3.f-sqrt(3.f);
             rlx_massB = 3.f-sqrt(3.f);
 
@@ -1824,12 +1913,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 			b1 = Bq[1*Np+n];
 			a2 = Aq[2*Np+n];
 			b2 = Bq[2*Np+n];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*ux));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*ux));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*ux));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*ux));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*ux));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*ux));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*ux));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*ux));
 
 			Aq[1*Np+n] = a1;
 			Bq[1*Np+n] = b1;
@@ -1843,12 +1930,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 			b1 = Bq[3*Np+n];
 			a2 = Aq[4*Np+n];
 			b2 = Bq[4*Np+n];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*uy));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*uy));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*uy));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*uy));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*uy));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*uy));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*uy));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*uy));
 
 			Aq[3*Np+n] = a1;
 			Bq[3*Np+n] = b1;
@@ -1861,12 +1946,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 			b1 = Bq[5*Np+n];
 			a2 = Aq[6*Np+n];
 			b2 = Bq[6*Np+n];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*uz));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*uz));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*uz));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*uz));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*uz));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*uz));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*uz));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*uz));
 
 			Aq[5*Np+n] = a1;
 			Bq[5*Np+n] = b1;
@@ -1878,18 +1961,18 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 			// Stationary value - distribution 0
             a1=Aq[n];
             b1=Bq[n];
-			Aq[n] = (1.0-rlx_massA)*a1+rlx_massA*(nA-nA_sum_tmp);
-			Bq[n] = (1.0-rlx_massB)*b1+rlx_massB*(nB-nB_sum_tmp);
+			Aq[n] = (1.0-rlx_massA)*a1+rlx_massA*(nA-3.0*gamma*chem_a);
+			Bq[n] = (1.0-rlx_massB)*b1+rlx_massB*(nB-3.0*gamma*chem_b);
 
 
 		}
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB,  double *DenLapA, double *DenLapB,double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda,double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure){
+__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 
 	int n, nread, nr1,nr2,nr3,nr4,nr5,nr6;
 	double vx,vy,vz,v_mag;
@@ -1910,17 +1993,19 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
     double mu_eff;//effective kinematic viscosity for Darcy term
     double rho0;
     double phi;
+    double phi_lap;//laplacian of phase field
     double nA,nB;
-    double nA_sum_tmp,nB_sum_tmp;
 	double a1,b1,a2,b2;
-    double nA_gradx,nA_grady,nA_gradz;
-    double nB_gradx,nB_grady,nB_gradz;
-    double Gff_x,Gff_y,Gff_z;
     double Gfs_x,Gfs_y,Gfs_z;
-    double Gsc = 1.f/3.f*sqrt(kappa*lambda);
-    double nA_lap,nB_lap;
+    double Gff_x,Gff_y,Gff_z;
     double chem_a,chem_b;
     double rlx_massA,rlx_massB;
+    // *---------------------------------Pressure Tensor Gradient------------------------------------*//
+    double Pxx_x,Pyy_y,Pzz_z;
+    double Pxy_x,Pxy_y;
+    double Pyz_y,Pyz_z;
+    double Pxz_x,Pxz_z;
+    double px,py,pz; //pressure gradient
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1945,17 +2030,58 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
-			nA_gradx = DenGradA[n+0*Np];
-			nA_grady = DenGradA[n+1*Np];
-			nA_gradz = DenGradA[n+2*Np];
-			nB_gradx = DenGradB[n+0*Np];
-			nB_grady = DenGradB[n+1*Np];
-			nB_gradz = DenGradB[n+2*Np];
-            nA_lap = DenLapA[n];//laplacian of denA
-            nB_lap = DenLapB[n];
-
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
+            // load laplacian of phase field
+            phi_lap = PhiLap[n];
+            // Load voxel porosity and perm
+            porosity = Poros[n];
+            // use local saturation as an estimation of effective relperm values
+            perm = Perm[n]*nA/(nA+nB)*int(phi>0.0)+Perm[n]*nB/(nA+nB)*int(phi<0.0);
+
+            //Load pressure gradient
+            px=PressureGrad[0*Np+n];
+            py=PressureGrad[1*Np+n];
+            pz=PressureGrad[2*Np+n];
+
+            //Load pressure tensor gradient
+            //For reference full list of PressTensorGrad
+            //PressTensorGrad[n+0*Np]  = Pxx_x
+            //PressTensorGrad[n+1*Np]  = Pxx_y
+            //PressTensorGrad[n+2*Np]  = Pxx_z
+            //PressTensorGrad[n+3*Np]  = Pyy_x
+            //PressTensorGrad[n+4*Np]  = Pyy_y
+            //PressTensorGrad[n+5*Np]  = Pyy_z
+            //PressTensorGrad[n+6*Np]  = Pzz_x
+            //PressTensorGrad[n+7*Np]  = Pzz_y
+            //PressTensorGrad[n+8*Np]  = Pzz_z
+            //PressTensorGrad[n+9*Np]  = Pxy_x
+            //PressTensorGrad[n+10*Np] = Pxy_y
+            //PressTensorGrad[n+11*Np] = Pxy_z
+            //PressTensorGrad[n+12*Np] = Pyz_x
+            //PressTensorGrad[n+13*Np] = Pyz_y
+            //PressTensorGrad[n+14*Np] = Pyz_z
+            //PressTensorGrad[n+15*Np] = Pxz_x
+            //PressTensorGrad[n+16*Np] = Pxz_y
+            //PressTensorGrad[n+17*Np] = Pxz_z
+            Pxx_x = PressTensorGrad[0*Np+n];
+            Pyy_y = PressTensorGrad[4*Np+n];
+            Pzz_z = PressTensorGrad[8*Np+n];
+            Pxy_x = PressTensorGrad[9*Np+n];
+            Pxz_x = PressTensorGrad[15*Np+n];
+		    Pxy_y = PressTensorGrad[10*Np+n];
+		    Pyz_y = PressTensorGrad[13*Np+n];
+		    Pyz_z = PressTensorGrad[14*Np+n];
+		    Pxz_z = PressTensorGrad[17*Np+n];
+		    //............Compute the fluid-fluid force (gfx,gfy,gfz)...................................
+            //TODO double check if you need porosity as a fre-factor
+            Gff_x = porosity*px-(Pxx_x+Pxy_y+Pxz_z);
+            Gff_y = porosity*py-(Pxy_x+Pyy_y+Pyz_z);
+            Gff_z = porosity*pz-(Pxz_x+Pyz_y+Pzz_z);
+            // fluid-solid force
+            Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
+            Gfs_y = (nA-nB)*SolidForce[n+1*Np];    
+            Gfs_z = (nA-nB)*SolidForce[n+2*Np];    
 
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
@@ -2258,20 +2384,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
             m18 -= fq;
             //---------------------------------------------------------------------//
 
-            //---------------- Calculate SC fluid-fluid and fluid-solid forces ---------------//
-            // fluid-fluid force
-            Gff_x = -Gsc*(nA*nB_gradx+nB*nA_gradx);
-            Gff_y = -Gsc*(nA*nB_grady+nB*nA_grady);
-            Gff_z = -Gsc*(nA*nB_gradz+nB*nA_gradz);
-            // fluid-solid force
-            Gfs_x = (nA-nB)*SolidForce[n+0*Np];    
-            Gfs_y = (nA-nB)*SolidForce[n+1*Np];    
-            Gfs_z = (nA-nB)*SolidForce[n+2*Np];    
-
-            porosity = Poros[n];
-            // use local saturation as an estimation of effective relperm values
-            perm = Perm[n]*nA/(nA+nB)*int(phi>0.0)+Perm[n]*nB/(nA+nB)*int(phi<0.0);
-
             c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
             if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
             //GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
@@ -2464,10 +2576,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
-            chem_a = lambda*(nA*nA*nA-1.5*nA*nA+0.5*nA)-kappa*nA_lap;
-            chem_b = lambda*(nB*nB*nB-1.5*nB*nB+0.5*nB)-kappa*nB_lap;
-            nA_sum_tmp = 0.0;
-            nB_sum_tmp = 0.0;
+            chem_a = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-0.25*kappaA*phi_lap;
+            chem_b = lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
             rlx_massA = 3.f-sqrt(3.f);
             rlx_massB = 3.f-sqrt(3.f);
 
@@ -2478,12 +2588,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 			b1 = Bq[nr2];
 			a2 = Aq[nr1];
 			b2 = Bq[nr1];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*ux));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*ux));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*ux));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*ux));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*ux));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*ux));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*ux));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*ux));
 
 			// q = 1
 			//nread = neighborList[n+Np];
@@ -2500,12 +2608,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 			b1 = Bq[nr4];
 			a2 = Aq[nr3];
 			b2 = Bq[nr3];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*uy));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*uy));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*uy));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*uy));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*uy));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*uy));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*uy));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*uy));
 
 			// q = 3
 			//nread = neighborList[n+3*Np];
@@ -2523,12 +2629,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 			b1 = Bq[nr6];
 			a2 = Aq[nr5];
 			b2 = Bq[nr5];
-			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5+nA*4.5*uz));
-			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5+nB*4.5*uz));
-			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*(gamma*chem_a*4.5-nA*4.5*uz));
-			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*(gamma*chem_b*4.5-nB*4.5*uz));
-            nA_sum_tmp += a1+a2;
-            nB_sum_tmp += b1+b2;
+			a1 = (1.0-rlx_massA)*a1+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a+nA*uz));
+			b1 = (1.0-rlx_massB)*b1+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b+nB*uz));
+			a2 = (1.0-rlx_massA)*a2+rlx_massA*(0.1111111111111111*4.5*(gamma*chem_a-nA*uz));
+			b2 = (1.0-rlx_massB)*b2+rlx_massB*(0.1111111111111111*4.5*(gamma*chem_b-nB*uz));
 
 			// q = 5
 			//nread = neighborList[n+5*Np];
@@ -2544,8 +2648,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 			// Stationary value - distribution 0
             a1=Aq[n];
             b1=Bq[n];
-			Aq[n] = (1.0-rlx_massA)*a1+rlx_massA*(nA-nA_sum_tmp);
-			Bq[n] = (1.0-rlx_massB)*b1+rlx_massB*(nB-nB_sum_tmp);
+			Aq[n] = (1.0-rlx_massA)*a1+rlx_massA*(nA-3.0*gamma*chem_a);
+			Bq[n] = (1.0-rlx_massB)*b1+rlx_massB*(nB-3.0*gamma*chem_b);
 
 
 		}
@@ -2590,7 +2694,7 @@ __global__ void dvc_ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, d
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+__global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, double *Phi, int start, int finish, int Np){
 	int idx;
     double nA,nB;
 
@@ -2617,11 +2721,13 @@ __global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, doub
 			Bq[4*Np+idx]=0.1111111111111111*nB;
 			Bq[5*Np+idx]=0.1111111111111111*nB;
 			Bq[6*Np+idx]=0.1111111111111111*nB;
+
+            Phi[idx] = nA-nB;
 		}
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *neighborList, double *Aq, double *Bq, double *Den, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *neighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 	int n,nread;
 	double fq,nA,nB;
 
@@ -2682,11 +2788,13 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *neighborList, 
 			// save the number densities
 			Den[n] = nA;
 			Den[Np+n] = nB;
+            // save the phase field
+			Phi[n] = nA-nB; 	
 		}
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 	int n;
 	double fq,nA,nB;
 
@@ -2741,6 +2849,8 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double
 			// save the number densities
 			Den[n] = nA;
 			Den[Np+n] = nB;
+            // save the phase field
+			Phi[n] = nA-nB; 	
 		}
 	}
 }
@@ -2863,6 +2973,115 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, dou
 	}
 }
 
+__global__  void dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborList, double *Phi, double *PressTensor, double *PhiLap,
+      		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np){
+	//**GreyscaleColor model related parameters:
+	//kappaA, kappaB: characterize interfacial tension
+	//lambdaA, lambdaB: characterize bulk free energy 
+	//nA: concentration of liquid 1; 
+	//nB: concentration of liquid 2;
+	//nA = 0.5*(1+phi/chi)
+	//nB = 0.5*(1-phi/chi)
+	//nA+nB=1
+	//chi: a scaling factor, is set to 1.0 for now.
+
+	int nn,n;
+	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double m3,m5,m7;
+    double nx,ny,nz;//Color gradient
+    double nA,nB;//ELBM parameters: concentration of liquid 1 and 2
+    double phi;//phase field
+    double pb;//thermodynamic bulk fluid pressure
+    double Lphi;//Laplacian of phase field
+    double C;//squared magnitude of the gradient of phase field
+    double chi = 1.0;//legacy ELBM parameter, scale the phase field; may be useful in the future;
+    double kappa = 0.25*(kappaA+kappaB)/(chi*chi);//the effective surface tension coefficient
+    double Pxx,Pyy,Pzz,Pxy,Pyz,Pxz;//Pressure tensor
+
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+		if (n<finish) {
+
+			nn = neighborList[n+Np]%Np;
+			m1 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n]%Np;
+			m2 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+3*Np]%Np;
+			m3 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+2*Np]%Np;
+			m4 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+5*Np]%Np;
+			m5 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+4*Np]%Np;
+			m6 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+7*Np]%Np;
+			m7 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+6*Np]%Np;
+			m8 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+9*Np]%Np;
+			m9 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+8*Np]%Np;
+			m10 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+11*Np]%Np;
+			m11 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+10*Np]%Np;
+			m12 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+13*Np]%Np;
+			m13 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+12*Np]%Np;
+			m14 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+15*Np]%Np;
+			m15 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+14*Np]%Np;
+			m16 = Phi[nn]*int(n!=nn);		
+			nn = neighborList[n+17*Np]%Np;
+			m17 = Phi[nn]*int(n!=nn);
+			nn = neighborList[n+16*Np]%Np;
+			m18 = Phi[nn]*int(n!=nn);					
+
+			//............Compute the Color Gradient...................................
+			nx = 0.3333333333333333*1.f/18.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = 0.3333333333333333*1.f/18.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = 0.3333333333333333*1.f/18.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			C = nx*nx+ny*ny+nz*nz;
+			// Laplacian of phase field
+			//Lphi = 0.3333333333333333*(m1+m2+m3+m4+m5+m6)+
+			//		0.16666666666666666*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18) - 4.0*phi;
+            phi = Phi[n];
+            Lphi = 2.0*0.3333333333333333*1.f/18.f*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));
+
+			//bulk pressure p_b
+			nA = 0.5*(1.0+phi/chi);
+			nB = 0.5*(1.0-phi/chi);
+            pb = -((1.0-nA)*(1.0-nA)*nA*nA*lambdaA)*0.5 - ((1.0-nB)*(1.0-nB)*nB*nB*lambdaB)*0.5 + 
+                (nA - nB)*chi*(((0.5*nA-1.5*nA*nA+nA*nA*nA)*lambdaA)/chi + ((0.5*nB-1.5*nB*nB+nB*nB*nB)*lambdaB)/chi);
+
+			//Pressure tensors
+			Pxx=pb-kappa*phi*Lphi-0.5*kappa*C + kappa*nx*nx ;
+			Pyy=pb-kappa*phi*Lphi-0.5*kappa*C + kappa*ny*ny ;
+			Pzz=pb-kappa*phi*Lphi-0.5*kappa*C + kappa*nz*nz ;
+			Pxy= kappa*nx*ny;
+			Pyz= kappa*ny*nz;
+			Pxz= kappa*nx*nz;
+
+			//...Store the Pressure Tensors....................
+			PressTensor[n+0*Np] = Pxx;
+			PressTensor[n+1*Np] = Pyy;
+			PressTensor[n+2*Np] = Pzz;
+			PressTensor[n+3*Np] = Pxy;
+			PressTensor[n+4*Np] = Pyz;
+			PressTensor[n+5*Np] = Pxz;
+			//...............................................
+
+			//...Store the Laplacian of phase field....................
+			PhiLap[n]=Lphi;
+		}
+	}
+}
+
+
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
@@ -2891,13 +3110,13 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double *dis
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB, double *DenLapA, double *DenLapB, double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda, double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 
-    dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(dist, Aq, Bq, Den, DenGradA, DenGradB,DenLapA,DenLapB, SolidForce, start, finish, Np,
-                                                                 tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure);
+    dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(dist, Aq, Bq, Den, SolidForce, start, finish, Np,
+                                                                 tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure,PressureGrad,PressTensorGrad,PhiLap);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2905,13 +3124,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Aq,
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
-                double *DenGradA, double *DenGradB,  double *DenLapA, double *DenLapB,double *SolidForce, int start, int finish, int Np,
-                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappa,double lambda,double Gx, double Gy, double Gz,
-                double *Poros,double *Perm, double *Velocity,double *Pressure){
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,double *SolidForce, int start, int finish, int Np,
+                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
+                double Gx, double Gy, double Gz,
+                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 
-    dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, DenGradA, DenGradB,DenLapA,DenLapB, SolidForce, start, finish, Np,
-                                                                 tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure);
+    dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, SolidForce, start, finish, Np,
+                                                                 tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Gx, Gy, Gz, 
+                                                                 Poros, Perm, Velocity, Pressure,PressureGrad,PressTensorGrad,PhiLap);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2920,8 +3140,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double 
 }
 
 
-extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
-	dvc_ScaLBL_D3Q7_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(Den, Aq, Bq, start, finish, Np);
+extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, double *Phi, int start, int finish, int Np){
+	dvc_ScaLBL_D3Q7_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(Den, Aq, Bq, Phi, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_GreyColorIMRT_Init: %s \n",cudaGetErrorString(err));
@@ -2936,9 +3156,9 @@ extern "C" void ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, doubl
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(NeighborList, Aq, Bq, Den, start, finish, Np);
+	dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(NeighborList, Aq, Bq, Den, Phi, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2946,9 +3166,9 @@ extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, doubl
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, start, finish, Np);
+	dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, Phi, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_AAeven_GreyscaleColorDensity: %s \n",cudaGetErrorString(err));
@@ -2969,5 +3189,24 @@ extern "C" void ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, double 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_Laplacian: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *Den, double *Porosity,double *Velocity,
+                double *Pressure, double rhoA,double rhoB, int Np){
+
+	dvc_ScaLBL_D3Q19_GreyscaleColor_Pressure<<<NBLOCKS,NTHREADS >>>(dist, Den, Porosity, Velocity, Pressure, rhoA, rhoB, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_Pressure: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborList, double *Phi, double *PressTensor, double *PhiLap,
+      		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np){
+	dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor<<<NBLOCKS,NTHREADS >>>(neighborList,Phi,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,start,finish,Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_PressureTensor: %s \n",cudaGetErrorString(err));
 	}
 }

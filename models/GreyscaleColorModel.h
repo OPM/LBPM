@@ -43,9 +43,10 @@ public:
 	double din,dout;
     double dp;//solid particle diameter, unit in voxel
     double GreyPorosity;
-    double Gsc;
+    //double Gsc;
     double gamma;
-    double kappa,lambda;
+    double kappaA,kappaB;
+    double lambdaA,lambdaB;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -69,12 +70,17 @@ public:
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
-	double *Pressure_dvc;
     double *SolidForce;
-    double *DenGradA;
-    double *DenGradB;
-    double *DenLapA;
-    double *DenLapB;
+	double *Pressure_dvc;
+	double *PressureGrad;// gradiant of pressure
+    double *PressTensor;//pressure tensor
+    double *PressTensorGrad;// gradient of pressure tensor
+    double *Phi;
+    double *PhiLap;//laplacian of phase field phi
+//    double *DenGradA;
+//    double *DenGradB;
+//    double *DenLapA;
+//    double *DenLapB;
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;

@@ -14,7 +14,8 @@ void DeleteArray( const TYPE *p )
 }
 
 ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),rhoA(0),rhoB(0),Gsc(0),gamma(0),kappa(0),lambda(0),
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),
+rhoA(0),rhoB(0),gamma(0),kappaA(0),kappaB(0),lambdaA(0),lambdaB(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
@@ -48,10 +49,12 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	din=dout=1.0;
 	flux=0.0;
     dp = 10.0; //unit of 'dp': voxel
-    Gsc = 1.0;
-    gamma = 1.0;
-    kappa = 1.0;
-    lambda = 1.0;
+    //Gsc = 1.0;
+    gamma = 1.0;//may also have gammaA and gammaB;
+    kappaA = 1.0e-3;
+    kappaB = 1.0e-3;
+    lambdaA = 1.0e-3;
+    lambdaB = 1.0e-3;
 	
 	// ---------------------- Greyscale Model parameters -----------------------//
 	if (greyscaleColor_db->keyExists( "timestepMax" )){
@@ -71,17 +74,23 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	if (greyscaleColor_db->keyExists( "rhoB" )){
 		rhoB = greyscaleColor_db->getScalar<double>( "rhoB" );
 	}
-	if (greyscaleColor_db->keyExists( "Gsc" )){
-		Gsc = greyscaleColor_db->getScalar<double>( "Gsc" );
-	}
+//	if (greyscaleColor_db->keyExists( "Gsc" )){
+//		Gsc = greyscaleColor_db->getScalar<double>( "Gsc" );
+//	}
 	if (greyscaleColor_db->keyExists( "gamma" )){
 		gamma = greyscaleColor_db->getScalar<double>( "gamma" );
 	}
-	if (greyscaleColor_db->keyExists( "kappa" )){
-		kappa = greyscaleColor_db->getScalar<double>( "kappa" );
+	if (greyscaleColor_db->keyExists( "kappaA" )){
+		kappaA = greyscaleColor_db->getScalar<double>( "kappaA" );
 	}
-	if (greyscaleColor_db->keyExists( "lambda" )){
-		lambda = greyscaleColor_db->getScalar<double>( "lambda" );
+	if (greyscaleColor_db->keyExists( "kappaB" )){
+		kappaB = greyscaleColor_db->getScalar<double>( "kappaB" );
+	}
+	if (greyscaleColor_db->keyExists( "lambdaA" )){
+		lambdaA = greyscaleColor_db->getScalar<double>( "lambdaA" );
+	}
+	if (greyscaleColor_db->keyExists( "lambdaB" )){
+		lambdaB = greyscaleColor_db->getScalar<double>( "lambdaB" );
 	}
 	if (greyscaleColor_db->keyExists( "dp" )){
 		dp = greyscaleColor_db->getScalar<double>( "dp" );
@@ -550,15 +559,20 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure_dvc, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &PressureGrad, 3*sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Aq, 7*sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &PhiLap, sizeof(double)*Np);//laplacian of phase field		
 	ScaLBL_AllocateDeviceMemory((void **) &SolidForce, 3*sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &DenGradA, 3*sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &DenGradB, 3*sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &DenLapA, sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &DenLapB, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &PressTensor, 6*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &PressTensorGrad, 18*sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &DenGradA, 3*sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &DenGradB, 3*sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &DenLapA, sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &DenLapB, sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
 	if (rank==0)	printf ("Setting up device neighbor list \n");
@@ -608,17 +622,30 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+
+        //TODO need to initialize velocity field !
+        //this is required for calculating the pressure_dvc
+        //can make a funciton to update velocity, such as ScaLBL_D3Q19_GreyColorIMRT_Velocity
 	}
     else{
         if (rank==0)	printf ("Initializing density field \n");
         DensityField_Init();//initialize density field
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         
         if (rank==0)	printf ("Initializing distributions \n");
         ScaLBL_D3Q19_GreyColorIMRT_Init(fq, Den, rhoA, rhoB, Np);
+
+        //Velocity also needs initialization
+        if (rank==0)	printf ("Initializing velocity field \n");
+        double *vel_init;
+        vel_init = new double [3*Np];
+        for (int i=0;i<3*Np;i++) vel_init[i]=0.0;
+		ScaLBL_CopyToDevice(Velocity,vel_init,3*Np*sizeof(double));
+		ScaLBL_DeviceBarrier();
+        delete [] vel_init;
     }
 }
 
@@ -669,40 +696,77 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(NeighborList, Aq, Bq, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(NeighborList, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(NeighborList, Aq, Bq, Den, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(NeighborList, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
-        //compute Den gradients - component A
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenGradA);
-        //compute Den gradients - component B
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenGradB);
+        // Update local pressure
+        ScaLBL_D3Q19_GreyscaleColor_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
+        // Compute pressure gradient
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(Pressure_dvc);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);//TODO need to fix RecvGrad missing send function - see ScaLBL.cpp
+		ScaLBL_DeviceBarrier();
+        // Compute Pressure Tensor
+		ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
+		ScaLBL_Comm->RecvHalo(Phi);
+		ScaLBL_DeviceBarrier();
+        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
+        /* Compute gradient of the pressure tensor */
+		// call the recv Grad function once per tensor element
+        // 1st tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[0*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[0*Np],&PressTensorGrad[0*Np]);
+		// 2nd tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[1*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[1*Np],&PressTensorGrad[3*Np]);
+		// 3rd tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[2*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[2*Np],&PressTensorGrad[6*Np]);
+		// 4th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[3*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[3*Np],&PressTensorGrad[9*Np]);
+		// 5th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[4*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[4*Np],&PressTensorGrad[12*Np]);
+		// 6th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[5*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[5*Np],&PressTensorGrad[15*Np]);
 
-        //compute Den laplacian - component A
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[0*Np], DenLapA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[0*Np], DenLapA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenLapA);
+//        //compute Den gradients - component A
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+//		ScaLBL_Comm->SendHalo(&Den[0*Np]);
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
+//		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenGradA);
+//        //compute Den gradients - component B
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+//		ScaLBL_Comm->SendHalo(&Den[1*Np]);
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
+//		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenGradB);
 
-        //compute Den laplacian - component B
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[1*Np], DenLapB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[1*Np], DenLapB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenLapB);
 
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 //        ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, fq, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, 
 //                tauA,tauB,tauA_eff,tauB_eff,rhoA,rhoB,Gsc,Fx,Fy,Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Aq, Bq, Den, DenGradA, DenGradB, DenLapA,DenLapB, SolidForce, 
+        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Aq, Bq, Den, SolidForce, 
                                               ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np,
-                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Fx, Fy, Fz, Porosity, Permeability, Velocity, Pressure_dvc);
+                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
+                                              Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 
@@ -713,8 +777,10 @@ void ScaLBL_GreyscaleColorModel::Run(){
 //		}
 //        ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, fq, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, 0, ScaLBL_Comm->LastExterior(), Np, 
 //                tauA,tauB,tauA_eff,tauB_eff,rhoA,rhoB,Gsc,Fx,Fy,Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Aq, Bq, Den, DenGradA, DenGradB, DenLapA,DenLapB, SolidForce, 0, ScaLBL_Comm->LastExterior(), Np,
-                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Fx, Fy, Fz, Porosity, Permeability, Velocity, Pressure_dvc);
+        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Aq, Bq, Den, SolidForce, 
+                                              0, ScaLBL_Comm->LastExterior(), Np,
+                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
+                                              Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
 		ScaLBL_DeviceBarrier(); 
         MPI_Barrier(comm);
 
@@ -723,40 +789,76 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(Aq, Bq, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(Aq, Bq, Den, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
-        //compute Den gradients - component A
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenGradA);
-        //compute Den gradients - component B
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenGradB);
+        // Update local pressure
+        ScaLBL_D3Q19_GreyscaleColor_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
+        // Compute pressure gradient
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(Pressure_dvc);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);//TODO need to fix RecvGrad missing send function - see ScaLBL.cpp
+		ScaLBL_DeviceBarrier();
+        // Compute Pressure Tensor
+		ScaLBL_Comm->SendHalo(Phi);
+        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
+		ScaLBL_Comm->RecvHalo(Phi);
+		ScaLBL_DeviceBarrier();
+        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
+        /* Compute gradient of the pressure tensor */
+		// call the recv Grad function once per tensor element
+        // 1st tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[0*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[0*Np],&PressTensorGrad[0*Np]);
+		// 2nd tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[1*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[1*Np],&PressTensorGrad[3*Np]);
+		// 3rd tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[2*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[2*Np],&PressTensorGrad[6*Np]);
+		// 4th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[3*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[3*Np],&PressTensorGrad[9*Np]);
+		// 5th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[4*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[4*Np],&PressTensorGrad[12*Np]);
+		// 6th tensor element
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->SendHalo(&PressTensor[5*Np]);
+		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&PressTensor[5*Np],&PressTensorGrad[15*Np]);
 
-        //compute Den laplacian - component A
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[0*Np], DenLapA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[0*Np], DenLapA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenLapA);
-
-        //compute Den laplacian - component B
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[1*Np], DenLapB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, &Den[1*Np], DenLapB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenLapB);
+//        //compute Den gradients - component A
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+//		ScaLBL_Comm->SendHalo(&Den[0*Np]);
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[0*Np], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
+//		ScaLBL_Comm->RecvGrad(&Den[0*Np],DenGradA);
+//        //compute Den gradients - component B
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+//		ScaLBL_Comm->SendHalo(&Den[1*Np]);
+//		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &Den[1*Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
+//		ScaLBL_Comm->RecvGrad(&Den[1*Np],DenGradB);
 
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 //        ScaLBL_D3Q19_AAeven_GreyscaleColor(fq, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, 
 //                tauA,tauB,tauA_eff,tauB_eff,rhoA,rhoB,Gsc,Fx,Fy,Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Aq, Bq, Den, DenGradA, DenGradB, DenLapA,DenLapB, SolidForce, 
-                                              ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np,
-                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Fx, Fy, Fz, Porosity, Permeability, Velocity, Pressure_dvc);
+        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Aq, Bq, Den, SolidForce, 
+                                               ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np,
+                                               tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
+                                               Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 
@@ -767,8 +869,10 @@ void ScaLBL_GreyscaleColorModel::Run(){
 //		}
 //        ScaLBL_D3Q19_AAeven_GreyscaleColor(fq, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, 0, ScaLBL_Comm->LastExterior(), Np, 
 //                tauA,tauB,tauA_eff,tauB_eff,rhoA,rhoB,Gsc,Fx,Fy,Fz,Porosity,Permeability,Velocity,Pressure_dvc);
-        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Aq, Bq, Den, DenGradA, DenGradB, DenLapA,DenLapB, SolidForce, 0, ScaLBL_Comm->LastExterior(), Np,
-                                              tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappa,lambda, Fx, Fy, Fz, Porosity, Permeability, Velocity, Pressure_dvc);
+        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Aq, Bq, Den, SolidForce, 
+                                               0, ScaLBL_Comm->LastExterior(), Np,
+                                               tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
+                                               Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
         ScaLBL_DeviceBarrier(); 
         MPI_Barrier(comm);
 		//************************************************************************/
