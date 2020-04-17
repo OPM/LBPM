@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 		printf("Global mass difference B = %.5g\n",total_mass_B_1-total_mass_B_0);
 
 		if (count_negative_A > 0 ||count_negative_B > 0) CleanCheck=1;
-		if (fabs(total_mass_A_1-total_mass_A_0) > 1.0e-13||fabs(total_mass_B_1-total_mass_B_0) > 1.0e-13 ) CleanCheck=2;
+		if (fabs(total_mass_A_1-total_mass_A_0) > 1.0e-8 || fabs(total_mass_B_1-total_mass_B_0) > 1.0e-8) CleanCheck=2;
 
 		FILE *OUTFILE;
 		OUTFILE = fopen("error.raw","wb");
