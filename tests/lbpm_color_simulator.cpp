@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     ColorModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
     ColorModel.Initialize();   // initializing the model will set initial conditions for variables
     ColorModel.Run();	       
-    ColorModel.WriteDebug();
+    //ColorModel.WriteDebug();
 
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
