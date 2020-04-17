@@ -546,18 +546,18 @@ void ScaLBL_ColorModel::Run(){
 		USE_MORPH = true;
 	}
 	else if (protocol == "seed water"){
-		morph_delta = 0.05;
+		morph_delta = -0.05;
 		seed_water = 0.01;
 		USE_SEED = true;
 		USE_MORPH = true;
 	}
 	else if (protocol == "open connected oil"){
-		morph_delta = 0.05;
+		morph_delta = -0.05;
 		USE_MORPH = true;
 		USE_MORPHOPEN_OIL = true;
 	}
 	else if (protocol == "shell aggregation"){
-		morph_delta = 0.05;
+		morph_delta = -0.05;
 		USE_MORPH = true;
 	}  
 	if (color_db->keyExists( "capillary_number" )){
