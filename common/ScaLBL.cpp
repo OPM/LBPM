@@ -1068,6 +1068,7 @@ void ScaLBL_Communicator::RecvGrad(double *phi, double *grad){
 	ScaLBL_Gradient_Unpack(1.0,-1,0,0,dvcRecvDist_x,0,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,-1,0,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,1,0,dvcRecvDist_x,2*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,-1,dvcRecvDist_x,3*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,0,1,dvcRecvDist_x,4*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	//...................................................................................
 	//...Packing for X face(1,7,9,11,13)................................
