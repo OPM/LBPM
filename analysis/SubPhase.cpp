@@ -161,12 +161,12 @@ void SubPhase::Basic(){
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
 	imin=jmin=1;
-	// If inlet/outlet layers exist use these as default
+	/*// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
-	
+	*/
 	nb.reset(); wb.reset();
 
 	double count_w = 0.0;
@@ -376,16 +376,17 @@ void SubPhase::Full(){
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == 0) kmin=4;
+	/*if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == 0) kmin=4;
 	if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
-
+	*/
 	imin=jmin=1;
-	// If inlet layers exist use these as default
+	/*// If inlet layers exist use these as default
+	 * NOTE -- excluding inlet / outlet will screw up topological averages!!!
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
-		
+	*/
 	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
 
  	Dm->CommunicateMeshHalo(Phi);
