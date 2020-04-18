@@ -1902,7 +1902,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
             chem_a = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-0.25*kappaA*phi_lap;
-            chem_b = lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
+            chem_b = -lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
             rlx_massA = 3.f-sqrt(3.f);
             rlx_massB = 3.f-sqrt(3.f);
 
@@ -2577,7 +2577,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
             chem_a = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-0.25*kappaA*phi_lap;
-            chem_b = lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
+            chem_b = -lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*kappaB*phi_lap;
             rlx_massA = 3.f-sqrt(3.f);
             rlx_massB = 3.f-sqrt(3.f);
 
@@ -2906,9 +2906,9 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, doub
 			m18 = Den[nn]*int(n!=nn);					
 			
 			//............Compute the Color Gradient...................................
-			nx = 0.3333333333333333*1.f/18.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny = 0.3333333333333333*1.f/18.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz = 0.3333333333333333*1.f/18.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = 1.f/6.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = 1.f/6.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			
 			DenGrad[n] = nx;
 			DenGrad[Np+n] = ny;
@@ -2967,7 +2967,9 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, dou
 			nn = neighborList[n+16*Np]%Np;
 			m18 = Den[nn]*int(n!=nn);					
 			
-            lap = 2.0*0.3333333333333333*1.f/18.f*(m1+m2+m3+m4+m5+m6-6*Den[n]+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*Den[n]));
+
+
+            lap = 1.f/3.f*(m1+m2+m3+m4+m5+m6-6*Den[n]+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*Den[n]));
 			DenLap[n] = lap;
 		}
 	}
@@ -3042,21 +3044,21 @@ __global__  void dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborLis
 			m18 = Phi[nn]*int(n!=nn);					
 
 			//............Compute the Color Gradient...................................
-			nx = 0.3333333333333333*1.f/18.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny = 0.3333333333333333*1.f/18.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz = 0.3333333333333333*1.f/18.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = 1.f/6.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = 1.f/6.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			C = nx*nx+ny*ny+nz*nz;
 			// Laplacian of phase field
 			//Lphi = 0.3333333333333333*(m1+m2+m3+m4+m5+m6)+
 			//		0.16666666666666666*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18) - 4.0*phi;
             phi = Phi[n];
-            Lphi = 2.0*0.3333333333333333*1.f/18.f*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));
+            Lphi = 1.f/3.f*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));
 
 			//bulk pressure p_b
 			nA = 0.5*(1.0+phi/chi);
 			nB = 0.5*(1.0-phi/chi);
             pb = -((1.0-nA)*(1.0-nA)*nA*nA*lambdaA)*0.5 - ((1.0-nB)*(1.0-nB)*nB*nB*lambdaB)*0.5 + 
-                (nA - nB)*chi*(((0.5*nA-1.5*nA*nA+nA*nA*nA)*lambdaA)/chi + ((0.5*nB-1.5*nB*nB+nB*nB*nB)*lambdaB)/chi);
+                (nA - nB)*chi*(((0.5*nA-1.5*nA*nA+nA*nA*nA)*lambdaA)/chi - ((0.5*nB-1.5*nB*nB+nB*nB*nB)*lambdaB)/chi);
 
 			//Pressure tensors
 			Pxx=pb-kappa*phi*Lphi-0.5*kappa*C + kappa*nx*nx ;

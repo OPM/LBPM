@@ -707,7 +707,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(Pressure_dvc);
 		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);//TODO need to fix RecvGrad missing send function - see ScaLBL.cpp
+		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);
 		ScaLBL_DeviceBarrier();
         // Compute Pressure Tensor
 		ScaLBL_Comm->SendHalo(Phi);
@@ -800,7 +800,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(Pressure_dvc);
 		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);//TODO need to fix RecvGrad missing send function - see ScaLBL.cpp
+		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);
 		ScaLBL_DeviceBarrier();
         // Compute Pressure Tensor
 		ScaLBL_Comm->SendHalo(Phi);
