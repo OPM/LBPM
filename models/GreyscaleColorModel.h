@@ -65,7 +65,8 @@ public:
 
     signed char *id;    
 	int *NeighborList;
-	double *fq,*Aq,*Bq;
+	//double *fq,*Aq,*Bq;
+	double *fq,*Cq;
     double *Den;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
