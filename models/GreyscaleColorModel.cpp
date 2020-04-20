@@ -344,9 +344,9 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double 
 
     //Populate the poroisty map, NOTE only for node_ID > 0, i.e. open or grey nodes
     //For node_ID <= 0: these are solid nodes of various wettability
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				for (unsigned int idx=0; idx < NLABELS; idx++){
@@ -371,9 +371,9 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double 
 
     //Populate the permeability map, NOTE only for node_ID > 0, i.e. open or grey nodes
     //For node_ID <= 0: these are solid nodes of various wettability
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
@@ -486,9 +486,9 @@ void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
     Phi_temp=new double [Np];
     double phi = 0.0;
 
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=Mask->id[n];
                 if (VALUE>0){
@@ -525,6 +525,7 @@ void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
 	ScaLBL_CopyToDevice(Phi, Phi_temp, 1*Np*sizeof(double));
 	ScaLBL_DeviceBarrier();
 	delete [] Den_temp;
+	delete [] Phi_temp;
 }
 
 void ScaLBL_GreyscaleColorModel::Create(){
