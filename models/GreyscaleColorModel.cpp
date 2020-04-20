@@ -455,7 +455,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double 
 	}
 }
 
-void ScaLBL_GreyscaleColorModel::DensityField_Init(){
+void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
 
 	size_t NLABELS=0;
 	signed char VALUE=0;
@@ -482,6 +482,10 @@ void ScaLBL_GreyscaleColorModel::DensityField_Init(){
     double nA=0.5;//to prevent use may forget to specify all greynodes, then must initialize something to start with, givning just zeros is too risky.
     double nB=0.5;
 
+    double *Phi_temp;
+    Phi_temp=new double [Np];
+    double phi = 0.0;
+
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
@@ -494,26 +498,31 @@ void ScaLBL_GreyscaleColorModel::DensityField_Init(){
                             if ((Sw<0.0) || (Sw>1.0)) ERROR("Error: Initial saturation for grey nodes must be between [0.0, 1.0]! \n");
                             nB=Sw;
                             nA=1.0-Sw;
+                            phi = nA-nB;
                             idx = NLABELS;
                         }
                     }
                     if (VALUE==1){//label=1 reserved for NW phase
                         nA=1.0;
                         nB=0.0; 
+                        phi = nA-nB;
                     }
                     else if(VALUE==2){//label=2 reserved for W phase
                         nA=0.0;
                         nB=1.0; 
+                        phi = nA-nB;
                     }
                     int idx = Map(i,j,k);
                     Den_temp[idx+0*Np] = nA;
                     Den_temp[idx+1*Np] = nB;
+                    Phi_temp[idx] = phi;
                 }
 			}
 		}
 	}
     //copy to device
 	ScaLBL_CopyToDevice(Den, Den_temp, 2*Np*sizeof(double));
+	ScaLBL_CopyToDevice(Phi, Phi_temp, 1*Np*sizeof(double));
 	ScaLBL_DeviceBarrier();
 	delete [] Den_temp;
 }
@@ -625,8 +634,10 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 
         //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
         //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         //TODO need to initialize velocity field !
         //this is required for calculating the pressure_dvc
@@ -634,11 +645,13 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 	}
     else{
         if (rank==0)	printf ("Initializing density field \n");
-        DensityField_Init();//initialize density field
+        Density_and_Phase_Init();//initialize density field
         //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
         //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
+        ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         
         if (rank==0)	printf ("Initializing distributions \n");
         ScaLBL_D3Q19_GreyColorIMRT_Init(fq, Den, rhoA, rhoB, Np);

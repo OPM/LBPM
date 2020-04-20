@@ -105,7 +105,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double 
                 double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap);
 
 //extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Aq, double *Bq, double *Phi, int start, int finish, int Np);
-extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *Phi, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np);
 

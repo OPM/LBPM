@@ -102,7 +102,7 @@ private:
    
     void AssignComponentLabels(double *Porosity, double *Permeablity, double *SolidPotential);
     void AssignSolidForce(double *SolidPotential, double *SolidForce);
-    void DensityField_Init();
+    void Density_and_Phase_Init();
 
 };
 

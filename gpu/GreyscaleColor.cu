@@ -3266,7 +3266,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
             chem = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*(kappaA+kappaB)*phi_lap;
-            rlx_phi = 3.f-sqrt(3.f);
+            //rlx_phi = 3.f-sqrt(3.f);
+            rlx_phi = 1.0;
 
 			//...............................................
 			// q = 0,2,4
@@ -3898,7 +3899,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
             //-----------------------Mass transport------------------------//
             // calcuale chemical potential
             chem = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*(kappaA+kappaB)*phi_lap;
-            rlx_phi = 3.f-sqrt(3.f);
+            //rlx_phi = 3.f-sqrt(3.f);
+            rlx_phi = 1.0;
 
 			//...............................................
 			// q = 0,2,4
@@ -4012,11 +4014,13 @@ __global__ void dvc_ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, d
 //	}
 //}
 
-__global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *Phi, int start, int finish, int Np){
+__global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB,
+                int start, int finish, int Np){
 	int idx;
     double nA,nB;
     double phi;
-
+    double phi_lap;//laplacian of the phase field
+    double chem;//chemical potential
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 		//........Get 1-D index for this thread....................
@@ -4025,16 +4029,16 @@ __global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, doub
             nA = Den[idx];
             nB = Den[idx+Np];
             phi = nA-nB;
+            chem = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*(kappaA+kappaB)*phi_lap;
 
-			Cq[0*Np+idx]=0.3333333333333333*phi;
-			Cq[1*Np+idx]=0.1111111111111111*phi;
-			Cq[2*Np+idx]=0.1111111111111111*phi;
-			Cq[3*Np+idx]=0.1111111111111111*phi;
-			Cq[4*Np+idx]=0.1111111111111111*phi;
-			Cq[5*Np+idx]=0.1111111111111111*phi;
-			Cq[6*Np+idx]=0.1111111111111111*phi;
+			Cq[1*Np+idx]=0.5*gamma*chem;
+			Cq[2*Np+idx]=0.5*gamma*chem;
+			Cq[3*Np+idx]=0.5*gamma*chem;
+			Cq[4*Np+idx]=0.5*gamma*chem;
+			Cq[5*Np+idx]=0.5*gamma*chem;
+			Cq[6*Np+idx]=0.5*gamma*chem;
 
-            Phi[idx] = phi;
+			Cq[0*Np+idx]= phi - 3.0*gamma*chem;
 		}
 	}
 }
@@ -4280,43 +4284,80 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, doub
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
+//			nn = neighborList[n+Np]%Np;
+//			m1 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n]%Np;
+//			m2 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+3*Np]%Np;
+//			m3 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+2*Np]%Np;
+//			m4 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+5*Np]%Np;
+//			m5 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+4*Np]%Np;
+//			m6 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+7*Np]%Np;
+//			m7 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+6*Np]%Np;
+//			m8 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+9*Np]%Np;
+//			m9 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+8*Np]%Np;
+//			m10 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+11*Np]%Np;
+//			m11 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+10*Np]%Np;
+//			m12 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+13*Np]%Np;
+//			m13 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+12*Np]%Np;
+//			m14 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+15*Np]%Np;
+//			m15 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+14*Np]%Np;
+//			m16 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+17*Np]%Np;
+//			m17 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+16*Np]%Np;
+//			m18 = Den[nn]*int(n!=nn);					
+
 			nn = neighborList[n+Np]%Np;
-			m1 = Den[nn]*int(n!=nn);
+			m1 = Den[nn];
 			nn = neighborList[n]%Np;
-			m2 = Den[nn]*int(n!=nn);
+			m2 = Den[nn];
 			nn = neighborList[n+3*Np]%Np;
-			m3 = Den[nn]*int(n!=nn);
+			m3 = Den[nn];
 			nn = neighborList[n+2*Np]%Np;
-			m4 = Den[nn]*int(n!=nn);		
+			m4 = Den[nn];		
 			nn = neighborList[n+5*Np]%Np;
-			m5 = Den[nn]*int(n!=nn);
+			m5 = Den[nn];
 			nn = neighborList[n+4*Np]%Np;
-			m6 = Den[nn]*int(n!=nn);		
+			m6 = Den[nn];		
 			nn = neighborList[n+7*Np]%Np;
-			m7 = Den[nn]*int(n!=nn);
+			m7 = Den[nn];
 			nn = neighborList[n+6*Np]%Np;
-			m8 = Den[nn]*int(n!=nn);		
+			m8 = Den[nn];		
 			nn = neighborList[n+9*Np]%Np;
-			m9 = Den[nn]*int(n!=nn);
+			m9 = Den[nn];
 			nn = neighborList[n+8*Np]%Np;
-			m10 = Den[nn]*int(n!=nn);		
+			m10 = Den[nn];		
 			nn = neighborList[n+11*Np]%Np;
-			m11 = Den[nn]*int(n!=nn);
+			m11 = Den[nn];
 			nn = neighborList[n+10*Np]%Np;
-			m12 = Den[nn]*int(n!=nn);		
+			m12 = Den[nn];		
 			nn = neighborList[n+13*Np]%Np;
-			m13 = Den[nn]*int(n!=nn);
+			m13 = Den[nn];
 			nn = neighborList[n+12*Np]%Np;
-			m14 = Den[nn]*int(n!=nn);		
+			m14 = Den[nn];		
 			nn = neighborList[n+15*Np]%Np;
-			m15 = Den[nn]*int(n!=nn);
+			m15 = Den[nn];
 			nn = neighborList[n+14*Np]%Np;
-			m16 = Den[nn]*int(n!=nn);		
+			m16 = Den[nn];		
 			nn = neighborList[n+17*Np]%Np;
-			m17 = Den[nn]*int(n!=nn);
+			m17 = Den[nn];
 			nn = neighborList[n+16*Np]%Np;
-			m18 = Den[nn]*int(n!=nn);					
-			
+			m18 = Den[nn];					
+
 			//............Compute the Color Gradient...................................
 			nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
 			ny = 1.f/6.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
@@ -4342,43 +4383,79 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, dou
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-			nn = neighborList[n+Np]%Np;
-			m1 = Den[nn]*int(n!=nn);
-			nn = neighborList[n]%Np;
-			m2 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+3*Np]%Np;
-			m3 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+2*Np]%Np;
-			m4 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+5*Np]%Np;
-			m5 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+4*Np]%Np;
-			m6 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+7*Np]%Np;
-			m7 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+6*Np]%Np;
-			m8 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+9*Np]%Np;
-			m9 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+8*Np]%Np;
-			m10 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+11*Np]%Np;
-			m11 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+10*Np]%Np;
-			m12 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+13*Np]%Np;
-			m13 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+12*Np]%Np;
-			m14 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+15*Np]%Np;
-			m15 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+14*Np]%Np;
-			m16 = Den[nn]*int(n!=nn);		
-			nn = neighborList[n+17*Np]%Np;
-			m17 = Den[nn]*int(n!=nn);
-			nn = neighborList[n+16*Np]%Np;
-			m18 = Den[nn]*int(n!=nn);					
+//			nn = neighborList[n+Np]%Np;
+//			m1 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n]%Np;
+//			m2 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+3*Np]%Np;
+//			m3 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+2*Np]%Np;
+//			m4 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+5*Np]%Np;
+//			m5 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+4*Np]%Np;
+//			m6 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+7*Np]%Np;
+//			m7 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+6*Np]%Np;
+//			m8 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+9*Np]%Np;
+//			m9 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+8*Np]%Np;
+//			m10 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+11*Np]%Np;
+//			m11 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+10*Np]%Np;
+//			m12 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+13*Np]%Np;
+//			m13 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+12*Np]%Np;
+//			m14 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+15*Np]%Np;
+//			m15 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+14*Np]%Np;
+//			m16 = Den[nn]*int(n!=nn);		
+//			nn = neighborList[n+17*Np]%Np;
+//			m17 = Den[nn]*int(n!=nn);
+//			nn = neighborList[n+16*Np]%Np;
+//			m18 = Den[nn]*int(n!=nn);					
 			
+			nn = neighborList[n+Np]%Np;
+			m1 = Den[nn];
+			nn = neighborList[n]%Np;
+			m2 = Den[nn];
+			nn = neighborList[n+3*Np]%Np;
+			m3 = Den[nn];
+			nn = neighborList[n+2*Np]%Np;
+			m4 = Den[nn];		
+			nn = neighborList[n+5*Np]%Np;
+			m5 = Den[nn];
+			nn = neighborList[n+4*Np]%Np;
+			m6 = Den[nn];		
+			nn = neighborList[n+7*Np]%Np;
+			m7 = Den[nn];
+			nn = neighborList[n+6*Np]%Np;
+			m8 = Den[nn];		
+			nn = neighborList[n+9*Np]%Np;
+			m9 = Den[nn];
+			nn = neighborList[n+8*Np]%Np;
+			m10 = Den[nn];		
+			nn = neighborList[n+11*Np]%Np;
+			m11 = Den[nn];
+			nn = neighborList[n+10*Np]%Np;
+			m12 = Den[nn];		
+			nn = neighborList[n+13*Np]%Np;
+			m13 = Den[nn];
+			nn = neighborList[n+12*Np]%Np;
+			m14 = Den[nn];		
+			nn = neighborList[n+15*Np]%Np;
+			m15 = Den[nn];
+			nn = neighborList[n+14*Np]%Np;
+			m16 = Den[nn];		
+			nn = neighborList[n+17*Np]%Np;
+			m17 = Den[nn];
+			nn = neighborList[n+16*Np]%Np;
+			m18 = Den[nn];					
 
 
             lap = 1.f/3.f*(m1+m2+m3+m4+m5+m6-6*Den[n]+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*Den[n]));
@@ -4418,42 +4495,79 @@ __global__  void dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborLis
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
 
+//			nn = neighborList[n+Np]%Np;
+//			m1 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n]%Np;
+//			m2 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+3*Np]%Np;
+//			m3 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+2*Np]%Np;
+//			m4 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+5*Np]%Np;
+//			m5 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+4*Np]%Np;
+//			m6 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+7*Np]%Np;
+//			m7 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+6*Np]%Np;
+//			m8 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+9*Np]%Np;
+//			m9 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+8*Np]%Np;
+//			m10 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+11*Np]%Np;
+//			m11 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+10*Np]%Np;
+//			m12 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+13*Np]%Np;
+//			m13 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+12*Np]%Np;
+//			m14 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+15*Np]%Np;
+//			m15 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+14*Np]%Np;
+//			m16 = Phi[nn]*int(n!=nn);		
+//			nn = neighborList[n+17*Np]%Np;
+//			m17 = Phi[nn]*int(n!=nn);
+//			nn = neighborList[n+16*Np]%Np;
+//			m18 = Phi[nn]*int(n!=nn);					
+
 			nn = neighborList[n+Np]%Np;
-			m1 = Phi[nn]*int(n!=nn);
+			m1 = Phi[nn];
 			nn = neighborList[n]%Np;
-			m2 = Phi[nn]*int(n!=nn);
+			m2 = Phi[nn];
 			nn = neighborList[n+3*Np]%Np;
-			m3 = Phi[nn]*int(n!=nn);
+			m3 = Phi[nn];
 			nn = neighborList[n+2*Np]%Np;
-			m4 = Phi[nn]*int(n!=nn);		
+			m4 = Phi[nn];		
 			nn = neighborList[n+5*Np]%Np;
-			m5 = Phi[nn]*int(n!=nn);
+			m5 = Phi[nn];
 			nn = neighborList[n+4*Np]%Np;
-			m6 = Phi[nn]*int(n!=nn);		
+			m6 = Phi[nn];		
 			nn = neighborList[n+7*Np]%Np;
-			m7 = Phi[nn]*int(n!=nn);
+			m7 = Phi[nn];
 			nn = neighborList[n+6*Np]%Np;
-			m8 = Phi[nn]*int(n!=nn);		
+			m8 = Phi[nn];		
 			nn = neighborList[n+9*Np]%Np;
-			m9 = Phi[nn]*int(n!=nn);
+			m9 = Phi[nn];
 			nn = neighborList[n+8*Np]%Np;
-			m10 = Phi[nn]*int(n!=nn);		
+			m10 = Phi[nn];		
 			nn = neighborList[n+11*Np]%Np;
-			m11 = Phi[nn]*int(n!=nn);
+			m11 = Phi[nn];
 			nn = neighborList[n+10*Np]%Np;
-			m12 = Phi[nn]*int(n!=nn);		
+			m12 = Phi[nn];		
 			nn = neighborList[n+13*Np]%Np;
-			m13 = Phi[nn]*int(n!=nn);
+			m13 = Phi[nn];
 			nn = neighborList[n+12*Np]%Np;
-			m14 = Phi[nn]*int(n!=nn);		
+			m14 = Phi[nn];		
 			nn = neighborList[n+15*Np]%Np;
-			m15 = Phi[nn]*int(n!=nn);
+			m15 = Phi[nn];
 			nn = neighborList[n+14*Np]%Np;
-			m16 = Phi[nn]*int(n!=nn);		
+			m16 = Phi[nn];		
 			nn = neighborList[n+17*Np]%Np;
-			m17 = Phi[nn]*int(n!=nn);
+			m17 = Phi[nn];
 			nn = neighborList[n+16*Np]%Np;
-			m18 = Phi[nn]*int(n!=nn);					
+			m18 = Phi[nn];					
 
 			//............Compute the Color Gradient...................................
 			nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
@@ -4590,8 +4704,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double 
 //	}
 //}
 
-extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *Phi, int start, int finish, int Np){
-	dvc_ScaLBL_D3Q7_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(Den, Cq, Phi, start, finish, Np);
+extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB, int start, int finish, int Np){
+	dvc_ScaLBL_D3Q7_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(Den, Cq, PhiLap,gamma,kappaA,kappaB,lambdaA,lambdaB, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_GreyColorIMRT_Init: %s \n",cudaGetErrorString(err));
