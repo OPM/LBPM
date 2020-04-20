@@ -4029,6 +4029,7 @@ __global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Den, double *Cq, doub
             nA = Den[idx];
             nB = Den[idx+Np];
             phi = nA-nB;
+            phi_lap = PhiLap[idx];
             chem = lambdaA*(nA*nA*nA-1.5*nA*nA+0.5*nA)-lambdaB*(nB*nB*nB-1.5*nB*nB+0.5*nB)-0.25*(kappaA+kappaB)*phi_lap;
 
 			Cq[1*Np+idx]=0.5*gamma*chem;
