@@ -199,9 +199,9 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
@@ -230,9 +230,9 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	if (NLABELS != PermeabilityList.size()){
 		ERROR("Error: ComponentLabels and PermeabilityList must be the same length! \n");
 	}
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
@@ -338,10 +338,12 @@ void ScaLBL_GreyscaleModel::Create(){
 	// initialize phi based on PhaseLabel (include solid component labels)
 	double *Poros, *Perm;
 	Poros = new double[Np];
-	Perm = new double[Np];
+	Perm  = new double[Np];
 	AssignComponentLabels(Poros,Perm);
 	ScaLBL_CopyToDevice(Porosity, Poros, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
+    delete [] Poros;
+    delete [] Perm;
 }        
 
 
@@ -564,11 +566,6 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-			//MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			
             vax = Mask->Comm.sumReduce( vax_loc );
             vay = Mask->Comm.sumReduce( vay_loc );
             vaz = Mask->Comm.sumReduce( vaz_loc );
