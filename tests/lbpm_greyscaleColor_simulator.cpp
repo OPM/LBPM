@@ -41,16 +41,16 @@ int main(int argc, char **argv)
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		
-		ScaLBL_GreyscaleColorModel GreyscaleColor(rank,nprocs,comm);
+		ScaLBL_GreyscaleFEModel GreyscaleFE(rank,nprocs,comm);
 		auto filename = argv[1];
-		GreyscaleColor.ReadParams(filename);
-		GreyscaleColor.SetDomain();    // this reads in the domain 
-		GreyscaleColor.ReadInput();
-		GreyscaleColor.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-		GreyscaleColor.Initialize();   // initializing the model will set initial conditions for variables
-		GreyscaleColor.Run();	 
-		//GreyscaleColor.VelocityField();
-		GreyscaleColor.WriteDebug();
+		GreyscaleFE.ReadParams(filename);
+		GreyscaleFE.SetDomain();    // this reads in the domain 
+		GreyscaleFE.ReadInput();
+		GreyscaleFE.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+		GreyscaleFE.Initialize();   // initializing the model will set initial conditions for variables
+		GreyscaleFE.Run();	 
+		//GreyscaleFE.VelocityField();
+		GreyscaleFE.WriteDebug();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);

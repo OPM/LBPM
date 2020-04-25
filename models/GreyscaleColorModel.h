@@ -16,10 +16,10 @@ Implementation of multicomponent greyscale lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_GreyscaleColorModel{
+class ScaLBL_GreyscaleFEModel{
 public:
-	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_GreyscaleColorModel();	
+	ScaLBL_GreyscaleFEModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleFEModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -59,7 +59,7 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> greyscaleColor_db;
+    std::shared_ptr<Database> greyscaleFE_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 

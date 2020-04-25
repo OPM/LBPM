@@ -13,7 +13,7 @@ void DeleteArray( const TYPE *p )
     delete [] p;
 }
 
-ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_GreyscaleFEModel::ScaLBL_GreyscaleFEModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),
 rhoA(0),rhoB(0),gamma(0),kappaA(0),kappaB(0),lambdaA(0),lambdaB(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
@@ -23,15 +23,15 @@ Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),
     SignDist.fill(0);
 
 }
-ScaLBL_GreyscaleColorModel::~ScaLBL_GreyscaleColorModel(){
+ScaLBL_GreyscaleFEModel::~ScaLBL_GreyscaleFEModel(){
 
 }
 
-void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
+void ScaLBL_GreyscaleFEModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
-	greyscaleColor_db =  db->getDatabase( "GreyscaleColor" );
+	greyscaleFE_db =  db->getDatabase( "GreyscaleFE" );
 	analysis_db = db->getDatabase( "Analysis" );
 	vis_db = db->getDatabase( "Visualization" );
 
@@ -57,62 +57,62 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
     lambdaB = 1.0e-3;
 	
 	// ---------------------- Greyscale Model parameters -----------------------//
-	if (greyscaleColor_db->keyExists( "timestepMax" )){
-		timestepMax = greyscaleColor_db->getScalar<int>( "timestepMax" );
+	if (greyscaleFE_db->keyExists( "timestepMax" )){
+		timestepMax = greyscaleFE_db->getScalar<int>( "timestepMax" );
 	}
-	if (greyscaleColor_db->keyExists( "tauA" )){
-		tauA = greyscaleColor_db->getScalar<double>( "tauA" );
+	if (greyscaleFE_db->keyExists( "tauA" )){
+		tauA = greyscaleFE_db->getScalar<double>( "tauA" );
 	}
-	if (greyscaleColor_db->keyExists( "tauB" )){
-		tauB = greyscaleColor_db->getScalar<double>( "tauB" );
+	if (greyscaleFE_db->keyExists( "tauB" )){
+		tauB = greyscaleFE_db->getScalar<double>( "tauB" );
 	}
-	tauA_eff = greyscaleColor_db->getWithDefault<double>( "tauA_eff", tauA);
-	tauB_eff = greyscaleColor_db->getWithDefault<double>( "tauB_eff", tauB);
-	if (greyscaleColor_db->keyExists( "rhoA" )){
-		rhoA = greyscaleColor_db->getScalar<double>( "rhoA" );
+	tauA_eff = greyscaleFE_db->getWithDefault<double>( "tauA_eff", tauA);
+	tauB_eff = greyscaleFE_db->getWithDefault<double>( "tauB_eff", tauB);
+	if (greyscaleFE_db->keyExists( "rhoA" )){
+		rhoA = greyscaleFE_db->getScalar<double>( "rhoA" );
 	}
-	if (greyscaleColor_db->keyExists( "rhoB" )){
-		rhoB = greyscaleColor_db->getScalar<double>( "rhoB" );
+	if (greyscaleFE_db->keyExists( "rhoB" )){
+		rhoB = greyscaleFE_db->getScalar<double>( "rhoB" );
 	}
-	if (greyscaleColor_db->keyExists( "gamma" )){
-		gamma = greyscaleColor_db->getScalar<double>( "gamma" );
+	if (greyscaleFE_db->keyExists( "gamma" )){
+		gamma = greyscaleFE_db->getScalar<double>( "gamma" );
 	}
-	if (greyscaleColor_db->keyExists( "kappaA" )){
-		kappaA = greyscaleColor_db->getScalar<double>( "kappaA" );
+	if (greyscaleFE_db->keyExists( "kappaA" )){
+		kappaA = greyscaleFE_db->getScalar<double>( "kappaA" );
 	}
-	if (greyscaleColor_db->keyExists( "kappaB" )){
-		kappaB = greyscaleColor_db->getScalar<double>( "kappaB" );
+	if (greyscaleFE_db->keyExists( "kappaB" )){
+		kappaB = greyscaleFE_db->getScalar<double>( "kappaB" );
 	}
-	if (greyscaleColor_db->keyExists( "lambdaA" )){
-		lambdaA = greyscaleColor_db->getScalar<double>( "lambdaA" );
+	if (greyscaleFE_db->keyExists( "lambdaA" )){
+		lambdaA = greyscaleFE_db->getScalar<double>( "lambdaA" );
 	}
-	if (greyscaleColor_db->keyExists( "lambdaB" )){
-		lambdaB = greyscaleColor_db->getScalar<double>( "lambdaB" );
+	if (greyscaleFE_db->keyExists( "lambdaB" )){
+		lambdaB = greyscaleFE_db->getScalar<double>( "lambdaB" );
 	}
-	if (greyscaleColor_db->keyExists( "dp" )){
-		dp = greyscaleColor_db->getScalar<double>( "dp" );
+	if (greyscaleFE_db->keyExists( "dp" )){
+		dp = greyscaleFE_db->getScalar<double>( "dp" );
 	}
-	if (greyscaleColor_db->keyExists( "F" )){
-		Fx = greyscaleColor_db->getVector<double>( "F" )[0];
-		Fy = greyscaleColor_db->getVector<double>( "F" )[1];
-		Fz = greyscaleColor_db->getVector<double>( "F" )[2];
+	if (greyscaleFE_db->keyExists( "F" )){
+		Fx = greyscaleFE_db->getVector<double>( "F" )[0];
+		Fy = greyscaleFE_db->getVector<double>( "F" )[1];
+		Fz = greyscaleFE_db->getVector<double>( "F" )[2];
 	}
-	if (greyscaleColor_db->keyExists( "Restart" )){
-		Restart = greyscaleColor_db->getScalar<bool>( "Restart" );
+	if (greyscaleFE_db->keyExists( "Restart" )){
+		Restart = greyscaleFE_db->getScalar<bool>( "Restart" );
 	}
-	if (greyscaleColor_db->keyExists( "din" )){
-		din = greyscaleColor_db->getScalar<double>( "din" );
+	if (greyscaleFE_db->keyExists( "din" )){
+		din = greyscaleFE_db->getScalar<double>( "din" );
 	}
-	if (greyscaleColor_db->keyExists( "dout" )){
-		dout = greyscaleColor_db->getScalar<double>( "dout" );
+	if (greyscaleFE_db->keyExists( "dout" )){
+		dout = greyscaleFE_db->getScalar<double>( "dout" );
 	}
-	if (greyscaleColor_db->keyExists( "flux" )){
-		flux = greyscaleColor_db->getScalar<double>( "flux" );
+	if (greyscaleFE_db->keyExists( "flux" )){
+		flux = greyscaleFE_db->getScalar<double>( "flux" );
 	}
-	if (greyscaleColor_db->keyExists( "tolerance" )){
-		tolerance = greyscaleColor_db->getScalar<double>( "tolerance" );
+	if (greyscaleFE_db->keyExists( "tolerance" )){
+		tolerance = greyscaleFE_db->getScalar<double>( "tolerance" );
 	}
-	//auto collision = greyscaleColor_db->getWithDefault<std::string>( "collision", "IMRT" );
+	//auto collision = greyscaleFE_db->getWithDefault<std::string>( "collision", "IMRT" );
 	//if (collision == "BGK"){
     //    CollisionType=2;
 	//}
@@ -126,7 +126,7 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	// ------------------------------------------------------------------------//
 }
 
-void ScaLBL_GreyscaleColorModel::SetDomain(){
+void ScaLBL_GreyscaleFEModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
 	// domain parameters
@@ -157,7 +157,7 @@ void ScaLBL_GreyscaleColorModel::SetDomain(){
 	nprocz = Dm->nprocz();
 }
 
-void ScaLBL_GreyscaleColorModel::ReadInput(){
+void ScaLBL_GreyscaleFEModel::ReadInput(){
 	
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
@@ -206,7 +206,7 @@ void ScaLBL_GreyscaleColorModel::ReadInput(){
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
-void ScaLBL_GreyscaleColorModel::AssignSolidForce(double *SolidPotential, double *SolidForce){
+void ScaLBL_GreyscaleFEModel::AssignSolidForce(double *SolidPotential, double *SolidForce){
 
 	double *Dst;
 	Dst = new double [3*3*3];
@@ -303,7 +303,7 @@ void ScaLBL_GreyscaleColorModel::AssignSolidForce(double *SolidPotential, double
 }
 
 
-void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double *Permeability, double *SolidPotential)
+void ScaLBL_GreyscaleFEModel::AssignComponentLabels(double *Porosity, double *Permeability, double *SolidPotential)
 {
 	size_t NLABELS=0;
 	signed char VALUE=0;
@@ -311,10 +311,10 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double 
 	double PERMEABILITY=0.f;
 	double AFFINITY=0.f;
 
-	auto LabelList = greyscaleColor_db->getVector<int>( "ComponentLabels" );
-	auto AffinityList = greyscaleColor_db->getVector<double>( "ComponentAffinity" );
-	auto PorosityList = greyscaleColor_db->getVector<double>( "PorosityList" );
-	auto PermeabilityList = greyscaleColor_db->getVector<double>( "PermeabilityList" );
+	auto LabelList = greyscaleFE_db->getVector<int>( "ComponentLabels" );
+	auto AffinityList = greyscaleFE_db->getVector<double>( "ComponentAffinity" );
+	auto PorosityList = greyscaleFE_db->getVector<double>( "PorosityList" );
+	auto PermeabilityList = greyscaleFE_db->getVector<double>( "PermeabilityList" );
 
     //1. Requirement for "ComponentLabels":
     //   *labels can be a nagative integer, 0, 1, 2, or a positive integer >= 3
@@ -452,7 +452,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels(double *Porosity, double 
 	}
 }
 
-void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
+void ScaLBL_GreyscaleFEModel::Density_and_Phase_Init(){
 
 	size_t NLABELS=0;
 	signed char VALUE=0;
@@ -460,13 +460,13 @@ void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
     vector<int> LabelList{1,2};
     vector<double> SwList{0.0,1.0}; 
 
-	if (greyscaleColor_db->keyExists( "GreyNodeLabels" )){
+	if (greyscaleFE_db->keyExists( "GreyNodeLabels" )){
         LabelList.clear();
-	    LabelList = greyscaleColor_db->getVector<int>( "GreyNodeLabels" );
+	    LabelList = greyscaleFE_db->getVector<int>( "GreyNodeLabels" );
 	}
-	if (greyscaleColor_db->keyExists( "GreyNodeSw" )){
+	if (greyscaleFE_db->keyExists( "GreyNodeSw" )){
         SwList.clear();
-	    SwList = greyscaleColor_db->getVector<double>( "GreyNodeSw" );
+	    SwList = greyscaleFE_db->getVector<double>( "GreyNodeSw" );
 	}
 
 	NLABELS=LabelList.size();
@@ -525,7 +525,7 @@ void ScaLBL_GreyscaleColorModel::Density_and_Phase_Init(){
 	delete [] Phi_temp;
 }
 
-void ScaLBL_GreyscaleColorModel::Create(){
+void ScaLBL_GreyscaleFEModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
 	 */
@@ -608,7 +608,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 }        
 
 
-void ScaLBL_GreyscaleColorModel::Initialize(){
+void ScaLBL_GreyscaleFEModel::Initialize(){
 	if (Restart == true){
         //TODO: Restart funtion is currently not working; need updates
 		if (rank==0){
@@ -631,12 +631,7 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        //ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, 0, ScaLBL_Comm->LastExterior(), Np);
-        //ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        //TODO need proper initialization !
 
         //TODO need to initialize velocity field !
         //this is required for calculating the pressure_dvc
@@ -645,12 +640,10 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
     else{
         if (rank==0)	printf ("Initializing density field \n");
         Density_and_Phase_Init();//initialize density field
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        //ScaLBL_D3Q7_GreyColorIMRT_Init(Den, Aq, Bq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_D3Q19_GreyscaleColor_Laplacian(NeighborList, Phi, PhiLap, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Phi, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
-        ScaLBL_D3Q7_GreyColorIMRT_Init(Phi, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q19_GreyscaleFE_Laplacian(NeighborList, Phi, PhiLap, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q19_GreyscaleFE_Laplacian(NeighborList, Phi, PhiLap, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_GreyscaleFE_Init(Phi, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, 0, ScaLBL_Comm->LastExterior(), Np);//initialize D3Q7 density components
+        ScaLBL_D3Q7_GreyscaleFE_Init(Phi, Cq, PhiLap, gamma,kappaA,kappaB,lambdaA,lambdaB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         
         if (rank==0)	printf ("Initializing distributions \n");
         //ScaLBL_D3Q19_GreyColorIMRT_Init(fq, Den, rhoA, rhoB, Np);
@@ -667,7 +660,7 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
     }
 }
 
-void ScaLBL_GreyscaleColorModel::Run(){
+void ScaLBL_GreyscaleFEModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
@@ -683,8 +676,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	if (analysis_db->keyExists( "restart_interval" )){
 		restart_interval = analysis_db->getScalar<int>( "restart_interval" );
 	}
-	if (greyscaleColor_db->keyExists( "timestep" )){
-		timestep = greyscaleColor_db->getScalar<int>( "timestep" );
+	if (greyscaleFE_db->keyExists( "timestep" )){
+		timestep = greyscaleFE_db->getScalar<int>( "timestep" );
 	}
 
 	if (rank==0){
@@ -714,64 +707,64 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->SendD3Q7AA(Cq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_GreyscaleColorPhi(NeighborList, Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_GreyscaleFEPhi(NeighborList, Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(Cq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAodd_GreyscaleColorPhi(NeighborList, Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_GreyscaleFEPhi(NeighborList, Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Update local pressure
-        //ScaLBL_D3Q19_GreyscaleColor_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
+        //ScaLBL_D3Q19_GreyscaleFE_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
         ScaLBL_D3Q19_Pressure(fq, Pressure_dvc, Np);
         // Compute pressure gradient
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(Pressure_dvc);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);
 		ScaLBL_DeviceBarrier();
         // Compute Pressure Tensor
         //NOTE send and recv halo causes problems - it errorneously changes Phi
 		//ScaLBL_Comm->SendHalo(Phi);
-        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
+        ScaLBL_D3Q19_GreyscaleFE_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
 		//ScaLBL_Comm->RecvHalo(Phi);
 		//ScaLBL_DeviceBarrier();
-        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
+        ScaLBL_D3Q19_GreyscaleFE_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
 
         /* Compute gradient of the pressure tensor */
 		// call the recv Grad function once per tensor element
         // 1st tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[0*Np],&PressTensorGrad[0*Np]);
 		// 2nd tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[1*Np],&PressTensorGrad[3*Np]);
 		// 3rd tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[2*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[2*Np],&PressTensorGrad[6*Np]);
 		// 4th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[3*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[3*Np],&PressTensorGrad[9*Np]);
 		// 5th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[4*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[4*Np],&PressTensorGrad[12*Np]);
 		// 6th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[5*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[5*Np],&PressTensorGrad[15*Np]);
 
 
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Cq, Phi, SolidForce, 
+        ScaLBL_D3Q19_AAodd_GreyscaleFEChem(NeighborList, fq, Cq, Phi, SolidForce, 
                                               ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np,
                                               tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
                                               Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
@@ -783,7 +776,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 //			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 //			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 //		}
-        ScaLBL_D3Q19_AAodd_GreyscaleColorChem(NeighborList, fq, Cq, Phi, SolidForce, 
+        ScaLBL_D3Q19_AAodd_GreyscaleFEChem(NeighborList, fq, Cq, Phi, SolidForce, 
                                               0, ScaLBL_Comm->LastExterior(), Np,
                                               tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
                                               Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
@@ -796,63 +789,63 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->SendD3Q7AA(Cq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_GreyscaleColorPhi(Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_GreyscaleFEPhi(Cq, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(Cq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAeven_GreyscaleColorPhi(Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_GreyscaleFEPhi(Cq, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Update local pressure
-        //ScaLBL_D3Q19_GreyscaleColor_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
+        //ScaLBL_D3Q19_GreyscaleFE_Pressure(fq, Den, Porosity, Velocity, Pressure_dvc, rhoA, rhoB, Np);
         ScaLBL_D3Q19_Pressure(fq, Pressure_dvc, Np);
         // Compute pressure gradient
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, Pressure_dvc, PressureGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(Pressure_dvc);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, Pressure_dvc, PressureGrad, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(Pressure_dvc,PressureGrad);
 		ScaLBL_DeviceBarrier();
         // Compute Pressure Tensor
 		//ScaLBL_Comm->SendHalo(Phi);
         //NOTE send and recv halo causes problems - it errorneously changes Phi
-        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
+        ScaLBL_D3Q19_GreyscaleFE_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(),Np);
 		//ScaLBL_Comm->RecvHalo(Phi);
 		//ScaLBL_DeviceBarrier();
-        ScaLBL_D3Q19_GreyscaleColor_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
+        ScaLBL_D3Q19_GreyscaleFE_PressureTensor(NeighborList,Phi,Pressure_dvc,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,0,ScaLBL_Comm->LastExterior(),Np);
         /* Compute gradient of the pressure tensor */
 		// call the recv Grad function once per tensor element
         // 1st tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[0*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[0*Np], &PressTensorGrad[0*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[0*Np],&PressTensorGrad[0*Np]);
 		// 2nd tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[1*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[1*Np], &PressTensorGrad[3*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[1*Np],&PressTensorGrad[3*Np]);
 		// 3rd tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[2*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[2*Np], &PressTensorGrad[6*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[2*Np],&PressTensorGrad[6*Np]);
 		// 4th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[3*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[3*Np], &PressTensorGrad[9*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[3*Np],&PressTensorGrad[9*Np]);
 		// 5th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[4*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[4*Np], &PressTensorGrad[12*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[4*Np],&PressTensorGrad[12*Np]);
 		// 6th tensor element
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->SendHalo(&PressTensor[5*Np]);
-		ScaLBL_D3Q19_GreyscaleColor_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &PressTensor[5*Np], &PressTensorGrad[15*Np], 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&PressTensor[5*Np],&PressTensorGrad[15*Np]);
 
 
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Cq, Phi, SolidForce, 
+        ScaLBL_D3Q19_AAeven_GreyscaleFEChem(fq, Cq, Phi, SolidForce, 
                                                ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np,
                                                tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
                                                Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
@@ -864,7 +857,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 //			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
 //			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 //		}
-        ScaLBL_D3Q19_AAeven_GreyscaleColorChem(fq, Cq, Phi, SolidForce, 
+        ScaLBL_D3Q19_AAeven_GreyscaleFEChem(fq, Cq, Phi, SolidForce, 
                                                0, ScaLBL_Comm->LastExterior(), Np,
                                                tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Fx, Fy, Fz, 
                                                Porosity, Permeability, Velocity, Pressure_dvc,PressureGrad,PressTensorGrad,PhiLap);
@@ -1012,9 +1005,9 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		if (timestep%restart_interval==0){
             //Use rank=0 write out Restart.db
             if (rank==0) {
-                greyscaleColor_db->putScalar<int>("timestep",timestep);    		
-                greyscaleColor_db->putScalar<bool>( "Restart", true );
-                current_db->putDatabase("GreyscaleColor", greyscaleColor_db);
+                greyscaleFE_db->putScalar<int>("timestep",timestep);    		
+                greyscaleFE_db->putScalar<bool>( "Restart", true );
+                current_db->putDatabase("GreyscaleFE", greyscaleFE_db);
                 std::ofstream OutStream("Restart.db");
                 current_db->print(OutStream, "");
                 OutStream.close();
@@ -1038,7 +1031,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	}
 
 	PROFILE_STOP("Loop");
-	PROFILE_SAVE("lbpm_greyscaleColor_simulator",1);
+	PROFILE_SAVE("lbpm_greyscaleFE_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
@@ -1059,7 +1052,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_GreyscaleColorModel::VelocityField(){
+void ScaLBL_GreyscaleFEModel::VelocityField(){
 
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
@@ -1175,7 +1168,7 @@ void ScaLBL_GreyscaleColorModel::VelocityField(){
 
 }
 
-void ScaLBL_GreyscaleColorModel::WriteDebug(){
+void ScaLBL_GreyscaleFEModel::WriteDebug(){
 	// Copy back final phase indicator field and convert to regular layout
 	DoubleArray PhaseField(Nx,Ny,Nz);
 

@@ -3,7 +3,7 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
-__global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *Den, double *Poros,double *Velocity,
+__global__ void dvc_ScaLBL_D3Q19_GreyscaleFE_Pressure(double *dist, double *Den, double *Poros,double *Velocity,
                 double *Pressure, double rhoA,double rhoB, int N){
 
 	int n;
@@ -66,7 +66,7 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *D
 }
 
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq, double *Bq, double *Den,
+__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleFE(double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure){
@@ -675,7 +675,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq,
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
+__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleFE(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure){
@@ -1329,7 +1329,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double 
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
+__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleFEChem(int *neighborList, double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
                 double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
@@ -1969,7 +1969,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, dou
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
+__global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleFEChem(double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
                 double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
@@ -2561,7 +2561,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double 
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np){
+__global__ void dvc_ScaLBL_D3Q19_GreyscaleFE_IMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np){
 	int n;
 	int S = Np/NBLOCKS/NTHREADS + 1;
     double phi;
@@ -2599,7 +2599,7 @@ __global__ void dvc_ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, d
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Phi, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB,
+__global__ void dvc_ScaLBL_D3Q7_GreyscaleFE_Init(double *Phi, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB,
                 int start, int finish, int Np){
 	int idx;
     //double nA,nB;
@@ -2627,7 +2627,7 @@ __global__ void dvc_ScaLBL_D3Q7_GreyColorIMRT_Init(double *Phi, double *Cq, doub
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *neighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleFEDensity(int *neighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 	int n,nread;
 	double fq,nA,nB;
 
@@ -2694,7 +2694,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *neighborList, 
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleFEDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 	int n;
 	double fq,nA,nB;
 
@@ -2755,7 +2755,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorPhi(int *neighborList, double *Cq, double *Phi, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleFEPhi(int *neighborList, double *Cq, double *Phi, int start, int finish, int Np){
 	int n,nread;
 	double fq,phi;
 
@@ -2805,7 +2805,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorPhi(int *neighborList, doub
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorPhi(double *Cq, double *Phi, int start, int finish, int Np){
+__global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleFEPhi(double *Cq, double *Phi, int start, int finish, int Np){
 	int n;
 	double fq,phi;
 
@@ -2849,7 +2849,7 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorPhi(double *Cq, double *Ph
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np){
+__global__ void dvc_ScaLBL_D3Q19_GreyscaleFE_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np){
 
 	int n,nn;
 	// distributions
@@ -2948,7 +2948,7 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, doub
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np){
+__global__ void dvc_ScaLBL_D3Q19_GreyscaleFE_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np){
 
 	int n,nn;
 	// distributions
@@ -3042,9 +3042,9 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, dou
 	}
 }
 
-__global__  void dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborList, double *Phi,double *Pressure, double *PressTensor, double *PhiLap,
+__global__  void dvc_ScaLBL_D3Q19_GreyscaleFE_PressureTensor(int *neighborList, double *Phi,double *Pressure, double *PressTensor, double *PhiLap,
       		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np){
-	//**GreyscaleColor model related parameters:
+	//**GreyscaleFE model related parameters:
 	//kappaA, kappaB: characterize interfacial tension
 	//lambdaA, lambdaB: characterize bulk free energy 
 	//nA: concentration of liquid 1; 
@@ -3190,149 +3190,149 @@ __global__  void dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborLis
 }
 
 
-extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(double *dist, double *Aq, double *Bq, double *Den,
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleFE(double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure){
 
-    dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(dist, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, start, finish, Np,
+    dvc_ScaLBL_D3Q19_AAeven_GreyscaleFE<<<NBLOCKS,NTHREADS >>>(dist, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, start, finish, Np,
                                                                  tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, Gsc, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColor: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleFE: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleFE(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
                 double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure){
 
-    dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, start, finish, Np,
+    dvc_ScaLBL_D3Q19_AAodd_GreyscaleFE<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, DenGradA, DenGradB, SolidForce, start, finish, Np,
                                                                  tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, Gsc, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAodd_GreyscaleColor: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_GreyscaleFE: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColorChem(double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleFEChem(double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
                 double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 
-    dvc_ScaLBL_D3Q19_AAeven_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(dist, Cq, Phi, SolidForce, start, finish, Np,
+    dvc_ScaLBL_D3Q19_AAeven_GreyscaleFEChem<<<NBLOCKS,NTHREADS >>>(dist, Cq, Phi, SolidForce, start, finish, Np,
                                                                  tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Gx, Gy, Gz, Poros, Perm, Velocity, Pressure,PressureGrad,PressTensorGrad,PhiLap);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColorChem: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleFEChem: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColorChem(int *neighborList, double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleFEChem(int *neighborList, double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
                 double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
                 double Gx, double Gy, double Gz,
                 double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap){
 
-    dvc_ScaLBL_D3Q19_AAodd_GreyscaleColorChem<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Cq, Phi, SolidForce, start, finish, Np,
+    dvc_ScaLBL_D3Q19_AAodd_GreyscaleFEChem<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Cq, Phi, SolidForce, start, finish, Np,
                                                                  tauA, tauB, tauA_eff, tauB_eff, rhoA, rhoB, gamma,kappaA,kappaB,lambdaA,lambdaB, Gx, Gy, Gz, 
                                                                  Poros, Perm, Velocity, Pressure,PressureGrad,PressTensorGrad,PhiLap);
 
     cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAodd_GreyscaleColorChem: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_GreyscaleFEChem: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_GreyColorIMRT_Init(double *Phi, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB, int start, int finish, int Np){
-	dvc_ScaLBL_D3Q7_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(Phi, Cq, PhiLap,gamma,kappaA,kappaB,lambdaA,lambdaB, start, finish, Np);
+extern "C" void ScaLBL_D3Q7_GreyscaleFE_Init(double *Phi, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB, int start, int finish, int Np){
+	dvc_ScaLBL_D3Q7_GreyscaleFE_Init<<<NBLOCKS,NTHREADS >>>(Phi, Cq, PhiLap,gamma,kappaA,kappaB,lambdaA,lambdaB, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_GreyColorIMRT_Init: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_GreyscaleFE_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyColorIMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np){
-	dvc_ScaLBL_D3Q19_GreyColorIMRT_Init<<<NBLOCKS,NTHREADS >>>(dist,Den,rhoA,rhoB,Np);
+extern "C" void ScaLBL_D3Q19_GreyscaleFE_IMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np){
+	dvc_ScaLBL_D3Q19_GreyscaleFE_IMRT_Init<<<NBLOCKS,NTHREADS >>>(dist,Den,rhoA,rhoB,Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyColorIMRT_Init: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleFE_IMRT_Init: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorDensity(int *NeighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleFEDensity(int *NeighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(NeighborList, Aq, Bq, Den, Phi, start, finish, Np);
-
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_GreyscaleColorDensity: %s \n",cudaGetErrorString(err));
-	}
-}
-
-extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
-
-	dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorDensity<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, Phi, start, finish, Np);
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_GreyscaleColorDensity: %s \n",cudaGetErrorString(err));
-	}
-}
-
-extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleColorPhi(int *NeighborList, double *Cq, double *Phi, int start, int finish, int Np){
-
-	dvc_ScaLBL_D3Q7_AAodd_GreyscaleColorPhi<<<NBLOCKS,NTHREADS >>>(NeighborList, Cq, Phi, start, finish, Np);
+	dvc_ScaLBL_D3Q7_AAodd_GreyscaleFEDensity<<<NBLOCKS,NTHREADS >>>(NeighborList, Aq, Bq, Den, Phi, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_GreyscaleColorPhi: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAodd_GreyscaleFEDensity: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleColorPhi(double *Cq, double *Phi, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleFEDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q7_AAeven_GreyscaleColorPhi<<<NBLOCKS,NTHREADS >>>(Cq, Phi, start, finish, Np);
+	dvc_ScaLBL_D3Q7_AAeven_GreyscaleFEDensity<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, Phi, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_GreyscaleColorPhi: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAeven_GreyscaleFEDensity: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyscaleColor_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleFEPhi(int *NeighborList, double *Cq, double *Phi, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_GreyscaleColor_Gradient<<<NBLOCKS,NTHREADS >>>(neighborList, Den, DenGrad, start, finish, Np);
+	dvc_ScaLBL_D3Q7_AAodd_GreyscaleFEPhi<<<NBLOCKS,NTHREADS >>>(NeighborList, Cq, Phi, start, finish, Np);
+
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_Gradient: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAodd_GreyscaleFEPhi: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyscaleColor_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np){
-	dvc_ScaLBL_D3Q19_GreyscaleColor_Laplacian<<<NBLOCKS,NTHREADS >>>(neighborList, Den, DenLap, start, finish, Np);
+extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleFEPhi(double *Cq, double *Phi, int start, int finish, int Np){
+
+	dvc_ScaLBL_D3Q7_AAeven_GreyscaleFEPhi<<<NBLOCKS,NTHREADS >>>(Cq, Phi, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_Laplacian: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q7_AAeven_GreyscaleFEPhi: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyscaleColor_Pressure(double *dist, double *Den, double *Porosity,double *Velocity,
+extern "C" void ScaLBL_D3Q19_GreyscaleFE_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np){
+
+	dvc_ScaLBL_D3Q19_GreyscaleFE_Gradient<<<NBLOCKS,NTHREADS >>>(neighborList, Den, DenGrad, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleFE_Gradient: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_GreyscaleFE_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np){
+	dvc_ScaLBL_D3Q19_GreyscaleFE_Laplacian<<<NBLOCKS,NTHREADS >>>(neighborList, Den, DenLap, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleFE_Laplacian: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_GreyscaleFE_Pressure(double *dist, double *Den, double *Porosity,double *Velocity,
                 double *Pressure, double rhoA,double rhoB, int Np){
 
-	dvc_ScaLBL_D3Q19_GreyscaleColor_Pressure<<<NBLOCKS,NTHREADS >>>(dist, Den, Porosity, Velocity, Pressure, rhoA, rhoB, Np);
+	dvc_ScaLBL_D3Q19_GreyscaleFE_Pressure<<<NBLOCKS,NTHREADS >>>(dist, Den, Porosity, Velocity, Pressure, rhoA, rhoB, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_Pressure: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleFE_Pressure: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyscaleColor_PressureTensor(int *neighborList, double *Phi,double *Pressure, double *PressTensor, double *PhiLap,
+extern "C" void ScaLBL_D3Q19_GreyscaleFE_PressureTensor(int *neighborList, double *Phi,double *Pressure, double *PressTensor, double *PhiLap,
       		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np){
-	dvc_ScaLBL_D3Q19_GreyscaleColor_PressureTensor<<<NBLOCKS,NTHREADS >>>(neighborList,Phi,Pressure,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,start,finish,Np);
+	dvc_ScaLBL_D3Q19_GreyscaleFE_PressureTensor<<<NBLOCKS,NTHREADS >>>(neighborList,Phi,Pressure,PressTensor,PhiLap,kappaA,kappaB,lambdaA,lambdaB,start,finish,Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyscaleColor_PressureTensor: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_GreyscaleFE_PressureTensor: %s \n",cudaGetErrorString(err));
 	}
 }
