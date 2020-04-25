@@ -1,7 +1,7 @@
 /*
 Greyscale lattice boltzmann model
  */
-#include "models/GreyscaleColorModel.h"
+#include "models/GreyscaleFEModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
 #include <stdlib.h>

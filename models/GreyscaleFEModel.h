@@ -1,5 +1,5 @@
 /*
-Implementation of multicomponent greyscale lattice boltzmann model
+Implementation of multicomponent greyscale free-energy based lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>

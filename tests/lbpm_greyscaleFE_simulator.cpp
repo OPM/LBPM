@@ -9,7 +9,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "common/MPI.h"
-#include "models/GreyscaleColorModel.h"
+#include "models/GreyscaleFEModel.h"
 //#define WRITE_SURFACES
 
 using namespace std;
