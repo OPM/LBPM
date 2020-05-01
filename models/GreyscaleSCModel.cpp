@@ -706,21 +706,73 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		timestep++;
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
-		//ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
-		//ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		//ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
-		//ScaLBL_DeviceBarrier();
-		//ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
-
+		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
+		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
         // Compute density gradient
         // fluid component A
 		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        // fluid component B
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        // Compute density gradient
 		ScaLBL_Comm->SendHalo(&Den[0]);
 		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&Den[0],DenGradA);
 		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->SendHalo(&Den[Np]);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
+		ScaLBL_DeviceBarrier();
+
+        //debug
+	    DoubleArray PhaseField(Nx,Ny,Nz);
+        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+	    FILE *AFILE;
+	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
+	    AFILE = fopen(LocalRankFilename,"wb");
+	    fwrite(PhaseField.data(),8,N,AFILE);
+	    fclose(AFILE);
+
+	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	    FILE *BFILE;
+	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
+	    BFILE = fopen(LocalRankFilename,"wb");
+	    fwrite(PhaseField.data(),8,N,BFILE);
+	    fclose(BFILE);
+
+
+        // Collsion
+        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+                                       tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
+                                       ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+
+        // Collsion
+        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+                                       tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
+                                       0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+
+		// *************EVEN TIMESTEP*************//
+		timestep++;
+		// Compute the density field
+		// Read for Aq, Bq happens in this routine (requires communication)
+		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
+		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
+        // Compute density gradient
+        // fluid component A
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         // fluid component B
 		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        // Compute density gradient
+		ScaLBL_Comm->SendHalo(&Den[0]);
+		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->RecvGrad(&Den[0],DenGradA);
+		ScaLBL_DeviceBarrier();
 		ScaLBL_Comm->SendHalo(&Den[Np]);
 		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
@@ -728,123 +780,30 @@ void ScaLBL_GreyscaleSCModel::Run(){
 
         //debug
 	    //DoubleArray PhaseField(Nx,Ny,Nz);
-        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
 	    //FILE *AFILE;
-	    //sprintf(LocalRankFilename,"A_time_%i_prior.%05i.raw",timestep,rank);
-	    //AFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,AFILE);
-	    //fclose(AFILE);
+	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
+	    AFILE = fopen(LocalRankFilename,"wb");
+	    fwrite(PhaseField.data(),8,N,AFILE);
+	    fclose(AFILE);
 
-	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
 	    //FILE *BFILE;
-	    //sprintf(LocalRankFilename,"B_time_%i_prior.%05i.raw",timestep,rank);
-	    //BFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,BFILE);
-	    //fclose(BFILE);
+	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
+	    BFILE = fopen(LocalRankFilename,"wb");
+	    fwrite(PhaseField.data(),8,N,BFILE);
+	    fclose(BFILE);
 
-		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
-        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
-                                       tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
-                                       ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
-		// Set BCs
-		//if (BoundaryCondition == 3){
-		//	ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-		//	ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
-		//}
-        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
-                                       tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
-                                       0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-
-
-        //debug
-	    ////DoubleArray PhaseField(Nx,Ny,Nz);
-        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    ////FILE *AFILE;
-	    //sprintf(LocalRankFilename,"A_time_%i_after.%05i.raw",timestep,rank);
-	    //AFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,AFILE);
-	    //fclose(AFILE);
-
-	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    ////FILE *BFILE;
-	    //sprintf(LocalRankFilename,"B_time_%i_after.%05i.raw",timestep,rank);
-	    //BFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,BFILE);
-	    //fclose(BFILE);
-		// *************EVEN TIMESTEP*************//
-		timestep++;
-		// Compute the density field
-		// Read for Aq, Bq happens in this routine (requires communication)
-		//ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
-		//ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		//ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
-		//ScaLBL_DeviceBarrier();
-		//ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
-
-        // Compute density gradient
-        // fluid component A
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[0]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0],DenGradA);
-		ScaLBL_DeviceBarrier();
-        // fluid component B
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->SendHalo(&Den[Np]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
-		ScaLBL_DeviceBarrier();
-
-        //debug
-	    ////DoubleArray PhaseField(Nx,Ny,Nz);
-        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    ////FILE *AFILE;
-	    //sprintf(LocalRankFilename,"A_time_%i_prior.%05i.raw",timestep,rank);
-	    //AFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,AFILE);
-	    //fclose(AFILE);
-
-	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    ////FILE *BFILE;
-	    //sprintf(LocalRankFilename,"B_time_%i_prior.%05i.raw",timestep,rank);
-	    //BFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,BFILE);
-	    //fclose(BFILE);
-
-		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
+        // Collsion
         ScaLBL_D3Q19_AAeven_GreyscaleSC(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
-		// Set BCs
-		//if (BoundaryCondition == 3){
-		//	ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-		//	ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
-		//}
+
+        // Collsion
         ScaLBL_D3Q19_AAeven_GreyscaleSC(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-
-        //debug
-	    ////DoubleArray PhaseField(Nx,Ny,Nz);
-        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    ////FILE *AFILE;
-	    //sprintf(LocalRankFilename,"A_time_%i_after.%05i.raw",timestep,rank);
-	    //AFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,AFILE);
-	    //fclose(AFILE);
-
-	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    ////FILE *BFILE;
-	    //sprintf(LocalRankFilename,"B_time_%i_after.%05i.raw",timestep,rank);
-	    //BFILE = fopen(LocalRankFilename,"wb");
-	    //fwrite(PhaseField.data(),8,N,BFILE);
-	    //fclose(BFILE);
 
 		//************************************************************************/
 		

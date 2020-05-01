@@ -21,7 +21,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
 	double m1A,m2A,m4A,m6A,m8A,m9A,m10A,m11A,m12A,m13A,m14A,m15A,m16A,m17A,m18A;
 	double m1B,m2B,m4B,m6B,m8B,m9B,m10B,m11B,m12B,m13B,m14B,m15B,m16B,m17B,m18B;
     double fq;
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
@@ -687,9 +687,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             c1 = porosity*0.5*GeoFun/sqrt(permA);
             if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
-            vx = jxA/rhoA_next+0.5*(porosity*Gx+GffA_x+GfsA_x);
-            vy = jyA/rhoA_next+0.5*(porosity*Gy+GffA_y+GfsA_y);
-            vz = jzA/rhoA_next+0.5*(porosity*Gz+GffA_z+GfsA_z);
+            vx = jxA/rhoA+0.5*(porosity*Gx+GffA_x+GfsA_x);
+            vy = jyA/rhoA+0.5*(porosity*Gy+GffA_y+GfsA_y);
+            vz = jzA/rhoA+0.5*(porosity*Gz+GffA_z+GfsA_z);
             v_mag=sqrt(vx*vx+vy*vy+vz*vz);
             ux_A = vx/(c0+sqrt(c0*c0+c1*v_mag));
             uy_A = vy/(c0+sqrt(c0*c0+c1*v_mag));
@@ -713,9 +713,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             c1 = porosity*0.5*GeoFun/sqrt(permB);
             if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
-            vx = jxB/rhoB_next+0.5*(porosity*Gx+GffB_x+GfsB_x);
-            vy = jyB/rhoB_next+0.5*(porosity*Gy+GffB_y+GfsB_y);
-            vz = jzB/rhoB_next+0.5*(porosity*Gz+GffB_z+GfsB_z);
+            vx = jxB/rhoB+0.5*(porosity*Gx+GffB_x+GfsB_x);
+            vy = jyB/rhoB+0.5*(porosity*Gy+GffB_y+GfsB_y);
+            vz = jzB/rhoB+0.5*(porosity*Gz+GffB_z+GfsB_z);
             v_mag=sqrt(vx*vx+vy*vy+vz*vz);
             ux_B = vx/(c0+sqrt(c0*c0+c1*v_mag));
             uy_B = vy/(c0+sqrt(c0*c0+c1*v_mag));
@@ -733,9 +733,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             }
 
             // Calculate barycentric velocity of the fluid mixture
-            ux = (rhoA_next*ux_A+rhoB_next*ux_B)/(rhoA_next+rhoB_next);
-            uy = (rhoA_next*uy_A+rhoB_next*uy_B)/(rhoA_next+rhoB_next);
-            uz = (rhoA_next*uz_A+rhoB_next*uz_B)/(rhoA_next+rhoB_next);
+            ux = (rhoA*ux_A+rhoB*ux_B)/(rhoA+rhoB);
+            uy = (rhoA*uy_A+rhoB*uy_B)/(rhoA+rhoB);
+            uz = (rhoA*uz_A+rhoB*uz_B)/(rhoA+rhoB);
 
 //            //..............carry out relaxation process...............................................
 //            m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
@@ -776,32 +776,32 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             //-------------------- MRT collison where body force has NO higher-order terms -------------//
             //..............carry out relaxation process...............................................
             //TODO need to incoporate porosity
-			m1A = m1A + rlx_setA*((19*rhoA_next*(ux*ux+uy*uy+uz*uz) - 11*rhoA_next) - m1A)
+			m1A = m1A + rlx_setA*((19*rhoA*(ux*ux+uy*uy+uz*uz) - 11*rhoA_next) - m1A)
                       + (1-0.5*rlx_setA)*38*(FxA*ux+FyA*uy+FzA*uz);
-			m2A = m2A + rlx_setA*((3*rhoA_next - 5.5*rhoA_next*(ux*ux+uy*uy+uz*uz))- m2A)
+			m2A = m2A + rlx_setA*((3*rhoA_next - 5.5*rhoA*(ux*ux+uy*uy+uz*uz))- m2A)
                       + (1-0.5*rlx_setA)*11*(-FxA*ux-FyA*uy-FzA*uz);
             jxA = jxA + FxA;
-			m4A = m4A + rlx_setB*((-0.6666666666666666*ux*rhoA_next)- m4A)
+			m4A = m4A + rlx_setB*((-0.6666666666666666*ux*rhoA)- m4A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FxA);
             jyA = jyA + FyA;
-			m6A = m6A + rlx_setB*((-0.6666666666666666*uy*rhoA_next)- m6A)
+			m6A = m6A + rlx_setB*((-0.6666666666666666*uy*rhoA)- m6A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FyA);
             jzA = jzA + FzA;
-			m8A = m8A + rlx_setB*((-0.6666666666666666*uz*rhoA_next)- m8A)
+			m8A = m8A + rlx_setB*((-0.6666666666666666*uz*rhoA)- m8A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FzA);
-			m9A = m9A + rlx_setA*((rhoA_next*(2*ux*ux-uy*uy-uz*uz)) - m9A)
+			m9A = m9A + rlx_setA*((rhoA*(2*ux*ux-uy*uy-uz*uz)) - m9A)
                       + (1-0.5*rlx_setA)*(4*FxA*ux-2*FyA*uy-2*FzA*uz);
 			m10A = m10A + rlx_setA*( - m10A)
                         + (1-0.5*rlx_setA)*(-2*FxA*ux+FyA*uy+FzA*uz);
-			m11A = m11A + rlx_setA*((rhoA_next*(uy*uy-uz*uz)) - m11A)
+			m11A = m11A + rlx_setA*((rhoA*(uy*uy-uz*uz)) - m11A)
                         + (1-0.5*rlx_setA)*(2*FyA*uy-2*FzA*uz);
-			m12A = m12A + rlx_setA*( - m12A);
+			m12A = m12A + rlx_setA*( - m12A)
                         + (1-0.5*rlx_setA)*(-FyA*uy+FzA*uz);
-			m13A = m13A + rlx_setA*( rhoA_next*(ux*uy) - m13A)
+			m13A = m13A + rlx_setA*( rhoA*(ux*uy) - m13A)
                         + (1-0.5*rlx_setA)*(FyA*ux+FxA*uy);
-			m14A = m14A + rlx_setA*( rhoA_next*(uy*uz) - m14A);
+			m14A = m14A + rlx_setA*( rhoA*(uy*uz) - m14A)
                         + (1-0.5*rlx_setA)*(FzA*uy+FyA*uz);
-			m15A = m15A + rlx_setA*( rhoA_next*(ux*uz) - m15A)
+			m15A = m15A + rlx_setA*( rhoA*(ux*uz) - m15A)
                         + (1-0.5*rlx_setA)*(FzA*ux+FxA*uz);
 			m16A = m16A + rlx_setB*( - m16A);
 			m17A = m17A + rlx_setB*( - m17A);
@@ -812,121 +812,121 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             // ------------------- Fluid Component A -----------------------//
             //.................inverse transformation......................................................
             // q=0
-            //fq = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
-            f0 = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
-            distA[n] = f0;
+            fq = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
+            //f0 = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
+            distA[n] = fq;
 
             // q = 1
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
-            f1 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
+            //f1 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
             nread = neighborList[n+Np];
-            distA[nread] = f1;
+            distA[nread] = fq;
 
             // q=2
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
-            f2 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
+            //f2 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
             nread = neighborList[n];
-            distA[nread] = f2;
+            distA[nread] = fq;
 
             // q = 3
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            f3 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            //f3 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
             nread = neighborList[n+3*Np];
-            distA[nread] = f3;
+            distA[nread] = fq;
 
             // q = 4
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            f4 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            //f4 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
             nread = neighborList[n+2*Np];
-            distA[nread] = f4;
+            distA[nread] = fq;
 
             // q = 5
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            f5 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            //f5 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
             nread = neighborList[n+5*Np];
-            distA[nread] = f5;
+            distA[nread] = fq;
 
             // q = 6
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            f6 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            //f6 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
             nread = neighborList[n+4*Np];
-            distA[nread] = f6;
+            distA[nread] = fq;
 
             // q = 7
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
-            f7 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
+            //f7 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
             nread = neighborList[n+7*Np];
-            distA[nread] = f7;
+            distA[nread] = fq;
 
             // q = 8
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
-            f8 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
+            //f8 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
             nread = neighborList[n+6*Np];
-            distA[nread] = f8;
+            distA[nread] = fq;
 
             // q = 9
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
-            f9 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
+            //f9 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
             nread = neighborList[n+9*Np];
-            distA[nread] = f9;
+            distA[nread] = fq;
 
             // q = 10
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
-            f10 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
+            //f10 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
             nread = neighborList[n+8*Np];
-            distA[nread] = f10;
+            distA[nread] = fq;
 
             // q = 11
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
-            f11 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
+            //f11 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
             nread = neighborList[n+11*Np];
-            distA[nread] = f11;
+            distA[nread] = fq;
 
             // q = 12
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
-            f12 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
+            //f12 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
             nread = neighborList[n+10*Np];
-            distA[nread]= f12;
+            distA[nread]= fq;
 
             // q = 13
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
-            f13 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
+            //f13 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
             nread = neighborList[n+13*Np];
-            distA[nread] = f13;
+            distA[nread] = fq;
 
             // q= 14
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
-            f14 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
+            //f14 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
             nread = neighborList[n+12*Np];
-            distA[nread] = f14;
+            distA[nread] = fq;
 
             // q = 15
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
-            f15 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
+            //f15 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
             nread = neighborList[n+15*Np];
-            distA[nread] = f15;
+            distA[nread] = fq;
 
             // q = 16
-            //fq =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
-            f16 =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
+            fq =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
+            //f16 =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
             nread = neighborList[n+14*Np];
-            distA[nread] = f16;
+            distA[nread] = fq;
 
             // q = 17
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
-            f17 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
+            //f17 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
             nread = neighborList[n+17*Np];
-            distA[nread] = f17;
+            distA[nread] = fq;
 
             // q = 18
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
-            f18 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
+            //f18 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
             nread = neighborList[n+16*Np];
-            distA[nread] = f18;
+            distA[nread] = fq;
             //........................................................................
 
 
-            Den[n] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+            //Den[n] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
 
 
 //            //..............carry out relaxation process...............................................
@@ -968,32 +968,32 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             //-------------------- MRT collison where body force has NO higher-order terms -------------//
             //..............carry out relaxation process...............................................
             //TODO need to incoporate porosity
-			m1B = m1B + rlx_setA*((19*rhoB_next*(ux*ux+uy*uy+uz*uz) - 11*rhoB_next) - m1B)
+			m1B = m1B + rlx_setA*((19*rhoB*(ux*ux+uy*uy+uz*uz) - 11*rhoB_next) - m1B)
                       + (1-0.5*rlx_setA)*38*(FxB*ux+FyB*uy+FzB*uz);
-			m2B = m2B + rlx_setA*((3*rhoB_next - 5.5*rhoB_next*(ux*ux+uy*uy+uz*uz))- m2B)
+			m2B = m2B + rlx_setA*((3*rhoB_next - 5.5*rhoB*(ux*ux+uy*uy+uz*uz))- m2B)
                       + (1-0.5*rlx_setA)*11*(-FxB*ux-FyB*uy-FzB*uz);
             jxB = jxB + FxB;
-			m4B = m4B + rlx_setB*((-0.6666666666666666*ux*rhoB_next)- m4B)
+			m4B = m4B + rlx_setB*((-0.6666666666666666*ux*rhoB)- m4B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FxB);
             jyB = jyB + FyB;
-			m6B = m6B + rlx_setB*((-0.6666666666666666*uy*rhoB_next)- m6B)
+			m6B = m6B + rlx_setB*((-0.6666666666666666*uy*rhoB)- m6B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FyB);
             jzB = jzB + FzB;
-			m8B = m8B + rlx_setB*((-0.6666666666666666*uz*rhoB_next)- m8B)
+			m8B = m8B + rlx_setB*((-0.6666666666666666*uz*rhoB)- m8B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FzB);
-			m9B = m9B + rlx_setA*((rhoB_next*(2*ux*ux-uy*uy-uz*uz)) - m9B)
+			m9B = m9B + rlx_setA*((rhoB*(2*ux*ux-uy*uy-uz*uz)) - m9B)
                       + (1-0.5*rlx_setA)*(4*FxB*ux-2*FyB*uy-2*FzB*uz);
 			m10B = m10B + rlx_setA*( - m10B)
                         + (1-0.5*rlx_setA)*(-2*FxB*ux+FyB*uy+FzB*uz);
-			m11B = m11B + rlx_setA*((rhoB_next*(uy*uy-uz*uz)) - m11B)
+			m11B = m11B + rlx_setA*((rhoB*(uy*uy-uz*uz)) - m11B)
                         + (1-0.5*rlx_setA)*(2*FyB*uy-2*FzB*uz);
 			m12B = m12B + rlx_setA*( - m12B)
                         + (1-0.5*rlx_setA)*(-FyB*uy+FzB*uz);
-			m13B = m13B + rlx_setA*( rhoB_next*(ux*uy) - m13B)
+			m13B = m13B + rlx_setA*( rhoB*(ux*uy) - m13B)
                         + (1-0.5*rlx_setA)*(FyB*ux+FxB*uy);
-			m14B = m14B + rlx_setA*( rhoB_next*(uy*uz) - m14B)
+			m14B = m14B + rlx_setA*( rhoB*(uy*uz) - m14B)
                         + (1-0.5*rlx_setA)*(FzB*uy+FyB*uz);
-			m15B = m15B + rlx_setA*( rhoB_next*(ux*uz) - m15B)
+			m15B = m15B + rlx_setA*( rhoB*(ux*uz) - m15B)
                         + (1-0.5*rlx_setA)*(FzB*ux+FxB*uz);
 			m16B = m16B + rlx_setB*( - m16B);
 			m17B = m17B + rlx_setB*( - m17B);
@@ -1004,127 +1004,127 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *di
             // ------------------- Fluid Component B -----------------------//
             //.................inverse transformation......................................................
             // q=0
-            //fq = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
-            f0 = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
-            distB[n] = f0;
+            fq = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
+            //f0 = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
+            distB[n] = fq;
 
             // q = 1
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
-            f1 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
+            //f1 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
             nread = neighborList[n+Np];
-            distB[nread] = f1;
+            distB[nread] = fq;
 
             // q=2
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
-            f2 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
+            //f2 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
             nread = neighborList[n];
-            distB[nread] = f2;
+            distB[nread] = fq;
 
             // q = 3
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            f3 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            //f3 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
             nread = neighborList[n+3*Np];
-            distB[nread] = f3;
+            distB[nread] = fq;
 
             // q = 4
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            f4 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            //f4 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
             nread = neighborList[n+2*Np];
-            distB[nread] = f4;
+            distB[nread] = fq;
 
             // q = 5
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            f5 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            //f5 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
             nread = neighborList[n+5*Np];
-            distB[nread] = f5;
+            distB[nread] = fq;
 
             // q = 6
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            f6 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            //f6 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
             nread = neighborList[n+4*Np];
-            distB[nread] = f6;
+            distB[nread] = fq;
 
             // q = 7
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
-            f7 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
+            //f7 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
             nread = neighborList[n+7*Np];
-            distB[nread] = f7;
+            distB[nread] = fq;
 
             // q = 8
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
-            f8 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
+            //f8 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
             nread = neighborList[n+6*Np];
-            distB[nread] = f8;
+            distB[nread] = fq;
 
             // q = 9
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
-            f9 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
+            //f9 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
             nread = neighborList[n+9*Np];
-            distB[nread] = f9;
+            distB[nread] = fq;
 
             // q = 10
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
-            f10 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
+            //f10 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
             nread = neighborList[n+8*Np];
-            distB[nread] = f10;
+            distB[nread] = fq;
 
             // q = 11
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
-            f11 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
+            //f11 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
             nread = neighborList[n+11*Np];
-            distB[nread] = f11;
+            distB[nread] = fq;
 
             // q = 12
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
-            f12 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
+            //f12 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
             nread = neighborList[n+10*Np];
-            distB[nread]= f12;
+            distB[nread]= fq;
 
             // q = 13
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
-            f13 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
+            //f13 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
             nread = neighborList[n+13*Np];
-            distB[nread] = f13;
+            distB[nread] = fq;
 
             // q= 14
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
-            f14 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
+            //f14 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
             nread = neighborList[n+12*Np];
-            distB[nread] = f14;
+            distB[nread] = fq;
 
             // q = 15
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
-            f15 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
+            //f15 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
             nread = neighborList[n+15*Np];
-            distB[nread] = f15;
+            distB[nread] = fq;
 
             // q = 16
-            //fq =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
-            f16 =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
+            fq =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
+            //f16 =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
             nread = neighborList[n+14*Np];
-            distB[nread] = f16;
+            distB[nread] = fq;
 
             // q = 17
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
-            f17 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
+            //f17 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
             nread = neighborList[n+17*Np];
-            distB[nread] = f17;
+            distB[nread] = fq;
 
             // q = 18
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
-            f18 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
+            //f18 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
             nread = neighborList[n+16*Np];
-            distB[nread] = f18;
+            distB[nread] = fq;
             //........................................................................
 
-            Den[n+Np] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+            //Den[n+Np] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
 
             //Update velocity on device
             Velocity[0*Np+n] = ux;
             Velocity[1*Np+n] = uy;
             Velocity[2*Np+n] = uz;
             //Update pressure on device
-            Pressure[n] = (rhoA_next+rhoB_next+Gsc*rhoA_next*rhoB_next)/3.0;
+            Pressure[n] = (rhoA+rhoB+Gsc*rhoA*rhoB)/3.0;
             //Update density
             //Den[n] = rhoA_next;
             //Den[n+Np] = rhoB_next;
@@ -1151,7 +1151,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
 	double m1A,m2A,m4A,m6A,m8A,m9A,m10A,m11A,m12A,m13A,m14A,m15A,m16A,m17A,m18A;
 	double m1B,m2B,m4B,m6B,m8B,m9B,m10B,m11B,m12B,m13B,m14B,m15B,m16B,m17B,m18B;
     double fq;
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
@@ -1781,9 +1781,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             c1 = porosity*0.5*GeoFun/sqrt(permA);
             if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
-            vx = jxA/rhoA_next+0.5*(porosity*Gx+GffA_x+GfsA_x);
-            vy = jyA/rhoA_next+0.5*(porosity*Gy+GffA_y+GfsA_y);
-            vz = jzA/rhoA_next+0.5*(porosity*Gz+GffA_z+GfsA_z);
+            vx = jxA/rhoA+0.5*(porosity*Gx+GffA_x+GfsA_x);
+            vy = jyA/rhoA+0.5*(porosity*Gy+GffA_y+GfsA_y);
+            vz = jzA/rhoA+0.5*(porosity*Gz+GffA_z+GfsA_z);
             v_mag=sqrt(vx*vx+vy*vy+vz*vz);
             ux_A = vx/(c0+sqrt(c0*c0+c1*v_mag));
             uy_A = vy/(c0+sqrt(c0*c0+c1*v_mag));
@@ -1807,9 +1807,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             c1 = porosity*0.5*GeoFun/sqrt(permB);
             if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
 
-            vx = jxB/rhoB_next+0.5*(porosity*Gx+GffB_x+GfsB_x);
-            vy = jyB/rhoB_next+0.5*(porosity*Gy+GffB_y+GfsB_y);
-            vz = jzB/rhoB_next+0.5*(porosity*Gz+GffB_z+GfsB_z);
+            vx = jxB/rhoB+0.5*(porosity*Gx+GffB_x+GfsB_x);
+            vy = jyB/rhoB+0.5*(porosity*Gy+GffB_y+GfsB_y);
+            vz = jzB/rhoB+0.5*(porosity*Gz+GffB_z+GfsB_z);
             v_mag=sqrt(vx*vx+vy*vy+vz*vz);
             ux_B = vx/(c0+sqrt(c0*c0+c1*v_mag));
             uy_B = vy/(c0+sqrt(c0*c0+c1*v_mag));
@@ -1827,9 +1827,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             }
 
             // Calculate barycentric velocity of the fluid mixture
-            ux = (rhoA_next*ux_A+rhoB_next*ux_B)/(rhoA_next+rhoB_next);
-            uy = (rhoA_next*uy_A+rhoB_next*uy_B)/(rhoA_next+rhoB_next);
-            uz = (rhoA_next*uz_A+rhoB_next*uz_B)/(rhoA_next+rhoB_next);
+            ux = (rhoA*ux_A+rhoB*ux_B)/(rhoA+rhoB);
+            uy = (rhoA*uy_A+rhoB*uy_B)/(rhoA+rhoB);
+            uz = (rhoA*uz_A+rhoB*uz_B)/(rhoA+rhoB);
 
 
 //            //..............carry out relaxation process...............................................
@@ -1872,32 +1872,32 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             //-------------------- MRT collison where body force has NO higher-order terms -------------//
             //..............carry out relaxation process...............................................
             //TODO need to incoporate porosity
-			m1A = m1A + rlx_setA*((19*rhoA_next*(ux*ux+uy*uy+uz*uz) - 11*rhoA_next) - m1A)
+			m1A = m1A + rlx_setA*((19*rhoA*(ux*ux+uy*uy+uz*uz) - 11*rhoA_next) - m1A)
                       + (1-0.5*rlx_setA)*38*(FxA*ux+FyA*uy+FzA*uz);
-			m2A = m2A + rlx_setA*((3*rhoA_next - 5.5*rhoA_next*(ux*ux+uy*uy+uz*uz))- m2A)
+			m2A = m2A + rlx_setA*((3*rhoA_next - 5.5*rhoA*(ux*ux+uy*uy+uz*uz))- m2A)
                       + (1-0.5*rlx_setA)*11*(-FxA*ux-FyA*uy-FzA*uz);
             jxA = jxA + FxA;
-			m4A = m4A + rlx_setB*((-0.6666666666666666*ux*rhoA_next)- m4A)
+			m4A = m4A + rlx_setB*((-0.6666666666666666*ux*rhoA)- m4A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FxA);
             jyA = jyA + FyA;
-			m6A = m6A + rlx_setB*((-0.6666666666666666*uy*rhoA_next)- m6A)
+			m6A = m6A + rlx_setB*((-0.6666666666666666*uy*rhoA)- m6A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FyA);
             jzA = jzA + FzA;
-			m8A = m8A + rlx_setB*((-0.6666666666666666*uz*rhoA_next)- m8A)
+			m8A = m8A + rlx_setB*((-0.6666666666666666*uz*rhoA)- m8A)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FzA);
-			m9A = m9A + rlx_setA*((rhoA_next*(2*ux*ux-uy*uy-uz*uz)) - m9A)
+			m9A = m9A + rlx_setA*((rhoA*(2*ux*ux-uy*uy-uz*uz)) - m9A)
                       + (1-0.5*rlx_setA)*(4*FxA*ux-2*FyA*uy-2*FzA*uz);
 			m10A = m10A + rlx_setA*( - m10A)
                         + (1-0.5*rlx_setA)*(-2*FxA*ux+FyA*uy+FzA*uz);
-			m11A = m11A + rlx_setA*((rhoA_next*(uy*uy-uz*uz)) - m11A)
+			m11A = m11A + rlx_setA*((rhoA*(uy*uy-uz*uz)) - m11A)
                         + (1-0.5*rlx_setA)*(2*FyA*uy-2*FzA*uz);
-			m12A = m12A + rlx_setA*( - m12A);
+			m12A = m12A + rlx_setA*( - m12A)
                         + (1-0.5*rlx_setA)*(-FyA*uy+FzA*uz);
-			m13A = m13A + rlx_setA*( rhoA_next*(ux*uy) - m13A)
+			m13A = m13A + rlx_setA*( rhoA*(ux*uy) - m13A)
                         + (1-0.5*rlx_setA)*(FyA*ux+FxA*uy);
-			m14A = m14A + rlx_setA*( rhoA_next*(uy*uz) - m14A);
+			m14A = m14A + rlx_setA*( rhoA*(uy*uz) - m14A)
                         + (1-0.5*rlx_setA)*(FzA*uy+FyA*uz);
-			m15A = m15A + rlx_setA*( rhoA_next*(ux*uz) - m15A)
+			m15A = m15A + rlx_setA*( rhoA*(ux*uz) - m15A)
                         + (1-0.5*rlx_setA)*(FzA*ux+FxA*uz);
 			m16A = m16A + rlx_setB*( - m16A);
 			m17A = m17A + rlx_setB*( - m17A);
@@ -1908,102 +1908,102 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             // ------------------- Fluid Component A -----------------------//
             //.................inverse transformation......................................................
             // q=0
-            //fq = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
-            f0 = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
-            distA[n] = f0;
+            fq = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
+            //f0 = mrt_V1*rhoA_next-mrt_V2*m1A+mrt_V3*m2A;
+            distA[n] = fq;
 
             // q = 1
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
-            f1 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
-            distA[1*Np+n] = f1;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
+            //f1 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jxA-m4A)+mrt_V6*(m9A-m10A);
+            distA[1*Np+n] = fq;
 
             // q=2
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
-            f2 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
-            distA[2*Np+n] = f2;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
+            //f2 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m4A-jxA)+mrt_V6*(m9A-m10A);
+            distA[2*Np+n] = fq;
 
             // q = 3
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            f3 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            distA[3*Np+n] = f3;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            //f3 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jyA-m6A)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            distA[3*Np+n] = fq;
 
             // q = 4
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            f4 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
-            distA[4*Np+n] = f4;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            //f4 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m6A-jyA)+mrt_V7*(m10A-m9A)+mrt_V8*(m11A-m12A);
+            distA[4*Np+n] = fq;
 
             // q = 5
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            f5 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            distA[5*Np+n] = f5;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            //f5 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(jzA-m8A)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            distA[5*Np+n] = fq;
 
             // q = 6
-            //fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            f6 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
-            distA[6*Np+n] = f6;
+            fq = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            //f6 = mrt_V1*rhoA_next-mrt_V4*m1A-mrt_V5*m2A+0.1*(m8A-jzA)+mrt_V7*(m10A-m9A)+mrt_V8*(m12A-m11A);
+            distA[6*Np+n] = fq;
 
             // q = 7
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
-            f7 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
-            distA[7*Np+n] = f7;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
+            //f7 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jyA)+0.025*(m4A+m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m16A-m17A);
+            distA[7*Np+n] = fq;
 
             // q = 8
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
-            f8 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
-            distA[8*Np+n] = f8;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
+            //f8 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jyA)-0.025*(m4A+m6A) +mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A+0.25*m13A+0.125*(m17A-m16A);
+            distA[8*Np+n] = fq;
 
             // q = 9
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
-            f9 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
-            distA[9*Np+n] = f9;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
+            //f9 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jyA)+0.025*(m4A-m6A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A+0.125*(m16A+m17A);
+            distA[9*Np+n] = fq;
 
             // q = 10
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
-            f10 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
-            distA[10*Np+n] = f10;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
+            //f10 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jxA)+0.025*(m6A-m4A)+mrt_V7*m9A+mrt_V11*m10A+mrt_V8*m11A+mrt_V12*m12A-0.25*m13A-0.125*(m16A+m17A);
+            distA[10*Np+n] = fq;
 
             // q = 11
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
-            f11 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
-            distA[11*Np+n] = f11;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
+            //f11 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA+jzA)+0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m18A-m16A);
+            distA[11*Np+n] = fq;
 
             // q = 12
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
-            f12 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
-            distA[12*Np+n] = f12;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
+            //f12 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jxA+jzA)-0.025*(m4A+m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A+0.25*m15A+0.125*(m16A-m18A);
+            distA[12*Np+n] = fq;
 
             // q = 13
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
-            f13 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
-            distA[13*Np+n] = f13;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
+            //f13 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jxA-jzA)+0.025*(m4A-m8A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A-0.125*(m16A+m18A);
+            distA[13*Np+n] = fq;
 
             // q= 14
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
-            f14 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
-            distA[14*Np+n] = f14;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
+            //f14 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jxA)+0.025*(m8A-m4A)+mrt_V7*m9A+mrt_V11*m10A-mrt_V8*m11A-mrt_V12*m12A-0.25*m15A+0.125*(m16A+m18A);
+            distA[14*Np+n] = fq;
 
             // q = 15
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
-            f15 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
-            distA[15*Np+n] = f15;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
+            //f15 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA+jzA)+0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m17A-m18A);
+            distA[15*Np+n] = fq;
 
             // q = 16
-            //fq =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
-            f16 =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
-            distA[16*Np+n] = f16;
+            fq =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
+            //f16 =  mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A-0.1*(jyA+jzA)-0.025*(m6A+m8A)-mrt_V6*m9A-mrt_V7*m10A+0.25*m14A+0.125*(m18A-m17A);
+            distA[16*Np+n] = fq;
 
             // q = 17
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
-            f17 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
-            distA[17*Np+n] = f17;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
+            //f17 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jyA-jzA)+0.025*(m6A-m8A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A+0.125*(m17A+m18A);
+            distA[17*Np+n] = fq;
 
             // q = 18
-            //fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
-            f18 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
-            distA[18*Np+n] = f18;
+            fq = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
+            //f18 = mrt_V1*rhoA_next+mrt_V9*m1A+mrt_V10*m2A+0.1*(jzA-jyA)+0.025*(m8A-m6A)-mrt_V6*m9A-mrt_V7*m10A-0.25*m14A-0.125*(m17A+m18A);
+            distA[18*Np+n] = fq;
             //........................................................................
 
-            Den[n] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+            //Den[n] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
 
 //            //..............carry out relaxation process...............................................
 //            m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
@@ -2045,32 +2045,32 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             //-------------------- MRT collison where body force has NO higher-order terms -------------//
             //..............carry out relaxation process...............................................
             //TODO need to incoporate porosity
-			m1B = m1B + rlx_setA*((19*rhoB_next*(ux*ux+uy*uy+uz*uz) - 11*rhoB_next) - m1B)
+			m1B = m1B + rlx_setA*((19*rhoB*(ux*ux+uy*uy+uz*uz) - 11*rhoB_next) - m1B)
                       + (1-0.5*rlx_setA)*38*(FxB*ux+FyB*uy+FzB*uz);
-			m2B = m2B + rlx_setA*((3*rhoB_next - 5.5*rhoB_next*(ux*ux+uy*uy+uz*uz))- m2B)
+			m2B = m2B + rlx_setA*((3*rhoB_next - 5.5*rhoB*(ux*ux+uy*uy+uz*uz))- m2B)
                       + (1-0.5*rlx_setA)*11*(-FxB*ux-FyB*uy-FzB*uz);
             jxB = jxB + FxB;
-			m4B = m4B + rlx_setB*((-0.6666666666666666*ux*rhoB_next)- m4B)
+			m4B = m4B + rlx_setB*((-0.6666666666666666*ux*rhoB)- m4B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FxB);
             jyB = jyB + FyB;
-			m6B = m6B + rlx_setB*((-0.6666666666666666*uy*rhoB_next)- m6B)
+			m6B = m6B + rlx_setB*((-0.6666666666666666*uy*rhoB)- m6B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FyB);
             jzB = jzB + FzB;
-			m8B = m8B + rlx_setB*((-0.6666666666666666*uz*rhoB_next)- m8B)
+			m8B = m8B + rlx_setB*((-0.6666666666666666*uz*rhoB)- m8B)
                     + (1-0.5*rlx_setB)*(-0.6666666666666666*FzB);
-			m9B = m9B + rlx_setA*((rhoB_next*(2*ux*ux-uy*uy-uz*uz)) - m9B)
+			m9B = m9B + rlx_setA*((rhoB*(2*ux*ux-uy*uy-uz*uz)) - m9B)
                       + (1-0.5*rlx_setA)*(4*FxB*ux-2*FyB*uy-2*FzB*uz);
 			m10B = m10B + rlx_setA*( - m10B)
                         + (1-0.5*rlx_setA)*(-2*FxB*ux+FyB*uy+FzB*uz);
-			m11B = m11B + rlx_setA*((rhoB_next*(uy*uy-uz*uz)) - m11B)
+			m11B = m11B + rlx_setA*((rhoB*(uy*uy-uz*uz)) - m11B)
                         + (1-0.5*rlx_setA)*(2*FyB*uy-2*FzB*uz);
 			m12B = m12B + rlx_setA*( - m12B)
                         + (1-0.5*rlx_setA)*(-FyB*uy+FzB*uz);
-			m13B = m13B + rlx_setA*( rhoB_next*(ux*uy) - m13B)
+			m13B = m13B + rlx_setA*( rhoB*(ux*uy) - m13B)
                         + (1-0.5*rlx_setA)*(FyB*ux+FxB*uy);
-			m14B = m14B + rlx_setA*( rhoB_next*(uy*uz) - m14B)
+			m14B = m14B + rlx_setA*( rhoB*(uy*uz) - m14B)
                         + (1-0.5*rlx_setA)*(FzB*uy+FyB*uz);
-			m15B = m15B + rlx_setA*( rhoB_next*(ux*uz) - m15B)
+			m15B = m15B + rlx_setA*( rhoB*(ux*uz) - m15B)
                         + (1-0.5*rlx_setA)*(FzB*ux+FxB*uz);
 			m16B = m16B + rlx_setB*( - m16B);
 			m17B = m17B + rlx_setB*( - m17B);
@@ -2081,108 +2081,108 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB
             // ------------------- Fluid Component B -----------------------//
             //.................inverse transformation......................................................
             // q=0
-            //fq = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
-            f0 = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
-            distB[n] = f0;
+            fq = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
+            //f0 = mrt_V1*rhoB_next-mrt_V2*m1B+mrt_V3*m2B;
+            distB[n] = fq;
 
             // q = 1
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
-            f1 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
-            distB[1*Np+n] = f1;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
+            //f1 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jxB-m4B)+mrt_V6*(m9B-m10B);
+            distB[1*Np+n] = fq;
 
             // q=2
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
-            f2 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
-            distB[2*Np+n] = f2;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
+            //f2 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m4B-jxB)+mrt_V6*(m9B-m10B);
+            distB[2*Np+n] = fq;
 
             // q = 3
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            f3 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            distB[3*Np+n] = f3;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            //f3 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jyB-m6B)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            distB[3*Np+n] = fq;
 
             // q = 4
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            f4 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
-            distB[4*Np+n] = f4;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            //f4 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m6B-jyB)+mrt_V7*(m10B-m9B)+mrt_V8*(m11B-m12B);
+            distB[4*Np+n] = fq;
 
             // q = 5
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            f5 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            distB[5*Np+n] = f5;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            //f5 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(jzB-m8B)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            distB[5*Np+n] = fq;
 
             // q = 6
-            //fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            f6 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
-            distB[6*Np+n] = f6;
+            fq = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            //f6 = mrt_V1*rhoB_next-mrt_V4*m1B-mrt_V5*m2B+0.1*(m8B-jzB)+mrt_V7*(m10B-m9B)+mrt_V8*(m12B-m11B);
+            distB[6*Np+n] = fq;
 
             // q = 7
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
-            f7 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
-            distB[7*Np+n] = f7;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
+            //f7 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jyB)+0.025*(m4B+m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m16B-m17B);
+            distB[7*Np+n] = fq;
 
             // q = 8
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
-            f8 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
-            distB[8*Np+n] = f8;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
+            //f8 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jyB)-0.025*(m4B+m6B) +mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B+0.25*m13B+0.125*(m17B-m16B);
+            distB[8*Np+n] = fq;
 
             // q = 9
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
-            f9 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
-            distB[9*Np+n] = f9;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
+            //f9 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jyB)+0.025*(m4B-m6B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B+0.125*(m16B+m17B);
+            distB[9*Np+n] = fq;
 
             // q = 10
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
-            f10 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
-            distB[10*Np+n] = f10;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
+            //f10 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jxB)+0.025*(m6B-m4B)+mrt_V7*m9B+mrt_V11*m10B+mrt_V8*m11B+mrt_V12*m12B-0.25*m13B-0.125*(m16B+m17B);
+            distB[10*Np+n] = fq;
 
             // q = 11
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
-            f11 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
-            distB[11*Np+n] = f11;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
+            //f11 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB+jzB)+0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m18B-m16B);
+            distB[11*Np+n] = fq;
 
             // q = 12
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
-            f12 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
-            distB[12*Np+n] = f12;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
+            //f12 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jxB+jzB)-0.025*(m4B+m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B+0.25*m15B+0.125*(m16B-m18B);
+            distB[12*Np+n] = fq;
 
             // q = 13
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
-            f13 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
-            distB[13*Np+n] = f13;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
+            //f13 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jxB-jzB)+0.025*(m4B-m8B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B-0.125*(m16B+m18B);
+            distB[13*Np+n] = fq;
 
             // q= 14
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
-            f14 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
-            distB[14*Np+n] = f14;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
+            //f14 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jxB)+0.025*(m8B-m4B)+mrt_V7*m9B+mrt_V11*m10B-mrt_V8*m11B-mrt_V12*m12B-0.25*m15B+0.125*(m16B+m18B);
+            distB[14*Np+n] = fq;
 
             // q = 15
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
-            f15 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
-            distB[15*Np+n] = f15;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
+            //f15 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB+jzB)+0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m17B-m18B);
+            distB[15*Np+n] = fq;
 
             // q = 16
-            //fq =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
-            f16 =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
-            distB[16*Np+n] = f16;
+            fq =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
+            //f16 =  mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B-0.1*(jyB+jzB)-0.025*(m6B+m8B)-mrt_V6*m9B-mrt_V7*m10B+0.25*m14B+0.125*(m18B-m17B);
+            distB[16*Np+n] = fq;
 
             // q = 17
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
-            f17 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
-            distB[17*Np+n] = f17;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
+            //f17 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jyB-jzB)+0.025*(m6B-m8B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B+0.125*(m17B+m18B);
+            distB[17*Np+n] = fq;
 
             // q = 18
-            //fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
-            f18 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
-            distB[18*Np+n] = f18;
+            fq = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
+            //f18 = mrt_V1*rhoB_next+mrt_V9*m1B+mrt_V10*m2B+0.1*(jzB-jyB)+0.025*(m8B-m6B)-mrt_V6*m9B-mrt_V7*m10B-0.25*m14B-0.125*(m17B+m18B);
+            distB[18*Np+n] = fq;
             //........................................................................
 
-            Den[n+Np] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
+            //Den[n+Np] = f0+f2+f1+f4+f3+f6+f5+f8+f7+f10+f9+f12+f11+f14+f13+f16+f15+f18+f17;
             //Update velocity on device
             Velocity[0*Np+n] = ux;
             Velocity[1*Np+n] = uy;
             Velocity[2*Np+n] = uz;
             //Update pressure on device
-            Pressure[n] = (rhoA_next+rhoB_next+Gsc*rhoA_next*rhoB_next)/3.0;
+            Pressure[n] = (rhoA+rhoB+Gsc*rhoA*rhoB)/3.0;
             //Update density
             //Den[n] = rhoA_next;
             //Den[n+Np] = rhoB_next;
