@@ -16,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_GreyscaleModel{
+class ScaLBL_GreyscaleSCModel{
 public:
-	ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_GreyscaleModel();	
+	ScaLBL_GreyscaleSCModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleSCModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -36,9 +36,11 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
     int CollisionType;
-	double tau;
-    double tau_eff;
-    double Den;//constant density
+	double tauA,tauB;
+    double tauA_eff,tauB_eff;
+    double Gsc;
+    double rhoA,rhoB;
+    double rhoA_minor,rhoB_minor;//dissolved density
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
@@ -56,17 +58,21 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> greyscale_db;
+    std::shared_ptr<Database> greyscaleSC_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
     signed char *id;    
 	int *NeighborList;
-	double *fq;
+	double *fqA, *fqB;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
 	double *Pressure_dvc;
+    double *Den;
+    double *DenGradA,*DenGradB;
+    double *SolidForceA,*SolidForceB;
+    
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;
@@ -85,7 +91,7 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
    
-    void AssignComponentLabels(double *Porosity, double *Permeablity);
-    
+    void AssignGreyscaleAndSolidLabels();
+    void Density_Init();   
 };
 
