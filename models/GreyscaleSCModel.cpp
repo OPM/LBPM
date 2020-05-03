@@ -727,32 +727,33 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_DeviceBarrier();
 
         //debug
-	    DoubleArray PhaseField(Nx,Ny,Nz);
-        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    FILE *AFILE;
-	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
-	    AFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,AFILE);
-	    fclose(AFILE);
-
-	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    FILE *BFILE;
-	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
-	    BFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,BFILE);
-	    fclose(BFILE);
+//	    DoubleArray PhaseField(Nx,Ny,Nz);
+//        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+//	    FILE *AFILE;
+//	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
+//	    AFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,AFILE);
+//	    fclose(AFILE);
+//
+//	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+//	    FILE *BFILE;
+//	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
+//	    BFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,BFILE);
+//	    fclose(BFILE);
 
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
@@ -778,29 +779,29 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
 		ScaLBL_DeviceBarrier();
 
-        //debug
-	    //DoubleArray PhaseField(Nx,Ny,Nz);
-        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    //FILE *AFILE;
-	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
-	    AFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,AFILE);
-	    fclose(AFILE);
-
-	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    //FILE *BFILE;
-	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
-	    BFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,BFILE);
-	    fclose(BFILE);
+//        //debug
+//	    //DoubleArray PhaseField(Nx,Ny,Nz);
+//        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+//	    //FILE *AFILE;
+//	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
+//	    AFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,AFILE);
+//	    fclose(AFILE);
+//
+//	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+//	    //FILE *BFILE;
+//	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
+//	    BFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,BFILE);
+//	    fclose(BFILE);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);

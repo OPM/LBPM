@@ -124,16 +124,25 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(int *NeighborList, double
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(double *distA, double *distB, double *Den, int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC(int *neighborList, double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(int *neighborList, double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
                 double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
                 double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
                 int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC(double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
                 double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
                 double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
                 int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(int *neighborList, double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
+                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
+                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
+                int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(double *distA, double *distB, double *Den, double *DenGradA, double *DenGradB, 
+                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
+                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
+                int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
