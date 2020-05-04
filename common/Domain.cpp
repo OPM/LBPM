@@ -256,6 +256,7 @@ void Domain::Decomp( const std::string& Filename )
 	int64_t i,j,k,n;
 	int64_t xStart,yStart,zStart;
 	int checkerSize;
+	bool USE_CHECKER = false;
 	//int inlet_layers_x, inlet_layers_y, inlet_layers_z;
 	//int outlet_layers_x, outlet_layers_y, outlet_layers_z;
 	xStart=yStart=zStart=0;
@@ -295,6 +296,7 @@ void Domain::Decomp( const std::string& Filename )
 	}
 	if (database->keyExists( "checkerSize" )){
 		checkerSize = database->getScalar<int>( "checkerSize" );
+		USE_CHECKER = true;
 	}
 	else {
 		checkerSize = SIZE[0];
@@ -367,7 +369,7 @@ void Domain::Decomp( const std::string& Filename )
 			}
 		}
 		printf("Read segmented data from %s \n",Filename.c_str());
-		
+
 		// relabel the data
 		std::vector<long int> LabelCount(ReadValues.size(),0);
 		for (int k = 0; k<global_Nz; k++){
@@ -396,117 +398,149 @@ void Domain::Decomp( const std::string& Filename )
 			}
 		}
 
-		if (inlet_layers_x > 0){
-			// use checkerboard pattern
-			printf("Checkerboard pattern at x inlet for %i layers \n",inlet_layers_x);
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = xStart; i < xStart+inlet_layers_x; i++){
-						if ( (j/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+		if (USE_CHECKER) {
+			if (inlet_layers_x > 0){
+				// use checkerboard pattern
+				printf("Checkerboard pattern at x inlet for %i layers \n",inlet_layers_x);
+				for (int k = 0; k<global_Nz; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = xStart; i < xStart+inlet_layers_x; i++){
+							if ( (j/checkerSize + k/checkerSize)%2 == 0){
+								// void checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							}
 						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+					}
+				}
+			}
+
+			if (inlet_layers_y > 0){
+				printf("Checkerboard pattern at y inlet for %i layers \n",inlet_layers_y);
+				// use checkerboard pattern
+				for (int k = 0; k<global_Nz; k++){
+					for (int j = yStart; j < yStart+inlet_layers_y; j++){
+						for (int i = 0; i<global_Nx; i++){
+							if ( (i/checkerSize + k/checkerSize)%2 == 0){
+								// void checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							}
+						}
+					}
+				}
+			}
+
+			if (inlet_layers_z > 0){
+				printf("Checkerboard pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
+				// use checkerboard pattern
+				for (int k = zStart; k < zStart+inlet_layers_z; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = 0; i<global_Nx; i++){
+							if ( (i/checkerSize+j/checkerSize)%2 == 0){
+								// void checkers
+								//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = inlet_layers_phase;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							}
+						}
+					}
+				}
+			}
+
+			if (outlet_layers_x > 0){
+				// use checkerboard pattern
+				printf("Checkerboard pattern at x outlet for %i layers \n",outlet_layers_x);
+				for (int k = 0; k<global_Nz; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = xStart + nx*nprocx - outlet_layers_x; i <  xStart + nx*nprocx; i++){
+							if ( (j/checkerSize + k/checkerSize)%2 == 0){
+								// void checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							}
+						}
+					}
+				}
+			}
+
+			if (outlet_layers_y > 0){
+				printf("Checkerboard pattern at y outlet for %i layers \n",outlet_layers_y);
+				// use checkerboard pattern
+				for (int k = 0; k<global_Nz; k++){
+					for (int j = yStart + ny*nprocy - outlet_layers_y; j < yStart + ny*nprocy; j++){
+						for (int i = 0; i<global_Nx; i++){
+							if ( (i/checkerSize + k/checkerSize)%2 == 0){
+								// void checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+
+							}
+						}
+					}
+				}
+			}
+
+			if (outlet_layers_z > 0){
+				printf("Checkerboard pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
+				// use checkerboard pattern
+				for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = 0; i<global_Nx; i++){
+							if ( (i/checkerSize+j/checkerSize)%2 == 0){
+								// void checkers
+								//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = outlet_layers_phase;
+							}
+							else{
+								// solid checkers
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+							}
 						}
 					}
 				}
 			}
 		}
-
-		if (inlet_layers_y > 0){
-			printf("Checkerboard pattern at y inlet for %i layers \n",inlet_layers_y);
-			// use checkerboard pattern
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart; j < yStart+inlet_layers_y; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
-					}
-				}
-			}
-		}
-
+	}
+	else {
 		if (inlet_layers_z > 0){
-			printf("Checkerboard pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
-			// use checkerboard pattern
+			printf("Mixed reflection pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
 			for (int k = zStart; k < zStart+inlet_layers_z; k++){
 				for (int j = 0; j<global_Ny; j++){
 					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize+j/checkerSize)%2 == 0){
-							// void checkers
-							//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = inlet_layers_phase;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+						signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
+						signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+						if ( local_id < 1 && reflection_id > 0){
+							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
 						}
 					}
 				}
 			}
 		}
-
-		if (outlet_layers_x > 0){
-			// use checkerboard pattern
-			printf("Checkerboard pattern at x outlet for %i layers \n",outlet_layers_x);
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = xStart + nx*nprocx - outlet_layers_x; i <  xStart + nx*nprocx; i++){
-						if ( (j/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-						}
-					}
-				}
-			}
-		}
-
-		if (outlet_layers_y > 0){
-			printf("Checkerboard pattern at y outlet for %i layers \n",outlet_layers_y);
-			// use checkerboard pattern
-			for (int k = 0; k<global_Nz; k++){
-				for (int j = yStart + ny*nprocy - outlet_layers_y; j < yStart + ny*nprocy; j++){
-					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize + k/checkerSize)%2 == 0){
-							// void checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
-							
-						}
-					}
-				}
-			}
-		}
-
 		if (outlet_layers_z > 0){
-			printf("Checkerboard pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
-			// use checkerboard pattern
+			printf("Mixed reflection pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
 			for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
 				for (int j = 0; j<global_Ny; j++){
 					for (int i = 0; i<global_Nx; i++){
-						if ( (i/checkerSize+j/checkerSize)%2 == 0){
-							// void checkers
-							//SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 2;
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = outlet_layers_phase;
-						}
-						else{
-							// solid checkers
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = 0;
+						signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
+						signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+						if ( local_id < 1 && reflection_id > 0){
+							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
 						}
 					}
 				}
