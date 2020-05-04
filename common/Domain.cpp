@@ -390,14 +390,11 @@ void Domain::Decomp( const std::string& Filename )
 				}
 			}
 		}
-		if (RANK==0){
-			for (size_t idx=0; idx<ReadValues.size(); idx++){
-				long int label=ReadValues[idx];
-				long int count=LabelCount[idx];
-				printf("Label=%ld, Count=%ld \n",label,count);
-			}
+		for (size_t idx=0; idx<ReadValues.size(); idx++){
+			long int label=ReadValues[idx];
+			long int count=LabelCount[idx];
+			printf("Label=%ld, Count=%ld \n",label,count);
 		}
-
 		if (USE_CHECKER) {
 			if (inlet_layers_x > 0){
 				// use checkerboard pattern
@@ -516,31 +513,31 @@ void Domain::Decomp( const std::string& Filename )
 				}
 			}
 		}
-	}
-	else {
-		if (inlet_layers_z > 0){
-			printf("Mixed reflection pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
-			for (int k = zStart; k < zStart+inlet_layers_z; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = 0; i<global_Nx; i++){
-						signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
-						signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
-						if ( local_id < 1 && reflection_id > 0){
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
+		else {
+			if (inlet_layers_z > 0){
+				printf("Mixed reflection pattern at z inlet for %i layers, saturated with phase label=%i \n",inlet_layers_z,inlet_layers_phase);
+				for (int k = zStart; k < zStart+inlet_layers_z; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = 0; i<global_Nx; i++){
+							signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
+							signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+							if ( local_id < 1 && reflection_id > 0){
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
+							}
 						}
 					}
 				}
 			}
-		}
-		if (outlet_layers_z > 0){
-			printf("Mixed reflection pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
-			for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
-				for (int j = 0; j<global_Ny; j++){
-					for (int i = 0; i<global_Nx; i++){
-						signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
-						signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
-						if ( local_id < 1 && reflection_id > 0){
-							SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
+			if (outlet_layers_z > 0){
+				printf("Mixed reflection pattern at z outlet for %i layers, saturated with phase label=%i \n",outlet_layers_z,outlet_layers_phase);
+				for (int k = zStart + nz*nprocz - outlet_layers_z; k < zStart + nz*nprocz; k++){
+					for (int j = 0; j<global_Ny; j++){
+						for (int i = 0; i<global_Nx; i++){
+							signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
+							signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+							if ( local_id < 1 && reflection_id > 0){
+								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
+							}
 						}
 					}
 				}
