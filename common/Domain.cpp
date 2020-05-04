@@ -520,7 +520,7 @@ void Domain::Decomp( const std::string& Filename )
 					for (int j = 0; j<global_Ny; j++){
 						for (int i = 0; i<global_Nx; i++){
 							signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
-							signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+							signed char reflection_id = SegData[(zStart + nz*nprocz - 1)*global_Nx*global_Ny+j*global_Nx+i];
 							if ( local_id < 1 && reflection_id > 0){
 								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
 							}
@@ -534,7 +534,7 @@ void Domain::Decomp( const std::string& Filename )
 					for (int j = 0; j<global_Ny; j++){
 						for (int i = 0; i<global_Nx; i++){
 							signed char local_id = SegData[k*global_Nx*global_Ny+j*global_Nx+i];
-							signed char reflection_id = SegData[(zStart + nz*nprocz - k)*global_Nx*global_Ny+j*global_Nx+i];
+							signed char reflection_id = SegData[zStart*global_Nx*global_Ny+j*global_Nx+i];
 							if ( local_id < 1 && reflection_id > 0){
 								SegData[k*global_Nx*global_Ny+j*global_Nx+i] = reflection_id;
 							}
