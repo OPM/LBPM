@@ -465,6 +465,81 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
 	delete [] Dst;
 }
 
+//void ScaLBL_GreyscaleSCModel::Density_Init(){
+//
+//	size_t NLABELS=0;
+//	signed char VALUE=0;
+//
+//    vector<int> LabelList{1,2};
+//    vector<double> SwList{0.0,1.0}; 
+//
+//	if (greyscaleSC_db->keyExists( "GreyNodeLabels" )){
+//        LabelList.clear();
+//	    LabelList = greyscaleSC_db->getVector<int>( "GreyNodeLabels" );
+//	}
+//	if (greyscaleSC_db->keyExists( "GreyNodeSw" )){
+//        SwList.clear();
+//	    SwList = greyscaleSC_db->getVector<double>( "GreyNodeSw" );
+//	}
+//
+//	NLABELS=LabelList.size();
+//	if (NLABELS != SwList.size()){
+//		ERROR("Error: GreyNodeLabels and GreyNodeSw must be the same length! \n");
+//	}
+//	
+//    double *Den_temp;
+//	Den_temp=new double [2*Np];
+//    double nA=0.5;//to prevent use may forget to specify all greynodes, then must initialize something to start with, givning just zeros is too risky.
+//    double nB=0.5;
+//
+//    //double *Phi_temp;
+//    //Phi_temp=new double [Np];
+//    //double phi = 0.0;
+//
+//	for (int k=0; k<Nz; k++){
+//		for (int j=0; j<Ny; j++){
+//			for (int i=0; i<Nx; i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//				VALUE=Mask->id[n];
+//                if (VALUE>0){
+//                    for (unsigned int idx=0; idx < NLABELS; idx++){
+//                        if (VALUE == LabelList[idx]){
+//                            double Sw = SwList[idx];
+//                            if ((Sw<0.0) || (Sw>1.0)) ERROR("Error: Initial saturation for grey nodes must be between [0.0, 1.0]! \n");
+//                            nB=Sw;
+//                            nA=1.0-Sw;
+//                            //phi = nA-nB;
+//                            idx = NLABELS;
+//                        }
+//                    }
+//                    if (VALUE==1){//label=1 reserved for NW phase
+//                        //TODO; maybe need rho_major and rho_minor initialization
+//                        nA=rhoA;
+//                        nB=rhoB_minor; 
+//                        //phi = nA-nB;
+//                    }
+//                    else if(VALUE==2){//label=2 reserved for W phase
+//                        //TODO; maybe need rho_major and rho_minor initialization
+//                        nA=rhoA_minor;
+//                        nB=rhoB; 
+//                        //phi = nA-nB;
+//                    }
+//                    int idx = Map(i,j,k);
+//                    Den_temp[idx+0*Np] = nA;
+//                    Den_temp[idx+1*Np] = nB;
+//                    //Phi_temp[idx] = phi;
+//                }
+//			}
+//		}
+//	}
+//    //copy to device
+//	ScaLBL_CopyToDevice(Den, Den_temp, 2*Np*sizeof(double));
+//	//ScaLBL_CopyToDevice(Phi, Phi_temp, 1*Np*sizeof(double));
+//	ScaLBL_DeviceBarrier();
+//	delete [] Den_temp;
+//	//delete [] Phi_temp;
+//}
+
 void ScaLBL_GreyscaleSCModel::Density_Init(){
 
 	size_t NLABELS=0;
@@ -487,10 +562,11 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
 		ERROR("Error: GreyNodeLabels and GreyNodeSw must be the same length! \n");
 	}
 	
-    double *Den_temp;
-	Den_temp=new double [2*Np];
-    double nA=0.5;//to prevent use may forget to specify all greynodes, then must initialize something to start with, givning just zeros is too risky.
-    double nB=0.5;
+    double *DenA_temp,*DenB_temp;
+	DenA_temp=new double [Nx*Ny*Nz];
+	DenB_temp=new double [Nx*Ny*Nz];
+    double nA=0.0;//to prevent use may forget to specify all greynodes, then must initialize something to start with, givning just zeros is too risky.
+    double nB=0.0;
 
     //double *Phi_temp;
     //Phi_temp=new double [Np];
@@ -513,30 +589,32 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
                         }
                     }
                     if (VALUE==1){//label=1 reserved for NW phase
-                        //TODO; maybe need rho_major and rho_minor initialization
                         nA=rhoA;
                         nB=rhoB_minor; 
                         //phi = nA-nB;
                     }
                     else if(VALUE==2){//label=2 reserved for W phase
-                        //TODO; maybe need rho_major and rho_minor initialization
                         nA=rhoA_minor;
                         nB=rhoB; 
                         //phi = nA-nB;
                     }
-                    int idx = Map(i,j,k);
-                    Den_temp[idx+0*Np] = nA;
-                    Den_temp[idx+1*Np] = nB;
-                    //Phi_temp[idx] = phi;
+                    DenA_temp[n] = nA;
+                    DenB_temp[n] = nB;
+                }
+                else{ //for ID<=0, i.e. all sorts of solid minerals, density is zero
+                    DenA_temp[n] = 0.0;
+                    DenB_temp[n] = 0.0;
                 }
 			}
 		}
 	}
     //copy to device
-	ScaLBL_CopyToDevice(Den, Den_temp, 2*Np*sizeof(double));
+	ScaLBL_CopyToDevice(DenA, DenA_temp, Nx*Ny*Nz*sizeof(double));
+	ScaLBL_CopyToDevice(DenB, DenB_temp, Nx*Ny*Nz*sizeof(double));
 	//ScaLBL_CopyToDevice(Phi, Phi_temp, 1*Np*sizeof(double));
 	ScaLBL_DeviceBarrier();
-	delete [] Den_temp;
+	delete [] DenA_temp;
+	delete [] DenB_temp;
 	//delete [] Phi_temp;
 }
 
@@ -559,6 +637,7 @@ void ScaLBL_GreyscaleSCModel::Create(){
 	// Create a communicator for the device (will use optimized layout)
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
 	int Npad=(Np/16 + 2)*16;
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
@@ -577,9 +656,11 @@ void ScaLBL_GreyscaleSCModel::Create(){
 	neighborSize=18*(Np*sizeof(int));
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &fqA, 19*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &fqB, 19*dist_mem_size);
-	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*sizeof(double)*Np);		
+	ScaLBL_AllocateDeviceMemory((void **) &DenA, sizeof(double)*Nx*Ny*Nz);		
+	ScaLBL_AllocateDeviceMemory((void **) &DenB, sizeof(double)*Nx*Ny*Nz);		
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure_dvc, sizeof(double)*Np);
@@ -592,6 +673,36 @@ void ScaLBL_GreyscaleSCModel::Create(){
 	// Update GPU data structures
 	if (rank==0)	printf ("Setting up device neighbor list \n");
 	fflush(stdout);
+    // Copy the Map to device
+	int *TmpMap;
+	TmpMap=new int[Np];
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0))
+					TmpMap[idx] = k*Nx*Ny+j*Nx+i;
+			}
+		}
+	}
+	// check that TmpMap is valid
+	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+		auto n = TmpMap[idx];
+		if (n > Nx*Ny*Nz){
+			printf("Bad value! idx=%i \n", n);
+			TmpMap[idx] = Nx*Ny*Nz-1;
+		}
+	}
+	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
+		auto n = TmpMap[idx];
+		if ( n > Nx*Ny*Nz ){
+			printf("Bad value! idx=%i \n",n);
+			TmpMap[idx] = Nx*Ny*Nz-1;
+		}
+	}
+	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
+	ScaLBL_DeviceBarrier();
+	delete [] TmpMap;
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 }        
@@ -631,18 +742,20 @@ void ScaLBL_GreyscaleSCModel::Initialize(){
         if (rank==0)	printf ("Initializing density field \n");
         Density_Init();//initialize density field
         if (rank==0)	printf ("Initializing distributions \n");
-        ScaLBL_D3Q19_GreyscaleSC_Init(fqA, fqB, Den, Np);
+        ScaLBL_D3Q19_GreyscaleSC_Init(dvcMap,fqA, fqB, DenA,DenB, Np);
         
         //debug
 	    DoubleArray PhaseField(Nx,Ny,Nz);
-        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+	    ScaLBL_CopyToHost(PhaseField.data(), DenA, sizeof(double)*N);
 	    FILE *AFILE;
 	    sprintf(LocalRankFilename,"A_init.%05i.raw",rank);
 	    AFILE = fopen(LocalRankFilename,"wb");
 	    fwrite(PhaseField.data(),8,N,AFILE);
 	    fclose(AFILE);
 
-	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	    ScaLBL_CopyToHost(PhaseField.data(), DenB, sizeof(double)*N);
 	    FILE *BFILE;
 	    sprintf(LocalRankFilename,"B_init.%05i.raw",rank);
 	    BFILE = fopen(LocalRankFilename,"wb");
@@ -707,49 +820,32 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, dvcMap, fqA, fqB, DenA, DenB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, dvcMap, fqA, fqB, DenA, DenB, 0, ScaLBL_Comm->LastExterior(), Np);
+
         // Compute density gradient
         // fluid component A
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->SendHalo(DenA);
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenA, DenGradA, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(DenA);
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenA, DenGradA, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         // fluid component B
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        // Compute density gradient
-		ScaLBL_Comm->SendHalo(&Den[0]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0],DenGradA);
+		ScaLBL_Comm_Regular->SendHalo(DenB);
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(DenB);
 		ScaLBL_DeviceBarrier();
-		ScaLBL_Comm->SendHalo(&Den[Np]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
-		ScaLBL_DeviceBarrier();
-
-        //debug
-//	    DoubleArray PhaseField(Nx,Ny,Nz);
-//        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-//	    FILE *AFILE;
-//	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
-//	    AFILE = fopen(LocalRankFilename,"wb");
-//	    fwrite(PhaseField.data(),8,N,AFILE);
-//	    fclose(AFILE);
-//
-//	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-//	    FILE *BFILE;
-//	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
-//	    BFILE = fopen(LocalRankFilename,"wb");
-//	    fwrite(PhaseField.data(),8,N,BFILE);
-//	    fclose(BFILE);
-
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -760,48 +856,32 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		// Compute the density field
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q19AA(fqA,fqB); //READ FROM NORMAL
-		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(dvcMap, fqA, fqB, DenA, DenB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(fqA, fqB, Den, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(dvcMap, fqA, fqB, DenA, DenB, 0, ScaLBL_Comm->LastExterior(), Np);
+
         // Compute density gradient
         // fluid component A
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->SendHalo(DenA);
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenA, DenGradA, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(DenA);
+		ScaLBL_DeviceBarrier();
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenA, DenGradA, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         // fluid component B
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        // Compute density gradient
-		ScaLBL_Comm->SendHalo(&Den[0]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[0], DenGradA, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[0],DenGradA);
+		ScaLBL_Comm_Regular->SendHalo(DenB);
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(DenB);
 		ScaLBL_DeviceBarrier();
-		ScaLBL_Comm->SendHalo(&Den[Np]);
-		ScaLBL_D3Q19_GreyscaleFE_Gradient(NeighborList, &Den[Np], DenGradB, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->RecvGrad(&Den[Np],DenGradB);
-		ScaLBL_DeviceBarrier();
-
-//        //debug
-//	    //DoubleArray PhaseField(Nx,Ny,Nz);
-//        ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-//	    //FILE *AFILE;
-//	    sprintf(LocalRankFilename,"A_beforeCol_time_%i.%05i.raw",timestep,rank);
-//	    AFILE = fopen(LocalRankFilename,"wb");
-//	    fwrite(PhaseField.data(),8,N,AFILE);
-//	    fclose(AFILE);
-//
-//	    ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-//	    //FILE *BFILE;
-//	    sprintf(LocalRankFilename,"B_beforeCol_time_%i.%05i.raw",timestep,rank);
-//	    BFILE = fopen(LocalRankFilename,"wb");
-//	    fwrite(PhaseField.data(),8,N,BFILE);
-//	    fclose(BFILE);
+		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(fqA, fqB, Den, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -1114,14 +1194,16 @@ void ScaLBL_GreyscaleSCModel::WriteDebug(){
 //	fwrite(PhaseField.data(),8,N,OUTFILE);
 //	fclose(OUTFILE);
 //
-    ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+    //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+	ScaLBL_CopyToHost(PhaseField.data(), DenA, sizeof(double)*N);
 	FILE *AFILE;
 	sprintf(LocalRankFilename,"A.%05i.raw",rank);
 	AFILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,AFILE);
 	fclose(AFILE);
 
-	ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	//ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+	ScaLBL_CopyToHost(PhaseField.data(), DenB, sizeof(double)*N);
 	FILE *BFILE;
 	sprintf(LocalRankFilename,"B.%05i.raw",rank);
 	BFILE = fopen(LocalRankFilename,"wb");

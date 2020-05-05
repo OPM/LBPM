@@ -54,6 +54,7 @@ public:
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
     
     // input database
     std::shared_ptr<Database> db;
@@ -64,12 +65,13 @@ public:
 
     signed char *id;    
 	int *NeighborList;
+    int *dvcMap;
 	double *fqA, *fqB;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
 	double *Pressure_dvc;
-    double *Den;
+    double *DenA, *DenB;
     double *DenGradA,*DenGradB;
     double *SolidForceA,*SolidForceB;
     
