@@ -894,9 +894,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 
         //-------------------- IMRT collison where body force has higher-order terms -------------//
 //		//..............carry out relaxation process...............................................
-//		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
+//		m1 = m1 + rlx_setA*((-30*Den+19*Den*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
 //                + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
-//		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
+//		m2 = m2 + rlx_setA*((12*Den - 5.5*Den*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
 //                + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
 //        jx = jx + Fx;
 //		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
@@ -929,8 +929,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 
         //-------------------- IMRT collison where body force has NO higher-order terms -------------//
 		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
-		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
+		m1 = m1 + rlx_setA*((-30*Den+19*Den*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
+		m2 = m2 + rlx_setA*((12*Den - 5.5*Den*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
         jx = jx + Fx;
 		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
                 + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
@@ -1401,9 +1401,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 
         //-------------------- IMRT collison where body force has higher-order terms -------------//
 //		//..............carry out relaxation process...............................................
-//		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
+//		m1 = m1 + rlx_setA*((-30*Den+19*Den*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1) 
 //                + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
-//		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
+//		m2 = m2 + rlx_setA*((12*Den - 5.5*Den*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2)
 //                + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
 //        jx = jx + Fx;
 //		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
@@ -1436,8 +1436,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 
         //-------------------- IMRT collison where body force has NO higher-order terms -------------//
 		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((-30*Den+19*(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
-		m2 = m2 + rlx_setA*((12*Den - 5.5*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
+		m1 = m1 + rlx_setA*((-30*Den+19*Den(ux*ux+uy*uy+uz*uz)/porosity + 57*pressure*porosity) - m1);
+		m2 = m2 + rlx_setA*((12*Den - 5.5*Den*(ux*ux+uy*uy+uz*uz)/porosity-27*pressure*porosity) - m2);
         jx = jx + Fx;
 		m4 = m4 + rlx_setB*((-0.6666666666666666*ux*Den) - m4)
                 + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
