@@ -494,6 +494,7 @@ void ScaLBL_ColorModel::Run(){
 	int IMAGE_COUNT = 0;
 	std::vector<std::string> ImageList;
 	bool SET_CAPILLARY_NUMBER = false;
+	bool RESCALE_FORCE = false;
 	bool MORPH_ADAPT = false;
 	bool USE_MORPH = false;
 	bool USE_SEED = false;
@@ -502,6 +503,7 @@ void ScaLBL_ColorModel::Run(){
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
+	int RESCALE_FORCE_AFTER_TIMESTEP = 0;
 	int RAMP_TIMESTEPS = 0;//50000;		 // number of timesteps to run initially (to get a reasonable velocity field before other pieces kick in)
 	int CURRENT_MORPH_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
 	int CURRENT_STEADY_TIMESTEPS=0;   // counter for number of timesteps spent in  morphological adaptation routine (reset each time)
@@ -563,7 +565,9 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
-		//RESCALE_FORCE_MAX = 1;
+	}
+	if (color_db->keyExists( "rescale_force_after_timestep" )){
+		RESCALE_FORCE_AFTER_TIMESTEP = color_db->getScalar<int>( "rescale_force_after_timestep" );
 	}
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
@@ -791,7 +795,20 @@ void ScaLBL_ColorModel::Run(){
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
-
+				if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_STEADY_TIMESTEPS > RESCALE_FORCE_AFTER_TIMESTEP){
+					RESCALE_FORCE = false;
+					Fx *= capillary_number / Ca;
+					Fy *= capillary_number / Ca;
+					Fz *= capillary_number / Ca;
+					if (force_mag > 1e-3){
+						Fx *= 1e-3/force_mag;   // impose ceiling for stability
+						Fy *= 1e-3/force_mag;   
+						Fz *= 1e-3/force_mag;   
+					}
+					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+					color_db->putVector<double>("F",{Fx,Fy,Fz});
+				}
 				if ( isSteady ){
 					MORPH_ADAPT = true;
 					CURRENT_MORPH_TIMESTEPS=0;
@@ -952,12 +969,17 @@ void ScaLBL_ColorModel::Run(){
 					CURRENT_STEADY_TIMESTEPS=0;
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
+					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+						RESCALE_FORCE = true;
 				}
 				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
 					MORPH_ADAPT = false;
 					CURRENT_STEADY_TIMESTEPS=0;
 					initial_volume = volA*Dm->Volume;
 					delta_volume = 0.0;
+					RESCALE_FORCE = true;
+					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+						RESCALE_FORCE = true;
 				}
 			}
 			morph_timesteps += analysis_interval;
