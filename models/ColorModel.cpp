@@ -568,6 +568,7 @@ void ScaLBL_ColorModel::Run(){
 	}
 	if (color_db->keyExists( "rescale_force_after_timestep" )){
 		RESCALE_FORCE_AFTER_TIMESTEP = color_db->getScalar<int>( "rescale_force_after_timestep" );
+		RESCALE_FORCE = true;
 	}
 	if (color_db->keyExists( "timestep" )){
 		timestep = color_db->getScalar<int>( "timestep" );
