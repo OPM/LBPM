@@ -402,12 +402,12 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
 									double vec_z = double(kk-1);
 									double GWNS_A=SolidPotentialA_host[nn];
 									double GWNS_B=SolidPotentialB_host[nn];
-									phi_x_A += GWNS_A*weight*vec_x;
-									phi_y_A += GWNS_A*weight*vec_y;
-									phi_z_A += GWNS_A*weight*vec_z;
-									phi_x_B += GWNS_B*weight*vec_x;
-									phi_y_B += GWNS_B*weight*vec_y;
-									phi_z_B += GWNS_B*weight*vec_z;
+									phi_x_A += -1.0*GWNS_A*weight*vec_x;
+									phi_y_A += -1.0*GWNS_A*weight*vec_y;
+									phi_z_A += -1.0*GWNS_A*weight*vec_z;
+									phi_x_B += -1.0*GWNS_B*weight*vec_x;
+									phi_y_B += -1.0*GWNS_B*weight*vec_y;
+									phi_z_B += -1.0*GWNS_B*weight*vec_z;
 								}
 							}
 						}
