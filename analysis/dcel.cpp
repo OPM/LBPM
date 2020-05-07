@@ -352,6 +352,8 @@ double DECL::EdgeAngle(int edge)
 
 void Isosurface(DoubleArray &A, const double &v)
 {
+    NULL_USE( v );
+
 	Point P,Q;
 	Point PlaceHolder;
 	Point C0,C1,C2,C3,C4,C5,C6,C7;
@@ -562,7 +564,7 @@ void Isosurface(DoubleArray &A, const double &v)
 					if (P.z == 1.0 && Q.z == 1.0) HalfEdge[idx_edge][3] = -6;  // ghost twin for z=1 face
 				}
 				// Find all the angles
-				for (int idx=0; idx<EdgeCount; idx++){
+				/*for (int idx=0; idx<EdgeCount; idx++){
 					int V1=HalfEdge[idx][0];
 					int V2=HalfEdge[idx][1];
 					int T1= HalfEdge[idx_edge][2];
@@ -570,7 +572,7 @@ void Isosurface(DoubleArray &A, const double &v)
 					if (twin == -1){
 						
 					}
-				}
+				}*/
 
 				// Map vertices to global coordinates
 				for (int idx=0;idx<VertexCount;idx++) {

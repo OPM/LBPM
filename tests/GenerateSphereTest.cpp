@@ -145,8 +145,8 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-	double Rcrit_new;
+	double Rcrit_old=0.0;
+	double Rcrit_new=0.0;
 
 	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 	        nspheres = domain_db->getScalar<int>( "nspheres");
 
 		//printf("Set domain \n");
-		int BoundaryCondition=1;
+		//int BoundaryCondition=1;
 		//Nz += 2;
 		//Nx = Ny = Nz;	// Cubic domain
 		int N = Nx*Ny*Nz;
@@ -396,7 +396,7 @@ int main(int argc, char **argv)
 		int sum = 0;
 		double sum_local;
 		double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-		double porosity, pore_vol;
+		double porosity;
 		//...........................................................................
 		DoubleArray SignDist(Nx,Ny,Nz);
 		//.......................................................................
@@ -450,7 +450,6 @@ int main(int argc, char **argv)
 			}
 		}
 		sum=0;
-		pore_vol = 0.0;
 		for ( k=1;k<Nz-1;k++){
 			for ( j=1;j<Ny-1;j++){
 				for ( i=1;i<Nx-1;i++){

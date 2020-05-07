@@ -18,6 +18,7 @@
  */
 #include "models/MRTModel.h"
 #include "analysis/distance.h"
+#include "common/ReadMicroCT.h"
 
 ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
@@ -108,20 +109,36 @@ void ScaLBL_MRTModel::SetDomain(){
 }
 
 void ScaLBL_MRTModel::ReadInput(){
-    int rank=Dm->rank();
-    size_t readID;
-    //.......................................................................
-    //.......................................................................
-    Mask->ReadIDs();
     
     sprintf(LocalRankString,"%05d",Dm->rank());
     sprintf(LocalRankFilename,"%s%s","ID.",LocalRankString);
     sprintf(LocalRestartFile,"%s%s","Restart.",LocalRankString);
 
-	// Generate the signed distance map
+    
+    if (domain_db->keyExists( "Filename" )){
+    	auto Filename = domain_db->getScalar<std::string>( "Filename" );
+    	Mask->Decomp(Filename);
+    }
+    else if (domain_db->keyExists( "GridFile" )){
+    	// Read the local domain data
+    	auto input_id = readMicroCT( *domain_db, comm );
+    	// Fill the halo (assuming GCW of 1)
+    	array<int,3> size0 = { (int) input_id.size(0), (int) input_id.size(1), (int) input_id.size(2) };
+    	ArraySize size1 = { (size_t) Mask->Nx, (size_t) Mask->Ny, (size_t) Mask->Nz };
+    	ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
+    	fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
+    	Array<signed char> id_view;
+    	id_view.viewRaw( size1, Mask->id );
+    	fill.copy( input_id, id_view );
+    	fill.fill( id_view );
+    }
+    else{
+    	Mask->ReadIDs();
+    }
+
+    // Generate the signed distance map
 	// Initialize the domain and communication
 	Array<char> id_solid(Nx,Ny,Nz);
-	int count = 0;
 	// Solve for the position of the solid phase
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -137,7 +154,6 @@ void ScaLBL_MRTModel::ReadInput(){
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
-				int n=k*Nx*Ny+j*Nx+i;
 				// Initialize distance to +/- 1
 				Distance(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 			}
@@ -206,7 +222,6 @@ void ScaLBL_MRTModel::Run(){
 	double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
 	
 	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
 
 	if (rank==0){
 		bool WriteHeader=false;
@@ -238,12 +253,38 @@ void ScaLBL_MRTModel::Run(){
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		// Set boundary conditions
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_MRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		// Set boundary conditions
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
 		ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/

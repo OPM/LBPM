@@ -60,12 +60,11 @@ int main(int argc, char **argv)
 		}
 
 		// Get the rank info
-		std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>(db,comm);
 
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
-		int N = Nx*Ny*Nz;
 		//.......................................................................
 		for ( k=1;k<Nz-1;k++){
 			for ( j=1;j<Ny-1;j++){

@@ -261,6 +261,10 @@ void clearSignals();
 void raiseSignal( int signal );
 
 
+//! Default function to abort after catching a signal
+void terminateFunctionSignal( int signal );
+
+
 //! Return a list of all signals that can be caught
 std::vector<int> allSignalsToCatch();
 
@@ -302,6 +306,13 @@ multi_stack_info generateFromString( const std::vector<std::string> &str );
  * @return                  Returns the call stack
  */
 multi_stack_info generateFromString( const std::string &str );
+
+
+//! Set default stack type
+void setDefaultStackType( StackTrace::printStackType );
+
+//! Get default stack type
+StackTrace::printStackType getDefaultStackType();
 
 
 } // namespace StackTrace

@@ -53,11 +53,10 @@ extern "C" void ScaLBL_Gradient_Unpack(double weight, double Cqx, double Cqy, do
 	}
 }
 
-extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np){
-	int idx,n;
-	double phi,nA,nB;
-
-	for (idx=start; idx<finish; idx++){
+extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np)
+{
+	for (int idx=start; idx<finish; idx++){
+	    double phi,nA,nB;
 		phi = Phi[idx];
 		if (phi > 0.f){
 			nA = 1.0; nB = 0.f;
@@ -90,15 +89,13 @@ extern "C" void ScaLBL_DFH_Init(double *Phi, double *Den, double *Aq, double *Bq
 // LBM based on density functional hydrodynamics
 extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
-		double Fx, double Fy, double Fz, int start, int finish, int Np){
-
-	int ijk,nn,n;
+		double Fx, double Fy, double Fz, int start, int finish, int Np)
+{
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double m3,m5,m7;
 	double nA,nB; // number density
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
@@ -616,7 +613,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		double *Phi, double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 	
-	int n,nn,ijk,nread;
+	int nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 	int nr7,nr8,nr9,nr10;
 	int nr11,nr12,nr13,nr14;
@@ -626,7 +623,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 	double rho,jx,jy,jz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double m3,m5,m7;
 	double nA,nB; // number density
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
@@ -1212,12 +1208,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_DFH(int *neighborList, double *Aq, double *Bq, 
-			double *Den, double *Phi, int start, int finish, int Np){
-
-	int idx,n,nread;
-	double fq,nA,nB;
+			double *Den, double *Phi, int start, int finish, int Np)
+{
 
 	for (int n=start; n<finish; n++){
+		int nread;
+		double fq,nA,nB;
 		
 		//..........Compute the number density for component A............
 		// q=0
@@ -1300,11 +1296,10 @@ extern "C" void ScaLBL_D3Q7_AAodd_DFH(int *neighborList, double *Aq, double *Bq,
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_DFH(double *Aq, double *Bq, double *Den, double *Phi, 
-			int start, int finish, int Np){
-	int idx,n,nread;
-	double fq,nA,nB;
+			int start, int finish, int Np)
+{
 	for (int n=start; n<finish; n++){
-		
+		double fq,nA,nB;
 		// compute number density for component A
 		// q=0
 		fq = Aq[n];

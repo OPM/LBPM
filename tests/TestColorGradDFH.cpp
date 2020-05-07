@@ -53,9 +53,6 @@ int main(int argc, char **argv)
 	    int Nx = db->getVector<int>( "n" )[0];
 	    int Ny = db->getVector<int>( "n" )[1];
 	    int Nz = db->getVector<int>( "n" )[2];
-	    int nprocx = db->getVector<int>( "nproc" )[0];
-	    int nprocy = db->getVector<int>( "nproc" )[1];
-	    int nprocz = db->getVector<int>( "nproc" )[2];
 
 	    if (rank==0){
 	    	printf("********************************************************\n");
@@ -64,7 +61,7 @@ int main(int argc, char **argv)
 	    }
 
 	    // Get the rank info
-	    std::shared_ptr<Domain> Dm(new Domain(db,comm));
+		auto Dm = std::make_shared<Domain>(db,comm);
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -111,7 +108,6 @@ int main(int argc, char **argv)
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
-		int dist_mem_size = Np*sizeof(double);
 		int neighborSize=18*Np*sizeof(int);
 		if (rank==0)	printf ("Allocating distributions \n");
 		int *NeighborList;

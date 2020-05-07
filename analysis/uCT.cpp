@@ -172,6 +172,7 @@ void solve( const Array<float>& VOL, Array<float>& Mean, Array<char>& ID,
     //	int depth = 5;
     //	float sigsq=0.1;
 	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
+    NULL_USE( nlm_count );
 	fillFloat.fill(NonLocalMean);
 }
 
@@ -216,6 +217,7 @@ void refine( const Array<float>& Dist_coarse,
 //	int depth = 3;
 //	float sigsq = 0.1;
 	int nlm_count = NLM3D( MultiScaleSmooth, Mean, Dist, NonLocalMean, depth, sigsq);
+    NULL_USE( nlm_count );
 	fillFloat.fill(NonLocalMean);
     segment( NonLocalMean, ID, 0.001 );
     for (size_t i=0; i<ID.length(); i++) {

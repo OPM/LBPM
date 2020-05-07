@@ -70,8 +70,6 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     auto n = domain.getVector<int>( "n" );
     int rank = comm_rank(MPI_COMM_WORLD);
     auto nproc = domain.getVector<int>( "nproc" );
-	auto ReadValues = domain.getVector<int>( "ReadValues" );
-	auto WriteValues = domain.getVector<int>( "WriteValues" );
     RankInfoStruct rankInfo( rank, nproc[0], nproc[1], nproc[2] );
     
     // Determine the largest file number to get
@@ -95,29 +93,26 @@ Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
     		ERROR( "Invalid name for first file" );
     	}
     	data = readMicroCT( filename );
-
-    	// Relabel the data
-    	for (int k = 0; k<1024; k++){
-    		for (int j = 0; j<1024; j++){
-    			for (int i = 0; i<1024; i++){
-    				//n = k*Nfx*Nfy + j*Nfx + i;
-    				//char locval = loc_id[n];
-    				char locval = data(i,j,k);
-    				for (int idx=0; idx<ReadValues.size(); idx++){
-    					signed char oldvalue=ReadValues[idx];
-    					signed char newvalue=WriteValues[idx];
-    					if (locval == oldvalue){
-    						data(i,j,k) = newvalue;
-    						idx = ReadValues.size();
-    					}
-    				}
-    			}
-    		}
-    	}
     }
 
     // Redistribute the data
     data = redistribute( srcRankInfo, data, rankInfo, { n[0], n[1], n[2] }, comm );
+
+	// Relabel the data
+    auto ReadValues = domain.getVector<int>( "ReadValues" );
+    auto WriteValues = domain.getVector<int>( "WriteValues" );
+    ASSERT( ReadValues.size() == WriteValues.size() );
+    int readMaxValue = 0;
+    for ( auto v : ReadValues )
+        readMaxValue = std::max( data.max()+1, v );
+    std::vector<int> map( readMaxValue + 1, -1 );
+    for ( size_t i=0; i<ReadValues.size(); i++ )
+        map[ReadValues[i]] = WriteValues[i];
+    for ( size_t i=0; i<data.length(); i++ ) {
+        int t = data(i);
+        ASSERT( t >= 0 && t <= readMaxValue );
+        data(i) = map[t];
+    }
 
     return data;
 }

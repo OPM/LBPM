@@ -74,11 +74,6 @@ int main(int argc, char **argv)
         ScaLBL_DeviceBarrier();
         MPI_Barrier(comm);
 
-        PROFILE_ENABLE(1);
-        //PROFILE_ENABLE_TRACE();
-        //PROFILE_ENABLE_MEMORY();
-        PROFILE_SYNCHRONIZE();
-        PROFILE_START("Main");
         Utilities::setErrorHandlers();
 
         // Variables that specify the computational domain  
@@ -164,14 +159,14 @@ int main(int argc, char **argv)
             pBC=false;
 
         // Full domain used for averaging (do not use mask for analysis)
-        std::shared_ptr<Domain> Dm(new Domain(domain_db,comm));
+        auto Dm = std::make_shared<Domain>(domain_db,comm);
         for (int i=0; i<Dm->Nx*Dm->Ny*Dm->Nz; i++) Dm->id[i] = 1;
-        std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
+        auto Averages = std::make_shared<TwoPhase>(Dm);
         //   TwoPhase Averages(Dm);
         Dm->CommInit();
 
         // Mask that excludes the solid phase
-        std::shared_ptr<Domain> Mask(new Domain(domain_db,comm));
+        auto Mask = std::make_shared<Domain>(domain_db,comm);
         MPI_Barrier(comm);
 
         Nx+=2; Ny+=2; Nz += 2;
@@ -191,9 +186,8 @@ int main(int argc, char **argv)
 		//	printf("Local File Name =  %s \n",LocalRankFilename);
 		// .......... READ THE INPUT FILE .......................................
 		//	char value;
-		char *id;
-		id = new char[N];
-		double sum, sum_local;
+		auto id = new char[N];
+		double sum;
 		//...........................................................................
 		if (rank == 0) cout << "Setting up bubble..." << endl;
 	    double BubbleRadius = 15.5; // Radius of the capillary tube
@@ -244,19 +238,17 @@ int main(int argc, char **argv)
 		// Initialize communication structures in averaging domain
 		for (i=0; i<Mask->Nx*Mask->Ny*Mask->Nz; i++) Mask->id[i] = id[i];
 		Mask->CommInit();
-		double *PhaseLabel;
-		PhaseLabel = new double[N];
+		auto PhaseLabel = new double[N];
 		
 		//...........................................................................
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 		// Create a communicator for the device (will use optimized layout)
-		std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm(new ScaLBL_Communicator(Mask));
+		auto ScaLBL_Comm = std::make_shared<ScaLBL_Communicator>(Mask);
 		
 		int Npad=(Np/16 + 2)*16;
 		if (rank==0)	printf ("Set up memory efficient layout Npad=%i \n",Npad);
-		int *neighborList;
 		IntArray Map(Nx,Ny,Nz);
-		neighborList= new int[18*Npad];
+		auto neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
 		MPI_Barrier(comm);
 
@@ -515,9 +507,8 @@ int main(int argc, char **argv)
 		// Copy back final phase indicator field and convert to regular layout
 		DoubleArray PhaseField(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
-    	FILE *OUTFILE;
-		sprintf(LocalRankFilename,"Phase.raw",rank);
-		OUTFILE = fopen(LocalRankFilename,"wb");
+		sprintf(LocalRankFilename,"Phase.raw");
+		auto OUTFILE = fopen(LocalRankFilename,"wb");
     	fwrite(PhaseField.data(),8,N,OUTFILE);
     	fclose(OUTFILE);
     	
@@ -535,9 +526,8 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-    	FILE *GFILE;
 		sprintf(LocalRankFilename,"Gradient.raw");
-		GFILE = fopen(LocalRankFilename,"wb");
+		auto GFILE = fopen(LocalRankFilename,"wb");
     	fwrite(GradNorm.data(),8,N,GFILE);
     	fclose(GFILE);
     	
@@ -545,14 +535,12 @@ int main(int argc, char **argv)
 		DoubleArray Rho2(Nx,Ny,Nz);
         ScaLBL_Comm->RegularLayout(Map,&Den[0],Rho1);
         ScaLBL_Comm->RegularLayout(Map,&Den[Np],Rho2);
-    	FILE *RFILE1;
 		sprintf(LocalRankFilename,"Rho1.raw");
-		RFILE1 = fopen(LocalRankFilename,"wb");
+		auto RFILE1 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho1.data(),8,N,RFILE1);
     	fclose(RFILE1);
-    	FILE *RFILE2;
 		sprintf(LocalRankFilename,"Rho2.raw");
-		RFILE2 = fopen(LocalRankFilename,"wb");
+		auto RFILE2 = fopen(LocalRankFilename,"wb");
     	fwrite(Rho2.data(),8,N,RFILE2);
     	fclose(RFILE2);
     	

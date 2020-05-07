@@ -87,6 +87,23 @@ extern  "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int
 	}
 }
 
+extern "C" void ScaLBL_D3Q7_Reflection_BC_z(int *list, double *dist, int count, int Np){
+  int n;
+	for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		double f5 = 0.222222222222222222222222 - dist[6*Np+n];
+		dist[6*Np+n] = f5;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+  int n;
+  for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		double f6 = 0.222222222222222222222222 - dist[5*Np+n];
+		dist[5*Np+n] = f6;
+	}
+}
 extern "C" void ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
 {
 	int n,N;

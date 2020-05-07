@@ -192,11 +192,11 @@ public: // Public variables (need to create accessors instead)
     signed char *id;
 
     void ReadIDs();
-    void Decomp(std::string Filename);
+    void Decomp( const std::string& filename );
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();
-    void AggregateLabels(char *FILENAME);
+    void AggregateLabels( const std::string& filename );
 
 private:
 
@@ -259,10 +259,10 @@ private:
 
 };
 
-void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, int Np);
+void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np);
 
-void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, int Np);
+void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, size_t Np);
 
-void ReadBinaryFile(char *FILENAME, double *Data, int N);
+void ReadBinaryFile(char *FILENAME, double *Data, size_t N);
 
 #endif

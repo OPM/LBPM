@@ -60,12 +60,11 @@ int main(int argc, char **argv)
     }
 
     // Get the rank info
-    std::shared_ptr<Domain> Dm(new Domain(db,comm));
+    auto Dm = std::make_shared<Domain>(db,comm);
 
     Nx += 2;
     Ny += 2;
     Nz += 2;
-    int N = Nx*Ny*Nz;
     //.......................................................................
     for ( k=1;k<Nz-1;k++){
     	for ( j=1;j<Ny-1;j++){
@@ -98,14 +97,13 @@ int main(int argc, char **argv)
 	//.......................................................................
 	// Assign the phase ID field based and the signed distance
 	//.......................................................................
-    double R1,R2,R;
     double CX,CY,CZ; //CY1,CY2;
     CX=Nx*nprocx*0.5;
     CY=Ny*nprocy*0.5;
     CZ=Nz*nprocz*0.5;
-    R1 = (Nx-2)*nprocx*0.3; // middle radius
-    R2 = (Nx-2)*nprocx*0.1; // donut thickness
-    R = 0.4*nprocx*(Nx-2);
+    auto R1 = (Nx-2)*nprocx*0.3; // middle radius
+    auto R2 = (Nx-2)*nprocx*0.1; // donut thickness
+    //auto R = 0.4*nprocx*(Nx-2);
     
     Minkowski Object(Dm);
 

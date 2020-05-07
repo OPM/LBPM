@@ -203,6 +203,12 @@ inline int sumReduce( MPI_Comm comm, int x )
 	MPI_Allreduce(&x,&y,1,MPI_INT,MPI_SUM,comm);
     return y;
 }
+inline long long sumReduce( MPI_Comm comm, long long x )
+{
+    long long y = 0;
+	MPI_Allreduce(&x,&y,1,MPI_LONG_LONG,MPI_SUM,comm);
+    return y;
+}
 inline bool sumReduce( MPI_Comm comm, bool x )
 {
     int y = sumReduce( comm, x?1:0 );

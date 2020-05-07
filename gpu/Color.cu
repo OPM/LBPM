@@ -143,7 +143,7 @@ __global__  void dvc_ScaLBL_Color_InitDistance(char *ID, double *Den, double *Ph
 
 __global__  void dvc_ScaLBL_Color_BC(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np)
 {
-	int idx,n,nm;
+	int idx,n;
 	// Fill the outlet with component b
 	idx = blockIdx.x*blockDim.x + threadIdx.x;
 	if (idx < count){
@@ -1254,6 +1254,15 @@ __global__  void dvc_ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny
 	}
 }
 
+
+__global__  void dvc_ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Dest){
+	double value;
+	int n =  blockIdx.x*blockDim.x + threadIdx.x;
+	if (n < Nx*Ny){
+		value = Phi[Source*Nx*Ny+n];
+		Phi[Dest*Nx*Ny+n] = value;
+	}
+}
 
 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
@@ -3486,13 +3495,11 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_ColorMass(double *Aq, double *Bq, double
 		double *Velocity, double *ColorGrad, double beta, int start, int finish, int Np){
 
 	int n;
-	double fq;
 	// non-conserved moments
 	double nA,nB; // number density
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
-	double phi,tau,rho0,rlx_setA,rlx_setB;
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
@@ -3580,13 +3587,11 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_ColorMass(int *neighborList, double *Aq, 
 		double *Velocity, double *ColorGrad, double beta, int start, int finish, int Np){
 
 	int n,nread;
-	double fq;
 	// non-conserved moments
 	double nA,nB; // number density
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
-	double phi,tau,rho0,rlx_setA,rlx_setB;
 
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
@@ -4153,5 +4158,9 @@ extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den,
 	}
 }
 
+extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Dest){
+	int GRID = Nx*Ny / 512 + 1;
+	dvc_ScaLBL_CopySlice_z<<<GRID,512>>>(Phi,Nx,Ny,Nz,Source,Dest);
+}
 
 

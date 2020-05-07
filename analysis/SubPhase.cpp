@@ -161,15 +161,14 @@ void SubPhase::Basic(){
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
 	imin=jmin=1;
-	// If inlet/outlet layers exist use these as default
+	/*// If inlet/outlet layers exist use these as default
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
-	
+	*/
 	nb.reset(); wb.reset();
 
-	double nA,nB;
 	double count_w = 0.0;
 	double count_n = 0.0;
 	
@@ -281,7 +280,7 @@ void SubPhase::Basic(){
 			dir_y = 0.0;
 			dir_z = 1.0;
 		}
-		if (Dm->BoundaryCondition > 0 ){
+		if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 || Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4 ){
 			// compute the pressure drop
 			double pressure_drop = (Pressure(Nx*Ny + Nx + 1) - 1.0) / 3.0;
 			double length = ((Nz-2)*Dm->nprocz());
@@ -297,8 +296,8 @@ void SubPhase::Basic(){
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
-		double total_flow_rate = water_flow_rate + not_water_flow_rate;
-		double fractional_flow= water_flow_rate / total_flow_rate;
+		//double total_flow_rate = water_flow_rate + not_water_flow_rate;
+		//double fractional_flow = water_flow_rate / total_flow_rate;
 
 		double h = Dm->voxel_length;		
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
@@ -377,16 +376,17 @@ void SubPhase::Full(){
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == 0) kmin=4;
-	if (Dm->BoundaryCondition > 0 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
-
+	/*if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == 0) kmin=4;
+	if (Dm->BoundaryCondition > 0 && Dm->BoundaryCondition != 5 && Dm->kproc() == Dm->nprocz()-1) kmax=Nz-4;
+	*/
 	imin=jmin=1;
-	// If inlet layers exist use these as default
+	/*// If inlet layers exist use these as default
+	 * NOTE -- excluding inlet / outlet will screw up topological averages!!!
 	if (Dm->inlet_layers_x > 0) imin = Dm->inlet_layers_x;
 	if (Dm->inlet_layers_y > 0) jmin = Dm->inlet_layers_y;
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
-		
+	*/
 	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
 
  	Dm->CommunicateMeshHalo(Phi);
@@ -697,7 +697,8 @@ void SubPhase::Full(){
 }
 
 
-void SubPhase::AggregateLabels(char *FILENAME){
+void SubPhase::AggregateLabels( const std::string& filename )
+{
 	
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
@@ -721,7 +722,7 @@ void SubPhase::AggregateLabels(char *FILENAME){
 	}
 	MPI_Barrier(Dm->Comm);
 
-	Dm->AggregateLabels(FILENAME);
+	Dm->AggregateLabels( filename );
 
 }
 

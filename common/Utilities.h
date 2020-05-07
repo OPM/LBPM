@@ -40,6 +40,37 @@ using StackTrace::Utilities::sleep_ms;
 using StackTrace::Utilities::sleep_s;
 
 
+/*!
+ * \brief Start MPI, error handlers
+ * \details This routine will peform the default startup sequence
+ * \param argc              argc from main
+ * \param argv              argv from main
+ */
+void startup( int argc, char **argv );
+
+/*!
+ * \brief Stop MPI, error handlers
+ * \details This routine will peform the default shutdown sequence to match startup
+ */
+void shutdown();
+
+
+/*!
+ * Get an environmental variable
+ * @param name              The name of the environmental variable
+ * @return                  The value of the enviornmental variable
+ */
+std::string getenv( const std::string &name );
+
+
+/*!
+ * Set an environmental variable
+ * @param name              The name of the environmental variable
+ * @param value             The value to set
+ */
+void setenv( const std::string &name, const std::string &value );
+
+
 //! std::string version of sprintf
 inline std::string stringf( const char *format, ... );
 

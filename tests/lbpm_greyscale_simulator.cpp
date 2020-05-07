@@ -8,9 +8,8 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "analysis/TwoPhase.h"
 #include "common/MPI_Helpers.h"
-#include "models/MRTModel.h"
+#include "models/GreyscaleModel.h"
 //#define WRITE_SURFACES
 
 /*
@@ -23,6 +22,9 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
 	int rank,nprocs;
 	MPI_Init(&argc,&argv);
@@ -30,26 +32,29 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(comm,&rank);
 	MPI_Comm_size(comm,&nprocs);
 	{
+		// parallel domain size (# of sub-domains)
+
 		if (rank == 0){
 			printf("********************************************************\n");
-			printf("Running Single Phase Permeability Calculation \n");
+			printf("Running Greyscale Single Phase Permeability Calculation \n");
 			printf("********************************************************\n");
 		}
 		// Initialize compute device
 		int device=ScaLBL_SetDevice(rank);
-        NULL_USE( device );
+		NULL_USE(device);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		
-		ScaLBL_MRTModel MRT(rank,nprocs,comm);
+		ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
 		auto filename = argv[1];
-		MRT.ReadParams(filename);
-		MRT.SetDomain();    // this reads in the domain 
-		MRT.ReadInput();
-		MRT.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-		MRT.Initialize();   // initializing the model will set initial conditions for variables
-		MRT.Run();	 
-		MRT.VelocityField();
+		Greyscale.ReadParams(filename);
+		Greyscale.SetDomain();    // this reads in the domain 
+		Greyscale.ReadInput();
+		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
+		Greyscale.Run();	 
+		//Greyscale.VelocityField();
+		//Greyscale.WriteDebug();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);

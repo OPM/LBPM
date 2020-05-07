@@ -61,6 +61,7 @@ extern "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int 
 
 extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
+
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
@@ -69,6 +70,23 @@ extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
+// GREYSCALE MODEL
+
+extern "C" void ScaLBL_D3Q19_GreyIMRT_Init(double *Dist, int Np, double Den);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,
+                                              double *Poros,double *Perm, double *Velocity,double *Pressure);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
+                                             double *Poros,double *Perm, double *Velocity,double *Pressure);
+
+extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,
+                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
+
+extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
+                                             double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
+
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
@@ -116,11 +134,6 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double
 
 // BOUNDARY CONDITION ROUTINES
 
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_z(double *disteven, double *distodd, double din,
-//		int Nx, int Ny, int Nz);
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(double *disteven, double *distodd, double dout,
-//		int Nx, int Ny, int Nz, int outlet);
-
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *neighborList, int *list, double *dist, double din, int count, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *dist, double dout, int count, int Np);
@@ -139,7 +152,17 @@ extern "C" void ScaLBL_Color_BC_z(int *list, int *Map, double *Phi, double *Den,
 
 extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den, double vA, double vB, int count, int Np);
 
+extern "C" void ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np);
+
+extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_Reflection_BC_z(int *list, double *dist, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_Reflection_BC_Z(int *list, double *dist, int count, int Np);
+
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
+
+extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Destination);
 
 class ScaLBL_Communicator{
 public:
@@ -149,6 +172,7 @@ public:
 	//ScaLBL_Communicator(Domain &Dm, IntArray &Map);
 	~ScaLBL_Communicator();
 	//......................................................................................
+	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int BoundaryCondition;
@@ -174,18 +198,8 @@ public:
 	int LastInterior();
 	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
-//	void MemoryOptimizedLayout(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryOptimizedLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryDenseLayout(IntArray &Map, int *neighborList, char *id, int Np);
-//	void MemoryDenseLayoutFull(IntArray &Map, int *neighborList, char *id, int Np);
-//	void SendD3Q19(double *f_even, double *f_odd);
-//	void RecvD3Q19(double *f_even, double *f_odd);
-//	void SendD3Q19AA(double *f_even, double *f_odd);
-//	void RecvD3Q19AA(double *f_even, double *f_odd);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
-//	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
-//	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
@@ -200,10 +214,9 @@ public:
 	void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);
 	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
+	void D3Q19_Reflection_BC_z(double *fq);
+	void D3Q19_Reflection_BC_Z(double *fq);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
-
-//	void TestSendD3Q19(double *f_even, double *f_odd);
-//	void TestRecvD3Q19(double *f_even, double *f_odd);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();
@@ -222,7 +235,6 @@ private:
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
 	MPI_Group Group;	// Group of processors associated with this domain
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
 	MPI_Status stat1[18],stat2[18];
 	//......................................................................................

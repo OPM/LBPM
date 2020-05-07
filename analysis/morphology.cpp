@@ -34,9 +34,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
 	int nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
 	int nprocx = Dm->nprocx();
 	int nprocy = Dm->nprocy();
 	int nprocz = Dm->nprocz();
@@ -122,7 +119,6 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 
-	int x,y,z;
 	int ii,jj,kk;
 	int Nx = nx;
 	int Ny = ny;
@@ -135,7 +131,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
+	double Rcrit_old=0.0;
 
 	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
@@ -336,9 +332,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	int nx = Dm->Nx;
 	int ny = Dm->Ny;
 	int nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
 	int nprocx = Dm->nprocx();
 	int nprocy = Dm->nprocy();
 	int nprocz = Dm->nprocz();
@@ -427,7 +420,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
 
-	int x,y,z;
 	int ii,jj,kk;
 	int Nx = nx;
 	int Ny = ny;
@@ -693,19 +685,13 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	return final_void_fraction;
 }
 
-double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth){
-	
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth, double WallFactor)
+{
 	int Nx = Dm->Nx;
 	int Ny = Dm->Ny;
 	int Nz = Dm->Nz;
-	int iproc = Dm->iproc();
-	int jproc = Dm->jproc();
-	int kproc = Dm->kproc();
-	int nprocx = Dm->nprocx();
-	int nprocy = Dm->nprocy();
-	int nprocz = Dm->nprocz();
 	int rank = Dm->rank();
-	
+		
 	double count=0.0;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -736,8 +722,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					double walldist=BoundaryDist(i,j,k);
-					double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
-					//wallweight = 1.0;
+					double wallweight = WallFactor/ (1+exp(-5.f*(walldist-1.f))); 
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
 					
 					if (Dist(i,j,k) - wallweight*morph_delta < 0.0){
@@ -783,7 +768,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double walldist=BoundaryDist(i,j,k);
-				double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
+				double wallweight = WallFactor / (1+exp(-5.f*(walldist-1.f))); 
 				//wallweight = 1.0;
 				Dist(i,j,k) -= wallweight*morph_delta;
 				if (Dist(i,j,k) < 0.0)	count+=1.0;

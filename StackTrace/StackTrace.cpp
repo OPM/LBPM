@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cerrno>
 #include <csignal>
 #include <cstring>
 #include <iostream>
@@ -348,8 +349,11 @@ static inline int exec3( const char *cmd, FUNCTION &fun )
         if ( buffer[0] != 0 )
             fun( buffer );
     }
-    auto status = pclose( pipe );
-    int code    = WEXITSTATUS( status );
+    int code = pclose( pipe );
+    if ( errno == ECHILD ) {
+        errno = 0;
+        code  = 0;
+    }
     std::this_thread::yield(); // Allow any signals to process
     resetSignal( SIGCHLD );    // Clear child exited
     return code;
@@ -1741,7 +1745,7 @@ std::vector<int> StackTrace::defaultSignalsToCatch()
  *  Set the signal handlers                                                  *
  ****************************************************************************/
 static std::function<void( const StackTrace::abort_error &err )> abort_fun;
-static StackTrace::abort_error rethrow()
+StackTrace::abort_error rethrow()
 {
     StackTrace::abort_error error;
 #ifdef USE_LINUX
@@ -1775,14 +1779,14 @@ static StackTrace::abort_error rethrow()
     }
     return error;
 }
-static void term_func_abort( int sig )
+void StackTrace::terminateFunctionSignal( int sig )
 {
     StackTrace::abort_error err;
     err.type      = StackTrace::terminateType::signal;
     err.signal    = sig;
     err.bytes     = StackTrace::Utilities::getMemoryUsage();
     err.stack     = StackTrace::backtrace();
-    err.stackType = StackTrace::printStackType::global;
+    err.stackType = StackTrace::getDefaultStackType();
     abort_fun( err );
 }
 static bool signals_set[256] = { false };
@@ -1829,7 +1833,7 @@ void StackTrace::setErrorHandler( std::function<void( const StackTrace::abort_er
 {
     abort_fun = abort;
     std::set_terminate( term_func );
-    setSignals( defaultSignalsToCatch(), &term_func_abort );
+    setSignals( defaultSignalsToCatch(), &terminateFunctionSignal );
     std::set_unexpected( term_func );
 }
 void StackTrace::clearErrorHandler()
@@ -2215,7 +2219,7 @@ void StackTrace::cleanupStackTrace( multi_stack_info &stack )
             // Remove callstack (and all children) for threads that are just contributing
             bool test = function.find( "_callstack_signal_handler" ) != npos ||
                         function.find( "getGlobalCallStacks" ) != npos ||
-                        function.find( "(" ) == npos;
+                        function.find( "backtrace" ) != npos || function.find( "(" ) == npos;
             if ( test ) {
                 it = stack.children.erase( it );
                 continue;
@@ -2515,3 +2519,11 @@ const char *StackTrace::abort_error::what() const noexcept
             d_msg.erase( i, 1 );
     return d_msg.c_str();
 }
+
+
+/****************************************************************************
+ * Get/Set default stack type                                                *
+ ****************************************************************************/
+static StackTrace::printStackType abort_stackType = StackTrace::printStackType::global;
+void StackTrace::setDefaultStackType( StackTrace::printStackType type ) { abort_stackType = type; }
+StackTrace::printStackType StackTrace::getDefaultStackType() { return abort_stackType; }
