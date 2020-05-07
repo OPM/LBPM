@@ -840,12 +840,12 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -876,12 +876,12 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_D3Q19_GreyscaleSC_Gradient(NeighborList, dvcMap, DenB, DenGradB, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
         // Collsion
-        ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
+        ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
