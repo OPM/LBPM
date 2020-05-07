@@ -120,6 +120,8 @@ void ScaLBL_GreyscaleSCModel::SetDomain(){
 	Velocity_z.resize(Nx,Ny,Nz);
 	PorosityMap.resize(Nx,Ny,Nz);
 	Pressure.resize(Nx,Ny,Nz);
+	DenA_data.resize(Nx,Ny,Nz);
+	DenB_data.resize(Nx,Ny,Nz);
 
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
@@ -744,23 +746,23 @@ void ScaLBL_GreyscaleSCModel::Initialize(){
         if (rank==0)	printf ("Initializing distributions \n");
         ScaLBL_D3Q19_GreyscaleSC_Init(dvcMap,fqA, fqB, DenA,DenB, Np);
         
-        //debug
-	    DoubleArray PhaseField(Nx,Ny,Nz);
-        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
-	    ScaLBL_CopyToHost(PhaseField.data(), DenA, sizeof(double)*N);
-	    FILE *AFILE;
-	    sprintf(LocalRankFilename,"A_init.%05i.raw",rank);
-	    AFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,AFILE);
-	    fclose(AFILE);
-
-	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
-	    ScaLBL_CopyToHost(PhaseField.data(), DenB, sizeof(double)*N);
-	    FILE *BFILE;
-	    sprintf(LocalRankFilename,"B_init.%05i.raw",rank);
-	    BFILE = fopen(LocalRankFilename,"wb");
-	    fwrite(PhaseField.data(),8,N,BFILE);
-	    fclose(BFILE);
+//        //debug
+//	    DoubleArray PhaseField(Nx,Ny,Nz);
+//        //ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
+//	    ScaLBL_CopyToHost(PhaseField.data(), DenA, sizeof(double)*N);
+//	    FILE *AFILE;
+//	    sprintf(LocalRankFilename,"A_init.%05i.raw",rank);
+//	    AFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,AFILE);
+//	    fclose(AFILE);
+//
+//	    //ScaLBL_Comm->RegularLayout(Map,&Den[Np],PhaseField);
+//	    ScaLBL_CopyToHost(PhaseField.data(), DenB, sizeof(double)*N);
+//	    FILE *BFILE;
+//	    sprintf(LocalRankFilename,"B_init.%05i.raw",rank);
+//	    BFILE = fopen(LocalRankFilename,"wb");
+//	    fwrite(PhaseField.data(),8,N,BFILE);
+//	    fclose(BFILE);
 
         //Velocity also needs initialization (for old incompressible momentum transport)
         //if (rank==0)	printf ("Initializing velocity field \n");
@@ -1017,7 +1019,7 @@ void ScaLBL_GreyscaleSCModel::Run(){
 //		}
 
 		if (timestep%visualization_interval==0){
-            VelocityField();
+            WriteOutput();
         }
 
 //		if (timestep%restart_interval==0){
@@ -1066,7 +1068,7 @@ void ScaLBL_GreyscaleSCModel::Run(){
 	// ************************************************************************
 }
 
-void ScaLBL_GreyscaleSCModel::VelocityField(){
+void ScaLBL_GreyscaleSCModel::WriteOutput(){
 
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
@@ -1121,6 +1123,8 @@ void ScaLBL_GreyscaleSCModel::VelocityField(){
 	auto VzVar = std::make_shared<IO::Variable>();
 	auto SignDistVar = std::make_shared<IO::Variable>();
 	auto PressureVar = std::make_shared<IO::Variable>();
+	auto DenAVar = std::make_shared<IO::Variable>();
+	auto DenBVar = std::make_shared<IO::Variable>();
 
 	IO::initialize("","silo","false");
 	// Create the MeshDataStruct	
@@ -1155,28 +1159,47 @@ void ScaLBL_GreyscaleSCModel::VelocityField(){
 	PressureVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
 	visData[0].vars.push_back(PressureVar);
 
+	DenAVar->name = "DenA";
+	DenAVar->type = IO::VariableType::VolumeVariable;
+	DenAVar->dim = 1;
+	DenAVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(DenAVar);
+	DenBVar->name = "DenB";
+	DenBVar->type = IO::VariableType::VolumeVariable;
+	DenBVar->dim = 1;
+	DenBVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+	visData[0].vars.push_back(DenBVar);
+
 	Array<double>& SignData  = visData[0].vars[0]->data;
 	Array<double>& VelxData = visData[0].vars[1]->data;
 	Array<double>& VelyData = visData[0].vars[2]->data;
 	Array<double>& VelzData = visData[0].vars[3]->data;
 	Array<double>& PressureData = visData[0].vars[4]->data;
+	Array<double>& DenAData = visData[0].vars[5]->data;
+	Array<double>& DenBData = visData[0].vars[6]->data;
 	
     ASSERT(visData[0].vars[0]->name=="SignDist");
     ASSERT(visData[0].vars[1]->name=="Velocity_x");
     ASSERT(visData[0].vars[2]->name=="Velocity_y");
     ASSERT(visData[0].vars[3]->name=="Velocity_z");
     ASSERT(visData[0].vars[4]->name=="Pressure");
+    ASSERT(visData[0].vars[5]->name=="DenA");
+    ASSERT(visData[0].vars[6]->name=="DenB");
 	
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
 	ScaLBL_Comm->RegularLayout(Map,Pressure_dvc,Pressure);
+    ScaLBL_CopyToHost(DenA_data.data(), DenA, sizeof(double)*N);
+    ScaLBL_CopyToHost(DenB_data.data(), DenB, sizeof(double)*N);
 
     fillData.copy(SignDist,SignData);
     fillData.copy(Velocity_x,VelxData);
     fillData.copy(Velocity_y,VelyData);
     fillData.copy(Velocity_z,VelzData);
     fillData.copy(Pressure,PressureData);
+    fillData.copy(DenA_data,DenAData);
+    fillData.copy(DenB_data,DenBData);
 	
     IO::writeData( timestep, visData, Dm->Comm );
 

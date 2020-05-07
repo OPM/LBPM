@@ -30,7 +30,7 @@ public:
 	void Initialize();
 	void Run();
 	void WriteDebug();
-	void VelocityField();
+	void WriteOutput();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -82,6 +82,8 @@ public:
     DoubleArray Velocity_z;
     DoubleArray PorosityMap;
     DoubleArray Pressure;
+    DoubleArray DenA_data;
+    DoubleArray DenB_data;
 		
 private:
 	MPI_Comm comm;
