@@ -2,6 +2,7 @@
 
 #include "common/MPI.h"
 #include "common/Utilities.h"
+#include "common/Utilities.hpp"
 
 #include "ProfilerApp.h"
 #include "StackTrace/ErrorHandlers.h"
@@ -3803,6 +3804,26 @@ void MPI_CLASS::stop_MPI()
         called_MPI_Init = true;
     }
 #endif
+}
+
+
+/****************************************************************************
+ * Function to perform load balancing                                        *
+ ****************************************************************************/
+MPI MPI::loadBalance( double local, std::vector<double> work )
+{
+    MPI_ASSERT( (int) work.size() == getSize() );
+    auto perf = allGather( local );
+    std::vector<int> I( work.size() );
+    for ( size_t i=0; i<work.size(); i++)
+        I[i] = i;
+    auto J = I;
+    quicksort( perf, I );
+    quicksort( work, J );
+    std::vector<int> key( work.size() );
+    for ( size_t i=0; i<work.size(); i++)
+        key[J[i]] = I[i];
+    return split( 0, key[getRank()] );
 }
 
 

@@ -1067,6 +1067,13 @@ public: // Member functions
     static void stop_MPI();
 
 
+    /*!
+     * \brief   Load balance
+     * \details This function will return a new communicator in which the ranks match
+     *    the performance and the work load.
+     */
+    MPI loadBalance( double localPerformance, std::vector<double> work );
+
 private: // Private helper functions for templated MPI operations;
     template<class type>
     void call_sumReduce( type *x, const int n = 1 ) const;
