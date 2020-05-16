@@ -788,9 +788,9 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
-			
+
 			if ( morph_timesteps > morph_interval ){
-				
+
 				bool isSteady = false;
 				if ( (fabs((Ca - Ca_previous)/Ca) < tolerance &&  CURRENT_STEADY_TIMESTEPS > MIN_STEADY_TIMESTEPS))
 					isSteady = true;
@@ -815,141 +815,139 @@ void ScaLBL_ColorModel::Run(){
 					color_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
-							if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
-								// reject steady points if they don't match the Ca well enough
-								double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-								if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
-								if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
-								Fx *= RESCALE_FORCE_FACTOR;
-								Fy *= RESCALE_FORCE_FACTOR;
-								Fz *= RESCALE_FORCE_FACTOR;
-								force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-								if (force_mag > 1e-3){
-									Fx *= 1e-3/force_mag;   // impose ceiling for stability
-									Fy *= 1e-3/force_mag;   
-									Fz *= 1e-3/force_mag;   
-								}
-								if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-								Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-								color_db->putVector<double>("F",{Fx,Fy,Fz});
-								// simulate the point again with new force
-								CURRENT_STEADY_TIMESTEPS=0;
+					if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
+						// reject steady points if they don't match the Ca well enough
+						double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+						if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
+						if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
+						Fx *= RESCALE_FORCE_FACTOR;
+						Fy *= RESCALE_FORCE_FACTOR;
+						Fz *= RESCALE_FORCE_FACTOR;
+						force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+						if (force_mag > 1e-3){
+							Fx *= 1e-3/force_mag;   // impose ceiling for stability
+							Fy *= 1e-3/force_mag;   
+							Fz *= 1e-3/force_mag;   
+						}
+						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+						color_db->putVector<double>("F",{Fx,Fy,Fz});
+						// simulate the point again with new force
+						CURRENT_STEADY_TIMESTEPS=0;
+					}
+					else {
+						MORPH_ADAPT = true;
+						CURRENT_MORPH_TIMESTEPS=0;
+						delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+						//****** ENDPOINT ADAPTATION ********/
+						double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+						double krB_TMP= fabs(muB*flow_rate_B / force_mag);
+						log_krA = log(krA_TMP);
+						if (krA_TMP < 0.0){
+							// cannot do endpoint adaptation if kr is negative
+							log_krA = log_krA_prev;
+						}
+						else if (krA_TMP < krB_TMP && morph_delta > 0.0){
+							/** morphological target based on relative permeability for A **/
+							log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+							slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+							delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
+							if (rank==0){
+								printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
+								printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
 							}
-							else {
-								MORPH_ADAPT = true;
-								CURRENT_MORPH_TIMESTEPS=0;
-								delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
-								//****** ENDPOINT ADAPTATION ********/
-								double krA_TMP= fabs(muA*flow_rate_A / force_mag);
-								double krB_TMP= fabs(muB*flow_rate_B / force_mag);
-								log_krA = log(krA_TMP);
-								if (krA_TMP < 0.0){
-									// cannot do endpoint adaptation if kr is negative
-									log_krA = log_krA_prev;
-								}
-								else if (krA_TMP < krB_TMP && morph_delta > 0.0){
-									/** morphological target based on relative permeability for A **/
-									log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
-									slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
-									delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
-									if (rank==0){
-										printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
-										printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
-									}
-								}
-								log_krA_prev = log_krA;
-								volA_prev = volA;
-								//******************************** **/
-								/**  compute averages & write data **/
-								Averages->Full();
-								Averages->Write(timestep);
-								analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
-								analysis.finish();
+						}
+						log_krA_prev = log_krA;
+						volA_prev = volA;
+						//******************************** **/
+						/**  compute averages & write data **/
+						Averages->Full();
+						Averages->Write(timestep);
+						analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+						analysis.finish();
 
-								if (rank==0){
-									printf("** WRITE STEADY POINT *** ");
-									printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-									double h = Dm->voxel_length;		
-									// pressures
-									double pA = Averages->gnb.p;
-									double pB = Averages->gwb.p;
-									double pAc = Averages->gnc.p;
-									double pBc = Averages->gwc.p;
-									double pAB = (pA-pB)/(h*5.796*alpha);
-									double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
-									// connected contribution
-									double Vol_nc = Averages->gnc.V/Dm->Volume;
-									double Vol_wc = Averages->gwc.V/Dm->Volume;
-									double Vol_nd = Averages->gnd.V/Dm->Volume;
-									double Vol_wd = Averages->gwd.V/Dm->Volume;
-									double Mass_n = Averages->gnc.M + Averages->gnd.M;
-									double Mass_w = Averages->gwc.M + Averages->gwd.M;
-									double vAc_x = Averages->gnc.Px/Mass_n; 
-									double vAc_y = Averages->gnc.Py/Mass_n; 
-									double vAc_z = Averages->gnc.Pz/Mass_n; 
-									double vBc_x = Averages->gwc.Px/Mass_w; 
-									double vBc_y = Averages->gwc.Py/Mass_w; 
-									double vBc_z = Averages->gwc.Pz/Mass_w;
-									// disconnected contribution
-									double vAd_x = Averages->gnd.Px/Mass_n; 
-									double vAd_y = Averages->gnd.Py/Mass_n; 
-									double vAd_z = Averages->gnd.Pz/Mass_n; 
-									double vBd_x = Averages->gwd.Px/Mass_w; 
-									double vBd_y = Averages->gwd.Py/Mass_w; 
-									double vBd_z = Averages->gwd.Pz/Mass_w;
+						if (rank==0){
+							printf("** WRITE STEADY POINT *** ");
+							printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+							double h = Dm->voxel_length;		
+							// pressures
+							double pA = Averages->gnb.p;
+							double pB = Averages->gwb.p;
+							double pAc = Averages->gnc.p;
+							double pBc = Averages->gwc.p;
+							double pAB = (pA-pB)/(h*5.796*alpha);
+							double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
+							// connected contribution
+							double Vol_nc = Averages->gnc.V/Dm->Volume;
+							double Vol_wc = Averages->gwc.V/Dm->Volume;
+							double Vol_nd = Averages->gnd.V/Dm->Volume;
+							double Vol_wd = Averages->gwd.V/Dm->Volume;
+							double Mass_n = Averages->gnc.M + Averages->gnd.M;
+							double Mass_w = Averages->gwc.M + Averages->gwd.M;
+							double vAc_x = Averages->gnc.Px/Mass_n; 
+							double vAc_y = Averages->gnc.Py/Mass_n; 
+							double vAc_z = Averages->gnc.Pz/Mass_n; 
+							double vBc_x = Averages->gwc.Px/Mass_w; 
+							double vBc_y = Averages->gwc.Py/Mass_w; 
+							double vBc_z = Averages->gwc.Pz/Mass_w;
+							// disconnected contribution
+							double vAd_x = Averages->gnd.Px/Mass_n; 
+							double vAd_y = Averages->gnd.Py/Mass_n; 
+							double vAd_z = Averages->gnd.Pz/Mass_n; 
+							double vBd_x = Averages->gwd.Px/Mass_w; 
+							double vBd_y = Averages->gwd.Py/Mass_w; 
+							double vBd_z = Averages->gwd.Pz/Mass_w;
 
-									double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
-									double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
-									double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
-									double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+							double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+							double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+							double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+							double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
 
-									double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
-									double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
+							double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+							double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
 
-									double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
-									double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
+							double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
+							double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
 
-									double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
-									double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
+							double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
+							double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
 
-									double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
-									double Mobility = muA/muB;
+							double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
+							double Mobility = muA/muB;
 
-									bool WriteHeader=false;
-									FILE * kr_log_file = fopen("relperm.csv","r");
-									if (kr_log_file != NULL)
-										fclose(kr_log_file);
-									else
-										WriteHeader=true;
-									kr_log_file = fopen("relperm.csv","a");
-									if (WriteHeader)
-										fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+							bool WriteHeader=false;
+							FILE * kr_log_file = fopen("relperm.csv","r");
+							if (kr_log_file != NULL)
+								fclose(kr_log_file);
+							else
+								WriteHeader=true;
+							kr_log_file = fopen("relperm.csv","a");
+							if (WriteHeader)
+								fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n");
 
-									fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
-									fclose(kr_log_file);
+							fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+							fclose(kr_log_file);
 
-									printf("  Measured capillary number %f \n ",Ca);
-								}
-								if (SET_CAPILLARY_NUMBER ){
-									double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-									if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
-									if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
-									Fx *= RESCALE_FORCE_FACTOR;
-									Fy *= RESCALE_FORCE_FACTOR;
-									Fz *= RESCALE_FORCE_FACTOR;
-									force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-									if (force_mag > 1e-3){
-										Fx *= 1e-3/force_mag;   // impose ceiling for stability
-										Fy *= 1e-3/force_mag;   
-										Fz *= 1e-3/force_mag;   
-									}
-									if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-									Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-									color_db->putVector<double>("F",{Fx,Fy,Fz});
-								}
-
-								CURRENT_STEADY_TIMESTEPS = 0;
+							printf("  Measured capillary number %f \n ",Ca);
+						}
+						if (SET_CAPILLARY_NUMBER ){
+							double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+							if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
+							if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
+							Fx *= RESCALE_FORCE_FACTOR;
+							Fy *= RESCALE_FORCE_FACTOR;
+							Fz *= RESCALE_FORCE_FACTOR;
+							force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+							if (force_mag > 1e-3){
+								Fx *= 1e-3/force_mag;   // impose ceiling for stability
+								Fy *= 1e-3/force_mag;   
+								Fz *= 1e-3/force_mag;   
 							}
+							if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+							Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+							color_db->putVector<double>("F",{Fx,Fy,Fz});
+						}
+					}
 					else{
 						if (rank==0){
 							printf("** Continue to simulate steady *** \n ");
