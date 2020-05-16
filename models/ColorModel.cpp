@@ -489,7 +489,7 @@ void ScaLBL_ColorModel::Initialize(){
 void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-	
+
 	int IMAGE_INDEX = 0;
 	int IMAGE_COUNT = 0;
 	std::vector<std::string> ImageList;
@@ -518,7 +518,7 @@ void ScaLBL_ColorModel::Run(){
 	double initial_volume = 0.0;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
-	
+
 	/* history for morphological algoirthm */
 	double KRA_MORPH_FACTOR=0.5;
 	double volA_prev = 0.0; 
@@ -535,7 +535,7 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "krA_morph_factor" )){
 		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
 	}
-	
+
 	/* defaults for simulation protocols */
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -657,7 +657,7 @@ void ScaLBL_ColorModel::Run(){
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
-    //std::shared_ptr<Database> analysis_db;
+	//std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
 	auto current_db = db->cloneDatabase();
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
@@ -947,73 +947,74 @@ void ScaLBL_ColorModel::Run(){
 							Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 							color_db->putVector<double>("F",{Fx,Fy,Fz});
 						}
+
+						else{
+							if (rank==0){
+								printf("** Continue to simulate steady *** \n ");
+								printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+							}
+						}
+						morph_timesteps=0;
+						Ca_previous = Ca;
 					}
-					else{
-						if (rank==0){
-							printf("** Continue to simulate steady *** \n ");
-							printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+				}
+
+				if (MORPH_ADAPT ){
+					CURRENT_MORPH_TIMESTEPS += analysis_interval;
+					if (USE_DIRECT){
+						// Use image sequence
+						IMAGE_INDEX++;
+						MORPH_ADAPT = false;
+						if (IMAGE_INDEX < IMAGE_COUNT){
+							std::string next_image = ImageList[IMAGE_INDEX];
+							if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+							color_db->putScalar<int>("image_index",IMAGE_INDEX);
+							ImageInit(next_image);
+						}
+						else{
+							if (rank==0) printf("Finished simulating image sequence \n");
+							timestep = timestepMax;
 						}
 					}
-					morph_timesteps=0;
-					Ca_previous = Ca;
-				}
-			}
-
-			if (MORPH_ADAPT ){
-				CURRENT_MORPH_TIMESTEPS += analysis_interval;
-				if (USE_DIRECT){
-					// Use image sequence
-					IMAGE_INDEX++;
-					MORPH_ADAPT = false;
-					if (IMAGE_INDEX < IMAGE_COUNT){
-						std::string next_image = ImageList[IMAGE_INDEX];
-						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
-						color_db->putScalar<int>("image_index",IMAGE_INDEX);
-						ImageInit(next_image);
+					else if (USE_SEED){
+						delta_volume = volA*Dm->Volume - initial_volume;
+						CURRENT_MORPH_TIMESTEPS += analysis_interval;
+						double massChange = SeedPhaseField(seed_water);
+						if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
 					}
-					else{
-						if (rank==0) printf("Finished simulating image sequence \n");
-						timestep = timestepMax;
+					else if (USE_MORPHOPEN_OIL){
+						delta_volume = volA*Dm->Volume - initial_volume;
+						if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
+						MorphOpenConnected(delta_volume_target);
+					}
+					else {
+						if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
+						//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+						delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+					}
+
+					if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
+						MORPH_ADAPT = false;
+						CURRENT_STEADY_TIMESTEPS=0;
+						initial_volume = volA*Dm->Volume;
+						delta_volume = 0.0;
+						if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+							RESCALE_FORCE = true;
+					}
+					else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
+						MORPH_ADAPT = false;
+						CURRENT_STEADY_TIMESTEPS=0;
+						initial_volume = volA*Dm->Volume;
+						delta_volume = 0.0;
+						RESCALE_FORCE = true;
+						if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+							RESCALE_FORCE = true;
 					}
 				}
-				else if (USE_SEED){
-					delta_volume = volA*Dm->Volume - initial_volume;
-					CURRENT_MORPH_TIMESTEPS += analysis_interval;
-					double massChange = SeedPhaseField(seed_water);
-					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
-				}
-				else if (USE_MORPHOPEN_OIL){
-					delta_volume = volA*Dm->Volume - initial_volume;
-					if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
-					MorphOpenConnected(delta_volume_target);
-				}
-				else {
-					if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
-					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
-				}
-
-				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
-					MORPH_ADAPT = false;
-					CURRENT_STEADY_TIMESTEPS=0;
-					initial_volume = volA*Dm->Volume;
-					delta_volume = 0.0;
-					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
-						RESCALE_FORCE = true;
-				}
-				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
-					MORPH_ADAPT = false;
-					CURRENT_STEADY_TIMESTEPS=0;
-					initial_volume = volA*Dm->Volume;
-					delta_volume = 0.0;
-					RESCALE_FORCE = true;
-					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
-						RESCALE_FORCE = true;
-				}
+				morph_timesteps += analysis_interval;
 			}
-			morph_timesteps += analysis_interval;
+			MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		}
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
@@ -1039,7 +1040,7 @@ void ScaLBL_ColorModel::Run(){
 }
 
 double ScaLBL_ColorModel::ImageInit(std::string Filename){
-	
+
 	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
@@ -1067,16 +1068,16 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
-	
+
 	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-	
+
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-	
+
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
 	double saturation = Count/PoreCount;
@@ -1085,14 +1086,14 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 }
 
 double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
-	
+
 	int nx = Nx;
 	int ny = Ny;
 	int nz = Nz;
 	int n;
 	int N = nx*ny*nz;
 	double volume_change=0.0;
-	
+
 	if (target_volume_change < 0.0){
 		Array<char> id_solid(nx,ny,nz);
 		Array<int> phase_label(nx,ny,nz);
@@ -1158,7 +1159,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		signed char notwater=1;
 		double SW=-(target_volume_change)/count_connected;
 		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
-		
+
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -1174,7 +1175,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 			}
 		}
 		CalcDist(distance,id_solid,*Dm);
-		
+
 		// re-initialize
 		double beta = 0.95;
 		for (int k=0; k<nz; k++){
