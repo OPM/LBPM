@@ -815,7 +815,6 @@ void ScaLBL_ColorModel::Run(){
 					color_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
-					fabs(capillary_number - Ca) / capillary_number
 							if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
 								// reject steady points if they don't match the Ca well enough
 								double RESCALE_FORCE_FACTOR = capillary_number / Ca;
