@@ -815,7 +815,7 @@ void ScaLBL_ColorModel::Run(){
 					color_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
-					if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
+				  /*if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
 						// reject steady points if they don't match the Ca well enough
 						double RESCALE_FORCE_FACTOR = capillary_number / Ca;
 						if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
@@ -836,6 +836,7 @@ void ScaLBL_ColorModel::Run(){
 						CURRENT_STEADY_TIMESTEPS=0;
 					}
 					else {
+				  */
 						MORPH_ADAPT = true;
 						CURRENT_MORPH_TIMESTEPS=0;
 						delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
@@ -956,7 +957,9 @@ void ScaLBL_ColorModel::Run(){
 						}
 						morph_timesteps=0;
 						Ca_previous = Ca;
-					}
+						/*}
+						  THIS IS WHERE YOU DISABLE STEADY POINT REJECTION
+						 */
 				}
 
 				if (MORPH_ADAPT ){
