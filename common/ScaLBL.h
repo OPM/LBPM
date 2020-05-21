@@ -145,6 +145,19 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(int *Map, double *distA, dou
                 int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Map, double *Den, double *DenGrad, int strideY, int strideZ,int start, int finish, int Np);
+
+extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np);
+
+extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np);
+
+extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z(int *list, double *distA, double *distB, double dinA, double dinB, int count, int N);
+
+extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z(int *list, double *distA, double *distB, double doutA, double doutB, int count, int N);
+
+extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z(int *neighborList, int *list, double *distA, double *distB, double dinA, double dinB, int count, int N);
+
+extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *distA, double *distB, double doutA, double doutB, int count, int N);
+
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
 		double Fy, double Fz);
@@ -211,6 +224,11 @@ extern "C" void ScaLBL_Color_BC_Z(int *list, int *Map, double *Phi, double *Den,
 
 extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int Nz, int Slice);
 
+extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np);
+
+extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np);
+
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
@@ -275,7 +293,10 @@ public:
 	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
 	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
-
+	void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
+	void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
+    void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
+    void GreyscaleSC_Pressure_BC_Z(int *neighborList, double *fqA, double *fqB, double doutA, double doutB, int time);
 //	void TestSendD3Q19(double *f_even, double *f_odd);
 //	void TestRecvD3Q19(double *f_even, double *f_odd);
 

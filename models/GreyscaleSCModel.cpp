@@ -15,7 +15,7 @@ void DeleteArray( const TYPE *p )
 
 ScaLBL_GreyscaleSCModel::ScaLBL_GreyscaleSCModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),Gsc(0),
-rhoA(0),rhoB(0),rhoA_minor(0),rhoB_minor(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
+rhoA(0),rhoB(0),rhoA_minor(0),rhoB_minor(0),Fx(0),Fy(0),Fz(0),flux(0),dinA(0),doutA(0),dinB(0),doutB(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	SignDist.resize(Nx,Ny,Nz);           
@@ -46,9 +46,11 @@ void ScaLBL_GreyscaleSCModel::ReadParams(string filename){
 	tolerance = 0.01;
 	Fx = Fy = Fz = 0.0;
 	Restart=false;
-	din=dout=1.0;
+	dinA=rhoA;//inlet density for fluid A
+    dinB=rhoB_minor;//inlet density for fluid B
+    doutA=rhoA_minor;//outlet denisty for fluid A
+    doutB=rhoB;//outlet density for fluid B
 	flux=0.0;
-    dp = 10.0; //unit of 'dp': voxel
 	
 	// ---------------------- Greyscale Model parameters -----------------------//
 	if (greyscaleSC_db->keyExists( "timestepMax" )){
@@ -66,11 +68,12 @@ void ScaLBL_GreyscaleSCModel::ReadParams(string filename){
 	rhoB = greyscaleSC_db->getWithDefault<double>( "rhoB", rhoB );
 	rhoA_minor = greyscaleSC_db->getWithDefault<double>( "rhoA_minor", rhoA_minor );
 	rhoB_minor = greyscaleSC_db->getWithDefault<double>( "rhoB_minor", rhoB_minor );
+	dinA = greyscaleSC_db->getWithDefault<double>( "dinA", dinA );
+	dinB = greyscaleSC_db->getWithDefault<double>( "dinB", dinB );
+	doutA = greyscaleSC_db->getWithDefault<double>( "doutA", doutA );
+	doutB = greyscaleSC_db->getWithDefault<double>( "doutB", doutB );
 	if (greyscaleSC_db->keyExists( "Gsc" )){
 		Gsc = greyscaleSC_db->getScalar<double>( "Gsc" );
-	}
-	if (greyscaleSC_db->keyExists( "dp" )){
-		dp = greyscaleSC_db->getScalar<double>( "dp" );
 	}
 	if (greyscaleSC_db->keyExists( "F" )){
 		Fx = greyscaleSC_db->getVector<double>( "F" )[0];
@@ -79,12 +82,6 @@ void ScaLBL_GreyscaleSCModel::ReadParams(string filename){
 	}
 	if (greyscaleSC_db->keyExists( "Restart" )){
 		Restart = greyscaleSC_db->getScalar<bool>( "Restart" );
-	}
-	if (greyscaleSC_db->keyExists( "din" )){
-		din = greyscaleSC_db->getScalar<double>( "din" );
-	}
-	if (greyscaleSC_db->keyExists( "dout" )){
-		dout = greyscaleSC_db->getScalar<double>( "dout" );
 	}
 	if (greyscaleSC_db->keyExists( "flux" )){
 		flux = greyscaleSC_db->getScalar<double>( "flux" );
@@ -182,6 +179,20 @@ void ScaLBL_GreyscaleSCModel::ReadInput(){
 	CalcDist(SignDist,id_solid,*Mask);
 	
 	if (rank == 0) cout << "Domain set." << endl;
+
+    // Display boundary condition
+    switch (BoundaryCondition){
+        case 0:
+            if (rank==0) printf("BoundaryCondition=%i: Periodic boundary condition\n",BoundaryCondition);
+            break;
+        case 3:
+            if (rank==0) printf("BoundaryCondition=%i: Constant pressure boundary condition\n",BoundaryCondition);
+            break;
+        default:
+            if (rank==0) printf("BoundaryCondition=%i: is currently not supported! Periodic boundary condition is used.\n",BoundaryCondition);
+            BoundaryCondition=0;
+            break;
+    }
 }
 
 void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
@@ -610,14 +621,33 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
 			}
 		}
 	}
+
     //copy to device
 	ScaLBL_CopyToDevice(DenA, DenA_temp, Nx*Ny*Nz*sizeof(double));
 	ScaLBL_CopyToDevice(DenB, DenB_temp, Nx*Ny*Nz*sizeof(double));
-	//ScaLBL_CopyToDevice(Phi, Phi_temp, 1*Np*sizeof(double));
 	ScaLBL_DeviceBarrier();
 	delete [] DenA_temp;
 	delete [] DenB_temp;
-	//delete [] Phi_temp;
+
+	if (BoundaryCondition >0 ){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(DenA,dinA,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(DenA,dinA,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(DenA,dinA,Nx,Ny,Nz,2);
+			ScaLBL_SetSlice_z(DenB,dinB,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(DenB,dinB,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(DenB,dinB,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(DenA,doutA,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(DenA,doutA,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(DenA,doutA,Nx,Ny,Nz,Nz-3);
+			ScaLBL_SetSlice_z(DenB,doutB,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(DenB,doutB,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(DenB,doutB,Nx,Ny,Nz,Nz-3);
+		}
+	}
+
 }
 
 void ScaLBL_GreyscaleSCModel::Create(){
@@ -827,6 +857,11 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(NeighborList, dvcMap, fqA, fqB, DenA, DenB, 0, ScaLBL_Comm->LastExterior(), Np);
 
+		if (BoundaryCondition > 0){
+			ScaLBL_Comm->GreyscaleSC_BC_z(dvcMap, DenA, DenB,  dinA,  dinB);
+			ScaLBL_Comm->GreyscaleSC_BC_Z(dvcMap, DenA, DenB, doutA, doutB);
+		}
+
         // Compute density gradient
         // fluid component A
 		ScaLBL_Comm_Regular->SendHalo(DenA);
@@ -845,7 +880,11 @@ void ScaLBL_GreyscaleSCModel::Run(){
         ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->GreyscaleSC_Pressure_BC_z(NeighborList, fqA, fqB,  dinA,  dinB, timestep);
+			ScaLBL_Comm->GreyscaleSC_Pressure_BC_Z(NeighborList, fqA, fqB, doutA, doutB, timestep);
+		}
         // Collsion
         ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(NeighborList, dvcMap, fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
@@ -862,6 +901,11 @@ void ScaLBL_GreyscaleSCModel::Run(){
 		ScaLBL_Comm->BiRecvD3Q19AA(fqA,fqB); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(dvcMap, fqA, fqB, DenA, DenB, 0, ScaLBL_Comm->LastExterior(), Np);
+
+		if (BoundaryCondition > 0){
+			ScaLBL_Comm->GreyscaleSC_BC_z(dvcMap, DenA, DenB,  dinA,  dinB);
+			ScaLBL_Comm->GreyscaleSC_BC_Z(dvcMap, DenA, DenB, doutA, doutB);
+		}
 
         // Compute density gradient
         // fluid component A
@@ -881,7 +925,11 @@ void ScaLBL_GreyscaleSCModel::Run(){
         ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,
                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->GreyscaleSC_Pressure_BC_z(NeighborList, fqA, fqB,  dinA,  dinB, timestep);
+			ScaLBL_Comm->GreyscaleSC_Pressure_BC_Z(NeighborList, fqA, fqB, doutA, doutB, timestep);
+		}
         // Collsion
         ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(dvcMap,fqA, fqB, DenA, DenB, DenGradA, DenGradB, SolidForceA, SolidForceB, Porosity,Permeability,Velocity,Pressure_dvc, 
                                        tauA, tauB, tauA_eff, tauB_eff, Gsc, Fx, Fy, Fz,

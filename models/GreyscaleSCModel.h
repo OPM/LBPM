@@ -43,8 +43,8 @@ public:
     double rhoA_minor,rhoB_minor;//dissolved density
 	double tolerance;
 	double Fx,Fy,Fz,flux;
-	double din,dout;
-    double dp;//solid particle diameter, unit in voxel
+	double dinA,doutA;
+	double dinB,doutB;
     double GreyPorosity;
 	
 	int Nx,Ny,Nz,N,Np;

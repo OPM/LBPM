@@ -3215,6 +3215,460 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Ma
 	}
 }
 
+__global__  void dvc_ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		nm = Map[n];
+		DenA[nm] = vA;
+		DenB[nm] = vB;
+	}
+}
+
+__global__  void dvc_ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np)
+{
+	int idx,n,nm;
+	// Fill the outlet with component b
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		nm = Map[n];
+		DenA[nm] = vA;
+		DenB[nm] = vB;
+	}
+}
+
+__global__  void dvc_ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z(int *list, double *distA, double *distB, double dinA, double dinB, int count, int Np)
+{
+	int idx, n;
+	// distributions
+	double f0A,f1A,f2A,f3A,f4A,f5A,f6A,f7A,f8A,f9A;
+	double f10A,f11A,f12A,f13A,f14A,f15A,f16A,f17A,f18A;
+	double f0B,f1B,f2B,f3B,f4B,f5B,f6B,f7B,f8B,f9B;
+	double f10B,f11B,f12B,f13B,f14B,f15B,f16B,f17B,f18B;
+	double uxA,uyA,uzA,CyzA,CxzA;
+	double uxB,uyB,uzB,CyzB,CxzB;
+	uxA = uyA = 0.0;
+	uxB = uyB = 0.0;
+
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){
+
+		n = list[idx];
+		//........................................................................
+		// Read distributions 
+		//........................................................................
+		f0A = distA[n];
+		f1A = distA[2*Np+n];
+		f2A = distA[1*Np+n];
+		f3A = distA[4*Np+n];
+		f4A = distA[3*Np+n];
+		f6A = distA[5*Np+n];
+		f7A = distA[8*Np+n];
+		f8A = distA[7*Np+n];
+		f9A = distA[10*Np+n];
+		f10A = distA[9*Np+n];
+		f12A = distA[11*Np+n];
+		f13A = distA[14*Np+n];
+		f16A = distA[15*Np+n];
+		f17A = distA[18*Np+n];
+
+		f0B = distB[n];
+		f1B = distB[2*Np+n];
+		f2B = distB[1*Np+n];
+		f3B = distB[4*Np+n];
+		f4B = distB[3*Np+n];
+		f6B = distB[5*Np+n];
+		f7B = distB[8*Np+n];
+		f8B = distB[7*Np+n];
+		f9B = distB[10*Np+n];
+		f10B = distB[9*Np+n];
+		f12B = distB[11*Np+n];
+		f13B = distB[14*Np+n];
+		f16B = distB[15*Np+n];
+		f17B = distB[18*Np+n];
+		//...................................................
+		// Determine the inlet flow velocity
+		//ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
+		//uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
+		uzA = dinA - (f0A+f1A+f2A+f3A+f4A+f7A+f8A+f9A+f10A + 2*(f6A+f12A+f13A+f16A+f17A));
+		uzB = dinB - (f0B+f1B+f2B+f3B+f4B+f7B+f8B+f9B+f10B + 2*(f6B+f12B+f13B+f16B+f17B));
+
+		CxzA = 0.5*(f1A+f7A+f9A-f2A-f10A-f8A) - 0.3333333333333333*uxA;
+		CyzA = 0.5*(f3A+f7A+f10A-f4A-f9A-f8A) - 0.3333333333333333*uyA;
+		CxzB = 0.5*(f1B+f7B+f9B-f2B-f10B-f8B) - 0.3333333333333333*uxB;
+		CyzB = 0.5*(f3B+f7B+f10B-f4B-f9B-f8B) - 0.3333333333333333*uyB;
+
+		f5A = f6A + 0.33333333333333338*uzA;
+		f11A = f12A + 0.16666666666666678*(uzA+uxA)-CxzA;
+		f14A = f13A + 0.16666666666666678*(uzA-uxA)+CxzA;
+		f15A = f16A + 0.16666666666666678*(uyA+uzA)-CyzA;
+		f18A = f17A + 0.16666666666666678*(uzA-uyA)+CyzA;
+
+		f5B = f6B + 0.33333333333333338*uzB;
+		f11B = f12B + 0.16666666666666678*(uzB+uxB)-CxzB;
+		f14B = f13B + 0.16666666666666678*(uzB-uxB)+CxzB;
+		f15B = f16B + 0.16666666666666678*(uyB+uzB)-CyzB;
+		f18B = f17B + 0.16666666666666678*(uzB-uyB)+CyzB;
+		//........Store in "opposite" memory location..........
+		distA[6*Np+n] = f5A;
+		distA[12*Np+n] = f11A;
+		distA[13*Np+n] = f14A;
+		distA[16*Np+n] = f15A;
+		distA[17*Np+n] = f18A;
+        
+		distB[6*Np+n] = f5B;
+		distB[12*Np+n] = f11B;
+		distB[13*Np+n] = f14B;
+		distB[16*Np+n] = f15B;
+		distB[17*Np+n] = f18B;
+	}
+}
+
+__global__  void dvc_ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z(int *list, double *distA, double *distB, double doutA, double doutB, int count, int Np)
+{
+	int idx,n;
+	// distributions
+	double f0A,f1A,f2A,f3A,f4A,f5A,f6A,f7A,f8A,f9A;
+	double f10A,f11A,f12A,f13A,f14A,f15A,f16A,f17A,f18A;
+	double f0B,f1B,f2B,f3B,f4B,f5B,f6B,f7B,f8B,f9B;
+	double f10B,f11B,f12B,f13B,f14B,f15B,f16B,f17B,f18B;
+	double uxA,uyA,uzA,CyzA,CxzA;
+	double uxB,uyB,uzB,CyzB,CxzB;
+	uxA = uyA = 0.0;
+	uxB = uyB = 0.0;
+
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	// Loop over the boundary - threadblocks delineated by start...finish
+	if ( idx < count ){
+
+		n = list[idx];
+		//........................................................................
+		// Read distributions 
+		//........................................................................
+		f0A = distA[n];
+		f1A = distA[2*Np+n];
+		f2A = distA[1*Np+n];
+		f3A = distA[4*Np+n];
+		f4A = distA[3*Np+n];
+		f5A = distA[6*Np+n];
+		f7A = distA[8*Np+n];
+		f8A = distA[7*Np+n];
+		f9A = distA[10*Np+n];
+		f10A = distA[9*Np+n];
+		f11A = distA[12*Np+n];
+		f14A = distA[13*Np+n];
+		f15A = distA[16*Np+n];
+		f18A = distA[17*Np+n];
+
+		f0B = distB[n];
+		f1B = distB[2*Np+n];
+		f2B = distB[1*Np+n];
+		f3B = distB[4*Np+n];
+		f4B = distB[3*Np+n];
+		f5B = distB[6*Np+n];
+		f7B = distB[8*Np+n];
+		f8B = distB[7*Np+n];
+		f9B = distB[10*Np+n];
+		f10B = distB[9*Np+n];
+		f11B = distB[12*Np+n];
+		f14B = distB[13*Np+n];
+		f15B = distB[16*Np+n];
+		f18B = distB[17*Np+n];
+
+		// Determine the outlet flow velocity
+		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		uzA = -doutA + (f0A+f1A+f2A+f3A+f4A+f7A+f8A+f9A+f10A + 2*(f5A+f11A+f14A+f15A+f18A));
+		uzB = -doutB + (f0B+f1B+f2B+f3B+f4B+f7B+f8B+f9B+f10B + 2*(f5B+f11B+f14B+f15B+f18B));
+
+		CxzA = 0.5*(f1A+f7A+f9A-f2A-f10A-f8A) - 0.3333333333333333*uxA;
+		CyzA = 0.5*(f3A+f7A+f10A-f4A-f9A-f8A) - 0.3333333333333333*uyA;
+		CxzB = 0.5*(f1B+f7B+f9B-f2B-f10B-f8B) - 0.3333333333333333*uxB;
+		CyzB = 0.5*(f3B+f7B+f10B-f4B-f9B-f8B) - 0.3333333333333333*uyB;
+
+		f6A = f5A - 0.33333333333333338*uzA;
+		f12A = f11A - 0.16666666666666678*(uzA+uxA)+CxzA;
+		f13A = f14A - 0.16666666666666678*(uzA-uxA)-CxzA;
+		f16A = f15A - 0.16666666666666678*(uyA+uzA)+CyzA;
+		f17A = f18A - 0.16666666666666678*(uzA-uyA)-CyzA;
+
+		f6B = f5B - 0.33333333333333338*uzB;
+		f12B = f11B - 0.16666666666666678*(uzB+uxB)+CxzB;
+		f13B = f14B - 0.16666666666666678*(uzB-uxB)-CxzB;
+		f16B = f15B - 0.16666666666666678*(uyB+uzB)+CyzB;
+		f17B = f18B - 0.16666666666666678*(uzB-uyB)-CyzB;
+
+		distA[5*Np+n] = f6A;
+		distA[11*Np+n] = f12A;
+		distA[14*Np+n] = f13A;
+		distA[15*Np+n] = f16A;
+		distA[18*Np+n] = f17A;
+        
+		distB[5*Np+n] = f6B;
+		distB[11*Np+n] = f12B;
+		distB[14*Np+n] = f13B;
+		distB[15*Np+n] = f16B;
+		distB[18*Np+n] = f17B;
+		//...................................................
+	}
+}
+
+__global__  void dvc_ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z(int *d_neighborList, int *list, double *distA, double *distB, double dinA, double dinB, int count, int Np)
+{
+	int idx, n;
+	int nread;
+	int nr5,nr11,nr14,nr15,nr18;
+	// distributions
+	double f0A,f1A,f2A,f3A,f4A,f5A,f6A,f7A,f8A,f9A;
+	double f10A,f11A,f12A,f13A,f14A,f15A,f16A,f17A,f18A;
+	double f0B,f1B,f2B,f3B,f4B,f5B,f6B,f7B,f8B,f9B;
+	double f10B,f11B,f12B,f13B,f14B,f15B,f16B,f17B,f18B;
+	double uxA,uyA,uzA,CyzA,CxzA;
+	double uxB,uyB,uzB,CyzB,CxzB;
+	uxA = uyA = 0.0;
+	uxB = uyB = 0.0;
+
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	if (idx < count){
+		
+		n = list[idx];
+		//........................................................................
+		// Read distributions 
+		//........................................................................
+		f0A = distA[n];
+		f0B = distB[n];
+				
+		nread = d_neighborList[n];
+		f1A = distA[nread];
+		f1B = distB[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3A = distA[nread];
+		f3B = distB[nread];
+
+		nread = d_neighborList[n+6*Np];
+		f7A = distA[nread];
+		f7B = distB[nread];
+
+		nread = d_neighborList[n+8*Np];
+		f9A = distA[nread];
+		f9B = distB[nread];
+
+		nread = d_neighborList[n+12*Np];
+		f13A = distA[nread];
+		f13B = distB[nread];
+
+		nread = d_neighborList[n+16*Np];
+		f17A = distA[nread];
+		f17B = distB[nread];
+
+		nread = d_neighborList[n+Np];
+		f2A = distA[nread];
+		f2B = distB[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4A = distA[nread];
+		f4B = distB[nread];
+
+		nread = d_neighborList[n+5*Np];
+		f6A = distA[nread];
+		f6B = distB[nread];
+
+		nread = d_neighborList[n+7*Np];
+		f8A = distA[nread];
+		f8B = distB[nread];
+
+		nread = d_neighborList[n+9*Np];
+		f10A = distA[nread];
+		f10B = distB[nread];
+
+		nread = d_neighborList[n+11*Np];
+		f12A = distA[nread];
+		f12B = distB[nread];
+
+		nread = d_neighborList[n+15*Np];
+		f16A = distA[nread];
+		f16B = distB[nread];
+
+		// Unknown distributions
+		nr5 = d_neighborList[n+4*Np];
+		nr11 = d_neighborList[n+10*Np];
+		nr15 = d_neighborList[n+14*Np];
+		nr14 = d_neighborList[n+13*Np];
+		nr18 = d_neighborList[n+17*Np];
+		
+		//...................................................
+		//........Determine the inlet flow velocity.........
+		//ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
+		//uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
+		uzA = dinA - (f0A+f1A+f2A+f3A+f4A+f7A+f8A+f9A+f10A + 2*(f6A+f12A+f13A+f16A+f17A));
+		uzB = dinB - (f0B+f1B+f2B+f3B+f4B+f7B+f8B+f9B+f10B + 2*(f6B+f12B+f13B+f16B+f17B));
+
+		CxzA = 0.5*(f1A+f7A+f9A-f2A-f10A-f8A) - 0.3333333333333333*uxA;
+		CyzA = 0.5*(f3A+f7A+f10A-f4A-f9A-f8A) - 0.3333333333333333*uyA;
+		CxzB = 0.5*(f1B+f7B+f9B-f2B-f10B-f8B) - 0.3333333333333333*uxB;
+		CyzB = 0.5*(f3B+f7B+f10B-f4B-f9B-f8B) - 0.3333333333333333*uyB;
+
+		f5A = f6A + 0.33333333333333338*uzA;
+		f11A = f12A + 0.16666666666666678*(uzA+uxA)-CxzA;
+		f14A = f13A + 0.16666666666666678*(uzA-uxA)+CxzA;
+		f15A = f16A + 0.16666666666666678*(uyA+uzA)-CyzA;
+		f18A = f17A + 0.16666666666666678*(uzA-uyA)+CyzA;
+
+		f5B = f6B + 0.33333333333333338*uzB;
+		f11B = f12B + 0.16666666666666678*(uzB+uxB)-CxzB;
+		f14B = f13B + 0.16666666666666678*(uzB-uxB)+CxzB;
+		f15B = f16B + 0.16666666666666678*(uyB+uzB)-CyzB;
+		f18B = f17B + 0.16666666666666678*(uzB-uyB)+CyzB;
+
+		//........Store in "opposite" memory location..........
+		distA[nr5] = f5A;
+		distA[nr11] = f11A;
+		distA[nr14] = f14A;
+		distA[nr15] = f15A;
+		distA[nr18] = f18A;
+
+		distB[nr5] = f5B;
+		distB[nr11] = f11B;
+		distB[nr14] = f14B;
+		distB[nr15] = f15B;
+		distB[nr18] = f18B;
+	}
+}
+
+__global__  void dvc_ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(int *d_neighborList, int *list, double *distA, double *distB, double doutA, double doutB, int count, int Np)
+{
+	int idx,n,nread;
+	int nr6,nr12,nr13,nr16,nr17;
+	// distributions
+	double f0A,f1A,f2A,f3A,f4A,f5A,f6A,f7A,f8A,f9A;
+	double f10A,f11A,f12A,f13A,f14A,f15A,f16A,f17A,f18A;
+	double f0B,f1B,f2B,f3B,f4B,f5B,f6B,f7B,f8B,f9B;
+	double f10B,f11B,f12B,f13B,f14B,f15B,f16B,f17B,f18B;
+	double uxA,uyA,uzA,CyzA,CxzA;
+	double uxB,uyB,uzB,CyzB,CxzB;
+	uxA = uyA = 0.0;
+	uxB = uyB = 0.0;
+
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+
+	// Loop over the boundary - threadblocks delineated by start...finish
+	if ( idx < count ){
+
+		n = list[idx];
+		//........................................................................
+		// Read distributions 
+		//........................................................................
+		f0A = distA[n];
+		f0B = distB[n];
+
+		nread = d_neighborList[n];
+		f1A = distA[nread];
+		f1B = distB[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3A = distA[nread];
+		f3B = distB[nread];
+
+		nread = d_neighborList[n+4*Np];
+		f5A = distA[nread];
+		f5B = distB[nread];
+
+		nread = d_neighborList[n+6*Np];
+		f7A = distA[nread];
+		f7B = distB[nread];
+
+		nread = d_neighborList[n+8*Np];
+		f9A = distA[nread];
+		f9B = distB[nread];
+
+		nread = d_neighborList[n+10*Np];
+		f11A = distA[nread];
+		f11B = distB[nread];
+
+		nread = d_neighborList[n+14*Np];
+		f15A = distA[nread];
+		f15B = distB[nread];
+
+		nread = d_neighborList[n+Np];
+		f2A = distA[nread];
+		f2B = distB[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4A = distA[nread];
+		f4B = distB[nread];
+
+		nread = d_neighborList[n+7*Np];
+		f8A = distA[nread];
+		f8B = distB[nread];
+
+		nread = d_neighborList[n+9*Np];
+		f10A = distA[nread];
+		f10B = distB[nread];
+
+		nread = d_neighborList[n+13*Np];
+		f14A = distA[nread];
+		f14B = distB[nread];
+
+		nread = d_neighborList[n+17*Np];
+		f18A = distA[nread];
+		f18B = distB[nread];
+		
+		// unknown distributions
+		nr6 = d_neighborList[n+5*Np];
+		nr12 = d_neighborList[n+11*Np];
+		nr16 = d_neighborList[n+15*Np];
+		nr17 = d_neighborList[n+16*Np];
+		nr13 = d_neighborList[n+12*Np];
+
+		
+		//........Determine the outlet flow velocity.........
+		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		uzA = -doutA + (f0A+f1A+f2A+f3A+f4A+f7A+f8A+f9A+f10A + 2*(f5A+f11A+f14A+f15A+f18A));
+		uzB = -doutB + (f0B+f1B+f2B+f3B+f4B+f7B+f8B+f9B+f10B + 2*(f5B+f11B+f14B+f15B+f18B));
+
+		CxzA = 0.5*(f1A+f7A+f9A-f2A-f10A-f8A) - 0.3333333333333333*uxA;
+		CyzA = 0.5*(f3A+f7A+f10A-f4A-f9A-f8A) - 0.3333333333333333*uyA;
+		CxzB = 0.5*(f1B+f7B+f9B-f2B-f10B-f8B) - 0.3333333333333333*uxB;
+		CyzB = 0.5*(f3B+f7B+f10B-f4B-f9B-f8B) - 0.3333333333333333*uyB;
+
+		f6A = f5A - 0.33333333333333338*uzA;
+		f12A = f11A - 0.16666666666666678*(uzA+uxA)+CxzA;
+		f13A = f14A - 0.16666666666666678*(uzA-uxA)-CxzA;
+		f16A = f15A - 0.16666666666666678*(uyA+uzA)+CyzA;
+		f17A = f18A - 0.16666666666666678*(uzA-uyA)-CyzA;
+
+		f6B = f5B - 0.33333333333333338*uzB;
+		f12B = f11B - 0.16666666666666678*(uzB+uxB)+CxzB;
+		f13B = f14B - 0.16666666666666678*(uzB-uxB)-CxzB;
+		f16B = f15B - 0.16666666666666678*(uyB+uzB)+CyzB;
+		f17B = f18B - 0.16666666666666678*(uzB-uyB)-CyzB;
+
+
+		//........Store in "opposite" memory location..........
+		distA[nr6] = f6A;
+		distA[nr12] = f12A;
+		distA[nr13] = f13A;
+		distA[nr16] = f16A;
+		distA[nr17] = f17A;
+
+		distB[nr6] = f6B;
+		distB[nr12] = f12B;
+		distB[nr13] = f13B;
+		distB[nr16] = f16B;
+		distB[nr17] = f17B;
+		//...................................................
+	}
+}
+
 extern "C" void ScaLBL_D3Q19_GreyscaleSC_Init(int *Map, double *distA,double *distB, double *DenA, double *DenB, int Np){
 	dvc_ScaLBL_D3Q19_GreyscaleSC_Init<<<NBLOCKS,NTHREADS >>>(Map,distA,distB,DenA,DenB,Np);
 	cudaError_t err = cudaGetLastError();
@@ -3306,5 +3760,60 @@ extern "C" void ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Map, d
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_GreyscaleSC_Gradient: %s \n",cudaGetErrorString(err));
+	}
+}
+
+
+extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np){
+    int GRID = count / 512 + 1;
+    dvc_ScaLBL_GreyscaleSC_BC_z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_BC_z: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np){
+    int GRID = count / 512 + 1;
+    dvc_ScaLBL_GreyscaleSC_BC_Z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_BC_Z: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z(int *list, double *distA, double *distB, double dinA, double dinB, int count, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z<<<GRID,512>>>(list, distA, distB, dinA, dinB, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z(int *list, double *distA, double *distB, double doutA, double doutB, int count, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z<<<GRID,512>>>(list, distA, distB, doutA, doutB, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z(int *neighborList, int *list, double *distA, double *distB, double dinA, double dinB, int count, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z<<<GRID,512>>>(neighborList, list, distA, distB, dinA, dinB, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *distA, double *distB, double doutA, double doutB, int count, int N){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z<<<GRID,512>>>(neighborList, list, distA, distB, doutA, doutB, count, N);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }

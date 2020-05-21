@@ -2075,3 +2075,42 @@ void ScaLBL_Communicator::PrintD3Q19(){
 	delete [] TempBuffer;
 }
 
+void ScaLBL_Communicator::GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB)
+{
+	if (kproc == 0) {
+		// Set the density field on the z inlet
+		ScaLBL_GreyscaleSC_BC_z(dvcSendList_z, Map, DenA, DenB, vA, vB, sendCount_z, N);
+	}
+}
+
+void ScaLBL_Communicator::GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB)
+{
+	if (kproc == nprocz-1){
+		// Set the density field on the Z outlet
+		ScaLBL_GreyscaleSC_BC_Z(dvcSendList_Z, Map, DenA, DenB, vA, vB, sendCount_Z, N);
+	}
+}
+
+void ScaLBL_Communicator::GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time)
+{
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z(dvcSendList_z, fqA, fqB, dinA, dinB, sendCount_z, N);
+		}
+		else{
+			ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z(neighborList, dvcSendList_z, fqA, fqB, dinA, dinB, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::GreyscaleSC_Pressure_BC_Z(int *neighborList, double *fqA, double *fqB, double doutA, double doutB, int time)
+{
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z(dvcSendList_Z, fqA, fqB, doutA, doutB, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(neighborList, dvcSendList_Z, fqA, fqB, doutA, doutB, sendCount_Z, N);
+		}
+	}
+}
