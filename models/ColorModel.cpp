@@ -797,18 +797,22 @@ void ScaLBL_ColorModel::Run(){
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
 				if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_STEADY_TIMESTEPS > RESCALE_FORCE_AFTER_TIMESTEP){
-					RESCALE_FORCE = false;
-					Fx *= capillary_number / Ca;
-					Fy *= capillary_number / Ca;
-					Fz *= capillary_number / Ca;
-					if (force_mag > 1e-3){
-						Fx *= 1e-3/force_mag;   // impose ceiling for stability
-						Fy *= 1e-3/force_mag;   
-						Fz *= 1e-3/force_mag;   
-					}
-					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					color_db->putVector<double>("F",{Fx,Fy,Fz});
+				  RESCALE_FORCE = false;
+				  double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+				  if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
+				  if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
+				  Fx *= RESCALE_FORCE_FACTOR;
+				  Fy *= RESCALE_FORCE_FACTOR;
+				  Fz *= RESCALE_FORCE_FACTOR;
+				  force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				  if (force_mag > 1e-3){
+				    Fx *= 1e-3/force_mag;   // impose ceiling for stability
+				    Fy *= 1e-3/force_mag;   
+				    Fz *= 1e-3/force_mag;   
+				  }
+				  if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				  Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				  color_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
 					MORPH_ADAPT = true;
