@@ -489,7 +489,7 @@ void ScaLBL_ColorModel::Initialize(){
 void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-
+	
 	int IMAGE_INDEX = 0;
 	int IMAGE_COUNT = 0;
 	std::vector<std::string> ImageList;
@@ -518,7 +518,7 @@ void ScaLBL_ColorModel::Run(){
 	double initial_volume = 0.0;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
-
+	
 	/* history for morphological algoirthm */
 	double KRA_MORPH_FACTOR=0.5;
 	double volA_prev = 0.0; 
@@ -535,7 +535,7 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "krA_morph_factor" )){
 		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
 	}
-
+	
 	/* defaults for simulation protocols */
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -657,7 +657,7 @@ void ScaLBL_ColorModel::Run(){
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
-	//std::shared_ptr<Database> analysis_db;
+    //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
 	auto current_db = db->cloneDatabase();
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
@@ -788,42 +788,131 @@ void ScaLBL_ColorModel::Run(){
 			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
 			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
 			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
-
+			
 			if ( morph_timesteps > morph_interval ){
-
+				
 				bool isSteady = false;
 				if ( (fabs((Ca - Ca_previous)/Ca) < tolerance &&  CURRENT_STEADY_TIMESTEPS > MIN_STEADY_TIMESTEPS))
 					isSteady = true;
 				if (CURRENT_STEADY_TIMESTEPS > MAX_STEADY_TIMESTEPS)
 					isSteady = true;
 				if (RESCALE_FORCE == true && SET_CAPILLARY_NUMBER == true && CURRENT_STEADY_TIMESTEPS > RESCALE_FORCE_AFTER_TIMESTEP){
-					RESCALE_FORCE = false;
-					double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-					if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
-					if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
-					Fx *= RESCALE_FORCE_FACTOR;
-					Fy *= RESCALE_FORCE_FACTOR;
-					Fz *= RESCALE_FORCE_FACTOR;
-					force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-					if (force_mag > 1e-3){
-						Fx *= 1e-3/force_mag;   // impose ceiling for stability
-						Fy *= 1e-3/force_mag;   
-						Fz *= 1e-3/force_mag;   
-					}
-					if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-					Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-					color_db->putVector<double>("F",{Fx,Fy,Fz});
+				  RESCALE_FORCE = false;
+				  double RESCALE_FORCE_FACTOR = capillary_number / Ca;
+				  if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
+				  if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
+				  Fx *= RESCALE_FORCE_FACTOR;
+				  Fy *= RESCALE_FORCE_FACTOR;
+				  Fz *= RESCALE_FORCE_FACTOR;
+				  force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+				  if (force_mag > 1e-3){
+				    Fx *= 1e-3/force_mag;   // impose ceiling for stability
+				    Fy *= 1e-3/force_mag;   
+				    Fz *= 1e-3/force_mag;   
+				  }
+				  if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				  Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				  color_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
-				  /*if (SET_CAPILLARY_NUMBER && fabs(capillary_number - Ca) / capillary_number > 2.0){
-						// reject steady points if they don't match the Ca well enough
-						double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-						if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
-						if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
-						Fx *= RESCALE_FORCE_FACTOR;
-						Fy *= RESCALE_FORCE_FACTOR;
-						Fz *= RESCALE_FORCE_FACTOR;
-						force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
+					MORPH_ADAPT = true;
+					CURRENT_MORPH_TIMESTEPS=0;
+					delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
+					//****** ENDPOINT ADAPTATION ********/
+					double krA_TMP= fabs(muA*flow_rate_A / force_mag);
+					double krB_TMP= fabs(muB*flow_rate_B / force_mag);
+					log_krA = log(krA_TMP);
+					if (krA_TMP < 0.0){
+						// cannot do endpoint adaptation if kr is negative
+						log_krA = log_krA_prev;
+					}
+					else if (krA_TMP < krB_TMP && morph_delta > 0.0){
+						/** morphological target based on relative permeability for A **/
+						log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
+						slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
+						delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
+						if (rank==0){
+							printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
+							printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
+						}
+					}
+					log_krA_prev = log_krA;
+					volA_prev = volA;
+					//******************************** **/
+					/**  compute averages & write data **/
+					Averages->Full();
+					Averages->Write(timestep);
+					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+					analysis.finish();
+					
+					if (rank==0){
+						printf("** WRITE STEADY POINT *** ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						double h = Dm->voxel_length;		
+						// pressures
+						double pA = Averages->gnb.p;
+						double pB = Averages->gwb.p;
+						double pAc = Averages->gnc.p;
+						double pBc = Averages->gwc.p;
+						double pAB = (pA-pB)/(h*5.796*alpha);
+						double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
+						// connected contribution
+						double Vol_nc = Averages->gnc.V/Dm->Volume;
+						double Vol_wc = Averages->gwc.V/Dm->Volume;
+						double Vol_nd = Averages->gnd.V/Dm->Volume;
+						double Vol_wd = Averages->gwd.V/Dm->Volume;
+						double Mass_n = Averages->gnc.M + Averages->gnd.M;
+						double Mass_w = Averages->gwc.M + Averages->gwd.M;
+						double vAc_x = Averages->gnc.Px/Mass_n; 
+						double vAc_y = Averages->gnc.Py/Mass_n; 
+						double vAc_z = Averages->gnc.Pz/Mass_n; 
+						double vBc_x = Averages->gwc.Px/Mass_w; 
+						double vBc_y = Averages->gwc.Py/Mass_w; 
+						double vBc_z = Averages->gwc.Pz/Mass_w;
+						// disconnected contribution
+						double vAd_x = Averages->gnd.Px/Mass_n; 
+						double vAd_y = Averages->gnd.Py/Mass_n; 
+						double vAd_z = Averages->gnd.Pz/Mass_n; 
+						double vBd_x = Averages->gwd.Px/Mass_w; 
+						double vBd_y = Averages->gwd.Py/Mass_w; 
+						double vBd_z = Averages->gwd.Pz/Mass_w;
+						
+						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+						double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+						double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+						
+						double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+						double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
+						
+						double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
+						double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
+
+						double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
+						double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
+
+						double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
+						double Mobility = muA/muB;
+						
+						bool WriteHeader=false;
+						FILE * kr_log_file = fopen("relperm.csv","r");
+						if (kr_log_file != NULL)
+							fclose(kr_log_file);
+						else
+							WriteHeader=true;
+						kr_log_file = fopen("relperm.csv","a");
+						if (WriteHeader)
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+						fclose(kr_log_file);
+
+						printf("  Measured capillary number %f \n ",Ca);
+					}
+					if (SET_CAPILLARY_NUMBER ){
+						Fx *= capillary_number / Ca;
+						Fy *= capillary_number / Ca;
+						Fz *= capillary_number / Ca;
 						if (force_mag > 1e-3){
 							Fx *= 1e-3/force_mag;   // impose ceiling for stability
 							Fy *= 1e-3/force_mag;   
@@ -832,192 +921,75 @@ void ScaLBL_ColorModel::Run(){
 						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 						color_db->putVector<double>("F",{Fx,Fy,Fz});
-						// simulate the point again with new force
-						CURRENT_STEADY_TIMESTEPS=0;
 					}
-					else {
-				  */
-						MORPH_ADAPT = true;
-						CURRENT_MORPH_TIMESTEPS=0;
-						delta_volume_target = Dm->Volume*volA *morph_delta; // set target volume change
-						//****** ENDPOINT ADAPTATION ********/
-						double krA_TMP= fabs(muA*flow_rate_A / force_mag);
-						double krB_TMP= fabs(muB*flow_rate_B / force_mag);
-						log_krA = log(krA_TMP);
-						if (krA_TMP < 0.0){
-							// cannot do endpoint adaptation if kr is negative
-							log_krA = log_krA_prev;
-						}
-						else if (krA_TMP < krB_TMP && morph_delta > 0.0){
-							/** morphological target based on relative permeability for A **/
-							log_krA_target = log(KRA_MORPH_FACTOR*(krA_TMP));
-							slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
-							delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
-							if (rank==0){
-								printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
-								printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
-							}
-						}
-						log_krA_prev = log_krA;
-						volA_prev = volA;
-						//******************************** **/
-						/**  compute averages & write data **/
-						Averages->Full();
-						Averages->Write(timestep);
-						analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
-						analysis.finish();
-
-						if (rank==0){
-							printf("** WRITE STEADY POINT *** ");
-							printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-							double h = Dm->voxel_length;		
-							// pressures
-							double pA = Averages->gnb.p;
-							double pB = Averages->gwb.p;
-							double pAc = Averages->gnc.p;
-							double pBc = Averages->gwc.p;
-							double pAB = (pA-pB)/(h*5.796*alpha);
-							double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
-							// connected contribution
-							double Vol_nc = Averages->gnc.V/Dm->Volume;
-							double Vol_wc = Averages->gwc.V/Dm->Volume;
-							double Vol_nd = Averages->gnd.V/Dm->Volume;
-							double Vol_wd = Averages->gwd.V/Dm->Volume;
-							double Mass_n = Averages->gnc.M + Averages->gnd.M;
-							double Mass_w = Averages->gwc.M + Averages->gwd.M;
-							double vAc_x = Averages->gnc.Px/Mass_n; 
-							double vAc_y = Averages->gnc.Py/Mass_n; 
-							double vAc_z = Averages->gnc.Pz/Mass_n; 
-							double vBc_x = Averages->gwc.Px/Mass_w; 
-							double vBc_y = Averages->gwc.Py/Mass_w; 
-							double vBc_z = Averages->gwc.Pz/Mass_w;
-							// disconnected contribution
-							double vAd_x = Averages->gnd.Px/Mass_n; 
-							double vAd_y = Averages->gnd.Py/Mass_n; 
-							double vAd_z = Averages->gnd.Pz/Mass_n; 
-							double vBd_x = Averages->gwd.Px/Mass_w; 
-							double vBd_y = Averages->gwd.Py/Mass_w; 
-							double vBd_z = Averages->gwd.Pz/Mass_w;
-
-							double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
-							double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
-							double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
-							double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
-
-							double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
-							double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
-
-							double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
-							double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
-
-							double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
-							double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
-
-							double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
-							double Mobility = muA/muB;
-
-							bool WriteHeader=false;
-							FILE * kr_log_file = fopen("relperm.csv","r");
-							if (kr_log_file != NULL)
-								fclose(kr_log_file);
-							else
-								WriteHeader=true;
-							kr_log_file = fopen("relperm.csv","a");
-							if (WriteHeader)
-								fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n");
-
-							fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
-							fclose(kr_log_file);
-
-							printf("  Measured capillary number %f \n ",Ca);
-						}
-						if (SET_CAPILLARY_NUMBER ){
-							double RESCALE_FORCE_FACTOR = capillary_number / Ca;
-							if (RESCALE_FORCE_FACTOR > 2.0) RESCALE_FORCE_FACTOR = 2.0;
-							if (RESCALE_FORCE_FACTOR < 0.5) RESCALE_FORCE_FACTOR = 0.5;
-							Fx *= RESCALE_FORCE_FACTOR;
-							Fy *= RESCALE_FORCE_FACTOR;
-							Fz *= RESCALE_FORCE_FACTOR;
-							force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-							if (force_mag > 1e-3){
-								Fx *= 1e-3/force_mag;   // impose ceiling for stability
-								Fy *= 1e-3/force_mag;   
-								Fz *= 1e-3/force_mag;   
-							}
-							if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-							Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
-							color_db->putVector<double>("F",{Fx,Fy,Fz});
-						}
-
-						else{
-							if (rank==0){
-								printf("** Continue to simulate steady *** \n ");
-								printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
-							}
-						}
-						morph_timesteps=0;
-						Ca_previous = Ca;
-						/*}
-						  THIS IS WHERE YOU DISABLE STEADY POINT REJECTION
-						 */
+					
+					CURRENT_STEADY_TIMESTEPS = 0;
 				}
-
-				if (MORPH_ADAPT ){
-					CURRENT_MORPH_TIMESTEPS += analysis_interval;
-					if (USE_DIRECT){
-						// Use image sequence
-						IMAGE_INDEX++;
-						MORPH_ADAPT = false;
-						if (IMAGE_INDEX < IMAGE_COUNT){
-							std::string next_image = ImageList[IMAGE_INDEX];
-							if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
-							color_db->putScalar<int>("image_index",IMAGE_INDEX);
-							ImageInit(next_image);
-						}
-						else{
-							if (rank==0) printf("Finished simulating image sequence \n");
-							timestep = timestepMax;
-						}
-					}
-					else if (USE_SEED){
-						delta_volume = volA*Dm->Volume - initial_volume;
-						CURRENT_MORPH_TIMESTEPS += analysis_interval;
-						double massChange = SeedPhaseField(seed_water);
-						if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
-					}
-					else if (USE_MORPHOPEN_OIL){
-						delta_volume = volA*Dm->Volume - initial_volume;
-						if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
-						MorphOpenConnected(delta_volume_target);
-					}
-					else {
-						if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
-						//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-						delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
-					}
-
-					if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
-						MORPH_ADAPT = false;
-						CURRENT_STEADY_TIMESTEPS=0;
-						initial_volume = volA*Dm->Volume;
-						delta_volume = 0.0;
-						if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
-							RESCALE_FORCE = true;
-					}
-					else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
-						MORPH_ADAPT = false;
-						CURRENT_STEADY_TIMESTEPS=0;
-						initial_volume = volA*Dm->Volume;
-						delta_volume = 0.0;
-						RESCALE_FORCE = true;
-						if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
-							RESCALE_FORCE = true;
+				else{
+					if (rank==0){
+						printf("** Continue to simulate steady *** \n ");
+						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
 					}
 				}
-				morph_timesteps += analysis_interval;
+				morph_timesteps=0;
+				Ca_previous = Ca;
 			}
-			MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+
+			if (MORPH_ADAPT ){
+				CURRENT_MORPH_TIMESTEPS += analysis_interval;
+				if (USE_DIRECT){
+					// Use image sequence
+					IMAGE_INDEX++;
+					MORPH_ADAPT = false;
+					if (IMAGE_INDEX < IMAGE_COUNT){
+						std::string next_image = ImageList[IMAGE_INDEX];
+						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						color_db->putScalar<int>("image_index",IMAGE_INDEX);
+						ImageInit(next_image);
+					}
+					else{
+						if (rank==0) printf("Finished simulating image sequence \n");
+						timestep = timestepMax;
+					}
+				}
+				else if (USE_SEED){
+					delta_volume = volA*Dm->Volume - initial_volume;
+					CURRENT_MORPH_TIMESTEPS += analysis_interval;
+					double massChange = SeedPhaseField(seed_water);
+					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
+				}
+				else if (USE_MORPHOPEN_OIL){
+					delta_volume = volA*Dm->Volume - initial_volume;
+					if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
+					MorphOpenConnected(delta_volume_target);
+				}
+				else {
+					if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
+					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
+					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+				}
+
+				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
+					MORPH_ADAPT = false;
+					CURRENT_STEADY_TIMESTEPS=0;
+					initial_volume = volA*Dm->Volume;
+					delta_volume = 0.0;
+					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+						RESCALE_FORCE = true;
+				}
+				else if (!(USE_DIRECT) && CURRENT_MORPH_TIMESTEPS > MAX_MORPH_TIMESTEPS) {
+					MORPH_ADAPT = false;
+					CURRENT_STEADY_TIMESTEPS=0;
+					initial_volume = volA*Dm->Volume;
+					delta_volume = 0.0;
+					RESCALE_FORCE = true;
+					if (RESCALE_FORCE_AFTER_TIMESTEP > 0)
+						RESCALE_FORCE = true;
+				}
+			}
+			morph_timesteps += analysis_interval;
 		}
+		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
@@ -1043,7 +1015,7 @@ void ScaLBL_ColorModel::Run(){
 }
 
 double ScaLBL_ColorModel::ImageInit(std::string Filename){
-
+	
 	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
@@ -1071,16 +1043,16 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 
 	Count=sumReduce( Dm->Comm, Count);
 	PoreCount=sumReduce( Dm->Comm, PoreCount);
-
+	
 	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
 	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-
+	
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-
+	
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
 	double saturation = Count/PoreCount;
@@ -1089,14 +1061,14 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 }
 
 double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
-
+	
 	int nx = Nx;
 	int ny = Ny;
 	int nz = Nz;
 	int n;
 	int N = nx*ny*nz;
 	double volume_change=0.0;
-
+	
 	if (target_volume_change < 0.0){
 		Array<char> id_solid(nx,ny,nz);
 		Array<int> phase_label(nx,ny,nz);
@@ -1162,7 +1134,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		signed char notwater=1;
 		double SW=-(target_volume_change)/count_connected;
 		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
-
+		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
@@ -1178,7 +1150,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 			}
 		}
 		CalcDist(distance,id_solid,*Dm);
-
+		
 		// re-initialize
 		double beta = 0.95;
 		for (int k=0; k<nz; k++){
