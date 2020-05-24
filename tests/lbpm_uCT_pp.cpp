@@ -52,6 +52,7 @@ int main(int argc, char **argv)
             printf("Input data file: %s\n",filename.c_str());
         }
 
+	bool FILTER_CONNECTED_COMPONENTS = false;
         auto db = std::make_shared<Database>( filename );
         auto domain_db = db->getDatabase( "Domain" );
         auto uct_db = db->getDatabase( "uCT" );
@@ -82,9 +83,13 @@ int main(int argc, char **argv)
         auto center       = uct_db->getVector<int>( "center" );
         auto CylRad       = uct_db->getScalar<float>( "cylinder_radius" );
         auto maxLevels    = uct_db->getScalar<int>( "max_levels" );
+	
         std::vector<int> offset( 3, 0 );
         if ( uct_db->keyExists( "offset" ) )
             offset = uct_db->getVector<int>( "offset" );
+
+        if ( uct_db->keyExists( "filter_connected_components" ) )
+            FILTER_CONNECTED_COMPONENTS = uct_db->getScalar<bool>( "filter_connected_components" );
 
         // Check that the number of processors >= the number of ranks
         if ( rank==0 ) {
@@ -326,11 +331,13 @@ int main(int argc, char **argv)
 
         // Perform a final filter
         PROFILE_START("Filtering final domains");
+	if (FILTER_CONNECTED_COMPONENTS){
         if (rank==0)
             printf("Filtering final domains\n");
         Array<float> filter_Mean, filter_Dist1, filter_Dist2;
         filter_final( ID[0], Dist[0], *fillFloat[0], *Dm[0], filter_Mean, filter_Dist1, filter_Dist2 );
         PROFILE_STOP("Filtering final domains");
+	}
         //removeDisconnected( ID[0], *Dm[0] );
         
         // Write the distance function to a netcdf file
