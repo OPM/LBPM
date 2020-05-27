@@ -68,6 +68,7 @@ public:
     int *dvcMap;
 	double *fqA, *fqB;
 	double *Permeability;//grey voxel permeability
+    //double relPermA,relPermB;//grey voxel relperm
 	double *Porosity;
 	double *Velocity;
 	double *Pressure_dvc;

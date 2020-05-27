@@ -201,6 +201,8 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
 	double *Poros, *Perm;
 	Poros = new double[Np];
 	Perm = new double[Np];
+    //relPermA_host = new double[Np];
+    //relPermB_host = new double[Np];
     double *SolidPotentialA_host = new double [Nx*Ny*Nz];
     double *SolidPotentialB_host = new double [Nx*Ny*Nz];
 	double *SolidForceA_host = new double[3*Np];
@@ -210,11 +212,15 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
 	signed char VALUE=0;
 	double POROSITY=0.f;
 	double PERMEABILITY=0.f;
+    //double RELPERMA=0.f;
+    //double RELPERMB=0.f;
 	double AFFINITY_A=0.f;
 	double AFFINITY_B=0.f;
 
 	auto PorosityList = greyscaleSC_db->getVector<double>( "PorosityList" );
 	auto PermeabilityList = greyscaleSC_db->getVector<double>( "PermeabilityList" );
+	//auto RelPermListA = greyscaleSC_db->getVector<double>( "RelPermListA" );
+	//auto RelPermListB = greyscaleSC_db->getVector<double>( "RelPermListB" );
 	auto LabelList = greyscaleSC_db->getVector<int>( "ComponentLabels" );
 	auto AffinityListA = greyscaleSC_db->getVector<double>( "ComponentAffinityA" );
 	auto AffinityListB = greyscaleSC_db->getVector<double>( "ComponentAffinityB" );
@@ -231,11 +237,19 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
     //   *for ComponentLabels =1, 2, put porosity=1 (or if users accidentally put other values it should still be fine)
     //4. Requirement for "PermeabilityList":
     //   *for ComponentLabels <=2, does not matter, can leave it as 1.0 
+    //5. Requirement for "RelPermListA" and "RelPermListB":
+    //   *for ComponentLabels <=2, does not matter, can leave both RelPermA and RelPermB as 1.0 
 
 	NLABELS=LabelList.size();
-	if (NLABELS != PorosityList.size() || NLABELS != PermeabilityList.size() || NLABELS != AffinityListA.size() || NLABELS != AffinityListB.size() ){
-		ERROR("Error: ComponentLabels, ComponentAffinityA/B, PorosityList and PermeabilityList must all be the same length! \n");
+	if (NLABELS != PorosityList.size() || NLABELS != PermeabilityList.size() ||
+        NLABELS != AffinityListA.size() || NLABELS != AffinityListB.size() ){
+		ERROR("Error: ComponentLabels, ComponentAffinityA/B, PorosityList, and PermeabilityList must all be the same length! \n");
 	}
+//	if (NLABELS != PorosityList.size() || NLABELS != PermeabilityList.size() ||
+//        NLABELS != RelPermListA.size() || NLABELS != RelPermListB.size() || 
+//        NLABELS != AffinityListA.size() || NLABELS != AffinityListB.size() ){
+//		ERROR("Error: ComponentLabels, ComponentAffinityA/B, PorosityList, PermeabilityList, and RelPermListA/B must all be the same length! \n");
+//	}
 
 	double label_count[NLABELS];
 	double label_count_global[NLABELS];
@@ -297,6 +311,35 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
 			}
 		}
 	}
+//    // New way of initializing the relperm values
+//	for (int k=0;k<Nz;k++){
+//		for (int j=0;j<Ny;j++){
+//			for (int i=0;i<Nx;i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//				VALUE=id[n];
+//				// Assign the affinity from the paired list
+//				for (unsigned int idx=0; idx < NLABELS; idx++){
+//					//printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+//					if ( (VALUE>0) && (VALUE == LabelList[idx])){
+//						RELPERMA=PermeabilityList[idx]*RelPermListA[idx];
+//						RELPERMB=PermeabilityList[idx]*RelPermListB[idx];
+//						idx = NLABELS;
+//						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+//					}
+//				}
+//				int idx = Map(i,j,k);
+//				if (!(idx < 0)){
+//                    if (RELPERMA<=0.0 || RELPERMB<=0.0){
+//                        ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
+//                    }
+//                    else{
+//					    relPermA_host[idx] = RELPERMA/Dm->voxel_length/Dm->voxel_length;
+//					    relPermB_host[idx] = RELPERMB/Dm->voxel_length/Dm->voxel_length;
+//                    }
+//                }
+//			}
+//		}
+//	}
 
     //Populate the solid potential map, for ALL range of node_ID except node = 1,2, i.e. NW and W phase
 	for (int k=0;k<Nz;k++){
@@ -466,6 +509,8 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
     //Copy all data to device
 	ScaLBL_CopyToDevice(Porosity, Poros, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
+	//ScaLBL_CopyToDevice(relPermA, relPermA_host, Np*sizeof(double));
+	//ScaLBL_CopyToDevice(relPermB, relPermB_host, Np*sizeof(double));
 	ScaLBL_CopyToDevice(SolidForceA, SolidForceA_host, 3*Np*sizeof(double));
 	ScaLBL_CopyToDevice(SolidForceB, SolidForceB_host, 3*Np*sizeof(double));
 	ScaLBL_DeviceBarrier();
@@ -475,6 +520,8 @@ void ScaLBL_GreyscaleSCModel::AssignGreyscaleAndSolidLabels()
     delete [] SolidForceB_host;
     delete [] Poros;
     delete [] Perm;
+    //delete [] relPermA_host;
+    //delete [] relPermB_host;
 	delete [] Dst;
 }
 
@@ -565,9 +612,9 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
         LabelList.clear();
 	    LabelList = greyscaleSC_db->getVector<int>( "GreyNodeLabels" );
 	}
-	if (greyscaleSC_db->keyExists( "GreyNodeSw" )){
+	if (greyscaleSC_db->keyExists( "GreyNodeSwInit" )){
         SwList.clear();
-	    SwList = greyscaleSC_db->getVector<double>( "GreyNodeSw" );
+	    SwList = greyscaleSC_db->getVector<double>( "GreyNodeSwInit" );
 	}
 
 	NLABELS=LabelList.size();
@@ -694,6 +741,8 @@ void ScaLBL_GreyscaleSCModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &DenA, sizeof(double)*Nx*Ny*Nz);		
 	ScaLBL_AllocateDeviceMemory((void **) &DenB, sizeof(double)*Nx*Ny*Nz);		
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
+	//ScaLBL_AllocateDeviceMemory((void **) &relPermA, sizeof(double)*Np);		
+	//ScaLBL_AllocateDeviceMemory((void **) &relPermB, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure_dvc, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
