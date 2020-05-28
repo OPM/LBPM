@@ -26,7 +26,7 @@ std::string VariableTypeName( VariableType type );
 
 /*!
  * @brief  Open netcdf file
- * @detailed  This function opens a netcdf file
+ * @details  This function opens a netcdf file
  * @return This function returns a handle to the file
  * @param filename      File to open
  * @param mode          Open the file for reading or writing
@@ -37,7 +37,7 @@ int open( const std::string& filename, FileMode mode, const Utilities::MPI& comm
 
 /*!
  * @brief  Close netcdf file
- * @detailed  This function closes a netcdf file
+ * @details  This function closes a netcdf file
  * @param fid           Handle to the open file
 */
 void close( int fid );
@@ -45,7 +45,7 @@ void close( int fid );
 
 /*!
  * @brief  Read the variable names
- * @detailed  This function reads a list of the variable names in the file
+ * @details  This function reads a list of the variable names in the file
  * @param fid           Handle to the open file
 */
 std::vector<std::string> getVarNames( int fid );
@@ -53,7 +53,7 @@ std::vector<std::string> getVarNames( int fid );
 
 /*!
  * @brief  Read the attribute names
- * @detailed  This function reads a list of the attribute names in the file
+ * @details  This function reads a list of the attribute names in the file
  * @param fid           Handle to the open file
 */
 std::vector<std::string> getAttNames( int fid );
@@ -61,7 +61,7 @@ std::vector<std::string> getAttNames( int fid );
 
 /*!
  * @brief  Return the variable type
- * @detailed  This function returns the type for a variable
+ * @details  This function returns the type for a variable
  * @param fid           Handle to the open file
  * @param var           Variable to read
 */
@@ -70,7 +70,7 @@ VariableType getVarType( int fid, const std::string& var );
 
 /*!
  * @brief  Return the attribute type
- * @detailed  This function returns the type for an attribute
+ * @details  This function returns the type for an attribute
  * @param fid           Handle to the open file
  * @param att           Attribute to read
 */
@@ -79,7 +79,7 @@ VariableType getAttType( int fid, const std::string& att );
 
 /*!
  * @brief  Return the variable dimensions
- * @detailed  This function returns the die for a variable
+ * @details  This function returns the die for a variable
  * @param fid           Handle to the open file
  * @param var           Variable to read
 */
@@ -88,7 +88,7 @@ std::vector<size_t> getVarDim( int fid, const std::string& var );
 
 /*!
  * @brief  Read a variable
- * @detailed  This function reads a variable with the given name from the file
+ * @details  This function reads a variable with the given name from the file
  * @param fid           Handle to the open file
  * @param var           Variable to read
 */
@@ -98,7 +98,7 @@ Array<TYPE> getVar( int fid, const std::string& var );
 
 /*!
  * @brief  Read a strided variable
- * @detailed  This function reads a strided variable with the given name from the file
+ * @details  This function reads a strided variable with the given name from the file
  * @param fid           Handle to the open file
  * @param var           Variable to read
  * @param start         Starting corner for the read
@@ -112,7 +112,7 @@ Array<TYPE> getVar( int fid, const std::string& var, const std::vector<int>& sta
 
 /*!
  * @brief  Read an attribute
- * @detailed  This function reads an attribute with the given name from the file
+ * @details  This function reads an attribute with the given name from the file
  * @param fid           Handle to the open file
  * @param att           Attribute to read
 */
@@ -122,7 +122,7 @@ Array<TYPE> getAtt( int fid, const std::string& att );
 
 /*!
  * @brief  Write the dimensions
- * @detailed  This function writes the grid dimensions to netcdf. 
+ * @details  This function writes the grid dimensions to netcdf. 
  * @param fid           Handle to the open file
 */
 std::vector<int> defDim( int fid, const std::vector<std::string>& names, const std::vector<int>& dims );
@@ -130,7 +130,7 @@ std::vector<int> defDim( int fid, const std::vector<std::string>& names, const s
 
 /*!
  * @brief  Write a variable
- * @detailed  This function writes a variable to netcdf. 
+ * @details  This function writes a variable to netcdf. 
  * @param fid           Handle to the open file
 */
 template<class TYPE>
