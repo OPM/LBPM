@@ -606,20 +606,25 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
 	signed char VALUE=0;
 
     vector<int> LabelList{1,2};
-    vector<double> SwList{0.0,1.0}; 
+    vector<double> GreyDenAList{rhoA,rhoB_minor}; 
+    vector<double> GreyDenBList{rhoB,rhoA_minor}; 
 
 	if (greyscaleSC_db->keyExists( "GreyNodeLabels" )){
         LabelList.clear();
 	    LabelList = greyscaleSC_db->getVector<int>( "GreyNodeLabels" );
 	}
-	if (greyscaleSC_db->keyExists( "GreyNodeSwInit" )){
-        SwList.clear();
-	    SwList = greyscaleSC_db->getVector<double>( "GreyNodeSwInit" );
+	if (greyscaleSC_db->keyExists( "GreyNodeDenAInit" )){
+        GreyDenAList.clear();
+	    GreyDenAList = greyscaleSC_db->getVector<double>( "GreyNodeDenAInit" );
+	}
+	if (greyscaleSC_db->keyExists( "GreyNodeDenBInit" )){
+        GreyDenBList.clear();
+	    GreyDenBList = greyscaleSC_db->getVector<double>( "GreyNodeDenBInit" );
 	}
 
 	NLABELS=LabelList.size();
-	if (NLABELS != SwList.size()){
-		ERROR("Error: GreyNodeLabels and GreyNodeSw must be the same length! \n");
+	if (NLABELS != GreyDenAList.size() || NLABELS != GreyDenBList.size()){
+		ERROR("Error: GreyNodeLabels, GreyNodeDenAInit, and GreyNodeDenBInit must all be the same length! \n");
 	}
 	
     double *DenA_temp,*DenB_temp;
@@ -640,10 +645,8 @@ void ScaLBL_GreyscaleSCModel::Density_Init(){
                 if (VALUE>0){
                     for (unsigned int idx=0; idx < NLABELS; idx++){
                         if (VALUE == LabelList[idx]){
-                            double Sw = SwList[idx];
-                            if ((Sw<0.0) || (Sw>1.0)) ERROR("Error: Initial saturation for grey nodes must be between [0.0, 1.0]! \n");
-                            nB=Sw;
-                            nA=1.0-Sw;
+                            nA=GreyDenAList[idx];
+                            nB=GreyDenBList[idx];
                             //phi = nA-nB;
                             idx = NLABELS;
                         }
