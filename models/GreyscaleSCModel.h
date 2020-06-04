@@ -42,7 +42,8 @@ public:
     double rhoA,rhoB;
     double rhoA_minor,rhoB_minor;//dissolved density
 	double tolerance;
-	double Fx,Fy,Fz,flux;
+	double Fx,Fy,Fz;
+    double fluxA,fluxB;
 	double dinA,doutA;
 	double dinB,doutB;
     double GreyPorosity;
