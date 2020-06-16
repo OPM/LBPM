@@ -2079,7 +2079,7 @@ void ScaLBL_Communicator::GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB,
 {
 	if (kproc == 0) {
 		// Set the density field on the z inlet
-		ScaLBL_GreyscaleSC_BC_z(dvcSendList_z, Map, DenA, DenB, vA, vB, sendCount_z, N);
+		ScaLBL_GreyscaleSC_BC_z(dvcSendList_z, Map, DenA, DenB, vA, vB, sendCount_z);
 	}
 }
 
@@ -2087,7 +2087,7 @@ void ScaLBL_Communicator::GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB,
 {
 	if (kproc == nprocz-1){
 		// Set the density field on the Z outlet
-		ScaLBL_GreyscaleSC_BC_Z(dvcSendList_Z, Map, DenA, DenB, vA, vB, sendCount_Z, N);
+		ScaLBL_GreyscaleSC_BC_Z(dvcSendList_Z, Map, DenA, DenB, vA, vB, sendCount_Z);
 	}
 }
 

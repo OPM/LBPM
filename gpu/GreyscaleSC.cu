@@ -3215,7 +3215,7 @@ __global__ void dvc_ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Ma
 	}
 }
 
-__global__  void dvc_ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np)
+__global__  void dvc_ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count)
 {
 	int idx,n,nm;
 	// Fill the outlet with component b
@@ -3228,7 +3228,7 @@ __global__  void dvc_ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, 
 	}
 }
 
-__global__  void dvc_ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np)
+__global__  void dvc_ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count)
 {
 	int idx,n,nm;
 	// Fill the outlet with component b
@@ -3764,18 +3764,18 @@ extern "C" void ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Map, d
 }
 
 
-extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np){
+extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count){
     int GRID = count / 512 + 1;
-    dvc_ScaLBL_GreyscaleSC_BC_z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count, Np);
+    dvc_ScaLBL_GreyscaleSC_BC_z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_GreyscaleSC_BC_z: %s \n",cudaGetErrorString(err));
 	}
 }
 
-extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count, int Np){
+extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count){
     int GRID = count / 512 + 1;
-    dvc_ScaLBL_GreyscaleSC_BC_Z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count, Np);
+    dvc_ScaLBL_GreyscaleSC_BC_Z<<<GRID,512>>>(list, Map, DenA, DenB, vA, vB, count);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_GreyscaleSC_BC_Z: %s \n",cudaGetErrorString(err));

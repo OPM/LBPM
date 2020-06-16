@@ -16,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_ColorModel{
+class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
-	~ScaLBL_ColorModel();	
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM);
+	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -36,8 +36,11 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
+    double tauA_eff,tauB_eff;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
+    double GreyPorosity;
+    bool greyMode;//run greyColor model if true
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -53,7 +56,7 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> color_db;
+    std::shared_ptr<Database> greyscaleColor_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
@@ -63,9 +66,12 @@ public:
 	int *dvcMap;
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
-	double *ColorGrad;
+    double *GreySolidGrad;
+	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
+    double *Porosity_dvc;
+    double *Permeability_dvc;
 		
 private:
 	Utilities::MPI comm;
@@ -79,7 +85,9 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
-    void AssignComponentLabels(double *phase);
+    void AssignComponentLabels();
+    void AssignGreySolidLabels();
+    void AssignGreyPoroPermLabels();
     double ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
