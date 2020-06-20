@@ -88,7 +88,7 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 					// printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
 					  //}
 					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
-					Xi -= 0.5;
+					Xi -= 1.5;
 				}
 				// Euler characteristic -- each vertex shared by four cubes
 				Xi += 0.25*double(object.VertexCount);
