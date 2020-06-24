@@ -169,10 +169,10 @@ int main(int argc, char **argv)
    // Averages->Reduce();
     
     Object->MeasureObject();
-    double Vi = Object.V();
-    double Ai = Object.A();
-    double Hi = Object.H();
-    double Xi = Object.X();
+    double Vi = Object->V();
+    double Ai = Object->A();
+    double Hi = Object->H();
+    double Xi = Object->X();
 	Vi=sumReduce( Dm->Comm, Vi);
 	Ai=sumReduce( Dm->Comm, Ai);
 	Hi=sumReduce( Dm->Comm, Hi);
