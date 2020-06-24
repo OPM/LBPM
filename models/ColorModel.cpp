@@ -1398,48 +1398,48 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	}
 
 	if (USE_CONNECTED_NWP){
-		if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
-			// if connected volume is less than 2% just delete the whole thing
-			if (rank==0) printf("Connected region has shrunk! \n");
-			REVERSE_FLOW_DIRECTION = true;
-		}
-
-		/*	else{*/
+	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
+		// if connected volume is less than 2% just delete the whole thing
+		if (rank==0) printf("Connected region has shrunk! \n");
+		REVERSE_FLOW_DIRECTION = true;
+	}
+	
+/*	else{*/
 		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
 	}
-	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-	double target_delta_volume_incremental = target_delta_volume;
-	if (fabs(target_delta_volume) > 0.01*volume_initial)  
-		target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-	delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental, WallFactor);
+		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+		double target_delta_volume_incremental = target_delta_volume;
+		if (fabs(target_delta_volume) > 0.01*volume_initial)  
+			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
+		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental, WallFactor);
 
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-				else 		     				  phase_id(i,j,k) = 1;
-				//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+					else 		     				  phase_id(i,j,k) = 1;
+					//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+				}
+			}
+		}	
+
+		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
+
+		// 5. Update phase indicator field based on new distnace
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					double d = phase_distance(i,j,k);
+					if (Averages->SDs(i,j,k) > 0.f){
+						if (d < 3.f){
+							//phase(i,j,k) = -1.0;
+							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
+						}
+					}
+				} 
 			}
 		}
-	}	
-
-	CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
-
-	// 5. Update phase indicator field based on new distnace
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				double d = phase_distance(i,j,k);
-				if (Averages->SDs(i,j,k) > 0.f){
-					if (d < 3.f){
-						//phase(i,j,k) = -1.0;
-						phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-					}
-				}
-			} 
-		}
-	}
-	fillDouble.fill(phase);
+		fillDouble.fill(phase);
 	//}
 
 	count = 0.f;
