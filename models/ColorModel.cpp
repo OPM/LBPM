@@ -869,8 +869,8 @@ void ScaLBL_ColorModel::Run(){
 						double pB = Averages->gwb.p;
 						double pAc = Averages->gnc.p;
 						double pBc = Averages->gwc.p;
-						double pAB = (pA-pB)/(h*5.796*alpha);
-						double pAB_connected = (pAc-pBc)/(h*5.796*alpha);
+						double pAB = (pA-pB)/(h*6.0*alpha);
+						double pAB_connected = (pAc-pBc)/(h*6.0*alpha);
 						// connected contribution
 						double Vol_nc = Averages->gnc.V/Dm->Volume;
 						double Vol_wc = Averages->gwc.V/Dm->Volume;

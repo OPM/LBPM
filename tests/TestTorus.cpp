@@ -63,6 +63,8 @@ int main(int argc, char **argv)
     auto Dm = std::make_shared<Domain>(db,comm);
  //   const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
     auto Averages = std::make_shared<TwoPhase>(Dm);
+    auto Object = std::make_shared<Minkowski>(Dm);
+    
 	Nx += 2;
 	Ny += 2;
 	Nz += 2;
@@ -124,9 +126,11 @@ int main(int argc, char **argv)
 				//Averages->Phase(i,j,k) = - Averages->Phase(i,j,k);
 				if (Averages->Phase(i,j,k) > 0.0){
 					Dm->id[n] = 2;
+					Object->id(i,j,k) = 1;
 				}
 				else{
 					Dm->id[n] = 1;
+					Object->id(i,j,k) = 0;
 				}
 				Averages->SDn(i,j,k) = Averages->Phase(i,j,k);
 				Averages->Phase(i,j,k) = Averages->SDn(i,j,k);
@@ -163,6 +167,17 @@ int main(int argc, char **argv)
     Averages->Reduce();
     Averages->PrintAll(int(5));
    // Averages->Reduce();
+    
+    Object->MeasureObject();
+    double Vi = Object->V();
+    double Ai = Object->A();
+    double Hi = Object->H();
+    double Xi = Object->X();
+	Vi=sumReduce( Dm->Comm, Vi);
+	Ai=sumReduce( Dm->Comm, Ai);
+	Hi=sumReduce( Dm->Comm, Hi);
+	Xi=sumReduce( Dm->Comm, Xi);
+	printf("Vi=%f, Ai=%f, Hi=%f, Xi=%f \n", Vi,Ai,Hi,Xi);
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
   MPI_Barrier(comm);
