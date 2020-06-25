@@ -23,7 +23,7 @@ Configure, build & install procedure
 
 * edit configure script from sample_scripts directory and configure (e.g.)
 
-   `/path/to/LBPM-WIA/sample_scripts/configure_desktop`
+   `/path/to/LBPM/sample_scripts/configure_desktop`
 
 * compile and install
 
