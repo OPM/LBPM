@@ -15,6 +15,25 @@ int DECL::Face(int index){
 	return FaceData[index];
 }
 
+void DECL::Write(){
+	int e1,e2,e3;
+	FILE *TRIANGLES;
+	TRIANGLES = fopen("triangles.stl","w");
+	fprintf("solid \n");
+	for (int idx=0; idx<TriangleCount; idx++){
+		e1 = object.Face(idx); 
+		e2 = object.halfedge.next(e1);
+		e3 = object.halfedge.next(e2);
+		auto P1 = object.vertex.coords(object.halfedge.v1(e1));
+		auto P2 = object.vertex.coords(object.halfedge.v1(e2));
+		auto P3 = object.vertex.coords(object.halfedge.v1(e3));
+		fprintf("vertex %f %f %f\n",P1.x,P1.y.P1.z);
+		fprintf("vertex %f %f %f\n",P2.x,P2.y.P2.z);
+		fprintf("vertex %f %f %f\n",P3.x,P3.y.P3.z);
+	}
+	fclose(TRIANGLES);
+}
+
 void DECL::LocalIsosurface(const DoubleArray& A, double value, const int i, const int j, const int k){
 	Point P,Q;
 	Point PlaceHolder;

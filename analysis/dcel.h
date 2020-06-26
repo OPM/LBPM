@@ -67,6 +67,7 @@ public:
 	Vertex vertex;
 	Halfedge halfedge;
 	void LocalIsosurface(const DoubleArray& A, double value, int i, int j, int k);
+	void Write();
 	int Face(int index);
 	
 	double origin(int edge);
