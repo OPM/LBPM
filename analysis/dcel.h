@@ -1,3 +1,6 @@
+#ifndef DCEL_INC
+#define DCEL_INC
+
 #include <vector>
 #include "analysis/pmmc.h"
 
@@ -79,3 +82,7 @@ public:
 private:
 	std::vector<int> FaceData;
 };
+
+void iso_surface(const Array<double>&Field, const double isovalue);
+
+#endif
