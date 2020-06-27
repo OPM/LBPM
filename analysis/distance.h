@@ -40,4 +40,15 @@ void CalcDist( Array<TYPE> &Distance, const Array<char> &ID, const Domain &Dm,
 void CalcVecDist( Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
     const std::array<bool,3>& periodic = {true,true,true}, const std::array<double,3>& dx = {1,1,1} );
 
+
+/*!
+ * @brief  Calculate the distance based on solution of Eikonal equation
+ * @details  This routine calculates the signed distance to the nearest domain surface.
+ * @param[out] Distance     Distance function
+ * @param[in] ID            Domain id
+ * @param[in] Dm            Domain information
+ * @param[in] timesteps      number of timesteps to run for Eikonal solver
+ */
+double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps);
+
 #endif
