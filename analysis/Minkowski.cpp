@@ -137,6 +137,7 @@ void Minkowski::MeasureObject(){
 		}
 	}	
 	CalcDist(distance,id,*Dm);
+	Eikonal(distance, id, *Dm, 10, {true, true, true});
 	ComputeScalar(distance,0.0);
 
 }
