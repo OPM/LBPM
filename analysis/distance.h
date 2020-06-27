@@ -16,6 +16,16 @@ struct Vec {
 };
 inline bool operator<(const Vec& l, const Vec& r){ return l.x*l.x+l.y*l.y+l.z*l.z < r.x*r.x+r.y*r.y+r.z*r.z; }
 
+inline double minmod(double &a, double &b){
+
+  double value;
+
+  value = a;
+  if ( a*b < 0.0)    value=0.0;
+  else if (fabs(a) > fabs(b)) value = b;
+
+  return value;
+}
 
 /*!
  * @brief  Calculate the distance using a simple method
@@ -48,7 +58,8 @@ void CalcVecDist( Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
  * @param[in] ID            Domain id
  * @param[in] Dm            Domain information
  * @param[in] timesteps      number of timesteps to run for Eikonal solver
+ * @param[in] periodic      Directions that are periodic 
  */
-double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps);
+double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic);
 
 #endif

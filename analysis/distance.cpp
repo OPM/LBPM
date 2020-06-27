@@ -182,7 +182,7 @@ void CalcVecDist( Array<Vec> &d, const Array<int> &ID0, const Domain &Dm,
     }
 }
 
-double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
+double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic){
 
   /*
    * This routine converts the data in the Distance array to a signed distance
@@ -207,7 +207,8 @@ double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
   xdim=Dm.Nx-2;
   ydim=Dm.Ny-2;
   zdim=Dm.Nz-2;
-  fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+  //fillHalo<double> fillData(Dm.Comm, Dm.rank_info,xdim,ydim,zdim,1,1,1,0,1);
+  fillHalo<double> fillData(  Dm.Comm, Dm.rank_info, {xdim, ydim, zdim}, {1,1,1}, 50, 1, {true,true,true}, periodic );
 
   // Arrays to store the second derivatives
   DoubleArray Dxx(Dm.Nx,Dm.Ny,Dm.Nz);
@@ -310,14 +311,14 @@ double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 
     MPI_Allreduce(&LocalVar,&GlobalVar,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
     MPI_Allreduce(&LocalMax,&GlobalMax,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
-    GlobalVar /= (Dm.Nx-2)*(Dm.Ny-2)*(Dm.Nz-2)*Dm.nprocx*Dm.nprocy*Dm.nprocz;
+    GlobalVar /= Dm.Volume;
     count++;
 
-    if (count%50 == 0 && Dm.rank==0 )
+    if (count%50 == 0 && Dm.rank()==0 )
       printf("Time=%i, Max variation=%f, Global variation=%f \n",count,GlobalMax,GlobalVar);
 
     if (fabs(GlobalMax) < 1e-5){
-      if (Dm.rank==0) printf("Exiting with max tolerance of 1e-5 \n");
+      if (Dm.rank()==0) printf("Exiting with max tolerance of 1e-5 \n");
       count=timesteps;
     }
   }
