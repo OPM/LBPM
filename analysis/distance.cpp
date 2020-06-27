@@ -272,24 +272,24 @@ double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps){
 	  // Compute upwind derivatives for Godunov Hamiltonian
 	  if (sign < 0.0){
 	    if (Dxp + Dxm > 0.f)  Dx = Dxp*Dxp;
-	    elseDx = Dxm*Dxm;
+	    else Dx = Dxm*Dxm;
 
 	    if (Dyp + Dym > 0.f)  Dy = Dyp*Dyp;
-	    elseDy = Dym*Dym;
+	    else Dy = Dym*Dym;
 
 	    if (Dzp + Dzm > 0.f)  Dz = Dzp*Dzp;
-	    elseDz = Dzm*Dzm;
+	    else Dz = Dzm*Dzm;
 	  }
 	  else{
 
 	    if (Dxp + Dxm < 0.f)  Dx = Dxp*Dxp;
-	    elseDx = Dxm*Dxm;
+	    else Dx = Dxm*Dxm;
 
 	    if (Dyp + Dym < 0.f)  Dy = Dyp*Dyp;
-	    elseDy = Dym*Dym;
+	    else Dy = Dym*Dym;
 
 	    if (Dzp + Dzm < 0.f)  Dz = Dzp*Dzp;
-	    elseDz = Dzm*Dzm;
+	    else Dz = Dzm*Dzm;
 	  }
 
 	  //Dx = max(Dxp*Dxp,Dxm*Dxm);
