@@ -60,6 +60,6 @@ void CalcVecDist( Array<Vec> &Distance, const Array<int> &ID, const Domain &Dm,
  * @param[in] timesteps      number of timesteps to run for Eikonal solver
  * @param[in] periodic      Directions that are periodic 
  */
-double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic);
+double Eikonal(DoubleArray &Distance,  const Array<char> &ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic);
 
 #endif

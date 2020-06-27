@@ -182,7 +182,7 @@ void CalcVecDist( Array<Vec> &d, const Array<int> &ID0, const Domain &Dm,
     }
 }
 
-double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic){
+double Eikonal(DoubleArray &Distance, const Array<char> &ID, Domain &Dm, int timesteps, const std::array<bool,3>& periodic){
 
   /*
    * This routine converts the data in the Distance array to a signed distance
@@ -244,7 +244,7 @@ double Eikonal(DoubleArray &Distance, char *ID, Domain &Dm, int timesteps, const
 	  int n = k*Dm.Nx*Dm.Ny + j*Dm.Nx + i;
 
 	  sign = -1;
-	  if (ID[n] == 1) sign = 1;
+	  if (ID(i,j,k) == 1) sign = 1;
 
 	  // local second derivative terms
 	  Dxxp = minmod(Dxx(i,j,k),Dxx(i+1,j,k));
