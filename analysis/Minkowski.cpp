@@ -58,9 +58,9 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	//int Nx = Field.size(0);
 	//int Ny = Field.size(1);
 	//int Nz = Field.size(2);
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
+	for (int k=0; k<Nz-1; k++){
+		for (int j=0; j<Ny-1; j++){
+			for (int i=0; i<Nx-1; i++){
 				object.LocalIsosurface(Field,isovalue,i,j,k);
 				for (int idx=0; idx<object.TriangleCount; idx++){
 					e1 = object.Face(idx); 
