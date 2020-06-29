@@ -87,13 +87,23 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 					// printf("   (%i,%i,%i) QR(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e2,object.halfedge.twin(e2),P2.x,P2.y,P2.z,P3.x,P3.y,P3.z,a2,s2);
 					// printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
 					  //}
+					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
+					Xi -= 0.5;
 				}
 				// Euler characteristic -- each vertex shared by four cubes
-				double nside_extern = double(object.VertexCount);
-				double nside_intern = double(object.VertexCount)-3.0;
-				/*EulerChar=0.0;
+				//Xi += 0.25*double(object.VertexCount);
+				// check if vertices are at corners
+				for (int idx=0; idx<object.VertexCount; idx++){
+					auto P1 = object.vertex.coords(idx);
+					if ( P1.x%1.0==0.0 && P1.y%1.0==0.0  && P1.z%1.0==0.0 ){
+						Xi += 0.125
+					}
+					else Xi += 0.25
+				}
+				/*double nside_extern = double(npts);
+				double nside_intern = double(npts)-3.0;
+				EulerChar=0.0;
 				if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface); */
-				Xi += 0.25*double(object.VertexCount) - nside_intern - 0.5*nside_extern	+ double(object.TriangleCount);
 			}
 		}
 	}
