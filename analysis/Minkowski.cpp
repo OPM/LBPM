@@ -58,9 +58,9 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	//int Nx = Field.size(0);
 	//int Ny = Field.size(1);
 	//int Nz = Field.size(2);
-	for (int k=0; k<Nz-1; k++){
-		for (int j=0; j<Ny-1; j++){
-			for (int i=0; i<Nx-1; i++){
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
 				object.LocalIsosurface(Field,isovalue,i,j,k);
 				for (int idx=0; idx<object.TriangleCount; idx++){
 					e1 = object.Face(idx); 
@@ -87,11 +87,13 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 					// printf("   (%i,%i,%i) QR(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e2,object.halfedge.twin(e2),P2.x,P2.y,P2.z,P3.x,P3.y,P3.z,a2,s2);
 					// printf("   (%i,%i,%i) RP(%i,%i)={%f,%f,%f} {%f,%f,%f} a=%f l=%f \n",i,j,k,e3,object.halfedge.twin(e3),P3.x,P3.y,P3.z,P1.x,P1.y,P1.z,a3,s3);
 					  //}
-					// Euler characteristic (half edge rule: one face - 0.5*(three edges))
-					Xi -= 0.5;
 				}
 				// Euler characteristic -- each vertex shared by four cubes
-				Xi += 0.25*double(object.VertexCount);
+				double nside_extern = double(object.VertexCount);
+				double nside_intern = double(object.VertexCount)-3.0;
+				/*EulerChar=0.0;
+				if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface); */
+				Xi += 0.25*double(object.VertexCount) - nside_intern - 0.5*nside_extern	+ double(object.TriangleCount);
 			}
 		}
 	}
