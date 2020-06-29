@@ -95,10 +95,10 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 				// check if vertices are at corners
 				for (int idx=0; idx<object.VertexCount; idx++){
 					auto P1 = object.vertex.coords(idx);
-					if ( P1.x%1.0==0.0 && P1.y%1.0==0.0  && P1.z%1.0==0.0 ){
-						Xi += 0.125
+					if ( remainder(P1.x,1.0)==0.0 && remainder(P1.y,1.0)==0.0  && remainder(P1.z,1.0)==0.0 ){
+					  Xi += 0.125;
 					}
-					else Xi += 0.25
+					else Xi += 0.25;
 				}
 				/*double nside_extern = double(npts);
 				double nside_intern = double(npts)-3.0;

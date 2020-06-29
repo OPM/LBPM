@@ -18,7 +18,7 @@ int main (int argc, char **argv)
     // Initialize compute device
     ScaLBL_SetDevice(rank);
     ScaLBL_DeviceBarrier();
-    MPI_Barrier(comm);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Create a memory leak for valgrind to find
     if ( nprocs==1 ) {
