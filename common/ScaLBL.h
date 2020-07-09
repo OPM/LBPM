@@ -167,12 +167,12 @@ extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(int *neighborList, int *l
 //extern "C" void ScaLBL_D3Q19_GreyscaleColor_Init(double *dist, double *Porosity, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double *ColorGrad,double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+		double *ColorGrad,double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 

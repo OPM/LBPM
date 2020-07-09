@@ -67,7 +67,7 @@ public:
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
     double *GreySolidGrad;
-	//double *ColorGrad;
+	double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
     double *Porosity_dvc;

@@ -4,7 +4,7 @@
 #define NTHREADS 256
 
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
+		 double *ColorGrad,double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -33,6 +33,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
     double tau_eff;
     double mu_eff;//kinematic viscosity
     double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
+    double nx_phase,ny_phase,nz_phase,C_phase;
     double Fx,Fy,Fz;
 
 	const double mrt_V1=0.05263157894736842;
@@ -134,13 +135,23 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
 			//............Compute the Color Gradient...................................
-			nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx_phase = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny_phase = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            ColorGrad[n]=nx_phase;
+            ColorGrad[n+Np]=ny_phase;
+            ColorGrad[n+2*Np]=nz_phase;
+			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
+
             //correct the normal color gradient by considering the effect of grey solid
-            nx += (1.0-porosity)*nx_gs; 
-            ny += (1.0-porosity)*ny_gs; 
-            nz += (1.0-porosity)*nz_gs; 
+            nx = nx_phase + (1.0-porosity)*nx_gs; 
+            ny = ny_phase + (1.0-porosity)*ny_gs; 
+            nz = nz_phase + (1.0-porosity)*nz_gs; 
+            if (C_phase==0.0){
+                nx = nx_phase; 
+                ny = ny_phase;
+                nz = nz_phase;
+            }
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
@@ -717,7 +728,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 }
 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
+        double *ColorGrad,double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -741,6 +752,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
     double tau_eff;
     double mu_eff;//kinematic viscosity
     double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
+    double nx_phase,ny_phase,nz_phase,C_phase;
     double Fx,Fy,Fz;
 
 	const double mrt_V1=0.05263157894736842;
@@ -843,13 +855,23 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
 			//............Compute the Color Gradient...................................
-			nx = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx_phase = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny_phase = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            ColorGrad[n]=nx_phase;
+            ColorGrad[n+Np]=ny_phase;
+            ColorGrad[n+2*Np]=nz_phase;
+			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
+
             //correct the normal color gradient by considering the effect of grey solid
-            nx += (1.0-porosity)*nx_gs; 
-            ny += (1.0-porosity)*ny_gs; 
-            nz += (1.0-porosity)*nz_gs; 
+            nx = nx_phase + (1.0-porosity)*nx_gs; 
+            ny = ny_phase + (1.0-porosity)*ny_gs; 
+            nz = nz_phase + (1.0-porosity)*nz_gs; 
+            if (C_phase==0.0){
+                nx = nx_phase; 
+                ny = ny_phase;
+                nz = nz_phase;
+            }
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
@@ -1392,14 +1414,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 //}
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double *ColorGrad,double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	//cudaProfilerStart();
 	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, 
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den,ColorGrad, Phi, GreySolidGrad, Poros, Perm, Vel, 
             rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -1410,14 +1432,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+		double *ColorGrad,double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	//cudaProfilerStart();
 	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor, cudaFuncCachePreferL1);
 	
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel, 
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den,ColorGrad, Phi,  GreySolidGrad, Poros, Perm,Vel, 
 			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();

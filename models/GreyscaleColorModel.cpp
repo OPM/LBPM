@@ -119,9 +119,9 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	if (greyscaleColor_db->keyExists( "flux" )){
 		flux = greyscaleColor_db->getScalar<double>( "flux" );
 	}
-    if (greyscaleColor_db->keyExists("GreySolidLabels")||
-        greyscaleColor_db->keyExists("GreySolidAffinity")||
-        greyscaleColor_db->keyExists("PorosityList")||
+    if (greyscaleColor_db->keyExists("GreySolidLabels")&&
+        greyscaleColor_db->keyExists("GreySolidAffinity")&&
+        greyscaleColor_db->keyExists("PorosityList")&&
         greyscaleColor_db->keyExists("PermeabilityList")){
         greyMode = true;
     }
@@ -671,7 +671,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
         ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
         ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
     }
-	//ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
 	if (rank==0)	printf ("Setting up device map and neighbor list \n");
@@ -1018,7 +1018,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         if (greyMode==true){
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
+            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den,ColorGrad, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
@@ -1039,7 +1039,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
         if (greyMode==true){
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
+            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         }
@@ -1068,7 +1068,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         if (greyMode==true){
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
+            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
@@ -1089,7 +1089,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
         if (greyMode==true){
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
+            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         }
@@ -2020,25 +2020,25 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,GreySG_Z_FILE);
 	fclose(GreySG_Z_FILE);
 
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
-//	FILE *CGX_FILE;
-//	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
-//	CGX_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGX_FILE);
-//	fclose(CGX_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
-//	FILE *CGY_FILE;
-//	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
-//	CGY_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGY_FILE);
-//	fclose(CGY_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
-//	FILE *CGZ_FILE;
-//	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
-//	CGZ_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,CGZ_FILE);
-//	fclose(CGZ_FILE);
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
+	FILE *CGX_FILE;
+	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
+	CGX_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGX_FILE);
+	fclose(CGX_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
+	FILE *CGY_FILE;
+	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
+	CGY_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGY_FILE);
+	fclose(CGY_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
+	FILE *CGZ_FILE;
+	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
+	CGZ_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGZ_FILE);
+	fclose(CGZ_FILE);
 
 }
