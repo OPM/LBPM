@@ -2810,7 +2810,7 @@ MPI_Request MPI_CLASS::IrecvBytes(
 /************************************************************************
  *  sendrecv                                                             *
  ************************************************************************/
-#if defined( USE_MPI ) || defined( USE_EXT_MPI )
+#if defined( USE_MPI )
 template<>
 void MPI_CLASS::sendrecv<char>( const char* sendbuf, int sendcount, int dest, int sendtag,
                                 char* recvbuf, int recvcount, int source, int recvtag ) const
@@ -3760,12 +3760,12 @@ void MPI_CLASS::serializeStop()
 /****************************************************************************
  * Function to start/stop MPI                                                *
  ****************************************************************************/
-#ifdef USE_EXT_MPI
+#ifdef USE_MPI
 static bool called_MPI_Init = false;
 #endif
 bool MPI_CLASS::MPI_Active()
 {
-#ifdef USE_EXT_MPI
+#ifdef USE_MPI
     int MPI_initialized, MPI_finialized;
     MPI_Initialized( &MPI_initialized );
     MPI_Finalized( &MPI_finialized );
@@ -3779,7 +3779,7 @@ void MPI_CLASS::start_MPI( int argc, char *argv[], int profile_level )
     changeProfileLevel( profile_level );
     NULL_USE( argc );
     NULL_USE( argv );
-#ifdef USE_EXT_MPI
+#ifdef USE_MPI
     if ( MPI_Active() ) {
         called_MPI_Init = false;
     } else {
@@ -3795,7 +3795,7 @@ void MPI_CLASS::start_MPI( int argc, char *argv[], int profile_level )
 }
 void MPI_CLASS::stop_MPI()
 {
-#ifdef USE_EXT_MPI
+#ifdef USE_MPI
     int finalized;
     MPI_Finalized( &finalized );
     if ( called_MPI_Init && !finalized ) {

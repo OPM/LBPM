@@ -209,6 +209,24 @@ void quicksort( std::vector<T1> &x, std::vector<T2> &y )
         }
     }
 }
+template<class T>
+void unique( std::vector<T> &x )
+{
+    if ( x.size() <= 1 )
+        return;
+    // First perform a quicksort
+    quicksort( x );
+    // Next remove duplicate entries
+    size_t pos = 1;
+    for ( size_t i = 1; i < x.size(); i++ ) {
+        if ( x[i] != x[pos - 1] ) {
+            x[pos] = x[i];
+            pos++;
+        }
+    }
+    if ( pos < x.size() )
+        x.resize( pos );
+}
 
 
 }
