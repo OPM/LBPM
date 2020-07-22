@@ -91,7 +91,19 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 					Xi -= 0.5;
 				}
 				// Euler characteristic -- each vertex shared by four cubes
-				Xi += 0.25*double(object.VertexCount);
+				//Xi += 0.25*double(object.VertexCount);
+				// check if vertices are at corners
+				for (int idx=0; idx<object.VertexCount; idx++){
+					auto P1 = object.vertex.coords(idx);
+					if ( remainder(P1.x,1.0)==0.0 && remainder(P1.y,1.0)==0.0  && remainder(P1.z,1.0)==0.0 ){
+					  Xi += 0.125;
+					}
+					else Xi += 0.25;
+				}
+				/*double nside_extern = double(npts);
+				double nside_intern = double(npts)-3.0;
+				EulerChar=0.0;
+				if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface); */
 			}
 		}
 	}
@@ -137,6 +149,7 @@ void Minkowski::MeasureObject(){
 		}
 	}	
 	CalcDist(distance,id,*Dm);
+	Eikonal(distance, id, *Dm, 10, {true, true, true});
 	ComputeScalar(distance,0.0);
 
 }
