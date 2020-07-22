@@ -10,6 +10,7 @@
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "analysis/distance.h"
+#include "analysis/filters.h"
 
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"

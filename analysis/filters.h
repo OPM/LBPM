@@ -10,7 +10,7 @@
  * @param[in] Input     Input image
  * @param[out] Output   Output image
  */
-void Mean3D( const Array<float> &Input, Array<float> &Output )
+void Mean3D( const Array<double> &Input, Array<double> &Output );
 
 /*!
  * @brief  Filter image

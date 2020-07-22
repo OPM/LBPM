@@ -2,15 +2,11 @@
 #include "math.h"
 #include "ProfilerApp.h"
 
-void Mean3D( const Array<float> &Input, Array<float> &Output )
+void Mean3D( const Array<double> &Input, Array<double> &Output )
 {
 	PROFILE_START("Mean3D");
 	// Perform a 3D Mean filter on Input array
-	int i,j,k,ii,jj,kk;
-	int imin,jmin,kmin,imax,jmax,kmax;
-
-	float *List;
-	List=new float[27];
+	int i,j,k;
 
 	int Nx = int(Input.size(0));
 	int Ny = int(Input.size(1));

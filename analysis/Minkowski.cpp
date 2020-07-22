@@ -140,7 +140,7 @@ void Minkowski::MeasureObject(){
 	 *    0 - labels the object
 	 *    1 - labels the rest of the 
 	 */
-
+  DoubleArray smooth_distance(Nx,Ny,Nz);
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -149,8 +149,9 @@ void Minkowski::MeasureObject(){
 		}
 	}	
 	CalcDist(distance,id,*Dm);
-	Eikonal(distance, id, *Dm, 10, {true, true, true});
-	ComputeScalar(distance,0.0);
+	Mean3D(distance,smooth_distance);
+	//Eikonal(distance, id, *Dm, 10, {true, true, true});
+	ComputeScalar(smooth_distance,0.0);
 
 }
 
