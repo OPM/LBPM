@@ -2,6 +2,37 @@
 #include "math.h"
 #include "ProfilerApp.h"
 
+void Mean3D( const Array<float> &Input, Array<float> &Output )
+{
+	PROFILE_START("Mean3D");
+	// Perform a 3D Mean filter on Input array
+	int i,j,k,ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
+
+	float *List;
+	List=new float[27];
+
+	int Nx = int(Input.size(0));
+	int Ny = int(Input.size(1));
+	int Nz = int(Input.size(2));
+
+	for (k=1; k<Nz-1; k++){
+		for (j=1; j<Ny-1; j++){
+			for (i=1; i<Nx-1; i++){
+			  double MeanValue = Input(i,j,k);
+			  // next neighbors
+			  MeanValue += Input(i+1,j,k)+Input(i,j+1,k)+Input(i,j,k+1)+Input(i-1,j,k)+Input(i,j-1,k)+Input(i,j,k-1);
+			  MeanValue += Input(i+1,j+1,k)+Input(i-1,j+1,k)+Input(i+1,j-1,k)+Input(i-1,j-1,k);
+			  MeanValue += Input(i+1,j,k+1)+Input(i-1,j,k+1)+Input(i+1,j,k-1)+Input(i-1,j,k-1);
+			  MeanValue += Input(i,j+1,k+1)+Input(i,j-1,k+1)+Input(i,j+1,k-1)+Input(i,j-1,k-1);
+			  MeanValue += Input(i+1,j+1,k+1)+Input(i-1,j+1,k+1)+Input(i+1,j-1,k+1)+Input(i-1,j-1,k+1);
+			  MeanValue += Input(i+1,j+1,k-1)+Input(i-1,j+1,k-1)+Input(i+1,j-1,k-1)+Input(i-1,j-1,k-1);
+			  Output(i,j,k) = MeanValue/27.0;
+			}
+		}
+	}
+	PROFILE_STOP("Mean3D");
+}
 
 void Med3D( const Array<float> &Input, Array<float> &Output )
 {
