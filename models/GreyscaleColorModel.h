@@ -66,8 +66,9 @@ public:
 	int *dvcMap;
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
-    double *GreySolidGrad;
-	double *ColorGrad;
+    //double *GreySolidPhi; //Model 2 & 3
+    double *GreySolidGrad;//Model 1
+	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
     double *Porosity_dvc;

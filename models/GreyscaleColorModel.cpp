@@ -318,7 +318,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 		label_count_global[idx] = Dm->Comm.sumReduce( label_count[idx] );
 
 	if (rank==0){
-		printf("Component labels: %lu \n",NLABELS);
+		printf("Number of component labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
@@ -332,170 +332,158 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
     delete [] phase;
 }
 
-void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()
-{
-    // ONLY initialize grey nodes
-    // Key input parameters:
-    // 1. GreySolidLabels
-    //    labels for grey nodes
-    // 2. GreySolidAffinity
-    //    affinity ranges [-1,1]
-    //    oil-wet > 0
-    //    water-wet < 0
-    //    neutral = 0 
-    double *SolidPotential_host = new double [Nx*Ny*Nz];
-	double *GreySolidGrad_host  = new double [3*Np];
-
-	size_t NLABELS=0;
-	signed char VALUE=0;
-	double AFFINITY=0.f;
-
-	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
-	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
-
-	NLABELS=LabelList.size();
-	if (NLABELS != AffinityList.size()){
-		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
-	}
-
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
-	// Assign the labels
-
-	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
-
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
-				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
-				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						AFFINITY=AffinityList[idx];
-						label_count[idx] += 1.0;
-						idx = NLABELS;
-						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
-					}
-				}
-				SolidPotential_host[n] = AFFINITY;
-			}
-		}
-	}
-
-    // Calculate grey-solid color-gradient
-	double *Dst;
-	Dst = new double [3*3*3];
-	for (int kk=0; kk<3; kk++){
-		for (int jj=0; jj<3; jj++){
-			for (int ii=0; ii<3; ii++){
-				int index = kk*9+jj*3+ii;
-				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
-			}
-		}
-	}
-	double w_face = 1.f;
-	double w_edge = 0.5;
-	double w_corner = 0.f;
-	//local 
-	Dst[13] = 0.f;
-	//faces
-	Dst[4] = w_face;
-	Dst[10] = w_face;
-	Dst[12] = w_face;
-	Dst[14] = w_face;
-	Dst[16] = w_face;
-	Dst[22] = w_face;
-	// corners
-	Dst[0] = w_corner;
-	Dst[2] = w_corner;
-	Dst[6] = w_corner;
-	Dst[8] = w_corner;
-	Dst[18] = w_corner;
-	Dst[20] = w_corner;
-	Dst[24] = w_corner;
-	Dst[26] = w_corner;
-	// edges
-	Dst[1] = w_edge;
-	Dst[3] = w_edge;
-	Dst[5] = w_edge;
-	Dst[7] = w_edge;
-	Dst[9] = w_edge;
-	Dst[11] = w_edge;
-	Dst[15] = w_edge;
-	Dst[17] = w_edge;
-	Dst[19] = w_edge;
-	Dst[21] = w_edge;
-	Dst[23] = w_edge;
-	Dst[25] = w_edge;
-
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				int idx=Map(i,j,k);
-				if (!(idx < 0)){
-					double phi_x = 0.f;
-					double phi_y = 0.f;
-					double phi_z = 0.f;
-					for (int kk=0; kk<3; kk++){
-						for (int jj=0; jj<3; jj++){
-							for (int ii=0; ii<3; ii++){
-
-								int index = kk*9+jj*3+ii;
-								double weight= Dst[index];
-
-								int idi=i+ii-1;
-								int idj=j+jj-1;
-								int idk=k+kk-1;
-
-								if (idi < 0) idi=0;
-								if (idj < 0) idj=0;
-								if (idk < 0) idk=0;
-								if (!(idi < Nx)) idi=Nx-1;
-								if (!(idj < Ny)) idj=Ny-1;
-								if (!(idk < Nz)) idk=Nz-1;
-
-								int nn = idk*Nx*Ny + idj*Nx + idi;
-								double vec_x = double(ii-1);
-								double vec_y = double(jj-1);
-								double vec_z = double(kk-1);
-								double GWNS=SolidPotential_host[nn];
-								phi_x += GWNS*weight*vec_x;
-								phi_y += GWNS*weight*vec_y;
-								phi_z += GWNS*weight*vec_z;
-							}
-						}
-					}
-					GreySolidGrad_host[idx+0*Np] = phi_x;
-					GreySolidGrad_host[idx+1*Np] = phi_y;
-					GreySolidGrad_host[idx+2*Np] = phi_z;
-				}
-			}
-		}
-	}
-
-
-	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx] = Dm->Comm.sumReduce( label_count[idx] );
-
-	if (rank==0){
-		printf("Grey-solid labels: %lu \n",NLABELS);
-		for (unsigned int idx=0; idx<NLABELS; idx++){
-			VALUE=LabelList[idx];
-			AFFINITY=AffinityList[idx];
-			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   grey-solid label=%d, solid-affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
-		}
-	}
-    
-    
-	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
-	ScaLBL_DeviceBarrier();
-    delete [] SolidPotential_host;
-    delete [] GreySolidGrad_host;
-}
+//void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//Model-2 & Model-3
+//{
+//    // ONLY initialize grey nodes
+//    // Key input parameters:
+//    // 1. GreySolidLabels
+//    //    labels for grey nodes
+//    // 2. GreySolidAffinity
+//    //    affinity ranges [-1,1]
+//    //    oil-wet > 0
+//    //    water-wet < 0
+//    //    neutral = 0 
+//
+//	double *GreySolidPhi_host  = new double [Nx*Ny*Nz];
+//	//initialize grey solid phase field
+//    for (int k=0;k<Nz;k++){
+//		for (int j=0;j<Ny;j++){
+//			for (int i=0;i<Nx;i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//                GreySolidPhi_host[n]=0.f;
+//            }
+//        }
+//    }
+//
+//	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+//	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+//
+//	size_t NLABELS=0;
+//	NLABELS=LabelList.size();
+//	if (NLABELS != AffinityList.size()){
+//		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+//	}
+//
+//	double *Dst;
+//	Dst = new double [3*3*3];
+//	for (int kk=0; kk<3; kk++){
+//		for (int jj=0; jj<3; jj++){
+//			for (int ii=0; ii<3; ii++){
+//				int index = kk*9+jj*3+ii;
+//				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
+//			}
+//		}
+//	}
+//	double w_face = 1.f;
+//	double w_edge = 1.f;
+//	double w_corner = 0.f;
+//	//local 
+//	Dst[13] = 0.f;
+//	//faces
+//	Dst[4] = w_face;
+//	Dst[10] = w_face;
+//	Dst[12] = w_face;
+//	Dst[14] = w_face;
+//	Dst[16] = w_face;
+//	Dst[22] = w_face;
+//	// corners
+//	Dst[0] = w_corner;
+//	Dst[2] = w_corner;
+//	Dst[6] = w_corner;
+//	Dst[8] = w_corner;
+//	Dst[18] = w_corner;
+//	Dst[20] = w_corner;
+//	Dst[24] = w_corner;
+//	Dst[26] = w_corner;
+//	// edges
+//	Dst[1] = w_edge;
+//	Dst[3] = w_edge;
+//	Dst[5] = w_edge;
+//	Dst[7] = w_edge;
+//	Dst[9] = w_edge;
+//	Dst[11] = w_edge;
+//	Dst[15] = w_edge;
+//	Dst[17] = w_edge;
+//	Dst[19] = w_edge;
+//	Dst[21] = w_edge;
+//	Dst[23] = w_edge;
+//	Dst[25] = w_edge;
+//
+//	for (int k=1; k<Nz-1; k++){
+//		for (int j=1; j<Ny-1; j++){
+//			for (int i=1; i<Nx-1; i++){
+//
+//                int n = k*Nx*Ny+j*Nx+i;
+//                signed char VALUE=Mask->id[n];
+//                double AFFINITY=0.f;
+//				// Assign the affinity from the paired list
+//				for (unsigned int idx=0; idx < NLABELS; idx++){
+//				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+//					if (VALUE == LabelList[idx]){
+//						AFFINITY=AffinityList[idx];
+//						idx = NLABELS;
+//						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+//					}
+//				}
+//
+//                if (VALUE>2){//i.e. a grey node
+//                    double neighbor_counter = 0;
+//                    for (int kk=0; kk<3; kk++){
+//                        for (int jj=0; jj<3; jj++){
+//                            for (int ii=0; ii<3; ii++){
+//
+//                                int index = kk*9+jj*3+ii;
+//								double weight= Dst[index];
+//
+//                                int idi=i+ii-1;
+//                                int idj=j+jj-1;
+//                                int idk=k+kk-1;
+//
+//                                if (idi < 0) idi=0;
+//                                if (idj < 0) idj=0;
+//                                if (idk < 0) idk=0;
+//                                if (!(idi < Nx)) idi=Nx-1;
+//                                if (!(idj < Ny)) idj=Ny-1;
+//                                if (!(idk < Nz)) idk=Nz-1;
+//
+//                                int nn = idk*Nx*Ny + idj*Nx + idi;
+//								//if (Mask->id[nn] != VALUE){//Model-2:i.e. open nodes, impermeable solid nodes or any other type of greynodes
+//								if (Mask->id[nn] <=0){//Model-3:i.e. only impermeable solid nodes or any other type of greynodes
+//                                    neighbor_counter +=weight;
+//                                }
+//                            }
+//                        }
+//                    }
+//                    if (neighbor_counter>0){
+//                        GreySolidPhi_host[n] = AFFINITY;
+//                    }
+//                }
+//			}
+//		}
+//	}
+//
+//	if (rank==0){
+//		printf("Number of grey-solid labels: %lu \n",NLABELS);
+//		for (unsigned int idx=0; idx<NLABELS; idx++){
+//			signed char VALUE=LabelList[idx];
+//			double AFFINITY=AffinityList[idx];
+//			printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+//		}
+//	}
+//    
+//	ScaLBL_CopyToDevice(GreySolidPhi, GreySolidPhi_host, Nx*Ny*Nz*sizeof(double));
+//	ScaLBL_DeviceBarrier();
+//
+//    //debug
+//	//FILE *OUTFILE;
+//	//sprintf(LocalRankFilename,"GreySolidInit.%05i.raw",rank);
+//	//OUTFILE = fopen(LocalRankFilename,"wb");
+//	//fwrite(GreySolidPhi_host,8,N,OUTFILE);
+//	//fclose(OUTFILE);
+//
+//    delete [] GreySolidPhi_host;
+//    delete [] Dst;
+//}
 
 void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 {
@@ -667,11 +655,12 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
     if (greyMode==true){
+        //ScaLBL_AllocateDeviceMemory((void **) &GreySolidPhi, sizeof(double)*Nx*Ny*Nz);		
         ScaLBL_AllocateDeviceMemory((void **) &GreySolidGrad, 3*sizeof(double)*Np);		
         ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
         ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
     }
-	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
 	if (rank==0)	printf ("Setting up device map and neighbor list \n");
@@ -1018,9 +1007,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         if (greyMode==true){
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den,ColorGrad, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
+            //Model-1
+            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            ////Model-2&3
+            //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
+            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
+            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
         else{
             ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
@@ -1039,9 +1033,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
         if (greyMode==true){
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
+            //Model-1
+            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+            ////Model-2&3
+            //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
+            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         }
         else{
             ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
@@ -1068,9 +1067,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         if (greyMode==true){
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
+            //Model-1
+            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            ////Model-2&3
+            //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
+            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+            //        alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
         else{
             ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
@@ -1089,9 +1093,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 		}
         if (greyMode==true){
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den,ColorGrad,  Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
+            //Model-1
+            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
                     rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                     alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+            ////Model-2&3
+            //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
+            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         }
         else{
             ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
@@ -2020,25 +2029,415 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,GreySG_Z_FILE);
 	fclose(GreySG_Z_FILE);
 
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
-	FILE *CGX_FILE;
-	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
-	CGX_FILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,CGX_FILE);
-	fclose(CGX_FILE);
-
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
-	FILE *CGY_FILE;
-	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
-	CGY_FILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,CGY_FILE);
-	fclose(CGY_FILE);
-
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
-	FILE *CGZ_FILE;
-	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
-	CGZ_FILE = fopen(LocalRankFilename,"wb");
-	fwrite(PhaseField.data(),8,N,CGZ_FILE);
-	fclose(CGZ_FILE);
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
+//	FILE *CGX_FILE;
+//	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
+//	CGX_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGX_FILE);
+//	fclose(CGX_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[Np],PhaseField);
+//	FILE *CGY_FILE;
+//	sprintf(LocalRankFilename,"Gradient_Y.%05i.raw",rank);
+//	CGY_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGY_FILE);
+//	fclose(CGY_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[2*Np],PhaseField);
+//	FILE *CGZ_FILE;
+//	sprintf(LocalRankFilename,"Gradient_Z.%05i.raw",rank);
+//	CGZ_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,CGZ_FILE);
+//	fclose(CGZ_FILE);
 
 }
+
+//void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//Model-1
+//{
+//    // ONLY initialize grey nodes
+//    // Key input parameters:
+//    // 1. GreySolidLabels
+//    //    labels for grey nodes
+//    // 2. GreySolidAffinity
+//    //    affinity ranges [-1,1]
+//    //    oil-wet > 0
+//    //    water-wet < 0
+//    //    neutral = 0 
+//    double *SolidPotential_host = new double [Nx*Ny*Nz];
+//	double *GreySolidGrad_host  = new double [3*Np];
+//
+//	size_t NLABELS=0;
+//	signed char VALUE=0;
+//	double AFFINITY=0.f;
+//
+//	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+//	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+//
+//	NLABELS=LabelList.size();
+//	if (NLABELS != AffinityList.size()){
+//		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+//	}
+//
+//	for (int k=0;k<Nz;k++){
+//		for (int j=0;j<Ny;j++){
+//			for (int i=0;i<Nx;i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//				VALUE=id[n];
+//	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
+//				// Assign the affinity from the paired list
+//				for (unsigned int idx=0; idx < NLABELS; idx++){
+//				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+//					if (VALUE == LabelList[idx]){
+//						AFFINITY=AffinityList[idx];
+//						idx = NLABELS;
+//						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+//					}
+//				}
+//				SolidPotential_host[n] = AFFINITY;
+//			}
+//		}
+//	}
+//
+//    // Calculate grey-solid color-gradient
+//	double *Dst;
+//	Dst = new double [3*3*3];
+//	for (int kk=0; kk<3; kk++){
+//		for (int jj=0; jj<3; jj++){
+//			for (int ii=0; ii<3; ii++){
+//				int index = kk*9+jj*3+ii;
+//				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
+//			}
+//		}
+//	}
+//	double w_face = 1.f;
+//	double w_edge = 0.5;
+//	double w_corner = 0.f;
+//	//local 
+//	Dst[13] = 0.f;
+//	//faces
+//	Dst[4] = w_face;
+//	Dst[10] = w_face;
+//	Dst[12] = w_face;
+//	Dst[14] = w_face;
+//	Dst[16] = w_face;
+//	Dst[22] = w_face;
+//	// corners
+//	Dst[0] = w_corner;
+//	Dst[2] = w_corner;
+//	Dst[6] = w_corner;
+//	Dst[8] = w_corner;
+//	Dst[18] = w_corner;
+//	Dst[20] = w_corner;
+//	Dst[24] = w_corner;
+//	Dst[26] = w_corner;
+//	// edges
+//	Dst[1] = w_edge;
+//	Dst[3] = w_edge;
+//	Dst[5] = w_edge;
+//	Dst[7] = w_edge;
+//	Dst[9] = w_edge;
+//	Dst[11] = w_edge;
+//	Dst[15] = w_edge;
+//	Dst[17] = w_edge;
+//	Dst[19] = w_edge;
+//	Dst[21] = w_edge;
+//	Dst[23] = w_edge;
+//	Dst[25] = w_edge;
+//
+//	for (int k=1; k<Nz-1; k++){
+//		for (int j=1; j<Ny-1; j++){
+//			for (int i=1; i<Nx-1; i++){
+//				int idx=Map(i,j,k);
+//				if (!(idx < 0)){
+//					double phi_x = 0.f;
+//					double phi_y = 0.f;
+//					double phi_z = 0.f;
+//					for (int kk=0; kk<3; kk++){
+//						for (int jj=0; jj<3; jj++){
+//							for (int ii=0; ii<3; ii++){
+//
+//								int index = kk*9+jj*3+ii;
+//								double weight= Dst[index];
+//
+//								int idi=i+ii-1;
+//								int idj=j+jj-1;
+//								int idk=k+kk-1;
+//
+//								if (idi < 0) idi=0;
+//								if (idj < 0) idj=0;
+//								if (idk < 0) idk=0;
+//								if (!(idi < Nx)) idi=Nx-1;
+//								if (!(idj < Ny)) idj=Ny-1;
+//								if (!(idk < Nz)) idk=Nz-1;
+//
+//								int nn = idk*Nx*Ny + idj*Nx + idi;
+//								double vec_x = double(ii-1);
+//								double vec_y = double(jj-1);
+//								double vec_z = double(kk-1);
+//								double GWNS=SolidPotential_host[nn];
+//								phi_x += GWNS*weight*vec_x;
+//								phi_y += GWNS*weight*vec_y;
+//								phi_z += GWNS*weight*vec_z;
+//							}
+//						}
+//					}
+//					GreySolidGrad_host[idx+0*Np] = phi_x;
+//					GreySolidGrad_host[idx+1*Np] = phi_y;
+//					GreySolidGrad_host[idx+2*Np] = phi_z;
+//				}
+//			}
+//		}
+//	}
+//
+//	if (rank==0){
+//		printf("Number of Grey-solid labels: %lu \n",NLABELS);
+//		for (unsigned int idx=0; idx<NLABELS; idx++){
+//			VALUE=LabelList[idx];
+//			AFFINITY=AffinityList[idx];
+//			printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+//		}
+//	}
+//    
+//    
+//	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
+//	ScaLBL_DeviceBarrier();
+//    delete [] SolidPotential_host;
+//    delete [] GreySolidGrad_host;
+//    delete [] Dst;
+//}
+////----------------------------------------------------------------------------------------------------------//
+
+void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//Model-4
+{
+    // ONLY initialize grey nodes
+    // Key input parameters:
+    // 1. GreySolidLabels
+    //    labels for grey nodes
+    // 2. GreySolidAffinity
+    //    affinity ranges [-1,1]
+    //    oil-wet > 0
+    //    water-wet < 0
+    //    neutral = 0 
+    double *SolidPotential_host = new double [Nx*Ny*Nz];
+	double *GreySolidGrad_host  = new double [3*Np];
+
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+	}
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=id[n];
+	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+						idx = NLABELS;
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+					}
+				}
+				SolidPotential_host[n] = AFFINITY;
+			}
+		}
+	}
+
+    // Calculate grey-solid color-gradient
+	double *Dst;
+	Dst = new double [3*3*3];
+	for (int kk=0; kk<3; kk++){
+		for (int jj=0; jj<3; jj++){
+			for (int ii=0; ii<3; ii++){
+				int index = kk*9+jj*3+ii;
+				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
+			}
+		}
+	}
+	double w_face = 1.f;
+	double w_edge = 0.5;
+	double w_corner = 0.f;
+	//local 
+	Dst[13] = 0.f;
+	//faces
+	Dst[4] = w_face;
+	Dst[10] = w_face;
+	Dst[12] = w_face;
+	Dst[14] = w_face;
+	Dst[16] = w_face;
+	Dst[22] = w_face;
+	// corners
+	Dst[0] = w_corner;
+	Dst[2] = w_corner;
+	Dst[6] = w_corner;
+	Dst[8] = w_corner;
+	Dst[18] = w_corner;
+	Dst[20] = w_corner;
+	Dst[24] = w_corner;
+	Dst[26] = w_corner;
+	// edges
+	Dst[1] = w_edge;
+	Dst[3] = w_edge;
+	Dst[5] = w_edge;
+	Dst[7] = w_edge;
+	Dst[9] = w_edge;
+	Dst[11] = w_edge;
+	Dst[15] = w_edge;
+	Dst[17] = w_edge;
+	Dst[19] = w_edge;
+	Dst[21] = w_edge;
+	Dst[23] = w_edge;
+	Dst[25] = w_edge;
+
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0)){
+					double phi_x = 0.f;
+					double phi_y = 0.f;
+					double phi_z = 0.f;
+					for (int kk=0; kk<3; kk++){
+						for (int jj=0; jj<3; jj++){
+							for (int ii=0; ii<3; ii++){
+
+								int index = kk*9+jj*3+ii;
+								double weight= Dst[index];
+
+								int idi=i+ii-1;
+								int idj=j+jj-1;
+								int idk=k+kk-1;
+
+								if (idi < 0) idi=0;
+								if (idj < 0) idj=0;
+								if (idk < 0) idk=0;
+								if (!(idi < Nx)) idi=Nx-1;
+								if (!(idj < Ny)) idj=Ny-1;
+								if (!(idk < Nz)) idk=Nz-1;
+
+								int nn = idk*Nx*Ny + idj*Nx + idi;
+								double vec_x = double(ii-1);
+								double vec_y = double(jj-1);
+								double vec_z = double(kk-1);
+								double GWNS=SolidPotential_host[nn];
+								phi_x += GWNS*weight*vec_x;
+								phi_y += GWNS*weight*vec_y;
+								phi_z += GWNS*weight*vec_z;
+							}
+						}
+					}
+                    if (Averages->SDs(i,j,k)<2.0){
+                        GreySolidGrad_host[idx+0*Np] = phi_x;
+                        GreySolidGrad_host[idx+1*Np] = phi_y;
+                        GreySolidGrad_host[idx+2*Np] = phi_z;
+                    }
+                    else{
+                        GreySolidGrad_host[idx+0*Np] = 0.0;
+                        GreySolidGrad_host[idx+1*Np] = 0.0;
+                        GreySolidGrad_host[idx+2*Np] = 0.0;
+                    }
+				}
+			}
+		}
+	}
+
+
+	if (rank==0){
+		printf("Number of Grey-solid labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+		}
+	}
+    
+    
+	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
+	ScaLBL_DeviceBarrier();
+    delete [] SolidPotential_host;
+    delete [] GreySolidGrad_host;
+    delete [] Dst;
+}
+////----------------------------------------------------------------------------------------------------------//
+
+//--------- This is another old version of calculating greyscale-solid color-gradient modification-------//
+// **not working effectively, to be deprecated
+//void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()
+//{
+//    // ONLY initialize grey nodes
+//    // Key input parameters:
+//    // 1. GreySolidLabels
+//    //    labels for grey nodes
+//    // 2. GreySolidAffinity
+//    //    affinity ranges [-1,1]
+//    //    oil-wet > 0
+//    //    water-wet < 0
+//    //    neutral = 0 
+//
+//    //double *SolidPotential_host = new double [Nx*Ny*Nz];
+//	double *GreySolidPhi_host  = new double [Nx*Ny*Nz];
+//	signed char VALUE=0;
+//	double AFFINITY=0.f;
+//
+//	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+//	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+//
+//	size_t NLABELS=0;
+//	NLABELS=LabelList.size();
+//	if (NLABELS != AffinityList.size()){
+//		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+//	}
+//
+//	for (int k=0;k<Nz;k++){
+//		for (int j=0;j<Ny;j++){
+//			for (int i=0;i<Nx;i++){
+//				int n = k*Nx*Ny+j*Nx+i;
+//				VALUE=id[n];
+//	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
+//				// Assign the affinity from the paired list
+//				for (unsigned int idx=0; idx < NLABELS; idx++){
+//				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+//					if (VALUE == LabelList[idx]){
+//						AFFINITY=AffinityList[idx];
+//						idx = NLABELS;
+//						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+//					}
+//				}
+//				GreySolidPhi_host[n] = AFFINITY;
+//			}
+//		}
+//	}
+//
+//	if (rank==0){
+//		printf("Number of grey-solid labels: %lu \n",NLABELS);
+//		for (unsigned int idx=0; idx<NLABELS; idx++){
+//			VALUE=LabelList[idx];
+//			AFFINITY=AffinityList[idx];
+//			printf("   grey-solid label=%d, solid-affinity=%f\n",VALUE,AFFINITY); 
+//		}
+//	}
+//    
+//	ScaLBL_CopyToDevice(GreySolidPhi, GreySolidPhi_host, Nx*Ny*Nz*sizeof(double));
+//	ScaLBL_DeviceBarrier();
+//
+//    //debug
+//	FILE *OUTFILE;
+//	sprintf(LocalRankFilename,"GreySolidInit.%05i.raw",rank);
+//	OUTFILE = fopen(LocalRankFilename,"wb");
+//	fwrite(GreySolidPhi_host,8,N,OUTFILE);
+//	fclose(OUTFILE);
+//
+//    //delete [] SolidPotential_host;
+//    delete [] GreySolidPhi_host;
+//}
+//----------------------------------------------------------------------------------------------------------//
