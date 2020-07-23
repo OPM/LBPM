@@ -151,7 +151,7 @@ void Minkowski::MeasureObject(){
 	CalcDist(distance,id,*Dm);
 	//Mean3D(distance,smooth_distance);
 	Eikonal(distance, id, *Dm, 20, {true, true, true});
-	ComputeScalar(smooth_distance,0.0);
+	ComputeScalar(distance,0.0);
 
 }
 
