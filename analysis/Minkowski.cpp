@@ -156,6 +156,38 @@ void Minkowski::MeasureObject(){
 }
 
 
+void Minkowski::MeasureObject(double factor, const DoubleArray &Phi){
+	/*
+	 *  compute the distance to an object 
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 *    0 - labels the object
+	 *    1 - labels the rest of the 
+	 */
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				distance(i,j,k) =2.0*double(id(i,j,k))-1.0;
+			}
+		}
+	}	
+	CalcDist(distance,id,*Dm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double value =Phi(i,j,k);
+				if (distance(i,j,k) < 2.5 &&  distance(i,j,k) > -2.5) 
+					distance(i,j,k) = factor*log((1.0+value)/(1.0-value));
+			}
+		}
+	}
+	
+	ComputeScalar(distance,0.0);
+
+}
+
+
 int Minkowski::MeasureConnectedPathway(){
 	/*
 	 * compute the connected pathway for object with LABEL in id field
