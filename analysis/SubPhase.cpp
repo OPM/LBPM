@@ -427,13 +427,13 @@ void SubPhase::Full(){
 		}
 	}
 	// measure the whole object
-	morph_n->MeasureObject();
+	morph_n->MeasureObject(0.5/beta,Phi);
 	nd.V = morph_n->V(); 
 	nd.A = morph_n->A(); 
 	nd.H = morph_n->H(); 
 	nd.X = morph_n->X(); 
 	// measure only the connected part
-	nd.Nc = morph_n->MeasureConnectedPathway();
+	nd.Nc = morph_n->MeasureConnectedPathway(0.5/beta,Phi);
 	nc.V = morph_n->V(); 
 	nc.A = morph_n->A(); 
 	nc.H = morph_n->H(); 
@@ -475,13 +475,13 @@ void SubPhase::Full(){
 			}
 		}
 	}	
-	morph_w->MeasureObject();
+	morph_w->MeasureObject(-0.5/beta,Phi);
 	wd.V = morph_w->V(); 
 	wd.A = morph_w->A(); 
 	wd.H = morph_w->H(); 
 	wd.X = morph_w->X(); 
 	// measure only the connected part
-	wd.Nc = morph_w->MeasureConnectedPathway();
+	wd.Nc = morph_w->MeasureConnectedPathway(-0.5/beta,Phi);
 	wc.V = morph_w->V(); 
 	wc.A = morph_w->A(); 
 	wc.H = morph_w->H(); 
