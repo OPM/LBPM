@@ -176,9 +176,14 @@ void Minkowski::MeasureObject(double factor, const DoubleArray &Phi){
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
-				double value =Phi(i,j,k);
-				if (distance(i,j,k) < 2.5 &&  distance(i,j,k) > -2.5) 
-					distance(i,j,k) = factor*log((1.0+value)/(1.0-value));
+				double value = Phi(i,j,k);
+				double dist_value = distance(i,j,k);
+				if (dist_value < 2.5 &&  dist_value > -2.5) {
+					double new_distance = factor*log((1.0+value)/(1.0-value));
+					if (dist_value*new_distance < 0.0 )
+						new_distance = (-1.0)*new_distance;
+					distance(i,j,k) = new_distance;					
+				}
 			}
 		}
 	}
