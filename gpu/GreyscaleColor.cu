@@ -4,7 +4,7 @@
 #define NBLOCKS 1024
 #define NTHREADS 256
 
-//Model-1
+//Model-1 & 4
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
@@ -516,6 +516,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
+            //---------------- NO higher-order force -------------------------------//
 			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2);
@@ -540,6 +541,43 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
+            //----------------------------------------------------------------------//
+
+            //----------------With higher-order force ------------------------------//
+			//if (C == 0.0)	nx = ny = nz = 0.0;
+			//m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1)
+            //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+			//m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2)
+            //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+            //jx = jx + Fx;
+			//m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+            //jy = jy + Fy;
+			//m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+            //jz = jz + Fz;
+			//m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+			//m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9)
+            //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+			////m10 = m10 + rlx_setA*( - m10);
+            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+            //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+			//m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11)
+            //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+			////m12 = m12 + rlx_setA*( - m12);
+            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
+            //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+			//m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
+            //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+			//m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
+            //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+			//m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
+            //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
+			//m16 = m16 + rlx_setB*( - m16);
+			//m17 = m17 + rlx_setB*( - m17);
+			//m18 = m18 + rlx_setB*( - m18);
+            //----------------------------------------------------------------------//
 
 			//.................inverse transformation......................................................
 			// q=0
@@ -727,7 +765,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 	}
 }
 
-//Model-1
+//Model-1 & 4
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
@@ -1183,6 +1221,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
+            //---------------- NO higher-order force -------------------------------//
 			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2);
@@ -1207,6 +1246,43 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
+            //----------------------------------------------------------------------//
+
+            //----------------With higher-order force ------------------------------//
+			//if (C == 0.0)	nx = ny = nz = 0.0;
+			//m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1)
+            //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+			//m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2)
+            //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+            //jx = jx + Fx;
+			//m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+            //jy = jy + Fy;
+			//m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+            //jz = jz + Fz;
+			//m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
+            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+			//m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9)
+            //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+			////m10 = m10 + rlx_setA*( - m10);
+            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+            //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+			//m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11)
+            //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+			////m12 = m12 + rlx_setA*( - m12);
+            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
+            //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+			//m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
+            //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+			//m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
+            //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+			//m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
+            //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
+			//m16 = m16 + rlx_setB*( - m16);
+			//m17 = m17 + rlx_setB*( - m17);
+			//m18 = m18 + rlx_setB*( - m18);
+            //----------------------------------------------------------------------//
 
 			//.................inverse transformation......................................................
 			// q=0
@@ -2840,7 +2916,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 //	}
 //}
 
-//Model-1
+//Model-1 & 4
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
@@ -2859,7 +2935,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 
 }
 
-//Model-1
+//Model-1 & 4
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
 		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
