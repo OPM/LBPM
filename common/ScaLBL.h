@@ -72,6 +72,17 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
 
+// ION TRANSPORT MODEL
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Velocity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Velocity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
+
+// ION TRANSPORT MODEL
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
@@ -185,6 +196,8 @@ public:
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
+	void SendD3Q7AA(double *fq, int Component);
+	void RecvD3Q7AA(double *fq, int Component)
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
