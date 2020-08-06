@@ -189,17 +189,17 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
 		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);

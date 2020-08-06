@@ -25,9 +25,11 @@ void ScaLBL_IonModel::ReadParams(string filename){
 	tau = 1.0;
 	timestepMax = 100000;
 	tolerance = 1.0e-8;
-	// Model parameters
-	if (ion_db->keyExists( "timestepMax" )){
-		timestepMax = ion_db->getScalar<int>( "timestepMax" );
+	// Model parameters		
+
+	number_ion_species = 1;
+	if (ion_db->keyExists( "number_ion_species" )){
+		number_ion_species = ion_db->getScalar<int>( "number_ion_species" );
 	}
 }
 void ScaLBL_IonModel::SetDomain(){
@@ -180,17 +182,21 @@ void ScaLBL_IonModel::Run(double *Velocity){
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		for (int ic=0; ic<number_ion_species; ic++)
+			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq, Velocity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		for (int ic=0; ic<number_ion_species; ic++)
+			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq, Velocity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+		for (int ic=0; ic<number_ion_species; ic++)
+			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FORM NORMAL
 		ScaLBL_D3Q7_AAeven_Ion(fq, Velocity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		for (int ic=0; ic<number_ion_species; ic++)
+			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAeven_Ion(fq, Velocity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
