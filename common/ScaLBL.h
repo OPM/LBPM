@@ -78,10 +78,10 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Velocity, int start
 extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Velocity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
 
-// ION TRANSPORT MODEL
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+// LBM Poisson solver
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *ChargeDensity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *ChargeDensity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
 
 // MRT MODEL
@@ -92,7 +92,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_MRT(int *d_neighborList, double *dist, int st
 		double rlx_setA, double rlx_setB, double Fx, double Fy, double Fz);
 
 // COLOR MODEL
-
 extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, double *Bq, double *Den, double *Phi,
 		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
@@ -197,7 +196,7 @@ public:
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *fq, int Component);
-	void RecvD3Q7AA(double *fq, int Component)
+	void RecvD3Q7AA(double *fq, int Component);
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);

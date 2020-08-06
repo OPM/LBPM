@@ -1,5 +1,5 @@
 /*
- * Multi-relaxation time LBM Model
+ * Ion transporte LB Model
  */
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,8 +1,7 @@
 /*
  * Multi-relaxation time LBM Model
  */
-#include "models/MRT.h"
-#include "models/ElectroModel.h"
+#include "models/IonModel.h"
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
@@ -26,15 +25,10 @@ void ScaLBL_IonModel::ReadParams(string filename){
 	tau = 1.0;
 	timestepMax = 100000;
 	tolerance = 1.0e-8;
-	Fx = Fy = 0.0;
-	Fz = 1.0e-5;
-
-	// Color Model parameters
+	// Model parameters
 	if (ion_db->keyExists( "timestepMax" )){
-		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
+		timestepMax = ion_db->getScalar<int>( "timestepMax" );
 	}
-
-	mu=(tau-0.5)/3.0;
 }
 void ScaLBL_IonModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
@@ -50,9 +44,6 @@ void ScaLBL_IonModel::SetDomain(){
 	
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
-	Velocity_x.resize(Nx,Ny,Nz);
-	Velocity_y.resize(Nx,Ny,Nz);
-	Velocity_z.resize(Nx,Ny,Nz);
 	
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
@@ -176,7 +167,7 @@ void ScaLBL_IonModel::Initialize(){
 }
 
 void ScaLBL_IonModel::Run(double *Velocity){
-
+  double rlx = 1.0/tau;
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -190,19 +181,19 @@ void ScaLBL_IonModel::Run(double *Velocity){
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq, Velocity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAodd_Ion(NeighborList, fq, Velocity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q7_AAeven_Ion(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAeven_Ion(fq, Velocity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAeven_Ion(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAeven_Ion(fq, Velocity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 	}

@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	
 	DFHModel.Run();	     // Solve the N-S equations to get velocity
 	IonModel.Run(DFHModel.Velocity); //solve for ion transport and electric potential
-	IonModel.Run(DFHModel.Velocity, DFHModel.Phi); //solve for ion transport and electric potential with multiphase system
+	//IonModel.Run(DFHModel.Velocity, DFHModel.Phi); //solve for ion transport and electric potential with multiphase system
 	PoissonSolver.Run(IonModel.ChargeDensity);
 
 	DFHModel.WriteDebug();

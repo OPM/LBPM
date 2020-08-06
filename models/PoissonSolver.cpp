@@ -1,8 +1,7 @@
 /*
  * Multi-relaxation time LBM Model
  */
-#include "models/MRT.h"
-#include "models/ElectroModel.h"
+#include "models/PoissonSolver.h"
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
@@ -21,8 +20,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
-	mrt_db = db->getDatabase( "MRT" );
-	electric_db = db->getDatabase( "Electrochemistry" );
+	electric_db = db->getDatabase( "Electric" );
 	
 	tau = 1.0;
 	timestepMax = 100000;
@@ -31,38 +29,14 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	Fz = 1.0e-5;
 
 	// Color Model parameters
-	if (mrt_db->keyExists( "timestepMax" )){
-		timestepMax = mrt_db->getScalar<int>( "timestepMax" );
+	if (electric_db->keyExists( "timestepMax" )){
+		timestepMax = electric_db->getScalar<int>( "timestepMax" );
 	}
-	if (mrt_db->keyExists( "tolerance" )){
-		tolerance = mrt_db->getScalar<double>( "tolerance" );
-	}
-	if (mrt_db->keyExists( "tau" )){
-		tau = mrt_db->getScalar<double>( "tau" );
-	}
-	if (mrt_db->keyExists( "F" )){
-		Fx = mrt_db->getVector<double>( "F" )[0];
-		Fy = mrt_db->getVector<double>( "F" )[1];
-		Fz = mrt_db->getVector<double>( "F" )[2];
-	}
-	if (mrt_db->keyExists( "Restart" )){
-		Restart = mrt_db->getScalar<bool>( "Restart" );
-	}
-	if (mrt_db->keyExists( "din" )){
-		din = mrt_db->getScalar<double>( "din" );
-	}
-	if (mrt_db->keyExists( "dout" )){
-		dout = mrt_db->getScalar<double>( "dout" );
-	}
-	if (mrt_db->keyExists( "flux" )){
-		flux = mrt_db->getScalar<double>( "flux" );
-	}	
 	
 	// Read domain parameters
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
-	
 
 	mu=(tau-0.5)/3.0;
 }
@@ -80,10 +54,7 @@ void ScaLBL_Poisson::SetDomain(){
 	
 	N = Nx*Ny*Nz;
 	Distance.resize(Nx,Ny,Nz);
-	Velocity_x.resize(Nx,Ny,Nz);
-	Velocity_y.resize(Nx,Ny,Nz);
-	Velocity_z.resize(Nx,Ny,Nz);
-	
+
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
@@ -205,7 +176,7 @@ void ScaLBL_Poisson::Initialize(){
 }
 
 void ScaLBL_Poisson::Run(double *ChargeDensity){
-
+  double rlx = 1.0/tau;
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -219,19 +190,19 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		//************************************************************************/
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-		ScaLBL_D3Q7_AAeven_Poisson(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAeven_Poisson(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
+		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, 0, ScaLBL_Comm->LastExterior(), Np, rlx, Fx, Fy, Fz);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 	}
