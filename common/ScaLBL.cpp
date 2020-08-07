@@ -1182,7 +1182,7 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (SendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
@@ -1288,7 +1288,7 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (BiSendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
@@ -1415,7 +1415,7 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (TriSendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;

@@ -29,17 +29,19 @@ public:
 	void Initialize();
 	void Run(double *ChargeDensity);
 	
-	bool Restart,pBC;
+	//bool Restart,pBC;
 	int timestep,timestepMax;
+    int analysis_interval;
 	int BoundaryCondition;
-	double tau,mu;
-	double Fx,Fy,Fz,flux;
-	double din,dout;
+	double tau;
 	double tolerance;
+    double k2_inv,deltaT;
+    double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
 	double Lx,Ly,Lz;
+    double h;//image resolution
 
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
@@ -51,9 +53,11 @@ public:
 
     IntArray Map;
     DoubleArray Distance;
+    DoubleArray Psi_host;
     int *NeighborList;
     double *fq;
     double *Psi; 
+    double *ElectricField;
 
 private:
 	MPI_Comm comm;

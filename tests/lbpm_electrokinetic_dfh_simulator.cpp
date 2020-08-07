@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 
 	if (rank == 0){
 		printf("********************************************************\n");
-		printf("Running Color LBM	\n");
+		printf("Running Electrokinetic LBM Simulator \n");
 		printf("********************************************************\n");
 	}
     PROFILE_ENABLE(1);
