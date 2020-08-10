@@ -275,17 +275,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         //Update ion concentration and charge density
 		for (int ic=0; ic<number_ion_species; ic++){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
-        }
-		for (int ic=0; ic<number_ion_species; ic++){
-            //TODO should this loop be merged with Send & Recv ?
-            //Sum up distribution to get ion concentration
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
+			/* Update exterior ion concentration */
         }
+		
         ScaLBL_D3Q7_IonChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
-		for (int ic=0; ic<number_ion_species; ic++){
-			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
-        }
 		for (int ic=0; ic<number_ion_species; ic++){
             //TODO should this loop be merged with Send & Recv ?
             //Sum up distribution to get ion concentration
