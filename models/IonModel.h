@@ -8,6 +8,7 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
+#include <vector>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
@@ -33,12 +34,13 @@ public:
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
-	double tau,mu;
-	double Fx,Fy,Fz,flux;
-	double din,dout;
-	double tolerance;
 	
 	int number_ion_species;
+    vector<double> IonDiffusivity;//User input unit [m^2/sec]
+    vector<int> IonValence;
+    vector<double> IonConcentration;//unit [mol/m^3]
+    vector<double> deltaT;
+	vector<double> tau;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;

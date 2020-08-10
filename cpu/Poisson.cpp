@@ -8,7 +8,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, doubl
 	double f0,f1,f2,f3,f4,f5,f6;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 
-	for (int n=start; n<finish; n++){
+	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];
@@ -80,7 +80,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, dou
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
 
-	for (int n=start; n<finish; n++){
+	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];

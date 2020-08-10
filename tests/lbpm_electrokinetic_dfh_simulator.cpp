@@ -59,10 +59,10 @@ int main(int argc, char **argv)
 	DFHModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
 	DFHModel.Initialize();   // initializing the model will set initial conditions for variables
 	
-	DFHModel.Run();	     // Solve the N-S equations to get velocity
-	IonModel.Run(DFHModel.Velocity); //solve for ion transport and electric potential
-	//IonModel.Run(DFHModel.Velocity, DFHModel.Phi); //solve for ion transport and electric potential with multiphase system
+	DFHModel.Run(IonModel.ChargeDensity);	     // Solve the N-S equations to get velocity
 	PoissonSolver.Run(IonModel.ChargeDensity);
+	IonModel.Run(DFHModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
+	//IonModel.Run(DFHModel.Velocity, DFHModel.Phi,PoissonSolver.ElectricField); 
 
 	DFHModel.WriteDebug();
 	
