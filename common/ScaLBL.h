@@ -205,6 +205,8 @@ public:
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
+	void SolidDirichletD3Q7_init();
+	void SolidDirichletD3Q7();
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -267,6 +269,10 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+	//......................................................................................
+	int n_bb_d3q7, n_bb_d3q19; 
+	int *bb_dist;
+	int *bb_interactions;
 	//......................................................................................
 
 };
