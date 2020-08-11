@@ -372,7 +372,11 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				Map(i,j,k) = -2;
+				n = k*Nx*Ny + j*Nx + i;
+				if (id[n] > 0)
+					Map(i,j,k) = -2; // this label is for parallel communication sites
+				else
+					Map(i,j,k) = -1; // this label is for solid bounce-back sites
 			}
 		}
 	}
