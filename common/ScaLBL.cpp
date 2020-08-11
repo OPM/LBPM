@@ -854,9 +854,11 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 }
 
 
-void ScaLBL_Communicator::SetupBounceBackList()
+void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np)
 {
-	
+
+  int idx,i,j,k;
+					int neighbor;    
 	// save list of bounce-back distributions and interaction sites
 	n_bb_d3q7 = 0; n_bb_d3q19 = 0;
 	
@@ -866,9 +868,8 @@ void ScaLBL_Communicator::SetupBounceBackList()
 			for (i=1;i<Nx-1;i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
-				else if (!(idx<0)){
+				if (!(idx<0)){
 
-					int neighbor;    // cycle through the neighbors of lattice site idx
 					neighbor=Map(i-1,j,k);
 					if (neighbor==-1)	  local_count++;
 
@@ -937,7 +938,7 @@ void ScaLBL_Communicator::SetupBounceBackList()
 			for (i=1;i<Nx-1;i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
-				else if (!(idx<0)){
+				if (!(idx<0)){
 
 					int neighbor;    // cycle through the neighbors of lattice site idx
 					neighbor=Map(i-1,j,k);
@@ -985,7 +986,7 @@ void ScaLBL_Communicator::SetupBounceBackList()
 			for (i=1;i<Nx-1;i++){
 				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
-				else if (!(idx<0)){
+				if (!(idx<0)){
 
 					neighbor=Map(i-1,j-1,k);
 					if (neighbor==-1){

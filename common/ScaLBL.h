@@ -205,8 +205,8 @@ public:
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
-	void SolidDirichletD3Q7_init();
-	void SolidDirichletD3Q7();
+	void SetupBounceBackList(IntArray &Map, signed char *id, int Np);
+	//void SolidDirichletD3Q7();
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
