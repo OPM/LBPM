@@ -1067,6 +1067,16 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
 }
 
+void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *assignValues){
+		// fq is a D3Q7 distribution
+		// assignValues is a list of values to assign at bounce-back sites
+	for (int idx=0; idx<n_bb_d3q7; idx++){
+		double value = assignValues[idx];
+		int iq = bb_dist[idx];
+		fq[iq] += value;
+	}
+}
+
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
