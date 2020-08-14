@@ -187,7 +187,16 @@ void ScaLBL_Poisson::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 7*dist_mem_size);  
 	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &zeta, sizeof(double)*ScaLBL_Comm->n_bb_d3q7);  
 	//...........................................................................
+	// initialize the zeta function (example is zeta is constant on solid surface)
+	double *tmpZeta = new double[ScaLBL_Comm->n_bb_d3q7];
+	for int (i=0; i<ScaLBL_Comm->n_bb_d3q7; i++){
+		tmpZeta[i] = 1.0/k2_inv; // this has to be read from input file
+	}
+	ScaLBL_CopyToDevice(zeta, tmpZeta, sizeof(double)*ScaLBL_Comm->n_bb_d3q7);
+	delete [] tmpZeta;
+	
 	// Update GPU data structures
 	if (rank==0)    printf ("LB-Poisson Solver: Setting up device map and neighbor list \n");
 	// copy the neighbor list 
@@ -224,6 +233,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->SolidDirichletD3Q7(fq, zeta);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
@@ -234,6 +244,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->SolidDirichletD3Q7(fq, zeta);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 

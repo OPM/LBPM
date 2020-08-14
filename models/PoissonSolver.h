@@ -58,6 +58,7 @@ public:
     double *fq;
     double *Psi; 
     double *ElectricField;
+    double *zeta;
 
 private:
 	MPI_Comm comm;

@@ -170,6 +170,7 @@ public:
 	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
+	int n_bb_d3q7, n_bb_d3q19; 
 	int BoundaryCondition;
 	
 	int next;
@@ -205,6 +206,8 @@ public:
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
+	void SetupBounceBackList(IntArray &Map, signed char *id, int Np);
+	void SolidDirichletD3Q7(double *fq, double *assignValues);
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -267,6 +270,9 @@ private:
 	int *dvcRecvDist_x, *dvcRecvDist_y, *dvcRecvDist_z, *dvcRecvDist_X, *dvcRecvDist_Y, *dvcRecvDist_Z;
 	int *dvcRecvDist_xy, *dvcRecvDist_yz, *dvcRecvDist_xz, *dvcRecvDist_Xy, *dvcRecvDist_Yz, *dvcRecvDist_xZ;
 	int *dvcRecvDist_xY, *dvcRecvDist_yZ, *dvcRecvDist_Xz, *dvcRecvDist_XY, *dvcRecvDist_YZ, *dvcRecvDist_XZ;
+	//......................................................................................
+	int *bb_dist;
+	int *bb_interactions;
 	//......................................................................................
 
 };
