@@ -23,8 +23,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	electric_db = db->getDatabase( "Poisson" );
 	
     k2_inv = 4.5;//the inverse of 2nd-rank moment of D3Q7 lattice
-    deltaT = 0.3;//time step of LB-Poisson equation
-	tau = 0.5+k2_inv*deltaT;
+    gamma = 0.3;//time step of LB-Poisson equation
+	tau = 0.5+k2_inv*gamma;
 	timestepMax = 100000;
 	tolerance = 1.0e-6;//stopping criterion for obtaining steady-state electricla potential
     h = 1.0;//resolution; unit: um/lu
@@ -44,8 +44,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "tolerance" )){
 		tolerance = electric_db->getScalar<double>( "tolerance" );
 	}
-	if (electric_db->keyExists( "deltaT" )){
-		deltaT = electric_db->getScalar<double>( "deltaT" );
+	if (electric_db->keyExists( "gamma" )){
+		gamma = electric_db->getScalar<double>( "gamma" );
 	}
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
@@ -60,8 +60,12 @@ void ScaLBL_Poisson::ReadParams(string filename){
     //Re-calcualte model parameters if user updates input
     epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electrical permittivity 
-	tau = 0.5+k2_inv*deltaT;
+	tau = 0.5+k2_inv*gamma;
 
+	if (rank==0) printf("***********************************************************************************\n");
+	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
+	if (rank==0) printf("                   LB relaxation tau = %.5g \n", tau);
+	if (rank==0) printf("***********************************************************************************\n");
 }
 void ScaLBL_Poisson::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
@@ -143,9 +147,9 @@ void ScaLBL_Poisson::ReadInput(){
 		}
 	}
 //	MeanFilter(Averages->SDs);
-	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
+	if (rank==0) printf("LB-Poisson Solver: Initialized solid phase & converting to Signed Distance function \n");
 	CalcDist(Distance,id_solid,*Dm);
-    if (rank == 0) cout << "Domain set." << endl;
+    if (rank == 0) cout << "    Domain set." << endl;
 }
 
 void ScaLBL_Poisson::Create(){
@@ -159,13 +163,13 @@ void ScaLBL_Poisson::Create(){
 	Mask->CommInit();
 	Np=Mask->PoreCount();
 	//...........................................................................
-	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
+	if (rank==0)    printf ("LB-Poisson Solver: Create ScaLBL_Communicator \n");
 	// Create a communicator for the device (will use optimized layout)
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
 	int Npad=(Np/16 + 2)*16;
-	if (rank==0)    printf ("Set up memory efficient layout \n");
+	if (rank==0)    printf ("LB-Poisson Solver: Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
 	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
@@ -174,7 +178,7 @@ void ScaLBL_Poisson::Create(){
 	//                MAIN  VARIABLES ALLOCATED HERE
 	//...........................................................................
 	// LBM variables
-	if (rank==0)    printf ("Allocating distributions \n");
+	if (rank==0)    printf ("LB-Poisson Solver: Allocating distributions \n");
 	//......................device distributions.................................
 	int dist_mem_size = Np*sizeof(double);
 	int neighborSize=18*(Np*sizeof(int));
@@ -185,7 +189,7 @@ void ScaLBL_Poisson::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
-	if (rank==0)    printf ("Setting up device map and neighbor list \n");
+	if (rank==0)    printf ("LB-Poisson Solver: Setting up device map and neighbor list \n");
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	MPI_Barrier(comm);
@@ -196,22 +200,17 @@ void ScaLBL_Poisson::Initialize(){
 	/*
 	 * This function initializes model
 	 */
-    if (rank==0)    printf ("Initializing D3Q7 distributions for LB-Poisson solver\n");
+    if (rank==0)    printf ("LB-Poisson Solver: initializing D3Q7 distributions\n");
     ScaLBL_D3Q7_Poisson_Init(fq, Np);
 }
 
 void ScaLBL_Poisson::Run(double *ChargeDensity){
     
-    //LB-related parameter
-    double rlx = 1.0/tau;
-    
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-	starttime = MPI_Wtime();
-	if (rank==0) printf("***************************************************************************\n");
-	if (rank==0) printf("LB-Poisson Solver: timestepMax = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
-	if (rank==0) printf("***************************************************************************\n");
+	//double starttime,stoptime,cputime;
+	//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	//starttime = MPI_Wtime();
+
 	timestep=0;
 	double error = 1.0;
 	double psi_avg_previous = 0.0;
@@ -220,21 +219,21 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// *************ODD TIMESTEP*************//
         timestep++;
 		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, rlx, epsilon_LB, deltaT, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, rlx, epsilon_LB, deltaT, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
-		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, rlx, epsilon_LB, deltaT, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
 		// Set boundary conditions
 		/* ... */
-		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, rlx, epsilon_LB, deltaT, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 
@@ -267,24 +266,22 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 			psi_avg_previous = psi_avg;
         }
 	}
-	//************************************************************************/
-	stoptime = MPI_Wtime();
-	if (rank==0) printf("LB-Poission Solver: a steady-state solution is obtained\n");
-	if (rank==0) printf("---------------------------------------------------------------------------\n");
-	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
-	// Performance obtained from each node
-	double MLUPS = double(Np)/cputime/1000000;
 
-	if (rank==0) printf("******************* LB-Poisson Solver Statistics ********************\n");
-	if (rank==0) printf("CPU time = %f \n", cputime);
-	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
-	MLUPS *= nprocs;
-	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
-	if (rank==0) printf("*********************************************************************\n");
+	//************************************************************************/
+	//stoptime = MPI_Wtime();
+	////if (rank==0) printf("LB-Poission Solver: a steady-state solution is obtained\n");
+	////if (rank==0) printf("---------------------------------------------------------------------------\n");
+	//// Compute the walltime per timestep
+	//cputime = (stoptime - starttime)/timestep;
+	//// Performance obtained from each node
+	//double MLUPS = double(Np)/cputime/1000000;
+
+	//if (rank==0) printf("******************* LB-Poisson Solver Statistics ********************\n");
+	//if (rank==0) printf("CPU time = %f \n", cputime);
+	//if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	//MLUPS *= nprocs;
+	//if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	//if (rank==0) printf("*********************************************************************\n");
 
 }
 
-//void ScaLBL_Poisson::get_ElectricField(){
-//// ???
-//}

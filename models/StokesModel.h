@@ -1,5 +1,5 @@
 /*
- * Ion transporte LB Model
+ * Multi-relaxation time LBM Model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,6 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
-#include <vector>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
@@ -16,35 +15,28 @@
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
-class ScaLBL_IonModel{
+class ScaLBL_StokesModel{
 public:
-	ScaLBL_IonModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_IonModel();	
+	ScaLBL_StokesModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_StokesModel();	
 	
 	// functions in they should be run
-	void ReadParams(string filename,int num_iter,int num_iter_Stokes,double time_conv_Stokes);
+	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
 	void Create();
 	void Initialize();
-	void Run(double *Velocity, double *ElectricField);
+	void Run();
+	void VelocityField();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
-    double h;//domain resolution, unit [um/lu]
-    double time_conv;
-    double kb,electron_charge,T,Vt;
-    double k2_inv;
-    double tolerance;
-	
-	int number_ion_species;
-    vector<double> IonDiffusivity;//User input unit [m^2/sec]
-    vector<int> IonValence;
-    vector<double> IonConcentration;//unit [mol/m^3]
-    //vector<double> deltaT;
-	vector<double> tau;
+	double tau,mu;
+	double Fx,Fy,Fz,flux;
+	double din,dout;
+	double tolerance;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -56,15 +48,20 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> ion_db;
+    std::shared_ptr<Database> stokes_db;
 
     IntArray Map;
     DoubleArray Distance;
     int *NeighborList;
     double *fq;
-    double *Ci; 
-    double *ChargeDensity; 
-
+    double *Velocity;
+    double *Pressure;
+    
+    //Minkowski Morphology;
+		
+    DoubleArray Velocity_x;
+    DoubleArray Velocity_y;
+    DoubleArray Velocity_z;
 private:
 	MPI_Comm comm;
 	

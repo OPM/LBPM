@@ -1,5 +1,5 @@
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double rlx, double epsilon_LB,double deltaT,
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
         int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
@@ -7,12 +7,13 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, doubl
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
+    double rlx=1.0/tau;
 
 	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];
-        rho_e = deltaT*rho_e/epsilon_LB;
+        rho_e = gamma*rho_e/epsilon_LB;
 		
 		// q=0
 		f0 = dist[n];
@@ -40,9 +41,9 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, doubl
 		f6 = dist[nr6];
 		
 		psi = f0+f2+f1+f4+f3+f6+f5;
-		Ex = f1-f2;
-		Ey = f3-f4;
-		Ez = f5-f6;
+		Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+		Ey = (f3-f4)*rlx*4.5;
+		Ez = (f5-f6)*rlx*4.5;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;
         ElectricField[n+2*Np] = Ez;
@@ -72,19 +73,20 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, doubl
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, double *Psi, double *ElectricField, double rlx, double epsilon_LB,double deltaT,
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
         int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
     double Ex,Ey,Ez;//electrical field
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
+    double rlx=1.0/tau;
 
 	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];
-        rho_e = deltaT*rho_e/epsilon_LB;
+        rho_e = gamma*rho_e/epsilon_LB;
 
 		f0 = dist[n];
 		f1 = dist[2*Np+n];
@@ -96,9 +98,9 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, dou
 
 
 		psi = f0+f2+f1+f4+f3+f6+f5;
-		Ex = f1-f2;
-		Ey = f3-f4;
-		Ez = f5-f6;
+		Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+		Ey = (f3-f4)*rlx*4.5;
+		Ez = (f5-f6)*rlx*4.5;
         ElectricField[n+0*Np] = Ex;
         ElectricField[n+1*Np] = Ey;
         ElectricField[n+2*Np] = Ez;
