@@ -1,14 +1,14 @@
 /*
- * Multi-relaxation time LBM Model
+ * Dilute Ion Transport LBM Model
  */
 #include "models/IonModel.h"
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
 ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),
-Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+rank(RANK),nprocs(NP),timestep(0),timestepMax(0),time_conv(0),kb(0),electron_charge(0),T(0),Vt(0),k2_inv(0),h(0),
+tolerance(0),number_ion_species(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),
+BoundaryCondition(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
@@ -44,8 +44,8 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
     IonValence.push_back(1);//algebraic valence charge
     IonConcentration.push_back(1.0e-3);//user-input ion concentration has physical unit [mol/m^3]
     //deltaT.push_back(1.0);
-    //tau.push_back(0.5+k2_inv*deltaT[0]*IonDiffusivisty[0]);
-    tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivisty[0]);
+    //tau.push_back(0.5+k2_inv*deltaT[0]*IonDiffusivity[0]);
+    tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivity[0]);
     //--------------------------------------------------------------------------//
 
 	// LB-Ion Model parameters		
@@ -74,10 +74,10 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
         }
         else{
             for (int i=0; i<IonDiffusivity.size();i++){
-                //First, re-calculate tau
-                tau[i] = 0.5+k2_inv*time_conv/(h*h*1.0e-12)*IonDiffusivisty[i];
-                //Second, convert ion diffusivity in physical unit to LB unit
+                //First, convert ion diffusivity in physical unit to LB unit
                 IonDiffusivity[i] = IonDiffusivity[i]*time_conv/(h*h*1.0e-12);//LB diffusivity has unit [lu^2/lt]
+                //Second, re-calculate tau
+                tau[i] = 0.5+k2_inv*IonDiffusivity[i];
             }
         }
     }
@@ -103,27 +103,18 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
             }
         }
     }
-    // wrong...
-	//if (ion_db->keyExists( "deltaT" )){
-    //    deltaT.clear();
-    //    tau.clear();
-	//    deltaT = ion_db->getVector<double>( "deltaT" );
-    //    if (deltaT.size()!=number_ion_species){
-    //        ERROR("Error: number_ion_species and deltaT must be the same length! \n");
-    //    }
-    //    else{//update relaxation parameter tau
-    //        for (int i=0;i<deltaT.size();i++){
-    //            tau[i]=0.5+k2_inv*deltaT[i]*IonDiffusivity[i];
-    //        }
-    //    }
-    //}
 
 	// Read domain parameters
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
 	}
+    BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+    BoundaryConditionSolid = 0;
+	if (domain_db->keyExists( "BC_Solid" )){
+		BoundaryConditionSolid = domain_db->getScalar<int>( "BC_Solid" );
 	}
 
 	if (rank==0) printf("*****************************************************\n");
@@ -134,6 +125,18 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 	    if (rank==0) printf("      Ion %i: LB relaxation tau = %.5g\n", i+1,tau[i]);
     }
 	if (rank==0) printf("*****************************************************\n");
+
+    switch (BoundaryConditionSolid){
+        case 0:
+          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned");  
+          break;
+        case 1:
+          if (rank==0) printf("LB Ion Solver: solid boundary: Neumann-type surfacen ion concentration is assigned");  
+          break;
+        default:
+          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned");  
+          break;
+    }
 }
 
 void ScaLBL_IonModel::SetDomain(){
@@ -220,6 +223,64 @@ void ScaLBL_IonModel::ReadInput(){
     if (rank == 0) cout << "    Domain set." << endl;
 }
 
+
+void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
+{
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = ion_db->getVector<int>( "SolidLabels" );
+	auto AffinityList = ion_db->getVector<double>( "SolidValues" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: LB Ion Solver: SolidLabels and SolidValues must be the same length! \n");
+	}
+
+	double label_count[NLABELS];
+	double label_count_global[NLABELS];
+	// Assign the labels
+
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=Mask->id[n];
+                AFFINITY=0.f;
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+                        //NOTE need to convert the user input phys unit to LB unit
+                        AFFINITY = AFFINITY*(h*h*1.0e-12); 
+						label_count[idx] += 1.0;
+						idx = NLABELS;
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+					}
+				}
+				ion_solid[n] = AFFINITY;
+			}
+		}
+	}
+
+	for (size_t idx=0; idx<NLABELS; idx++)
+		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+
+	if (rank==0){
+		printf("LB Ion Solver: Ion Solid labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+			printf("   label=%d, surface ion concentration=%.3g [mol/m^2], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+		}
+	}
+}
+
 void ScaLBL_IonModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -262,6 +323,23 @@ void ScaLBL_IonModel::Create(){
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	MPI_Barrier(comm);
 	
+    //Initialize solid boundary for electrical potential
+    //if ion concentration at solid surface is specified
+    if (BoundaryConditionSolid==1){
+
+	    ScaLBL_AllocateDeviceMemory((void **) &IonSolid, sizeof(double)*Nx*Ny*Nz);
+        ScaLBL_Comm->SetupBounceBackList(Map, Mask->id, Np);
+        MPI_Barrier(comm);
+
+        double *IonSolid_host;
+        IonSolid_host = new double[Nx*Ny*Nz];
+        AssignSolidBoundary(IonSolid_host);
+        ScaLBL_CopyToDevice(IonSolid, IonSolid_host, Nx*Ny*Nz*sizeof(double));
+        ScaLBL_DeviceBarrier();
+        delete [] IonSolid_host;
+    }
+
+
 }        
 
 void ScaLBL_IonModel::Initialize(){
@@ -273,8 +351,10 @@ void ScaLBL_IonModel::Initialize(){
         ScaLBL_D3Q7_Ion_Init(&fq[ic*Np*7],&Ci[ic*Np],IonConcentration[ic],Np); 
     }
     if (rank==0)    printf ("LB Ion Solver: initializing charge density\n");
-    ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-    ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, 0, ScaLBL_Comm->LastExterior(), Np);
+	for (int ic=0; ic<number_ion_species; ic++){
+        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0, ScaLBL_Comm->LastExterior(), Np);
+    }
 }
 
 void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
@@ -299,10 +379,11 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
+            ScaLBL_DeviceBarrier();
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+            ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0, ScaLBL_Comm->LastExterior(), Np);
         }
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, 0, ScaLBL_Comm->LastExterior(), Np);
 
         //LB-Ion collison
 		for (int ic=0; ic<number_ion_species; ic++){
@@ -317,7 +398,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_D3Q7_AAodd_Ion(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);
         }
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        if (BoundaryConditionSolid==1){
+		    for (int ic=0; ic<number_ion_species; ic++){
+                //TODO IonSolid may also be species-dependent
+		        ScaLBL_Comm->SolidNeumannD3Q7(&fq[ic*Np*7], IonSolid);
+		        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+            }
+        }
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
@@ -327,9 +414,9 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 			ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np], 0, ScaLBL_Comm->LastExterior(), Np);
+            ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+            ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0, ScaLBL_Comm->LastExterior(), Np);
         }
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence, number_ion_species, 0, ScaLBL_Comm->LastExterior(), Np);
 
         //LB-Ion collison
 		for (int ic=0; ic<number_ion_species; ic++){
@@ -344,7 +431,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_D3Q7_AAeven_Ion(&fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);
         }
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        if (BoundaryConditionSolid==1){
+		    for (int ic=0; ic<number_ion_species; ic++){
+                //TODO IonSolid may also be species-dependent
+		        ScaLBL_Comm->SolidNeumannD3Q7(&fq[ic*Np*7], IonSolid);
+		        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+            }
+        }
 		//************************************************************************/
 	}
 	//************************************************************************/

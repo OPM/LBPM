@@ -73,16 +73,39 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
 
 // ION TRANSPORT MODEL
-extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Velocity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Velocity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np);
+
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                      double Di, double zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                       double Di, double zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
 
 // LBM Poisson solver
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *ChargeDensity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *ChargeDensity, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz);
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
+        int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
+        int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_Init(double *dist, int Np);
+
+// LBM Stokes Model (adapted from MRT model)
+
+extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                                              double Gx, double Gy, double Gz, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB,  
+                                             double Gx, double Gy, double Gz, int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
@@ -159,6 +182,10 @@ extern "C" void ScaLBL_SetSlice_z(double *Phi, double value, int Nx, int Ny, int
 
 extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Source, int Destination);
 
+extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
+
+extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
@@ -207,7 +234,8 @@ public:
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
 	void SetupBounceBackList(IntArray &Map, signed char *id, int Np);
-	void SolidDirichletD3Q7(double *fq, double *assignValues);
+    void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
+    void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
 
 	// Routines to set boundary conditions
 	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);

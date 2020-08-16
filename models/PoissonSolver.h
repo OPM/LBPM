@@ -33,9 +33,10 @@ public:
 	int timestep,timestepMax;
     int analysis_interval;
 	int BoundaryCondition;
+    int BoundaryConditionSolid;
 	double tau;
 	double tolerance;
-    double k2_inv,deltaT;
+    double k2_inv,gamma;
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
 	
 	int Nx,Ny,Nz,N,Np;
@@ -58,7 +59,7 @@ public:
     double *fq;
     double *Psi; 
     double *ElectricField;
-    double *zeta;
+    double *PoissonSolid;
 
 private:
 	MPI_Comm comm;
@@ -70,4 +71,5 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
+    void AssignSolidBoundary(double *poisson_solid);
 };

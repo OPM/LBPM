@@ -219,26 +219,19 @@ extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, 
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, vector<double>& IonValence, int number_ion_species, int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np){
     
     int n;
-    int ic=number_ion_species;
     double Ci;//ion concentration of species i
     double CD;//charge density
+    double CD_tmp;
     double F = 96485.0;//Faraday's constant; unit[C/mol]; F=e*Na, where Na is the Avogadro constant
-	for (n=start; n<finish; n++){
-            Ci = Den[n];
-            CD = F*IonValence[0]*Ci;
-            ChargeDensity[n] = CD;
-    }
 
-    ic = ic - 1;
-    while (ic>0){
-        for (n=start; n<finish; n++){
-            Ci = Den[n+ic*Np];
-            CD = F*IonValence[ic]*Ci;
-            ChargeDensity[n] += CD;
-        }
-        ic--;
+	for (n=start; n<finish; n++){
+            Ci = Den[n+ion_component*Np];
+            CD = ChargeDensity[n];
+            CD_tmp = F*IonValence*Ci;
+            ChargeDensity[n] = CD*(IonValence>0) + CD_tmp;
     }
 }
+

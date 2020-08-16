@@ -7,7 +7,7 @@
 
 ScaLBL_StokesModel::ScaLBL_StokesModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),
+Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),h(0),nu_phys(0),time_conv(0),tolerance(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 

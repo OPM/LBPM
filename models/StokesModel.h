@@ -21,13 +21,14 @@ public:
 	~ScaLBL_StokesModel();	
 	
 	// functions in they should be run
-	void ReadParams(string filename);
+	void ReadParams(string filename,int num_iter);
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
 	void Create();
 	void Initialize();
 	void Run();
+	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
 	
 	bool Restart,pBC;
@@ -37,6 +38,9 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout;
 	double tolerance;
+    double nu_phys;
+    double time_conv;
+    double h;//image resolution
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;

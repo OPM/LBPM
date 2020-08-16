@@ -6,9 +6,9 @@
 #include "common/ReadMicroCT.h"
 
 ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),
-Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+rank(RANK), nprocs(NP),timestep(0),timestepMax(0),tau(0),k2_inv(0),gamma(0),tolerance(0),h(0),
+epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),analysis_interval(0),
+nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
@@ -54,9 +54,16 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
 	}
+
+    BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
+    BoundaryConditionSolid = 1;
+	if (domain_db->keyExists( "BC_Solid" )){
+		BoundaryConditionSolid = domain_db->getScalar<int>( "BC_Solid" );
+	}
+
     //Re-calcualte model parameters if user updates input
     epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electrical permittivity 
@@ -66,6 +73,18 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (rank==0) printf("LB-Poisson Solver: steady-state MaxTimeStep = %i; steady-state tolerance = %.3g \n", timestepMax,tolerance);
 	if (rank==0) printf("                   LB relaxation tau = %.5g \n", tau);
 	if (rank==0) printf("***********************************************************************************\n");
+
+    switch (BoundaryConditionSolid){
+        case 1:
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned");  
+          break;
+        case 2:
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Neumann-type surfacen charge density is assigned");  
+          break;
+        default:
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned");  
+          break;
+    }
 }
 void ScaLBL_Poisson::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
@@ -152,6 +171,77 @@ void ScaLBL_Poisson::ReadInput(){
     if (rank == 0) cout << "    Domain set." << endl;
 }
 
+void ScaLBL_Poisson::AssignSolidBoundary(double *poisson_solid)
+{
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = electric_db->getVector<int>( "SolidLabels" );
+	auto AffinityList = electric_db->getVector<double>( "SolidValues" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: LB-Poisson Solver: SolidLabels and SolidValues must be the same length! \n");
+	}
+
+	double label_count[NLABELS];
+	double label_count_global[NLABELS];
+	// Assign the labels
+
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=Mask->id[n];
+                AFFINITY=0.f;
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+                        //NOTE need to convert the user input phys unit to LB unit
+                        if (BoundaryConditionSolid==2){
+                            //for BCS=1, i.e. Dirichlet-type, no need for unit conversion
+                            AFFINITY = AFFINITY*(h*h*1.0e-12); 
+                        }
+						label_count[idx] += 1.0;
+						idx = NLABELS;
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+					}
+				}
+				poisson_solid[n] = AFFINITY;
+			}
+		}
+	}
+
+	for (size_t idx=0; idx<NLABELS; idx++)
+		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+
+	if (rank==0){
+		printf("LB-Poisson Solver: Poisson Solid labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+            switch (BoundaryConditionSolid){
+                case 1:
+			        printf("   label=%d, surface potential=%.3g [V], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+                    break;
+                case 2: 
+			        printf("   label=%d, surface charge density=%.3g [C/m^2], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+                    break;
+                default:
+			        printf("   label=%d, surface potential=%.3g [V], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+                    break;
+            }
+		}
+	}
+}
+
+
 void ScaLBL_Poisson::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -187,22 +277,26 @@ void ScaLBL_Poisson::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 7*dist_mem_size);  
 	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricField, 3*sizeof(double)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &zeta, sizeof(double)*ScaLBL_Comm->n_bb_d3q7);  
+	ScaLBL_AllocateDeviceMemory((void **) &PoissonSolid, sizeof(double)*Nx*Ny*Nz);  
 	//...........................................................................
-	// initialize the zeta function (example is zeta is constant on solid surface)
-	double *tmpZeta = new double[ScaLBL_Comm->n_bb_d3q7];
-	for int (i=0; i<ScaLBL_Comm->n_bb_d3q7; i++){
-		tmpZeta[i] = 1.0/k2_inv; // this has to be read from input file
-	}
-	ScaLBL_CopyToDevice(zeta, tmpZeta, sizeof(double)*ScaLBL_Comm->n_bb_d3q7);
-	delete [] tmpZeta;
 	
 	// Update GPU data structures
 	if (rank==0)    printf ("LB-Poisson Solver: Setting up device map and neighbor list \n");
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+	ScaLBL_DeviceBarrier();
 	MPI_Barrier(comm);
 	
+    //Initialize solid boundary for electrical potential
+    ScaLBL_Comm->SetupBounceBackList(Map, Mask->id, Np);
+	MPI_Barrier(comm);
+
+    double *PoissonSolid_host;
+    PoissonSolid_host = new double[Nx*Ny*Nz];
+    AssignSolidBoundary(PoissonSolid_host);
+	ScaLBL_CopyToDevice(PoissonSolid, PoissonSolid_host, Nx*Ny*Nz*sizeof(double));
+	ScaLBL_DeviceBarrier();
+    delete [] PoissonSolid_host;
 }        
 
 void ScaLBL_Poisson::Initialize(){
@@ -233,7 +327,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->SolidDirichletD3Q7(fq, zeta);
+		ScaLBL_Comm->SolidDirichletD3Q7(fq, PoissonSolid);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
@@ -244,14 +338,14 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// Set boundary conditions
 		/* ... */
 		ScaLBL_D3Q7_AAeven_Poisson(fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_Comm->SolidDirichletD3Q7(fq, zeta);
+		ScaLBL_Comm->SolidDirichletD3Q7(fq, PoissonSolid);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 
         // Check convergence of steady-state solution
         if (timestep%analysis_interval==0){
         
-			ScaLBL_Comm->RegularLayout(Map,&Psi,Psi_host);
+			ScaLBL_Comm->RegularLayout(Map,Psi,Psi_host);
 			double count_loc=0;
 			double count;
             double psi_avg;

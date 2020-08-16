@@ -30,9 +30,10 @@ public:
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
 	
-	bool Restart,pBC;
+	//bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
+	int BoundaryConditionSolid;
     double h;//domain resolution, unit [um/lu]
     double time_conv;
     double kb,electron_charge,T,Vt;
@@ -64,6 +65,7 @@ public:
     double *fq;
     double *Ci; 
     double *ChargeDensity; 
+    double *IonSolid;
 
 private:
 	MPI_Comm comm;
@@ -75,4 +77,5 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
+    void AssignSolidBoundary(double *ion_solid);
 };

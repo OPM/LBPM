@@ -1,7 +1,7 @@
 #include "models/MultiPhysController.h"
 
 ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM):
-rank(RANK),Restart(0),timestepMax(0),num_iter_Stokes(0),num_iter_Ion(0),SchmidtNum(0),comm(COMM)
+rank(RANK),nprocs(NP),Restart(0),timestepMax(0),num_iter_Stokes(0),num_iter_Ion(0),SchmidtNum(0),comm(COMM)
 {
 
 }

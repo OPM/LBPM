@@ -30,6 +30,8 @@ public:
     int num_iter_Ion;
     double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
+	int rank,nprocs;
+
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> study_db;

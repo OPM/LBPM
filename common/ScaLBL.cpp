@@ -857,8 +857,8 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np)
 {
 
-  int idx,i,j,k;
-					int neighbor;    
+    int idx,i,j,k;
+    int neighbor;    
 	// save list of bounce-back distributions and interaction sites
 	n_bb_d3q7 = 0; n_bb_d3q19 = 0;
 	
@@ -929,8 +929,9 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 	}
 	
 	int *bb_dist_tmp = new int [local_count];	
-	bb_interactions = new int [local_count];	
+	int *bb_interactions_tmp = new int [local_count];	
 	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
 	
 	local_count=0;
 	for (k=1;k<Nz-1;k++){
@@ -943,37 +944,37 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 					int neighbor;    // cycle through the neighbors of lattice site idx
 					neighbor=Map(i-1,j,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 2*Np;
 					}
 
 					neighbor=Map(i+1,j,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++] = idx + 1*Np;
 					}
 
 					neighbor=Map(i,j-1,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 4*Np;
 					}
 
 					neighbor=Map(i,j+1,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 3*Np;
 					}
 
 					neighbor=Map(i,j,k-1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 6*Np;
 					}
 
 					neighbor=Map(i,j,k+1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 5*Np;
 					}
 				}
@@ -990,73 +991,73 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 
 					neighbor=Map(i-1,j-1,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 8*Np;
 					}
 
 					neighbor=Map(i+1,j+1,k);
 					if (neighbor==-1)	{
-						bb_interactions[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 7*Np;
 					}
 
 					neighbor=Map(i-1,j+1,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 10*Np;
 					}
 
 					neighbor=Map(i+1,j-1,k);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 9*Np;
 					}
 
 					neighbor=Map(i-1,j,k-1);
 					if (neighbor==-1) {
-						bb_interactions[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 12*Np;
 					}
 
 					neighbor=Map(i+1,j,k+1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 11*Np;
 					}
 
 					neighbor=Map(i-1,j,k+1);
 					if (neighbor==-1) {
-						bb_interactions[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 14*Np;
 					}
 
 					neighbor=Map(i+1,j,k-1);
 					if (neighbor==-1) {
-						bb_interactions[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 13*Np;
 					}
 
 					neighbor=Map(i,j-1,k-1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 16*Np;
 					}
 
 					neighbor=Map(i,j+1,k+1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 15*Np;
 					}
 
 					neighbor=Map(i,j-1,k+1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 18*Np;
 					}
 
 					neighbor=Map(i,j+1,k-1);
 					if (neighbor==-1){
-						bb_interactions[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
 						bb_dist_tmp[local_count++]=idx + 17*Np;
 					}
 				}
@@ -1065,17 +1066,25 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 	}
 	n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
 	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
+	ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
+	ScaLBL_DeviceBarrier();
+    
+	delete [] bb_dist_tmp;
+	delete [] bb_interactions_tmp;
 }
 
-void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *assignValues){
-		// fq is a D3Q7 distribution
-		// assignValues is a list of values to assign at bounce-back sites
-	for (int idx=0; idx<n_bb_d3q7; idx++){
-		double value = assignValues[idx];
-		int iq = bb_dist[idx];
-		fq[iq] += value;
-	}
+void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Dirichlet_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
 }
+
+void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
