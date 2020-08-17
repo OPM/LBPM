@@ -390,3 +390,14 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 
 }
 
+void ScaLBL_Poisson::getElectricalPotential(){
+
+        DoubleArray PhaseField(Nx,Ny,Nz);
+	    ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
+        //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        FILE *OUTFILE;
+        sprintf(LocalRankFilename,"Electrical_Potential.%05i.raw",rank);
+        OUTFILE = fopen(LocalRankFilename,"wb");
+        fwrite(PhaseField.data(),8,N,OUTFILE);
+        fclose(OUTFILE);
+}

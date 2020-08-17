@@ -30,12 +30,14 @@ public:
 	void Run();
 	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
+    void getVelocity();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tau,mu;
 	double Fx,Fy,Fz,flux;
+    double Ex,Ey,Ez;
 	double din,dout;
 	double tolerance;
     double nu_phys;

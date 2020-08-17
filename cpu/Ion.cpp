@@ -235,3 +235,13 @@ extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity
     }
 }
 
+extern "C" void ScaLBL_IonConcentration_Phys(double *Den, double h, int ion_component, int start, int finish, int Np){
+    //h: resolution [um/lu]
+    int n;
+    double Ci;
+    
+	for (n=start; n<finish; n++){
+            Ci = Den[n+ion_component*Np];
+            Den[n+ion_component*Np] = Ci/(h*h*h*1.0e-18);
+    }
+}

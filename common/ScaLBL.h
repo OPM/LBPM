@@ -49,6 +49,8 @@ extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
 
+extern "C" void ScaLBL_D3Q19_Momentum_Phys(double *dist, double *vel, double h, double time_conv, int Np);
+
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 
 // BGK MODEL
@@ -89,6 +91,8 @@ extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, 
 
 extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
 
+extern "C" void ScaLBL_IonConcentration_Phys(double *Den, double h, int ion_component, int start, int finish, int Np);
+
 // LBM Poisson solver
 
 extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
@@ -102,10 +106,10 @@ extern "C" void ScaLBL_D3Q7_Poisson_Init(double *dist, int Np);
 // LBM Stokes Model (adapted from MRT model)
 
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                                              double Gx, double Gy, double Gz, int start, int finish, int Np);
+                                              double Gx, double Gy, double Gz, double Ex, double Ey, double Ez, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB,  
-                                             double Gx, double Gy, double Gz, int start, int finish, int Np);
+                                             double Gx, double Gy, double Gz, double Ex, double Ey, double Ez, int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,

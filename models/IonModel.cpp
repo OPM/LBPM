@@ -457,3 +457,22 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 
 }
 
+void ScaLBL_IonModel::getIonConcentration(){
+	for (int ic=0; ic<number_ion_species; ic++){
+        ScaLBL_IonConcentration_Phys(Ci, h, ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+    }
+
+    DoubleArray PhaseField(Nx,Ny,Nz);
+	for (int ic=0; ic<number_ion_species; ic++){
+	    ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],PhaseField);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+
+        FILE *OUTFILE;
+        sprintf(LocalRankFilename,"Ion%02i.%05i.raw",ic+1,rank);
+        OUTFILE = fopen(LocalRankFilename,"wb");
+        fwrite(PhaseField.data(),8,N,OUTFILE);
+        fclose(OUTFILE);
+    }
+
+}
+

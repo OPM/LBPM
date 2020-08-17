@@ -29,6 +29,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
+    void getIonConcentration();
 	
 	//bool Restart,pBC;
 	int timestep,timestepMax;

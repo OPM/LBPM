@@ -89,7 +89,9 @@ int main(int argc, char **argv)
             //--------------------------------------------
         }
 
-        //StokesModel.WriteDebug();
+        StokesModel.getVelocity();
+        PoissonSolver.getElectricalPotential();
+        IonModel.getIonConcentration();
 
         PROFILE_STOP("Main");
         PROFILE_SAVE("lbpm_electrokinetic_simulator",1);

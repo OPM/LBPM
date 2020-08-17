@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                                              double Gx, double Gy, double Gz, int start, int finish, int Np)
+                                              double Gx, double Gy, double Gz, double Ex_const, double Ey_const, double Ez_const, int start, int finish, int Np)
 {
     double fq;
 	// conserved momemnts
@@ -32,9 +32,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
         
         //Load data
         rhoE = ChargeDensity[n];
-        Ex = ElectricField[n+0*Np];
-        Ey = ElectricField[n+1*Np];
-        Ez = ElectricField[n+2*Np];
+        Ex = ElectricField[n+0*Np]+Ex_const;
+        Ey = ElectricField[n+1*Np]+Ey_const;
+        Ez = ElectricField[n+2*Np]+Ez_const;
         //compute total body force, including input body force (Gx,Gy,Gz)
         Fx = Gx + rhoE*Ex;
         Fy = Gy + rhoE*Ey;
@@ -455,7 +455,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB,  
-                                             double Gx, double Gy, double Gz, int start, int finish, int Np)
+                                             double Gx, double Gy, double Gz, double Ex_const, double Ey_const, double Ez_const, int start, int finish, int Np)
 {
     double fq;
 	// conserved momemnts
@@ -487,9 +487,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 
         //Load data
         rhoE = ChargeDensity[n];
-        Ex = ElectricField[n+0*Np];
-        Ey = ElectricField[n+1*Np];
-        Ez = ElectricField[n+2*Np];
+        Ex = ElectricField[n+0*Np]+Ex_const;
+        Ey = ElectricField[n+1*Np]+Ey_const;
+        Ez = ElectricField[n+2*Np]+Ez_const;
         //compute total body force, including input body force (Gx,Gy,Gz)
         Fx = Gx + rhoE*Ex;
         Fy = Gy + rhoE*Ey;
@@ -955,3 +955,47 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 	}
 }
 
+extern "C" void ScaLBL_D3Q19_Momentum_Phys(double *dist, double *vel, double h, double time_conv, int Np)
+{
+    //h: resolution [um/lu]
+    //time_conv: time conversion factor [sec/lt]
+	int n;
+	// distributions
+	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
+	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+	double vx,vy,vz;
+
+	for (n=0; n<Np; n++){
+		//........................................................................
+		// Registers to store the distributions
+		//........................................................................
+		f2 = dist[2*Np+n];
+		f4 = dist[4*Np+n];
+		f6 = dist[6*Np+n];
+		f8 = dist[8*Np+n];
+		f10 = dist[10*Np+n];
+		f12 = dist[12*Np+n];
+		f14 = dist[14*Np+n];
+		f16 = dist[16*Np+n];
+		f18 = dist[18*Np+n];
+		//........................................................................
+		f1 = dist[Np+n];
+		f3 = dist[3*Np+n];
+		f5 = dist[5*Np+n];
+		f7 = dist[7*Np+n];
+		f9 = dist[9*Np+n];
+		f11 = dist[11*Np+n];
+		f13 = dist[13*Np+n];
+		f15 = dist[15*Np+n];
+		f17 = dist[17*Np+n];
+		//.................Compute the velocity...................................
+		vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+		vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+		vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+		//..................Write the velocity.....................................
+		vel[0*Np+n] = vx*(h*1.0e-6)/time_conv;
+		vel[1*Np+n] = vy*(h*1.0e-6)/time_conv;
+		vel[2*Np+n] = vz*(h*1.0e-6)/time_conv;
+		//........................................................................
+	}
+}

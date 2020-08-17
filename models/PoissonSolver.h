@@ -28,7 +28,8 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *ChargeDensity);
-	
+    void getElectricalPotential();
+
 	//bool Restart,pBC;
 	int timestep,timestepMax;
     int analysis_interval;
