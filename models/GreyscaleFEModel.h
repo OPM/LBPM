@@ -1,5 +1,5 @@
 /*
-Implementation of color lattice boltzmann model
+Implementation of multicomponent greyscale free-energy based lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,16 +10,16 @@ Implementation of color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Database.h"
 #include "common/ScaLBL.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_GreyscaleModel{
+class ScaLBL_GreyscaleFEModel{
 public:
-	ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_GreyscaleModel();	
+	ScaLBL_GreyscaleFEModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleFEModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -35,15 +35,18 @@ public:
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
-    int CollisionType;
-	double tau;
-    double tau_eff;
-    double Den;//constant density
+	double tauA,tauB;
+    double tauA_eff,tauB_eff;
+    double rhoA,rhoB;
 	double tolerance;
 	double Fx,Fy,Fz,flux;
 	double din,dout;
     double dp;//solid particle diameter, unit in voxel
     double GreyPorosity;
+    //double Gsc;
+    double gamma;
+    double kappaA,kappaB;
+    double lambdaA,lambdaB;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -56,17 +59,29 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> greyscale_db;
+    std::shared_ptr<Database> greyscaleFE_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
     signed char *id;    
 	int *NeighborList;
-	double *fq;
+	//double *fq,*Aq,*Bq;
+	double *fq,*Cq;
+    double *Den;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
 	double *Velocity;
+    double *SolidForce;
 	double *Pressure_dvc;
+	double *PressureGrad;// gradiant of pressure
+    double *PressTensor;//pressure tensor
+    double *PressTensorGrad;// gradient of pressure tensor
+    double *Phi;
+    double *PhiLap;//laplacian of phase field phi
+//    double *DenGradA;
+//    double *DenGradB;
+//    double *DenLapA;
+//    double *DenLapB;
     IntArray Map;
     DoubleArray SignDist;
     DoubleArray Velocity_x;
@@ -85,7 +100,9 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
    
-    void AssignComponentLabels(double *Porosity, double *Permeablity);
-    
+    void AssignComponentLabels(double *Porosity, double *Permeablity, double *SolidPotential);
+    void AssignSolidForce(double *SolidPotential, double *SolidForce);
+    void Density_and_Phase_Init();
+
 };
 

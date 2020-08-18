@@ -8,14 +8,9 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
-#include "models/GreyscaleModel.h"
+#include "common/MPI.h"
+#include "models/GreyscaleSCModel.h"
 //#define WRITE_SURFACES
-
-/*
- * Simulator for two-phase flow in porous media
- * James E. McClure 2013-2014
- */
 
 using namespace std;
 
@@ -33,28 +28,28 @@ int main(int argc, char **argv)
 	MPI_Comm_size(comm,&nprocs);
 	{
 		// parallel domain size (# of sub-domains)
+		int nprocx,nprocy,nprocz;
+		int iproc,jproc,kproc;
 
 		if (rank == 0){
-			printf("********************************************************\n");
-			printf("Running Greyscale Single Phase Permeability Calculation \n");
-			printf("********************************************************\n");
+			printf("****************************************\n");
+			printf("Running Greyscale Two-Phase Calculation \n");
+			printf("****************************************\n");
 		}
 		// Initialize compute device
 		int device=ScaLBL_SetDevice(rank);
-		NULL_USE(device);
 		ScaLBL_DeviceBarrier();
 		MPI_Barrier(comm);
 		
-		ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
+		ScaLBL_GreyscaleSCModel GreyscaleSC(rank,nprocs,comm);
 		auto filename = argv[1];
-		Greyscale.ReadParams(filename);
-		Greyscale.SetDomain();    // this reads in the domain 
-		Greyscale.ReadInput();
-		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
-		Greyscale.Run();	 
-		Greyscale.VelocityField();
-		//Greyscale.WriteDebug();
+		GreyscaleSC.ReadParams(filename);
+		GreyscaleSC.SetDomain();    // this reads in the domain 
+		GreyscaleSC.ReadInput();
+		GreyscaleSC.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+		GreyscaleSC.Initialize();   // initializing the model will set initial conditions for variables
+		GreyscaleSC.Run();	 
+		GreyscaleSC.WriteDebug();
 	}
 	// ****************************************************
 	MPI_Barrier(comm);
