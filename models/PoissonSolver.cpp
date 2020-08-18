@@ -22,7 +22,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	domain_db = db->getDatabase( "Domain" );
 	electric_db = db->getDatabase( "Poisson" );
 	
-    k2_inv = 4.5;//the inverse of 2nd-rank moment of D3Q7 lattice
+    k2_inv = 4.5;//speed of sound for D3Q7 lattice 
     gamma = 0.3;//time step of LB-Poisson equation
 	tau = 0.5+k2_inv*gamma;
 	timestepMax = 100000;
@@ -30,7 +30,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
     h = 1.0;//resolution; unit: um/lu
     epsilon0 = 8.85e-12;//electrical permittivity of vaccum; unit:[C/(V*m)]
     epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
-    epsilonR = 78.4;//default dielectric constant for water
+    epsilonR = 78.4;//default dielectric constant of water
     epsilon_LB = epsilon0_LB*epsilonR;//electrical permittivity 
     analysis_interval = 1000; 
 
@@ -50,6 +50,13 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "epsilonR" )){
 		epsilonR = electric_db->getScalar<double>( "epsilonR" );
 	}
+
+    // Read solid boundary condition specific to Poisson equation
+    BoundaryConditionSolid = 1;
+	if (electric_db->keyExists( "BC_Solid" )){
+		BoundaryConditionSolid = electric_db->getScalar<int>( "BC_Solid" );
+	}
+
 	// Read domain parameters
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
@@ -58,10 +65,6 @@ void ScaLBL_Poisson::ReadParams(string filename){
     BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
-    BoundaryConditionSolid = 1;
-	if (domain_db->keyExists( "BC_Solid" )){
-		BoundaryConditionSolid = domain_db->getScalar<int>( "BC_Solid" );
 	}
 
     //Re-calcualte model parameters if user updates input
@@ -76,13 +79,13 @@ void ScaLBL_Poisson::ReadParams(string filename){
 
     switch (BoundaryConditionSolid){
         case 1:
-          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned");  
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned\n");  
           break;
         case 2:
-          if (rank==0) printf("LB-Poisson Solver: solid boundary: Neumann-type surfacen charge density is assigned");  
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Neumann-type surfacen charge density is assigned\n");  
           break;
         default:
-          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned");  
+          if (rank==0) printf("LB-Poisson Solver: solid boundary: Dirichlet-type surfacen potential is assigned\n");  
           break;
     }
 }

@@ -36,7 +36,7 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 	//---------------------- Default model parameters --------------------------//		
     T = 300.0;//temperature; unit [K]
     Vt = kb*T/electron_charge;//thermal voltage; unit [Vy]
-    k2_inv = 4.5;//the inverse of 2nd-rank moment of D3Q7 lattice
+    k2_inv = 4.5;//speed of sound for D3Q7 lattice
     h = 1.0;//resolution; unit: um/lu
 	tolerance = 1.0e-8;
 	number_ion_species = 1;
@@ -57,6 +57,8 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 	}
 	if (ion_db->keyExists( "temperature" )){
 		T = ion_db->getScalar<int>( "temperature" );
+        //re-calculate thermal voltage 
+        Vt = kb*T/electron_charge;//thermal voltage; unit [Vy]
 	}
 	if (ion_db->keyExists( "number_ion_species" )){
 		number_ion_species = ion_db->getScalar<int>( "number_ion_species" );
@@ -104,6 +106,12 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
         }
     }
 
+    //Read solid boundary condition specific to Ion model
+    BoundaryConditionSolid = 0;
+	if (ion_db->keyExists( "BC_Solid" )){
+		BoundaryConditionSolid = ion_db->getScalar<int>( "BC_Solid" );
+	}
+
 	// Read domain parameters
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
@@ -111,10 +119,6 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
     BoundaryCondition = 0;
 	if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
-    BoundaryConditionSolid = 0;
-	if (domain_db->keyExists( "BC_Solid" )){
-		BoundaryConditionSolid = domain_db->getScalar<int>( "BC_Solid" );
 	}
 
 	if (rank==0) printf("*****************************************************\n");
@@ -128,13 +132,13 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 
     switch (BoundaryConditionSolid){
         case 0:
-          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned");  
+          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned\n");  
           break;
         case 1:
-          if (rank==0) printf("LB Ion Solver: solid boundary: Neumann-type surfacen ion concentration is assigned");  
+          if (rank==0) printf("LB Ion Solver: solid boundary: Neumann-type surfacen ion concentration is assigned\n");  
           break;
         default:
-          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned");  
+          if (rank==0) printf("LB Ion Solver: solid boundary: non-flux boundary is assigned\n");  
           break;
     }
 }
@@ -375,6 +379,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// *************ODD TIMESTEP*************//
 		timestep++;
         //Update ion concentration and charge density
+        if (rank==0) printf("timestep=%i; updating ion concentration and charge density\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -386,7 +391,9 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         }
 
         //LB-Ion collison
+        if (rank==0) printf("timestep=%i; execute collision step 1/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
+            if (rank==0) printf("   ic=%i; execute collsion step 1/2\n",ic);
             ScaLBL_D3Q7_AAodd_Ion(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
@@ -394,7 +401,9 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// Set boundary conditions
 		/* ... */
 
+        if (rank==0) printf("timestep=%i; execute collision step 2/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
+            if (rank==0) printf("   ic=%i; execute collsion step 2/2\n",ic);
             ScaLBL_D3Q7_AAodd_Ion(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);
         }
@@ -409,6 +418,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// *************EVEN TIMESTEP*************//
 		timestep++;
         //Update ion concentration and charge density
+        if (rank==0) printf("timestep=%i; updating ion concentration and charge density\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FORM NORMAL
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -419,6 +429,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         }
 
         //LB-Ion collison
+        if (rank==0) printf("timestep=%i; execute collision step 1/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
             ScaLBL_D3Q7_AAeven_Ion(&fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -427,6 +438,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// Set boundary conditions
 		/* ... */
 		
+        if (rank==0) printf("timestep=%i; execute collision step 2/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
             ScaLBL_D3Q7_AAeven_Ion(&fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);

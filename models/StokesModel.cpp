@@ -86,7 +86,7 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 
     // Re-calculate model parameters due to parameter read
 	mu=(tau-0.5)/3.0;
-    time_conv = h*h*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
+    time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     // convert user-input electric field ([V/m]) from physical unit to LB unit 
     Ex = Ex*(h*1.0e-6);//LB electric field: V/lu 
     Ey = Ey*(h*1.0e-6);

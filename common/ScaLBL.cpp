@@ -1429,37 +1429,37 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
-	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
 
 	MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_SCALBL,&req1[0]);
 	MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_SCALBL,&req2[0]);
 	
 	//...Packing for X face(1,7,9,11,13)................................
-	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
 	
 	MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_SCALBL,&req1[1]);
 	MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_SCALBL,&req2[1]);
 
 	//...Packing for y face(4,8,9,16,18).................................
-	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
 
 	MPI_Isend(sendbuf_y, 2*sendCount_y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_SCALBL,&req1[2]);
 	MPI_Irecv(recvbuf_Y, 2*recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_SCALBL,&req2[2]);
 	
 	//...Packing for Y face(3,7,10,15,17).................................
-	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
 
 	MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_SCALBL,&req1[3]);
 	MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_SCALBL,&req2[3]);
 	
 	//...Packing for z face(6,12,13,16,17)................................
-	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
 	
 	MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_SCALBL,&req1[4]);
 	MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_SCALBL,&req2[4]);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
-	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*N],N);
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
 
 	//...................................................................................
 	// Send all the distributions
@@ -1483,33 +1483,33 @@ void ScaLBL_Communicator::RecvD3Q7AA(double *Aq, int Component){
 	// Unpack the distributions on the device
 	//...................................................................................
 	//...Unpacking for x face(2,8,10,12,14)................................
-	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,&Aq[Component*N],N);
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,&Aq[Component*7*N],N);
 	//...................................................................................
 	//...Packing for X face(1,7,9,11,13)................................
-	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,&Aq[Component*N],N);
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,&Aq[Component*7*N],N);
 	//...................................................................................
 	//...Packing for y face(4,8,9,16,18).................................
-	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,&Aq[Component*N],N);
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,&Aq[Component*7*N],N);
 	//...................................................................................
 	//...Packing for Y face(3,7,10,15,17).................................
-	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,&Aq[Component*N],N);
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,&Aq[Component*7*N],N);
 	//...................................................................................
 
 	if (BoundaryCondition > 0){
 		if (kproc != 0){
 			//...Packing for z face(6,12,13,16,17)................................
-			ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*N],N);
+			ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
 		}
 		if (kproc != nprocz-1){
 			//...Packing for Z face(5,11,14,15,18)................................
-			ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*N],N);
+			ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
 		}
 	}
 	else {
 		//...Packing for z face(6,12,13,16,17)................................
-		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*N],N);
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
 		//...Packing for Z face(5,11,14,15,18)................................
-		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*N],N);
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
 	}
 
 	//...................................................................................

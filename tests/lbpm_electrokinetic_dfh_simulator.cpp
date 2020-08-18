@@ -78,8 +78,13 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax){
             
             timestep++;
+            if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
             PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
+
+            if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+
+            if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
             
