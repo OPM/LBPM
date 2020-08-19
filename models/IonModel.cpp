@@ -100,7 +100,7 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 		    ERROR("Error: number_ion_species and IonConcentrationList must be the same length! \n");
         }
         else{
-            for (int i=0; i<IonDiffusivity.size();i++){
+            for (int i=0; i<IonConcentration.size();i++){
                 IonConcentration[i] = IonConcentration[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
             }
         }
