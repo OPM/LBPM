@@ -3,7 +3,6 @@
 extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np){
     int n,nread;
     double fq,Ci;
-    printf("ScaLBL_D3Q7_AAodd_IonConcentration: entering the kernel successfully\n");
 	for (n=start; n<finish; n++){
 
 		// q=0
@@ -42,7 +41,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *di
 
         Den[n]=Ci;
     }
-    printf("ScaLBL_D3Q7_AAodd_IonConcentration: exiting the loop successfully\n");
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np){
@@ -95,23 +93,16 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 	for (n=start; n<finish; n++){
 		
         //Load data
-        printf("ScaLBL_D3Q7_AAodd_Ion: enetering the kernel successfully \n");
         Ci=Den[n];
-        printf("ScaLBL_D3Q7_AAodd_Ion: load concentration successfully\n");
         Ex=ElectricField[n+0*Np];
         Ey=ElectricField[n+1*Np];
         Ez=ElectricField[n+2*Np];
-        printf("ScaLBL_D3Q7_AAodd_Ion: load electric field successfully\n");
         ux=Velocity[n+0*Np];
         uy=Velocity[n+1*Np];
         uz=Velocity[n+2*Np];
-        printf("ScaLBL_D3Q7_AAodd_Ion: load velocity field successfully\n");
         uEPx=zi*Di/Vt*Ex;
         uEPy=zi*Di/Vt*Ey;
         uEPz=zi*Di/Vt*Ez;
-
-        printf("ScaLBL_D3Q7_AAodd_Ion: load spatial data successfully\n");
-
 
 		// q=0
 		f0 = dist[n];
@@ -134,8 +125,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 		nr6 = neighborList[n+5*Np];
 		f6 = dist[nr6];
 		
-        printf("ScaLBL_D3Q7_AAodd_Ion: load D3Q7 dist data successfully\n");
-
 		// q=0
 		dist[n] = f0*(1.0-rlx)+rlx*0.3333333333333333*Ci;
 
@@ -157,8 +146,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 		// q = 6
 		dist[nr5] = f6*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(uz+uEPz));
 	
-        
-        printf("ScaLBL_D3Q7_AAodd_Ion: data write successfully\n");
 	}
 }
 

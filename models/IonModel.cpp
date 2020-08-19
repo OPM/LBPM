@@ -79,7 +79,7 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
                 //First, convert ion diffusivity in physical unit to LB unit
                 IonDiffusivity[i] = IonDiffusivity[i]*time_conv/(h*h*1.0e-12);//LB diffusivity has unit [lu^2/lt]
                 //Second, re-calculate tau
-                tau[i] = 0.5+k2_inv*IonDiffusivity[i];
+                tau.push_back(0.5+k2_inv*IonDiffusivity[i]);
             }
         }
     }
@@ -379,7 +379,6 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// *************ODD TIMESTEP*************//
 		timestep++;
         //Update ion concentration and charge density
-        if (rank==0) printf("timestep=%i; updating ion concentration and charge density\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -391,9 +390,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         }
 
         //LB-Ion collison
-        if (rank==0) printf("timestep=%i; execute collision step 1/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
-            if (rank==0) printf("   ic=%i; execute collsion step 1/2\n",ic);
             ScaLBL_D3Q7_AAodd_Ion(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         }
@@ -401,9 +398,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// Set boundary conditions
 		/* ... */
 
-        if (rank==0) printf("timestep=%i; execute collision step 2/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
-            if (rank==0) printf("   ic=%i; execute collsion step 2/2\n",ic);
             ScaLBL_D3Q7_AAodd_Ion(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);
         }
@@ -418,7 +413,6 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// *************EVEN TIMESTEP*************//
 		timestep++;
         //Update ion concentration and charge density
-        if (rank==0) printf("timestep=%i; updating ion concentration and charge density\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
 			ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FORM NORMAL
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -429,7 +423,6 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         }
 
         //LB-Ion collison
-        if (rank==0) printf("timestep=%i; execute collision step 1/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
             ScaLBL_D3Q7_AAeven_Ion(&fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -438,7 +431,6 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 		// Set boundary conditions
 		/* ... */
 		
-        if (rank==0) printf("timestep=%i; execute collision step 2/2\n",timestep);
 		for (int ic=0; ic<number_ion_species; ic++){
             ScaLBL_D3Q7_AAeven_Ion(&fq[ic*Np*7],&Ci[ic*Np],Velocity,ElectricField,IonDiffusivity[ic],IonValence[ic],
                                   rlx[ic],Vt,0, ScaLBL_Comm->LastExterior(), Np);
