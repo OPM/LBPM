@@ -1,5 +1,5 @@
 /*
-Implementation of color lattice boltzmann model
+Implementation of two-fluid greyscale color lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,13 +12,13 @@ Implementation of color lattice boltzmann model
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
 class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM);
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
 	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
@@ -67,7 +67,7 @@ public:
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
     //double *GreySolidPhi; //Model 2 & 3
-    double *GreySolidGrad;//Model 1
+    double *GreySolidGrad;//Model 1 & 4
 	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
@@ -75,7 +75,7 @@ public:
     double *Permeability_dvc;
 		
 private:
-	Utilities::MPI comm;
+	MPI_Comm comm;
     
 	int dist_mem_size;
 	int neighborSize;

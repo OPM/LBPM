@@ -584,15 +584,10 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-		    // Disable the this, if the one below does not work, then enable this	
-            //vax = sumReduce( Mask->Comm, vax_loc);
-            //vay = sumReduce( Mask->Comm, vay_loc);
-            //vaz = sumReduce( Mask->Comm, vaz_loc);
-            //count = sumReduce( Mask->Comm, count_loc);
-            vax = Mask->Comm.sumReduce( vax_loc );
-            vay = Mask->Comm.sumReduce( vay_loc );
-            vaz = Mask->Comm.sumReduce( vaz_loc );
-            count = Mask->Comm.sumReduce( count_loc );
+            vax = sumReduce( Mask->Comm, vax_loc);
+            vay = sumReduce( Mask->Comm, vay_loc);
+            vaz = sumReduce( Mask->Comm, vaz_loc);
+            count = sumReduce( Mask->Comm, count_loc);
 
 			vax /= count;
 			vay /= count;
