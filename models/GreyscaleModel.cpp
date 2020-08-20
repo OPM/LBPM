@@ -274,7 +274,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
-		printf("Component labels: %lu \n",NLABELS);
+		printf("Number of component labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			POROSITY=PorosityList[idx];

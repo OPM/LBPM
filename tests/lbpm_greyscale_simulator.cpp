@@ -6,58 +6,67 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/ScaLBL.h"
-#include "common/Communication.h"
-#include "common/MPI_Helpers.h"
 #include "models/GreyscaleModel.h"
+#include "common/Utilities.h"
 //#define WRITE_SURFACES
 
-/*
- * Simulator for two-phase flow in porous media
- * James E. McClure 2013-2014
- */
+//****************************************************************
+// Implementation of Greyscale Single-Fluid LBM using CUDA
+//****************************************************************
 
 using namespace std;
 
 
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
-	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
-	{
-		// parallel domain size (# of sub-domains)
 
-		if (rank == 0){
-			printf("********************************************************\n");
-			printf("Running Greyscale Single Phase Permeability Calculation \n");
-			printf("********************************************************\n");
-		}
-		// Initialize compute device
-		int device=ScaLBL_SetDevice(rank);
-		NULL_USE(device);
-		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
-		
-		ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
-		auto filename = argv[1];
-		Greyscale.ReadParams(filename);
-		Greyscale.SetDomain();    // this reads in the domain 
-		Greyscale.ReadInput();
-		Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-		Greyscale.Initialize();   // initializing the model will set initial conditions for variables
-		Greyscale.Run();	 
-		Greyscale.VelocityField();
-		//Greyscale.WriteDebug();
-	}
-	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
-	// ****************************************************
+    // Initialize MPI and error handlers
+    Utilities::startup( argc, argv );
+
+    { // Limit scope so variables that contain communicators will free before MPI_Finialize
+  
+      MPI_Comm comm;
+      MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+      int rank = comm_rank(comm);
+      int nprocs = comm_size(comm);
+  
+      if (rank == 0){
+	      printf("********************************************************\n");
+	 	  printf("Running Greyscale Single Phase Permeability Calculation \n");
+	 	  printf("********************************************************\n");
+      }
+      // Initialize compute device
+      ScaLBL_SetDevice(rank);
+      ScaLBL_DeviceBarrier();
+      MPI_Barrier(comm);
+  
+      PROFILE_ENABLE(1);
+      //PROFILE_ENABLE_TRACE();
+      //PROFILE_ENABLE_MEMORY();
+      PROFILE_SYNCHRONIZE();
+      PROFILE_START("Main");
+      Utilities::setErrorHandlers();
+  
+      auto filename = argv[1];
+      ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
+      Greyscale.ReadParams(filename);
+      Greyscale.SetDomain();    
+      Greyscale.ReadInput();    
+      Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+      Greyscale.Initialize();   // initializing the model will set initial conditions for variables
+      Greyscale.Run();	       
+	  Greyscale.VelocityField();
+      //Greyscale.WriteDebug();
+  
+      PROFILE_STOP("Main");
+      PROFILE_SAVE("lbpm_greyscale_simulator",1);
+      // ****************************************************
+  
+      MPI_Barrier(comm);
+      MPI_Comm_free(&comm);
+  
+    } // Limit scope so variables that contain communicators will free before MPI_Finialize
+
+    Utilities::shutdown();
+
 }

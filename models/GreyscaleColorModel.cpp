@@ -596,15 +596,15 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
-		printf("Number of component labels: %lu \n",NLABELS);
+		printf("Number of Grey-fluid labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			POROSITY=PorosityList[idx];
 			PERMEABILITY=PermeabilityList[idx];
 			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d: porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
+			printf("   grey-fluid label=%d, porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
                     VALUE,POROSITY,PERMEABILITY,PERMEABILITY/Dm->voxel_length/Dm->voxel_length,volume_fraction); 
-            printf("             effective porosity=%.3g\n",volume_fraction*POROSITY);
+            printf("                        effective porosity=%.3g\n",volume_fraction*POROSITY);
 		}
         printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
 	}
