@@ -40,6 +40,15 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     Ez = 1.0e-3;
     //--------------------------------------------------------------------------//
 
+	// Read domain parameters
+    BoundaryCondition = 0;
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
+		h = domain_db->getScalar<double>( "voxel_length" );
+	}
+
 	// Single-fluid Navier-Stokes Model parameters
 	//if (stokes_db->keyExists( "timestepMax" )){
 	//	timestepMax = stokes_db->getScalar<int>( "timestepMax" );
@@ -75,14 +84,6 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	if (stokes_db->keyExists( "flux" )){
 		flux = stokes_db->getScalar<double>( "flux" );
 	}	
-	
-	// Read domain parameters
-	if (domain_db->keyExists( "BC" )){
-		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
-	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
-		h = domain_db->getScalar<double>( "voxel_length" );
-	}
 
     // Re-calculate model parameters due to parameter read
 	mu=(tau-0.5)/3.0;

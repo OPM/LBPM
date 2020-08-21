@@ -98,6 +98,9 @@ int main(int argc, char **argv)
         PoissonSolver.getElectricalPotential();
         IonModel.getIonConcentration();
 
+        if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
+        if (rank==0) printf("*************************************************************\n");
+
         PROFILE_STOP("Main");
         PROFILE_SAVE("lbpm_electrokinetic_simulator",1);
         // ****************************************************

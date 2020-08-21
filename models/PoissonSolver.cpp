@@ -224,7 +224,7 @@ void ScaLBL_Poisson::AssignSolidBoundary(double *poisson_solid)
 		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
-		printf("LB-Poisson Solver: Poisson Solid labels: %lu \n",NLABELS);
+		printf("LB-Poisson Solver: number of Poisson solid labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];

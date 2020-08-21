@@ -48,6 +48,15 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
     tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivity[0]);
     //--------------------------------------------------------------------------//
 
+	// Read domain parameters
+	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
+		h = domain_db->getScalar<double>( "voxel_length" );
+	}
+    BoundaryCondition = 0;
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+
 	// LB-Ion Model parameters		
 	//if (ion_db->keyExists( "timestepMax" )){
 	//	timestepMax = ion_db->getScalar<int>( "timestepMax" );
@@ -112,14 +121,6 @@ void ScaLBL_IonModel::ReadParams(string filename,int num_iter,int num_iter_Stoke
 		BoundaryConditionSolid = ion_db->getScalar<int>( "BC_Solid" );
 	}
 
-	// Read domain parameters
-	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
-		h = domain_db->getScalar<double>( "voxel_length" );
-	}
-    BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
-		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
 
 	if (rank==0) printf("*****************************************************\n");
 	if (rank==0) printf("LB Ion Transport Solver: \n");
@@ -275,7 +276,7 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
 
 	if (rank==0){
-		printf("LB Ion Solver: Ion Solid labels: %lu \n",NLABELS);
+		printf("LB Ion Solver: number of ion solid labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
@@ -464,6 +465,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 void ScaLBL_IonModel::getIonConcentration(){
 	for (int ic=0; ic<number_ion_species; ic++){
         ScaLBL_IonConcentration_Phys(Ci, h, ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_IonConcentration_Phys(Ci, h, ic, 0, ScaLBL_Comm->LastExterior(), Np);
     }
 
     DoubleArray PhaseField(Nx,Ny,Nz);
