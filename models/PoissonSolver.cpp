@@ -418,76 +418,20 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
         timestep++;
-		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
-        ScaLBL_DeviceBarrier();
-		// Set boundary conditions
-		if (BoundaryCondition == 1){
-			ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
-			ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
-		}
-        //-------------------------//
-		ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
-
+        SolveElectricPotentialAAodd();
         //compute electric field
-        ScaLBL_Comm_Regular->SendHalo(Psi);
-        ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid,
-                                          Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_Comm_Regular->RecvHalo(Psi);
-        ScaLBL_DeviceBarrier();
-        if (BoundaryCondition == 1){
-            ScaLBL_Comm->Poisson_D3Q7_BC_z(dvcMap,Psi,Vin);
-            ScaLBL_Comm->Poisson_D3Q7_BC_Z(dvcMap,Psi,Vout);
-        }
-        ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-
+        SolveElectricField();
         //perform collision
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
-        if (BoundaryConditionSolid==1){
-		    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
-        }
-        else if (BoundaryConditionSolid==2){
-		    ScaLBL_Comm->SolidNeumannD3Q7(fq, Psi);
-        }
+        SolvePoissonAAodd();
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
-		ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
-		ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
-        ScaLBL_DeviceBarrier();
-		// Set boundary conditions
-		if (BoundaryCondition == 1){
-			ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
-			ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
-		}
-        //-------------------------//
-		ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
-
+		SolveElectricPotentialAAeven();
         //compute electric field
-        ScaLBL_Comm_Regular->SendHalo(Psi);
-        ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid,
-                                          Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_Comm_Regular->RecvHalo(Psi);
-        ScaLBL_DeviceBarrier();
-        if (BoundaryCondition == 1){
-            ScaLBL_Comm->Poisson_D3Q7_BC_z(dvcMap,Psi,Vin);
-            ScaLBL_Comm->Poisson_D3Q7_BC_Z(dvcMap,Psi,Vout);
-        }
-        ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-
+        SolveElectricField();
         //perform collision
-		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
-        if (BoundaryConditionSolid==1){
-		    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
-        }
-        else if (BoundaryConditionSolid==2){
-		    ScaLBL_Comm->SolidNeumannD3Q7(fq, Psi);
-        }
+        SolvePoissonAAeven()
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 
@@ -582,6 +526,67 @@ void ScaLBL_Poisson::getElectricField(int timestep){
         EZ = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,EZ);
         fclose(EZ);
+}
+
+void ScaLBL_Poisson::SolveElectricPotentialAAodd(){
+	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
+	ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
+    ScaLBL_DeviceBarrier();
+	// Set boundary conditions
+	if (BoundaryCondition == 1){
+		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+	}
+    //-------------------------//
+	ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
+}
+void ScaLBL_Poisson::SolveElectricField(){
+    ScaLBL_Comm_Regular->SendHalo(Psi);
+    ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid,
+                                      Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+    ScaLBL_Comm_Regular->RecvHalo(Psi);
+    ScaLBL_DeviceBarrier();
+    if (BoundaryCondition == 1){
+        ScaLBL_Comm->Poisson_D3Q7_BC_z(dvcMap,Psi,Vin);
+        ScaLBL_Comm->Poisson_D3Q7_BC_Z(dvcMap,Psi,Vout);
+    }
+    ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+
+}
+void ScaLBL_Poisson::SolvePoissonAAodd(){
+	ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+    if (BoundaryConditionSolid==1){
+	    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
+    }
+    else if (BoundaryConditionSolid==2){
+	    ScaLBL_Comm->SolidNeumannD3Q7(fq, Psi);
+    }
+}
+
+void ScaLBL_Poisson::SolveElectricPotentialAAeven(){
+	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
+	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
+    ScaLBL_DeviceBarrier();
+	// Set boundary conditions
+	if (BoundaryCondition == 1){
+		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+	}
+    //-------------------------//
+	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
+}
+void ScaLBL_Poisson::SolvePoissonAAeven(){
+	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+    if (BoundaryConditionSolid==1){
+	    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
+    }
+    else if (BoundaryConditionSolid==2){
+	    ScaLBL_Comm->SolidNeumannD3Q7(fq, Psi);
+    }
 }
 
 
