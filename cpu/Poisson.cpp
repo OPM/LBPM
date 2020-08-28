@@ -1,19 +1,110 @@
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
-        int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList,int *Map, double *dist, double *Psi, int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
-    double Ex,Ey,Ez;//electrical field
+	double fq;
+	int nread;
+    int idx;
+
+	for (n=start; n<finish; n++){
+
+		// q=0
+		fq = dist[n];
+        psi = fq;
+
+		// q=1
+		nread = neighborList[n]; 
+		fq = dist[nread];
+		psi += fq;
+		
+		// q=2
+		nread = neighborList[n+Np]; 
+		fq = dist[nread];  
+		psi += fq;
+
+		// q=3
+		nread = neighborList[n+2*Np]; 
+		fq = dist[nread];
+		psi += fq;
+
+		// q = 4
+		nread = neighborList[n+3*Np]; 
+		fq = dist[nread];
+		psi += fq;
+
+		// q=5
+		nread = neighborList[n+4*Np];
+		fq = dist[nread];
+		psi += fq;
+
+		// q = 6
+		nread = neighborList[n+5*Np];
+		fq = dist[nread];
+		psi += fq;
+        
+        idx=Map[n];
+        Psi[idx] = psi;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Psi, int start, int finish, int Np){
+	int n;
+	double psi;//electric potential
+	double fq;
+    int idx;
+
+	for (n=start; n<finish; n++){
+
+		// q=0
+		fq = dist[n];
+		psi = fq;
+		
+		// q=1
+		fq = dist[2*Np+n];
+		psi += fq;
+
+		// q=2 
+		fq = dist[1*Np+n];
+		psi += fq;
+
+		// q=3
+		fq = dist[4*Np+n];
+		psi += fq;
+
+		// q=4
+		fq = dist[3*Np+n];
+		psi += fq;
+
+		// q=5
+		fq = dist[6*Np+n];
+		psi += fq;
+
+		// q=6
+		fq = dist[5*Np+n];
+		psi += fq;
+
+        idx=Map[n];
+        Psi[idx] = psi;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
+	int n;
+	double psi;//electric potential
+    double Ex,Ey,Ez;//electric field
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
     double rlx=1.0/tau;
+    int idx;
 
 	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];
         rho_e = gamma*rho_e/epsilon_LB;
+        idx=Map[n];
+        psi = Psi[idx];
 		
 		// q=0
 		f0 = dist[n];
@@ -40,53 +131,63 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, doubl
 		nr6 = neighborList[n+5*Np];
 		f6 = dist[nr6];
 		
-		psi = f0+f2+f1+f4+f3+f6+f5;
-		Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.5;
-		Ez = (f5-f6)*rlx*4.5;
-        ElectricField[n+0*Np] = Ex;
-        ElectricField[n+1*Np] = Ey;
-        ElectricField[n+2*Np] = Ez;
-        Psi[n] = psi;
+		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+		//Ey = (f3-f4)*rlx*4.5;
+		//Ez = (f5-f6)*rlx*4.5;
+		//Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
+		//Ey = (f3-f4)*rlx*4.0;
+		//Ez = (f5-f6)*rlx*4.0;
+        //ElectricField[n+0*Np] = Ex;
+        //ElectricField[n+1*Np] = Ey;
+        //ElectricField[n+2*Np] = Ez;
 
 		// q = 0
-		dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		//dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
 
 		// q = 1
-		dist[nr2] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr2] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr2] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 2
-		dist[nr1] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr1] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr1] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 3
-		dist[nr4] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr4] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr4] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 4
-		dist[nr3] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr3] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr3] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 5
-		dist[nr6] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr6] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr6] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 6
-		dist[nr5] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr5] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[nr5] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 		//........................................................................
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
-        int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
-    double Ex,Ey,Ez;//electrical field
+    double Ex,Ey,Ez;//electric field
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
     double rlx=1.0/tau;
+    int idx;
 
 	for (n=start; n<finish; n++){
 
         //Load data
         rho_e = Den_charge[n];
         rho_e = gamma*rho_e/epsilon_LB;
+        idx=Map[n];
+        psi = Psi[idx];
 
 		f0 = dist[n];
 		f1 = dist[2*Np+n];
@@ -97,49 +198,208 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, dou
 		f6 = dist[5*Np+n];
 
 
-		psi = f0+f2+f1+f4+f3+f6+f5;
-		Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.5;
-		Ez = (f5-f6)*rlx*4.5;
-        ElectricField[n+0*Np] = Ex;
-        ElectricField[n+1*Np] = Ey;
-        ElectricField[n+2*Np] = Ez;
-        Psi[n] = psi;
+		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+		//Ey = (f3-f4)*rlx*4.5;
+		//Ez = (f5-f6)*rlx*4.5;
+		//Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
+		//Ey = (f3-f4)*rlx*4.0;
+		//Ez = (f5-f6)*rlx*4.0;
+        //ElectricField[n+0*Np] = Ex;
+        //ElectricField[n+1*Np] = Ey;
+        //ElectricField[n+2*Np] = Ez;
 
 		// q = 0
-		dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		//dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
 
 		// q = 1
-		dist[1*Np+n] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[1*Np+n] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		dist[1*Np+n] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 2
-		dist[2*Np+n] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[2*Np+n] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		dist[2*Np+n] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 3
-		dist[3*Np+n] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[3*Np+n] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		dist[3*Np+n] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 4
-		dist[4*Np+n] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[4*Np+n] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		dist[4*Np+n] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 5
-		dist[5*Np+n] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[5*Np+n] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		dist[5*Np+n] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 6
-		dist[6*Np+n] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[6*Np+n] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		dist[6*Np+n] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 		//........................................................................
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_Poisson_Init(double *dist, int Np)
+extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np)
 {
 	int n;
-	for (n=0; n<Np; n++){
-		dist[0*Np+n] = 0.3333333333333333;
-		dist[1*Np+n] = 0.1111111111111111;		
-		dist[2*Np+n] = 0.1111111111111111;	
-		dist[3*Np+n] = 0.1111111111111111;	
-		dist[4*Np+n] = 0.1111111111111111;	
-		dist[5*Np+n] = 0.1111111111111111;	
-		dist[6*Np+n] = 0.1111111111111111;	
+    int ijk;
+	for (n=start; n<finish; n++){
+        ijk = Map[n];
+		//dist[0*Np+n] = 0.3333333333333333*Psi[n];
+		//dist[1*Np+n] = 0.1111111111111111*Psi[n];		
+		//dist[2*Np+n] = 0.1111111111111111*Psi[n];	
+		//dist[3*Np+n] = 0.1111111111111111*Psi[n];	
+		//dist[4*Np+n] = 0.1111111111111111*Psi[n];	
+		//dist[5*Np+n] = 0.1111111111111111*Psi[n];	
+		//dist[6*Np+n] = 0.1111111111111111*Psi[n];	
+		//dist[0*Np+n] = 0.25*Psi[n];
+		//dist[1*Np+n] = 0.125*Psi[n];		
+		//dist[2*Np+n] = 0.125*Psi[n];	
+		//dist[3*Np+n] = 0.125*Psi[n];	
+		//dist[4*Np+n] = 0.125*Psi[n];	
+		//dist[5*Np+n] = 0.125*Psi[n];	
+		//dist[6*Np+n] = 0.125*Psi[n];	
+
+		dist[0*Np+n] = 0.25*Psi[ijk];
+		dist[1*Np+n] = 0.125*Psi[ijk];		
+		dist[2*Np+n] = 0.125*Psi[ijk];	
+		dist[3*Np+n] = 0.125*Psi[ijk];	
+		dist[4*Np+n] = 0.125*Psi[ijk];	
+		dist[5*Np+n] = 0.125*Psi[ijk];	
+		dist[6*Np+n] = 0.125*Psi[ijk];	
 	}
 }
+
+extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
+	int n;
+	// distributions
+	double f1,f2,f3,f4,f5,f6;
+	double Ex,Ey,Ez;
+    double rlx=1.0/tau;
+
+	for (n=0; n<Np; n++){
+		//........................................................................
+		// Registers to store the distributions
+		//........................................................................
+		f1 = dist[Np+n];
+		f2 = dist[2*Np+n];
+		f3 = dist[3*Np+n];
+		f4 = dist[4*Np+n];
+		f5 = dist[5*Np+n];
+		f6 = dist[6*Np+n];
+		//.................Compute the Electric Field...................................
+		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+		//Ey = (f3-f4)*rlx*4.5;
+		//Ez = (f5-f6)*rlx*4.5;
+		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
+		Ey = (f3-f4)*rlx*4.0;
+		Ez = (f5-f6)*rlx*4.0;
+		//..................Write the Electric Field.....................................
+		ElectricField[0*Np+n] = Ex;
+		ElectricField[1*Np+n] = Ey;
+		ElectricField[2*Np+n] = Ez;
+		//........................................................................
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
+        int strideY, int strideZ,int start, int finish, int Np){
+
+	int n,nn;
+    int ijk;
+    int id;
+	// distributions
+	double m1,m2,m3,m4,m5,m6,m7,m8,m9;
+	double m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double nx,ny,nz;
+
+	for (n=start; n<finish; n++){
+
+		// Get the 1D index based on regular data layout
+		ijk = Map[n];
+		//					COMPUTE THE COLOR GRADIENT
+		//........................................................................
+		//.................Read Phase Indicator Values............................
+		//........................................................................
+		nn = ijk-1;							// neighbor index (get convention)
+        id = ID[nn];
+		m1 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 1
+		//........................................................................
+		nn = ijk+1;							// neighbor index (get convention)
+        id = ID[nn];
+		m2 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 2
+		//........................................................................
+		nn = ijk-strideY;							// neighbor index (get convention)
+        id = ID[nn];
+		m3 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 3
+		//........................................................................
+		nn = ijk+strideY;							// neighbor index (get convention)
+        id = ID[nn];
+		m4 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 4
+		//........................................................................
+		nn = ijk-strideZ;						// neighbor index (get convention)
+        id = ID[nn];
+		m5 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 5
+		//........................................................................
+		nn = ijk+strideZ;						// neighbor index (get convention)
+        id = ID[nn];
+		m6 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 6
+		//........................................................................
+		nn = ijk-strideY-1;						// neighbor index (get convention)
+        id = ID[nn];
+		m7 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 7
+		//........................................................................
+		nn = ijk+strideY+1;						// neighbor index (get convention)
+        id = ID[nn];
+		m8 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 8
+		//........................................................................
+		nn = ijk+strideY-1;						// neighbor index (get convention)
+        id = ID[nn];
+		m9 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 9
+		//........................................................................
+		nn = ijk-strideY+1;						// neighbor index (get convention)
+        id = ID[nn];
+		m10 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 10
+		//........................................................................
+		nn = ijk-strideZ-1;						// neighbor index (get convention)
+        id = ID[nn];
+		m11 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 11
+		//........................................................................
+		nn = ijk+strideZ+1;						// neighbor index (get convention)
+        id = ID[nn];
+		m12 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 12
+		//........................................................................
+		nn = ijk+strideZ-1;						// neighbor index (get convention)
+        id = ID[nn];
+		m13 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 13
+		//........................................................................
+		nn = ijk-strideZ+1;						// neighbor index (get convention)
+        id = ID[nn];
+		m14 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 14
+		//........................................................................
+		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+        id = ID[nn];
+		m15 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 15
+		//........................................................................
+		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+        id = ID[nn];
+		m16 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 16
+		//........................................................................
+		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+        id = ID[nn];
+		m17 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 17
+		//........................................................................
+		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+        id = ID[nn];
+		m18 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 18
+		//............Compute the Color Gradient...................................
+		nx = -1.f/18.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+		ny = -1.f/18.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+		nz = -1.f/18.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+		
+		ElectricField[n] = nx;
+		ElectricField[Np+n] = ny;
+		ElectricField[2*Np+n] = nz;
+	}
+}
+

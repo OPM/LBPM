@@ -2053,3 +2053,36 @@ void ScaLBL_Communicator::PrintD3Q19(){
 	delete [] TempBuffer;
 }
 
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(neighborList, dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(neighborList, dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin){
+	if (kproc == 0) {
+		ScaLBL_Poisson_D3Q7_BC_z(dvcSendList_z, Map, Psi, Vin, sendCount_z);
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout){
+	if (kproc == nprocz-1){
+		ScaLBL_Poisson_D3Q7_BC_Z(dvcSendList_Z, Map, Psi, Vout, sendCount_Z);
+	}
+}

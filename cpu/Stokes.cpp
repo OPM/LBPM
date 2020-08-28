@@ -1,7 +1,6 @@
 #include <stdio.h>
 
-extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                                              double Gx, double Gy, double Gz, double Ex_const, double Ey_const, double Ez_const, int start, int finish, int Np)
+extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np)
 {
     double fq;
 	// conserved momemnts
@@ -32,13 +31,13 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
         
         //Load data
         rhoE = ChargeDensity[n];
-        Ex = ElectricField[n+0*Np]+Ex_const;
-        Ey = ElectricField[n+1*Np]+Ey_const;
-        Ez = ElectricField[n+2*Np]+Ez_const;
+        Ex = ElectricField[n+0*Np];
+        Ey = ElectricField[n+1*Np];
+        Ez = ElectricField[n+2*Np];
         //compute total body force, including input body force (Gx,Gy,Gz)
-        Fx = Gx + rhoE*Ex;
-        Fy = Gy + rhoE*Ey;
-        Fz = Gz + rhoE*Ez;
+        Fx = Gx + rhoE*Ex*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;//the extra factors at the end necessarily convert unit from phys to LB
+        Fy = Gy + rhoE*Ey*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fz = Gz + rhoE*Ez*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
 
 		// q=0
 		fq = dist[n];
@@ -311,9 +310,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
 		m18 -= fq;
 
 		// write the velocity 
-		ux = jx / rho;
-		uy = jy / rho;
-		uz = jz / rho;
+		ux = jx / rho0;
+		uy = jy / rho0;
+		uz = jz / rho0;
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
@@ -326,18 +325,18 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
 
 		//..............incorporate external force................................................
 		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) - m1);
-		m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho) - m2);
+		m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) - m1);
+		m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0) - m2);
 		m4 = m4 + rlx_setB*((-0.6666666666666666*jx) - m4);
 		m6 = m6 + rlx_setB*((-0.6666666666666666*jy) - m6);
 		m8 = m8 + rlx_setB*((-0.6666666666666666*jz) - m8);
-		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho) - m9);
+		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) - m9);
 		m10 = m10 + rlx_setA*(-0.5*((2*jx*jx-jy*jy-jz*jz)/rho) - m10);
-		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho) - m11);
-		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/rho) - m12);
-		m13 = m13 + rlx_setA*((jx*jy/rho) - m13);
-		m14 = m14 + rlx_setA*((jy*jz/rho) - m14);
-		m15 = m15 + rlx_setA*((jx*jz/rho) - m15);
+		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) - m11);
+		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/rho0) - m12);
+		m13 = m13 + rlx_setA*((jx*jy/rho0) - m13);
+		m14 = m14 + rlx_setA*((jy*jz/rho0) - m14);
+		m15 = m15 + rlx_setA*((jx*jz/rho0) - m15);
 		m16 = m16 + rlx_setB*( - m16);
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
@@ -454,8 +453,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB,  
-                                             double Gx, double Gy, double Gz, double Ex_const, double Ey_const, double Ez_const, int start, int finish, int Np)
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np)
 {
     double fq;
 	// conserved momemnts
@@ -487,13 +485,13 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 
         //Load data
         rhoE = ChargeDensity[n];
-        Ex = ElectricField[n+0*Np]+Ex_const;
-        Ey = ElectricField[n+1*Np]+Ey_const;
-        Ez = ElectricField[n+2*Np]+Ez_const;
+        Ex = ElectricField[n+0*Np];
+        Ey = ElectricField[n+1*Np];
+        Ez = ElectricField[n+2*Np];
         //compute total body force, including input body force (Gx,Gy,Gz)
-        Fx = Gx + rhoE*Ex;
-        Fy = Gy + rhoE*Ey;
-        Fz = Gz + rhoE*Ez;
+        Fx = Gx + rhoE*Ex*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fy = Gy + rhoE*Ey*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fz = Gz + rhoE*Ez*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
 
 		// q=0
 		fq = dist[n];
@@ -803,27 +801,27 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 		m18 -= fq;
 
 		// write the velocity 
-		ux = jx / rho;
-		uy = jy / rho;
-		uz = jz / rho;
+		ux = jx / rho0;
+		uy = jy / rho0;
+		uz = jz / rho0;
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
 
 		//..............incorporate external force................................................
 		//..............carry out relaxation process...............................................
-		m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho - 11*rho) - m1);
-		m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho) - m2);
+		m1 = m1 + rlx_setA*((19*(jx*jx+jy*jy+jz*jz)/rho0 - 11*rho) - m1);
+		m2 = m2 + rlx_setA*((3*rho - 5.5*(jx*jx+jy*jy+jz*jz)/rho0) - m2);
 		m4 = m4 + rlx_setB*((-0.6666666666666666*jx) - m4);
 		m6 = m6 + rlx_setB*((-0.6666666666666666*jy) - m6);
 		m8 = m8 + rlx_setB*((-0.6666666666666666*jz) - m8);
-		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho) - m9);
+		m9 = m9 + rlx_setA*(((2*jx*jx-jy*jy-jz*jz)/rho0) - m9);
 		m10 = m10 + rlx_setA*(-0.5*((2*jx*jx-jy*jy-jz*jz)/rho) - m10);
-		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho) - m11);
-		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/rho) - m12);
-		m13 = m13 + rlx_setA*((jx*jy/rho) - m13);
-		m14 = m14 + rlx_setA*((jy*jz/rho) - m14);
-		m15 = m15 + rlx_setA*((jx*jz/rho) - m15);
+		m11 = m11 + rlx_setA*(((jy*jy-jz*jz)/rho0) - m11);
+		m12 = m12 + rlx_setA*(-0.5*((jy*jy-jz*jz)/rho0) - m12);
+		m13 = m13 + rlx_setA*((jx*jy/rho0) - m13);
+		m14 = m14 + rlx_setA*((jy*jz/rho0) - m14);
+		m15 = m15 + rlx_setA*((jx*jz/rho0) - m15);
 		m16 = m16 + rlx_setB*( - m16);
 		m17 = m17 + rlx_setB*( - m17);
 		m18 = m18 + rlx_setB*( - m18);
@@ -955,47 +953,47 @@ extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, do
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_Momentum_Phys(double *dist, double *vel, double h, double time_conv, int Np)
-{
-    //h: resolution [um/lu]
-    //time_conv: time conversion factor [sec/lt]
-	int n;
-	// distributions
-	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double vx,vy,vz;
-
-	for (n=0; n<Np; n++){
-		//........................................................................
-		// Registers to store the distributions
-		//........................................................................
-		f2 = dist[2*Np+n];
-		f4 = dist[4*Np+n];
-		f6 = dist[6*Np+n];
-		f8 = dist[8*Np+n];
-		f10 = dist[10*Np+n];
-		f12 = dist[12*Np+n];
-		f14 = dist[14*Np+n];
-		f16 = dist[16*Np+n];
-		f18 = dist[18*Np+n];
-		//........................................................................
-		f1 = dist[Np+n];
-		f3 = dist[3*Np+n];
-		f5 = dist[5*Np+n];
-		f7 = dist[7*Np+n];
-		f9 = dist[9*Np+n];
-		f11 = dist[11*Np+n];
-		f13 = dist[13*Np+n];
-		f15 = dist[15*Np+n];
-		f17 = dist[17*Np+n];
-		//.................Compute the velocity...................................
-		vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-		vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-		vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
-		//..................Write the velocity.....................................
-		vel[0*Np+n] = vx*(h*1.0e-6)/time_conv;
-		vel[1*Np+n] = vy*(h*1.0e-6)/time_conv;
-		vel[2*Np+n] = vz*(h*1.0e-6)/time_conv;
-		//........................................................................
-	}
-}
+//extern "C" void ScaLBL_D3Q19_Momentum_Phys(double *dist, double *vel, double h, double time_conv, int Np)
+//{
+//    //h: resolution [um/lu]
+//    //time_conv: time conversion factor [sec/lt]
+//	int n;
+//	// distributions
+//	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
+//	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
+//	double vx,vy,vz;
+//
+//	for (n=0; n<Np; n++){
+//		//........................................................................
+//		// Registers to store the distributions
+//		//........................................................................
+//		f2 = dist[2*Np+n];
+//		f4 = dist[4*Np+n];
+//		f6 = dist[6*Np+n];
+//		f8 = dist[8*Np+n];
+//		f10 = dist[10*Np+n];
+//		f12 = dist[12*Np+n];
+//		f14 = dist[14*Np+n];
+//		f16 = dist[16*Np+n];
+//		f18 = dist[18*Np+n];
+//		//........................................................................
+//		f1 = dist[Np+n];
+//		f3 = dist[3*Np+n];
+//		f5 = dist[5*Np+n];
+//		f7 = dist[7*Np+n];
+//		f9 = dist[9*Np+n];
+//		f11 = dist[11*Np+n];
+//		f13 = dist[13*Np+n];
+//		f15 = dist[15*Np+n];
+//		f17 = dist[17*Np+n];
+//		//.................Compute the velocity...................................
+//		vx = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
+//		vy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
+//		vz = f5-f6+f11-f12-f13+f14+f15-f16-f17+f18;
+//		//..................Write the velocity.....................................
+//		vel[0*Np+n] = vx*(h*1.0e-6)/time_conv;
+//		vel[1*Np+n] = vy*(h*1.0e-6)/time_conv;
+//		vel[2*Np+n] = vz*(h*1.0e-6)/time_conv;
+//		//........................................................................
+//	}
+//}

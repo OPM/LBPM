@@ -7,7 +7,7 @@
 
 ScaLBL_StokesModel::ScaLBL_StokesModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),h(0),nu_phys(0),time_conv(0),tolerance(0),
+Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),h(0),nu_phys(0),rho_phys(0),rho0(0),den_scale(0),time_conv(0),tolerance(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
@@ -27,17 +27,17 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     //-------------------------------------------------------------------//
 
 	//---------------------- Default model parameters --------------------------//		
+    rho_phys = 1000.0; //by default use water density; unit [kg/m^3]
     nu_phys = 1.004e-6;//by default use water kinematic viscosity at 20C; unit [m^2/sec]    
     h = 1.0;//image resolution;[um]
 	tau = 1.0;
     mu = (tau-0.5)/3.0;//LB kinematic viscosity;unit [lu^2/lt]
     time_conv = h*h*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
+    rho0 = 1.0;//LB density
+    den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
 	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
-    //Body electric field [V/lu]
-    Ex = Ey = 0.0;
-    Ez = 1.0e-3;
     //--------------------------------------------------------------------------//
 
 	// Read domain parameters
@@ -59,18 +59,19 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	if (stokes_db->keyExists( "tau" )){
 		tau = stokes_db->getScalar<double>( "tau" );
 	}
+	if (stokes_db->keyExists( "rho0" )){
+		rho0 = stokes_db->getScalar<double>( "rho0" );
+	}
 	if (stokes_db->keyExists( "nu_phys" )){
 		nu_phys = stokes_db->getScalar<double>( "nu_phys" );
+	}
+	if (stokes_db->keyExists( "rho_phys" )){
+		rho_phys = stokes_db->getScalar<double>( "rho_phys" );
 	}
 	if (stokes_db->keyExists( "F" )){
 		Fx = stokes_db->getVector<double>( "F" )[0];
 		Fy = stokes_db->getVector<double>( "F" )[1];
 		Fz = stokes_db->getVector<double>( "F" )[2];
-	}
-	if (stokes_db->keyExists( "ElectricField" )){//NOTE user-input has physical unit [V/m]
-		Ex = stokes_db->getVector<double>( "ElectricField" )[0];
-		Ey = stokes_db->getVector<double>( "ElectricField" )[1];
-		Ez = stokes_db->getVector<double>( "ElectricField" )[2];
 	}
 	if (stokes_db->keyExists( "Restart" )){
 		Restart = stokes_db->getScalar<bool>( "Restart" );
@@ -88,10 +89,7 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     // Re-calculate model parameters due to parameter read
 	mu=(tau-0.5)/3.0;
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
-    // convert user-input electric field ([V/m]) from physical unit to LB unit 
-    Ex = Ex*(h*1.0e-6);//LB electric field: V/lu 
-    Ey = Ey*(h*1.0e-6);
-    Ez = Ez*(h*1.0e-6);
+    den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
 
 	if (rank==0) printf("*****************************************************\n");
 	if (rank==0) printf("LB Single-Fluid Navier-Stokes Solver: \n");
@@ -246,7 +244,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
 	while (timestep < timestepMax) {
         //************************************************************************/
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
-        ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz, Ex, Ey, Ez, 
+        ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
                                      ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set boundary conditions
@@ -262,12 +260,14 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz, Ex, Ey, Ez, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
+                                     0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
         timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
-        ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz, Ex, Ey, Ez, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
+                                      ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
         // Set boundary conditions
         if (BoundaryCondition == 3){
@@ -282,40 +282,86 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
             ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
             ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
         }
-        ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz, Ex, Ey, Ez, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
+                                      0, ScaLBL_Comm->LastExterior(), Np);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
         //************************************************************************/
     }
 }
 
-void ScaLBL_StokesModel::getVelocity(){
+void ScaLBL_StokesModel::getVelocity(int timestep){
     //get velocity in physical unit [m/sec]
-	ScaLBL_D3Q19_Momentum_Phys(fq, Velocity, h, time_conv, Np);
+	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
     DoubleArray PhaseField(Nx,Ny,Nz);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
+    Velocity_LB_to_Phys(PhaseField);
 	FILE *VELX_FILE;
-	sprintf(LocalRankFilename,"Velocity_X.%05i.raw",rank);
+	sprintf(LocalRankFilename,"Velocity_X_Time_%i.%05i.raw",timestep,rank);
 	VELX_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,VELX_FILE);
 	fclose(VELX_FILE);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
+    Velocity_LB_to_Phys(PhaseField);
 	FILE *VELY_FILE;
-	sprintf(LocalRankFilename,"Velocity_Y.%05i.raw",rank);
+	sprintf(LocalRankFilename,"Velocity_Y_Time_%i.%05i.raw",timestep,rank);
 	VELY_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,VELY_FILE);
 	fclose(VELY_FILE);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
+    Velocity_LB_to_Phys(PhaseField);
 	FILE *VELZ_FILE;
-	sprintf(LocalRankFilename,"Velocity_Z.%05i.raw",rank);
+	sprintf(LocalRankFilename,"Velocity_Z_Time_%i.%05i.raw",timestep,rank);
 	VELZ_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 
 }
+
+void ScaLBL_StokesModel::Velocity_LB_to_Phys(DoubleArray &Vel_reg){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+                int idx=Map(i,j,k);
+				if (!(idx < 0)){
+                    Vel_reg(i,j,k) = Vel_reg(i,j,k)*(h*1.0e-6)/time_conv; 
+                }
+            }
+        }
+    }
+}
+
+//void ScaLBL_StokesModel::getVelocity(){
+//    //get velocity in physical unit [m/sec]
+//	ScaLBL_D3Q19_Momentum_Phys(fq, Velocity, h, time_conv, Np);
+//	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+//
+//    DoubleArray PhaseField(Nx,Ny,Nz);
+//	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
+//	FILE *VELX_FILE;
+//	sprintf(LocalRankFilename,"Velocity_X.%05i.raw",rank);
+//	VELX_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,VELX_FILE);
+//	fclose(VELX_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
+//	FILE *VELY_FILE;
+//	sprintf(LocalRankFilename,"Velocity_Y.%05i.raw",rank);
+//	VELY_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,VELY_FILE);
+//	fclose(VELY_FILE);
+//
+//	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
+//	FILE *VELZ_FILE;
+//	sprintf(LocalRankFilename,"Velocity_Z.%05i.raw",rank);
+//	VELZ_FILE = fopen(LocalRankFilename,"wb");
+//	fwrite(PhaseField.data(),8,N,VELZ_FILE);
+//	fclose(VELZ_FILE);
+//
+//}
 
 void ScaLBL_StokesModel::Run(){
 	double rlx_setA=1.0/tau;

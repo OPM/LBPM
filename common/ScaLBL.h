@@ -46,10 +46,7 @@ extern "C" void ScaLBL_UnpackDenD3Q7(int *list, int count, double *recvbuf, int 
 
 extern "C" void ScaLBL_D3Q19_Init(double *Dist, int Np);
 
-
 extern "C" void ScaLBL_D3Q19_Momentum(double *dist, double *vel, int Np);
-
-extern "C" void ScaLBL_D3Q19_Momentum_Phys(double *dist, double *vel, double h, double time_conv, int Np);
 
 extern "C" void ScaLBL_D3Q19_Pressure(double *dist, double *press, int Np);
 
@@ -95,21 +92,30 @@ extern "C" void ScaLBL_IonConcentration_Phys(double *Den, double h, int ion_comp
 
 // LBM Poisson solver
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
         int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,
         int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q7_Poisson_Init(double *dist, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList,int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
+        int strideY, int strideZ,int start, int finish, int Np);
 
 // LBM Stokes Model (adapted from MRT model)
 
 extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
-                                              double Gx, double Gy, double Gz, double Ex, double Ey, double Ez, int start, int finish, int Np);
+                double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np);
 
-extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB,  
-                                             double Gx, double Gy, double Gz, double Ex, double Ey, double Ez, int start, int finish, int Np);
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
@@ -190,6 +196,18 @@ extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,i
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
 
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(int *list, double *dist, double Vout, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(int *d_neighborList, int *list, double *dist, double Vin, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(int *d_neighborList, int *list, double *dist, double Vout, int count, int Np);
+
+extern "C" void ScaLBL_Poisson_D3Q7_BC_z(int *list, int *Map, double *Psi, double Vin, int count);
+
+extern "C" void ScaLBL_Poisson_D3Q7_BC_Z(int *list, int *Map, double *Psi, double Vout, int count);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
@@ -249,6 +267,10 @@ public:
 	void D3Q19_Reflection_BC_z(double *fq);
 	void D3Q19_Reflection_BC_Z(double *fq);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
+	void D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
+	void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
+	void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
+	void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();

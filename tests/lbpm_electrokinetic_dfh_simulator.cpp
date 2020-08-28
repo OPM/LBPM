@@ -78,14 +78,17 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax){
             
             timestep++;
-            if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
+            //if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
             PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
+            //PoissonSolver.getElectricPotential(timestep);
 
-            if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
+            //if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
+            //StokesModel.getVelocity(timestep);
 
-            if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
+            //if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
+            //IonModel.getIonConcentration(timestep);
             
             
             timestep++;//AA operations
@@ -94,9 +97,10 @@ int main(int argc, char **argv)
             //--------------------------------------------
         }
 
-        StokesModel.getVelocity();
-        PoissonSolver.getElectricalPotential();
-        IonModel.getIonConcentration();
+        StokesModel.getVelocity(timestep);
+        PoissonSolver.getElectricPotential(timestep);
+        PoissonSolver.getElectricField(timestep);
+        IonModel.getIonConcentration(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

@@ -28,7 +28,8 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *ChargeDensity);
-    void getElectricalPotential();
+    void getElectricPotential(int timestep);
+    void getElectricField(int timestep);
 
 	//bool Restart,pBC;
 	int timestep,timestepMax;
@@ -39,6 +40,7 @@ public:
 	double tolerance;
     double k2_inv,gamma;
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
+    double Vin, Vout;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -48,6 +50,7 @@ public:
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
@@ -57,10 +60,12 @@ public:
     DoubleArray Distance;
     DoubleArray Psi_host;
     int *NeighborList;
+    int *dvcMap;
+    signed char *dvcID;
     double *fq;
     double *Psi; 
     double *ElectricField;
-    double *PoissonSolid;
+    //double *PoissonSolid;
 
 private:
 	MPI_Comm comm;
@@ -73,4 +78,6 @@ private:
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
     void AssignSolidBoundary(double *poisson_solid);
+    void Potential_Init(double *psi_init);
+    void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
 };

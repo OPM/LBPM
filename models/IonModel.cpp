@@ -364,11 +364,16 @@ void ScaLBL_IonModel::Initialize(){
 
 void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 
+    //Input parameter:
+    //1. Velocity is from StokesModel
+    //2. ElectricField is from Poisson model
+
     //LB-related parameter
     vector<double> rlx(tau.begin(),tau.end());
     for (double item : rlx){
         item = 1.0/item; 
     }
+    
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
 	//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
@@ -462,7 +467,9 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 
 }
 
-void ScaLBL_IonModel::getIonConcentration(){
+//TODO this ruin the ion concentration on device
+//need to do something similar to electric field
+void ScaLBL_IonModel::getIonConcentration(int timestep){
 	for (int ic=0; ic<number_ion_species; ic++){
         ScaLBL_IonConcentration_Phys(Ci, h, ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         ScaLBL_IonConcentration_Phys(Ci, h, ic, 0, ScaLBL_Comm->LastExterior(), Np);
@@ -474,11 +481,31 @@ void ScaLBL_IonModel::getIonConcentration(){
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
         FILE *OUTFILE;
-        sprintf(LocalRankFilename,"Ion%02i.%05i.raw",ic+1,rank);
+        sprintf(LocalRankFilename,"Ion%02i_Time_%i.%05i.raw",ic+1,timestep,rank);
         OUTFILE = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,OUTFILE);
         fclose(OUTFILE);
     }
 
 }
+
+//void ScaLBL_IonModel::getIonConcentration(){
+//	for (int ic=0; ic<number_ion_species; ic++){
+//        ScaLBL_IonConcentration_Phys(Ci, h, ic, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+//        ScaLBL_IonConcentration_Phys(Ci, h, ic, 0, ScaLBL_Comm->LastExterior(), Np);
+//    }
+//
+//    DoubleArray PhaseField(Nx,Ny,Nz);
+//	for (int ic=0; ic<number_ion_species; ic++){
+//	    ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],PhaseField);
+//        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+//
+//        FILE *OUTFILE;
+//        sprintf(LocalRankFilename,"Ion%02i.%05i.raw",ic+1,rank);
+//        OUTFILE = fopen(LocalRankFilename,"wb");
+//        fwrite(PhaseField.data(),8,N,OUTFILE);
+//        fclose(OUTFILE);
+//    }
+//
+//}
 

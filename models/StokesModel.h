@@ -30,19 +30,21 @@ public:
 	void Run();
 	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
-    void getVelocity();
+    void getVelocity(int timestep);
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tau,mu;
+    double rho0;
 	double Fx,Fy,Fz,flux;
-    double Ex,Ey,Ez;
 	double din,dout;
 	double tolerance;
     double nu_phys;
+    double rho_phys;
     double time_conv;
     double h;//image resolution
+    double den_scale;//scale factor for density
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -78,4 +80,5 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
+    void Velocity_LB_to_Phys(DoubleArray &Vel_reg);
 };

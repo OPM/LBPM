@@ -29,7 +29,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
-    void getIonConcentration();
+    void getIonConcentration(int timestep);
 	
 	//bool Restart,pBC;
 	int timestep,timestepMax;
@@ -40,6 +40,7 @@ public:
     double kb,electron_charge,T,Vt;
     double k2_inv;
     double tolerance;
+    double Ex,Ey,Ez;
 	
 	int number_ion_species;
     vector<double> IonDiffusivity;//User input unit [m^2/sec]
