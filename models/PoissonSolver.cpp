@@ -422,7 +422,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         //compute electric field
         SolveElectricField();
         //perform collision
-        SolvePoissonAAodd();
+        SolvePoissonAAodd(ChargeDensity);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
@@ -431,7 +431,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         //compute electric field
         SolveElectricField();
         //perform collision
-        SolvePoissonAAeven()
+        SolvePoissonAAeven(ChargeDensity);
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
 
@@ -554,7 +554,7 @@ void ScaLBL_Poisson::SolveElectricField(){
     ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
 }
-void ScaLBL_Poisson::SolvePoissonAAodd(){
+void ScaLBL_Poisson::SolvePoissonAAodd(double *ChargeDensity){
 	ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
     if (BoundaryConditionSolid==1){
@@ -578,7 +578,7 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(){
     //-------------------------//
 	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
 }
-void ScaLBL_Poisson::SolvePoissonAAeven(){
+void ScaLBL_Poisson::SolvePoissonAAeven(double *ChargeDensity){
 	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
     if (BoundaryConditionSolid==1){

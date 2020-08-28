@@ -31,8 +31,8 @@ public:
     void SolveElectricPotentialAAodd();
     void SolveElectricPotentialAAeven();
     void SolveElectricField();
-    void SolvePoissonAAodd();
-    void SolvePoissonAAeven();
+    void SolvePoissonAAodd(double *ChargeDensity);
+    void SolvePoissonAAeven(double *ChargeDensity);
     void getElectricPotential(int timestep);
     void getElectricField(int timestep);
 
