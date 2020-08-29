@@ -88,10 +88,10 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *d
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *dist, double *Den_charge, double *Psi, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
-    double Ex,Ey,Ez;//electric field
+    //double Ex,Ey,Ez;//electric field
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
@@ -142,40 +142,40 @@ extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList, int *Map, double *d
         //ElectricField[n+2*Np] = Ez;
 
 		// q = 0
-		//dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
-		dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
+		dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		//dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
 
 		// q = 1
-		//dist[nr2] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr2] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr2] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr2] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 2
-		//dist[nr1] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr1] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr1] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr1] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 3
-		//dist[nr4] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr4] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr4] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr4] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 4
-		//dist[nr3] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr3] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr3] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr3] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 5
-		//dist[nr6] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr6] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr6] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr6] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 6
-		//dist[nr5] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[nr5] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[nr5] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[nr5] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 		//........................................................................
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double tau, double epsilon_LB,double gamma,int start, int finish, int Np){
 	int n;
 	double psi;//electric potential
-    double Ex,Ey,Ez;//electric field
+    //double Ex,Ey,Ez;//electric field
     double rho_e;//local charge density
 	double f0,f1,f2,f3,f4,f5,f6;
     double rlx=1.0/tau;
@@ -209,32 +209,32 @@ extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_c
         //ElectricField[n+2*Np] = Ez;
 
 		// q = 0
-		//dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
-		dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
+		dist[n] = f0*(1.0-rlx) + 0.3333333333333333*(rlx*psi+rho_e);
+		//dist[n] = f0*(1.0-rlx) + 0.25*(rlx*psi+rho_e);
 
 		// q = 1
-		//dist[1*Np+n] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
-		dist[1*Np+n] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
+		dist[1*Np+n] = f1*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[1*Np+n] = f1*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 2
-		//dist[2*Np+n] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
-		dist[2*Np+n] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
+		dist[2*Np+n] = f2*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[2*Np+n] = f2*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 3
-		//dist[3*Np+n] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
-		dist[3*Np+n] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
+		dist[3*Np+n] = f3*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e);
+		//dist[3*Np+n] = f3*(1.0-rlx) + 0.125*(rlx*psi+rho_e);
 
 		// q = 4
-		//dist[4*Np+n] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
-		dist[4*Np+n] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
+		dist[4*Np+n] = f4*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[4*Np+n] = f4*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 5
-		//dist[5*Np+n] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
-		dist[5*Np+n] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
+		dist[5*Np+n] = f5*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[5*Np+n] = f5*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 
 		// q = 6
-		//dist[6*Np+n] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
-		dist[6*Np+n] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
+		dist[6*Np+n] = f6*(1.0-rlx) + 0.1111111111111111*(rlx*psi+rho_e); 
+		//dist[6*Np+n] = f6*(1.0-rlx) + 0.125*(rlx*psi+rho_e); 
 		//........................................................................
 	}
 }
@@ -260,45 +260,20 @@ extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, in
 		//dist[5*Np+n] = 0.125*Psi[n];	
 		//dist[6*Np+n] = 0.125*Psi[n];	
 
-		dist[0*Np+n] = 0.25*Psi[ijk];
-		dist[1*Np+n] = 0.125*Psi[ijk];		
-		dist[2*Np+n] = 0.125*Psi[ijk];	
-		dist[3*Np+n] = 0.125*Psi[ijk];	
-		dist[4*Np+n] = 0.125*Psi[ijk];	
-		dist[5*Np+n] = 0.125*Psi[ijk];	
-		dist[6*Np+n] = 0.125*Psi[ijk];	
-	}
-}
-
-extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
-	int n;
-	// distributions
-	double f1,f2,f3,f4,f5,f6;
-	double Ex,Ey,Ez;
-    double rlx=1.0/tau;
-
-	for (n=0; n<Np; n++){
-		//........................................................................
-		// Registers to store the distributions
-		//........................................................................
-		f1 = dist[Np+n];
-		f2 = dist[2*Np+n];
-		f3 = dist[3*Np+n];
-		f4 = dist[4*Np+n];
-		f5 = dist[5*Np+n];
-		f6 = dist[6*Np+n];
-		//.................Compute the Electric Field...................................
-		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
-		//Ey = (f3-f4)*rlx*4.5;
-		//Ez = (f5-f6)*rlx*4.5;
-		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
-		Ey = (f3-f4)*rlx*4.0;
-		Ez = (f5-f6)*rlx*4.0;
-		//..................Write the Electric Field.....................................
-		ElectricField[0*Np+n] = Ex;
-		ElectricField[1*Np+n] = Ey;
-		ElectricField[2*Np+n] = Ez;
-		//........................................................................
+		dist[0*Np+n] = 0.3333333333333333*Psi[ijk];
+		dist[1*Np+n] = 0.1111111111111111*Psi[ijk];		
+		dist[2*Np+n] = 0.1111111111111111*Psi[ijk];	
+		dist[3*Np+n] = 0.1111111111111111*Psi[ijk];	
+		dist[4*Np+n] = 0.1111111111111111*Psi[ijk];	
+		dist[5*Np+n] = 0.1111111111111111*Psi[ijk];	
+		dist[6*Np+n] = 0.1111111111111111*Psi[ijk];	
+		//dist[0*Np+n] = 0.25*Psi[ijk];
+		//dist[1*Np+n] = 0.125*Psi[ijk];		
+		//dist[2*Np+n] = 0.125*Psi[ijk];	
+		//dist[3*Np+n] = 0.125*Psi[ijk];	
+		//dist[4*Np+n] = 0.125*Psi[ijk];	
+		//dist[5*Np+n] = 0.125*Psi[ijk];	
+		//dist[6*Np+n] = 0.125*Psi[ijk];	
 	}
 }
 
@@ -403,3 +378,34 @@ extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, s
 	}
 }
 
+//extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
+//	int n;
+//	// distributions
+//	double f1,f2,f3,f4,f5,f6;
+//	double Ex,Ey,Ez;
+//    double rlx=1.0/tau;
+//
+//	for (n=0; n<Np; n++){
+//		//........................................................................
+//		// Registers to store the distributions
+//		//........................................................................
+//		f1 = dist[Np+n];
+//		f2 = dist[2*Np+n];
+//		f3 = dist[3*Np+n];
+//		f4 = dist[4*Np+n];
+//		f5 = dist[5*Np+n];
+//		f6 = dist[6*Np+n];
+//		//.................Compute the Electric Field...................................
+//		//Ex = (f1-f2)*rlx*4.5;//NOTE the unit of electric field here is V/lu
+//		//Ey = (f3-f4)*rlx*4.5;
+//		//Ez = (f5-f6)*rlx*4.5;
+//		Ex = (f1-f2)*rlx*4.0;//NOTE the unit of electric field here is V/lu
+//		Ey = (f3-f4)*rlx*4.0;
+//		Ez = (f5-f6)*rlx*4.0;
+//		//..................Write the Electric Field.....................................
+//		ElectricField[0*Np+n] = Ex;
+//		ElectricField[1*Np+n] = Ey;
+//		ElectricField[2*Np+n] = Ez;
+//		//........................................................................
+//	}
+//}

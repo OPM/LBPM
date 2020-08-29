@@ -22,8 +22,8 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	domain_db = db->getDatabase( "Domain" );
 	electric_db = db->getDatabase( "Poisson" );
 	
-    //k2_inv = 4.5;//speed of sound for D3Q7 lattice 
-    k2_inv = 4.0;//speed of sound for D3Q7 lattice 
+    k2_inv = 4.5;//speed of sound for D3Q7 lattice 
+    //k2_inv = 4.0;//speed of sound for D3Q7 lattice 
     gamma = 1.0;//time step of LB-Poisson equation
 	tau = 0.5+k2_inv*gamma;
 	timestepMax = 100000;
@@ -443,8 +443,8 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         //perform collision
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_Poisson(NeighborList, dvcMap, fq, ChargeDensity, Psi, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
         if (BoundaryConditionSolid==1){
 		    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
         }
@@ -480,8 +480,8 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
         //perform collision
-		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, ElectricField, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, tau, epsilon_LB, gamma, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_Poisson(dvcMap, fq, ChargeDensity, Psi, tau, epsilon_LB, gamma, 0, ScaLBL_Comm->LastExterior(), Np);
         if (BoundaryConditionSolid==1){
 		    ScaLBL_Comm->SolidDirichletD3Q7(fq, Psi);
         }
