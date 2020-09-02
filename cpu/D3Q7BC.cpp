@@ -11,7 +11,7 @@ extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,i
         ib = BounceBackSolid_list[idx];
 		value_b = BoundaryValue[ib];//get boundary value from a solid site
         value_q = dist[iq];
-		dist[iq] = -1.0*value_q + value_b*2.0/9.0;//NOTE 2/9 is the speed of sound for D3Q7 lattice
+		dist[iq] = -1.0*value_q + value_b*0.25;//NOTE 0.25 is the speed of sound for D3Q7 lattice
 	}
 }
 

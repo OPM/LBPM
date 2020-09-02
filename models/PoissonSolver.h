@@ -28,13 +28,9 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *ChargeDensity);
-    void SolveElectricPotentialAAodd();
-    void SolveElectricPotentialAAeven();
-    void SolveElectricField();
-    void SolvePoissonAAodd(double *ChargeDensity);
-    void SolvePoissonAAeven(double *ChargeDensity);
     void getElectricPotential(int timestep);
     void getElectricField(int timestep);
+    void DummyChargeDensity();//for debugging
 
 	//bool Restart,pBC;
 	int timestep,timestepMax;
@@ -43,9 +39,10 @@ public:
     int BoundaryConditionSolid;
 	double tau;
 	double tolerance;
-    double k2_inv,gamma;
+    double k2_inv;
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;
+    double chargeDen_dummy;//for debugging
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -66,11 +63,11 @@ public:
     DoubleArray Psi_host;
     int *NeighborList;
     int *dvcMap;
-    signed char *dvcID;
+    //signed char *dvcID;
     double *fq;
     double *Psi; 
     double *ElectricField;
-    //double *PoissonSolid;
+    double *ChargeDensityDummy;// for debugging
 
 private:
 	MPI_Comm comm;
@@ -85,5 +82,10 @@ private:
     void AssignSolidBoundary(double *poisson_solid);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
+    void SolveElectricPotentialAAodd();
+    void SolveElectricPotentialAAeven();
+    //void SolveElectricField();
+    void SolvePoissonAAodd(double *ChargeDensity);
+    void SolvePoissonAAeven(double *ChargeDensity);
     
 };
