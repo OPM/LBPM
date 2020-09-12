@@ -8,6 +8,8 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
+#include <vector>
+#include <algorithm>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
@@ -22,13 +24,17 @@ public:
 	
 	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
+    int getStokesNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
+    vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
+    //void getIonNumIter_PNP_coupling(double StokesTimeConv,vector<double> &IonTimeConv,vector<int> &IonTimeMax);
 	
 	bool Restart;
-	//int timestep;
     int timestepMax;
     int num_iter_Stokes;
-    int num_iter_Ion;
-    double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
+    vector<int> num_iter_Ion;
+    int analysis_interval;
+    double tolerance;
+    //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
 	int rank,nprocs;
 

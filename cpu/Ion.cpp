@@ -81,7 +81,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, i
 }
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
-                                      double Di, double zi, double rlx, double Vt, int start, int finish, int Np){
+                                      double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
     double ux,uy,uz;
@@ -126,31 +126,31 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *D
 		f6 = dist[nr6];
 		
 		// q=0
-		dist[n] = f0*(1.0-rlx)+rlx*0.3333333333333333*Ci;
+		dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
 
 		// q = 1
-		dist[nr2] = f1*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(ux+uEPx));
+		dist[nr2] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
 
 		// q=2
-		dist[nr1] = f2*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(ux+uEPx));
+		dist[nr1] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
 
 		// q = 3
-		dist[nr4] = f3*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(uy+uEPy));
+		dist[nr4] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
 
 		// q = 4
-		dist[nr3] = f4*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(uy+uEPy));
+		dist[nr3] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
 
 		// q = 5
-		dist[nr6] = f5*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(uz+uEPz));
+		dist[nr6] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
 
 		// q = 6
-		dist[nr5] = f6*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(uz+uEPz));
+		dist[nr5] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
 	
 	}
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
-                                       double Di, double zi, double rlx, double Vt, int start, int finish, int Np){
+                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np){
 	int n;
 	double Ci;
     double ux,uy,uz;
@@ -181,25 +181,25 @@ extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Veloci
 		f6 = dist[5*Np+n];
 		
 		// q=0
-		dist[n] = f0*(1.0-rlx)+rlx*0.3333333333333333*Ci;
+		dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
 
 		// q = 1
-		dist[1*Np+n] = f1*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(ux+uEPx));
+		dist[1*Np+n] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
 
 		// q=2
-		dist[2*Np+n] = f2*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(ux+uEPx));
+		dist[2*Np+n] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
 
 		// q = 3
-		dist[3*Np+n] = f3*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(uy+uEPy));
+		dist[3*Np+n] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
 
 		// q = 4
-		dist[4*Np+n] = f4*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(uy+uEPy));
+		dist[4*Np+n] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
 
 		// q = 5
-		dist[5*Np+n] = f5*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0+4.5*(uz+uEPz));
+		dist[5*Np+n] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
 
 		// q = 6
-		dist[6*Np+n] = f6*(1.0-rlx) + rlx*0.1111111111111111*Ci*(1.0-4.5*(uz+uEPz));
+		dist[6*Np+n] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
 
 	
 	}
@@ -209,13 +209,13 @@ extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, 
 {
 	int n;
 	for (n=0; n<Np; n++){
-		dist[0*Np+n] = 0.3333333333333333*DenInit;
-		dist[1*Np+n] = 0.1111111111111111*DenInit;		
-		dist[2*Np+n] = 0.1111111111111111*DenInit;	
-		dist[3*Np+n] = 0.1111111111111111*DenInit;	
-		dist[4*Np+n] = 0.1111111111111111*DenInit;	
-		dist[5*Np+n] = 0.1111111111111111*DenInit;	
-		dist[6*Np+n] = 0.1111111111111111*DenInit;	
+		dist[0*Np+n] = 0.25*DenInit;
+		dist[1*Np+n] = 0.125*DenInit;		
+		dist[2*Np+n] = 0.125*DenInit;	
+		dist[3*Np+n] = 0.125*DenInit;	
+		dist[4*Np+n] = 0.125*DenInit;	
+		dist[5*Np+n] = 0.125*DenInit;	
+		dist[6*Np+n] = 0.125*DenInit;	
         Den[n] = DenInit;
 	}
 }
@@ -236,13 +236,3 @@ extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity
     }
 }
 
-extern "C" void ScaLBL_IonConcentration_Phys(double *Den, double h, int ion_component, int start, int finish, int Np){
-    //h: resolution [um/lu]
-    int n;
-    double Ci;
-    
-	for (n=start; n<finish; n++){
-            Ci = Den[n+ion_component*Np];
-            Den[n+ion_component*Np] = Ci/(h*h*h*1.0e-18);
-    }
-}

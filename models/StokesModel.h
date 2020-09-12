@@ -22,6 +22,7 @@ public:
 	
 	// functions in they should be run
 	void ReadParams(string filename,int num_iter);
+	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
@@ -31,6 +32,7 @@ public:
 	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
     void getVelocity(int timestep);
+    double CalVelocityConvergence(double& flow_rate_previous,double *ChargeDensity, double *ElectricField);
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -81,4 +83,5 @@ private:
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
     void Velocity_LB_to_Phys(DoubleArray &Vel_reg);
+    vector<double> computeElectricForceAvg(double *ChargeDensity, double *ElectricField);
 };

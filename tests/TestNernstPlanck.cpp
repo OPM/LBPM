@@ -7,7 +7,6 @@
 #include <fstream>
 #include <math.h>
 
-#include "models/StokesModel.h"
 #include "models/IonModel.h"
 #include "models/PoissonSolver.h"
 #include "models/MultiPhysController.h"
@@ -15,7 +14,7 @@
 using namespace std;
 
 //***************************************************************************
-// Implementation of Multiphysics simulator using lattice-Boltzmann method
+// Test lattice-Boltzmann Ion Model coupled with Poisson equation
 //***************************************************************************
 
 int main(int argc, char **argv)
@@ -35,7 +34,7 @@ int main(int argc, char **argv)
     { 
         if (rank == 0){
             printf("********************************************************\n");
-            printf("Running Electrokinetic LBM Simulator \n");
+            printf("Running Test for LB-Poisson-Ion Coupling \n");
             printf("********************************************************\n");
         }
         //PROFILE_ENABLE_TRACE();
@@ -45,7 +44,6 @@ int main(int argc, char **argv)
         Utilities::setErrorHandlers();
 
         auto filename = argv[1];
-        ScaLBL_StokesModel StokesModel(rank,nprocs,comm);
         ScaLBL_IonModel IonModel(rank,nprocs,comm);
         ScaLBL_Poisson PoissonSolver(rank,nprocs,comm); 
         ScaLBL_Multiphys_Controller Study(rank,nprocs,comm);//multiphysics controller coordinating multi-model coupling
@@ -53,19 +51,13 @@ int main(int argc, char **argv)
         // Load controller information
         Study.ReadParams(filename);
 
-        // Initialize LB Navier-Stokes model
-        StokesModel.ReadParams(filename,Study.num_iter_Stokes);
-        StokesModel.SetDomain();    
-        StokesModel.ReadInput();    
-        StokesModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-        StokesModel.Initialize();   // initializing the model will set initial conditions for variables
-
         // Initialize LB-Ion model
         IonModel.ReadParams(filename,Study.num_iter_Ion);
         IonModel.SetDomain();    
         IonModel.ReadInput();    
         IonModel.Create();       
         IonModel.Initialize();   
+        IonModel.DummyFluidVelocity();
 
         // Initialize LB-Poisson model
         PoissonSolver.ReadParams(filename);
@@ -75,29 +67,21 @@ int main(int argc, char **argv)
         PoissonSolver.Initialize();   
 
         int timestep=0;
-        while (timestep < Study.timestepMax){
+        double error = 1.0;
+        vector<double>ci_avg_previous{0.0,0.0};//assuming 1:1 solution
+        while (timestep < Study.timestepMax && error > Study.tolerance){
             
             timestep++;
-            //if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
             PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
-            //PoissonSolver.getElectricPotential(timestep);
-
-            //if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
-            StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-            //StokesModel.getVelocity(timestep);
-
-            //if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
-            IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
-            //IonModel.getIonConcentration(timestep);
-            
+            IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
             timestep++;//AA operations
-            //--------------------------------------------
-            //potentially leave analysis module for future
-            //--------------------------------------------
+
+            if (timestep%Study.analysis_interval==0){
+                error = IonModel.CalIonDenConvergence(ci_avg_previous);
+            }
         }
 
-        StokesModel.getVelocity(timestep);
         PoissonSolver.getElectricPotential(timestep);
         PoissonSolver.getElectricField(timestep);
         IonModel.getIonConcentration(timestep);

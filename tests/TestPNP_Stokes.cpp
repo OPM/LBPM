@@ -7,15 +7,15 @@
 #include <fstream>
 #include <math.h>
 
-#include "models/StokesModel.h"
 #include "models/IonModel.h"
+#include "models/StokesModel.h"
 #include "models/PoissonSolver.h"
 #include "models/MultiPhysController.h"
 
 using namespace std;
 
 //***************************************************************************
-// Implementation of Multiphysics simulator using lattice-Boltzmann method
+// Test lattice-Boltzmann Ion Model coupled with Poisson equation
 //***************************************************************************
 
 int main(int argc, char **argv)
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
     { 
         if (rank == 0){
             printf("********************************************************\n");
-            printf("Running Electrokinetic LBM Simulator \n");
+            printf("Running Test for LB-Poisson-Ion Coupling \n");
             printf("********************************************************\n");
         }
         //PROFILE_ENABLE_TRACE();
@@ -53,18 +53,24 @@ int main(int argc, char **argv)
         // Load controller information
         Study.ReadParams(filename);
 
-        // Initialize LB Navier-Stokes model
-        StokesModel.ReadParams(filename,Study.num_iter_Stokes);
+        // Load user input database files for Navier-Stokes and Ion solvers
+        StokesModel.ReadParams(filename);
+        IonModel.ReadParams(filename);
+
+        // Setup other model specific structures
         StokesModel.SetDomain();    
         StokesModel.ReadInput();    
         StokesModel.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-        StokesModel.Initialize();   // initializing the model will set initial conditions for variables
 
-        // Initialize LB-Ion model
-        IonModel.ReadParams(filename,Study.num_iter_Ion);
         IonModel.SetDomain();    
         IonModel.ReadInput();    
         IonModel.Create();       
+
+        // Get internal iteration number
+        StokesModel.timestepMax = Study.getStokesNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
+        StokesModel.Initialize();   // initializing the model will set initial conditions for variables
+
+        IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
         IonModel.Initialize();   
 
         // Initialize LB-Poisson model
@@ -74,33 +80,33 @@ int main(int argc, char **argv)
         PoissonSolver.Create();       
         PoissonSolver.Initialize();   
 
+
         int timestep=0;
-        while (timestep < Study.timestepMax){
+        double error = 1.0;
+        double error_ion    = 1.0;
+        double error_stokes = 1.0;
+        vector<double>ci_avg_previous{0.0,0.0};//assuming 1:1 solution
+        double vel_avg_previous = 0.0;
+        while (timestep < Study.timestepMax && error > Study.tolerance){
             
             timestep++;
-            //if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
             PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
-            //PoissonSolver.getElectricPotential(timestep);
-
-            //if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-            //StokesModel.getVelocity(timestep);
-
-            //if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
-            //IonModel.getIonConcentration(timestep);
-            
             
             timestep++;//AA operations
-            //--------------------------------------------
-            //potentially leave analysis module for future
-            //--------------------------------------------
+
+            if (timestep%Study.analysis_interval==0){
+                error_ion = IonModel.CalIonDenConvergence(ci_avg_previous);
+                error_stokes = StokesModel.CalVelocityConvergence(vel_avg_previous,IonModel.ChargeDensity,PoissonSolver.ElectricField);
+                error = max(error_ion,error_stokes);
+            }
         }
 
-        StokesModel.getVelocity(timestep);
         PoissonSolver.getElectricPotential(timestep);
         PoissonSolver.getElectricField(timestep);
         IonModel.getIonConcentration(timestep);
+        StokesModel.getVelocity(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

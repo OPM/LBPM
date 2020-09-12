@@ -91,12 +91,84 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
 
-	if (rank==0) printf("*****************************************************\n");
-	if (rank==0) printf("LB Single-Fluid Navier-Stokes Solver: \n");
-	if (rank==0) printf("      Time conversion factor: %.5g [sec/lt]\n", time_conv);
-	if (rank==0) printf("      Internal iteration: %i [lt]\n", timestepMax);
-	if (rank==0) printf("*****************************************************\n");
 }
+
+void ScaLBL_StokesModel::ReadParams(string filename){
+    //NOTE the max time step is left unspecified
+
+	// read the input database 
+	db = std::make_shared<Database>( filename );
+	domain_db = db->getDatabase( "Domain" );
+	stokes_db = db->getDatabase( "Stokes" );
+	
+
+	//---------------------- Default model parameters --------------------------//		
+    rho_phys = 1000.0; //by default use water density; unit [kg/m^3]
+    nu_phys = 1.004e-6;//by default use water kinematic viscosity at 20C; unit [m^2/sec]    
+    h = 1.0;//image resolution;[um]
+	tau = 1.0;
+    mu = (tau-0.5)/3.0;//LB kinematic viscosity;unit [lu^2/lt]
+    time_conv = h*h*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
+    rho0 = 1.0;//LB density
+    den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
+	tolerance = 1.0e-8;
+	Fx = Fy = 0.0;
+	Fz = 1.0e-5;
+    //--------------------------------------------------------------------------//
+
+	// Read domain parameters
+    BoundaryCondition = 0;
+	if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
+	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
+		h = domain_db->getScalar<double>( "voxel_length" );
+	}
+
+	// Single-fluid Navier-Stokes Model parameters
+	//if (stokes_db->keyExists( "timestepMax" )){
+	//	timestepMax = stokes_db->getScalar<int>( "timestepMax" );
+	//}
+	if (stokes_db->keyExists( "tolerance" )){
+		tolerance = stokes_db->getScalar<double>( "tolerance" );
+	}
+	if (stokes_db->keyExists( "tau" )){
+		tau = stokes_db->getScalar<double>( "tau" );
+	}
+	if (stokes_db->keyExists( "rho0" )){
+		rho0 = stokes_db->getScalar<double>( "rho0" );
+	}
+	if (stokes_db->keyExists( "nu_phys" )){
+		nu_phys = stokes_db->getScalar<double>( "nu_phys" );
+	}
+	if (stokes_db->keyExists( "rho_phys" )){
+		rho_phys = stokes_db->getScalar<double>( "rho_phys" );
+	}
+	if (stokes_db->keyExists( "F" )){
+		Fx = stokes_db->getVector<double>( "F" )[0];
+		Fy = stokes_db->getVector<double>( "F" )[1];
+		Fz = stokes_db->getVector<double>( "F" )[2];
+	}
+	if (stokes_db->keyExists( "Restart" )){
+		Restart = stokes_db->getScalar<bool>( "Restart" );
+	}
+	if (stokes_db->keyExists( "din" )){
+		din = stokes_db->getScalar<double>( "din" );
+	}
+	if (stokes_db->keyExists( "dout" )){
+		dout = stokes_db->getScalar<double>( "dout" );
+	}
+	if (stokes_db->keyExists( "flux" )){
+		flux = stokes_db->getScalar<double>( "flux" );
+	}	
+
+    // Re-calculate model parameters due to parameter read
+	mu=(tau-0.5)/3.0;
+    time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
+    den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
+
+}
+
 void ScaLBL_StokesModel::SetDomain(){
 	Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
 	Mask  = std::shared_ptr<Domain>(new Domain(domain_db,comm));    // mask domain removes immobile phases
@@ -235,6 +307,12 @@ void ScaLBL_StokesModel::Initialize(){
     if (rank==0) printf("LB Single-Fluid Solver: Initializing distributions \n");
 	if (rank==0) printf("****************************************************************\n");
     ScaLBL_D3Q19_Init(fq, Np);
+
+	if (rank==0) printf("*****************************************************\n");
+	if (rank==0) printf("LB Single-Fluid Navier-Stokes Solver: \n");
+	if (rank==0) printf("      Time conversion factor: %.5g [sec/lt]\n", time_conv);
+	if (rank==0) printf("      Internal iteration: %i [lt]\n", timestepMax);
+	if (rank==0) printf("*****************************************************\n");
 }
 
 void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
@@ -243,6 +321,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
     timestep = 0;
 	while (timestep < timestepMax) {
         //************************************************************************/
+        timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
                                      ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -334,34 +413,123 @@ void ScaLBL_StokesModel::Velocity_LB_to_Phys(DoubleArray &Vel_reg){
     }
 }
 
-//void ScaLBL_StokesModel::getVelocity(){
-//    //get velocity in physical unit [m/sec]
-//	ScaLBL_D3Q19_Momentum_Phys(fq, Velocity, h, time_conv, Np);
-//	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-//
-//    DoubleArray PhaseField(Nx,Ny,Nz);
-//	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
-//	FILE *VELX_FILE;
-//	sprintf(LocalRankFilename,"Velocity_X.%05i.raw",rank);
-//	VELX_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,VELX_FILE);
-//	fclose(VELX_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
-//	FILE *VELY_FILE;
-//	sprintf(LocalRankFilename,"Velocity_Y.%05i.raw",rank);
-//	VELY_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,VELY_FILE);
-//	fclose(VELY_FILE);
-//
-//	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
-//	FILE *VELZ_FILE;
-//	sprintf(LocalRankFilename,"Velocity_Z.%05i.raw",rank);
-//	VELZ_FILE = fopen(LocalRankFilename,"wb");
-//	fwrite(PhaseField.data(),8,N,VELZ_FILE);
-//	fclose(VELZ_FILE);
-//
-//}
+vector<double> ScaLBL_StokesModel::computeElectricForceAvg(double *ChargeDensity, double *ElectricField){
+
+    double *Ex_host;
+    double *Ey_host;
+    double *Ez_host;
+    Ex_host = new double[Np];
+    Ey_host = new double[Np];
+    Ez_host = new double[Np];
+    
+    double *rhoE_host;
+    rhoE_host = new double[Np];
+
+	ScaLBL_CopyToHost(Ex_host,&ElectricField[0*Np],Np*sizeof(double));
+	ScaLBL_CopyToHost(Ey_host,&ElectricField[1*Np],Np*sizeof(double));
+	ScaLBL_CopyToHost(Ez_host,&ElectricField[2*Np],Np*sizeof(double));
+	ScaLBL_CopyToHost(rhoE_host,ChargeDensity,Np*sizeof(double));
+
+	double count_loc=0;
+	double count;
+    double Fx_avg,Fy_avg,Fz_avg;//average electric field induced force
+    double Fx_loc,Fy_loc,Fz_loc;
+    Fx_loc = Fy_loc = Fz_loc = 0.0;
+
+    for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+        Fx_loc += rhoE_host[idx]*Ex_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fy_loc += rhoE_host[idx]*Ey_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fz_loc += rhoE_host[idx]*Ez_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        count_loc+=1.0;
+    }
+    for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
+        Fx_loc += rhoE_host[idx]*Ex_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fy_loc += rhoE_host[idx]*Ey_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        Fz_loc += rhoE_host[idx]*Ez_host[idx]*(time_conv*time_conv)/(h*h*1.0e-12)/den_scale;
+        count_loc+=1.0;
+    }
+
+	MPI_Allreduce(&Fx_loc,&Fx_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&Fy_loc,&Fy_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&Fz_loc,&Fz_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	
+	Fx_avg /= count;
+	Fy_avg /= count;
+	Fz_avg /= count;
+
+    vector<double>F_avg{Fx_avg,Fy_avg,Fz_avg};
+
+    delete [] Ex_host;
+    delete [] Ey_host;
+    delete [] Ez_host;
+    delete [] rhoE_host;
+
+    return F_avg;
+}
+
+double ScaLBL_StokesModel::CalVelocityConvergence(double& flow_rate_previous,double *ChargeDensity, double *ElectricField){
+    
+    //-----------------------------------------------------
+	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
+	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
+	
+	double count_loc=0;
+	double count;
+	double vax,vay,vaz;
+	double vax_loc,vay_loc,vaz_loc;
+	vax_loc = vay_loc = vaz_loc = 0.f;
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				if (Distance(i,j,k) > 0){
+					vax_loc += Velocity_x(i,j,k);
+					vay_loc += Velocity_y(i,j,k);
+					vaz_loc += Velocity_z(i,j,k);
+					count_loc+=1.0;
+				}
+			}
+		}
+	}
+	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	
+	vax /= count;
+	vay /= count;
+	vaz /= count;
+    
+    vector<double> Eforce;
+    Eforce = computeElectricForceAvg(ChargeDensity,ElectricField);
+    double TFx = Fx+Eforce[0];//TF: total body force
+    double TFy = Fy+Eforce[1];
+    double TFz = Fz+Eforce[2];
+	double force_mag = sqrt(TFx*TFx+TFy*TFy+TFz*TFz);
+	double dir_x = TFx/force_mag;
+	double dir_y = TFy/force_mag;
+	double dir_z = TFz/force_mag;
+	if (force_mag == 0.0){
+		// default to z direction
+		dir_x = 0.0;
+		dir_y = 0.0;
+		dir_z = 1.0;
+		force_mag = 1.0;
+	}
+	double flow_rate = (vax*dir_x + vay*dir_y + vaz*dir_z);
+	double error = fabs(flow_rate - flow_rate_previous) / fabs(flow_rate);
+	flow_rate_previous = flow_rate;
+    //----------------------------------------------------
+
+    //for debugging 
+    if (rank==0){
+        printf("StokesModel: error: %.5g\n",error);
+    }
+    return error;
+}
 
 void ScaLBL_StokesModel::Run(){
 	double rlx_setA=1.0/tau;

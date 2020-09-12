@@ -79,16 +79,14 @@ extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, i
 
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
-                                      double Di, double zi, double rlx, double Vt, int start, int finish, int Np);
+                                      double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
-                                       double Di, double zi, double rlx, double Vt, int start, int finish, int Np);
+                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
 
 extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
-
-extern "C" void ScaLBL_IonConcentration_Phys(double *Den, double h, int ion_component, int start, int finish, int Np);
 
 // LBM Poisson solver
 
@@ -206,6 +204,14 @@ extern "C" void ScaLBL_Poisson_D3Q7_BC_z(int *list, int *Map, double *Psi, doubl
 
 extern "C" void ScaLBL_Poisson_D3Q7_BC_Z(int *list, int *Map, double *Psi, double Vout, int count);
 
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z(int *list, double *dist, double Cin, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z(int *list, double *dist, double Cout, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(int *d_neighborList, int *list, double *dist, double Cin, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
@@ -269,6 +275,8 @@ public:
 	void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
 	void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
 	void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
+	void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
+	void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();

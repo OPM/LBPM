@@ -22,7 +22,8 @@ public:
 	~ScaLBL_IonModel();	
 	
 	// functions in they should be run
-	void ReadParams(string filename,int num_iter,int num_iter_Stokes,double time_conv_Stokes);
+	void ReadParams(string filename,vector<int> &num_iter);
+	void ReadParams(string filename);
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
@@ -30,24 +31,30 @@ public:
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
     void getIonConcentration(int timestep);
-	
+    void DummyFluidVelocity();
+    void DummyElectricField();
+    double CalIonDenConvergence(vector<double> &ci_avg_previous);
+
 	//bool Restart,pBC;
-	int timestep,timestepMax;
+	int timestep;
+    vector<int> timestepMax;
 	int BoundaryCondition;
 	int BoundaryConditionSolid;
     double h;//domain resolution, unit [um/lu]
-    double time_conv;
     double kb,electron_charge,T,Vt;
     double k2_inv;
     double tolerance;
-    double Ex,Ey,Ez;
+    double fluidVelx_dummy,fluidVely_dummy,fluidVelz_dummy;
+    double Ex_dummy,Ey_dummy,Ez_dummy;
 	
 	int number_ion_species;
     vector<double> IonDiffusivity;//User input unit [m^2/sec]
     vector<int> IonValence;
     vector<double> IonConcentration;//unit [mol/m^3]
-    //vector<double> deltaT;
+    vector<double> Cin;//unit [mol/m^3]
+    vector<double> Cout;//unit [mol/m^3]
 	vector<double> tau;
+	vector<double> time_conv;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -68,6 +75,8 @@ public:
     double *Ci; 
     double *ChargeDensity; 
     double *IonSolid;
+    double *FluidVelocityDummy;
+    double *ElectricFieldDummy;
 
 private:
 	MPI_Comm comm;
@@ -80,4 +89,5 @@ private:
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
     void AssignSolidBoundary(double *ion_solid);
+    void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
 };

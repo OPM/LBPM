@@ -59,7 +59,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "BC_Solid" )){
 		BoundaryConditionSolid = electric_db->getScalar<int>( "BC_Solid" );
 	}
-    // Read boundary condition for electric potentiona
+    // Read boundary condition for electric potential
     // BC = 0: normal periodic BC
     // BC = 1: fixed inlet and outlet potential
     BoundaryCondition = 0;

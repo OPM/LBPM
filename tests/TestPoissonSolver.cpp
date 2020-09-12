@@ -50,7 +50,6 @@ int main(int argc, char **argv)
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
         PoissonSolver.Initialize();   
-        PoissonSolver.getElectricPotential(0);
 
         //Initialize dummy charge density for test
         PoissonSolver.DummyChargeDensity();   
@@ -58,34 +57,6 @@ int main(int argc, char **argv)
         PoissonSolver.Run(PoissonSolver.ChargeDensityDummy);
         PoissonSolver.getElectricPotential(1);
         PoissonSolver.getElectricField(1);
-
-        //int timestep=0;
-        //while (timestep < Study.timestepMax){
-        //    
-        //    timestep++;
-        //    //if (rank==0) printf("timestep=%i; running Poisson solver\n",timestep);    
-        //    PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
-        //    //PoissonSolver.getElectricPotential(timestep);
-
-        //    //if (rank==0) printf("timestep=%i; running StokesModel\n",timestep);    
-        //    StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
-        //    //StokesModel.getVelocity(timestep);
-
-        //    //if (rank==0) printf("timestep=%i; running Ion model\n",timestep);    
-        //    IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
-        //    //IonModel.getIonConcentration(timestep);
-        //    
-        //    
-        //    timestep++;//AA operations
-        //    //--------------------------------------------
-        //    //potentially leave analysis module for future
-        //    //--------------------------------------------
-        //}
-
-        //StokesModel.getVelocity(timestep);
-        //PoissonSolver.getElectricPotential(timestep);
-        //PoissonSolver.getElectricField(timestep);
-        //IonModel.getIonConcentration(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");
