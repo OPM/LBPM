@@ -25,6 +25,7 @@
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "analysis/distance.h"
+#include "analysis/filters.h"
 
 #include "common/Utilities.h"
 #include "common/MPI_Helpers.h"
@@ -77,7 +78,9 @@ public:
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
 	void MeasureObject();
+	void MeasureObject(double factor, const DoubleArray &Phi);
 	int MeasureConnectedPathway();
+	int MeasureConnectedPathway(double factor, const DoubleArray &Phi);
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
 
 	void PrintAll();

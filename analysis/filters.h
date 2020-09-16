@@ -19,6 +19,13 @@
 
 #include "common/Array.h"
 
+/*!
+ * @brief  Filter image
+ * @details  This routine performs a mean filter
+ * @param[in] Input     Input image
+ * @param[out] Output   Output image
+ */
+void Mean3D( const Array<double> &Input, Array<double> &Output );
 
 /*!
  * @brief  Filter image
@@ -27,7 +34,6 @@
  * @param[out] Output   Output image
  */
 void Med3D( const Array<float> &Input, Array<float> &Output );
-
 
 /*!
  * @brief  Filter image

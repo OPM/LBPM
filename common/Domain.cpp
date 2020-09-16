@@ -710,7 +710,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 	int full_ny = npy*(ny-2);
 	int full_nz = npz*(nz-2);
 	int local_size = (nx-2)*(ny-2)*(nz-2);
-	long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	unsigned long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
 	
 	signed char *LocalID;
 	LocalID = new signed char [local_size];
@@ -740,7 +740,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 					int y = j-1;
 					int z = k-1;
 					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
-					int n_full = z*full_nx*full_ny + y*full_nx + x;
+					unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
 					FullID[n_full] = LocalID[n_local];
 				}
 			}
@@ -760,7 +760,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 						int y = j-1 + ipy*(ny-2);
 						int z = k-1 + ipz*(nz-2);
 						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
-						int n_full = z*full_nx*full_ny + y*full_nx + x;
+						unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
 						FullID[n_full] = LocalID[n_local];
 					}
 				}

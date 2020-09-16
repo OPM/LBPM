@@ -58,7 +58,7 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	din=dout=1.0;
 	flux=0.0;
     dp = 10.0; //unit of 'dp': voxel
-    CollisionType = 1; //1: IMRT; 2: BGK
+    CollisionType = 1; //1: IMRT; 2: BGK; 3: MRT
 	
 	// ---------------------- Greyscale Model parameters -----------------------//
 	if (greyscale_db->keyExists( "timestepMax" )){
@@ -98,6 +98,9 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
 	if (collision == "BGK"){
         CollisionType=2;
 	}
+    else if (collision == "MRT"){
+        CollisionType=3;
+    }
 	// ------------------------------------------------------------------------//
     
     //------------------------ Other Domain parameters ------------------------//
@@ -213,9 +216,9 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
@@ -244,9 +247,9 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	if (NLABELS != PermeabilityList.size()){
 		ERROR("Error: ComponentLabels and PermeabilityList must be the same length! \n");
 	}
-	for (int k=1;k<Nz-1;k++){
-		for (int j=1;j<Ny-1;j++){
-			for (int i=1;i<Nx-1;i++){
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
@@ -285,7 +288,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
-		printf("Component labels: %lu \n",NLABELS);
+		printf("Number of component labels: %lu \n",NLABELS);
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			POROSITY=PorosityList[idx];
@@ -337,7 +340,6 @@ void ScaLBL_GreyscaleModel::Create(){
 	neighborSize=18*(Np*sizeof(int));
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
-	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Permeability, sizeof(double)*Np);		
 	ScaLBL_AllocateDeviceMemory((void **) &Porosity, sizeof(double)*Np);		
@@ -345,47 +347,19 @@ void ScaLBL_GreyscaleModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
-	if (rank==0)	printf ("Setting up device map and neighbor list \n");
+	if (rank==0)	printf ("Setting up device neighbor list \n");
 	fflush(stdout);
-	int *TmpMap;
-	TmpMap=new int[Np];
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				int idx=Map(i,j,k);
-				if (!(idx < 0))
-					TmpMap[idx] = k*Nx*Ny+j*Nx+i;
-			}
-		}
-	}
-	// check that TmpMap is valid
-	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
-		int n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
-			printf("Bad value! idx=%i \n");
-			TmpMap[idx] = Nx*Ny*Nz-1;
-		}
-	}
-	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
-		int n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
-			printf("Bad value! idx=%i \n");
-			TmpMap[idx] = Nx*Ny*Nz-1;
-		}
-	}
-	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-	ScaLBL_DeviceBarrier();
-	delete [] TmpMap;
-	
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	// initialize phi based on PhaseLabel (include solid component labels)
 	double *Poros, *Perm;
 	Poros = new double[Np];
-	Perm = new double[Np];
+	Perm  = new double[Np];
 	AssignComponentLabels(Poros,Perm);
 	ScaLBL_CopyToDevice(Porosity, Poros, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
+    delete [] Poros;
+    delete [] Perm;
 }        
 
 
@@ -401,6 +375,10 @@ void ScaLBL_GreyscaleModel::Initialize(){
     else if (CollisionType==2){
 	    ScaLBL_D3Q19_Init(fq, Np);
         if (rank==0) printf("Collision model: BGK.\n");
+    }
+    else if (CollisionType==3){
+	    ScaLBL_D3Q19_Init(fq, Np);
+        if (rank==0) printf("Collision model: MRT.\n");
     }
     else{
         if (rank==0) printf("Unknown collison type! IMRT collision is used.\n"); 
@@ -483,6 +461,9 @@ void ScaLBL_GreyscaleModel::Run(){
             case 2: 
                     ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
                     break;
+            case 3: 
+                    ScaLBL_D3Q19_AAodd_Greyscale_MRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
             default: 
                     ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
@@ -501,6 +482,9 @@ void ScaLBL_GreyscaleModel::Run(){
             case 2: 
 		            ScaLBL_D3Q19_AAodd_Greyscale(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
                     break;
+            case 3: 
+		            ScaLBL_D3Q19_AAodd_Greyscale_MRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
+                    break;
             default: 
 		            ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
@@ -516,6 +500,9 @@ void ScaLBL_GreyscaleModel::Run(){
                     break;
             case 2: 
 		            ScaLBL_D3Q19_AAeven_Greyscale(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            case 3: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_MRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
             default: 
 		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
@@ -534,6 +521,9 @@ void ScaLBL_GreyscaleModel::Run(){
                     break;
             case 2: 
 		            ScaLBL_D3Q19_AAeven_Greyscale(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Pressure_dvc);
+                    break;
+            case 3: 
+		            ScaLBL_D3Q19_AAeven_Greyscale_MRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
             default: 
 		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
@@ -608,11 +598,6 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-			//MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			//MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			
             vax = sumReduce( Mask->Comm, vax_loc);
             vay = sumReduce( Mask->Comm, vay_loc);
             vaz = sumReduce( Mask->Comm, vaz_loc);

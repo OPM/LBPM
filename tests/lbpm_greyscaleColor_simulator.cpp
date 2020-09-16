@@ -6,13 +6,13 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "models/GreyscaleModel.h"
+#include "models/GreyscaleColorModel.h"
 #include "common/Utilities.h"
 //#define WRITE_SURFACES
 
-//****************************************************************
-// Implementation of Greyscale Single-Fluid LBM using CUDA
-//****************************************************************
+//*************************************************************************
+// Implementation of Greyscale Two-Fluid Color LBM using CUDA
+//*************************************************************************
 
 using namespace std;
 
@@ -31,9 +31,9 @@ int main(int argc, char **argv)
       int nprocs = comm_size(comm);
   
       if (rank == 0){
-	      printf("********************************************************\n");
-	 	  printf("Running Greyscale Single Phase Permeability Calculation \n");
-	 	  printf("********************************************************\n");
+	      printf("****************************************\n");
+	      printf("Running Greyscale Two-Phase Calculation \n");
+	      printf("****************************************\n");
       }
       // Initialize compute device
       ScaLBL_SetDevice(rank);
@@ -48,18 +48,17 @@ int main(int argc, char **argv)
       Utilities::setErrorHandlers();
   
       auto filename = argv[1];
-      ScaLBL_GreyscaleModel Greyscale(rank,nprocs,comm);
-      Greyscale.ReadParams(filename);
-      Greyscale.SetDomain();    
-      Greyscale.ReadInput();    
-      Greyscale.Create();       // creating the model will create data structure to match the pore structure and allocate variables
-      Greyscale.Initialize();   // initializing the model will set initial conditions for variables
-      Greyscale.Run();	       
-	  Greyscale.VelocityField();
-      //Greyscale.WriteDebug();
+      ScaLBL_GreyscaleColorModel GreyscaleColor(rank,nprocs,comm);
+      GreyscaleColor.ReadParams(filename);
+      GreyscaleColor.SetDomain();    
+      GreyscaleColor.ReadInput();    
+      GreyscaleColor.Create();       // creating the model will create data structure to match the pore structure and allocate variables
+      GreyscaleColor.Initialize();   // initializing the model will set initial conditions for variables
+      GreyscaleColor.Run();	       
+      GreyscaleColor.WriteDebug();
   
       PROFILE_STOP("Main");
-      PROFILE_SAVE("lbpm_greyscale_simulator",1);
+      PROFILE_SAVE("lbpm_greyscaleColor_simulator",1);
       // ****************************************************
   
       MPI_Barrier(comm);

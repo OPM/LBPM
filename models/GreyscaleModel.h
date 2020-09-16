@@ -76,7 +76,6 @@ public:
 
     signed char *id;    
 	int *NeighborList;
-	int *dvcMap;
 	double *fq;
 	double *Permeability;//grey voxel permeability
 	double *Porosity;
