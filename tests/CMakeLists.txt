@@ -4,7 +4,7 @@
 ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscale_simulator )
-ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_dfh_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_SingleFluid_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_BGK_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_dfh_simulator )

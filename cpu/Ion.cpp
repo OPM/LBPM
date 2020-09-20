@@ -229,10 +229,10 @@ extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity
     double F = 96485.0;//Faraday's constant; unit[C/mol]; F=e*Na, where Na is the Avogadro constant
 
 	for (n=start; n<finish; n++){
-            Ci = Den[n+ion_component*Np];
-            CD = ChargeDensity[n];
-            CD_tmp = F*IonValence*Ci;
-            ChargeDensity[n] = CD*(ion_component>0) + CD_tmp;
+        Ci = Den[n+ion_component*Np];
+        CD = ChargeDensity[n];
+        CD_tmp = F*IonValence*Ci;
+        ChargeDensity[n] = CD*(ion_component>0) + CD_tmp;
     }
 }
 

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
         if (rank==0) printf("*************************************************************\n");
 
         PROFILE_STOP("Main");
-        PROFILE_SAVE("lbpm_electrokinetic_simulator",1);
+        PROFILE_SAVE("TestPNP_Stokes",1);
         // ****************************************************
         MPI_Barrier(comm);
     } // Limit scope so variables that contain communicators will free before MPI_Finialize

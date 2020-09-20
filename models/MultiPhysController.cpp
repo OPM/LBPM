@@ -2,7 +2,7 @@
 
 ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM):
 rank(RANK),nprocs(NP),Restart(0),timestepMax(0),num_iter_Stokes(0),num_iter_Ion(0),
-analysis_interval(0),tolerance(0),comm(COMM)
+analysis_interval(0),visualization_interval(0),tolerance(0),comm(COMM)
 {
 
 }
@@ -23,6 +23,7 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename){
     num_iter_Stokes=1;
     num_iter_Ion.push_back(1);
     analysis_interval = 500;
+    visualization_interval = 10000;
     tolerance = 1.0e-6;
 	
     // load input parameters
@@ -31,6 +32,9 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename){
 	}
 	if (study_db->keyExists( "analysis_interval" )){
 		analysis_interval = study_db->getScalar<int>( "analysis_interval" );
+	}
+	if (study_db->keyExists( "visualization_interval" )){
+		visualization_interval = study_db->getScalar<int>( "visualization_interval" );
 	}
 	if (study_db->keyExists( "tolerance" )){
 		tolerance = study_db->getScalar<double>( "tolerance" );
@@ -76,15 +80,8 @@ int ScaLBL_Multiphys_Controller::getStokesNumIter_PNP_coupling(double StokesTime
     int num_iter_stokes;
     vector<double> TimeConv;
 
-    printf("*****Debug; IonTimeConv size = %i\n",IonTimeConv.size());
-    for (unsigned int i =0; i<IonTimeConv.size();i++){
-        printf("*****Debug; Ion %i; IonTimeConv = %.5g\n",i,IonTimeConv[i]);
-    }
     TimeConv.assign(IonTimeConv.begin(),IonTimeConv.end());
     TimeConv.insert(TimeConv.begin(),StokesTimeConv);
-    for (unsigned int i =0; i<TimeConv.size();i++){
-        printf("*****Debug; all TimeConv %i; TimeConv = %.5g\n",i,TimeConv[i]);
-    }
     vector<double>::iterator it_max = max_element(TimeConv.begin(),TimeConv.end());
     int idx_max = distance(TimeConv.begin(),it_max);
     if (idx_max==0){

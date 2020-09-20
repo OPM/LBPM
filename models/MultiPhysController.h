@@ -33,6 +33,7 @@ public:
     int num_iter_Stokes;
     vector<int> num_iter_Ion;
     int analysis_interval;
+    int visualization_interval;
     double tolerance;
     //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 

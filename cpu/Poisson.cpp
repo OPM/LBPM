@@ -235,109 +235,109 @@ extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, in
 	}
 }
 
-extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
-        int strideY, int strideZ,int start, int finish, int Np){
-
-	int n,nn;
-    int ijk;
-    int id;
-	// distributions
-	double m1,m2,m3,m4,m5,m6,m7,m8,m9;
-	double m10,m11,m12,m13,m14,m15,m16,m17,m18;
-	double nx,ny,nz;
-
-	for (n=start; n<finish; n++){
-
-		// Get the 1D index based on regular data layout
-		ijk = Map[n];
-		//					COMPUTE THE COLOR GRADIENT
-		//........................................................................
-		//.................Read Phase Indicator Values............................
-		//........................................................................
-		nn = ijk-1;							// neighbor index (get convention)
-        id = ID[nn];
-		m1 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 1
-		//........................................................................
-		nn = ijk+1;							// neighbor index (get convention)
-        id = ID[nn];
-		m2 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 2
-		//........................................................................
-		nn = ijk-strideY;							// neighbor index (get convention)
-        id = ID[nn];
-		m3 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 3
-		//........................................................................
-		nn = ijk+strideY;							// neighbor index (get convention)
-        id = ID[nn];
-		m4 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 4
-		//........................................................................
-		nn = ijk-strideZ;						// neighbor index (get convention)
-        id = ID[nn];
-		m5 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 5
-		//........................................................................
-		nn = ijk+strideZ;						// neighbor index (get convention)
-        id = ID[nn];
-		m6 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 6
-		//........................................................................
-		nn = ijk-strideY-1;						// neighbor index (get convention)
-        id = ID[nn];
-		m7 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 7
-		//........................................................................
-		nn = ijk+strideY+1;						// neighbor index (get convention)
-        id = ID[nn];
-		m8 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 8
-		//........................................................................
-		nn = ijk+strideY-1;						// neighbor index (get convention)
-        id = ID[nn];
-		m9 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 9
-		//........................................................................
-		nn = ijk-strideY+1;						// neighbor index (get convention)
-        id = ID[nn];
-		m10 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 10
-		//........................................................................
-		nn = ijk-strideZ-1;						// neighbor index (get convention)
-        id = ID[nn];
-		m11 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 11
-		//........................................................................
-		nn = ijk+strideZ+1;						// neighbor index (get convention)
-        id = ID[nn];
-		m12 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 12
-		//........................................................................
-		nn = ijk+strideZ-1;						// neighbor index (get convention)
-        id = ID[nn];
-		m13 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 13
-		//........................................................................
-		nn = ijk-strideZ+1;						// neighbor index (get convention)
-        id = ID[nn];
-		m14 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 14
-		//........................................................................
-		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
-        id = ID[nn];
-		m15 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 15
-		//........................................................................
-		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
-        id = ID[nn];
-		m16 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 16
-		//........................................................................
-		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
-        id = ID[nn];
-		m17 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 17
-		//........................................................................
-		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
-        id = ID[nn];
-		m18 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 18
-		//............Compute the Color Gradient...................................
-		//nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-		//ny = 1.f/6.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-		//nz = 1.f/6.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-		nx = 1.f/6.f*(m1-m2);//but looks like it needs to multiply another factor of 3
-		ny = 1.f/6.f*(m3-m4);
-		nz = 1.f/6.f*(m5-m6);
-		
-		ElectricField[n] = nx;
-		ElectricField[Np+n] = ny;
-		ElectricField[2*Np+n] = nz;
-	}
-}
+//extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
+//        int strideY, int strideZ,int start, int finish, int Np){
+//
+//	int n,nn;
+//    int ijk;
+//    int id;
+//	// distributions
+//	double m1,m2,m3,m4,m5,m6,m7,m8,m9;
+//	double m10,m11,m12,m13,m14,m15,m16,m17,m18;
+//	double nx,ny,nz;
+//
+//	for (n=start; n<finish; n++){
+//
+//		// Get the 1D index based on regular data layout
+//		ijk = Map[n];
+//		//					COMPUTE THE COLOR GRADIENT
+//		//........................................................................
+//		//.................Read Phase Indicator Values............................
+//		//........................................................................
+//		nn = ijk-1;							// neighbor index (get convention)
+//        id = ID[nn];
+//		m1 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 1
+//		//........................................................................
+//		nn = ijk+1;							// neighbor index (get convention)
+//        id = ID[nn];
+//		m2 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 2
+//		//........................................................................
+//		nn = ijk-strideY;							// neighbor index (get convention)
+//        id = ID[nn];
+//		m3 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 3
+//		//........................................................................
+//		nn = ijk+strideY;							// neighbor index (get convention)
+//        id = ID[nn];
+//		m4 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 4
+//		//........................................................................
+//		nn = ijk-strideZ;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m5 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 5
+//		//........................................................................
+//		nn = ijk+strideZ;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m6 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 6
+//		//........................................................................
+//		nn = ijk-strideY-1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m7 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 7
+//		//........................................................................
+//		nn = ijk+strideY+1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m8 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 8
+//		//........................................................................
+//		nn = ijk+strideY-1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m9 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 9
+//		//........................................................................
+//		nn = ijk-strideY+1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m10 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 10
+//		//........................................................................
+//		nn = ijk-strideZ-1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m11 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 11
+//		//........................................................................
+//		nn = ijk+strideZ+1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m12 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 12
+//		//........................................................................
+//		nn = ijk+strideZ-1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m13 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 13
+//		//........................................................................
+//		nn = ijk-strideZ+1;						// neighbor index (get convention)
+//        id = ID[nn];
+//		m14 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 14
+//		//........................................................................
+//		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+//        id = ID[nn];
+//		m15 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 15
+//		//........................................................................
+//		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+//        id = ID[nn];
+//		m16 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 16
+//		//........................................................................
+//		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+//        id = ID[nn];
+//		m17 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 17
+//		//........................................................................
+//		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+//        id = ID[nn];
+//		m18 = SolidBC==1 ? Psi[nn] : Psi[nn]*(id>0)+Psi[ijk]*(id<=0);// get neighbor for phi - 18
+//		//............Compute the Color Gradient...................................
+//		//nx = 1.f/6.f*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+//		//ny = 1.f/6.f*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+//		//nz = 1.f/6.f*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+//		nx = 1.f/6.f*(m1-m2);//but looks like it needs to multiply another factor of 3
+//		ny = 1.f/6.f*(m3-m4);
+//		nz = 1.f/6.f*(m5-m6);
+//		
+//		ElectricField[n] = nx;
+//		ElectricField[Np+n] = ny;
+//		ElectricField[2*Np+n] = nz;
+//	}
+//}
 
 //extern "C" void ScaLBL_D3Q7_Poisson_getElectricField(double *dist, double *ElectricField, double tau, int Np){
 //	int n;
