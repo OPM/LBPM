@@ -147,25 +147,32 @@ __global__  void dvc_ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, doub
             f6 = dist[nr6];
             
             // q=0
-            dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
+            //dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
+            dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci*(1.0 - 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 1
-            dist[nr2] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
+            //dist[nr2] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
+            dist[nr2] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx)+8.0*(ux+uEPx)*(ux+uEPx)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q=2
-            dist[nr1] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
+            //dist[nr1] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
+            dist[nr1] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx)+8.0*(ux+uEPx)*(ux+uEPx)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 3
-            dist[nr4] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
+            //dist[nr4] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
+            dist[nr4] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy)+8.0*(uy+uEPy)*(uy+uEPy)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 4
-            dist[nr3] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
+            //dist[nr3] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
+            dist[nr3] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy)+8.0*(uy+uEPy)*(uy+uEPy)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 5
-            dist[nr6] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
+            //dist[nr6] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
+            dist[nr6] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz)+8.0*(uz+uEPz)*(uz+uEPz)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 6
-            dist[nr5] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
+            //dist[nr5] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
+            dist[nr5] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz)+8.0*(uz+uEPz)*(uz+uEPz)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 		}
 	}
 }
@@ -206,25 +213,32 @@ __global__  void dvc_ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *V
             f6 = dist[5*Np+n];
             
             // q=0
-            dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
+            //dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci;
+            dist[n] = f0*(1.0-rlx)+rlx*0.25*Ci*(1.0 - 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 1
-            dist[1*Np+n] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
+            //dist[1*Np+n] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx));
+            dist[1*Np+n] = f1*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(ux+uEPx)+8.0*(ux+uEPx)*(ux+uEPx)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q=2
-            dist[2*Np+n] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
+            //dist[2*Np+n] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx));
+            dist[2*Np+n] = f2*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(ux+uEPx)+8.0*(ux+uEPx)*(ux+uEPx)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 3
-            dist[3*Np+n] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
+            //dist[3*Np+n] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy));
+            dist[3*Np+n] = f3*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uy+uEPy)+8.0*(uy+uEPy)*(uy+uEPy)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 4
-            dist[4*Np+n] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
+            //dist[4*Np+n] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy));
+            dist[4*Np+n] = f4*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uy+uEPy)+8.0*(uy+uEPy)*(uy+uEPy)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 5
-            dist[5*Np+n] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
+            //dist[5*Np+n] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz));
+            dist[5*Np+n] = f5*(1.0-rlx) + rlx*0.125*Ci*(1.0+4.0*(uz+uEPz)+8.0*(uz+uEPz)*(uz+uEPz)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 
             // q = 6
-            dist[6*Np+n] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
+            //dist[6*Np+n] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz));
+            dist[6*Np+n] = f6*(1.0-rlx) + rlx*0.125*Ci*(1.0-4.0*(uz+uEPz)+8.0*(uz+uEPz)*(uz+uEPz)- 2.0*((ux+uEPx)*(ux+uEPx) + (uy+uEPy)*(uy+uEPy) + (uz+uEPz)*(uz+uEPz)));
 		}
 	}
 }
