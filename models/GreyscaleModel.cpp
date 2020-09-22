@@ -88,7 +88,10 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
     
     //------------------------ Other Domain parameters ------------------------//
 	BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
+	if (greyscale_db->keyExists( "BC" )){
+		BoundaryCondition = greyscale_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
 	// ------------------------------------------------------------------------//
