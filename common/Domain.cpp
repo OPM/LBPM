@@ -1438,3 +1438,8 @@ void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
   File.close();
 }
 
+void ReadFromFile(const std::string& Filename, DoubleArray &Mesh){
+	
+
+}
+
