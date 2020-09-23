@@ -175,6 +175,8 @@ public: // Public variables (need to create accessors instead)
     //......................................................................................    
     // Solid indicator function
     signed char *id;
+    // User-defined input data
+    double *UserData;
 
     void ReadIDs();
     void Decomp( const std::string& filename );
