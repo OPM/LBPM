@@ -175,8 +175,6 @@ public: // Public variables (need to create accessors instead)
     //......................................................................................    
     // Solid indicator function
     signed char *id;
-    // User-defined input data
-    double *UserData;
 
     void ReadIDs();
     void Decomp( const std::string& filename );
@@ -246,7 +244,8 @@ private:
 
 };
 
-void ReadFromFile(const std::string& Filename, DoubleArray &Mesh);
+void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
+//void ReadFromFile(const std::string& Filename, DoubleArray &Mesh);
 
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np);
 

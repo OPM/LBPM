@@ -56,7 +56,7 @@ Domain::Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz,
 	recvData_x(NULL), recvData_y(NULL), recvData_z(NULL), recvData_X(NULL), recvData_Y(NULL), recvData_Z(NULL),
 	recvData_xy(NULL), recvData_yz(NULL), recvData_xz(NULL), recvData_Xy(NULL), recvData_Yz(NULL), recvData_xZ(NULL),
 	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
-	id(NULL),UserData(NULL)
+	id(NULL)
 {	
     NULL_USE( rnk );
     NULL_USE( npy );
@@ -107,7 +107,7 @@ Domain::Domain( std::shared_ptr<Database> db, MPI_Comm Communicator):
 	recvData_x(NULL), recvData_y(NULL), recvData_z(NULL), recvData_X(NULL), recvData_Y(NULL), recvData_Z(NULL),
 	recvData_xy(NULL), recvData_yz(NULL), recvData_xz(NULL), recvData_Xy(NULL), recvData_Yz(NULL), recvData_xZ(NULL),
 	recvData_xY(NULL), recvData_yZ(NULL), recvData_Xz(NULL), recvData_XY(NULL), recvData_YZ(NULL), recvData_XZ(NULL),
-	id(NULL),UserData(NULL)
+	id(NULL)
 {
     MPI_Comm_dup(Communicator,&Comm);
 
@@ -165,8 +165,7 @@ Domain::~Domain()
 	delete [] recvData_yZ;  delete [] recvData_Yz;  delete [] recvData_YZ;
 	// Free id
 	delete [] id;
-    // Free user-defined input data
-    delete [] UserData;
+ 
 	// Free the communicator
 	if ( Comm != MPI_COMM_WORLD && Comm != MPI_COMM_NULL ) {
 		MPI_Comm_free(&Comm);
@@ -240,7 +239,6 @@ void Domain::initialize( std::shared_ptr<Database> db )
 
 	id = new signed char[N];
 	memset(id,0,N);
-    UserData = new double[N];
 	BoundaryCondition = d_db->getScalar<int>("BC");
     int nprocs;
     MPI_Comm_size( Comm, &nprocs );
@@ -678,154 +676,6 @@ void Domain::Decomp( const std::string& Filename )
  	//.........................................................
 }
 
-void Domain::Decomp_RegularFile(const std::string& Filename,const std::string& Datatype)
-{
-	//........................................................................................
-	// Reading the user-defined input file
-    // NOTE: so far it only supports BC=0 (periodic) and BC=5 (mixed reflection)
-    //       because if checkerboard or inlet/outlet buffer layers are added, the
-    //       value of the void space is undefined. 
-    // NOTE: if BC=5 is used, where the inlet and outlet layers of the domain are modified, 
-    //       user needs to modify the input file accordingly before LBPM simulator read
-    //       the input file.
-	//........................................................................................
-	int rank_offset = 0;
-	int RANK = rank();
-	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
-	int64_t global_Nx,global_Ny,global_Nz;
-	int64_t i,j,k,n;
-    //TODO These offset we may still need them
-	//int64_t xStart,yStart,zStart;
-	//xStart=yStart=zStart=0;
-
-	// Read domain parameters
-    // TODO currently the size of the data is still read from Domain{}; 
-    //      but user may have a user-specified size
-	auto size = database->getVector<int>( "n" );
-	auto SIZE = database->getVector<int>( "N" );
-	auto nproc = database->getVector<int>( "nproc" );
-    //TODO currently the funcationality "offset" is disabled as the user-defined input data may have a different size from that of the input domain 
-	//if (database->keyExists( "offset" )){
-	//	auto offset = database->getVector<int>( "offset" );
-	//	xStart = offset[0];
-	//	yStart = offset[1];
-	//	zStart = offset[2];
-	//}
-	
-	nx = size[0];
-	ny = size[1];
-	nz = size[2];
-	nprocx = nproc[0];
-	nprocy = nproc[1];
-	nprocz = nproc[2];
-	global_Nx = SIZE[0];
-	global_Ny = SIZE[1];
-	global_Nz = SIZE[2];
-	nprocs=nprocx*nprocy*nprocz;
-
-	auto ReadType = Datatype.c_str();
-	double *SegData = NULL;
-	if (RANK==0){
-		printf("User-defined input file: %s (data type: %s)\n",Filename.c_str(),Datatype.c_str());
-        printf("NOTE: currently only BC=0 or 5 supports user-defined input file!\n");
-		// Rank=0 reads the entire segmented data and distributes to worker processes
-		printf("Dimensions of the user-defined input file: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
-		int64_t SIZE = global_Nx*global_Ny*global_Nz;
-
-		if (ReadType == "double"){
-			printf("Reading input data as double precision floating number\n");
-		    SegData = new double[SIZE];
-			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading file: %s\n",Filename.c_str());
-			size_t ReadSeg;
-			ReadSeg=fread(SegData,8,SIZE,SEGDAT);
-			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading file: %s\n",Filename.c_str());
-			fclose(SEGDAT);
-		}
-        else{
-            ERROR("Error: User-defined input file only supports double-precision floating number!\n"); 
-        }
-		printf("Read file successfully from %s \n",Filename.c_str());
-	}
-	
-	// Get the rank info
-	int64_t N = (nx+2)*(ny+2)*(nz+2);
-
-	// number of sites to use for periodic boundary condition transition zone
-	//int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
-	//if (z_transition_size < 0) z_transition_size=0;
-	int64_t z_transition_size = 0;
-
-	char LocalRankFilename[40];//just for debug
-	double *loc_id;
-	loc_id = new double [(nx+2)*(ny+2)*(nz+2)];
-
-	// Set up the sub-domains
-	if (RANK==0){
-        printf("Decomposing user-defined input file\n");
-		printf("Distributing subdomains across %i processors \n",nprocs);
-		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
-		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
-		printf("Size of transition region: %ld \n", z_transition_size);
-
-		for (int kp=0; kp<nprocz; kp++){
-			for (int jp=0; jp<nprocy; jp++){
-				for (int ip=0; ip<nprocx; ip++){
-					// rank of the process that gets this subdomain
-					int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
-					// Pack and send the subdomain for rnk
-					for (k=0;k<nz+2;k++){
-						for (j=0;j<ny+2;j++){
-							for (i=0;i<nx+2;i++){
-								int64_t x = xStart + ip*nx + i-1;
-								int64_t y = yStart + jp*ny + j-1;
-								// int64_t z = zStart + kp*nz + k-1;
-								int64_t z = zStart + kp*nz + k-1 - z_transition_size;
-								if (x<xStart) 	x=xStart;
-								if (!(x<global_Nx))	x=global_Nx-1;
-								if (y<yStart) 	y=yStart;
-								if (!(y<global_Ny))	y=global_Ny-1;
-								if (z<zStart) 	z=zStart;
-								if (!(z<global_Nz))	z=global_Nz-1;
-								int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-								int64_t nglobal = z*global_Nx*global_Ny+y*global_Nx+x;
-								loc_id[nlocal] = SegData[nglobal];
-							}
-						}
-					}
-					if (rnk==0){
-						for (k=0;k<nz+2;k++){
-							for (j=0;j<ny+2;j++){
-								for (i=0;i<nx+2;i++){
-									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									UserData[nlocal] = loc_id[nlocal];
-								}
-							}
-						}
-					}
-					else{
-						//printf("Sending data to process %i \n", rnk);
-						MPI_Send(loc_id,N,MPI_DOUBLE,rnk,15,Comm);
-					}
-					// Write the data for this rank data 
-                    // NOTE just for debug
-					sprintf(LocalRankFilename,"UserData.%05i",rnk+rank_offset);
-					FILE *ID = fopen(LocalRankFilename,"wb");
-					fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
-					fclose(ID);
-				}
-			}
-		}
-
-	}
-	else{
-		// Recieve the subdomain from rank = 0
-		//printf("Ready to recieve data %i at process %i \n", N,rank);
-		MPI_Recv(UserData,N,MPI_DOUBLE,0,15,Comm,MPI_STATUS_IGNORE);
-	}
-	//Comm.barrier();
-	MPI_Barrier(Comm);
-}
 
 void Domain::AggregateLabels( const std::string& filename ){
 	
@@ -1383,7 +1233,7 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
 }
 
-// Ideally stuff below here should be moved somewhere else -- doesn't really belong here
+// TODO Ideally stuff below here should be moved somewhere else -- doesn't really belong here
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np)
 {
     double value;
@@ -1438,8 +1288,152 @@ void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
   File.close();
 }
 
-void ReadFromFile(const std::string& Filename, DoubleArray &Mesh){
+
+void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData)
+{
+	//........................................................................................
+	// Reading the user-defined input file
+    // NOTE: so far it only supports BC=0 (periodic) and BC=5 (mixed reflection)
+    //       because if checkerboard or inlet/outlet buffer layers are added, the
+    //       value of the void space is undefined. 
+    // NOTE: if BC=5 is used, where the inlet and outlet layers of the domain are modified, 
+    //       user needs to modify the input file accordingly before LBPM simulator read
+    //       the input file.
+	//........................................................................................
+	int rank_offset = 0;
+	int RANK = rank();
+	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
+	int64_t global_Nx,global_Ny,global_Nz;
+	int64_t i,j,k,n;
+    //TODO These offset we may still need them
+	//int64_t xStart,yStart,zStart;
+	//xStart=yStart=zStart=0;
+
+	// Read domain parameters
+    // TODO currently the size of the data is still read from Domain{}; 
+    //      but user may have a user-specified size
+	auto size = database->getVector<int>( "n" );
+	auto SIZE = database->getVector<int>( "N" );
+	auto nproc = database->getVector<int>( "nproc" );
+    //TODO currently the funcationality "offset" is disabled as the user-defined input data may have a different size from that of the input domain 
+	//if (database->keyExists( "offset" )){
+	//	auto offset = database->getVector<int>( "offset" );
+	//	xStart = offset[0];
+	//	yStart = offset[1];
+	//	zStart = offset[2];
+	//}
 	
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nprocx = nproc[0];
+	nprocy = nproc[1];
+	nprocz = nproc[2];
+	global_Nx = SIZE[0];
+	global_Ny = SIZE[1];
+	global_Nz = SIZE[2];
+	nprocs=nprocx*nprocy*nprocz;
 
+	auto ReadType = Datatype.c_str();
+	double *SegData = NULL;
+	if (RANK==0){
+		printf("User-defined input file: %s (data type: %s)\n",Filename.c_str(),Datatype.c_str());
+        printf("NOTE: currently only BC=0 or 5 supports user-defined input file!\n");
+		// Rank=0 reads the entire segmented data and distributes to worker processes
+		printf("Dimensions of the user-defined input file: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
+		int64_t SIZE = global_Nx*global_Ny*global_Nz;
+
+		if (ReadType == "double"){
+			printf("Reading input data as double precision floating number\n");
+		    SegData = new double[SIZE];
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading file: %s\n",Filename.c_str());
+			size_t ReadSeg;
+			ReadSeg=fread(SegData,8,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading file: %s\n",Filename.c_str());
+			fclose(SEGDAT);
+		}
+        else{
+            ERROR("Error: User-defined input file only supports double-precision floating number!\n"); 
+        }
+		printf("Read file successfully from %s \n",Filename.c_str());
+	}
+	
+	// Get the rank info
+	int64_t N = (nx+2)*(ny+2)*(nz+2);
+
+	// number of sites to use for periodic boundary condition transition zone
+	//int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
+	//if (z_transition_size < 0) z_transition_size=0;
+	int64_t z_transition_size = 0;
+
+	char LocalRankFilename[40];//just for debug
+	double *loc_id;
+	loc_id = new double [(nx+2)*(ny+2)*(nz+2)];
+
+	// Set up the sub-domains
+	if (RANK==0){
+        printf("Decomposing user-defined input file\n");
+		printf("Distributing subdomains across %i processors \n",nprocs);
+		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
+		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
+		printf("Size of transition region: %ld \n", z_transition_size);
+
+		for (int kp=0; kp<nprocz; kp++){
+			for (int jp=0; jp<nprocy; jp++){
+				for (int ip=0; ip<nprocx; ip++){
+					// rank of the process that gets this subdomain
+					int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
+					// Pack and send the subdomain for rnk
+					for (k=0;k<nz+2;k++){
+						for (j=0;j<ny+2;j++){
+							for (i=0;i<nx+2;i++){
+								int64_t x = xStart + ip*nx + i-1;
+								int64_t y = yStart + jp*ny + j-1;
+								// int64_t z = zStart + kp*nz + k-1;
+								int64_t z = zStart + kp*nz + k-1 - z_transition_size;
+								if (x<xStart) 	x=xStart;
+								if (!(x<global_Nx))	x=global_Nx-1;
+								if (y<yStart) 	y=yStart;
+								if (!(y<global_Ny))	y=global_Ny-1;
+								if (z<zStart) 	z=zStart;
+								if (!(z<global_Nz))	z=global_Nz-1;
+								int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+								int64_t nglobal = z*global_Nx*global_Ny+y*global_Nx+x;
+								loc_id[nlocal] = SegData[nglobal];
+							}
+						}
+					}
+					if (rnk==0){
+						for (k=0;k<nz+2;k++){
+							for (j=0;j<ny+2;j++){
+								for (i=0;i<nx+2;i++){
+									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+									UserData[nlocal] = loc_id[nlocal];
+								}
+							}
+						}
+					}
+					else{
+						//printf("Sending data to process %i \n", rnk);
+						MPI_Send(loc_id,N,MPI_DOUBLE,rnk,15,Comm);
+					}
+					// Write the data for this rank data 
+                    // NOTE just for debug
+					sprintf(LocalRankFilename,"%s.%05i",Filename.c_str(),rnk+rank_offset);
+					FILE *ID = fopen(LocalRankFilename,"wb");
+					fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
+					fclose(ID);
+				}
+			}
+		}
+
+	}
+	else{
+		// Recieve the subdomain from rank = 0
+		//printf("Ready to recieve data %i at process %i \n", N,rank);
+		MPI_Recv(UserData,N,MPI_DOUBLE,0,15,Comm,MPI_STATUS_IGNORE);
+	}
+	//Comm.barrier();
+	MPI_Barrier(Comm);
 }
-

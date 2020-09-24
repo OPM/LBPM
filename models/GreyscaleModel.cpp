@@ -290,117 +290,48 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm)
 {
-	size_t NLABELS=0;
-	signed char VALUE=0;
+    double *Porosity_host, Permeability_host;
+    Porosity_host = new double[N];
+    Permeability_host = new double[N];
 	double POROSITY=0.f;
 	double PERMEABILITY=0.f;
+    //Initialize a weighted porosity after considering grey voxels
+    double GreyPorosity=0.0;
+    //double label_count_loc = 0.0;
+    //double label_count_glb = 0.0;
 
-	if (rank==0){
-		printf("Input voxel porosity map: %s\n",Filename_poro.c_str());
-		printf("Input voxel permeability map: %s\n",Filename_perm.c_str());
-		printf("Relabeling %lu values\n",ReadValues.size());
-		for (size_t idx=0; idx<ReadValues.size(); idx++){
-			int oldvalue=ReadValues[idx];
-			int newvalue=WriteValues[idx];
-			printf("oldvalue=%d, newvalue =%d \n",oldvalue,newvalue);
-		}
-	auto LabelList = greyscale_db->getVector<int>( "ComponentLabels" );
-	auto PorosityList = greyscale_db->getVector<double>( "PorosityList" );
-	auto PermeabilityList = greyscale_db->getVector<double>( "PermeabilityList" );
-
-	NLABELS=LabelList.size();
-	if (NLABELS != PorosityList.size()){
-		ERROR("Error: ComponentLabels and PorosityList must be the same length! \n");
-	}
-
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
-	// Assign the labels
-
-	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+    ReadFromFile(File_poro[0],File_poro[1],Porosity_host);
+    ReadFromFile(File_perm[0],File_perm[1],Permeability_host);
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
-				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						POROSITY=PorosityList[idx];
-						label_count[idx] += 1.0;
-						idx = NLABELS;
-						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
-					}
-				}
 				int idx = Map(i,j,k);
 				if (!(idx < 0)){
+				    int n = k*Nx*Ny+j*Nx+i;
+                    POROSITY = Porosity_host[n];
+                    PERMEABILITY = Permeability_host[n];
                     if (POROSITY<=0.0){
                         ERROR("Error: Porosity for grey voxels must be 0.0 < Porosity <= 1.0 !\n");
                     }
-                    else{
-					    Porosity[idx] = POROSITY;
-                    }
-                }
-			}
-		}
-	}
-
-	if (NLABELS != PermeabilityList.size()){
-		ERROR("Error: ComponentLabels and PermeabilityList must be the same length! \n");
-	}
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
-					//printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						PERMEABILITY=PermeabilityList[idx];
-						idx = NLABELS;
-						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
-					}
-				}
-				int idx = Map(i,j,k);
-				if (!(idx < 0)){
-                    if (PERMEABILITY<=0.0){
+                    else if (PERMEABILITY<=0.0){
                         ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
                     }
                     else{
-					    Permeability[idx] = PERMEABILITY/Dm->voxel_length/Dm->voxel_length;
+                        Porosity[idx] = POROSITY;
+                        Permeability[idx] = PERMEABILITY;
+                        GreyPorosity += POROSITY;
+                        //label_count_loc += 1.0;
                     }
                 }
 			}
 		}
 	}
-
-
-	// Set Dm to match Mask
-	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
-	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
-    //Initialize a weighted porosity after considering grey voxels
-    GreyPorosity=0.0;
-	for (unsigned int idx=0; idx<NLABELS; idx++){
-		double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-        GreyPorosity+=volume_fraction*PorosityList[idx];
-    }
+    //label_count_global = sumReduce( Dm->Comm, label_count_loc);
+    GreyPorosity = GreyPorosity/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
-		printf("Number of component labels: %lu \n",NLABELS);
-		for (unsigned int idx=0; idx<NLABELS; idx++){
-			VALUE=LabelList[idx];
-			POROSITY=PorosityList[idx];
-			PERMEABILITY=PermeabilityList[idx];
-			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d: porosity=%.3g, permeability=%.3g [um^2] (=%.3g [voxel^2]), volume fraction=%.3g\n",
-                    VALUE,POROSITY,PERMEABILITY,PERMEABILITY/Dm->voxel_length/Dm->voxel_length,volume_fraction); 
-            printf("             effective porosity=%.3g\n",volume_fraction*POROSITY);
-		}
         printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
 	}
 }
