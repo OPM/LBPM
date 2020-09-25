@@ -178,6 +178,7 @@ public: // Public variables (need to create accessors instead)
 
     void ReadIDs();
     void Decomp( const std::string& filename );
+    void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();
@@ -244,7 +245,7 @@ private:
 
 };
 
-void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
+//void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
 //void ReadFromFile(const std::string& Filename, DoubleArray &Mesh);
 
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np);

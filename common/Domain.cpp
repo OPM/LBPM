@@ -1289,7 +1289,7 @@ void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
 }
 
 
-void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData)
+void Domain::ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData)
 {
 	//........................................................................................
 	// Reading the user-defined input file
@@ -1306,8 +1306,8 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 	int64_t global_Nx,global_Ny,global_Nz;
 	int64_t i,j,k,n;
     //TODO These offset we may still need them
-	//int64_t xStart,yStart,zStart;
-	//xStart=yStart=zStart=0;
+	int64_t xStart,yStart,zStart;
+	xStart=yStart=zStart=0;
 
 	// Read domain parameters
     // TODO currently the size of the data is still read from Domain{}; 
@@ -1316,12 +1316,12 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 	auto SIZE = database->getVector<int>( "N" );
 	auto nproc = database->getVector<int>( "nproc" );
     //TODO currently the funcationality "offset" is disabled as the user-defined input data may have a different size from that of the input domain 
-	//if (database->keyExists( "offset" )){
-	//	auto offset = database->getVector<int>( "offset" );
-	//	xStart = offset[0];
-	//	yStart = offset[1];
-	//	zStart = offset[2];
-	//}
+	if (database->keyExists( "offset" )){
+		auto offset = database->getVector<int>( "offset" );
+		xStart = offset[0];
+		yStart = offset[1];
+		zStart = offset[2];
+	}
 	
 	nx = size[0];
 	ny = size[1];
@@ -1334,7 +1334,6 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 	global_Nz = SIZE[2];
 	nprocs=nprocx*nprocy*nprocz;
 
-	auto ReadType = Datatype.c_str();
 	double *SegData = NULL;
 	if (RANK==0){
 		printf("User-defined input file: %s (data type: %s)\n",Filename.c_str(),Datatype.c_str());
@@ -1343,11 +1342,11 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 		printf("Dimensions of the user-defined input file: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
 		int64_t SIZE = global_Nx*global_Ny*global_Nz;
 
-		if (ReadType == "double"){
+		if (Datatype == "double"){
 			printf("Reading input data as double precision floating number\n");
 		    SegData = new double[SIZE];
 			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading file: %s\n",Filename.c_str());
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading user-defined file!\n");
 			size_t ReadSeg;
 			ReadSeg=fread(SegData,8,SIZE,SEGDAT);
 			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading file: %s\n",Filename.c_str());
@@ -1367,7 +1366,7 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 	//if (z_transition_size < 0) z_transition_size=0;
 	int64_t z_transition_size = 0;
 
-	char LocalRankFilename[40];//just for debug
+	//char LocalRankFilename[1000];//just for debug
 	double *loc_id;
 	loc_id = new double [(nx+2)*(ny+2)*(nz+2)];
 
@@ -1420,10 +1419,10 @@ void ReadFromFile(const std::string& Filename,const std::string& Datatype, doubl
 					}
 					// Write the data for this rank data 
                     // NOTE just for debug
-					sprintf(LocalRankFilename,"%s.%05i",Filename.c_str(),rnk+rank_offset);
-					FILE *ID = fopen(LocalRankFilename,"wb");
-					fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
-					fclose(ID);
+					//sprintf(LocalRankFilename,"%s.%05i",Filename.c_str(),rnk+rank_offset);
+					//FILE *ID = fopen(LocalRankFilename,"wb");
+					//fwrite(loc_id,8,(nx+2)*(ny+2)*(nz+2),ID);
+					//fclose(ID);
 				}
 			}
 		}

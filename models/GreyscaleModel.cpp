@@ -290,18 +290,19 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 
 void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm)
 {
-    double *Porosity_host, Permeability_host;
+    double *Porosity_host, *Permeability_host;
     Porosity_host = new double[N];
     Permeability_host = new double[N];
 	double POROSITY=0.f;
 	double PERMEABILITY=0.f;
     //Initialize a weighted porosity after considering grey voxels
-    double GreyPorosity=0.0;
+    double GreyPorosity_loc=0.0;
+    GreyPorosity=0.0;
     //double label_count_loc = 0.0;
     //double label_count_glb = 0.0;
 
-    ReadFromFile(File_poro[0],File_poro[1],Porosity_host);
-    ReadFromFile(File_perm[0],File_perm[1],Permeability_host);
+    Mask->ReadFromFile(File_poro[0],File_poro[1],Porosity_host);
+    Mask->ReadFromFile(File_perm[0],File_perm[1],Permeability_host);
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -320,20 +321,22 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Perme
                     else{
                         Porosity[idx] = POROSITY;
                         Permeability[idx] = PERMEABILITY;
-                        GreyPorosity += POROSITY;
+                        GreyPorosity_loc += POROSITY;
                         //label_count_loc += 1.0;
                     }
                 }
 			}
 		}
 	}
-    //label_count_global = sumReduce( Dm->Comm, label_count_loc);
+    GreyPorosity = sumReduce( Dm->Comm, GreyPorosity_loc);
     GreyPorosity = GreyPorosity/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 
 	if (rank==0){
         printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
         printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
 	}
+    delete [] Porosity_host;
+    delete [] Permeability_host;
 }
 
 void ScaLBL_GreyscaleModel::Create(){
@@ -390,8 +393,8 @@ void ScaLBL_GreyscaleModel::Create(){
 	Perm  = new double[Np];
     if (greyscale_db->keyExists("FileVoxelPorosityMap")){
         //NOTE: FileVoxel**Map is a vector, including "file_name, datatype"
-		auto File_poro = domain_db->getVector<std::string>( "FileVoxelPorosityMap" );
-		auto File_perm = domain_db->getVector<std::string>( "FileVoxelPermeabilityMap" );
+		auto File_poro = greyscale_db->getVector<std::string>( "FileVoxelPorosityMap" );
+		auto File_perm = greyscale_db->getVector<std::string>( "FileVoxelPermeabilityMap" );
 	    AssignComponentLabels(Poros,Perm,File_poro,File_perm);
     }
     else if (greyscale_db->keyExists("PorosityList")){
