@@ -41,10 +41,6 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     //--------------------------------------------------------------------------//
 
 	// Read domain parameters
-    BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
-		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
 	}
@@ -53,6 +49,10 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	//if (stokes_db->keyExists( "timestepMax" )){
 	//	timestepMax = stokes_db->getScalar<int>( "timestepMax" );
 	//}
+    BoundaryCondition = 0;
+	if (stokes_db->keyExists( "BC" )){
+		BoundaryCondition = stokes_db->getScalar<int>( "BC" );
+	}
 	if (stokes_db->keyExists( "tolerance" )){
 		tolerance = stokes_db->getScalar<double>( "tolerance" );
 	}
@@ -117,10 +117,6 @@ void ScaLBL_StokesModel::ReadParams(string filename){
     //--------------------------------------------------------------------------//
 
 	// Read domain parameters
-    BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
-		BoundaryCondition = domain_db->getScalar<int>( "BC" );
-	}
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
 	}
@@ -129,6 +125,10 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	//if (stokes_db->keyExists( "timestepMax" )){
 	//	timestepMax = stokes_db->getScalar<int>( "timestepMax" );
 	//}
+    BoundaryCondition = 0;
+	if (stokes_db->keyExists( "BC" )){
+		BoundaryCondition = stokes_db->getScalar<int>( "BC" );
+	}
 	if (stokes_db->keyExists( "tolerance" )){
 		tolerance = stokes_db->getScalar<double>( "tolerance" );
 	}
@@ -190,6 +190,8 @@ void ScaLBL_StokesModel::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
+	Dm->BoundaryCondition = BoundaryCondition;
+	Mask->BoundaryCondition = BoundaryCondition;
 	Dm->CommInit();
 	MPI_Barrier(comm);
 	

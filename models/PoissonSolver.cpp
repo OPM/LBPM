@@ -416,14 +416,12 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         timestep++;
         
         SolveElectricPotentialAAodd();//update electric potential
-        //SolveElectricField(); //deprecated - compute electric field
         SolvePoissonAAodd(ChargeDensity);//perform collision
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		SolveElectricPotentialAAeven();//update electric potential
-        //SolveElectricField();//deprecated - compute electric field
         SolvePoissonAAeven(ChargeDensity);//perform collision
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/

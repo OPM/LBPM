@@ -418,6 +418,8 @@ void ScaLBL_IonModel::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
+	Dm->BoundaryCondition = BoundaryCondition;
+	Mask->BoundaryCondition = BoundaryCondition;
 	Dm->CommInit();
 	MPI_Barrier(comm);
 	
