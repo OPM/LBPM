@@ -89,5 +89,6 @@ private:
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
     void AssignSolidBoundary(double *ion_solid);
+    void AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion);
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
 };

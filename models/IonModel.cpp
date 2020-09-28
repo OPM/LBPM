@@ -136,7 +136,7 @@ void ScaLBL_IonModel::ReadParams(string filename,vector<int> &num_iter){
     }
     //read initial ion concentration list; INPUT unit [mol/m^3]
     //it must be converted to LB unit [mol/lu^3]
-	if (ion_db->keyExists("IonConcentrationList")){
+    if (ion_db->keyExists("IonConcentrationList")){
         IonConcentration.clear();
 	    IonConcentration = ion_db->getVector<double>( "IonConcentrationList" );
         if (IonConcentration.size()!=number_ion_species){
@@ -544,6 +544,35 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 	}
 }
 
+void ScaLBL_IonModel::AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion)
+{
+    double *Ci_host;
+    Ci_host = new double[N];
+	double VALUE=0.f;
+
+    Mask->ReadFromFile(File_ion[0],File_ion[1],Ci_host);
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int idx = Map(i,j,k);
+				if (!(idx < 0)){
+				    int n = k*Nx*Ny+j*Nx+i;
+                    //NOTE: default user-input unit: mol/m^3
+                    VALUE = Ci_host[n]*(h*h*h*1.0e-18);
+                    if (VALUE<0.0){
+                        ERROR("Error: Ion concentration value must be a positive number! \n");
+                    }
+                    else{
+                        Ci[idx] = VALUE;
+                    }
+                }
+			}
+		}
+	}
+    delete [] Ci_host;
+}
+
 void ScaLBL_IonModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -601,8 +630,6 @@ void ScaLBL_IonModel::Create(){
         ScaLBL_DeviceBarrier();
         delete [] IonSolid_host;
     }
-
-
 }        
 
 void ScaLBL_IonModel::Initialize(){
@@ -610,8 +637,26 @@ void ScaLBL_IonModel::Initialize(){
 	 * This function initializes model
 	 */
     if (rank==0)    printf ("LB Ion Solver: initializing D3Q7 distributions\n");
-	for (int ic=0; ic<number_ion_species; ic++){
-        ScaLBL_D3Q7_Ion_Init(&fq[ic*Np*7],&Ci[ic*Np],IonConcentration[ic],Np); 
+	if (ion_db->keyExists("IonConcentrationFile")){
+        //TODO: Need to figure out how to deal with multi-species concentration initialization
+        //NOTE: "IonConcentrationFile" is a vector, including "file_name, datatype"
+		auto File_ion = ion_db->getVector<std::string>( "IonConcentrationFile" );
+        double *Ci_host;
+        Ci_host = new double[number_ion_species*Np];
+        for (int ic=0; ic<number_ion_species; ic++){
+            AssignIonConcentration_FromFile(&Ci_host[ic*Np],File_ion);
+        }
+	    ScaLBL_CopyToDevice(Ci, Ci_host, number_ion_species*sizeof(double)*Np);
+	    MPI_Barrier(comm);
+        for (int ic=0; ic<number_ion_species; ic++){
+            ScaLBL_D3Q7_Ion_Init_FromFile(&fq[ic*Np*7],&Ci[ic*Np],Np); 
+        }
+        delete [] Ci_host;
+    }
+    else{
+        for (int ic=0; ic<number_ion_species; ic++){
+            ScaLBL_D3Q7_Ion_Init(&fq[ic*Np*7],&Ci[ic*Np],IonConcentration[ic],Np); 
+        }
     }
     if (rank==0)    printf ("LB Ion Solver: initializing charge density\n");
 	for (int ic=0; ic<number_ion_species; ic++){

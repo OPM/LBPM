@@ -263,6 +263,27 @@ __global__  void dvc_ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenI
 	}
 }
 
+__global__  void dvc_ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np){
+
+	int n;
+    double DenInit;
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
+		if (n<Np) {
+            DenInit = Den[n];
+            dist[0*Np+n] = 0.25*DenInit;
+            dist[1*Np+n] = 0.125*DenInit;		
+            dist[2*Np+n] = 0.125*DenInit;	
+            dist[3*Np+n] = 0.125*DenInit;	
+            dist[4*Np+n] = 0.125*DenInit;	
+            dist[5*Np+n] = 0.125*DenInit;	
+            dist[6*Np+n] = 0.125*DenInit;	
+		}
+	}
+}
+
 __global__  void dvc_ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np){
 
     int n;
@@ -341,6 +362,18 @@ extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_Ion_Init: %s \n",cudaGetErrorString(err));
+	}
+	//cudaProfilerStop();
+}
+
+extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np){
+
+	//cudaProfilerStart();
+	dvc_ScaLBL_D3Q7_Ion_Init_FromFile<<<NBLOCKS,NTHREADS >>>(dist,Den,Np);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q7_Ion_Init_FromFile: %s \n",cudaGetErrorString(err));
 	}
 	//cudaProfilerStop();
 }
