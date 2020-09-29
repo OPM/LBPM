@@ -15,7 +15,6 @@ public:
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;     // original domain structure
 	int Nxh,Nyh,Nzh,Nh; // with wide halo
-    RankInfoStruct rank_info;
 
 	int first_interior,last_interior;
 	//......................................................................................
@@ -42,7 +41,7 @@ public:
 	void Recv(double *data);
 
 	// Debugging and unit testing functions
-	void PrintDebug());
+	void PrintDebug();
 
 private:
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit

@@ -20,7 +20,6 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	Nyh = Ny + 2*(width - 1);
 	Nzh = Nz + 2*(width - 1);
 	Nh = Nxh*Nyh*Nzh;
-	next=0;
 	
 	rank=Dm->rank();
 	iproc = Dm->iproc();
@@ -29,7 +28,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	nprocx = Dm->nprocx();
 	nprocy = Dm->nprocy();
 	nprocz = Dm->nprocz();
-	rank_info = RankInfoStruct(myrank,nprocx,nprocy,nprocz);
+	rank_info = RankInfoStruct(rank,nprocx,nprocy,nprocz);
     rank = rank_info.rank[1][1][1]; 
     rank_X = rank_info.rank[2][1][1]; 
     rank_x = rank_info.rank[0][1][1]; 
@@ -85,32 +84,32 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	sendCount_xYZ = width*width*width;
 	sendCount_XYZ = width*width*width;
 	
-	RecvCount_x = (Ny-2)*(Nz-2)*width;
-	RecvCount_y = (Nx-2)*(Nz-2)*width;
-	RecvCount_z = (Nx-2)*(Ny-2)*width;
-	RecvCount_X = (Ny-2)*(Nz-2)*width;
-	RecvCount_Y = (Nx-2)*(Nz-2)*width;
-	RecvCount_Z = (Nx-2)*(Ny-2)*width;
-	RecvCount_xy = (Nz-2)*width*width;
-	RecvCount_yz = (Nx-2)*width*width;
-	RecvCount_xz = (Ny-2)*width*width;
-	RecvCount_Xy = (Nz-2)*width*width;
-	RecvCount_Yz = (Nx-2)*width*width;
-	RecvCount_xZ = (Ny-2)*width*width;
-	RecvCount_xY = (Nz-2)*width*width;
-	RecvCount_yZ = (Nx-2)*width*width;
-	RecvCount_Xz = (Ny-2)*width*width;
-	RecvCount_XY = (Nz-2)*width*width;
-	RecvCount_YZ = (Nx-2)*width*width;
-	RecvCount_XZ = (Ny-2)*width*width;
-	RecvCount_xyz = width*width*width;
-	RecvCount_Xyz = width*width*width;
-	RecvCount_xYz = width*width*width;
-	RecvCount_XYz = width*width*width;
-	RecvCount_xyZ = width*width*width;
-	RecvCount_XyZ = width*width*width;
-	RecvCount_xYZ = width*width*width;
-	RecvCount_XYZ = width*width*width;
+	recvCount_x = (Ny-2)*(Nz-2)*width;
+	recvCount_y = (Nx-2)*(Nz-2)*width;
+	recvCount_z = (Nx-2)*(Ny-2)*width;
+	recvCount_X = (Ny-2)*(Nz-2)*width;
+	recvCount_Y = (Nx-2)*(Nz-2)*width;
+	recvCount_Z = (Nx-2)*(Ny-2)*width;
+	recvCount_xy = (Nz-2)*width*width;
+	recvCount_yz = (Nx-2)*width*width;
+	recvCount_xz = (Ny-2)*width*width;
+	recvCount_Xy = (Nz-2)*width*width;
+	recvCount_Yz = (Nx-2)*width*width;
+	recvCount_xZ = (Ny-2)*width*width;
+	recvCount_xY = (Nz-2)*width*width;
+	recvCount_yZ = (Nx-2)*width*width;
+	recvCount_Xz = (Ny-2)*width*width;
+	recvCount_XY = (Nz-2)*width*width;
+	recvCount_YZ = (Nx-2)*width*width;
+	recvCount_XZ = (Ny-2)*width*width;
+	recvCount_xyz = width*width*width;
+	recvCount_Xyz = width*width*width;
+	recvCount_xYz = width*width*width;
+	recvCount_XYz = width*width*width;
+	recvCount_xyZ = width*width*width;
+	recvCount_XyZ = width*width*width;
+	recvCount_xYZ = width*width*width;
+	recvCount_XYZ = width*width*width;
 	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, sendCount_x*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, sendCount_X*sizeof(double));	// Allocate device memory
@@ -224,8 +223,9 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	MPI_Barrier(MPI_COMM_SCALBL);
 	
 	/*  Fill in communications patterns for the lists */
-	int *sendList, *recvList;
-	sendList = new int [width*max(Nxh,Nyh)*max(Nxh,Nzh)];
+	int *SendList, *RecvList;
+	SendList = new int [width*max(Nxh,Nyh)*max(Nxh,Nzh)];
+	RecvList = new int [width*max(Nxh,Nyh)*max(Nxh,Nzh)];
 	/* x face */
 	int count = 0;
 	for (int k=0; k<width; k++){
@@ -236,8 +236,8 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 			}
 		}
 	}
-	ScaLBL_CopyToZeroCopy(dvcSendList_x,sendList,sendCount_x*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_x,recvList,recvCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_x,SendList,sendCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_x,RecvList,recvCount_x*sizeof(int));
 	/* X face */
 	count = 0;
 	for (int k=0; k<width; k++){
@@ -248,8 +248,8 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 			}
 		}
 	}
-	ScaLBL_CopyToZeroCopy(dvcSendList_X,sendList,sendCount_X*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_X,recvList,recvCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_X,SendList,sendCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_X,RecvList,recvCount_X*sizeof(int));
 	/* y face */
 	count = 0;
 	for (k=2; k<Nzh-2; k++){
@@ -260,8 +260,8 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 			}
 		}
 	}
-	ScaLBL_CopyToZeroCopy(dvcSendList_y,sendList,sendCount_y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_y,recvList,recvCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_y,SendList,sendCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_y,RecvList,recvCount_y*sizeof(int));
 	/* Y face */
 	count = 0;
 	for (k=2; k<Nzh-2; k++){
@@ -272,8 +272,8 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 			}
 		}
 	}
-	ScaLBL_CopyToZeroCopy(dvcSendList_Y,sendList,sendCount_Y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,recvList,recvCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Y,SendList,sendCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,RecvList,recvCount_Y*sizeof(int));
 	
 
 }
