@@ -1,7 +1,7 @@
 /*
 color lattice boltzmann model
  */
-#include "models/ColorModel.h"
+#include "models/FreeLeeModel.h"
 #include "analysis/distance.h"
 #include "analysis/morphology.h"
 #include "common/Communication.h"
