@@ -277,7 +277,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 
 }
 
-void ScaLBLWideHalo_Communicator::SendHalo(double *data){
+void ScaLBLWideHalo_Communicator::Send(double *data){
 	//...................................................................................
 	if (Lock==true){
 		ERROR("ScaLBL Error (SendHalo): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
@@ -349,11 +349,11 @@ void ScaLBLWideHalo_Communicator::SendHalo(double *data){
 	MPI_Irecv(recvbuf_Yz, recvCount_Yz,MPI_DOUBLE,rank_Yz,recvtag,MPI_COMM_SCALBL,&req2[17]);
 	//...................................................................................
 }
-void ScaLBLWideHalo_Communicator::RecvHalo(double *data){
+void ScaLBLWideHalo_Communicator::Recv(double *data){
 
 	//...................................................................................
-	MPI_Waitall(18,req1,stat1);
-	MPI_Waitall(18,req2,stat2);
+	MPI_Waitall(26,req1,stat1);
+	MPI_Waitall(26,req2,stat2);
 	ScaLBL_DeviceBarrier();
 	//...................................................................................
 	//...................................................................................
