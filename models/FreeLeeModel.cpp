@@ -181,8 +181,7 @@ void ScaLBL_FreeLeeModel::ReadInput(){
 	CalcDist(SignDist,id_solid,*Mask);
 	
 	if (rank == 0) cout << "Domain set." << endl;
-	
-	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+
 }
 
 void ScaLBL_FreeLeeModel::AssignComponentLabels(double *phase)

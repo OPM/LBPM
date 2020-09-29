@@ -40,7 +40,7 @@ public:
 	double din,dout,inletA,inletB,outletA,outletB;
 	
 	int Nx,Ny,Nz,N,Np;
-        int Nxh,Nyh,Nzh,Nh; // extra halo width
+    int Nxh,Nyh,Nzh,Nh; // extra halo width
 	int rank,nprocx,nprocy,nprocz,nprocs;
 	double Lx,Ly,Lz;
 
@@ -48,8 +48,6 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-    //std::shared_ptr<TwoPhase> Averages;
-    std::shared_ptr<SubPhase> Averages;
     
     // input database
     std::shared_ptr<Database> db;
@@ -68,7 +66,7 @@ public:
 	double *Velocity;
 	double *Pressure;
 	
-	DoubleArray SignDistance;
+	DoubleArray SignDist;
 		
 private:
 	MPI_Comm comm;
