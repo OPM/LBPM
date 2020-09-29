@@ -3,7 +3,7 @@ This class implements support for halo widths larger than 1
  */
 #ifndef WideHalo_H
 #define WideHalo_H
-#include "common/Domain.h"
+#include "common/ScaLBL.h"
 
 class ScaLBLWideHalo_Communicator{
 public:
