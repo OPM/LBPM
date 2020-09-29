@@ -1,6 +1,7 @@
 /* 
 This class implements support for halo widths larger than 1
  */
+#include "common/WideHalo.h"
 
 ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain> Dm, int width)
 {
@@ -383,5 +384,5 @@ void ScaLBLWideHalo_Communicator::Recv(double *data){
 }
 
 inline int getHaloBlock(){
-}
+
 }

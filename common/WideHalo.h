@@ -1,6 +1,9 @@
 /* 
 This class implements support for halo widths larger than 1
  */
+#ifndef WideHalo_H
+#define WideHalo_H
+#include "common/Domain.h"
 
 class ScaLBLWideHalo_Communicator{
 public:
@@ -92,5 +95,5 @@ private:
 	int *dvcRecvList_xyz,*dvcRecvList_Xyz,*dvcRecvList_xYz,*dvcRecvList_XYz;
 	int *dvcRecvList_xyZ,*dvcRecvList_XyZ,*dvcRecvList_xYZ,*dvcRecvList_XYZ;
 	//......................................................................................
-
 };
+#endif
