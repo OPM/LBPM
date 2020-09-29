@@ -184,68 +184,6 @@ void ScaLBL_FreeLeeModel::ReadInput(){
 
 }
 
-void ScaLBL_FreeLeeModel::AssignComponentLabels(double *phase)
-{
-	size_t NLABELS=0;
-	signed char VALUE=0;
-	double AFFINITY=0.f;
-
-	auto LabelList = freelee_db->getVector<int>( "ComponentLabels" );
-	auto AffinityList = freelee_db->getVector<double>( "ComponentAffinity" );
-
-	NLABELS=LabelList.size();
-	if (NLABELS != AffinityList.size()){
-		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
-	}
-
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
-	// Assign the labels
-
-	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
-
-	for (int k=0;k<Nz;k++){
-		for (int j=0;j<Ny;j++){
-			for (int i=0;i<Nx;i++){
-				int n = k*Nx*Ny+j*Nx+i;
-				VALUE=id[n];
-				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
-				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
-					if (VALUE == LabelList[idx]){
-						AFFINITY=AffinityList[idx];
-						label_count[idx] += 1.0;
-						idx = NLABELS;
-						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
-					}
-				}
-				// fluid labels are reserved
-				if (VALUE == 1) AFFINITY=1.0;
-				else if (VALUE == 2) AFFINITY=-1.0;
-				phase[n] = AFFINITY;
-			}
-		}
-	}
-
-	// Set Dm to match Mask
-	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
-	
-	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
-
-	if (rank==0){
-		printf("Component labels: %lu \n",NLABELS);
-		for (unsigned int idx=0; idx<NLABELS; idx++){
-			VALUE=LabelList[idx];
-			AFFINITY=AffinityList[idx];
-			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-			printf("   label=%d, affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
-		}
-	}
-
-}
-
-
 void ScaLBL_FreeLeeModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -329,10 +267,6 @@ void ScaLBL_FreeLeeModel::Create(){
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	// initialize phi based on PhaseLabel (include solid component labels)
-	double *PhaseLabel;
-	PhaseLabel = new double[N];
-	AssignComponentLabels(PhaseLabel);
-	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 }        
 
 /********************************************************
@@ -407,8 +341,8 @@ void ScaLBL_FreeLeeModel::Initialize(){
 	}
 
 	if (rank==0)	printf ("Initializing phase field \n");
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	//ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	//ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 	// establish reservoirs for external bC
 	if (BoundaryCondition == 1 || BoundaryCondition == 2 ||  BoundaryCondition == 3 || BoundaryCondition == 4 ){
@@ -423,7 +357,7 @@ void ScaLBL_FreeLeeModel::Initialize(){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 		}
 	}
-	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
+	//ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 }
 
 void ScaLBL_FreeLeeModel::Run(){
@@ -450,7 +384,7 @@ void ScaLBL_FreeLeeModel::Run(){
 		PROFILE_START("Update");
 		// *************ODD TIMESTEP*************
 		timestep++;
-		// Compute the Phase indicator field
+		/*		// Compute the Phase indicator field
 		// Read for hq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(hq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, hq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
@@ -527,6 +461,7 @@ void ScaLBL_FreeLeeModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+		*/
 		ScaLBL_DeviceBarrier(); 
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		//************************************************************************
