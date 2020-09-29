@@ -697,6 +697,12 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
     for (double item : rlx){
         item = 1.0/item; 
     }
+    //**debug
+    if (rank==0){
+        for (unsigned int ic=0;ic<rlx.size();ic++){
+            printf("**debug: Ion %i rlx = %.5g; LB diffusivity = %.5g \n",ic+1,rlx[ic],IonDiffusivity[ic]);
+        }
+    }
     
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
