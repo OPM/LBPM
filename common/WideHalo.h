@@ -24,12 +24,12 @@ public:
 	double *sendbuf_x, *sendbuf_y, *sendbuf_z, *sendbuf_X, *sendbuf_Y, *sendbuf_Z;
 	double *sendbuf_xy, *sendbuf_yz, *sendbuf_xz, *sendbuf_Xy, *sendbuf_Yz, *sendbuf_xZ;
 	double *sendbuf_xY, *sendbuf_yZ, *sendbuf_Xz, *sendbuf_XY, *sendbuf_YZ, *sendbuf_XZ;
-	double *sendbuf_xyz, *sendbuf_Xyz, *sendbuf_xYz, *sendbuf_XYy;
+	double *sendbuf_xyz, *sendbuf_Xyz, *sendbuf_xYz, *sendbuf_XYz;
 	double *sendbuf_xyZ, *sendbuf_XyZ, *sendbuf_xYZ, *sendbuf_XYZ;
 	double *recvbuf_x, *recvbuf_y, *recvbuf_z, *recvbuf_X, *recvbuf_Y, *recvbuf_Z;
 	double *recvbuf_xy, *recvbuf_yz, *recvbuf_xz, *recvbuf_Xy, *recvbuf_Yz, *recvbuf_xZ;
 	double *recvbuf_xY, *recvbuf_yZ, *recvbuf_Xz, *recvbuf_XY, *recvbuf_YZ, *recvbuf_XZ;
-	double *recvbuf_xyz, *recvbuf_Xyz, *recvbuf_xYz, *recvbuf_XYy;
+	double *recvbuf_xyz, *recvbuf_Xyz, *recvbuf_xYz, *recvbuf_XYz;
 	double *recvbuf_xyZ, *recvbuf_XyZ, *recvbuf_xYZ, *recvbuf_XYZ;
 	//......................................................................................
 

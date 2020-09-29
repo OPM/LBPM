@@ -384,5 +384,6 @@ void ScaLBLWideHalo_Communicator::Recv(double *data){
 }
 
 inline int getHaloBlock(){
-
+	int count = 0;
+	return count;
 }
