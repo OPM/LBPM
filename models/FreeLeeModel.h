@@ -1,5 +1,5 @@
 /*
-Implementation of color lattice boltzmann model
+Implementation of Lee et al JCP 2016 lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
