@@ -199,9 +199,7 @@ void ScaLBL_FreeLeeModel::Create(){
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 	ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
-
-	// create wide halo for phase field
-	//ScaLBL_Comm_Regular->WideHalo
+	ScaLBL_Comm_WideHalo  = std::shared_ptr<ScaLBLWideHalo_Communicator>(new ScaLBLWideHalo_Communicator(Mask,2));
 
 	// create the layout for the LBM
 	int Npad=(Np/16 + 2)*16;

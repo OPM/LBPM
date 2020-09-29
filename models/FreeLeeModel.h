@@ -48,7 +48,8 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-    
+	std::shared_ptr<ScaLBLWideHalo_Communicator> ScaLBL_Comm_WideHalo;
+
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;

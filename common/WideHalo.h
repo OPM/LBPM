@@ -94,5 +94,22 @@ private:
 	int *dvcRecvList_xyz,*dvcRecvList_Xyz,*dvcRecvList_xYz,*dvcRecvList_XYz;
 	int *dvcRecvList_xyZ,*dvcRecvList_XyZ,*dvcRecvList_xYZ,*dvcRecvList_XYZ;
 	//......................................................................................
+
+	inline int getHaloBlock(int imin, int imax, int jmin, int jmax, int kmin, int kmax, int *dvcList){
+		int count = 0;
+		int *List;
+		List = new int [(imax-imin)*(jmax-jmin)*(kmax-kmin)];
+		for (int k=kmin; k<kmax; k++){
+			for (j=jmin; j<jmax; j++){
+				for (i=imin; i<imax; i++){
+					List[count++] =  k*Nxh*Nyh + j*Nxh + i;
+				}
+			}
+		}
+		ScaLBL_AllocateZeroCopy((void **) &dvcList, count*sizeof(int));	// Allocate device memory
+		ScaLBL_CopyToZeroCopy(dvcList,List,count*sizeof(int));
+		return count;
+	}
+
 };
 #endif
