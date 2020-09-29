@@ -13,6 +13,8 @@ Implementation of Lee et al JCP 2016 lattice boltzmann model
 #include "common/MPI_Helpers.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
+#include "common/ScaLBL.h"
+#include "common/WideHalo.h"
 
 class ScaLBL_FreeLeeModel{
 public:
