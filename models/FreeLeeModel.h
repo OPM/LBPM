@@ -67,6 +67,8 @@ public:
 	double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
+	
+	DoubleArray SignDistance;
 		
 private:
 	MPI_Comm comm;

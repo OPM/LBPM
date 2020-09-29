@@ -14,7 +14,8 @@ rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rh
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
-
+	
+}
 ScaLBL_FreeLeeModel::~ScaLBL_FreeLeeModel(){
 
 }
@@ -105,8 +106,7 @@ void ScaLBL_FreeLeeModel::SetDomain(){
 	Nh = Nxh*Nyh*Nzh;
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
+
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
@@ -167,18 +167,18 @@ void ScaLBL_FreeLeeModel::ReadInput(){
 			}
 		}
 	}
+	SignDist.resize(Nx,Ny,Nz);
 	// Initialize the signed distance function
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
 				// Initialize distance to +/- 1
-				Averages->SDs(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
+				SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 			}
 		}
 	}
-//	MeanFilter(Averages->SDs);
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
-	CalcDist(Averages->SDs,id_solid,*Mask);
+	CalcDist(SignDist,id_solid,*Mask);
 	
 	if (rank == 0) cout << "Domain set." << endl;
 	
