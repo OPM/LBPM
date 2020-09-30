@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 		auto neighborList= new int[18*Npad];
 		IntArray Map(Nx,Ny,Nz);
 		Map.fill(-2);		
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
 		MPI_Barrier(comm);
 		int neighborSize=18*Np*sizeof(int);
 		//......................device distributions.................................
