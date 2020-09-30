@@ -391,7 +391,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					// Counts for the six faces
-					if (i>0 && i<=width)      	Map(n)=idx++;
+					if (i>0 && i<=width)        Map(n)=idx++;
 					else if (j>0 && j<=width))  Map(n)=idx++;
 					else if (k>0 && k<=width))  Map(n)=idx++;
 					else if (i>Nx-width-2 && i<Nx-1)  Map(n)=idx++;
