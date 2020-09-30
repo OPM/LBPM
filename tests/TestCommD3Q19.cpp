@@ -58,7 +58,7 @@ extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int 
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
-    NULL_USE(Z);
+        NULL_USE(Z);
 
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
