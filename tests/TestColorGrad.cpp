@@ -72,20 +72,7 @@ int main(int argc, char **argv)
 			//.......................................................................
 			// Reading the domain information file
 			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
+		        if (nprocs==1){
 				nprocx=nprocy=nprocz=1;
 				Nx=Ny=Nz=3;
 				nspheres=0;
