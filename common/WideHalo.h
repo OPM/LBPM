@@ -15,7 +15,7 @@ public:
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;     // original domain structure
 	int Nxh,Nyh,Nzh,Nh; // with wide halo
-
+	DoubleArray Map;    // map to regular halo
 	int first_interior,last_interior;
 	//......................................................................................
 	//  Set up for D3Q19 distributions -- all 27 neighbors are needed

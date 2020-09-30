@@ -21,6 +21,8 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	Nzh = Nz + 2*(width - 1);
 	Nh = Nxh*Nyh*Nzh;
 	
+	Map.resize(Nx,Ny,Nz);
+	
 	rank=Dm->rank();
 	iproc = Dm->iproc();
 	jproc = Dm->jproc();
@@ -56,118 +58,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
     rank_xyZ = rank_info.rank[0][0][2]; 
     rank_XyZ = rank_info.rank[2][0][2]; 
     rank_xYZ = rank_info.rank[0][2][2]; 
-    /*	
-	sendCount_x = (Ny-2)*(Nz-2)*width;
-	sendCount_y = (Nx-2)*(Nz-2)*width;
-	sendCount_z = (Nx-2)*(Ny-2)*width;
-	sendCount_X = (Ny-2)*(Nz-2)*width;
-	sendCount_Y = (Nx-2)*(Nz-2)*width;
-	sendCount_Z = (Nx-2)*(Ny-2)*width;
-	sendCount_xy = (Nz-2)*width*width;
-	sendCount_yz = (Nx-2)*width*width;
-	sendCount_xz = (Ny-2)*width*width;
-	sendCount_Xy = (Nz-2)*width*width;
-	sendCount_Yz = (Nx-2)*width*width;
-	sendCount_xZ = (Ny-2)*width*width;
-	sendCount_xY = (Nz-2)*width*width;
-	sendCount_yZ = (Nx-2)*width*width;
-	sendCount_Xz = (Ny-2)*width*width;
-	sendCount_XY = (Nz-2)*width*width;
-	sendCount_YZ = (Nx-2)*width*width;
-	sendCount_XZ = (Ny-2)*width*width;
-	sendCount_xyz = width*width*width;
-	sendCount_Xyz = width*width*width;
-	sendCount_xYz = width*width*width;
-	sendCount_XYz = width*width*width;
-	sendCount_xyZ = width*width*width;
-	sendCount_XyZ = width*width*width;
-	sendCount_xYZ = width*width*width;
-	sendCount_XYZ = width*width*width;
-	
-	recvCount_x = (Ny-2)*(Nz-2)*width;
-	recvCount_y = (Nx-2)*(Nz-2)*width;
-	recvCount_z = (Nx-2)*(Ny-2)*width;
-	recvCount_X = (Ny-2)*(Nz-2)*width;
-	recvCount_Y = (Nx-2)*(Nz-2)*width;
-	recvCount_Z = (Nx-2)*(Ny-2)*width;
-	recvCount_xy = (Nz-2)*width*width;
-	recvCount_yz = (Nx-2)*width*width;
-	recvCount_xz = (Ny-2)*width*width;
-	recvCount_Xy = (Nz-2)*width*width;
-	recvCount_Yz = (Nx-2)*width*width;
-	recvCount_xZ = (Ny-2)*width*width;
-	recvCount_xY = (Nz-2)*width*width;
-	recvCount_yZ = (Nx-2)*width*width;
-	recvCount_Xz = (Ny-2)*width*width;
-	recvCount_XY = (Nz-2)*width*width;
-	recvCount_YZ = (Nx-2)*width*width;
-	recvCount_XZ = (Ny-2)*width*width;
-	recvCount_xyz = width*width*width;
-	recvCount_Xyz = width*width*width;
-	recvCount_xYz = width*width*width;
-	recvCount_XYz = width*width*width;
-	recvCount_xyZ = width*width*width;
-	recvCount_XyZ = width*width*width;
-	recvCount_xYZ = width*width*width;
-	recvCount_XYZ = width*width*width;
-
-	//......................................................................................
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_y, sendCount_y*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Y, sendCount_Y*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_z, sendCount_z*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Z, sendCount_Z*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xy, sendCount_xy*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xY, sendCount_xY*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Xy, sendCount_Xy*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_XY, sendCount_XY*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xz, sendCount_xz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xZ, sendCount_xZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Xz, sendCount_Xz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_XZ, sendCount_XZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_yz, sendCount_yz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_yZ, sendCount_yZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Yz, sendCount_Yz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_YZ, sendCount_YZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xyz, sendCount_xyz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xYz, sendCount_xYz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_Xyz, sendCount_Xyz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_XYz, sendCount_XYz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xyZ, sendCount_xyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_xYZ, sendCount_xYZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_XyZ, sendCount_XyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_XYZ, sendCount_XYZ*sizeof(int));	// Allocate device memory
-	//......................................................................................
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_x, recvCount_x*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_X, recvCount_X*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_y, recvCount_y*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Y, recvCount_Y*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_z, recvCount_z*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Z, recvCount_Z*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xy, recvCount_xy*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xY, recvCount_xY*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Xy, recvCount_Xy*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_XY, recvCount_XY*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xz, recvCount_xz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xZ, recvCount_xZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Xz, recvCount_Xz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_XZ, recvCount_XZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_yz, recvCount_yz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_yZ, recvCount_yZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Yz, recvCount_Yz*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xyz, recvCount_xyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xYz, recvCount_xYZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_Xyz, recvCount_XyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_XYz, recvCount_XYZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xyZ, recvCount_xyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_xYZ, recvCount_xYZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_XyZ, recvCount_XyZ*sizeof(int));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &dvcRecvList_XYZ, recvCount_XYZ*sizeof(int));	// Allocate device memory
-	*/
-	//......................................................................................
-
+ 
 	MPI_Barrier(MPI_COMM_SCALBL);
 	
 	/*  Fill in communications patterns for the lists */
@@ -289,12 +180,23 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xYZ, recvCount_xYZ*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XyZ, recvCount_XyZ*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XYZ, recvCount_XYZ*sizeof(double));	// Allocate device memory
+	
+	/* Set up a map to the halo width=1 data structure */
+	for (k=width; k<Nzh-width; k++){
+		for (j=width; j<Nyh-width; j++){
+			for (i=width; i<Nxh-width; i++){
+				int idx = k*Nxh*Nyh + j*Nxh + i;
+				Map(i-width+1,j-width+1,k-width+1) = idx;
+			}
+		}
+	}
+	
 }
 
 void ScaLBLWideHalo_Communicator::Send(double *data){
 	//...................................................................................
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendHalo): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (SendHalo): ScaLBLWideHalo_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
