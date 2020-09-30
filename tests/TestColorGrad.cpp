@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		int BoundaryCondition=0;
 
-		std::shared_ptr<Domain> Dm  = std::shared_ptr<Domain>(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);     
+		std::shared_ptr<Domain> Dm  = std::shared_ptr<Domain>(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition));     
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm.id[n]=1;
+					Dm->id[n]=1;
 					Np++;
 					// Initialize gradient ColorGrad = (1,2,3)
 					double value=double(3*k+2*j+i);
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm.CommInit();
+		Dm->CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm.id[n] > 0){
+    				if (Dm->id[n] > 0){
     					int idx = Map(i,j,k);
     					CX=COLORGRAD[idx];
     					CY=COLORGRAD[Np+idx];
