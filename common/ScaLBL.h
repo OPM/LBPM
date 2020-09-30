@@ -295,7 +295,7 @@ public:
 	int FirstInterior();
 	int LastInterior();
 	
-	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
+	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
 //	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
