@@ -72,20 +72,7 @@ int main(int argc, char **argv)
 			//.......................................................................
 			// Reading the domain information file
 			//.......................................................................
-			ifstream domain("Domain.in");
-			if (domain.good()){
-				domain >> nprocx;
-				domain >> nprocy;
-				domain >> nprocz;
-				domain >> Nx;
-				domain >> Ny;
-				domain >> Nz;
-				domain >> nspheres;
-				domain >> Lx;
-				domain >> Ly;
-				domain >> Lz;
-			}
-			else if (nprocs==1){
+		        if (nprocs==1){
 				nprocx=nprocy=nprocz=1;
 				Nx=Ny=Nz=3;
 				nspheres=0;
@@ -151,8 +138,7 @@ int main(int argc, char **argv)
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		int BoundaryCondition=0;
 
-		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
-
+		Dm  = std::shared_ptr<Domain>(Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);     
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
