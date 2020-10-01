@@ -77,104 +77,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_MRT(double *dist, int start, int f
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
-// GREYSCALE FREE-ENERGY MODEL (Two-component)
-
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleFE(double *dist, double *Aq, double *Bq, double *Den,
-//                double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
-//                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
-//                double *Poros,double *Perm, double *Velocity,double *Pressure);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleFE(int *neighborList, double *dist, double *Aq, double *Bq, double *Den,
-//                double *DenGradA, double *DenGradB, double *SolidForce, int start, int finish, int Np,
-//                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double Gsc, double Gx, double Gy, double Gz,
-//                double *Poros,double *Perm, double *Velocity,double *Pressure);
-//
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleFEChem(double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
-//                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
-//                double Gx, double Gy, double Gz,
-//                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleFEChem(int *neighborList, double *dist, double *Cq, double *Phi, double *SolidForce, int start, int finish, int Np,
-//                double tauA,double tauB,double tauA_eff,double tauB_eff,double rhoA,double rhoB,double gamma,double kappaA,double kappaB,double lambdaA,double lambdaB,
-//                double Gx, double Gy, double Gz,
-//                double *Poros,double *Perm, double *Velocity,double *Pressure,double *PressureGrad,double *PressTensorGrad,double *PhiLap);
-//
-//extern "C" void ScaLBL_D3Q7_GreyscaleFE_Init(double *Den, double *Cq, double *PhiLap, double gamma, double kappaA, double kappaB, double lambdaA, double lambdaB, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleFE_IMRT_Init(double *dist, double *Den, double rhoA, double rhoB, int Np);
-//
-//extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleFEDensity(int *NeighborList, double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleFEDensity(double *Aq, double *Bq, double *Den, double *Phi, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q7_AAodd_GreyscaleFEPhi(int *NeighborList, double *Cq, double *Phi, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q7_AAeven_GreyscaleFEPhi(double *Cq, double *Phi, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleFE_Gradient(int *neighborList, double *Den, double *DenGrad, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleFE_Laplacian(int *neighborList, double *Den, double *DenLap, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleFE_Pressure(double *dist, double *Den, double *Porosity,double *Velocity,
-//                double *Pressure, double rhoA,double rhoB, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleFE_PressureTensor(int *neighborList, double *Phi,double *Pressure, double *PressTensor, double *PhiLap,
-//      		     double kappaA,double kappaB,double lambdaA,double lambdaB, int start, int finish, int Np);
-
-// GREYSCALE SHAN-CHEN MODEL (Two-component)
-
-//extern "C" void ScaLBL_D3Q19_GreyscaleSC_Init(int *Map, double *distA, double *distB, double *DenA, double *DenB, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_Density(int *NeighborList, int *Map, double *distA, double *distB, double *DenA, double *DenB, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_Density(int *Map, double *distA, double *distB, double *DenA, double *DenB, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_MRT(int *neighborList, int *Mpa, double *distA, double *distB, double *DenA,double *DenB, double *DenGradA, double *DenGradB, 
-//                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
-//                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
-//                int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_MRT(int *Map,double *distA, double *distB, double *DenA,double *DenB, double *DenGradA, double *DenGradB, 
-//                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
-//                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
-//                int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleSC_BGK(int *neighborList, int *Map, double *distA, double *distB, double *DenA, double *DenB, double *DenGradA, double *DenGradB, 
-//                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
-//                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
-//                int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleSC_BGK(int *Map, double *distA, double *distB, double *DenA, double *DenB, double *DenGradA, double *DenGradB, 
-//                double *SolidForceA, double *SolidForceB, double *Poros,double *Perm, double *Velocity,double *Pressure, 
-//                double tauA,double tauB,double tauA_eff,double tauB_eff, double Gsc, double Gx, double Gy, double Gz,                                                 
-//                int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_GreyscaleSC_Gradient(int *neighborList, int *Map, double *Den, double *DenGrad, int strideY, int strideZ,int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_GreyscaleSC_BC_z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count);
-//
-//extern "C" void ScaLBL_GreyscaleSC_BC_Z(int *list, int *Map, double *DenA, double *DenB, double vA, double vB, int count);
-//
-//extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_z(int *list, double *distA, double *distB, double dinA, double dinB, int count, int N);
-//
-//extern "C" void ScaLBL_GreyscaleSC_AAeven_Pressure_BC_Z(int *list, double *distA, double *distB, double doutA, double doutB, int count, int N);
-//
-//extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_z(int *neighborList, int *list, double *distA, double *distB, double dinA, double dinB, int count, int N);
-//
-//extern "C" void ScaLBL_GreyscaleSC_AAodd_Pressure_BC_Z(int *neighborList, int *list, double *distA, double *distB, double doutA, double doutB, int count, int N);
-
-// GREYSCALE COLOR MODEL (Two-component)
-//extern "C" void ScaLBL_D3Q19_GreyscaleColor_Init(double *dist, double *Porosity, int Np);
-
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-//        double *ColorGrad,double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
-//        double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
-//
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-//		double *ColorGrad,double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
-//        double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
@@ -210,6 +112,8 @@ extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, 
 			int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *Phi, double *ColorGrad, int start, int finish, int Np, int Nx, int Ny, int Nz);
+
+extern "C" void ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradient, int start, int finish, int Np, int Nx, int Ny, int Nz);
 
 extern "C" void ScaLBL_PhaseField_Init(int *Map, double *Phi, double *Den, double *Aq, double *Bq, int start, int finish, int Np);
 
