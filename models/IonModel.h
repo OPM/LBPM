@@ -85,6 +85,7 @@ private:
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
+    char OutputFilename[200];
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	

@@ -794,11 +794,14 @@ void ScaLBL_IonModel::getIonConcentration(int timestep){
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
         IonConcentration_LB_to_Phys(PhaseField);
 
-        FILE *OUTFILE;
-        sprintf(LocalRankFilename,"Ion%02i_Time_%i.%05i.raw",ic+1,timestep,rank);
-        OUTFILE = fopen(LocalRankFilename,"wb");
-        fwrite(PhaseField.data(),8,N,OUTFILE);
-        fclose(OUTFILE);
+        //FILE *OUTFILE;
+        //sprintf(LocalRankFilename,"Ion%02i_Time_%i.%05i.raw",ic+1,timestep,rank);
+        //OUTFILE = fopen(LocalRankFilename,"wb");
+        //fwrite(PhaseField.data(),8,N,OUTFILE);
+        //fclose(OUTFILE);
+
+        sprintf(OutputFilename,"Ion%02i_Time_%i.raw",ic+1,timestep);
+        Mask->AggregateLabels(OutputFilename,PhaseField);
     }
 
 }
