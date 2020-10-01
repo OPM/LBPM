@@ -218,9 +218,9 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 		//...........................................................................
 
-		Nxh = Nx+2;
-		Nyh = Ny+2;
-		Nzh = Nz+2;
+		int Nxh = Nx+2;
+		int Nyh = Ny+2;
+		int Nzh = Nz+2;
 		ScaLBL_D3Q19_MixedGradient(dvcMap, Phi, ColorGrad, 0, Np, Np, Nxh, Nyh, Nzh);
 
 		double *COLORGRAD;
