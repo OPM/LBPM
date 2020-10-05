@@ -10,7 +10,6 @@
 #ifndef ScalLBL_H
 #define ScalLBL_H
 #include "common/Domain.h"
-#include "common/WideHalo.h"
 
 extern "C" int ScaLBL_SetDevice(int rank);
 

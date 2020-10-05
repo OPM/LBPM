@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
+#include "common/WideHalo.h"
 #include "common/MPI_Helpers.h"
 
 using namespace std;
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
 		//Create a second communicator based on the regular data layout
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
-		ScaLBLWideHalo_Communicator WideHalo(Dm);
+		ScaLBLWideHalo_Communicator WideHalo(Dm,2);
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");

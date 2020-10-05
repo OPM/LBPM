@@ -106,8 +106,9 @@ private:
 				}
 			}
 		}
-		ScaLBL_AllocateZeroCopy((void **) &dvcList, count*sizeof(int));	// Allocate device memory
-		ScaLBL_CopyToZeroCopy(dvcList,List,count*sizeof(int));
+		size_t numbytes=count*sizeof(int);
+		ScaLBL_AllocateZeroCopy((void **) &dvcList, numbytes);	// Allocate device memory
+		ScaLBL_CopyToZeroCopy(dvcList,List,numbytes);
 		return count;
 	}
 
