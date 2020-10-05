@@ -31,6 +31,7 @@ public:
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
     void getIonConcentration(int timestep);
+    void getIonConcentration_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);

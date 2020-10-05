@@ -29,7 +29,9 @@ public:
 	void Initialize();
 	void Run(double *ChargeDensity);
     void getElectricPotential(int timestep);
+    void getElectricPotential_debug(int timestep);
     void getElectricField(int timestep);
+    void getElectricField_debug(int timestep);
     void DummyChargeDensity();//for debugging
 
 	//bool Restart,pBC;
@@ -76,6 +78,7 @@ private:
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
+    char OutputFilename[200];
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
