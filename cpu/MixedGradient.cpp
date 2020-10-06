@@ -29,7 +29,7 @@ extern "C" void ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradie
 			vp = Phi[np];
 			vp2 = Phi[np2];
 			vm = Phi[nm];
-			grad += 0.25*(5.0*vp1-vp2-3.0*v-vm);
+			grad += 0.25*(5.0*vp-vp2-3.0*v-vm);
 		}
 		for (int q=6; q<18; q++){
 			int iqx = D3Q19[q][0];
@@ -41,7 +41,7 @@ extern "C" void ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradie
 			vp = Phi[np];
 			vp2 = Phi[np2];
 			vm = Phi[nm];
-			grad += 0.125*(5.0*vp1-vp2-3.0*v-vm);
+			grad += 0.125*(5.0*vp-vp2-3.0*v-vm);
 		}
 		Gradient[n] = grad;
 	}
