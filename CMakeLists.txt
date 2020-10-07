@@ -104,7 +104,7 @@ IF ( USE_DOXYGEN )
         ADD_DEPENDENCIES( doc latex_docs doxygen )
     ELSE()
         SET( USE_DOXYGEN 0 )
-    ENDIF()lbpm-wia
+    ENDIF()
 ENDIF()
 
 
@@ -112,7 +112,7 @@ ENDIF()
 ADD_CUSTOM_TARGET( build-test )
 ADD_CUSTOM_TARGET( build-examples )
 ADD_CUSTOM_TARGET( check COMMAND  make test  )
-ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu example common IO threadpool StackTrace )
+ADD_DISTCLEAN( analysis null_timer tests liblbpm-wia.* cpu gpu cuda hip example common IO threadpool StackTrace )
 
 
 # Check for CUDA
@@ -178,7 +178,7 @@ IF ( NOT ONLY_BUILD_DOCS )
     IF ( USE_CUDA )
         ADD_PACKAGE_SUBDIRECTORY( cuda )
     ELSEIF ( USE_HIP )
-        ADD_SUBDIRECTORY( gpu )
+        ADD_SUBDIRECTORY( hip )
         SET( LBPM_LIBRARIES lbpm-hip lbpm-wia )
     ELSE()
         ADD_PACKAGE_SUBDIRECTORY( cpu )

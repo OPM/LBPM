@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
 #define NTHREADS 256

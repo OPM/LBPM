@@ -3986,7 +3986,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_Color, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAeven_Color, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAeven_Color<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, Vel, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
@@ -4001,7 +4001,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *d_neighborList, int *Map, double *
 		double *Phi, double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_Color, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAodd_Color, hipFuncCachePreferL1);
 	
 	dvc_ScaLBL_D3Q19_AAodd_Color<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, Vel, 
 			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
@@ -4060,7 +4060,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_ColorMomentum(double *dist, double *Den, dou
 		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_ColorMomentum, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAeven_ColorMomentum, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAeven_ColorMomentum<<<NBLOCKS,NTHREADS >>>(dist, Den, Vel, ColorGrad, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, start, finish, Np);
@@ -4074,7 +4074,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_ColorMomentum(int *d_neighborList, double *di
 		double *ColorGrad, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_ColorMomentum, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAodd_ColorMomentum, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAodd_ColorMomentum<<<NBLOCKS,NTHREADS >>>(d_neighborList, dist, Den, Vel, ColorGrad, 
 			rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz, start, finish, Np);
@@ -4087,7 +4087,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_ColorMomentum(int *d_neighborList, double *di
 extern "C" void ScaLBL_D3Q19_AAeven_ColorMass(double *Aq, double *Bq, double *Den, double *Vel,
 		double *ColorGrad, double beta, int start, int finish, int Np){
 
-        hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_ColorMass, hipFuncCachePreferL1);
+        hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAeven_ColorMass, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAeven_ColorMass<<<NBLOCKS,NTHREADS >>>(Aq, Bq, Den, Vel, ColorGrad, beta, start, finish, Np);
 	hipError_t err = hipGetLastError();
@@ -4100,7 +4100,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_ColorMass(double *Aq, double *Bq, double *De
 extern "C" void ScaLBL_D3Q19_AAodd_ColorMass(int *d_neighborList, double *Aq, double *Bq, double *Den, double *Vel,
 		double *ColorGrad, double beta, int start, int finish, int Np){
 
-        hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_ColorMass, hipFuncCachePreferL1);
+        hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAodd_ColorMass, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAodd_ColorMass<<<NBLOCKS,NTHREADS >>>(d_neighborList, Aq, Bq, Den, Vel, ColorGrad, beta, start, finish, Np);
 	hipError_t err = hipGetLastError();

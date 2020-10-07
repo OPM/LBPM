@@ -1450,7 +1450,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_DFH(int *neighborList, double *dist, double 
 		double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_DFH, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAeven_DFH, hipFuncCachePreferL1);
 
 	dvc_ScaLBL_D3Q19_AAeven_DFH<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Aq, Bq, Den, Phi, Gradient, SolidForce, rhoA, rhoB, tauA, tauB, 
 			alpha, beta, Fx, Fy, Fz, start, finish, Np);
@@ -1464,7 +1464,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_DFH(int *neighborList, double *dist, double *
 		double *Phi, double *Gradient, double *SolidForce, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_DFH, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig( (void*) dvc_ScaLBL_D3Q19_AAodd_DFH, hipFuncCachePreferL1);
 	
 	dvc_ScaLBL_D3Q19_AAodd_DFH<<<NBLOCKS,NTHREADS >>>(neighborList,dist, Aq, Bq, Den, Phi, Gradient, 
 			SolidForce, rhoA, rhoB, tauA, tauB, alpha, beta, Fx, Fy, Fz,  start, finish, Np);

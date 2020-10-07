@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "hip/hip_runtime.h"
 #include <cooperative_groups.h>
+#include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
 #define NTHREADS 256
@@ -2355,7 +2355,7 @@ extern "C" void ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, d
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *d_dist,  int Np) {
-        hipFuncSetCacheConfig(dvc_ScaLBL_AAeven_Compact, hipFuncCachePreferL1);
+        hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAeven_Compact, hipFuncCachePreferL1);
 	dvc_ScaLBL_AAeven_Compact<<<NBLOCKS,NTHREADS>>>(ID, d_dist, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -2364,7 +2364,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Compact(char * ID, double *d_dist,  int Np) 
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_Compact(char * ID, int *d_neighborList, double *d_dist, int Np) {
-        hipFuncSetCacheConfig(dvc_ScaLBL_AAodd_Compact, hipFuncCachePreferL1);
+        hipFuncSetCacheConfig( (void*) dvc_ScaLBL_AAodd_Compact, hipFuncCachePreferL1);
 	dvc_ScaLBL_AAodd_Compact<<<NBLOCKS,NTHREADS>>>(ID,d_neighborList, d_dist,Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){

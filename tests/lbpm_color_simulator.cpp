@@ -23,8 +23,13 @@
 
 int main(int argc, char **argv)
 {
+  // Load the input database
+  auto db = std::make_shared<Database>( argv[1] );
+
   // Initialize MPI and error handlers
-  Utilities::startup( argc, argv );
+  auto multiple = db->getWithDefault<bool>( "MPI_THREAD_MULTIPLE", true );
+  Utilities::startup( argc, argv, multiple );
+  Utilities::MPI::changeProfileLevel( 1 );
 
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
@@ -60,7 +65,9 @@ int main(int argc, char **argv)
     //ColorModel.WriteDebug();
 
     PROFILE_STOP("Main");
-    PROFILE_SAVE("lbpm_color_simulator",1);
+    auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
+    auto level = db->getWithDefault<int>( "TimerLevel", 1 );
+    PROFILE_SAVE(file,level);
     // ****************************************************
 
     comm.barrier();

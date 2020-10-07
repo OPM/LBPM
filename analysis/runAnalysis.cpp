@@ -678,10 +678,8 @@ void runAnalysis::createThreads( const std::string& method, int N_threads )
     // Check if we have thread support
     int thread_support;
     MPI_Query_thread( &thread_support );
-    if ( thread_support < MPI_THREAD_MULTIPLE ) {
-        std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
-        return;
-    }
+    if ( thread_support < MPI_THREAD_MULTIPLE && N_threads > 0 )
+        std::cerr << "Warning: Failed to start MPI with necessary thread support, errors may occur\n";
     // Create the threads
     const auto cores = d_tpool.getProcessAffinity();
     if ( N_threads == 0 ) {
