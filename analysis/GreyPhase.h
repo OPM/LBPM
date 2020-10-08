@@ -43,9 +43,9 @@ public:
 	GreyPhase Water_local, Oil_local;
 	//...........................................................................
         int Nx,Ny,Nz;
-	IntArray SDs;		// contains porosity map 
-	IntArray Porosity;		// contains porosity map 
 	IntArray PhaseID;		// Phase ID array 
+	DoubleArray SDs;		// contains porosity map 
+	DoubleArray Porosity;		// contains porosity map 
 	DoubleArray Rho_n;	// density field 
 	DoubleArray Rho_w;	// density field 
 	DoubleArray Phi;		// phase indicator field
