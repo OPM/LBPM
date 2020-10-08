@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <cooperative_groups.h>
 #include "hip/hip_runtime.h"
+#include "hip/hip_cooperative_groups.h"
 
 #define NBLOCKS 1024
 #define NTHREADS 256
