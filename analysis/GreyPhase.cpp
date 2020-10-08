@@ -1,13 +1,15 @@
-#include "analysis/SubPhase.h"
+#include "analysis/GreyPhase.h"
 
 // Constructor
-GreyPhase::GreyPhase(std::shared_ptr <Domain> dm):
+GreyPhaseAnalysis::GreyPhaseAnalysis(std::shared_ptr <Domain> dm):
 	Dm(dm)
 {
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
 	
 	// Global arrays
+        SDs.resize(Nx,Ny,Nz);       SDs.fill(0);
+	Porosity.resize(Nx,Ny,Nz);       Porosity.fill(0);
 	PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
 	Rho_n.resize(Nx,Ny,Nz);       	Rho_n.fill(0);
 	Rho_w.resize(Nx,Ny,Nz);       	Rho_w.fill(0);
@@ -39,17 +41,17 @@ GreyPhase::GreyPhase(std::shared_ptr <Domain> dm):
 
 
 // Destructor
-GreyPhase::~GreyPhase()
+GreyPhaseAnalysis::~GreyPhaseAnalysis()
 {
 
 }
 
-void GreyPhase::Write(int timestep)
+void GreyPhaseAnalysis::Write(int timestep)
 {
 
 }
 
-void GreyPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double B)
+void GreyPhaseAnalysis::SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double B)
 {
 	Fx = force_x;
 	Fy = force_y;
@@ -62,7 +64,7 @@ void GreyPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, do
 	beta = B;
 }
 
-void GreyPhase::Basic(){
+void GreyPhaseAnalysis::Basic(){
 	int i,j,k,n,imin,jmin,kmin,kmax;
 
 	// If external boundary conditions are set, do not average over the inlet
@@ -72,22 +74,8 @@ void GreyPhase::Basic(){
 	double count_w = 0.0;
 	double count_n = 0.0;
 	
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
-				n = k*Nx*Ny + j*Nx + i;
-				// Compute volume averages
-				if ( Dm->id[n] > 0 ){
-					// compute density
-					double nA = Rho_n(n);
-					double nB = Rho_w(n);
-					double phi = (nA-nB)/(nA+nB);
-					Phi(n) = phi;
-				}
-			}
-		}
-	}
-	
+	Water_local.reset();
+	Oil_local.reset();
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -95,75 +83,56 @@ void GreyPhase::Basic(){
 				// Compute volume averages
 				if ( Dm->id[n] > 0 ){
 					// compute density
-					double nA = Rho_n(n);
-					double nB = Rho_w(n);
-					double phi = (nA-nB)/(nA+nB);					
-					/*					if ( phi > 0.0 ){
-						nA = 1.0;
-						nb.V += 1.0;
-						nb.M += nA*rho_n;						
-						// velocity
-						nb.Px += rho_n*nA*Vel_x(n);
-						nb.Py += rho_n*nA*Vel_y(n);
-						nb.Pz += rho_n*nA*Vel_z(n);
-					}
-					else{
-						nB = 1.0;
-						wb.M += nB*rho_w;
-						wb.V += 1.0;
+				        double pressure = Pressure(n);
+					double rho_n = Rho_n(n);
+					double rho_w = Rho_w(n);				
+					double porosity = Porosity(n);
+					double vel_x = Vel_x(n);
+					double vel_y = Vel_y(n);
+					double vel_z = Vel_z(n);					
+					Water_local.p += pressure*(rho_w)/(rho_n+rho_w);
+					Water_local.M += rho_w*porosity;
+					Water_local.Px += rho_w*vel_x;
+					Water_local.Py += rho_w*vel_y;
+					Water_local.Pz += rho_w*vel_z;
+					Oil_local.p += pressure*(rho_n)/(rho_n+rho_w);
+					Oil_local.M += rho_n*porosity;
+					Oil_local.Px += rho_n*vel_x;
+					Oil_local.Py += rho_n*vel_y;
+					Oil_local.Pz += rho_n*vel_z;
 
-						// velocity
-						wb.Px += rho_w*nB*Vel_x(n);
-						wb.Py += rho_w*nB*Vel_y(n);
-						wb.Pz += rho_w*nB*Vel_z(n);
-					}
-					if ( phi > 0.99 ){
-						nb.p += Pressure(n);
-						count_n += 1.0;
-					}
-					else if ( phi < -0.99 ){
-						wb.p += Pressure(n);
-						count_w += 1.0;
-					}
-					*/
 				}
 			}
 		}
 	}
-	/*	gwb.V=sumReduce( Dm->Comm, wb.V);
-	gnb.V=sumReduce( Dm->Comm, nb.V);
-	gwb.M=sumReduce( Dm->Comm, wb.M);
-	gnb.M=sumReduce( Dm->Comm, nb.M);
-	gwb.Px=sumReduce( Dm->Comm, wb.Px);
-	gwb.Py=sumReduce( Dm->Comm, wb.Py);
-	gwb.Pz=sumReduce( Dm->Comm, wb.Pz);
-	gnb.Px=sumReduce( Dm->Comm, nb.Px);
-	gnb.Py=sumReduce( Dm->Comm, nb.Py);
-	gnb.Pz=sumReduce( Dm->Comm, nb.Pz);
-	
-	count_w=sumReduce( Dm->Comm, count_w);
-	count_n=sumReduce( Dm->Comm, count_n);
-	if (count_w > 0.0)
-		gwb.p=sumReduce( Dm->Comm, wb.p) / count_w;
-	else 
-		gwb.p = 0.0;
-	if (count_n > 0.0)
-		gnb.p=sumReduce( Dm->Comm, nb.p) / count_n;
-	else 
-		gnb.p = 0.0;
+	Oil.M=sumReduce( Dm->Comm, Oil_local.M);
+	Oil.p=sumReduce( Dm->Comm, Oil_local.p);
+	Oil.Px=sumReduce( Dm->Comm, Oil_local.Px);
+	Oil.Py=sumReduce( Dm->Comm, Oil_local.Py);
+	Oil.Pz=sumReduce( Dm->Comm, Oil_local.Pz);
+
+	Water.M=sumReduce( Dm->Comm, Water_local.M);
+	Water.p=sumReduce( Dm->Comm, Water_local.p);
+	Water.Px=sumReduce( Dm->Comm, Water_local.Px);
+	Water.Py=sumReduce( Dm->Comm, Water_local.Py);
+	Water.Pz=sumReduce( Dm->Comm, Water_local.Pz);
+
+	Oil.p /= Oil.M;	
+	Water.p /= Water.M;
 
 	// check for NaN
 	bool err=false;
-	if (gwb.V != gwb.V) err=true;
-	if (gnb.V != gnb.V) err=true;
-	if (gwb.p != gwb.p) err=true;
-	if (gnb.p != gnb.p) err=true;
-	if (gwb.Px != gwb.Px) err=true;
-	if (gwb.Py != gwb.Py) err=true;
-	if (gwb.Pz != gwb.Pz) err=true;
-	if (gnb.Px != gnb.Px) err=true;
-	if (gnb.Py != gnb.Py) err=true;
-	if (gnb.Pz != gnb.Pz) err=true;	
+	if (Water.M != Water.M) err=true;
+	if (Water.p != Water.p) err=true;
+	if (Water.Px != Water.Px) err=true;
+	if (Water.Py != Water.Py) err=true;
+	if (Water.Pz != Water.Pz) err=true;
+
+	if (Oil.M != Oil.M) err=true;
+	if (Oil.p != Oil.p) err=true;
+	if (Oil.Px != Oil.Px) err=true;
+	if (Oil.Py != Oil.Py) err=true;
+	if (Oil.Pz != Oil.Pz) err=true;
 	
 	if (Dm->rank() == 0){
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
@@ -194,23 +163,21 @@ void GreyPhase::Basic(){
 			dir_z = 1.0;
 			force_mag = 1.0;
 		}
-		double saturation=gwb.V/(gwb.V + gnb.V);
-		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
-		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
-		//double total_flow_rate = water_flow_rate + not_water_flow_rate;
-		//double fractional_flow = water_flow_rate / total_flow_rate;
+		saturation=Water.M/(Water.M + Oil.M); // assume constant density
+		water_flow_rate=saturation*(Water.Px*dir_x + Water.Py*dir_y + Water.Pz*dir_z)/Water.M;
+		oil_flow_rate=(1.0-saturation)*(Oil.Px*dir_x + Oil.Py*dir_y + Oil.Pz*dir_z)/Oil.M;
 
 		double h = Dm->voxel_length;		
-		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
+		double krn = h*h*nu_n*oil_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p); 
+		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*water_flow_rate,h*oil_flow_rate, Water.p, Oil.p); 
 		fflush(TIMELOG); 
 	}
-*/
+
 	if (err==true){
 		// exception if simulation produceds NaN
-		printf("GreyPhase.cpp: NaN encountered, may need to check simulation parameters \n");
+		printf("GreyPhaseAnalysis.cpp: NaN encountered, may need to check simulation parameters \n");
 	}	
 	ASSERT(err==false);
 }

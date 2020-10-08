@@ -10,8 +10,7 @@ Implementation of two-fluid greyscale color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "analysis/TwoPhase.h"
-#include "analysis/runAnalysis.h"
+#include "analysis/GreyPhase.h"
 #include "common/MPI_Helpers.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
@@ -50,7 +49,7 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-        std::shared_ptr<GreyPhase> Averages;
+        std::shared_ptr<GreyPhaseAnalysis> Averages;
     
     // input database
     std::shared_ptr<Database> db;
