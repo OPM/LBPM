@@ -52,7 +52,7 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
+	Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
@@ -404,6 +404,6 @@ int main(int argc, char **argv)
 	fclose(ID);
 
 	comm.barrier();
-	MPI_Finalize();
+	Utilities::shutdown();
 	return 0;
 }

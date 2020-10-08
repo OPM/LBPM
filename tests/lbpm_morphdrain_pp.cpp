@@ -23,7 +23,7 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
 	{
@@ -201,6 +201,5 @@ int main(int argc, char **argv)
 		Mask->AggregateLabels( filename2 );
 	}
 
-	comm.barrier();
-	MPI_Finalize();
+    Utilities::shutdown();
 }

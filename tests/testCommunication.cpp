@@ -251,7 +251,7 @@ int testHalo( const Utilities::MPI& comm, int nprocx, int nprocy, int nprocz, in
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
     comm.barrier();
     int N_errors_global = comm.sumReduce( N_errors );
     comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
     if ( rank==0 ) {
         if ( N_errors_global==0 )
             std::cout << "All tests passed\n";

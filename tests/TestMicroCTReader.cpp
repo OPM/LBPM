@@ -50,7 +50,7 @@ void testReadMicroCT( const std::string& filename, UnitTest& ut )
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     UnitTest ut;
 
     // Run the tests
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int N_errors = ut.NumFailGlobal();
 
     // Close MPI
-    MPI_Finalize();
+    Utilities::shutdown();
     return N_errors;
 }
 

@@ -138,7 +138,7 @@ extern "C" void CMT_ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, doubl
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
 
 	int n,N,Nx,Ny,Nz;
 
@@ -359,6 +359,6 @@ int main(int argc, char **argv)
     
     // Close MPI
     comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
     return 0;
 }

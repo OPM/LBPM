@@ -150,7 +150,7 @@ void readRankData( int proc, int nx, int ny, int nz, DoubleArray& Phase, DoubleA
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
+	Utilities::startup( argc, argv );
 
     printf("-----------------------------------------------------------\n");
     printf("Labeling Blobs from Two-Phase Lattice Boltzmann Simulation \n");
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
     FILE *BLOBS = fopen("Blobs.dat","wb");
     fwrite(GlobalBlobID.data(),4,Nx*Ny*Nz,BLOBS);
     fclose(BLOBS);
-	MPI_Finalize();
+	Utilities::shutdown();
     return 0;
 }
 

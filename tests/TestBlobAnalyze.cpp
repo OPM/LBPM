@@ -127,7 +127,7 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  MPI_Init(&argc,&argv);
+  Utilities::startup( argc, argv );
   Utilities::MPI comm( MPI_COMM_WORLD );
   int rank = comm.getRank();
   int nprocs = comm.getSize();
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
   comm.barrier();
-  MPI_Finalize();
+  Utilities::shutdown();
   return 0;  
 }
 

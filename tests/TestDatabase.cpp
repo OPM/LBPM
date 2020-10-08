@@ -17,7 +17,7 @@
 // Main
 int main(int argc, char **argv)
 {
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     Utilities::setAbortBehavior(true,2);
     Utilities::setErrorHandlers();
@@ -66,8 +66,7 @@ int main(int argc, char **argv)
 
     // Finished
     PROFILE_SAVE("TestDatabase",true);
-    comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
     return err;
 }
 

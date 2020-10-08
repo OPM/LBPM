@@ -825,7 +825,7 @@ int main(int argc, char **argv)
 			NULL_USE(RESTART_INTERVAL);
 		}
 		comm.barrier();
-		MPI_Finalize();
+		Utilities::shutdown();
 	 //****************************************************
 }
 

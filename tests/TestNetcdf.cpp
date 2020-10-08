@@ -95,7 +95,7 @@ void load( const std::string& filename )
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     const int rank = comm.getRank();
     UnitTest ut;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 
     // Close MPI
     comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
     return N_errors;
 }
 

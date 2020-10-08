@@ -17,7 +17,7 @@
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  MPI_Init(&argc,&argv);
+  Utilities::startup( argc, argv );
   Utilities::MPI comm( MPI_COMM_WORLD );
   int rank = comm.getRank();
   int nprocs = comm.getSize();
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	// ****************************************************
 	comm.barrier();
   } // Limit scope so Domain will free it's communicator
-  MPI_Finalize();
+  Utilities::shutdown();
   return 0;
 }
 

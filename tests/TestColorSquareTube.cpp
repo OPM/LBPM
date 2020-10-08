@@ -85,12 +85,12 @@ void InitializeSquareTube(ScaLBL_ColorModel &ColorModel){
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
-	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    Utilities::startup( argc, argv );
 	int check=0;
 	{
+	    Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Color Model: TestColor	\n");
@@ -108,11 +108,7 @@ int main(int argc, char **argv)
 		ColorModel.WriteDebug(); 
  
 	}
-	// ****************************************************
-	comm.barrier();
-	MPI_Finalize();
-	// ****************************************************
-
+    Utilities::shutdown();
 	return check;
 }
 

@@ -18,7 +18,7 @@
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
     /*if ( nprocs != 8 ) {

@@ -115,7 +115,7 @@ double ReadFromBlock( char *ID, int iproc, int jproc, int kproc, int Nx, int Ny,
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
+	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 
 	}
 	comm.barrier();
-	MPI_Finalize();
+	Utilities::shutdown();
 	return 0;
 
 }

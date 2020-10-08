@@ -18,7 +18,7 @@
 int main (int argc, char *argv[])
 {
 	// Initialize MPI
-	MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
 
@@ -146,9 +146,7 @@ int main (int argc, char *argv[])
 
 	return toReturn;
 
-	// ****************************************************
 	comm.barrier();
 	return 0;
-	MPI_Finalize();
-	// ****************************************************
+    Utilities::shutdown();
 }

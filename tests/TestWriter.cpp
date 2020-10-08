@@ -226,7 +226,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
 // Main
 int main(int argc, char **argv)
 {
-    MPI_Init(&argc,&argv);
+    Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
     int nprocs = comm.getSize();
@@ -387,7 +387,7 @@ int main(int argc, char **argv)
     PROFILE_SAVE("TestWriter",true);
     int N_errors = ut.NumFailGlobal();
     comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
     return N_errors;
 }
 

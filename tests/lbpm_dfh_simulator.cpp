@@ -24,12 +24,12 @@ using namespace std;
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  int provided_thread_support = -1;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
+  Utilities::startup( argc, argv );
   Utilities::MPI comm( MPI_COMM_WORLD );
   int rank = comm.getRank();
   int nprocs = comm.getSize();
-  if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
+  auto thread_support = Utilities::MPI::queryThreadSupport();
+  if ( rank==0 && thread_support != Utilities::MPI::ThreadSupport::MULTIPLE )
     std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	// ****************************************************
 	comm.barrier();
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
-  MPI_Finalize();
+    Utilities::shutdown();
 }
 
 

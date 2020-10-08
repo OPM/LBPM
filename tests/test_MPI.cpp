@@ -1452,10 +1452,7 @@ int main( int argc, char *argv[] )
 
         // Test splitByNode
         MPI_CLASS nodeComm = globalComm.splitByNode();
-        int length;
-        char name[MPI_MAX_PROCESSOR_NAME];
-        MPI_Get_processor_name( name, &length );
-        std::string localName( name );
+        std::string localName = MPI_CLASS::getNodeName();
         std::vector<std::string> globalStrings( globalComm.getSize() );
         std::vector<std::string> nodeStrings( nodeComm.getSize() );
         globalComm.allGather<std::string>( localName, &globalStrings[0] );

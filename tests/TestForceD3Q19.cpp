@@ -442,7 +442,7 @@ inline void MRT_Transform(double *dist, int Np, double Fx, double Fy, double Fz)
 
 int main (int argc, char **argv)
 {
-	MPI_Init(&argc,&argv);
+	Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
 	int rank = comm.getRank();
 	int nprocs = comm.getSize();
@@ -541,5 +541,5 @@ int main (int argc, char **argv)
     printf("Fz = %f; Computed vz=%f \n",Fz,vel[2*Np+0]);
     
     comm.barrier();
-    MPI_Finalize();
+    Utilities::shutdown();
 }
