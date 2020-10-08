@@ -50,8 +50,7 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-    //std::shared_ptr<TwoPhase> Averages;
-    std::shared_ptr<SubPhase> Averages;
+        std::shared_ptr<GreyPhase> Averages;
     
     // input database
     std::shared_ptr<Database> db;

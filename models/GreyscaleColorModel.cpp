@@ -19,43 +19,6 @@ Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),
 ScaLBL_GreyscaleColorModel::~ScaLBL_GreyscaleColorModel(){
 
 }
-
-/*void ScaLBL_GreyscaleColorModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
-{
-    int q,n;
-    double value;
-    ofstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
-        // Write the two density values
-        value = cPhi[n];
-        File.write((char*) &value, sizeof(value));
-        // Write the even distributions
-        for (q=0; q<19; q++){
-            value = cfq[q*Np+n];
-            File.write((char*) &value, sizeof(value));
-        }
-    }
-    File.close();
-
-}
-
-void ScaLBL_GreyscaleColorModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
-{
-    int q=0, n=0;
-    double value=0;
-    ifstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
-        File.read((char*) &value, sizeof(value));
-        cPhi[n] = value;
-        // Read the distributions
-        for (q=0; q<19; q++){
-            File.read((char*) &value, sizeof(value));
-            cfq[q*Np+n] = value;
-        }
-    }
-    File.close();
-}
- */
 void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
@@ -172,8 +135,7 @@ void ScaLBL_GreyscaleColorModel::SetDomain(){
 	N = Nx*Ny*Nz;
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
+	Averages = std::shared_ptr<GreyPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
