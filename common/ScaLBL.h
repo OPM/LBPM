@@ -268,13 +268,8 @@ public:
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
-<<<<<<< HEAD
-//	void BiSendD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
-//	void BiRecvD3Q7(double *A_even, double *A_odd, double *B_even, double *B_odd);
-=======
 	void SendD3Q7AA(double *fq, int Component);
 	void RecvD3Q7AA(double *fq, int Component);
->>>>>>> electrokinetic
 	void BiSendD3Q7AA(double *Aq, double *Bq);
 	void BiRecvD3Q7AA(double *Aq, double *Bq);
 	void TriSendD3Q7AA(double *Aq, double *Bq, double *Cq);
@@ -295,21 +290,16 @@ public:
 	void D3Q19_Reflection_BC_z(double *fq);
 	void D3Q19_Reflection_BC_Z(double *fq);
 	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
-<<<<<<< HEAD
 	void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
 	void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
     void GreyscaleSC_Pressure_BC_Z(int *neighborList, double *fqA, double *fqB, double doutA, double doutB, int time);
-//	void TestSendD3Q19(double *f_even, double *f_odd);
-//	void TestRecvD3Q19(double *f_even, double *f_odd);
-=======
 	void D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
 	void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
 	void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
 	void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
 	void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
 	void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
->>>>>>> electrokinetic
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();
