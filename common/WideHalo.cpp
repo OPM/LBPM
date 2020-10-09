@@ -291,6 +291,11 @@ void ScaLBLWideHalo_Communicator::Send(double *data){
 	MPI_Irecv(recvbuf_XYz, recvCount_XYz,MPI_DOUBLE,rank_XYz,recvtag,MPI_COMM_SCALBL,&req2[25]);
 	//...................................................................................
 }
+
+
+ScaLBLWideHalo_Communicator::~ScaLBLWideHalo_Communicator()
+{
+}
 void ScaLBLWideHalo_Communicator::Recv(double *data){
 
 	//...................................................................................
