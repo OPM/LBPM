@@ -39,7 +39,6 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
-    bool greyMode;//run greyColor model if true
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -87,7 +86,7 @@ private:
     void AssignComponentLabels();
     void AssignGreySolidLabels();
     void AssignGreyPoroPermLabels();
-    double ImageInit(std::string filename);
+    void ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
     double MorphOpenConnected(double target_volume_change);

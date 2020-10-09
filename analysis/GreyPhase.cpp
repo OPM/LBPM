@@ -8,14 +8,14 @@ GreyPhaseAnalysis::GreyPhaseAnalysis(std::shared_ptr <Domain> dm):
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
 	
 	// Global arrays
-        SDs.resize(Nx,Ny,Nz);       SDs.fill(0);
-	Porosity.resize(Nx,Ny,Nz);       Porosity.fill(0);
-	PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
+    SDs.resize(Nx,Ny,Nz);           SDs.fill(0);
+	Porosity.resize(Nx,Ny,Nz);      Porosity.fill(0);
+	//PhaseID.resize(Nx,Ny,Nz);       PhaseID.fill(0);
 	Rho_n.resize(Nx,Ny,Nz);       	Rho_n.fill(0);
 	Rho_w.resize(Nx,Ny,Nz);       	Rho_w.fill(0);
 	Pressure.resize(Nx,Ny,Nz);      Pressure.fill(0);
-	Phi.resize(Nx,Ny,Nz);         	Phi.fill(0);
-	DelPhi.resize(Nx,Ny,Nz);        DelPhi.fill(0);
+	//Phi.resize(Nx,Ny,Nz);         	Phi.fill(0);
+	//DelPhi.resize(Nx,Ny,Nz);        DelPhi.fill(0);
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
@@ -51,7 +51,7 @@ void GreyPhaseAnalysis::Write(int timestep)
 
 }
 
-void GreyPhaseAnalysis::SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double B)
+void GreyPhaseAnalysis::SetParams(double rhoA, double rhoB, double tauA, double tauB, double force_x, double force_y, double force_z, double alpha, double B, double GreyPorosity)
 {
 	Fx = force_x;
 	Fy = force_y;
@@ -60,8 +60,9 @@ void GreyPhaseAnalysis::SetParams(double rhoA, double rhoB, double tauA, double 
 	rho_w = rhoB;
 	nu_n = (tauA-0.5)/3.f;
 	nu_w = (tauB-0.5)/3.f;
-	gamma_wn = 5.796*alpha;
+	gamma_wn = 6.0*alpha;
 	beta = B;
+    grey_porosity = GreyPorosity;
 }
 
 void GreyPhaseAnalysis::Basic(){
@@ -71,9 +72,6 @@ void GreyPhaseAnalysis::Basic(){
 	kmin=1; kmax=Nz-1;
 	imin=jmin=1;
 
-	double count_w = 0.0;
-	double count_n = 0.0;
-	
 	Water_local.reset();
 	Oil_local.reset();
 	for (k=kmin; k<kmax; k++){
@@ -83,23 +81,20 @@ void GreyPhaseAnalysis::Basic(){
 				// Compute volume averages
 				if ( Dm->id[n] > 0 ){
 					// compute density
-				        double pressure = Pressure(n);
-					double rho_n = Rho_n(n);
-					double rho_w = Rho_w(n);				
+				    double pressure = Pressure(n);
+					double nA = Rho_n(n);
+					double nB = Rho_w(n);				
 					double porosity = Porosity(n);
-					double vel_x = Vel_x(n);
-					double vel_y = Vel_y(n);
-					double vel_z = Vel_z(n);					
-					Water_local.p += pressure*(rho_w)/(rho_n+rho_w);
-					Water_local.M += rho_w*porosity;
-					Water_local.Px += rho_w*vel_x;
-					Water_local.Py += rho_w*vel_y;
-					Water_local.Pz += rho_w*vel_z;
-					Oil_local.p += pressure*(rho_n)/(rho_n+rho_w);
-					Oil_local.M += rho_n*porosity;
-					Oil_local.Px += rho_n*vel_x;
-					Oil_local.Py += rho_n*vel_y;
-					Oil_local.Pz += rho_n*vel_z;
+					Water_local.p += pressure*(rho_w*nB)/(rho_n*nA+rho_w*nB);
+					Water_local.M += rho_w*nB*porosity;
+					Water_local.Px += rho_w*nB*Vel_x(n);
+					Water_local.Py += rho_w*nB*Vel_y(n);
+					Water_local.Pz += rho_w*nB*Vel_z(n);
+					Oil_local.p += pressure*(rho_n*nA)/(rho_n*nA+rho_w*nB);
+					Oil_local.M += rho_n*nA*porosity;
+					Oil_local.Px += rho_n*nA*Vel_x(n);
+					Oil_local.Py += rho_n*nA*Vel_y(n);
+					Oil_local.Pz += rho_n*nA*Vel_z(n);
 
 				}
 			}
@@ -164,10 +159,11 @@ void GreyPhaseAnalysis::Basic(){
 			force_mag = 1.0;
 		}
 		saturation=Water.M/(Water.M + Oil.M); // assume constant density
-		water_flow_rate=saturation*(Water.Px*dir_x + Water.Py*dir_y + Water.Pz*dir_z)/Water.M;
-		oil_flow_rate=(1.0-saturation)*(Oil.Px*dir_x + Oil.Py*dir_y + Oil.Pz*dir_z)/Oil.M;
+		water_flow_rate=grey_porosity*saturation*(Water.Px*dir_x + Water.Py*dir_y + Water.Pz*dir_z)/Water.M;
+		oil_flow_rate  =grey_porosity*(1.0-saturation)*(Oil.Px*dir_x + Oil.Py*dir_y + Oil.Pz*dir_z)/Oil.M;
 
 		double h = Dm->voxel_length;		
+        //TODO check if need greyporosity or domain porosity ? - compare to analytical solution
 		double krn = h*h*nu_n*oil_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
