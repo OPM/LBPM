@@ -57,7 +57,10 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	}	
 	
 	// Read domain parameters
-	if (domain_db->keyExists( "BC" )){
+	if (mrt_db->keyExists( "BoundaryCondition" )){
+		BoundaryCondition = mrt_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
 

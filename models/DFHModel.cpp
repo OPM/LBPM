@@ -81,13 +81,18 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
 
-	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
+	BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	if (color_db->keyExists( "BC" )){
+		BoundaryCondition = color_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
 
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
 	auto nproc = domain_db->getVector<int>( "nproc" );
-	BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	Nx = size[0];
 	Ny = size[1];
 	Nz = size[2];
@@ -97,6 +102,8 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	nprocx = nproc[0];
 	nprocy = nproc[1];
 	nprocz = nproc[2];
+	
+	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
 void ScaLBL_DFHModel::SetDomain(){

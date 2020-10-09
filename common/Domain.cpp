@@ -626,38 +626,38 @@ void Domain::Decomp( const std::string& Filename )
 	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
-    	if (inlet_layers_z < 4){
-            inlet_layers_z=4;
-            if(RANK==0){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
-            } 
-        }	
-		for (int k=0; k<inlet_layers_z; k++){
-			for (int j=0;j<Ny;j++){
-				for (int i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					id[n] = inlet_layers_phase;
-				}                    
-			}
- 		}
- 	}
-    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz-1){
-    	if (outlet_layers_z < 4){
-            outlet_layers_z=4;
-            if(RANK==nprocs-1){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
-            } 
-        }	
- 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
- 			for (int j=0;j<Ny;j++){
- 				for (int i=0;i<Nx;i++){
- 					int n = k*Nx*Ny+j*Nx+i;
- 					id[n] = outlet_layers_phase;
- 				}                    
- 			}
- 		}
- 	}
+//	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
+//    	if (inlet_layers_z < 4){
+//            inlet_layers_z=4;
+//            if(RANK==0){
+//                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
+//            } 
+//        }	
+//		for (int k=0; k<inlet_layers_z; k++){
+//			for (int j=0;j<Ny;j++){
+//				for (int i=0;i<Nx;i++){
+//					int n = k*Nx*Ny+j*Nx+i;
+//					id[n] = inlet_layers_phase;
+//				}                    
+//			}
+// 		}
+// 	}
+//    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz-1){
+//    	if (outlet_layers_z < 4){
+//            outlet_layers_z=4;
+//            if(RANK==nprocs-1){
+//                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
+//            } 
+//        }	
+// 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
+// 			for (int j=0;j<Ny;j++){
+// 				for (int i=0;i<Nx;i++){
+// 					int n = k*Nx*Ny+j*Nx+i;
+// 					id[n] = outlet_layers_phase;
+// 				}                    
+// 			}
+// 		}
+// 	}
     for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
         for (int j=1;j<Ny-1;j++){
             for (int i=1;i<Nx-1;i++){
@@ -1286,3 +1286,241 @@ void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
   File.close();
 }
 
+void Domain::ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData)
+{
+	//........................................................................................
+	// Reading the user-defined input file
+    // NOTE: so far it only supports BC=0 (periodic) and BC=5 (mixed reflection)
+    //       because if checkerboard or inlet/outlet buffer layers are added, the
+    //       value of the void space is undefined. 
+    // NOTE: if BC=5 is used, where the inlet and outlet layers of the domain are modified, 
+    //       user needs to modify the input file accordingly before LBPM simulator read
+    //       the input file.
+	//........................................................................................
+	int rank_offset = 0;
+	int RANK = rank();
+	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
+	int64_t global_Nx,global_Ny,global_Nz;
+	int64_t i,j,k,n;
+    //TODO These offset we may still need them
+	int64_t xStart,yStart,zStart;
+	xStart=yStart=zStart=0;
+
+	// Read domain parameters
+    // TODO currently the size of the data is still read from Domain{}; 
+    //      but user may have a user-specified size
+	auto size = database->getVector<int>( "n" );
+	auto SIZE = database->getVector<int>( "N" );
+	auto nproc = database->getVector<int>( "nproc" );
+    //TODO currently the funcationality "offset" is disabled as the user-defined input data may have a different size from that of the input domain 
+	if (database->keyExists( "offset" )){
+		auto offset = database->getVector<int>( "offset" );
+		xStart = offset[0];
+		yStart = offset[1];
+		zStart = offset[2];
+	}
+	
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
+	nprocx = nproc[0];
+	nprocy = nproc[1];
+	nprocz = nproc[2];
+	global_Nx = SIZE[0];
+	global_Ny = SIZE[1];
+	global_Nz = SIZE[2];
+	nprocs=nprocx*nprocy*nprocz;
+
+	double *SegData = NULL;
+	if (RANK==0){
+		printf("User-defined input file: %s (data type: %s)\n",Filename.c_str(),Datatype.c_str());
+        printf("NOTE: currently only BC=0 or 5 supports user-defined input file!\n");
+		// Rank=0 reads the entire segmented data and distributes to worker processes
+		printf("Dimensions of the user-defined input file: %ld x %ld x %ld \n",global_Nx,global_Ny,global_Nz);
+		int64_t SIZE = global_Nx*global_Ny*global_Nz;
+
+		if (Datatype == "double"){
+			printf("Reading input data as double precision floating number\n");
+		    SegData = new double[SIZE];
+			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
+			if (SEGDAT==NULL) ERROR("Domain.cpp: Error reading user-defined file!\n");
+			size_t ReadSeg;
+			ReadSeg=fread(SegData,8,SIZE,SEGDAT);
+			if (ReadSeg != size_t(SIZE)) printf("Domain.cpp: Error reading file: %s\n",Filename.c_str());
+			fclose(SEGDAT);
+		}
+        else{
+            ERROR("Error: User-defined input file only supports double-precision floating number!\n"); 
+        }
+		printf("Read file successfully from %s \n",Filename.c_str());
+	}
+	
+	// Get the rank info
+	int64_t N = (nx+2)*(ny+2)*(nz+2);
+
+	// number of sites to use for periodic boundary condition transition zone
+	//int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
+	//if (z_transition_size < 0) z_transition_size=0;
+	int64_t z_transition_size = 0;
+
+	//char LocalRankFilename[1000];//just for debug
+	double *loc_id;
+	loc_id = new double [(nx+2)*(ny+2)*(nz+2)];
+
+	// Set up the sub-domains
+	if (RANK==0){
+        printf("Decomposing user-defined input file\n");
+		printf("Distributing subdomains across %i processors \n",nprocs);
+		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
+		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
+		printf("Size of transition region: %ld \n", z_transition_size);
+
+		for (int kp=0; kp<nprocz; kp++){
+			for (int jp=0; jp<nprocy; jp++){
+				for (int ip=0; ip<nprocx; ip++){
+					// rank of the process that gets this subdomain
+					int rnk = kp*nprocx*nprocy + jp*nprocx + ip;
+					// Pack and send the subdomain for rnk
+					for (k=0;k<nz+2;k++){
+						for (j=0;j<ny+2;j++){
+							for (i=0;i<nx+2;i++){
+								int64_t x = xStart + ip*nx + i-1;
+								int64_t y = yStart + jp*ny + j-1;
+								// int64_t z = zStart + kp*nz + k-1;
+								int64_t z = zStart + kp*nz + k-1 - z_transition_size;
+								if (x<xStart) 	x=xStart;
+								if (!(x<global_Nx))	x=global_Nx-1;
+								if (y<yStart) 	y=yStart;
+								if (!(y<global_Ny))	y=global_Ny-1;
+								if (z<zStart) 	z=zStart;
+								if (!(z<global_Nz))	z=global_Nz-1;
+								int64_t nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+								int64_t nglobal = z*global_Nx*global_Ny+y*global_Nx+x;
+								loc_id[nlocal] = SegData[nglobal];
+							}
+						}
+					}
+					if (rnk==0){
+						for (k=0;k<nz+2;k++){
+							for (j=0;j<ny+2;j++){
+								for (i=0;i<nx+2;i++){
+									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
+									UserData[nlocal] = loc_id[nlocal];
+								}
+							}
+						}
+					}
+					else{
+						//printf("Sending data to process %i \n", rnk);
+						MPI_Send(loc_id,N,MPI_DOUBLE,rnk,15,Comm);
+					}
+					// Write the data for this rank data 
+                    // NOTE just for debug
+					//sprintf(LocalRankFilename,"%s.%05i",Filename.c_str(),rnk+rank_offset);
+					//FILE *ID = fopen(LocalRankFilename,"wb");
+					//fwrite(loc_id,8,(nx+2)*(ny+2)*(nz+2),ID);
+					//fclose(ID);
+				}
+			}
+		}
+
+	}
+	else{
+		// Recieve the subdomain from rank = 0
+		//printf("Ready to recieve data %i at process %i \n", N,rank);
+		MPI_Recv(UserData,N,MPI_DOUBLE,0,15,Comm,MPI_STATUS_IGNORE);
+	}
+	//Comm.barrier();
+	MPI_Barrier(Comm);
+}
+
+void Domain::AggregateLabels( const std::string& filename, DoubleArray &UserData ){
+	
+	int nx = Nx;
+	int ny = Ny;
+	int nz = Nz;
+	
+	int npx = nprocx();
+	int npy = nprocy();
+	int npz = nprocz();
+	
+	int ipx = iproc();
+	int ipy = jproc();
+	int ipz = kproc();		
+	
+	int nprocs = nprocx()*nprocy()*nprocz();
+		
+	int full_nx = npx*(nx-2);
+	int full_ny = npy*(ny-2);
+	int full_nz = npz*(nz-2);
+	int local_size = (nx-2)*(ny-2)*(nz-2);
+	unsigned long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	
+	double *LocalID;
+	LocalID = new double [local_size];
+		
+	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
+	// assign the ID for the local sub-region
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				int n = k*nx*ny+j*nx+i;
+				double local_id_val = UserData(i,j,k); 
+				LocalID[(k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1] = local_id_val;
+			}
+		}
+	}
+	MPI_Barrier(Comm);
+
+	// populate the FullID 
+	if (rank() == 0){
+		double *FullID;
+		FullID = new double [full_size];
+		// first handle local ID for rank 0
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					int x = i-1;
+					int y = j-1;
+					int z = k-1;
+					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+					unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
+					FullID[n_full] = LocalID[n_local];
+				}
+			}
+		}
+		// next get the local ID from the other ranks
+		for (int rnk = 1; rnk<nprocs; rnk++){
+			ipz = rnk / (npx*npy);
+			ipy = (rnk - ipz*npx*npy) / npx;
+			ipx = (rnk - ipz*npx*npy - ipy*npx); 
+			//printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
+			int tag = 15+rnk;
+			MPI_Recv(LocalID,local_size,MPI_DOUBLE,rnk,tag,Comm,MPI_STATUS_IGNORE);
+			for (int k=1; k<nz-1; k++){
+				for (int j=1; j<ny-1; j++){
+					for (int i=1; i<nx-1; i++){
+						int x = i-1 + ipx*(nx-2);
+						int y = j-1 + ipy*(ny-2);
+						int z = k-1 + ipz*(nz-2);
+						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+						unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
+						FullID[n_full] = LocalID[n_local];
+					}
+				}
+			}
+		}
+		// write the output
+		FILE *OUTFILE = fopen(filename.c_str(),"wb");
+		fwrite(FullID,8,full_size,OUTFILE);
+		fclose(OUTFILE);
+	}
+	else{
+		// send LocalID to rank=0
+		int tag = 15+ rank();
+		int dstrank = 0;
+		MPI_Send(LocalID,local_size,MPI_DOUBLE,dstrank,tag,Comm);
+	}
+	MPI_Barrier(Comm);
+
+}
