@@ -1,6 +1,3 @@
-<<<<<<< HEAD
- /*
-=======
 /*
   Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
 
@@ -17,7 +14,6 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
->>>>>>> master
 color lattice boltzmann model
  */
 #include "models/ColorModel.h"
