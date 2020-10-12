@@ -71,9 +71,13 @@ void GreyPhaseAnalysis::Basic(){
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
 	imin=jmin=1;
+	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
+	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 
 	Water_local.reset();
 	Oil_local.reset();
+	double count_w = 0.0;
+	double count_n = 0.0;
 	for (k=kmin; k<kmax; k++){
 		for (j=jmin; j<Ny-1; j++){
 			for (i=imin; i<Nx-1; i++){
@@ -81,39 +85,56 @@ void GreyPhaseAnalysis::Basic(){
 				// Compute volume averages
 				if ( Dm->id[n] > 0 ){
 					// compute density
-				    double pressure = Pressure(n);
 					double nA = Rho_n(n);
 					double nB = Rho_w(n);				
+					double phi = (nA-nB)/(nA+nB);					
 					double porosity = Porosity(n);
-					Water_local.p += pressure*(rho_w*nB)/(rho_n*nA+rho_w*nB);
 					Water_local.M += rho_w*nB*porosity;
 					Water_local.Px += porosity*rho_w*nB*Vel_x(n);
 					Water_local.Py += porosity*rho_w*nB*Vel_y(n);
 					Water_local.Pz += porosity*rho_w*nB*Vel_z(n);
-					Oil_local.p += pressure*(rho_n*nA)/(rho_n*nA+rho_w*nB);
 					Oil_local.M += rho_n*nA*porosity;
 					Oil_local.Px += porosity*rho_n*nA*Vel_x(n);
 					Oil_local.Py += porosity*rho_n*nA*Vel_y(n);
 					Oil_local.Pz += porosity*rho_n*nA*Vel_z(n);
 
+					if ( phi > 0.99 ){
+						Oil_local.p += Pressure(n);
+					    //Oil_local.p += pressure*(rho_n*nA)/(rho_n*nA+rho_w*nB);
+						count_n += 1.0;
+					}
+					else if ( phi < -0.99 ){
+						Water_local.p += Pressure(n);
+					    //Water_local.p += pressure*(rho_w*nB)/(rho_n*nA+rho_w*nB);
+						count_w += 1.0;
+					}
 				}
 			}
 		}
 	}
 	Oil.M=sumReduce( Dm->Comm, Oil_local.M);
-	Oil.p=sumReduce( Dm->Comm, Oil_local.p);
 	Oil.Px=sumReduce( Dm->Comm, Oil_local.Px);
 	Oil.Py=sumReduce( Dm->Comm, Oil_local.Py);
 	Oil.Pz=sumReduce( Dm->Comm, Oil_local.Pz);
 
 	Water.M=sumReduce( Dm->Comm, Water_local.M);
-	Water.p=sumReduce( Dm->Comm, Water_local.p);
 	Water.Px=sumReduce( Dm->Comm, Water_local.Px);
 	Water.Py=sumReduce( Dm->Comm, Water_local.Py);
 	Water.Pz=sumReduce( Dm->Comm, Water_local.Pz);
 
-	Oil.p /= Oil.M;	
-	Water.p /= Water.M;
+
+	//Oil.p /= Oil.M;	
+	//Water.p /= Water.M;
+	count_w=sumReduce( Dm->Comm, count_w);
+	count_n=sumReduce( Dm->Comm, count_n);
+	if (count_w > 0.0)
+		Water.p=sumReduce( Dm->Comm, Water_local.p) / count_w;
+	else 
+		Water.p = 0.0;
+	if (count_n > 0.0)
+		Oil.p=sumReduce( Dm->Comm, Oil_local.p) / count_n;
+	else 
+		Oil.p = 0.0;
 
 	// check for NaN
 	bool err=false;
