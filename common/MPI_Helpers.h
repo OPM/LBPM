@@ -1,5 +1,6 @@
 /*
   Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+  Copyright Equnior ASA
 
   This file is part of the Open Porous Media project (OPM).
   OPM is free software: you can redistribute it and/or modify
