@@ -87,14 +87,14 @@ void GreyPhaseAnalysis::Basic(){
 					double porosity = Porosity(n);
 					Water_local.p += pressure*(rho_w*nB)/(rho_n*nA+rho_w*nB);
 					Water_local.M += rho_w*nB*porosity;
-					Water_local.Px += rho_w*nB*Vel_x(n);
-					Water_local.Py += rho_w*nB*Vel_y(n);
-					Water_local.Pz += rho_w*nB*Vel_z(n);
+					Water_local.Px += porosity*rho_w*nB*Vel_x(n);
+					Water_local.Py += porosity*rho_w*nB*Vel_y(n);
+					Water_local.Pz += porosity*rho_w*nB*Vel_z(n);
 					Oil_local.p += pressure*(rho_n*nA)/(rho_n*nA+rho_w*nB);
 					Oil_local.M += rho_n*nA*porosity;
-					Oil_local.Px += rho_n*nA*Vel_x(n);
-					Oil_local.Py += rho_n*nA*Vel_y(n);
-					Oil_local.Pz += rho_n*nA*Vel_z(n);
+					Oil_local.Px += porosity*rho_n*nA*Vel_x(n);
+					Oil_local.Py += porosity*rho_n*nA*Vel_y(n);
+					Oil_local.Pz += porosity*rho_n*nA*Vel_z(n);
 
 				}
 			}

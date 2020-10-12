@@ -663,6 +663,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
     AssignGreySolidLabels();
     AssignGreyPoroPermLabels(); 
 	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
+	ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);//porosity doesn't change over time
 }        
 
 void ScaLBL_GreyscaleColorModel::Initialize(){
@@ -1015,11 +1016,10 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		PROFILE_STOP("Update");
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition == 4){
-			printf("%i %f \n",timestep,din);
+			printf("%i %.5g \n",timestep,din);
 		}
 
         if (timestep%analysis_interval == 0){
-			ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);
 			ScaLBL_Comm->RegularLayout(Map,Pressure,Averages->Pressure);
 			ScaLBL_Comm->RegularLayout(Map,&Den[0],Averages->Rho_n);
 			ScaLBL_Comm->RegularLayout(Map,&Den[Np],Averages->Rho_w);
@@ -1075,7 +1075,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 				    Fy *= 1e-3/force_mag;   
 				    Fz *= 1e-3/force_mag;   
 				  }
-				  if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+				  if (rank == 0) printf("    -- adjust force by factor %.5g \n ",capillary_number / Ca);
 				  Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
 				  greyscaleColor_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
@@ -1097,8 +1097,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 						slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
 						delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
 						if (rank==0){
-							printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
-							printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
+							printf("    Enabling endpoint adaptation: krA = %.5g, krB = %.5g \n",krA_TMP,krB_TMP);	
+							printf("    log(kr)=%.5g, volume=%.5g, TARGET log(kr)=%.5g, volume change=%.5g \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
 						}
 					}
 					log_krA_prev = log_krA;
@@ -1112,7 +1112,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 					*/
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
-						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						printf("Ca = %.5g, (previous = %.5g) \n",Ca,Ca_previous);
 						double h = Dm->voxel_length;		
 
 						// pressures
@@ -1177,7 +1177,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
                                 CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
-						printf("  Measured capillary number %f \n ",Ca);
+						printf("  Measured capillary number %.5g \n ",Ca);
 					}
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
@@ -1188,7 +1188,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
 						}
-						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
+						if (rank == 0) printf("    -- adjust force by factor %.5g \n ",capillary_number / Ca);
 						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
 						greyscaleColor_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
@@ -1198,7 +1198,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 				else{
 					if (rank==0){
 						printf("** Continue to simulate steady *** \n ");
-						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						printf("Ca = %.5g, (previous = %.5g) \n",Ca,Ca_previous);
 					}
 				}
 				morph_timesteps=0;
@@ -1226,7 +1226,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
-					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
+					if (rank==0) printf("***Seed water in oil %.5g, volume change %.5g / %.5g ***\n", massChange, delta_volume, delta_volume_target);
 				}
 
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
@@ -1284,6 +1284,7 @@ void ScaLBL_GreyscaleColorModel::ImageInit(std::string Filename){
     AssignGreySolidLabels();
     AssignGreyPoroPermLabels(); 
 	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
+	ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);
 
     //NOTE in greyscale simulations, water may have multiple labels (e.g. 2, 21, 22, etc)
     //so the saturaiton calculation is not that straightforward
@@ -1382,7 +1383,7 @@ double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil
 
   count= sumReduce( Dm->Comm, count);
   mass_loss= sumReduce( Dm->Comm, mass_loss);
-  if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+  if (rank == 0) printf("Remove mass %.5g from %.5g voxels \n",mass_loss,count);
 
   // Need to initialize Aq, Bq, Den, Phi directly
   //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
