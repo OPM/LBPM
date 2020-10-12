@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include <stdio.h>
 #include <cooperative_groups.h>
 
@@ -245,37 +260,6 @@ __global__ void dvc_ScaLBL_D3Q19_Init(double *dist, int Np)
 		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
 		if (n<Np ){
 			dist[n] = 0.3333333333333333;
-			dist[Np+n] = 0.055555555555555555;		//double(100*n)+1.f;
-			dist[2*Np+n] = 0.055555555555555555;	//double(100*n)+2.f;
-			dist[3*Np+n] = 0.055555555555555555;	//double(100*n)+3.f;
-			dist[4*Np+n] = 0.055555555555555555;	//double(100*n)+4.f;
-			dist[5*Np+n] = 0.055555555555555555;	//double(100*n)+5.f;
-			dist[6*Np+n] = 0.055555555555555555;	//double(100*n)+6.f;
-			dist[7*Np+n] = 0.0277777777777778;   //double(100*n)+7.f;
-			dist[8*Np+n] = 0.0277777777777778;   //double(100*n)+8.f;
-			dist[9*Np+n] = 0.0277777777777778;   //double(100*n)+9.f;
-			dist[10*Np+n] = 0.0277777777777778;  //double(100*n)+10.f;
-			dist[11*Np+n] = 0.0277777777777778;  //double(100*n)+11.f;
-			dist[12*Np+n] = 0.0277777777777778;  //double(100*n)+12.f;
-			dist[13*Np+n] = 0.0277777777777778;  //double(100*n)+13.f;
-			dist[14*Np+n] = 0.0277777777777778;  //double(100*n)+14.f;
-			dist[15*Np+n] = 0.0277777777777778;  //double(100*n)+15.f;
-			dist[16*Np+n] = 0.0277777777777778;  //double(100*n)+16.f;
-			dist[17*Np+n] = 0.0277777777777778;  //double(100*n)+17.f;
-			dist[18*Np+n] = 0.0277777777777778;  //double(100*n)+18.f;
-		}
-	}
-}
-
-__global__ void dvc_ScaLBL_D3Q19_GreyIMRT_Init(double *dist, int Np, double Den)
-{
-	int n;
-	int S = Np/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x;
-		if (n<Np ){
-			dist[n] = Den - 0.6666666666666667;
 			dist[Np+n] = 0.055555555555555555;		//double(100*n)+1.f;
 			dist[2*Np+n] = 0.055555555555555555;	//double(100*n)+2.f;
 			dist[3*Np+n] = 0.055555555555555555;	//double(100*n)+3.f;
@@ -2395,13 +2379,6 @@ extern "C" void ScaLBL_D3Q19_Init(double *dist, int Np){
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_GreyIMRT_Init(double *dist, int Np, double Den){
-	dvc_ScaLBL_D3Q19_GreyIMRT_Init<<<NBLOCKS,NTHREADS >>>(dist, Np, Den);
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_GreyIMRT_Init: %s \n",cudaGetErrorString(err));
-	}
-}
 
 extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
 	dvc_ScaLBL_D3Q19_Swap<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);

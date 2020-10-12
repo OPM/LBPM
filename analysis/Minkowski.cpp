@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "analysis/Minkowski.h"
 #include "analysis/pmmc.h"
 #include "analysis/analysis.h"
@@ -94,11 +109,13 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 				//Xi += 0.25*double(object.VertexCount);
 				// check if vertices are at corners
 				for (int idx=0; idx<object.VertexCount; idx++){
-					auto P1 = object.vertex.coords(idx);
+				  /*auto P1 = object.vertex.coords(idx);
 					if ( remainder(P1.x,1.0)==0.0 && remainder(P1.y,1.0)==0.0  && remainder(P1.z,1.0)==0.0 ){
 					  Xi += 0.125;
 					}
-					else Xi += 0.25;
+					else
+				  */
+					Xi += 0.25;
 				}
 				/*double nside_extern = double(npts);
 				double nside_intern = double(npts)-3.0;
@@ -150,7 +167,43 @@ void Minkowski::MeasureObject(){
 	}	
 	CalcDist(distance,id,*Dm);
 	//Mean3D(distance,smooth_distance);
-	Eikonal(distance, id, *Dm, 20, {true, true, true});
+	//Eikonal(distance, id, *Dm, 20, {true, true, true});
+	ComputeScalar(distance,0.0);
+}
+
+
+void Minkowski::MeasureObject(double factor, const DoubleArray &Phi){
+	/*
+	 *  compute the distance to an object 
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 *    0 - labels the object
+	 *    1 - labels the rest of the 
+	 */
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				distance(i,j,k) =2.0*double(id(i,j,k))-1.0;
+			}
+		}
+	}	
+	CalcDist(distance,id,*Dm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double value = Phi(i,j,k);
+				double dist_value = distance(i,j,k);
+				if (dist_value < 2.5 &&  dist_value > -2.5) {
+					double new_distance = factor*log((1.0+value)/(1.0-value));
+					if (dist_value*new_distance < 0.0 )
+						new_distance = (-1.0)*new_distance;
+					distance(i,j,k) = new_distance;					
+				}
+			}
+		}
+	}
+	
 	ComputeScalar(distance,0.0);
 
 }
@@ -197,6 +250,50 @@ int Minkowski::MeasureConnectedPathway(){
 		}
 	}
 	MeasureObject();
+	return n_connected_components; 
+}
+
+int Minkowski::MeasureConnectedPathway(double factor, const DoubleArray &Phi){
+	/*
+	 * compute the connected pathway for object with LABEL in id field
+	 * compute the labels for connected components
+	 * compute the distance to the connected pathway
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 */
+	
+	char LABEL = 0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (id(i,j,k) == LABEL){
+					distance(i,j,k) = 1.0;
+				}
+				else
+					distance(i,j,k) = -1.0;
+			}
+		}
+	}
+	
+	// Extract only the connected part of NWP
+	double vF=0.0; 
+	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+//	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
+	MPI_Barrier(Dm->Comm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if ( label(i,j,k) == 0){
+					id(i,j,k) = 0;
+				}
+				else{
+					id(i,j,k) = 1;
+				}
+			}
+		}
+	}
+	MeasureObject(factor,Phi);
 	return n_connected_components; 
 }
 

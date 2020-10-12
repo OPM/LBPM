@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 // Created by James McClure
 // Copyright 2008-2013
 #include <stdio.h>
@@ -695,7 +710,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 	int full_ny = npy*(ny-2);
 	int full_nz = npz*(nz-2);
 	int local_size = (nx-2)*(ny-2)*(nz-2);
-	long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	unsigned long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
 	
 	signed char *LocalID;
 	LocalID = new signed char [local_size];
@@ -725,7 +740,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 					int y = j-1;
 					int z = k-1;
 					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
-					int n_full = z*full_nx*full_ny + y*full_nx + x;
+					unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
 					FullID[n_full] = LocalID[n_local];
 				}
 			}
@@ -745,7 +760,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 						int y = j-1 + ipy*(ny-2);
 						int z = k-1 + ipz*(nz-2);
 						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
-						int n_full = z*full_nx*full_ny + y*full_nx + x;
+						unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
 						FullID[n_full] = LocalID[n_local];
 					}
 				}

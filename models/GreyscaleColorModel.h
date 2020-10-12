@@ -1,20 +1,5 @@
 /*
-  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
-
-  This file is part of the Open Porous Media project (OPM).
-  OPM is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  OPM is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  You should have received a copy of the GNU General Public License
-  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/*
-Implementation of color lattice boltzmann model
+Implementation of two-fluid greyscale color lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,10 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_ColorModel{
+class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_ColorModel();	
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -51,8 +36,11 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB,alpha,beta;
+    double tauA_eff,tauB_eff;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
+    double GreyPorosity;
+    bool greyMode;//run greyColor model if true
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -68,7 +56,7 @@ public:
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> color_db;
+    std::shared_ptr<Database> greyscaleColor_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
@@ -78,9 +66,13 @@ public:
 	int *dvcMap;
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
-	double *ColorGrad;
+    //double *GreySolidPhi; //Model 2 & 3
+    double *GreySolidGrad;//Model 1 & 4
+	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
+    double *Porosity_dvc;
+    double *Permeability_dvc;
 		
 private:
 	MPI_Comm comm;
@@ -94,7 +86,9 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
-    void AssignComponentLabels(double *phase);
+    void AssignComponentLabels();
+    void AssignGreySolidLabels();
+    void AssignGreyPoroPermLabels();
     double ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);

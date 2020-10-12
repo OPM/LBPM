@@ -1,4 +1,19 @@
 /*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*
  * Multi-relaxation time LBM Model
  */
 #include "models/MRTModel.h"
@@ -412,7 +427,9 @@ void ScaLBL_MRTModel::VelocityField(){
 	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
 						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
 						*/
-	
+        vis_db = db->getDatabase( "Visualization" );
+	if (vis_db->getWithDefault<bool>( "write_silo", false )){
+  
 	std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
 
@@ -464,5 +481,5 @@ void ScaLBL_MRTModel::VelocityField(){
     fillData.copy(Velocity_z,VelzData);
 	
     IO::writeData( timestep, visData, Dm->Comm );
-
+    }
 }

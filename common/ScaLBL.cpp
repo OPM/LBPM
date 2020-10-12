@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #include "common/ScaLBL.h"
 
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
@@ -81,43 +96,43 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//BoundaryCondition = 0; // default to periodic BC
 	//......................................................................................
 
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 2*5*sendCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 2*5*sendCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 2*5*sendCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Y, 2*5*sendCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_z, 2*5*sendCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Z, 2*5*sendCount_Z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xy, 2*sendCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xY, 2*sendCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xy, 2*sendCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XY, 2*sendCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xz, 2*sendCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xZ, 2*sendCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xz, 2*sendCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XZ, 2*sendCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yz, 2*sendCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yZ, 2*sendCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Yz, 2*sendCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_YZ, 2*sendCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_x, 2*5*recvCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_X, 2*5*recvCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_y, 2*5*recvCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Y, 2*5*recvCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_z, 2*5*recvCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Z, 2*5*recvCount_Z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xy, 2*recvCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xY, 2*recvCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xy, 2*recvCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XY, 2*recvCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xz, 2*recvCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xZ, 2*recvCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xz, 2*recvCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XZ, 2*recvCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yz, 2*recvCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yZ, 2*recvCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Yz, 2*recvCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_YZ, 2*recvCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
@@ -1348,6 +1363,7 @@ void ScaLBL_Communicator::RecvGrad(double *phi, double *grad){
 	ScaLBL_Gradient_Unpack(1.0,-1,0,0,dvcRecvDist_x,0,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,-1,0,dvcRecvDist_x,recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,1,0,dvcRecvDist_x,2*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
+	ScaLBL_Gradient_Unpack(0.5,-1,0,-1,dvcRecvDist_x,3*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	ScaLBL_Gradient_Unpack(0.5,-1,0,1,dvcRecvDist_x,4*recvCount_x,recvCount_x,recvbuf_x,phi,grad,N);
 	//...................................................................................
 	//...Packing for X face(1,7,9,11,13)................................
