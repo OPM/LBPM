@@ -1,7 +1,7 @@
 #include <math.h>
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Velocity, 
+		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Velocity,double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -494,6 +494,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, d
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        Pressure[n] = rho/3.f/porosity;
 
 		//........................................................................
 		//..............carry out relaxation process..............................
@@ -709,7 +710,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, d
 }
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Velocity, 
+        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Velocity,double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -1148,6 +1149,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
+        Pressure[n] = rho/3.f/porosity;
 
 		//........................................................................
 		//..............carry out relaxation process..............................

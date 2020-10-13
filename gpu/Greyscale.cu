@@ -2006,7 +2006,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *
             }
 
             //Calculate pressure for MRT model
-            pressure=rho/3.f;
+            pressure=rho/3.f/porosity;
 
             //-------------------- MRT collison where body force has NO higher-order terms -------------//
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) - m1);
@@ -2512,7 +2512,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_Greyscale_MRT(double *dist, int start, i
             }
 
             //Calculate pressure for Incompressible-MRT model
-            pressure=rho/3.f;
+            pressure=rho/3.f/porosity;
 
             //-------------------- IMRT collison where body force has NO higher-order terms -------------//
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) - m1);

@@ -12,50 +12,13 @@ Two-fluid greyscale color lattice boltzmann model
 ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),GreyPorosity(0),
-Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),greyMode(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	REVERSE_FLOW_DIRECTION = false;
 }
 ScaLBL_GreyscaleColorModel::~ScaLBL_GreyscaleColorModel(){
 
 }
-
-/*void ScaLBL_GreyscaleColorModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
-{
-    int q,n;
-    double value;
-    ofstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
-        // Write the two density values
-        value = cPhi[n];
-        File.write((char*) &value, sizeof(value));
-        // Write the even distributions
-        for (q=0; q<19; q++){
-            value = cfq[q*Np+n];
-            File.write((char*) &value, sizeof(value));
-        }
-    }
-    File.close();
-
-}
-
-void ScaLBL_GreyscaleColorModel::ReadCheckpoint(char *FILENAME, double *cPhi, double *cfq, int Np)
-{
-    int q=0, n=0;
-    double value=0;
-    ifstream File(FILENAME,ios::binary);
-    for (n=0; n<Np; n++){
-        File.read((char*) &value, sizeof(value));
-        cPhi[n] = value;
-        // Read the distributions
-        for (q=0; q<19; q++){
-            File.read((char*) &value, sizeof(value));
-            cfq[q*Np+n] = value;
-        }
-    }
-    File.close();
-}
- */
 void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
@@ -74,7 +37,6 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	Restart=false;
 	din=dout=1.0;
 	flux=0.0;
-    greyMode=false;
 	
 	// Color Model parameters
 	if (greyscaleColor_db->keyExists( "timestepMax" )){
@@ -117,12 +79,6 @@ void ScaLBL_GreyscaleColorModel::ReadParams(string filename){
 	if (greyscaleColor_db->keyExists( "flux" )){
 		flux = greyscaleColor_db->getScalar<double>( "flux" );
 	}
-    if (greyscaleColor_db->keyExists("GreySolidLabels")&&
-        greyscaleColor_db->keyExists("GreySolidAffinity")&&
-        greyscaleColor_db->keyExists("PorosityList")&&
-        greyscaleColor_db->keyExists("PermeabilityList")){
-        greyMode = true;
-    }
 	inletA=1.f;
 	inletB=0.f;
 	outletA=0.f;
@@ -172,8 +128,7 @@ void ScaLBL_GreyscaleColorModel::SetDomain(){
 	N = Nx*Ny*Nz;
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
+	Averages = std::shared_ptr<GreyPhaseAnalysis> ( new GreyPhaseAnalysis(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
 	Dm->CommInit();
 	MPI_Barrier(comm);
@@ -249,7 +204,6 @@ void ScaLBL_GreyscaleColorModel::ReadInput(){
 	
 	if (rank == 0) cout << "Domain set." << endl;
 	
-	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
 }
 
 void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
@@ -662,13 +616,11 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nx*Ny*Nz);		
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
-    if (greyMode==true){
-        //ScaLBL_AllocateDeviceMemory((void **) &GreySolidPhi, sizeof(double)*Nx*Ny*Nz);		
-        ScaLBL_AllocateDeviceMemory((void **) &GreySolidGrad, 3*sizeof(double)*Np);		
-        ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
-        ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
-    }
 	//ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+    //ScaLBL_AllocateDeviceMemory((void **) &GreySolidPhi, sizeof(double)*Nx*Ny*Nz);		
+    ScaLBL_AllocateDeviceMemory((void **) &GreySolidGrad, 3*sizeof(double)*Np);		
+    ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
+    ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
 	//...........................................................................
 	// Update GPU data structures
 	if (rank==0)	printf ("Setting up device map and neighbor list \n");
@@ -708,10 +660,10 @@ void ScaLBL_GreyscaleColorModel::Create(){
 
 	// initialize phi based on PhaseLabel (include solid component labels)
 	AssignComponentLabels();//do open/black/grey nodes initialization
-    if (greyMode==true){
-        AssignGreySolidLabels();
-        AssignGreyPoroPermLabels(); 
-    }
+    AssignGreySolidLabels();
+    AssignGreyPoroPermLabels(); 
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
+	ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);//porosity doesn't change over time
 }        
 
 void ScaLBL_GreyscaleColorModel::Initialize(){
@@ -799,7 +751,7 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
 		}
 	}
-	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
+	//ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 }
 
 void ScaLBL_GreyscaleColorModel::Run(){
@@ -869,15 +821,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		USE_SEED = true;
 		USE_MORPH = true;
 	}
-	else if (protocol == "open connected oil"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-		USE_MORPHOPEN_OIL = true;
-	}
-	else if (protocol == "shell aggregation"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-	}  
+
 	if (greyscaleColor_db->keyExists( "capillary_number" )){
 		capillary_number = greyscaleColor_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -904,11 +848,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	}
 	if (analysis_db->keyExists( "morph_interval" )){
 		morph_interval = analysis_db->getScalar<int>( "morph_interval" );
-		USE_MORPH = true;
-	}
-	if (analysis_db->keyExists( "use_morphopen_oil" )){
-		USE_MORPHOPEN_OIL = analysis_db->getScalar<bool>( "use_morphopen_oil" );
-		if (rank == 0 && USE_MORPHOPEN_OIL) printf("Volume change by morphological opening \n");
 		USE_MORPH = true;
 	}
 	if (analysis_db->keyExists( "tolerance" )){
@@ -946,20 +885,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			printf("     morph_delta = %f \n",morph_delta);
 			printf("     seed_water = %f \n",seed_water);
 		}
-		else if (protocol == "open connected oil"){
-			printf("  using protocol = open connected oil \n");
-			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
-			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
-			printf("     tolerance = %f \n",tolerance);
-			printf("     morph_delta = %f \n",morph_delta);
-		}
-		else if (protocol == "shell aggregation"){
-			printf("  using protocol = shell aggregation \n"); 
-			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
-			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
-			printf("     tolerance = %f \n",tolerance);
-			printf("     morph_delta = %f \n",morph_delta);
-		}  
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
 	}
@@ -976,7 +901,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
     //std::shared_ptr<Database> analysis_db;
 	bool Regular = false;
 	auto current_db = db->cloneDatabase();
-	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
+	//runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -999,20 +924,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
-        if (greyMode==true){
-            //Model-1&4
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
-                    rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-            ////Model-2&3
-            //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
-            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
-            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        }
-        else{
-            ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        }
+        //Model-1&4
+        ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+                rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
+                alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ////Model-2&3
+        //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
+        //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
+        //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
@@ -1029,20 +948,15 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
-        if (greyMode==true){
-            //Model-1&4
-            ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
-                    rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-            ////Model-2&3
-            //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
-            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-        }
-        else{
-            ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-        }
+
+        //Model-1&4
+        ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+                rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+                alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+        ////Model-2&3
+        //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
+        //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+        //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); 
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 
@@ -1063,20 +977,14 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
-        if (greyMode==true){
-            //Model-1&4
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity, 
-                    rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                    alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-            ////Model-2&3
-            //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
-            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-            //        alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        }
-        else{
-            ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-                    alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        }
+        //Model-1&4
+        ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
+                rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+                alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ////Model-2&3
+        //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
+        //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+        //        alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
@@ -1093,47 +1001,39 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
-        if (greyMode==true){
-            //Model-1&4
-            ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,
-                    rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-            ////Model-2&3
-            //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
-            //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-            //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-        }
-        else{
-            ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
-                    alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-        }
+
+        //Model-1&4
+        ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+                rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+                alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+        ////Model-2&3
+        //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
+        //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
+        //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); 
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		//************************************************************************
 		PROFILE_STOP("Update");
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition == 4){
-			printf("%i %f \n",timestep,din);
+			printf("%i %.5g \n",timestep,din);
 		}
-		// Run the analysis
-		analysis.basic(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
+
+        if (timestep%analysis_interval == 0){
+			ScaLBL_Comm->RegularLayout(Map,Pressure,Averages->Pressure);
+			ScaLBL_Comm->RegularLayout(Map,&Den[0],Averages->Rho_n);
+			ScaLBL_Comm->RegularLayout(Map,&Den[Np],Averages->Rho_w);
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Averages->Vel_x);
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Averages->Vel_y);
+			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Averages->Vel_z);
+			Averages->Basic(); 
+        }
 
 		// allow initial ramp-up to get closer to steady state
 		if (timestep > RAMP_TIMESTEPS && timestep%analysis_interval == 0 && USE_MORPH){
-			analysis.finish();
+		  //analysis.finish();
 			CURRENT_STEADY_TIMESTEPS += analysis_interval;
 
-			double volB = Averages->gwb.V; 
-			double volA = Averages->gnb.V; 
-			volA /= Dm->Volume;
-			volB /= Dm->Volume;;
-			//initial_volume = volA*Dm->Volume;
-			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
-			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
-			double vA_z = Averages->gnb.Pz/Averages->gnb.M; 
-			double vB_x = Averages->gwb.Px/Averages->gwb.M; 
-			double vB_y = Averages->gwb.Py/Averages->gwb.M; 
-			double vB_z = Averages->gwb.Pz/Averages->gwb.M;
 			double muA = rhoA*(tauA-0.5)/3.f; 
 			double muB = rhoB*(tauB-0.5)/3.f;				
 			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
@@ -1147,10 +1047,12 @@ void ScaLBL_GreyscaleColorModel::Run(){
 				dir_z = 1.0;
 				force_mag = 1.0;
 			}
-			double current_saturation = volB/(volA+volB);
-			double flow_rate_A = volA*(vA_x*dir_x + vA_y*dir_y + vA_z*dir_z);
-			double flow_rate_B = volB*(vB_x*dir_x + vB_y*dir_y + vB_z*dir_z);
-			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(5.796*alpha);
+			double current_saturation = Averages->saturation;
+			double volA = current_saturation*GreyPorosity;
+			double volB = (1.0-current_saturation)*GreyPorosity;
+			double flow_rate_A = Averages->oil_flow_rate;
+			double flow_rate_B = Averages->water_flow_rate;
+			double Ca = fabs(muA*flow_rate_A + muB*flow_rate_B)/(6.0*alpha);
 			
 			if ( morph_timesteps > morph_interval ){
 				
@@ -1173,8 +1075,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 				    Fy *= 1e-3/force_mag;   
 				    Fz *= 1e-3/force_mag;   
 				  }
-				  if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-				  Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+				  if (rank == 0) printf("    -- adjust force by factor %.5g \n ",capillary_number / Ca);
+				  Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
 				  greyscaleColor_db->putVector<double>("F",{Fx,Fy,Fz});
 				}
 				if ( isSteady ){
@@ -1195,61 +1097,65 @@ void ScaLBL_GreyscaleColorModel::Run(){
 						slope_krA_volume = (log_krA - log_krA_prev)/(Dm->Volume*(volA - volA_prev));
 						delta_volume_target=min(delta_volume_target,Dm->Volume*(volA+(log_krA_target - log_krA)/slope_krA_volume));
 						if (rank==0){
-							printf("    Enabling endpoint adaptation: krA = %f, krB = %f \n",krA_TMP,krB_TMP);	
-							printf("    log(kr)=%f, volume=%f, TARGET log(kr)=%f, volume change=%f \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
+							printf("    Enabling endpoint adaptation: krA = %.5g, krB = %.5g \n",krA_TMP,krB_TMP);	
+							printf("    log(kr)=%.5g, volume=%.5g, TARGET log(kr)=%.5g, volume change=%.5g \n",log_krA, volA, log_krA_target, delta_volume_target/(volA*Dm->Volume));							
 						}
 					}
 					log_krA_prev = log_krA;
 					volA_prev = volA;
 					//******************************** **/
 					/**  compute averages & write data **/
-					Averages->Full();
+					/*Averages->Full();
 					Averages->Write(timestep);
 					analysis.WriteVisData(timestep, current_db, *Averages, Phi, Pressure, Velocity, fq, Den );
 					analysis.finish();
-					
+					*/
 					if (rank==0){
 						printf("** WRITE STEADY POINT *** ");
-						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						printf("Ca = %.5g, (previous = %.5g) \n",Ca,Ca_previous);
 						double h = Dm->voxel_length;		
+
 						// pressures
-						double pA = Averages->gnb.p;
-						double pB = Averages->gwb.p;
-						double pAc = Averages->gnc.p;
-						double pBc = Averages->gwc.p;
+						double pA = Averages->Oil.p;
+						double pB = Averages->Water.p;
 						double pAB = (pA-pB)/(h*6.0*alpha);
-						double pAB_connected = (pAc-pBc)/(h*6.0*alpha);
-						// connected contribution
-						double Vol_nc = Averages->gnc.V/Dm->Volume;
-						double Vol_wc = Averages->gwc.V/Dm->Volume;
-						double Vol_nd = Averages->gnd.V/Dm->Volume;
-						double Vol_wd = Averages->gwd.V/Dm->Volume;
-						double Mass_n = Averages->gnc.M + Averages->gnd.M;
-						double Mass_w = Averages->gwc.M + Averages->gwd.M;
-						double vAc_x = Averages->gnc.Px/Mass_n; 
-						double vAc_y = Averages->gnc.Py/Mass_n; 
-						double vAc_z = Averages->gnc.Pz/Mass_n; 
-						double vBc_x = Averages->gwc.Px/Mass_w; 
-						double vBc_y = Averages->gwc.Py/Mass_w; 
-						double vBc_z = Averages->gwc.Pz/Mass_w;
-						// disconnected contribution
-						double vAd_x = Averages->gnd.Px/Mass_n; 
-						double vAd_y = Averages->gnd.Py/Mass_n; 
-						double vAd_z = Averages->gnd.Pz/Mass_n; 
-						double vBd_x = Averages->gwd.Px/Mass_w; 
-						double vBd_y = Averages->gwd.Py/Mass_w; 
-						double vBd_z = Averages->gwd.Pz/Mass_w;
-						
-						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
-						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
-						double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
-						double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
-						
-						double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
-						double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
-						
-						double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
-						double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
+                        
+                        // -------- The following quantities may not make sense for greyscale simulation -----------//
+//						double pAc = Averages->gnc.p;
+//						double pBc = Averages->gwc.p;
+//						double pAB_connected = (pAc-pBc)/(h*6.0*alpha);
+//						// connected contribution
+//						double Vol_nc = Averages->gnc.V/Dm->Volume;
+//						double Vol_wc = Averages->gwc.V/Dm->Volume;
+//						double Vol_nd = Averages->gnd.V/Dm->Volume;
+//						double Vol_wd = Averages->gwd.V/Dm->Volume;
+//						double Mass_n = Averages->gnc.M + Averages->gnd.M;
+//						double Mass_w = Averages->gwc.M + Averages->gwd.M;
+//						double vAc_x = Averages->gnc.Px/Mass_n; 
+//						double vAc_y = Averages->gnc.Py/Mass_n; 
+//						double vAc_z = Averages->gnc.Pz/Mass_n; 
+//						double vBc_x = Averages->gwc.Px/Mass_w; 
+//						double vBc_y = Averages->gwc.Py/Mass_w; 
+//						double vBc_z = Averages->gwc.Pz/Mass_w;
+//						// disconnected contribution
+//						double vAd_x = Averages->gnd.Px/Mass_n; 
+//						double vAd_y = Averages->gnd.Py/Mass_n; 
+//						double vAd_z = Averages->gnd.Pz/Mass_n; 
+//						double vBd_x = Averages->gwd.Px/Mass_w; 
+//						double vBd_y = Averages->gwd.Py/Mass_w; 
+//						double vBd_z = Averages->gwd.Pz/Mass_w;
+//						
+//						double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
+//						double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
+//						double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
+//						double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
+//						
+//						double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
+//						double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
+//						
+//						double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
+//						double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
+//						//---------------------------------------------------------------------------------------//
 
 						double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
 						double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
@@ -1265,12 +1171,13 @@ void ScaLBL_GreyscaleColorModel::Run(){
 							WriteHeader=true;
 						kr_log_file = fopen("relperm.csv","a");
 						if (WriteHeader)
-							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+							fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water cap.pressure.norm pressure.drop Ca M\n");
 
-						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected,pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+						fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",
+                                CURRENT_STEADY_TIMESTEPS,current_saturation,kAeff,kBeff,pAB,viscous_pressure_drop,Ca,Mobility);
 						fclose(kr_log_file);
 
-						printf("  Measured capillary number %f \n ",Ca);
+						printf("  Measured capillary number %.5g \n ",Ca);
 					}
 					if (SET_CAPILLARY_NUMBER ){
 						Fx *= capillary_number / Ca;
@@ -1281,8 +1188,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 							Fy *= 1e-3/force_mag;   
 							Fz *= 1e-3/force_mag;   
 						}
-						if (rank == 0) printf("    -- adjust force by factor %f \n ",capillary_number / Ca);
-						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta);
+						if (rank == 0) printf("    -- adjust force by factor %.5g \n ",capillary_number / Ca);
+						Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
 						greyscaleColor_db->putVector<double>("F",{Fx,Fy,Fz});
 					}
 					
@@ -1291,7 +1198,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 				else{
 					if (rank==0){
 						printf("** Continue to simulate steady *** \n ");
-						printf("Ca = %f, (previous = %f) \n",Ca,Ca_previous);
+						printf("Ca = %.5g, (previous = %.5g) \n",Ca,Ca_previous);
 					}
 				}
 				morph_timesteps=0;
@@ -1319,17 +1226,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 					delta_volume = volA*Dm->Volume - initial_volume;
 					CURRENT_MORPH_TIMESTEPS += analysis_interval;
 					double massChange = SeedPhaseField(seed_water);
-					if (rank==0) printf("***Seed water in oil %f, volume change %f / %f ***\n", massChange, delta_volume, delta_volume_target);
-				}
-				else if (USE_MORPHOPEN_OIL){
-					delta_volume = volA*Dm->Volume - initial_volume;
-					if (rank==0) printf("***Morphological opening of connected oil, target volume change %f ***\n", delta_volume_target);
-					MorphOpenConnected(delta_volume_target);
-				}
-				else {
-					if (rank==0) printf("***Shell aggregation, target volume change %f ***\n", delta_volume_target);
-					//double delta_volume_target = volB - (volA + volB)*TARGET_SATURATION; // change in volume to A
-					delta_volume += MorphInit(beta,delta_volume_target-delta_volume);
+					if (rank==0) printf("***Seed water in oil %.5g, volume change %.5g / %.5g ***\n", massChange, delta_volume, delta_volume_target);
 				}
 
 				if ( (delta_volume - delta_volume_target)/delta_volume_target > 0.0 ){
@@ -1354,7 +1251,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	}
-	analysis.finish();
+	//analysis.finish();
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
@@ -1377,189 +1274,49 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	// ************************************************************************
 }
 
-double ScaLBL_GreyscaleColorModel::ImageInit(std::string Filename){
-	
+void ScaLBL_GreyscaleColorModel::ImageInit(std::string Filename){
 	if (rank==0) printf("Re-initializing fluids from file: %s \n", Filename.c_str());
 	Mask->Decomp(Filename);
 	for (int i=0; i<Nx*Ny*Nz; i++) id[i] = Mask->id[i];  // save what was read
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];  // save what was read
 
 	AssignComponentLabels();
+    AssignGreySolidLabels();
+    AssignGreyPoroPermLabels(); 
+	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
+	ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);
 
-	double Count = 0.0;
-	double PoreCount = 0.0;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				if (id[Nx*Ny*k+Nx*j+i] == 2){
-					PoreCount++;
-					Count++;
-				}
-				else if (id[Nx*Ny*k+Nx*j+i] == 1){
-					PoreCount++;						
-				}
-			}
-		}
-	}
-
-	Count=sumReduce( Dm->Comm, Count);
-	PoreCount=sumReduce( Dm->Comm, PoreCount);
-	
-	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
+    //NOTE in greyscale simulations, water may have multiple labels (e.g. 2, 21, 22, etc)
+    //so the saturaiton calculation is not that straightforward
+//	double Count = 0.0;
+//	double PoreCount = 0.0;
+//	for (int k=1; k<Nz-1; k++){
+//		for (int j=1; j<Ny-1; j++){
+//			for (int i=1; i<Nx-1; i++){
+//				if (id[Nx*Ny*k+Nx*j+i] == 2){
+//					PoreCount++;
+//					Count++;
+//				}
+//				else if (id[Nx*Ny*k+Nx*j+i] == 1){
+//					PoreCount++;						
+//				}
+//			}
+//		}
+//	}
+//	Count=sumReduce( Dm->Comm, Count);
+//	PoreCount=sumReduce( Dm->Comm, PoreCount);
+//	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 	
-	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
+	//ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
-	double saturation = Count/PoreCount;
-	return saturation;
+	//double saturation = Count/PoreCount;
+	//return saturation;
 
-}
-
-double ScaLBL_GreyscaleColorModel::MorphOpenConnected(double target_volume_change){
-	
-	int nx = Nx;
-	int ny = Ny;
-	int nz = Nz;
-	int n;
-	int N = nx*ny*nz;
-	double volume_change=0.0;
-	
-	if (target_volume_change < 0.0){
-		Array<char> id_solid(nx,ny,nz);
-		Array<int> phase_label(nx,ny,nz);
-		DoubleArray distance(Nx,Ny,Nz);
-		DoubleArray phase(nx,ny,nz);
-		signed char *id_connected;
-		id_connected = new signed char [nx*ny*nz];
-
-		ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
-
-		// Extract only the connected part of NWP
-		BlobIDstruct new_index;
-		double vF=0.0; double vS=0.0;
-		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
-
-		long long count_connected=0;
-		long long count_porespace=0;
-		long long count_water=0;
-		for (int k=1; k<nz-1; k++){
-			for (int j=1; j<ny-1; j++){
-				for (int i=1; i<nx-1; i++){
-					n=k*nx*ny+j*nx+i;
-					// only apply opening to connected component 
-					if ( phase_label(i,j,k) == 0){
-						count_connected++;
-					}
-					if (id[n] > 0){
-						count_porespace++;
-					}
-					if (id[n] == 2){
-						count_water++;
-					}
-				}
-			}
-		}
-		count_connected=sumReduce( Dm->Comm, count_connected);
-		count_porespace=sumReduce( Dm->Comm, count_porespace);
-		count_water=sumReduce( Dm->Comm, count_water);
-
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					n=k*nx*ny+j*nx+i;
-					// only apply opening to connected component 
-					if ( phase_label(i,j,k) == 0){
-						id_solid(i,j,k) = 1;
-						id_connected[n] = 2;
-						id[n] = 2;
-						/* delete the connected component */
-						phase(i,j,k) = -1.0;
-					}
-					else{
-						id_solid(i,j,k) = 0;
-						id_connected[n] = 0;
-					}
-				}
-			}
-		}
-		CalcDist(distance,id_solid,*Dm);
-
-		signed char water=2;
-		signed char notwater=1;
-		double SW=-(target_volume_change)/count_connected;
-		MorphOpen(distance, id_connected, Dm, SW, water, notwater);
-		
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					n=k*nx*ny+j*nx+i;
-					// only apply opening to connected component 
-					if ( id_connected[n] == 1){
-						id_solid(i,j,k) = 0;
-					}
-					else{
-						id_solid(i,j,k) = 1;
-					}
-				}
-			}
-		}
-		CalcDist(distance,id_solid,*Dm);
-		
-		// re-initialize
-		double beta = 0.95;
-		for (int k=0; k<nz; k++){
-			for (int j=0; j<ny; j++){
-				for (int i=0; i<nx; i++){
-					n=k*nx*ny+j*nx+i;
-					double d = distance(i,j,k);
-					if (Averages->SDs(i,j,k) > 0.f){
-						if (d < 3.f){
-							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-						}
-					}
-				} 
-			}
-		}
-		
-		int count_morphopen=0.0;
-		for (int k=1; k<nz-1; k++){
-			for (int j=1; j<ny-1; j++){
-				for (int i=1; i<nx-1; i++){
-					n=k*nx*ny+j*nx+i;
-					// only apply opening to connected component 
-					if ( id_connected[n] == 1){
-						count_morphopen++;
-					}
-				}
-			}
-		}
-		count_morphopen=sumReduce( Dm->Comm, count_morphopen);
-		volume_change = double(count_morphopen - count_connected);
-		
-		if (rank==0)  printf("   opening of connected oil %f \n",volume_change/count_connected);
-
-		ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
-			if (Dm->kproc()==0){
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-				ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-			}
-			if (Dm->kproc() == nprocz-1){
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-				ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-			}
-		}
-	}
-	return(volume_change);
 }
 double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil){
   srand(time(NULL));
@@ -1626,7 +1383,7 @@ double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil
 
   count= sumReduce( Dm->Comm, count);
   mass_loss= sumReduce( Dm->Comm, mass_loss);
-  if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+  if (rank == 0) printf("Remove mass %.5g from %.5g voxels \n",mass_loss,count);
 
   // Need to initialize Aq, Bq, Den, Phi directly
   //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
@@ -1634,219 +1391,6 @@ double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil
   ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
 
   return(mass_loss);
-}
-
-double ScaLBL_GreyscaleColorModel::MorphInit(const double beta, const double target_delta_volume){
-	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
-
-	double vF = 0.f;
-	double vS = 0.f;
-	double delta_volume;
-	double WallFactor = 0.0;
-	bool USE_CONNECTED_NWP = false;
-
-	DoubleArray phase(Nx,Ny,Nz);
-	IntArray phase_label(Nx,Ny,Nz);;
-	DoubleArray phase_distance(Nx,Ny,Nz);
-	Array<char> phase_id(Nx,Ny,Nz);
-	fillHalo<double> fillDouble(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
-	
-
-	// Basic algorithm to 
-	// 1. Copy phase field to CPU
-	ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
-
-	double count = 0.f;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f) count+=1.f;
-			}
-		}
-	}
-	double volume_initial = sumReduce( Dm->Comm, count);
-	/*
-	sprintf(LocalRankFilename,"phi_initial.%05i.raw",rank);
-	FILE *INPUT = fopen(LocalRankFilename,"wb");
-	fwrite(phase.data(),8,N,INPUT);
-	fclose(INPUT);
-	*/
-	// 2. Identify connected components of phase field -> phase_label
-	
-	double volume_connected = 0.0;
-       	double second_biggest = 0.0;
-	if (USE_CONNECTED_NWP){
-		BlobIDstruct new_index;
-		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-		MPI_Barrier(Dm->Comm);
-
-		// only operate on component "0"
-		count = 0.0;
-
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					int label = phase_label(i,j,k);
-					if (label == 0 ){
-						phase_id(i,j,k) = 0;
-						count += 1.0;
-					}
-					else 		
-						phase_id(i,j,k) = 1;
-					if (label == 1 ){
-						second_biggest += 1.0;
-					}
-				}
-			}
-		}	
-		volume_connected = sumReduce( Dm->Comm, count);
-		second_biggest = sumReduce( Dm->Comm, second_biggest);
-	}
-	else {
-		// use the whole NWP 
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					if (Averages->SDs(i,j,k) > 0.f){
-						if (phase(i,j,k) > 0.f ){
-							phase_id(i,j,k) = 0;
-						}
-						else {
-							phase_id(i,j,k) = 1;
-						}
-					}
-					else {
-						phase_id(i,j,k) = 1;
-					}
-				}
-			}
-		}
-	}
-
-	/*int reach_x, reach_y, reach_z;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-			}
-		}
-	}*/
-
-	// 3. Generate a distance map to the largest object -> phase_distance
-	CalcDist(phase_distance,phase_id,*Dm);
-
-	double temp,value;
-	double factor=0.5/beta;
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				if (phase_distance(i,j,k) < 3.f ){
-					value = phase(i,j,k);
-					if (value > 1.f)   value=1.f;
-					if (value < -1.f)  value=-1.f;
-					// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
-					temp = -factor*log((1.0+value)/(1.0-value));
-					/// use this approximation close to the object
-					if (fabs(value) < 0.8 && Averages->SDs(i,j,k) > 1.f ){
-						phase_distance(i,j,k) = temp;
-					}
-					// erase the original object
-					phase(i,j,k) = -1.0;
-				}
-			}
-		}
-	}
-
-	if (USE_CONNECTED_NWP){
-	if (volume_connected - second_biggest < 2.0*fabs(target_delta_volume) && target_delta_volume < 0.0){
-		// if connected volume is less than 2% just delete the whole thing
-		if (rank==0) printf("Connected region has shrunk! \n");
-		REVERSE_FLOW_DIRECTION = true;
-	}
-	
-/*	else{*/
-		if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
-	}
-		if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
-		double target_delta_volume_incremental = target_delta_volume;
-		if (fabs(target_delta_volume) > 0.01*volume_initial)  
-			target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
-		delta_volume = MorphGrow(Averages->SDs,phase_distance,phase_id,Averages->Dm, target_delta_volume_incremental, WallFactor);
-
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
-					else 		     				  phase_id(i,j,k) = 1;
-					//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
-				}
-			}
-		}	
-
-		CalcDist(phase_distance,phase_id,*Dm); // re-calculate distance
-
-		// 5. Update phase indicator field based on new distnace
-		for (int k=0; k<Nz; k++){
-			for (int j=0; j<Ny; j++){
-				for (int i=0; i<Nx; i++){
-					double d = phase_distance(i,j,k);
-					if (Averages->SDs(i,j,k) > 0.f){
-						if (d < 3.f){
-							//phase(i,j,k) = -1.0;
-							phase(i,j,k) = (2.f*(exp(-2.f*beta*d))/(1.f+exp(-2.f*beta*d))-1.f);	
-						}
-					}
-				} 
-			}
-		}
-		fillDouble.fill(phase);
-	//}
-
-	count = 0.f;
-	for (int k=1; k<Nz-1; k++){
-		for (int j=1; j<Ny-1; j++){
-			for (int i=1; i<Nx-1; i++){
-				if (phase(i,j,k) > 0.f && Averages->SDs(i,j,k) > 0.f){
-					count+=1.f;
-				}
-			}
-		}
-	}
-	double volume_final= sumReduce( Dm->Comm, count);
-
-	delta_volume = (volume_final-volume_initial);
-	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
-	if (rank == 0)  printf("   new saturation =  %f \n", volume_final/(0.238323*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs)));
-
-	// 6. copy back to the device
-	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
-	ScaLBL_CopyToDevice(Phi,phase.data(),N*sizeof(double));
-	/*
-	sprintf(LocalRankFilename,"dist_final.%05i.raw",rank);
-	FILE *DIST = fopen(LocalRankFilename,"wb");
-	fwrite(phase_distance.data(),8,N,DIST);
-	fclose(DIST);
-	
-	sprintf(LocalRankFilename,"phi_final.%05i.raw",rank);
-	FILE *PHI = fopen(LocalRankFilename,"wb");
-	fwrite(phase.data(),8,N,PHI);
-	fclose(PHI);
-	*/
-	// 7. Re-initialize phase field and density
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
-	return delta_volume;
 }
 
 void ScaLBL_GreyscaleColorModel::WriteDebug(){

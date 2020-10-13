@@ -101,6 +101,6 @@ private:
     char LocalRestartFile[40];
    
     void AssignComponentLabels(double *Porosity, double *Permeablity);
-    
+    void AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm);
 };
 
