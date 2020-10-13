@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include "models/PoissonSolver.h"
+#include "common/Utilities.h"
 
 using namespace std;
 
@@ -18,23 +19,26 @@ using namespace std;
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    int provided_thread_support = -1;
-    MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
-    MPI_Comm comm;
-    MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-    int rank = comm_rank(comm);
-    int nprocs = comm_size(comm);
-    if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE ){
-      std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
-    }
+    Utilities::startup( argc, argv );
+    
+    {// Limit scope so variables that contain communicators will free before MPI_Finialize
 
-    // Limit scope so variables that contain communicators will free before MPI_Finialize
-    { 
+        MPI_Comm comm;
+        MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+        int rank = comm_rank(comm);
+        int nprocs = comm_size(comm);
+
         if (rank == 0){
             printf("********************************************************\n");
             printf("Running Test for LB-Poisson Solver \n");
             printf("********************************************************\n");
         }
+        // Initialize compute device
+        ScaLBL_SetDevice(rank);
+        ScaLBL_DeviceBarrier();
+        MPI_Barrier(comm);
+
+        PROFILE_ENABLE(1);
         //PROFILE_ENABLE_TRACE();
         //PROFILE_ENABLE_MEMORY();
         PROFILE_SYNCHRONIZE();
@@ -64,10 +68,13 @@ int main(int argc, char **argv)
         PROFILE_STOP("Main");
         PROFILE_SAVE("TestPoissonSolver",1);
         // ****************************************************
+        
         MPI_Barrier(comm);
+        MPI_Comm_free(&comm);
+
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
-    MPI_Comm_free(&comm);
-    MPI_Finalize();
+
+    Utilities::shutdown();
 }
 
 

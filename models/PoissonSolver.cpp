@@ -544,20 +544,54 @@ void ScaLBL_Poisson::DummyChargeDensity(){
 	delete [] ChargeDensity_host;
 }
 
-void ScaLBL_Poisson::getElectricPotential(int timestep){
+void ScaLBL_Poisson::getElectricPotential_debug(int timestep){
+    //This function write out decomposed data
+    DoubleArray PhaseField(Nx,Ny,Nz);
+	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
+    ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+    //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    FILE *OUTFILE;
+    sprintf(LocalRankFilename,"Electric_Potential_Time_%i.%05i.raw",timestep,rank);
+    OUTFILE = fopen(LocalRankFilename,"wb");
+    fwrite(PhaseField.data(),8,N,OUTFILE);
+    fclose(OUTFILE);
+}
 
-        DoubleArray PhaseField(Nx,Ny,Nz);
-	    //ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
-        ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-        //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        FILE *OUTFILE;
-        sprintf(LocalRankFilename,"Electric_Potential_Time_%i.%05i.raw",timestep,rank);
-        OUTFILE = fopen(LocalRankFilename,"wb");
-        fwrite(PhaseField.data(),8,N,OUTFILE);
-        fclose(OUTFILE);
+void ScaLBL_Poisson::getElectricPotential(int timestep){
+    //This function wirte out the data in a normal layout (by aggregating all decomposed domains)
+    DoubleArray PhaseField(Nx,Ny,Nz);
+	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
+    ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
+    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    
+    sprintf(OutputFilename,"Electric_Potential_Time_%i.raw",timestep);
+    Mask->AggregateLabels(OutputFilename,PhaseField);
 }
 
 void ScaLBL_Poisson::getElectricField(int timestep){
+
+        DoubleArray PhaseField(Nx,Ny,Nz);
+
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],PhaseField);
+        ElectricField_LB_to_Phys(PhaseField);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        sprintf(OutputFilename,"ElectricField_X_Time_%i.raw",timestep);
+        Mask->AggregateLabels(OutputFilename,PhaseField);
+
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],PhaseField);
+        ElectricField_LB_to_Phys(PhaseField);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        sprintf(OutputFilename,"ElectricField_Y_Time_%i.raw",timestep);
+        Mask->AggregateLabels(OutputFilename,PhaseField);
+
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],PhaseField);
+        ElectricField_LB_to_Phys(PhaseField);
+        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        sprintf(OutputFilename,"ElectricField_Z_Time_%i.raw",timestep);
+        Mask->AggregateLabels(OutputFilename,PhaseField);
+}
+
+void ScaLBL_Poisson::getElectricField_debug(int timestep){
 
         //ScaLBL_D3Q7_Poisson_getElectricField(fq,ElectricField,tau,Np);
         //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);

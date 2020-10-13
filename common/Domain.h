@@ -198,6 +198,7 @@ public: // Public variables (need to create accessors instead)
     void CommInit(); 
     int PoreCount();
     void AggregateLabels( const std::string& filename );
+    void AggregateLabels( const std::string& filename, DoubleArray &UserData );
 
 private:
 

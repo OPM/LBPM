@@ -32,6 +32,7 @@ public:
 	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
     void getVelocity(int timestep);
+    void getVelocity_debug(int timestep);
     double CalVelocityConvergence(double& flow_rate_previous,double *ChargeDensity, double *ElectricField);
 	
 	bool Restart,pBC;
@@ -79,6 +80,7 @@ private:
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
+    char OutputFilename[200];
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	

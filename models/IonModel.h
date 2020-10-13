@@ -31,6 +31,7 @@ public:
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
     void getIonConcentration(int timestep);
+    void getIonConcentration_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
     double CalIonDenConvergence(vector<double> &ci_avg_previous);
@@ -85,6 +86,7 @@ private:
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
+    char OutputFilename[200];
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
