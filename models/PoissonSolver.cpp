@@ -390,14 +390,15 @@ void ScaLBL_Poisson::Initialize(){
     delete [] psi_host;
     
     //extra treatment for halo layer
-    if (BoundaryCondition==1){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
-		}
-    }
+    //maybe not useful
+    //if (BoundaryCondition==1){
+	//	if (Dm->kproc()==0){
+	//		ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
+	//	}
+	//	if (Dm->kproc() == nprocz-1){
+	//		ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
+	//	}
+    //}
 }
 
 void ScaLBL_Poisson::Run(double *ChargeDensity){
