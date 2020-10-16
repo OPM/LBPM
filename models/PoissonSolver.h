@@ -3,6 +3,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/stat.h>
 #include <iostream>
 #include <exception>
@@ -45,6 +46,7 @@ public:
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
+    short WriteLog;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -79,6 +81,7 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
     char OutputFilename[200];
+	FILE *TIMELOG;
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
@@ -90,5 +93,6 @@ private:
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);
+    void getConvergenceLog(int timestep,double error);
     
 };

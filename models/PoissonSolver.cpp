@@ -8,7 +8,7 @@
 ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP),timestep(0),timestepMax(0),tau(0),k2_inv(0),tolerance(0),h(0),
 epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),Vin(0),Vout(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),analysis_interval(0),
-chargeDen_dummy(0),
+chargeDen_dummy(0),WriteLog(0),
 nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
@@ -36,6 +36,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
     Vin  = 1.0; //Boundary-z (inlet)  electric potential
     Vout = 1.0; //Boundary-Z (outlet) electric potential
     chargeDen_dummy = 1.0e-3;//For debugging;unit=[C/m^3]
+    WriteLog = 0;
 
 	// LB-Poisson Model parameters
 	if (electric_db->keyExists( "timestepMax" )){
@@ -52,6 +53,15 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	}
 	if (electric_db->keyExists( "DummyChargeDen" )){
 		chargeDen_dummy = electric_db->getScalar<double>( "DummyChargeDen" );
+	}
+	if (electric_db->keyExists( "WriteLog" )){
+		auto writelog = electric_db->getScalar<std::string>( "WriteLog" );
+        if (writelog !="True" && writelog !="False"){
+            ERROR("Error: LB-Poisson Solver: WriteLog cannot be identified! Uesage: WriteLog is either True or False.\n");
+        }
+        else if (writelog =="True"){
+            WriteLog = 1;
+        }
 	}
 
     // Read solid boundary condition specific to Poisson equation
@@ -390,15 +400,14 @@ void ScaLBL_Poisson::Initialize(){
     delete [] psi_host;
     
     //extra treatment for halo layer
-    //maybe not useful
-    //if (BoundaryCondition==1){
-	//	if (Dm->kproc()==0){
-	//		ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
-	//	}
-	//	if (Dm->kproc() == nprocz-1){
-	//		ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
-	//	}
-    //}
+    if (BoundaryCondition==1){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
+		}
+    }
 }
 
 void ScaLBL_Poisson::Run(double *ChargeDensity){
@@ -457,6 +466,9 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 			psi_avg_previous = psi_avg;
         }
 	}
+    if(WriteLog==1){
+        getConvergenceLog(timestep,error);
+    }
 
 	//************************************************************************/
 	//stoptime = MPI_Wtime();
@@ -474,6 +486,29 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 	//if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	//if (rank==0) printf("*********************************************************************\n");
 
+}
+
+void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
+    if (rank==0){
+		bool WriteHeader=false;
+		TIMELOG = fopen("PoissonSolver_Convergence.csv","r");
+		if (TIMELOG != NULL)
+			fclose(TIMELOG);
+		else
+			WriteHeader=true;
+
+		TIMELOG = fopen("PoissonSolver_Convergence.csv","a+");
+		if (WriteHeader)
+		{
+			fprintf(TIMELOG,"Timestep Error\n");				
+            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
+            fflush(TIMELOG);
+		}
+        else {
+            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
+            fflush(TIMELOG);
+        }
+    }
 }
 
 void ScaLBL_Poisson::SolveElectricPotentialAAodd(){
