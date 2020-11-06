@@ -223,3 +223,55 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, in
 		dist[nr6] = f6;
 	}
 }
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double FluxIn, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		double f6 = dist[5*Np+n];
+		//...................................................
+		double f5 = FluxIn +f6;
+		dist[6*Np+n] = f5;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double FluxIn, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		double f5 = dist[6*Np+n];
+		//...................................................
+		double f6 = FluxIn +f5;
+		dist[5*Np+n] = f6;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    int nread,nr5;
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		nread = d_neighborList[n+5*Np];
+		double f6 = dist[nread];
+
+		// Unknown distributions
+		nr5 = d_neighborList[n+4*Np];
+		double f5 = FluxIn +f6;
+		dist[nr5] = f5;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    int nread,nr6;
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		nread = d_neighborList[n+4*Np];
+		double f5 = dist[nread];
+
+		// unknown distributions
+		nr6 = d_neighborList[n+5*Np];
+		double f6 = FluxIn +f5;
+		dist[nr6] = f6;
+	}
+}

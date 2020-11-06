@@ -39,7 +39,6 @@ public:
 	//bool Restart,pBC;
 	int timestep;
     vector<int> timestepMax;
-	int BoundaryCondition;
 	int BoundaryConditionSolid;
     double h;//domain resolution, unit [um/lu]
     double kb,electron_charge,T,Vt;
@@ -49,11 +48,13 @@ public:
     double Ex_dummy,Ey_dummy,Ez_dummy;
 	
 	int number_ion_species;
+	vector<int> BoundaryConditionInlet;
+	vector<int> BoundaryConditionOutlet;
     vector<double> IonDiffusivity;//User input unit [m^2/sec]
     vector<int> IonValence;
     vector<double> IonConcentration;//unit [mol/m^3]
-    vector<double> Cin;//unit [mol/m^3]
-    vector<double> Cout;//unit [mol/m^3]
+    vector<double> Cin;//inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> Cout;//outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
 	vector<double> tau;
 	vector<double> time_conv;
 	

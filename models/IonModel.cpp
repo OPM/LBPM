@@ -10,7 +10,7 @@ ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK),nprocs(NP),timestep(0),timestepMax(0),time_conv(0),kb(0),electron_charge(0),T(0),Vt(0),k2_inv(0),h(0),
 tolerance(0),number_ion_species(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),
 fluidVelx_dummy(0),fluidVely_dummy(0),fluidVelz_dummy(0),
-BoundaryCondition(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+BoundaryConditionInlet(0),BoundaryConditionOutlet(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
 }
@@ -40,8 +40,6 @@ void ScaLBL_IonModel::ReadParams(string filename,vector<int> &num_iter){
     IonDiffusivity.push_back(1.0e-9);//user-input diffusivity has physical unit [m^2/sec]
     IonValence.push_back(1);//algebraic valence charge
     IonConcentration.push_back(1.0e-3);//user-input ion concentration has physical unit [mol/m^3]
-    Cin.push_back(1.0e-3);//user-input inlet boundary ion concentration;unit [mol/m^3]
-    Cout.push_back(1.0e-3);//user-input outlet boundary ion concentration;unit [mol/m^3]
     //tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivity[0]);
     time_conv.push_back((tau[0]-0.5)/k2_inv*(h*h*1.0e-12)/IonDiffusivity[0]);
     fluidVelx_dummy = 0.0;//for debugging, unit [m/sec]
@@ -162,54 +160,78 @@ void ScaLBL_IonModel::ReadParams(string filename,vector<int> &num_iter){
 	}
     // Read boundary condition for ion transport
     // BC = 0: normal periodic BC
-    // BC = 1: fixed inlet and outlet ion concentration
-    BoundaryCondition = 0;
-	if (ion_db->keyExists( "BC" )){
-		BoundaryCondition = ion_db->getScalar<int>( "BC" );
+    // BC = 1: fixed ion concentration; unit=[mol/m^3]
+    // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
+    BoundaryConditionInlet.push_back(0);
+    BoundaryConditionOutlet.push_back(0);
+    //Inlet
+	if (ion_db->keyExists( "BC_InletList" )){
+		BoundaryConditionInlet = ion_db->getVector<int>( "BC_InletList" );
+        if (BoundaryConditionInlet.size()!=number_ion_species){
+		    ERROR("Error: number_ion_species and BC_InletList must be of the same length! \n");
+        }
+        unsigned short int BC_inlet_min = *min_element(BoundaryConditionInlet.begin(),BoundaryConditionInlet.end());
+        unsigned short int BC_inlet_max = *max_element(BoundaryConditionInlet.begin(),BoundaryConditionInlet.end());
+        if (BC_inlet_min == 0 && BC_inlet_max>0){
+		    ERROR("Error: BC_InletList: mix of periodic, ion concentration and flux BC is not supported! \n");
+        }
+        if (BC_inlet_min>0){
+            //read in inlet values Cin
+            if (ion_db->keyExists("InletValueList")){
+                Cin = ion_db->getVector<double>( "InletValueList" );
+                if (Cin.size()!=number_ion_species){
+                    ERROR("Error: number_ion_species and InletValueList must be the same length! \n");
+                }
+            }
+            else {
+                ERROR("Error: Non-periodic BCs are specified but InletValueList cannot be found! \n");
+            }
+            for (unsigned int i=0;i<BoundaryConditionInlet.size();i++){
+                switch (BoundaryConditionInlet[i]){
+                    case 1://fixed boundary ion concentration [mol/m^3]
+                       Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+                       break;
+                    case 2://fixed boundary ion flux [mol/m^2/sec]
+                       Cin[i] = Cin[i]*(h*h*1.0e-12)*time_conv[i];//LB ion flux has unit [mol/lu^2/lt]
+                       break; 
+                }
+            }
+        }
 	}
-    if (BoundaryCondition==1){
-        //read boundary ion concentration list; INPUT unit [mol/m^3]
-        //it must be converted to LB unit [mol/lu^3]
-        
-        //inlet
-        if (ion_db->keyExists("CinList")){
-            Cin.clear();
-            Cin = ion_db->getVector<double>( "CinList" );
-            if (Cin.size()!=number_ion_species){
-                ERROR("Error: number_ion_species and CinList must be the same length! \n");
+    //Outlet
+	if (ion_db->keyExists( "BC_OutletList" )){
+		BoundaryConditionOutlet = ion_db->getVector<int>( "BC_OutletList" );
+        if (BoundaryConditionOutlet.size()!=number_ion_species){
+		    ERROR("Error: number_ion_species and BC_OutletList must be of the same length! \n");
+        }
+        unsigned short int BC_outlet_min = *min_element(BoundaryConditionOutlet.begin(),BoundaryConditionOutlet.end());
+        unsigned short int BC_outlet_max = *max_element(BoundaryConditionOutlet.begin(),BoundaryConditionOutlet.end());
+        if (BC_outlet_min == 0 && BC_outlet_max>0){
+		    ERROR("Error: BC_OutletList: mix of periodic, ion concentration and flux BC is not supported! \n");
+        }
+        if (BC_outlet_min>0){
+            //read in outlet values Cout
+            if (ion_db->keyExists("OutletValueList")){
+                Cout = ion_db->getVector<double>( "OutletValueList" );
+                if (Cout.size()!=number_ion_species){
+                    ERROR("Error: number_ion_species and OutletValueList must be the same length! \n");
+                }
             }
-            else{
-                for (int i=0; i<Cin.size();i++){
-                    Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+            else {
+                ERROR("Error: Non-periodic BCs are specified but OutletValueList cannot be found! \n");
+            }
+            for (unsigned int i=0;i<BoundaryConditionOutlet.size();i++){
+                switch (BoundaryConditionOutlet[i]){
+                    case 1://fixed boundary ion concentration [mol/m^3]
+                       Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+                       break;
+                    case 2://fixed boundary ion flux [mol/m^2/sec]
+                       Cout[i] = Cout[i]*(h*h*1.0e-12)*time_conv[i];//LB ion flux has unit [mol/lu^2/lt]
+                       break; 
                 }
             }
         }
-        else {
-            for (int i=0; i<Cin.size();i++){
-                Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-            }
-        
-        }
-        //outlet
-        if (ion_db->keyExists("CoutList")){
-            Cout.clear();
-            Cout = ion_db->getVector<double>( "CoutList" );
-            if (Cout.size()!=number_ion_species){
-                ERROR("Error: number_ion_species and CoutList must be the same length! \n");
-            }
-            else{
-                for (int i=0; i<Cout.size();i++){
-                    Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-                }
-            }
-        }
-        else {
-            for (int i=0; i<Cout.size();i++){
-                Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-            }
-        
-        }
-    }
+	}
 }
 
 void ScaLBL_IonModel::ReadParams(string filename){
@@ -236,8 +258,6 @@ void ScaLBL_IonModel::ReadParams(string filename){
     IonDiffusivity.push_back(1.0e-9);//user-input diffusivity has physical unit [m^2/sec]
     IonValence.push_back(1);//algebraic valence charge
     IonConcentration.push_back(1.0e-3);//user-input ion concentration has physical unit [mol/m^3]
-    Cin.push_back(1.0e-3);//user-input inlet boundary ion concentration;unit [mol/m^3]
-    Cout.push_back(1.0e-3);//user-input outlet boundary ion concentration;unit [mol/m^3]
     //tau.push_back(0.5+k2_inv*time_conv/(h*1.0e-6)/(h*1.0e-6)*IonDiffusivity[0]);
     time_conv.push_back((tau[0]-0.5)/k2_inv*(h*h*1.0e-12)/IonDiffusivity[0]);
     fluidVelx_dummy = 0.0;//for debugging, unit [m/sec]
@@ -350,54 +370,78 @@ void ScaLBL_IonModel::ReadParams(string filename){
 	}
     // Read boundary condition for ion transport
     // BC = 0: normal periodic BC
-    // BC = 1: fixed inlet and outlet ion concentration
-    BoundaryCondition = 0;
-	if (ion_db->keyExists( "BC" )){
-		BoundaryCondition = ion_db->getScalar<int>( "BC" );
+    // BC = 1: fixed ion concentration; unit=[mol/m^3]
+    // BC = 2: fixed ion flux (inward flux); unit=[mol/m^2/sec]
+    BoundaryConditionInlet.push_back(0);
+    BoundaryConditionOutlet.push_back(0);
+    //Inlet
+	if (ion_db->keyExists( "BC_InletList" )){
+		BoundaryConditionInlet = ion_db->getVector<int>( "BC_InletList" );
+        if (BoundaryConditionInlet.size()!=number_ion_species){
+		    ERROR("Error: number_ion_species and BC_InletList must be of the same length! \n");
+        }
+        unsigned short int BC_inlet_min = *min_element(BoundaryConditionInlet.begin(),BoundaryConditionInlet.end());
+        unsigned short int BC_inlet_max = *max_element(BoundaryConditionInlet.begin(),BoundaryConditionInlet.end());
+        if (BC_inlet_min == 0 && BC_inlet_max>0){
+		    ERROR("Error: BC_InletList: mix of periodic, ion concentration and flux BC is not supported! \n");
+        }
+        if (BC_inlet_min>0){
+            //read in inlet values Cin
+            if (ion_db->keyExists("InletValueList")){
+                Cin = ion_db->getVector<double>( "InletValueList" );
+                if (Cin.size()!=number_ion_species){
+                    ERROR("Error: number_ion_species and InletValueList must be the same length! \n");
+                }
+            }
+            else {
+                ERROR("Error: Non-periodic BCs are specified but InletValueList cannot be found! \n");
+            }
+            for (unsigned int i=0;i<BoundaryConditionInlet.size();i++){
+                switch (BoundaryConditionInlet[i]){
+                    case 1://fixed boundary ion concentration [mol/m^3]
+                       Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+                       break;
+                    case 2://fixed boundary ion flux [mol/m^2/sec]
+                       Cin[i] = Cin[i]*(h*h*1.0e-12)*time_conv[i];//LB ion flux has unit [mol/lu^2/lt]
+                       break; 
+                }
+            }
+        }
 	}
-    if (BoundaryCondition==1){
-        //read boundary ion concentration list; INPUT unit [mol/m^3]
-        //it must be converted to LB unit [mol/lu^3]
-        
-        //inlet
-        if (ion_db->keyExists("CinList")){
-            Cin.clear();
-            Cin = ion_db->getVector<double>( "CinList" );
-            if (Cin.size()!=number_ion_species){
-                ERROR("Error: number_ion_species and CinList must be the same length! \n");
+    //Outlet
+	if (ion_db->keyExists( "BC_OutletList" )){
+		BoundaryConditionOutlet = ion_db->getVector<int>( "BC_OutletList" );
+        if (BoundaryConditionOutlet.size()!=number_ion_species){
+		    ERROR("Error: number_ion_species and BC_OutletList must be of the same length! \n");
+        }
+        unsigned short int BC_outlet_min = *min_element(BoundaryConditionOutlet.begin(),BoundaryConditionOutlet.end());
+        unsigned short int BC_outlet_max = *max_element(BoundaryConditionOutlet.begin(),BoundaryConditionOutlet.end());
+        if (BC_outlet_min == 0 && BC_outlet_max>0){
+		    ERROR("Error: BC_OutletList: mix of periodic, ion concentration and flux BC is not supported! \n");
+        }
+        if (BC_outlet_min>0){
+            //read in outlet values Cout
+            if (ion_db->keyExists("OutletValueList")){
+                Cout = ion_db->getVector<double>( "OutletValueList" );
+                if (Cout.size()!=number_ion_species){
+                    ERROR("Error: number_ion_species and OutletValueList must be the same length! \n");
+                }
             }
-            else{
-                for (int i=0; i<Cin.size();i++){
-                    Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+            else {
+                ERROR("Error: Non-periodic BCs are specified but OutletValueList cannot be found! \n");
+            }
+            for (unsigned int i=0;i<BoundaryConditionOutlet.size();i++){
+                switch (BoundaryConditionOutlet[i]){
+                    case 1://fixed boundary ion concentration [mol/m^3]
+                       Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
+                       break;
+                    case 2://fixed boundary ion flux [mol/m^2/sec]
+                       Cout[i] = Cout[i]*(h*h*1.0e-12)*time_conv[i];//LB ion flux has unit [mol/lu^2/lt]
+                       break; 
                 }
             }
         }
-        else {
-            for (int i=0; i<Cin.size();i++){
-                Cin[i] = Cin[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-            }
-        
-        }
-        //outlet
-        if (ion_db->keyExists("CoutList")){
-            Cout.clear();
-            Cout = ion_db->getVector<double>( "CoutList" );
-            if (Cout.size()!=number_ion_species){
-                ERROR("Error: number_ion_species and CoutList must be the same length! \n");
-            }
-            else{
-                for (int i=0; i<Cout.size();i++){
-                    Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-                }
-            }
-        }
-        else {
-            for (int i=0; i<Cout.size();i++){
-                Cout[i] = Cout[i]*(h*h*h*1.0e-18);//LB ion concentration has unit [mol/lu^3]
-            }
-        
-        }
-    }
+	}
 }
 
 void ScaLBL_IonModel::SetDomain(){
@@ -418,8 +462,21 @@ void ScaLBL_IonModel::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
-	Dm->BoundaryCondition = BoundaryCondition;
-	Mask->BoundaryCondition = BoundaryCondition;
+    
+    unsigned short int BC_inlet_min  = *min_element(BoundaryConditionInlet.begin(),BoundaryConditionInlet.end());
+    unsigned short int BC_outlet_min = *min_element(BoundaryConditionOutlet.begin(),BoundaryConditionOutlet.end());
+    if (BC_inlet_min==0 && BC_outlet_min==0){
+        Dm->BoundaryCondition   = 0;
+        Mask->BoundaryCondition = 0;
+    }
+    else if (BC_inlet_min>0 && BC_outlet_min>0){
+        Dm->BoundaryCondition   = 1;
+        Mask->BoundaryCondition = 1;
+    }
+    else { //i.e. periodic and non-periodic BCs are mixed
+        ERROR("Error: check the type of inlet and outlet boundary condition! Mixed periodic and non-periodic BCs are found. \n");
+    }
+    
 	Dm->CommInit();
 	MPI_Barrier(comm);
 	
@@ -714,12 +771,24 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
             ScaLBL_DeviceBarrier();
-            // Set boundary conditions
-            if (BoundaryCondition == 1){
-                ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
-                ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(NeighborList, &fq[ic*Np*7], Cout[ic], timestep);
+            //--------------------------------------- Set boundary conditions -------------------------------------//
+            switch (BoundaryConditionInlet[i]){
+                case 1: 
+                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
+                    break;
+                case 2: 
+                    ScaLBL_Comm->D3Q7_Ion_Flux_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
+                    break;
             }
-            //-------------------------//
+            switch (BoundaryConditionOutlet[i]){
+                case 1: 
+                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(NeighborList, &fq[ic*Np*7],  Cout[ic], timestep);
+                    break;
+                case 2: 
+                    ScaLBL_Comm->D3Q7_Ion_Flux_BC_Z(NeighborList, &fq[ic*Np*7],  Cout[ic], timestep);
+                    break;
+            }
+            //----------------------------------------------------------------------------------------------------//
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np], 0, ScaLBL_Comm->LastExterior(), Np);
             
 
@@ -742,12 +811,24 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
             ScaLBL_DeviceBarrier();
-            // Set boundary conditions
-            if (BoundaryCondition == 1){
-                ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
-                ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(NeighborList, &fq[ic*Np*7], Cout[ic], timestep);
+            //--------------------------------------- Set boundary conditions -------------------------------------//
+            switch (BoundaryConditionInlet[i]){
+                case 1: 
+                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
+                    break;
+                case 2: 
+                    ScaLBL_Comm->D3Q7_Ion_Flux_BC_z(NeighborList, &fq[ic*Np*7],  Cin[ic], timestep);
+                    break;
             }
-            //-------------------------//
+            switch (BoundaryConditionOutlet[i]){
+                case 1: 
+                    ScaLBL_Comm->D3Q7_Ion_Concentration_BC_Z(NeighborList, &fq[ic*Np*7],  Cout[ic], timestep);
+                    break;
+                case 2: 
+                    ScaLBL_Comm->D3Q7_Ion_Flux_BC_Z(NeighborList, &fq[ic*Np*7],  Cout[ic], timestep);
+                    break;
+            }
+            //----------------------------------------------------------------------------------------------------//
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np], 0, ScaLBL_Comm->LastExterior(), Np);
             
 
