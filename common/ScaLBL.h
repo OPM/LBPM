@@ -214,13 +214,13 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(int *d_neighborList, in
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double Cin, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double Cout, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double Cin, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
 
 class ScaLBL_Communicator{
 public:
@@ -287,8 +287,8 @@ public:
 	void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
 	void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
 	void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
-	void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, int time);
-	void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, int time);
+	void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+	void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
 
 	// Debugging and unit testing functions
 	void PrintD3Q19();

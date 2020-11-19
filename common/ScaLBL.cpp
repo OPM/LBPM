@@ -2110,24 +2110,24 @@ void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_Z(int *neighborList, double 
 	}
 }
 
-void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, int time){
+void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time){
 	if (kproc == 0) {
 		if (time%2==0){
-			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(dvcSendList_z, fq, Cin, sendCount_z, N);
+			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
 		}
 		else{
-			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(neighborList, dvcSendList_z, fq, Cin, sendCount_z, N);
+			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
 		}
 	}
 }
 
-void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, int time){
+void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time){
 	if (kproc == nprocz-1){
 		if (time%2==0){
-			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(dvcSendList_Z, fq, Cout, sendCount_Z, N);
+			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
 		}
 		else{
-			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(neighborList, dvcSendList_Z, fq, Cout, sendCount_Z, N);
+			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
 		}
 	}
 }
