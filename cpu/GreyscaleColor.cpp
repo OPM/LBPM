@@ -494,7 +494,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, d
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
-        Pressure[n] = rho/3.f/porosity;
+        //Pressure[n] = rho/3.f/porosity;
+        Pressure[n] = rho/3.f;
 
 		//........................................................................
 		//..............carry out relaxation process..............................
@@ -1149,7 +1150,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 		Velocity[n] = ux;
 		Velocity[Np+n] = uy;
 		Velocity[2*Np+n] = uz;
-        Pressure[n] = rho/3.f/porosity;
+        //Pressure[n] = rho/3.f/porosity;
+        Pressure[n] = rho/3.f;
 
 		//........................................................................
 		//..............carry out relaxation process..............................
