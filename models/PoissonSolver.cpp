@@ -36,7 +36,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
     Vin  = 1.0; //Boundary-z (inlet)  electric potential
     Vout = 1.0; //Boundary-Z (outlet) electric potential
     chargeDen_dummy = 1.0e-3;//For debugging;unit=[C/m^3]
-    WriteLog = 0;
+    WriteLog = false;
 
 	// LB-Poisson Model parameters
 	if (electric_db->keyExists( "timestepMax" )){
@@ -55,13 +55,7 @@ void ScaLBL_Poisson::ReadParams(string filename){
 		chargeDen_dummy = electric_db->getScalar<double>( "DummyChargeDen" );
 	}
 	if (electric_db->keyExists( "WriteLog" )){
-		auto writelog = electric_db->getScalar<std::string>( "WriteLog" );
-        if (writelog !="True" && writelog !="False"){
-            ERROR("Error: LB-Poisson Solver: WriteLog cannot be identified! Uesage: WriteLog is either True or False.\n");
-        }
-        else if (writelog =="True"){
-            WriteLog = 1;
-        }
+		WriteLog = electric_db->getScalar<bool>( "WriteLog" );
 	}
 
     // Read solid boundary condition specific to Poisson equation
@@ -466,7 +460,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 			psi_avg_previous = psi_avg;
         }
 	}
-    if(WriteLog==1){
+    if(WriteLog==true){
         getConvergenceLog(timestep,error);
     }
 

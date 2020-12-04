@@ -46,7 +46,7 @@ public:
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
-    short WriteLog;
+    bool WriteLog;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
