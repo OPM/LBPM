@@ -91,7 +91,10 @@ void ScaLBL_GreyscaleModel::ReadParams(string filename){
     
     //------------------------ Other Domain parameters ------------------------//
 	BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
+	if (greyscale_db->keyExists( "BC" )){
+		BoundaryCondition = greyscale_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
 	// ------------------------------------------------------------------------//
@@ -363,7 +366,7 @@ void ScaLBL_GreyscaleModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
 	MPI_Barrier(comm);
 
 	//...........................................................................

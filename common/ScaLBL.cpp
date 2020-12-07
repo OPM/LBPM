@@ -78,6 +78,7 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	nprocy = Dm->nprocy();
 	nprocz = Dm->nprocz();
 	BoundaryCondition = Dm->BoundaryCondition;
+	//BoundaryCondition = 0; // default to periodic BC
 	//......................................................................................
 
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 2*5*sendCount_x*sizeof(double));	// Allocate device memory
@@ -352,7 +353,7 @@ void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  i
 	delete [] ReturnDist;
 }
 
-int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np){
+int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width){
 	/*
 	 * Generate a memory optimized layout
 	 *   id[n] == 0 implies that site n should be ignored (treat as a mask)
@@ -372,7 +373,11 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				Map(i,j,k) = -2;
+				n = k*Nx*Ny + j*Nx + i;
+				if (id[n] > 0)
+					Map(i,j,k) = -2; // this label is for parallel communication sites
+				else
+					Map(i,j,k) = -1; // this label is for solid bounce-back sites
 			}
 		}
 	}
@@ -391,28 +396,26 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					// Counts for the six faces
-					if (i==1)       Map(n)=idx++;
-					else if (j==1)  Map(n)=idx++;
-					else if (k==1)  Map(n)=idx++;
-					else if (i==Nx-2)  Map(n)=idx++;
-					else if (j==Ny-2)  Map(n)=idx++;
-					else if (k==Nz-2)  Map(n)=idx++;
+					if (i>0 && i<=width)        Map(n)=idx++;
+					else if (j>0 && j<=width)  Map(n)=idx++;
+					else if (k>0 && k<=width)  Map(n)=idx++;
+					else if (i>Nx-width-2 && i<Nx-1)  Map(n)=idx++;
+					else if (j>Ny-width-2 && j<Ny-1)  Map(n)=idx++;
+					else if (k>Nz-width-2 && k<Nz-1)  Map(n)=idx++;
 				}
 			}
 		}
 	}
 	next=idx;
-	
-	//printf("Interior... \n");
-	
+
 	// ********* Interior **********
 	// align the next read
 	first_interior=(next/16 + 1)*16;
 	idx = first_interior;
 	// Step 2/2: Next loop over the domain interior in block-cyclic fashion
-	for (k=2; k<Nz-2; k++){
-		for (j=2; j<Ny-2; j++){
-			for (i=2; i<Nx-2; i++){
+	for (k=width+1; k<Nz-width-1; k++){
+		for (j=width+1; j<Ny-width-1; j++){
+			for (i=width+1; i<Nx-width-1; i++){
 				// Local index (regular layout)
 				n = k*Nx*Ny + j*Nx + i;
 				if (id[n] > 0 ){
@@ -522,7 +525,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			}
 		}
 	}
-
+	
 	//for (idx=0; idx<Np; idx++)	printf("%i: %i %i\n", idx, neighborList[Np],  neighborList[Np+idx]);
 	//.......................................................................
 	// Now map through  SendList and RecvList to update indices
@@ -848,6 +851,239 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	delete [] TempBuffer;
 	return(Np);
 }
+
+
+void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np)
+{
+
+    int idx,i,j,k;
+    int neighbor;    
+	// save list of bounce-back distributions and interaction sites
+	n_bb_d3q7 = 0; n_bb_d3q19 = 0;
+	
+	int local_count = 0;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					neighbor=Map(i-1,j,k);
+					if (neighbor==-1)	  local_count++;
+
+					neighbor=Map(i+1,j,k);
+					if (neighbor==-1)	  local_count++;
+
+					neighbor=Map(i,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j,k-1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i+1,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i+1,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j,k-1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i+1,j,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j,k+1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i+1,j,k-1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i,j-1,k-1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j-1,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k-1);
+					if (neighbor==-1)	    local_count++;
+				}
+			}
+		}
+	}
+	
+	int *bb_dist_tmp = new int [local_count];	
+	int *bb_interactions_tmp = new int [local_count];	
+	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
+	
+	local_count=0;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					int neighbor;    // cycle through the neighbors of lattice site idx
+					neighbor=Map(i-1,j,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 2*Np;
+					}
+
+					neighbor=Map(i+1,j,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++] = idx + 1*Np;
+					}
+
+					neighbor=Map(i,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 4*Np;
+					}
+
+					neighbor=Map(i,j+1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 3*Np;
+					}
+
+					neighbor=Map(i,j,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 6*Np;
+					}
+
+					neighbor=Map(i,j,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 5*Np;
+					}
+				}
+			}
+		}
+	}
+	n_bb_d3q7 = local_count;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					neighbor=Map(i-1,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 8*Np;
+					}
+
+					neighbor=Map(i+1,j+1,k);
+					if (neighbor==-1)	{
+						bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 7*Np;
+					}
+
+					neighbor=Map(i-1,j+1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 10*Np;
+					}
+
+					neighbor=Map(i+1,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 9*Np;
+					}
+
+					neighbor=Map(i-1,j,k-1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 12*Np;
+					}
+
+					neighbor=Map(i+1,j,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 11*Np;
+					}
+
+					neighbor=Map(i-1,j,k+1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 14*Np;
+					}
+
+					neighbor=Map(i+1,j,k-1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 13*Np;
+					}
+
+					neighbor=Map(i,j-1,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 16*Np;
+					}
+
+					neighbor=Map(i,j+1,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 15*Np;
+					}
+
+					neighbor=Map(i,j-1,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 18*Np;
+					}
+
+					neighbor=Map(i,j+1,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 17*Np;
+					}
+				}
+			}
+		}
+	}
+	n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
+	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
+	ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
+	ScaLBL_DeviceBarrier();
+    
+	delete [] bb_dist_tmp;
+	delete [] bb_interactions_tmp;
+}
+
+void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Dirichlet_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
+void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 
@@ -1176,12 +1412,120 @@ void ScaLBL_Communicator::RecvGrad(double *phi, double *grad){
 	//...................................................................................
 
 }
+/**
+ * 
+ */
+void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	if (Lock==true){
+		ERROR("ScaLBL Error (SendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+	}
+	else{
+		Lock=true;
+	}
+	// assign tag of 19 to D3Q19 communication
+	sendtag = recvtag = 7;
+	ScaLBL_DeviceBarrier();
+	// Pack the distributions
+	//...Packing for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
+
+	MPI_Isend(sendbuf_x, sendCount_x,MPI_DOUBLE,rank_x,sendtag,MPI_COMM_SCALBL,&req1[0]);
+	MPI_Irecv(recvbuf_X, recvCount_X,MPI_DOUBLE,rank_X,recvtag,MPI_COMM_SCALBL,&req2[0]);
+	
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
+	
+	MPI_Isend(sendbuf_X, sendCount_X,MPI_DOUBLE,rank_X,sendtag,MPI_COMM_SCALBL,&req1[1]);
+	MPI_Irecv(recvbuf_x, recvCount_x,MPI_DOUBLE,rank_x,recvtag,MPI_COMM_SCALBL,&req2[1]);
+
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
+
+	MPI_Isend(sendbuf_y, sendCount_y,MPI_DOUBLE,rank_y,sendtag,MPI_COMM_SCALBL,&req1[2]);
+	MPI_Irecv(recvbuf_Y, recvCount_Y,MPI_DOUBLE,rank_Y,recvtag,MPI_COMM_SCALBL,&req2[2]);
+	
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
+
+	MPI_Isend(sendbuf_Y, sendCount_Y,MPI_DOUBLE,rank_Y,sendtag,MPI_COMM_SCALBL,&req1[3]);
+	MPI_Irecv(recvbuf_y, recvCount_y,MPI_DOUBLE,rank_y,recvtag,MPI_COMM_SCALBL,&req2[3]);
+	
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
+	
+	MPI_Isend(sendbuf_z, sendCount_z,MPI_DOUBLE,rank_z,sendtag,MPI_COMM_SCALBL,&req1[4]);
+	MPI_Irecv(recvbuf_Z, recvCount_Z,MPI_DOUBLE,rank_Z,recvtag,MPI_COMM_SCALBL,&req2[4]);
+	
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
+
+	//...................................................................................
+	// Send all the distributions
+	MPI_Isend(sendbuf_Z, sendCount_Z,MPI_DOUBLE,rank_Z,sendtag,MPI_COMM_SCALBL,&req1[5]);
+	MPI_Irecv(recvbuf_z, recvCount_z,MPI_DOUBLE,rank_z,recvtag,MPI_COMM_SCALBL,&req2[5]);
+
+}
+
+
+void ScaLBL_Communicator::RecvD3Q7AA(double *Aq, int Component){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	//...................................................................................
+	// Wait for completion of D3Q19 communication
+	MPI_Waitall(6,req1,stat1);
+	MPI_Waitall(6,req2,stat2);
+	ScaLBL_DeviceBarrier();
+
+	//...................................................................................
+	// NOTE: AA Routine writes to opposite
+	// Unpack the distributions on the device
+	//...................................................................................
+	//...Unpacking for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,&Aq[Component*7*N],N);
+	//...................................................................................
+
+	if (BoundaryCondition > 0){
+		if (kproc != 0){
+			//...Packing for z face(6,12,13,16,17)................................
+			ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
+		}
+		if (kproc != nprocz-1){
+			//...Packing for Z face(5,11,14,15,18)................................
+			ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
+		}
+	}
+	else {
+		//...Packing for z face(6,12,13,16,17)................................
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
+	}
+
+	//...................................................................................
+	Lock=false; // unlock the communicator after communications complete
+	//...................................................................................
+
+}
+/* 
+ */
+
 
 void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (BiSendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
@@ -1308,7 +1652,7 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
 	if (Lock==true){
-		ERROR("ScaLBL Error (SendD3Q19): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+		ERROR("ScaLBL Error (TriSendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
 	}
 	else{
 		Lock=true;
@@ -1709,3 +2053,58 @@ void ScaLBL_Communicator::PrintD3Q19(){
 	delete [] TempBuffer;
 }
 
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(neighborList, dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(neighborList, dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin){
+	if (kproc == 0) {
+		ScaLBL_Poisson_D3Q7_BC_z(dvcSendList_z, Map, Psi, Vin, sendCount_z);
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout){
+	if (kproc == nprocz-1){
+		ScaLBL_Poisson_D3Q7_BC_Z(dvcSendList_Z, Map, Psi, Vout, sendCount_Z);
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z(dvcSendList_z, fq, Cin, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(neighborList, dvcSendList_z, fq, Cin, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z(dvcSendList_Z, fq, Cout, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(neighborList, dvcSendList_Z, fq, Cout, sendCount_Z, N);
+		}
+	}
+}

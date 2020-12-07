@@ -1,3 +1,4 @@
+
 //*************************************************************************
 // Lattice Boltzmann Simulator for Single Phase Flow in Porous Media
 // James E. McCLure
@@ -6,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
+#include "common/WideHalo.h"
 #include "common/MPI_Helpers.h"
 
 using namespace std;
@@ -167,6 +169,7 @@ int main(int argc, char **argv)
 		//Create a second communicator based on the regular data layout
 		ScaLBL_Communicator ScaLBL_Comm_Regular(Dm);
 		ScaLBL_Communicator ScaLBL_Comm(Dm);
+		ScaLBLWideHalo_Communicator WideHalo(Dm,2);
 
 		// LBM variables
 		if (rank==0)	printf ("Set up the neighborlist \n");
@@ -176,7 +179,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,2);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -196,20 +199,19 @@ int main(int argc, char **argv)
 		//...........................................................................
 		// Update GPU data structures
 		if (rank==0)	printf ("Setting up device map and neighbor list \n");
-		int *TmpMap;
-		TmpMap=new int[Np*sizeof(int)];
-		for (k=1; k<Nz-1; k++){
-			for (j=1; j<Ny-1; j++){
-				for (i=1; i<Nx-1; i++){
-					int idx=Map(i,j,k);
-					if (!(idx < 0))
-						TmpMap[idx] = k*Nx*Ny+j*Nx+i;
+		int *WideMap;
+		WideMap=new int[Np];
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					int nw = WideHalo.Map(i,j,k);
+					int idx = Map(i,j,k);
+					WideMap[idx] = nw;
 				}
 			}
 		}
-		ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
+		ScaLBL_CopyToDevice(dvcMap, WideMap, sizeof(int)*Np);
 		ScaLBL_DeviceBarrier();
-		delete [] TmpMap;
 		
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
@@ -217,9 +219,12 @@ int main(int argc, char **argv)
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 		//...........................................................................
 
-		ScaLBL_D3Q19_Gradient(dvcMap, Phi, ColorGrad, 0, Np, Np, Nx, Ny, Nz);
-	
-    	double *COLORGRAD;
+		int Nxh = Nx+2;
+		int Nyh = Ny+2;
+		int Nzh = Nz+2;
+		ScaLBL_D3Q19_MixedGradient(dvcMap, Phi, ColorGrad, 0, Np, Np, Nxh, Nyh, Nzh);
+
+		double *COLORGRAD;
     	COLORGRAD= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
     	ScaLBL_CopyToHost(&COLORGRAD[0],&ColorGrad[0],SIZE);

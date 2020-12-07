@@ -705,7 +705,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np,1);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................

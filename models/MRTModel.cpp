@@ -57,7 +57,10 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	}	
 	
 	// Read domain parameters
-	if (domain_db->keyExists( "BC" )){
+	if (mrt_db->keyExists( "BoundaryCondition" )){
+		BoundaryCondition = mrt_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
 
@@ -170,7 +173,7 @@ void ScaLBL_MRTModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
 	MPI_Barrier(comm);
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE

@@ -1,5 +1,5 @@
 // Created by James McClure
-// Copyright 2008-2013
+// Copyright 2008-2020
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -627,38 +627,38 @@ void Domain::Decomp( const std::string& Filename )
 	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
 	//.........................................................
 	// If external boundary conditions are applied remove solid
-	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
-    	if (inlet_layers_z < 4){
-            inlet_layers_z=4;
-            if(RANK==0){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
-            } 
-        }	
-		for (int k=0; k<inlet_layers_z; k++){
-			for (int j=0;j<Ny;j++){
-				for (int i=0;i<Nx;i++){
-					int n = k*Nx*Ny+j*Nx+i;
-					id[n] = inlet_layers_phase;
-				}                    
-			}
- 		}
- 	}
-    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz-1){
-    	if (outlet_layers_z < 4){
-            outlet_layers_z=4;
-            if(RANK==nprocs-1){
-                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
-            } 
-        }	
- 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
- 			for (int j=0;j<Ny;j++){
- 				for (int i=0;i<Nx;i++){
- 					int n = k*Nx*Ny+j*Nx+i;
- 					id[n] = outlet_layers_phase;
- 				}                    
- 			}
- 		}
- 	}
+//	if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == 0){
+//    	if (inlet_layers_z < 4){
+//            inlet_layers_z=4;
+//            if(RANK==0){
+//                printf("NOTE:Non-periodic BC is applied, but the number of Z-inlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-inlet layer is reset to %i voxels, saturated with phase label=%i \n",inlet_layers_z-1,inlet_layers_phase);
+//            } 
+//        }	
+//		for (int k=0; k<inlet_layers_z; k++){
+//			for (int j=0;j<Ny;j++){
+//				for (int i=0;i<Nx;i++){
+//					int n = k*Nx*Ny+j*Nx+i;
+//					id[n] = inlet_layers_phase;
+//				}                    
+//			}
+// 		}
+// 	}
+//    if (BoundaryCondition >  0 && BoundaryCondition !=5 && kproc() == nprocz-1){
+//    	if (outlet_layers_z < 4){
+//            outlet_layers_z=4;
+//            if(RANK==nprocs-1){
+//                printf("NOTE:Non-periodic BC is applied, but the number of Z-outlet layers is not specified (or is smaller than 3 voxels) \n     the number of Z-outlet layer is reset to %i voxels, saturated with phase label=%i \n",outlet_layers_z-1,outlet_layers_phase);
+//            } 
+//        }	
+// 		for (int k=Nz-outlet_layers_z; k<Nz; k++){
+// 			for (int j=0;j<Ny;j++){
+// 				for (int i=0;i<Nx;i++){
+// 					int n = k*Nx*Ny+j*Nx+i;
+// 					id[n] = outlet_layers_phase;
+// 				}                    
+// 			}
+// 		}
+// 	}
     for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
         for (int j=1;j<Ny-1;j++){
             for (int i=1;i<Nx-1;i++){
@@ -1288,7 +1288,6 @@ void ReadBinaryFile(char *FILENAME, double *Data, size_t N)
   File.close();
 }
 
-
 void Domain::ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData)
 {
 	//........................................................................................
@@ -1436,3 +1435,95 @@ void Domain::ReadFromFile(const std::string& Filename,const std::string& Datatyp
 	//Comm.barrier();
 	MPI_Barrier(Comm);
 }
+
+void Domain::AggregateLabels( const std::string& filename, DoubleArray &UserData ){
+	
+	int nx = Nx;
+	int ny = Ny;
+	int nz = Nz;
+	
+	int npx = nprocx();
+	int npy = nprocy();
+	int npz = nprocz();
+	
+	int ipx = iproc();
+	int ipy = jproc();
+	int ipz = kproc();		
+	
+	int nprocs = nprocx()*nprocy()*nprocz();
+		
+	int full_nx = npx*(nx-2);
+	int full_ny = npy*(ny-2);
+	int full_nz = npz*(nz-2);
+	int local_size = (nx-2)*(ny-2)*(nz-2);
+	unsigned long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
+	
+	double *LocalID;
+	LocalID = new double [local_size];
+		
+	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
+	// assign the ID for the local sub-region
+	for (int k=1; k<nz-1; k++){
+		for (int j=1; j<ny-1; j++){
+			for (int i=1; i<nx-1; i++){
+				int n = k*nx*ny+j*nx+i;
+				double local_id_val = UserData(i,j,k); 
+				LocalID[(k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1] = local_id_val;
+			}
+		}
+	}
+	MPI_Barrier(Comm);
+
+	// populate the FullID 
+	if (rank() == 0){
+		double *FullID;
+		FullID = new double [full_size];
+		// first handle local ID for rank 0
+		for (int k=1; k<nz-1; k++){
+			for (int j=1; j<ny-1; j++){
+				for (int i=1; i<nx-1; i++){
+					int x = i-1;
+					int y = j-1;
+					int z = k-1;
+					int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+					unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
+					FullID[n_full] = LocalID[n_local];
+				}
+			}
+		}
+		// next get the local ID from the other ranks
+		for (int rnk = 1; rnk<nprocs; rnk++){
+			ipz = rnk / (npx*npy);
+			ipy = (rnk - ipz*npx*npy) / npx;
+			ipx = (rnk - ipz*npx*npy - ipy*npx); 
+			//printf("ipx=%i ipy=%i ipz=%i\n", ipx, ipy, ipz);
+			int tag = 15+rnk;
+			MPI_Recv(LocalID,local_size,MPI_DOUBLE,rnk,tag,Comm,MPI_STATUS_IGNORE);
+			for (int k=1; k<nz-1; k++){
+				for (int j=1; j<ny-1; j++){
+					for (int i=1; i<nx-1; i++){
+						int x = i-1 + ipx*(nx-2);
+						int y = j-1 + ipy*(ny-2);
+						int z = k-1 + ipz*(nz-2);
+						int n_local = (k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1;
+						unsigned long int n_full = z*long(full_nx)*long(full_ny) + y*long(full_nx) + x;
+						FullID[n_full] = LocalID[n_local];
+					}
+				}
+			}
+		}
+		// write the output
+		FILE *OUTFILE = fopen(filename.c_str(),"wb");
+		fwrite(FullID,8,full_size,OUTFILE);
+		fclose(OUTFILE);
+	}
+	else{
+		// send LocalID to rank=0
+		int tag = 15+ rank();
+		int dstrank = 0;
+		MPI_Send(LocalID,local_size,MPI_DOUBLE,dstrank,tag,Comm);
+	}
+	MPI_Barrier(Comm);
+
+}
+>>>>>>> 35447181dfeb81e0b3e8de854f7e1fcbcc313190

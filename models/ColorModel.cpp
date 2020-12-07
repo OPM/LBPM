@@ -1,4 +1,4 @@
-/*
+ /*
 color lattice boltzmann model
  */
 #include "models/ColorModel.h"
@@ -121,7 +121,10 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	//if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
-	if (domain_db->keyExists( "BC" )){
+	if (color_db->keyExists( "BC" )){
+		BoundaryCondition = color_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
 	
@@ -330,7 +333,7 @@ void ScaLBL_ColorModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
 	MPI_Barrier(comm);
 
 	//...........................................................................
