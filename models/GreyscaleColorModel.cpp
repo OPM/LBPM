@@ -9,6 +9,12 @@ Two-fluid greyscale color lattice boltzmann model
 #include <stdlib.h>
 #include <time.h>
 
+template<class TYPE>
+void DeleteArray( const TYPE *p )
+{
+    delete [] p;
+}
+
 ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),GreyPorosity(0),
@@ -786,6 +792,15 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	double initial_volume = 0.0;
 	double delta_volume = 0.0;
 	double delta_volume_target = 0.0;
+
+    //TODO -------- For temporary use - should be included in the analysis framework later -------------
+	if (analysis_db->keyExists( "visualization_interval" )){
+		visualization_interval = analysis_db->getScalar<int>( "visualization_interval" );
+	}
+	if (analysis_db->keyExists( "restart_interval" )){
+		restart_interval = analysis_db->getScalar<int>( "restart_interval" );
+	}
+    //-------------------------------------------------------------------------------------------------
 	
 	/* history for morphological algoirthm */
 	double KRA_MORPH_FACTOR=0.5;
@@ -1014,6 +1029,51 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
 		//************************************************************************
 		PROFILE_STOP("Update");
+
+        //TODO For temporary use - writing Restart and Vis files should be included in the analysis framework in the future
+		if (timestep%restart_interval==0){
+            //Use rank=0 write out Restart.db
+            if (rank==0) {
+                greyscaleColor_db->putScalar<int>("timestep",timestep);    		
+                greyscaleColor_db->putScalar<bool>( "Restart", true );
+                current_db->putDatabase("Color", greyscaleColor_db);
+                std::ofstream OutStream("Restart.db");
+                current_db->print(OutStream, "");
+                OutStream.close();
+      
+            }
+            //Write out Restart data.
+            std::shared_ptr<double> cDen;
+            std::shared_ptr<double> cfq;
+            cDen = std::shared_ptr<double>(new double[2*Np], DeleteArray<double>);
+            cfq  = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
+            ScaLBL_CopyToHost(cDen.get(),Den,2*Np*sizeof(double));// Copy restart data to the CPU
+            ScaLBL_CopyToHost(cfq.get(), fq,19*Np*sizeof(double));// Copy restart data to the CPU
+
+            ofstream RESTARTFILE(LocalRestartFile,ios::binary);
+            double value;
+            for (int n=0; n<Np; n++){
+                // Write the two density values
+                value = cDen.get()[n];
+                RESTARTFILE.write((char*) &value, sizeof(value));
+                value = cDen.get()[Np+n];
+                RESTARTFILE.write((char*) &value, sizeof(value));
+                
+            }
+            for (int n=0; n<Np; n++){
+                // Write the distributions
+                for (int q=0; q<19; q++){
+                    value = cfq.get()[q*Np+n];
+                    RESTARTFILE.write((char*) &value, sizeof(value));
+                }
+            }
+            RESTARTFILE.close();
+		    MPI_Barrier(comm);
+        }
+		if (timestep%visualization_interval==0){
+            WriteVisFiles();
+        }
+        //-----------------------------------------------------------------------------------------------------------------
 
 		if (rank==0 && timestep%analysis_interval == 0 && BoundaryCondition == 4){
 			printf("%i %.5g \n",timestep,din);
@@ -1391,6 +1451,115 @@ double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil
   ScaLBL_CopyToDevice(Bq, Bq_tmp, 7*Np*sizeof(double));
 
   return(mass_loss);
+}
+
+//TODO for temporary use - writing visualization files should be included in the analysis framework in the future
+void ScaLBL_GreyscaleColorModel::WriteVisFiles(){
+    //NOTE: write_silo is always true
+    
+	std::vector<IO::MeshDataStruct> visData;
+	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
+
+	auto VxVar = std::make_shared<IO::Variable>();
+	auto VyVar = std::make_shared<IO::Variable>();
+	auto VzVar = std::make_shared<IO::Variable>();
+	auto SignDistVar = std::make_shared<IO::Variable>();
+	auto PressureVar = std::make_shared<IO::Variable>();
+	auto PhaseVar    = std::make_shared<IO::Variable>();
+
+	// Create the MeshDataStruct	
+	IO::initialize("","silo","false");
+	visData.resize(1);
+	visData[0].meshName = "domain";
+	visData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
+
+    // create a temp data for copy from device
+	DoubleArray DataTemp(Nx,Ny,Nz);
+
+    if (vis_db->getWithDefault<bool>( "save_phase_field", true )){
+
+        PhaseVar->name = "Phase";
+        PhaseVar->type = IO::VariableType::VolumeVariable;
+        PhaseVar->dim = 1;
+        PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(PaseVar);
+
+        ASSERT(visData[0].vars[0]->name=="Phase");
+        Array<double>& PhaseData = visData[0].vars[0]->data;
+	    ScaLBL_Comm->RegularLayout(Map,Phase,DataTemp);
+        fillData.copy(DataTemp,PhaseData);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_pressure", false )){
+
+        PressureVar->name = "Pressure";
+        PressureVar->type = IO::VariableType::VolumeVariable;
+        PressureVar->dim = 1;
+        PressureVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(PressureVar);
+
+        ASSERT(visData[0].vars[1]->name=="Pressure");
+        Array<double>& PressData = visData[0].vars[1]->data;
+	    ScaLBL_Comm->RegularLayout(Map,Pressure,DataTemp);
+        fillData.copy(DataTemp,PressData);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_velocity", false )){
+
+        VxVar->name = "Velocity_x";
+        VxVar->type = IO::VariableType::VolumeVariable;
+        VxVar->dim = 1;
+        VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(VxVar);
+        VyVar->name = "Velocity_y";
+        VyVar->type = IO::VariableType::VolumeVariable;
+        VyVar->dim = 1;
+        VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(VyVar);
+        VzVar->name = "Velocity_z";
+        VzVar->type = IO::VariableType::VolumeVariable;
+        VzVar->dim = 1;
+        VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(VzVar);
+
+        ASSERT(visData[0].vars[2]->name=="Velocity_x");
+        ASSERT(visData[0].vars[3]->name=="Velocity_y");
+        ASSERT(visData[0].vars[4]->name=="Velocity_z");
+        Array<double>& VelxData = visData[0].vars[2]->data;
+        Array<double>& VelyData = visData[0].vars[3]->data;
+        Array<double>& VelzData = visData[0].vars[4]->data;
+	    ScaLBL_Comm->RegularLayout(Map,&Velocity[0],DataTemp);
+        fillData.copy(DataTemp,VelxData);
+	    ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],DataTemp);
+        fillData.copy(DataTemp,VelyData);
+	    ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],DataTemp);
+        fillData.copy(DataTemp,VelzData);
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_distance", false )){
+
+        SignDistVar->name = "SignDist";
+        SignDistVar->type = IO::VariableType::VolumeVariable;
+        SignDistVar->dim = 1;
+        SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        visData[0].vars.push_back(SignDistVar);
+
+        ASSERT(visData[0].vars[5]->name=="SignDist");
+        Array<double>& SignData  = visData[0].vars[5]->data;
+        fillData.copy(Averages.SDs,SignData);
+    }
+
+    if (vis_db->getWithDefault<bool>( "write_silo", true )){
+        IO::writeData( timestep, visData, Dm->Comm );
+    }
+
+    if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
+        //TODO
+        //char CurrentIDFilename[40];
+        //sprintf(CurrentIDFilename,"id_t%d.raw",timestep);
+        //Averages.AggregateLabels(CurrentIDFilename);
+    }
+
 }
 
 void ScaLBL_GreyscaleColorModel::WriteDebug(){
