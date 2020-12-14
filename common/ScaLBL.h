@@ -186,6 +186,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map,
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
+extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np);
+
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
 		double Fy, double Fz);

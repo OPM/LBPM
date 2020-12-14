@@ -1338,6 +1338,32 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 	}
 }
 
+extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	int idx;
+	double nA,nB;
+
+	for (idx=start; idx<finish; idx++){
+
+		nA = Den[idx];
+		nB = Den[Np+idx];
+		
+		Aq[idx]=0.3333333333333333*nA;
+		Aq[Np+idx]=0.1111111111111111*nA;
+		Aq[2*Np+idx]=0.1111111111111111*nA;
+		Aq[3*Np+idx]=0.1111111111111111*nA;
+		Aq[4*Np+idx]=0.1111111111111111*nA;
+		Aq[5*Np+idx]=0.1111111111111111*nA;
+		Aq[6*Np+idx]=0.1111111111111111*nA;
+		
+		Bq[idx]=0.3333333333333333*nB;
+		Bq[Np+idx]=0.1111111111111111*nB;
+		Bq[2*Np+idx]=0.1111111111111111*nB;
+		Bq[3*Np+idx]=0.1111111111111111*nB;
+		Bq[4*Np+idx]=0.1111111111111111*nB;
+		Bq[5*Np+idx]=0.1111111111111111*nB;
+		Bq[6*Np+idx]=0.1111111111111111*nB;
+	}
+}
 
 //extern "C" void ScaLBL_D3Q19_GreyscaleColor_Init(double *dist, double *Porosity, int Np){
 //	int n;

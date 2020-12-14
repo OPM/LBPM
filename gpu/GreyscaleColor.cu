@@ -1447,6 +1447,37 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 	}
 }
 
+__global__ void dvc_ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	int idx;
+	double nA,nB;
+
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+		if (idx<finish) {
+
+			nA = Den[idx];
+			nB = Den[Np+idx];
+
+			Aq[idx]=0.3333333333333333*nA;
+			Aq[Np+idx]=0.1111111111111111*nA;
+			Aq[2*Np+idx]=0.1111111111111111*nA;
+			Aq[3*Np+idx]=0.1111111111111111*nA;
+			Aq[4*Np+idx]=0.1111111111111111*nA;
+			Aq[5*Np+idx]=0.1111111111111111*nA;
+			Aq[6*Np+idx]=0.1111111111111111*nA;
+
+			Bq[idx]=0.3333333333333333*nB;
+			Bq[Np+idx]=0.1111111111111111*nB;
+			Bq[2*Np+idx]=0.1111111111111111*nB;
+			Bq[3*Np+idx]=0.1111111111111111*nB;
+			Bq[4*Np+idx]=0.1111111111111111*nB;
+			Bq[5*Np+idx]=0.1111111111111111*nB;
+			Bq[6*Np+idx]=0.1111111111111111*nB;
+		}
+	}
+}
 ////Model-2&3
 //__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 //		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
@@ -2959,6 +2990,13 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map,
 	//cudaProfilerStop();
 }
 
+extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	dvc_ScaLBL_PhaseField_InitFromRestart<<<NBLOCKS,NTHREADS >>>(Den, Aq, Bq, start, finish, Np); 
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_PhaseField_InitFromRestart: %s \n",cudaGetErrorString(err));
+	}
+}
 ////Model-2&3
 //extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
 //        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 

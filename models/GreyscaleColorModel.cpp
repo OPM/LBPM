@@ -673,13 +673,17 @@ void ScaLBL_GreyscaleColorModel::Create(){
 }        
 
 void ScaLBL_GreyscaleColorModel::Initialize(){
-	
-	if (rank==0)	printf ("Initializing distributions \n");
-	ScaLBL_D3Q19_Init(fq, Np);
-    //ScaLBL_D3Q19_GreyscaleColor_Init(fq, Porosity_dvc, Np);
 	/*
 	 * This function initializes model
 	 */
+	if (rank==0)	printf ("Initializing distributions \n");
+	ScaLBL_D3Q19_Init(fq, Np);
+    //ScaLBL_D3Q19_GreyscaleColor_Init(fq, Porosity_dvc, Np);
+
+	if (rank==0)	printf ("Initializing phase field \n");
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+
 	if (Restart == true){
 		if (rank==0){
 			printf("Reading restart file! \n");
@@ -738,11 +742,11 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 
 		MPI_Barrier(comm);
-	}
 
-	if (rank==0)	printf ("Initializing phase field \n");
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        if (rank==0)	printf ("Initializing phase field from Restart\n");
+        ScaLBL_PhaseField_InitFromRestart(Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_PhaseField_InitFromRestart(Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	}
 
 	// establish reservoirs for external bC
 	if (BoundaryCondition == 1 || BoundaryCondition == 2 ||  BoundaryCondition == 3 || BoundaryCondition == 4 ){
@@ -794,6 +798,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	double delta_volume_target = 0.0;
 
     //TODO -------- For temporary use - should be included in the analysis framework later -------------
+    int visualization_interval = 50000;
+    int restart_interval = 100000;
 	if (analysis_db->keyExists( "visualization_interval" )){
 		visualization_interval = analysis_db->getScalar<int>( "visualization_interval" );
 	}
@@ -1482,11 +1488,11 @@ void ScaLBL_GreyscaleColorModel::WriteVisFiles(){
         PhaseVar->type = IO::VariableType::VolumeVariable;
         PhaseVar->dim = 1;
         PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-        visData[0].vars.push_back(PaseVar);
+        visData[0].vars.push_back(PhaseVar);
 
         ASSERT(visData[0].vars[0]->name=="Phase");
         Array<double>& PhaseData = visData[0].vars[0]->data;
-	    ScaLBL_Comm->RegularLayout(Map,Phase,DataTemp);
+     	ScaLBL_CopyToHost(DataTemp.data(), Phi, sizeof(double)*Nx*Ny*Nz);
         fillData.copy(DataTemp,PhaseData);
     }
 
@@ -1546,7 +1552,7 @@ void ScaLBL_GreyscaleColorModel::WriteVisFiles(){
 
         ASSERT(visData[0].vars[5]->name=="SignDist");
         Array<double>& SignData  = visData[0].vars[5]->data;
-        fillData.copy(Averages.SDs,SignData);
+        fillData.copy(Averages->SDs,SignData);
     }
 
     if (vis_db->getWithDefault<bool>( "write_silo", true )){
