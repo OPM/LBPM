@@ -47,6 +47,6 @@ public:
 
 private:
 	FILE *TIMELOG;
-}
+};
 #endif
 
