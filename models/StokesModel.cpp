@@ -375,25 +375,20 @@ void ScaLBL_StokesModel::getVelocity(int timestep){
 	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
 	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
-    DoubleArray PhaseField(Nx,Ny,Nz);
-
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
+    Velocity_LB_to_Phys(Velocity_x);
     ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
     sprintf(OutputFilename,"Velocity_X_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
+    Velocity_LB_to_Phys(Velocity_y);
     ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
     sprintf(OutputFilename,"Velocity_Y_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
+    Velocity_LB_to_Phys(Velocity_z);
     ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
     sprintf(OutputFilename,"Velocity_Z_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
 }
 
 void ScaLBL_StokesModel::getVelocity_debug(int timestep){

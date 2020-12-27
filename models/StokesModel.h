@@ -69,7 +69,6 @@ public:
     double *Pressure;
     
     //Minkowski Morphology;
-		
     DoubleArray Velocity_x;
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
