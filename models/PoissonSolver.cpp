@@ -587,38 +587,26 @@ void ScaLBL_Poisson::getElectricPotential_debug(int timestep){
     fclose(OUTFILE);
 }
 
-void ScaLBL_Poisson::getElectricPotential(int timestep){
+void ScaLBL_Poisson::getElectricPotential(DoubleArray &ReturnValues){
     //This function wirte out the data in a normal layout (by aggregating all decomposed domains)
-    DoubleArray PhaseField(Nx,Ny,Nz);
 	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
-    ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-    
-    sprintf(OutputFilename,"Electric_Potential_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
+    ScaLBL_CopyToHost(ReturnValues.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 }
 
-void ScaLBL_Poisson::getElectricField(int timestep){
+void ScaLBL_Poisson::getElectricField(DoubleArray &Values_x, DoubleArray &Values_y, DoubleArray &Values_z){
 
-        DoubleArray PhaseField(Nx,Ny,Nz);
-
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],Values_x);
+        ElectricField_LB_to_Phys(Values_x);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_X_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],Values_y);
+        ElectricField_LB_to_Phys(Values_y);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_Y_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],Values_z);
+        ElectricField_LB_to_Phys(Values_z);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_Z_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
+
 }
 
 void ScaLBL_Poisson::getElectricField_debug(int timestep){

@@ -900,17 +900,13 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 	//if (rank==0) printf("********************************************************\n");
 }
 
-void ScaLBL_IonModel::getIonConcentration(int timestep){
-    //This function wirte out the data in a normal layout (by aggregating all decomposed domains)
-    DoubleArray PhaseField(Nx,Ny,Nz);
-	for (int ic=0; ic<number_ion_species; ic++){
-	    ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],PhaseField);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        IonConcentration_LB_to_Phys(PhaseField);
+void ScaLBL_IonModel::getIonConcentration(DoubleArray &IonConcentration, const int ic){
+	//This function wirte out the data in a normal layout (by aggregating all decomposed domains)
 
-        sprintf(OutputFilename,"Ion%02i_Time_%i.raw",ic+1,timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
-    }
+	ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],IonConcentration);
+	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	IonConcentration_LB_to_Phys(IonConcentration);
+
 }
 
 void ScaLBL_IonModel::getIonConcentration_debug(int timestep){

@@ -1,5 +1,5 @@
 /*
- * Sub-phase averaging tools
+ *  averaging tools for electrochemistry
  */
 
 #ifndef ElectroChem_INC
@@ -16,9 +16,14 @@
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
+#include "models/IonModel.h"
+#include "models/PoissonSolver.h"
+#include "models/StokesModel.h"
 
 class ElectroChemistryAnalyzer{
 public:
+    MPI_Comm comm;
+    int tag;
 	std::shared_ptr <Domain> Dm;
 	double Volume;
 	// input variables
@@ -42,10 +47,12 @@ public:
 	~ElectroChemistryAnalyzer();
 	
 	void SetParams();
-	void Basic();
-	void Write(int time);
+	void Basic( ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes);
+	void WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, std::shared_ptr<Database> input_db, int timestep);
 
 private:
+    std::vector<IO::MeshDataStruct> visData;
+    fillHalo<double> fillData;
 	FILE *TIMELOG;
 };
 #endif

@@ -16,6 +16,9 @@
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
+#ifndef ScaLBL_POISSON_INC
+#define ScaLBL_POISSON_INC
+
 class ScaLBL_Poisson{
 public:
 	ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM);
@@ -29,9 +32,9 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *ChargeDensity);
-    void getElectricPotential(int timestep);
+    void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
-    void getElectricField(int timestep);
+    void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y, DoubleArray &Values_z);
     void getElectricField_debug(int timestep);
     void DummyChargeDensity();//for debugging
 
@@ -96,3 +99,4 @@ private:
     void getConvergenceLog(int timestep,double error);
     
 };
+#endif

@@ -87,9 +87,9 @@ int main(int argc, char **argv)
             }
         }
 
-        PoissonSolver.getElectricPotential(timestep);
-        PoissonSolver.getElectricField(timestep);
-        IonModel.getIonConcentration(timestep);
+        PoissonSolver.getElectricPotential_debug(timestep);
+        PoissonSolver.getElectricField_debug(timestep);
+        IonModel.getIonConcentration_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

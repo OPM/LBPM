@@ -59,8 +59,8 @@ int main(int argc, char **argv)
         PoissonSolver.DummyChargeDensity();   
 
         PoissonSolver.Run(PoissonSolver.ChargeDensityDummy);
-        PoissonSolver.getElectricPotential(1);
-        PoissonSolver.getElectricField(1);
+        PoissonSolver.getElectricPotential_debug(1);
+        PoissonSolver.getElectricField_debug(1);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

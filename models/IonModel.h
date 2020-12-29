@@ -1,6 +1,10 @@
 /*
  * Ion transporte LB Model
  */
+
+#ifndef ScaLBL_IonModel_INC
+#define ScaLBL_IonModel_INC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -30,7 +34,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
-    void getIonConcentration(int timestep);
+    void getIonConcentration(DoubleArray &IonConcentration, const int ic);
     void getIonConcentration_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
@@ -95,3 +99,4 @@ private:
     void AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion);
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
 };
+#endif
