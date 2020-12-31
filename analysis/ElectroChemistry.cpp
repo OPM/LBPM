@@ -38,21 +38,94 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr <Domain> dm):
 }
 
 ElectroChemistryAnalyzer::~ElectroChemistryAnalyzer(){
-	
+	if (Dm->rank()==0){
+		fclose(TIMELOG);
+	}
 }
 
 void ElectroChemistryAnalyzer::SetParams(){
 	
 }
 
-void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes){
+void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, int timestep){
 
+	int i,j,k;
 	Poisson.getElectricPotential(ElectricalPotential);
+	
+	/* local sub-domain averages */
+	double rho_avg_local[Ion.number_ion_species];
+	double rho_mu_avg_local[Ion.number_ion_species];
+	double rho_mu_fluctuation_local[Ion.number_ion_species];	
+	double rho_psi_avg_local[Ion.number_ion_species];
+	double rho_psi_fluctuation_local[Ion.number_ion_species];
+	/* global averages */
+	double rho_avg_global[Ion.number_ion_species];
+	double rho_mu_avg_global[Ion.number_ion_species];
+	double rho_mu_fluctuation_global[Ion.number_ion_species];
+	double rho_psi_avg_global[Ion.number_ion_species];
+	double rho_psi_fluctuation_global[Ion.number_ion_species];
+	
 	for (int ion=0; ion<Ion.number_ion_species; ion++){
+		rho_avg_local[ion] = 0.0;
+		rho_mu_avg_local[ion] = 0.0;
+		rho_psi_avg_local[ion] = 0.0;
 		Ion.getIonConcentration(Rho,ion);
+		/* Compute averages for each ion */
+		for (k=1; k<Nz; k++){
+			for (j=1; j<Ny; j++){
+				for (i=1; i<Nx; i++){
+					rho_avg_local[ion] += Rho(i,j,k);
+					rho_mu_avg_local[ion] += Rho(i,j,k)*Rho(i,j,k);
+					rho_psi_avg_local[ion] += Rho(i,j,k)*ElectricalPotential(i,j,k);
+				}
+			}
+		}
+		rho_avg_global[ion]=sumReduce( Dm->Comm, rho_avg_local[ion]);
+		rho_mu_avg_global[ion]=sumReduce( Dm->Comm, rho_mu_avg_local[ion]);
+		rho_psi_avg_global[ion]=sumReduce( Dm->Comm, rho_psi_avg_local[ion]);
+		
+		rho_mu_avg_global[ion] /= rho_avg_global[ion];
+		rho_psi_avg_global[ion] /= rho_avg_global[ion];
 	}
 	
+	for (int ion=0; ion<Ion.number_ion_species; ion++){
+		rho_mu_fluctuation_local[ion] = 0.0;
+		rho_psi_fluctuation_local[ion] = 0.0;
+		/* Compute averages for each ion */
+		for (k=1; k<Nz; k++){
+			for (j=1; j<Ny; j++){
+				for (i=1; i<Nx; i++){
+					rho_mu_fluctuation_local[ion] += (Rho(i,j,k)*Rho(i,j,k) - rho_mu_avg_global[ion]);
+					rho_psi_fluctuation_local[ion] += (Rho(i,j,k)*ElectricalPotential(i,j,k) - rho_psi_avg_global[ion]);
+				}
+			}
+		}
+		rho_mu_fluctuation_global[ion]=sumReduce( Dm->Comm, rho_mu_fluctuation_local[ion]);
+		rho_psi_fluctuation_global[ion]=sumReduce( Dm->Comm, rho_psi_fluctuation_local[ion]);
+	}
 	
+	if (Dm->rank()==0){	
+		fprintf(TIMELOG,"%i ",timestep); 
+		for (int ion=0; ion<Ion.number_ion_species; ion++){
+			fprintf(TIMELOG,"%.8g ",rho_avg_global[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_mu_avg_global[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_psi_avg_global[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_mu_fluctuation_global[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_psi_fluctuation_global[ion]);
+		}
+		fflush(TIMELOG);
+	}
+/*	else{
+		fprintf(TIMELOG,"%i ",timestep); 
+		for (int ion=0; ion<Ion.number_ion_species; ion++){
+			fprintf(TIMELOG,"%.8g ",rho_avg_local[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_mu_avg_local[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_psi_avg_local[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_mu_fluctuation_local[ion]);
+			fprintf(TIMELOG,"%.8g ",rho_psi_fluctuation_local[ion]);
+		}
+		fflush(TIMELOG);
+	} */
 }
 
 void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, std::shared_ptr<Database> input_db, int timestep){
@@ -89,7 +162,6 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     		IonConcentration->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
     		visData[0].vars.push_back(IonConcentration);
     	}
-
     }
     if (vis_db->getWithDefault<bool>( "save_velocity", false )){
         VxVar->name = "Velocity_x";
