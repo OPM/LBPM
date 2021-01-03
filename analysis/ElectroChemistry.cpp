@@ -140,7 +140,10 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     visData[0].meshName = "domain";
     visData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
     auto ElectricPotential = std::make_shared<IO::Variable>();
-    auto IonConcentration = std::make_shared<IO::Variable>();
+    std::vector<shared_ptr<IO::Variable>> IonConcentration;
+    for (int ion=0; ion<Ion.number_ion_species; ion++){
+        IonConcentration.push_back(std::make_shared<IO::Variable>());
+    }
     auto VxVar = std::make_shared<IO::Variable>();
     auto VyVar = std::make_shared<IO::Variable>();
     auto VzVar = std::make_shared<IO::Variable>();
@@ -155,14 +158,15 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
 
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
     	for (int ion=0; ion<Ion.number_ion_species; ion++){
-    		sprintf(VisName,"IonConcentration_%i",ion);
-    		IonConcentration->name = VisName;
-    		IonConcentration->type = IO::VariableType::VolumeVariable;
-    		IonConcentration->dim = 1;
-    		IonConcentration->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
-    		visData[0].vars.push_back(IonConcentration);
+    		sprintf(VisName,"IonConcentration_%i",ion+1);
+    		IonConcentration[ion]->name = VisName;
+    		IonConcentration[ion]->type = IO::VariableType::VolumeVariable;
+    		IonConcentration[ion]->dim = 1;
+    		IonConcentration[ion]->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+    		visData[0].vars.push_back(IonConcentration[ion]);
     	}
     }
+
     if (vis_db->getWithDefault<bool>( "save_velocity", false )){
         VxVar->name = "Velocity_x";
         VxVar->type = IO::VariableType::VolumeVariable;
@@ -190,23 +194,23 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
 
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
     	for (int ion=0; ion<Ion.number_ion_species; ion++){
-    		sprintf(VisName,"IonConcentration_%i",ion);
-    		IonConcentration->name = VisName;
-    		ASSERT(visData[0].vars[1]->name==VisName);
-    		Array<double>& IonConcentrationData = visData[0].vars[1]->data;
+    		sprintf(VisName,"IonConcentration_%i",ion+1);
+    		IonConcentration[ion]->name = VisName;
+    		ASSERT(visData[0].vars[1+ion]->name==VisName);
+    		Array<double>& IonConcentrationData = visData[0].vars[1+ion]->data;
     		Ion.getIonConcentration(Rho,ion);
     		fillData.copy(Rho,IonConcentrationData);
     	}
     }
 
     if (vis_db->getWithDefault<bool>( "save_velocity", false )){
-    	ASSERT(visData[0].vars[2]->name=="Velocity_x");
-    	ASSERT(visData[0].vars[3]->name=="Velocity_y");
-    	ASSERT(visData[0].vars[4]->name=="Velocity_z");
+    	ASSERT(visData[0].vars[1+Ion.number_ion_species+0]->name=="Velocity_x");
+    	ASSERT(visData[0].vars[1+Ion.number_ion_species+1]->name=="Velocity_y");
+    	ASSERT(visData[0].vars[1+Ion.number_ion_species+2]->name=="Velocity_z");
     	Stokes.getVelocity(Vel_x,Vel_y,Vel_z);
-    	Array<double>& VelxData = visData[0].vars[2]->data;
-    	Array<double>& VelyData = visData[0].vars[3]->data;
-    	Array<double>& VelzData = visData[0].vars[4]->data;
+    	Array<double>& VelxData = visData[0].vars[1+Ion.number_ion_species+0]->data;
+    	Array<double>& VelyData = visData[0].vars[1+Ion.number_ion_species+1]->data;
+    	Array<double>& VelzData = visData[0].vars[1+Ion.number_ion_species+2]->data;
     	fillData.copy(Vel_x,VelxData);
     	fillData.copy(Vel_y,VelyData);
     	fillData.copy(Vel_z,VelzData);
