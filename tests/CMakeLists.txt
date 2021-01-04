@@ -5,6 +5,7 @@ ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscale_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_SingleFluid_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_greyscaleColor_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_BGK_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_dfh_simulator )
@@ -36,6 +37,7 @@ ADD_LBPM_EXECUTABLE( GenerateSphereTest )
 #ADD_LBPM_EXECUTABLE( DataAggregator )
 #ADD_LBPM_EXECUTABLE( BlobAnalyzeParallel )
 ADD_LBPM_EXECUTABLE( lbpm_minkowski_scalar )
+
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
