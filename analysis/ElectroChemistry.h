@@ -7,12 +7,12 @@
 
 #include <vector>
 #include "common/Domain.h"
+#include "common/Utilities.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "analysis/distance.h"
 #include "analysis/Minkowski.h"
-#include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -49,8 +49,6 @@ public:
 	void WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, std::shared_ptr<Database> input_db, int timestep);
 
 private:
-    std::vector<IO::MeshDataStruct> visData;
-    fillHalo<double> fillData;
 	FILE *TIMELOG;
 };
 #endif

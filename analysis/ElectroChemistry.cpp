@@ -1,8 +1,7 @@
 #include "analysis/ElectroChemistry.h"
 
 ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr <Domain> dm):
-	Dm(dm),
-	fillData(dm->Comm,dm->rank_info,{dm->Nx-2,dm->Ny-2,dm->Nz-2},{1,1,1},0,1)
+	Dm(dm)
 {
 	
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
@@ -130,7 +129,10 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poisson, ScaLBL_StokesModel &Stokes, std::shared_ptr<Database> input_db, int timestep){
 	
 	auto vis_db =  input_db->getDatabase( "Visualization" );
-    char VisName[40];
+    char VisName[40];	
+    
+    std::vector<IO::MeshDataStruct> visData;
+	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
 
     IO::initialize("","silo","false");
     // Create the MeshDataStruct    
@@ -216,7 +218,7 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     }
     
     if (vis_db->getWithDefault<bool>( "write_silo", true ))
-    	IO::writeData( timestep, visData, Dm->Comm.comm );
+    	IO::writeData( timestep, visData, Dm->Comm );
 
 /*    if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
     	char CurrentIDFilename[40];
