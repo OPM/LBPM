@@ -9,6 +9,7 @@
 #include <exception>
 #include <stdexcept>
 #include <fstream>
+#include <cmath>
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
@@ -16,6 +17,7 @@
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
+#define _USE_MATH_DEFINES
 #ifndef ScaLBL_POISSON_INC
 #define ScaLBL_POISSON_INC
 
@@ -41,7 +43,8 @@ public:
 	//bool Restart,pBC;
 	int timestep,timestepMax;
     int analysis_interval;
-	int BoundaryCondition;
+	int BoundaryConditionInlet;
+	int BoundaryConditionOutlet;
     int BoundaryConditionSolid;
 	double tau;
 	double tolerance;
@@ -50,11 +53,18 @@ public:
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
     bool WriteLog;
+    double Vin0,freqIn,t0_In,Vin_Type;
+    double Vout0,freqOut,t0_Out,Vout_Type;
+    bool   TestPeriodic;
+    double TestPeriodicTime;//unit: [sec]
+    double TestPeriodicTimeConv; //unit [sec/lt]
+    double TestPeriodicSaveInterval; //unit [sec]
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
 	double Lx,Ly,Lz;
     double h;//image resolution
+    double time_conv;//phys to LB time converting factor; unit=[sec/lt]
 
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
@@ -97,6 +107,7 @@ private:
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);
     void getConvergenceLog(int timestep,double error);
+    double getBoundaryVoltagefromPeriodicBC(double V0,double freq,double t0,int V_type,int time_step);
     
 };
 #endif
