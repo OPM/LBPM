@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "common/Array.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 
 
@@ -32,7 +32,7 @@ std::string VariableTypeName( VariableType type );
  * @param mode          Open the file for reading or writing
  * @param comm          MPI communicator to use (MPI_COMM_WORLD: don't use parallel netcdf)
 */
-int open( const std::string& filename, FileMode mode, MPI_Comm comm=MPI_COMM_NULL );
+int open( const std::string& filename, FileMode mode, const Utilities::MPI& comm=MPI_COMM_NULL );
 
 
 /*!
