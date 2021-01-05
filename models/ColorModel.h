@@ -18,7 +18,7 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run

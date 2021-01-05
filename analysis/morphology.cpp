@@ -1,7 +1,7 @@
 #include <analysis/morphology.h>
 // Implementation of morphological opening routine
 
-inline void PackID(const int *list, int count, signed char *sendbuf, signed char *ID){
+inline void PackID(int *list, int count, signed char *sendbuf, signed char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This packs up the values that need to be sent from one processor to another
 	int idx,n;
@@ -13,7 +13,7 @@ inline void PackID(const int *list, int count, signed char *sendbuf, signed char
 }
 //***************************************************************************************
 
-inline void UnpackID(const int *list, int count, signed char *recvbuf, signed char *ID){
+inline void UnpackID(int *list, int count, signed char *recvbuf, signed char *ID){
 	// Fill in the phase ID values from neighboring processors
 	// This unpacks the values once they have been recieved from neighbors
 	int idx,n;
@@ -58,11 +58,11 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			}
 		}
 	}
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 	
 	// total Global is the number of nodes in the pore-space
-	totalGlobal = Dm->Comm.sumReduce( count );
-	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -77,44 +77,44 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
 	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
 	// send buffers
-	sendID_x = new signed char [Dm->sendCount("x")];
-	sendID_y = new signed char [Dm->sendCount("y")];
-	sendID_z = new signed char [Dm->sendCount("z")];
-	sendID_X = new signed char [Dm->sendCount("X")];
-	sendID_Y = new signed char [Dm->sendCount("Y")];
-	sendID_Z = new signed char [Dm->sendCount("Z")];
-	sendID_xy = new signed char [Dm->sendCount("xy")];
-	sendID_yz = new signed char [Dm->sendCount("yz")];
-	sendID_xz = new signed char [Dm->sendCount("xz")];
-	sendID_Xy = new signed char [Dm->sendCount("Xy")];
-	sendID_Yz = new signed char [Dm->sendCount("Yz")];
-	sendID_xZ = new signed char [Dm->sendCount("xZ")];
-	sendID_xY = new signed char [Dm->sendCount("xY")];
-	sendID_yZ = new signed char [Dm->sendCount("yZ")];
-	sendID_Xz = new signed char [Dm->sendCount("Xz")];
-	sendID_XY = new signed char [Dm->sendCount("XY")];
-	sendID_YZ = new signed char [Dm->sendCount("YZ")];
-	sendID_XZ = new signed char [Dm->sendCount("XZ")];
+	sendID_x = new signed char [Dm->sendCount_x];
+	sendID_y = new signed char [Dm->sendCount_y];
+	sendID_z = new signed char [Dm->sendCount_z];
+	sendID_X = new signed char [Dm->sendCount_X];
+	sendID_Y = new signed char [Dm->sendCount_Y];
+	sendID_Z = new signed char [Dm->sendCount_Z];
+	sendID_xy = new signed char [Dm->sendCount_xy];
+	sendID_yz = new signed char [Dm->sendCount_yz];
+	sendID_xz = new signed char [Dm->sendCount_xz];
+	sendID_Xy = new signed char [Dm->sendCount_Xy];
+	sendID_Yz = new signed char [Dm->sendCount_Yz];
+	sendID_xZ = new signed char [Dm->sendCount_xZ];
+	sendID_xY = new signed char [Dm->sendCount_xY];
+	sendID_yZ = new signed char [Dm->sendCount_yZ];
+	sendID_Xz = new signed char [Dm->sendCount_Xz];
+	sendID_XY = new signed char [Dm->sendCount_XY];
+	sendID_YZ = new signed char [Dm->sendCount_YZ];
+	sendID_XZ = new signed char [Dm->sendCount_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new signed char [Dm->recvCount("x")];
-	recvID_y = new signed char [Dm->recvCount("y")];
-	recvID_z = new signed char [Dm->recvCount("z")];
-	recvID_X = new signed char [Dm->recvCount("X")];
-	recvID_Y = new signed char [Dm->recvCount("Y")];
-	recvID_Z = new signed char [Dm->recvCount("Z")];
-	recvID_xy = new signed char [Dm->recvCount("xy")];
-	recvID_yz = new signed char [Dm->recvCount("yz")];
-	recvID_xz = new signed char [Dm->recvCount("xz")];
-	recvID_Xy = new signed char [Dm->recvCount("Xy")];
-	recvID_xZ = new signed char [Dm->recvCount("xZ")];
-	recvID_xY = new signed char [Dm->recvCount("xY")];
-	recvID_yZ = new signed char [Dm->recvCount("yZ")];
-	recvID_Yz = new signed char [Dm->recvCount("Yz")];
-	recvID_Xz = new signed char [Dm->recvCount("Xz")];
-	recvID_XY = new signed char [Dm->recvCount("XY")];
-	recvID_YZ = new signed char [Dm->recvCount("YZ")];
-	recvID_XZ = new signed char [Dm->recvCount("XZ")];
+	recvID_x = new signed char [Dm->recvCount_x];
+	recvID_y = new signed char [Dm->recvCount_y];
+	recvID_z = new signed char [Dm->recvCount_z];
+	recvID_X = new signed char [Dm->recvCount_X];
+	recvID_Y = new signed char [Dm->recvCount_Y];
+	recvID_Z = new signed char [Dm->recvCount_Z];
+	recvID_xy = new signed char [Dm->recvCount_xy];
+	recvID_yz = new signed char [Dm->recvCount_yz];
+	recvID_xz = new signed char [Dm->recvCount_xz];
+	recvID_Xy = new signed char [Dm->recvCount_Xy];
+	recvID_xZ = new signed char [Dm->recvCount_xZ];
+	recvID_xY = new signed char [Dm->recvCount_xY];
+	recvID_yZ = new signed char [Dm->recvCount_yZ];
+	recvID_Yz = new signed char [Dm->recvCount_Yz];
+	recvID_Xz = new signed char [Dm->recvCount_Xz];
+	recvID_XY = new signed char [Dm->recvCount_XY];
+	recvID_YZ = new signed char [Dm->recvCount_YZ];
+	recvID_XZ = new signed char [Dm->recvCount_XZ];
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
@@ -131,8 +131,9 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
+	double Rcrit_old=0.0;
 
+	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	if (ErodeLabel == 1){
@@ -182,65 +183,83 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			}
 		}
 		// Pack and send the updated ID values
-		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
-		PackID(Dm->sendList("X"), Dm->sendCount("X") ,sendID_X, id);
-		PackID(Dm->sendList("y"), Dm->sendCount("y") ,sendID_y, id);
-		PackID(Dm->sendList("Y"), Dm->sendCount("Y") ,sendID_Y, id);
-		PackID(Dm->sendList("z"), Dm->sendCount("z") ,sendID_z, id);
-		PackID(Dm->sendList("Z"), Dm->sendCount("Z") ,sendID_Z, id);
-		PackID(Dm->sendList("xy"), Dm->sendCount("xy") ,sendID_xy, id);
-		PackID(Dm->sendList("Xy"), Dm->sendCount("Xy") ,sendID_Xy, id);
-		PackID(Dm->sendList("xY"), Dm->sendCount("xY") ,sendID_xY, id);
-		PackID(Dm->sendList("XY"), Dm->sendCount("XY") ,sendID_XY, id);
-		PackID(Dm->sendList("xz"), Dm->sendCount("xz") ,sendID_xz, id);
-		PackID(Dm->sendList("Xz"), Dm->sendCount("Xz") ,sendID_Xz, id);
-		PackID(Dm->sendList("xZ"), Dm->sendCount("xZ") ,sendID_xZ, id);
-		PackID(Dm->sendList("XZ"), Dm->sendCount("XZ") ,sendID_XZ, id);
-		PackID(Dm->sendList("yz"), Dm->sendCount("yz") ,sendID_yz, id);
-		PackID(Dm->sendList("Yz"), Dm->sendCount("Yz") ,sendID_Yz, id);
-		PackID(Dm->sendList("yZ"), Dm->sendCount("yZ") ,sendID_yZ, id);
-		PackID(Dm->sendList("YZ"), Dm->sendCount("YZ") ,sendID_YZ, id);
+		PackID(Dm->sendList_x, Dm->sendCount_x ,sendID_x, id);
+		PackID(Dm->sendList_X, Dm->sendCount_X ,sendID_X, id);
+		PackID(Dm->sendList_y, Dm->sendCount_y ,sendID_y, id);
+		PackID(Dm->sendList_Y, Dm->sendCount_Y ,sendID_Y, id);
+		PackID(Dm->sendList_z, Dm->sendCount_z ,sendID_z, id);
+		PackID(Dm->sendList_Z, Dm->sendCount_Z ,sendID_Z, id);
+		PackID(Dm->sendList_xy, Dm->sendCount_xy ,sendID_xy, id);
+		PackID(Dm->sendList_Xy, Dm->sendCount_Xy ,sendID_Xy, id);
+		PackID(Dm->sendList_xY, Dm->sendCount_xY ,sendID_xY, id);
+		PackID(Dm->sendList_XY, Dm->sendCount_XY ,sendID_XY, id);
+		PackID(Dm->sendList_xz, Dm->sendCount_xz ,sendID_xz, id);
+		PackID(Dm->sendList_Xz, Dm->sendCount_Xz ,sendID_Xz, id);
+		PackID(Dm->sendList_xZ, Dm->sendCount_xZ ,sendID_xZ, id);
+		PackID(Dm->sendList_XZ, Dm->sendCount_XZ ,sendID_XZ, id);
+		PackID(Dm->sendList_yz, Dm->sendCount_yz ,sendID_yz, id);
+		PackID(Dm->sendList_Yz, Dm->sendCount_Yz ,sendID_Yz, id);
+		PackID(Dm->sendList_yZ, Dm->sendCount_yZ ,sendID_yZ, id);
+		PackID(Dm->sendList_YZ, Dm->sendCount_YZ ,sendID_YZ, id);
 		//......................................................................................
-		Dm->Comm.sendrecv(sendID_x,Dm->sendCount("x"),Dm->rank_x(),sendtag,recvID_X,Dm->recvCount("X"),Dm->rank_X(),recvtag);
-		Dm->Comm.sendrecv(sendID_X,Dm->sendCount("X"),Dm->rank_X(),sendtag,recvID_x,Dm->recvCount("x"),Dm->rank_x(),recvtag);
-		Dm->Comm.sendrecv(sendID_y,Dm->sendCount("y"),Dm->rank_y(),sendtag,recvID_Y,Dm->recvCount("Y"),Dm->rank_Y(),recvtag);
-		Dm->Comm.sendrecv(sendID_Y,Dm->sendCount("Y"),Dm->rank_Y(),sendtag,recvID_y,Dm->recvCount("y"),Dm->rank_y(),recvtag);
-		Dm->Comm.sendrecv(sendID_z,Dm->sendCount("z"),Dm->rank_z(),sendtag,recvID_Z,Dm->recvCount("Z"),Dm->rank_Z(),recvtag);
-		Dm->Comm.sendrecv(sendID_Z,Dm->sendCount("Z"),Dm->rank_Z(),sendtag,recvID_z,Dm->recvCount("z"),Dm->rank_z(),recvtag);
-		Dm->Comm.sendrecv(sendID_xy,Dm->sendCount("xy"),Dm->rank_xy(),sendtag,recvID_XY,Dm->recvCount("XY"),Dm->rank_XY(),recvtag);
-		Dm->Comm.sendrecv(sendID_XY,Dm->sendCount("XY"),Dm->rank_XY(),sendtag,recvID_xy,Dm->recvCount("xy"),Dm->rank_xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xy,Dm->sendCount("Xy"),Dm->rank_Xy(),sendtag,recvID_xY,Dm->recvCount("xY"),Dm->rank_xY(),recvtag);
-		Dm->Comm.sendrecv(sendID_xY,Dm->sendCount("xY"),Dm->rank_xY(),sendtag,recvID_Xy,Dm->recvCount("Xy"),Dm->rank_Xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_xz,Dm->sendCount("xz"),Dm->rank_xz(),sendtag,recvID_XZ,Dm->recvCount("XZ"),Dm->rank_XZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_XZ,Dm->sendCount("XZ"),Dm->rank_XZ(),sendtag,recvID_xz,Dm->recvCount("xz"),Dm->rank_xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xz,Dm->sendCount("Xz"),Dm->rank_Xz(),sendtag,recvID_xZ,Dm->recvCount("xZ"),Dm->rank_xZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_xZ,Dm->sendCount("xZ"),Dm->rank_xZ(),sendtag,recvID_Xz,Dm->recvCount("Xz"),Dm->rank_Xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_yz,Dm->sendCount("yz"),Dm->rank_yz(),sendtag,recvID_YZ,Dm->recvCount("YZ"),Dm->rank_YZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_YZ,Dm->sendCount("YZ"),Dm->rank_YZ(),sendtag,recvID_yz,Dm->recvCount("yz"),Dm->rank_yz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Yz,Dm->sendCount("Yz"),Dm->rank_Yz(),sendtag,recvID_yZ,Dm->recvCount("yZ"),Dm->rank_yZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_yZ,Dm->sendCount("yZ"),Dm->rank_yZ(),sendtag,recvID_Yz,Dm->recvCount("Yz"),Dm->rank_Yz(),recvtag);
+		MPI_Sendrecv(sendID_x,Dm->sendCount_x,MPI_CHAR,Dm->rank_x(),sendtag,
+				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_X,Dm->sendCount_X,MPI_CHAR,Dm->rank_X(),sendtag,
+				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_y,Dm->sendCount_y,MPI_CHAR,Dm->rank_y(),sendtag,
+				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Y,Dm->sendCount_Y,MPI_CHAR,Dm->rank_Y(),sendtag,
+				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_z,Dm->sendCount_z,MPI_CHAR,Dm->rank_z(),sendtag,
+				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Z,Dm->sendCount_Z,MPI_CHAR,Dm->rank_Z(),sendtag,
+				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xy,Dm->sendCount_xy,MPI_CHAR,Dm->rank_xy(),sendtag,
+				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_XY,Dm->sendCount_XY,MPI_CHAR,Dm->rank_XY(),sendtag,
+				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Xy,Dm->sendCount_Xy,MPI_CHAR,Dm->rank_Xy(),sendtag,
+				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xY,Dm->sendCount_xY,MPI_CHAR,Dm->rank_xY(),sendtag,
+				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xz,Dm->sendCount_xz,MPI_CHAR,Dm->rank_xz(),sendtag,
+				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_XZ,Dm->sendCount_XZ,MPI_CHAR,Dm->rank_XZ(),sendtag,
+				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Xz,Dm->sendCount_Xz,MPI_CHAR,Dm->rank_Xz(),sendtag,
+				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xZ,Dm->sendCount_xZ,MPI_CHAR,Dm->rank_xZ(),sendtag,
+				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_yz,Dm->sendCount_yz,MPI_CHAR,Dm->rank_yz(),sendtag,
+				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_YZ,Dm->sendCount_YZ,MPI_CHAR,Dm->rank_YZ(),sendtag,
+				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Yz,Dm->sendCount_Yz,MPI_CHAR,Dm->rank_Yz(),sendtag,
+				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_yZ,Dm->sendCount_yZ,MPI_CHAR,Dm->rank_yZ(),sendtag,
+				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
 		//......................................................................................
-		UnpackID(Dm->recvList("x"), Dm->recvCount("x") ,recvID_x, id);
-		UnpackID(Dm->recvList("X"), Dm->recvCount("X") ,recvID_X, id);
-		UnpackID(Dm->recvList("y"), Dm->recvCount("y") ,recvID_y, id);
-		UnpackID(Dm->recvList("Y"), Dm->recvCount("Y") ,recvID_Y, id);
-		UnpackID(Dm->recvList("z"), Dm->recvCount("z") ,recvID_z, id);
-		UnpackID(Dm->recvList("Z"), Dm->recvCount("Z") ,recvID_Z, id);
-		UnpackID(Dm->recvList("xy"), Dm->recvCount("xy") ,recvID_xy, id);
-		UnpackID(Dm->recvList("Xy"), Dm->recvCount("Xy") ,recvID_Xy, id);
-		UnpackID(Dm->recvList("xY"), Dm->recvCount("xY") ,recvID_xY, id);
-		UnpackID(Dm->recvList("XY"), Dm->recvCount("XY") ,recvID_XY, id);
-		UnpackID(Dm->recvList("xz"), Dm->recvCount("xz") ,recvID_xz, id);
-		UnpackID(Dm->recvList("Xz"), Dm->recvCount("Xz") ,recvID_Xz, id);
-		UnpackID(Dm->recvList("xZ"), Dm->recvCount("xZ") ,recvID_xZ, id);
-		UnpackID(Dm->recvList("XZ"), Dm->recvCount("XZ") ,recvID_XZ, id);
-		UnpackID(Dm->recvList("yz"), Dm->recvCount("yz") ,recvID_yz, id);
-		UnpackID(Dm->recvList("Yz"), Dm->recvCount("Yz") ,recvID_Yz, id);
-		UnpackID(Dm->recvList("yZ"), Dm->recvCount("yZ") ,recvID_yZ, id);
-		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
+		UnpackID(Dm->recvList_x, Dm->recvCount_x ,recvID_x, id);
+		UnpackID(Dm->recvList_X, Dm->recvCount_X ,recvID_X, id);
+		UnpackID(Dm->recvList_y, Dm->recvCount_y ,recvID_y, id);
+		UnpackID(Dm->recvList_Y, Dm->recvCount_Y ,recvID_Y, id);
+		UnpackID(Dm->recvList_z, Dm->recvCount_z ,recvID_z, id);
+		UnpackID(Dm->recvList_Z, Dm->recvCount_Z ,recvID_Z, id);
+		UnpackID(Dm->recvList_xy, Dm->recvCount_xy ,recvID_xy, id);
+		UnpackID(Dm->recvList_Xy, Dm->recvCount_Xy ,recvID_Xy, id);
+		UnpackID(Dm->recvList_xY, Dm->recvCount_xY ,recvID_xY, id);
+		UnpackID(Dm->recvList_XY, Dm->recvCount_XY ,recvID_XY, id);
+		UnpackID(Dm->recvList_xz, Dm->recvCount_xz ,recvID_xz, id);
+		UnpackID(Dm->recvList_Xz, Dm->recvCount_Xz ,recvID_Xz, id);
+		UnpackID(Dm->recvList_xZ, Dm->recvCount_xZ ,recvID_xZ, id);
+		UnpackID(Dm->recvList_XZ, Dm->recvCount_XZ ,recvID_XZ, id);
+		UnpackID(Dm->recvList_yz, Dm->recvCount_yz ,recvID_yz, id);
+		UnpackID(Dm->recvList_Yz, Dm->recvCount_Yz ,recvID_Yz, id);
+		UnpackID(Dm->recvList_yZ, Dm->recvCount_yZ ,recvID_yZ, id);
+		UnpackID(Dm->recvList_YZ, Dm->recvCount_YZ ,recvID_YZ, id);
 		//......................................................................................
 
-		//double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
+		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 
 		count = 0.f;
 		for (int k=1; k<Nz-1; k++){
@@ -253,7 +272,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				}
 			}
 		}
-		countGlobal = Dm->Comm.sumReduce( count );
+		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 	/*	if (rank==0){
@@ -285,7 +304,7 @@ double morph_open()
 	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
 
 
-	GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
+	MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
@@ -298,7 +317,7 @@ double morph_open()
 			}
 		}
 	}
-	countGlobal = Dm->Comm.sumReduce( count );
+	MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 	return countGlobal;
 }
 */
@@ -341,11 +360,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 	}
 
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 	
 	// total Global is the number of nodes in the pore-space
-	totalGlobal = Dm->Comm.sumReduce( count );
-	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -359,44 +378,44 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	signed char *recvID_xy, *recvID_yz, *recvID_xz, *recvID_Xy, *recvID_Yz, *recvID_xZ;
 	signed char *recvID_xY, *recvID_yZ, *recvID_Xz, *recvID_XY, *recvID_YZ, *recvID_XZ;
 	// send buffers
-	sendID_x = new signed char [Dm->sendCount("x")];
-	sendID_y = new signed char [Dm->sendCount("y")];
-	sendID_z = new signed char [Dm->sendCount("z")];
-	sendID_X = new signed char [Dm->sendCount("X")];
-	sendID_Y = new signed char [Dm->sendCount("Y")];
-	sendID_Z = new signed char [Dm->sendCount("Z")];
-	sendID_xy = new signed char [Dm->sendCount("xy")];
-	sendID_yz = new signed char [Dm->sendCount("yz")];
-	sendID_xz = new signed char [Dm->sendCount("xz")];
-	sendID_Xy = new signed char [Dm->sendCount("Xy")];
-	sendID_Yz = new signed char [Dm->sendCount("Yz")];
-	sendID_xZ = new signed char [Dm->sendCount("xZ")];
-	sendID_xY = new signed char [Dm->sendCount("xY")];
-	sendID_yZ = new signed char [Dm->sendCount("yZ")];
-	sendID_Xz = new signed char [Dm->sendCount("Xz")];
-	sendID_XY = new signed char [Dm->sendCount("XY")];
-	sendID_YZ = new signed char [Dm->sendCount("YZ")];
-	sendID_XZ = new signed char [Dm->sendCount("XZ")];
+	sendID_x = new signed char [Dm->sendCount_x];
+	sendID_y = new signed char [Dm->sendCount_y];
+	sendID_z = new signed char [Dm->sendCount_z];
+	sendID_X = new signed char [Dm->sendCount_X];
+	sendID_Y = new signed char [Dm->sendCount_Y];
+	sendID_Z = new signed char [Dm->sendCount_Z];
+	sendID_xy = new signed char [Dm->sendCount_xy];
+	sendID_yz = new signed char [Dm->sendCount_yz];
+	sendID_xz = new signed char [Dm->sendCount_xz];
+	sendID_Xy = new signed char [Dm->sendCount_Xy];
+	sendID_Yz = new signed char [Dm->sendCount_Yz];
+	sendID_xZ = new signed char [Dm->sendCount_xZ];
+	sendID_xY = new signed char [Dm->sendCount_xY];
+	sendID_yZ = new signed char [Dm->sendCount_yZ];
+	sendID_Xz = new signed char [Dm->sendCount_Xz];
+	sendID_XY = new signed char [Dm->sendCount_XY];
+	sendID_YZ = new signed char [Dm->sendCount_YZ];
+	sendID_XZ = new signed char [Dm->sendCount_XZ];
 	//......................................................................................
 	// recv buffers
-	recvID_x = new signed char [Dm->recvCount("x")];
-	recvID_y = new signed char [Dm->recvCount("y")];
-	recvID_z = new signed char [Dm->recvCount("z")];
-	recvID_X = new signed char [Dm->recvCount("X")];
-	recvID_Y = new signed char [Dm->recvCount("Y")];
-	recvID_Z = new signed char [Dm->recvCount("Z")];
-	recvID_xy = new signed char [Dm->recvCount("xy")];
-	recvID_yz = new signed char [Dm->recvCount("yz")];
-	recvID_xz = new signed char [Dm->recvCount("xz")];
-	recvID_Xy = new signed char [Dm->recvCount("Xy")];
-	recvID_xZ = new signed char [Dm->recvCount("xZ")];
-	recvID_xY = new signed char [Dm->recvCount("xY")];
-	recvID_yZ = new signed char [Dm->recvCount("yZ")];
-	recvID_Yz = new signed char [Dm->recvCount("Yz")];
-	recvID_Xz = new signed char [Dm->recvCount("Xz")];
-	recvID_XY = new signed char [Dm->recvCount("XY")];
-	recvID_YZ = new signed char [Dm->recvCount("YZ")];
-	recvID_XZ = new signed char [Dm->recvCount("XZ")];
+	recvID_x = new signed char [Dm->recvCount_x];
+	recvID_y = new signed char [Dm->recvCount_y];
+	recvID_z = new signed char [Dm->recvCount_z];
+	recvID_X = new signed char [Dm->recvCount_X];
+	recvID_Y = new signed char [Dm->recvCount_Y];
+	recvID_Z = new signed char [Dm->recvCount_Z];
+	recvID_xy = new signed char [Dm->recvCount_xy];
+	recvID_yz = new signed char [Dm->recvCount_yz];
+	recvID_xz = new signed char [Dm->recvCount_xz];
+	recvID_Xy = new signed char [Dm->recvCount_Xy];
+	recvID_xZ = new signed char [Dm->recvCount_xZ];
+	recvID_xY = new signed char [Dm->recvCount_xY];
+	recvID_yZ = new signed char [Dm->recvCount_yZ];
+	recvID_Yz = new signed char [Dm->recvCount_Yz];
+	recvID_Xz = new signed char [Dm->recvCount_Xz];
+	recvID_XY = new signed char [Dm->recvCount_XY];
+	recvID_YZ = new signed char [Dm->recvCount_YZ];
+	recvID_XZ = new signed char [Dm->recvCount_XZ];
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
@@ -415,6 +434,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	double deltaR=0.05; // amount to change the radius in voxel units
 	double Rcrit_old;
 
+	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	double Rcrit_new = maxdistGlobal;
@@ -422,7 +442,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 
 	
 	FILE *DRAIN = fopen("morphdrain.csv","w");
@@ -469,64 +489,82 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 			}
 		}
 		// Pack and send the updated ID values
-		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
-		PackID(Dm->sendList("X"), Dm->sendCount("X") ,sendID_X, id);
-		PackID(Dm->sendList("y"), Dm->sendCount("y") ,sendID_y, id);
-		PackID(Dm->sendList("Y"), Dm->sendCount("Y") ,sendID_Y, id);
-		PackID(Dm->sendList("z"), Dm->sendCount("z") ,sendID_z, id);
-		PackID(Dm->sendList("Z"), Dm->sendCount("Z") ,sendID_Z, id);
-		PackID(Dm->sendList("xy"), Dm->sendCount("xy") ,sendID_xy, id);
-		PackID(Dm->sendList("Xy"), Dm->sendCount("Xy") ,sendID_Xy, id);
-		PackID(Dm->sendList("xY"), Dm->sendCount("xY") ,sendID_xY, id);
-		PackID(Dm->sendList("XY"), Dm->sendCount("XY") ,sendID_XY, id);
-		PackID(Dm->sendList("xz"), Dm->sendCount("xz") ,sendID_xz, id);
-		PackID(Dm->sendList("Xz"), Dm->sendCount("Xz") ,sendID_Xz, id);
-		PackID(Dm->sendList("xZ"), Dm->sendCount("xZ") ,sendID_xZ, id);
-		PackID(Dm->sendList("XZ"), Dm->sendCount("XZ") ,sendID_XZ, id);
-		PackID(Dm->sendList("yz"), Dm->sendCount("yz") ,sendID_yz, id);
-		PackID(Dm->sendList("Yz"), Dm->sendCount("Yz") ,sendID_Yz, id);
-		PackID(Dm->sendList("yZ"), Dm->sendCount("yZ") ,sendID_yZ, id);
-		PackID(Dm->sendList("YZ"), Dm->sendCount("YZ") ,sendID_YZ, id);
+		PackID(Dm->sendList_x, Dm->sendCount_x ,sendID_x, id);
+		PackID(Dm->sendList_X, Dm->sendCount_X ,sendID_X, id);
+		PackID(Dm->sendList_y, Dm->sendCount_y ,sendID_y, id);
+		PackID(Dm->sendList_Y, Dm->sendCount_Y ,sendID_Y, id);
+		PackID(Dm->sendList_z, Dm->sendCount_z ,sendID_z, id);
+		PackID(Dm->sendList_Z, Dm->sendCount_Z ,sendID_Z, id);
+		PackID(Dm->sendList_xy, Dm->sendCount_xy ,sendID_xy, id);
+		PackID(Dm->sendList_Xy, Dm->sendCount_Xy ,sendID_Xy, id);
+		PackID(Dm->sendList_xY, Dm->sendCount_xY ,sendID_xY, id);
+		PackID(Dm->sendList_XY, Dm->sendCount_XY ,sendID_XY, id);
+		PackID(Dm->sendList_xz, Dm->sendCount_xz ,sendID_xz, id);
+		PackID(Dm->sendList_Xz, Dm->sendCount_Xz ,sendID_Xz, id);
+		PackID(Dm->sendList_xZ, Dm->sendCount_xZ ,sendID_xZ, id);
+		PackID(Dm->sendList_XZ, Dm->sendCount_XZ ,sendID_XZ, id);
+		PackID(Dm->sendList_yz, Dm->sendCount_yz ,sendID_yz, id);
+		PackID(Dm->sendList_Yz, Dm->sendCount_Yz ,sendID_Yz, id);
+		PackID(Dm->sendList_yZ, Dm->sendCount_yZ ,sendID_yZ, id);
+		PackID(Dm->sendList_YZ, Dm->sendCount_YZ ,sendID_YZ, id);
 		//......................................................................................
-		Dm->Comm.sendrecv(sendID_x,Dm->sendCount("x"),Dm->rank_x(),sendtag,recvID_X,Dm->recvCount("X"),Dm->rank_X(),recvtag);
-		Dm->Comm.sendrecv(sendID_X,Dm->sendCount("X"),Dm->rank_X(),sendtag,recvID_x,Dm->recvCount("x"),Dm->rank_x(),recvtag);
-		Dm->Comm.sendrecv(sendID_y,Dm->sendCount("y"),Dm->rank_y(),sendtag,recvID_Y,Dm->recvCount("Y"),Dm->rank_Y(),recvtag);
-		Dm->Comm.sendrecv(sendID_Y,Dm->sendCount("Y"),Dm->rank_Y(),sendtag,recvID_y,Dm->recvCount("y"),Dm->rank_y(),recvtag);
-		Dm->Comm.sendrecv(sendID_z,Dm->sendCount("z"),Dm->rank_z(),sendtag,recvID_Z,Dm->recvCount("Z"),Dm->rank_Z(),recvtag);
-		Dm->Comm.sendrecv(sendID_Z,Dm->sendCount("Z"),Dm->rank_Z(),sendtag,recvID_z,Dm->recvCount("z"),Dm->rank_z(),recvtag);
-		Dm->Comm.sendrecv(sendID_xy,Dm->sendCount("xy"),Dm->rank_xy(),sendtag,recvID_XY,Dm->recvCount("XY"),Dm->rank_XY(),recvtag);
-		Dm->Comm.sendrecv(sendID_XY,Dm->sendCount("XY"),Dm->rank_XY(),sendtag,recvID_xy,Dm->recvCount("xy"),Dm->rank_xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xy,Dm->sendCount("Xy"),Dm->rank_Xy(),sendtag,recvID_xY,Dm->recvCount("xY"),Dm->rank_xY(),recvtag);
-		Dm->Comm.sendrecv(sendID_xY,Dm->sendCount("xY"),Dm->rank_xY(),sendtag,recvID_Xy,Dm->recvCount("Xy"),Dm->rank_Xy(),recvtag);
-		Dm->Comm.sendrecv(sendID_xz,Dm->sendCount("xz"),Dm->rank_xz(),sendtag,recvID_XZ,Dm->recvCount("XZ"),Dm->rank_XZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_XZ,Dm->sendCount("XZ"),Dm->rank_XZ(),sendtag,recvID_xz,Dm->recvCount("xz"),Dm->rank_xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Xz,Dm->sendCount("Xz"),Dm->rank_Xz(),sendtag,recvID_xZ,Dm->recvCount("xZ"),Dm->rank_xZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_xZ,Dm->sendCount("xZ"),Dm->rank_xZ(),sendtag,recvID_Xz,Dm->recvCount("Xz"),Dm->rank_Xz(),recvtag);
-		Dm->Comm.sendrecv(sendID_yz,Dm->sendCount("yz"),Dm->rank_yz(),sendtag,recvID_YZ,Dm->recvCount("YZ"),Dm->rank_YZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_YZ,Dm->sendCount("YZ"),Dm->rank_YZ(),sendtag,recvID_yz,Dm->recvCount("yz"),Dm->rank_yz(),recvtag);
-		Dm->Comm.sendrecv(sendID_Yz,Dm->sendCount("Yz"),Dm->rank_Yz(),sendtag,recvID_yZ,Dm->recvCount("yZ"),Dm->rank_yZ(),recvtag);
-		Dm->Comm.sendrecv(sendID_yZ,Dm->sendCount("yZ"),Dm->rank_yZ(),sendtag,recvID_Yz,Dm->recvCount("Yz"),Dm->rank_Yz(),recvtag);
+		MPI_Sendrecv(sendID_x,Dm->sendCount_x,MPI_CHAR,Dm->rank_x(),sendtag,
+				recvID_X,Dm->recvCount_X,MPI_CHAR,Dm->rank_X(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_X,Dm->sendCount_X,MPI_CHAR,Dm->rank_X(),sendtag,
+				recvID_x,Dm->recvCount_x,MPI_CHAR,Dm->rank_x(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_y,Dm->sendCount_y,MPI_CHAR,Dm->rank_y(),sendtag,
+				recvID_Y,Dm->recvCount_Y,MPI_CHAR,Dm->rank_Y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Y,Dm->sendCount_Y,MPI_CHAR,Dm->rank_Y(),sendtag,
+				recvID_y,Dm->recvCount_y,MPI_CHAR,Dm->rank_y(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_z,Dm->sendCount_z,MPI_CHAR,Dm->rank_z(),sendtag,
+				recvID_Z,Dm->recvCount_Z,MPI_CHAR,Dm->rank_Z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Z,Dm->sendCount_Z,MPI_CHAR,Dm->rank_Z(),sendtag,
+				recvID_z,Dm->recvCount_z,MPI_CHAR,Dm->rank_z(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xy,Dm->sendCount_xy,MPI_CHAR,Dm->rank_xy(),sendtag,
+				recvID_XY,Dm->recvCount_XY,MPI_CHAR,Dm->rank_XY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_XY,Dm->sendCount_XY,MPI_CHAR,Dm->rank_XY(),sendtag,
+				recvID_xy,Dm->recvCount_xy,MPI_CHAR,Dm->rank_xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Xy,Dm->sendCount_Xy,MPI_CHAR,Dm->rank_Xy(),sendtag,
+				recvID_xY,Dm->recvCount_xY,MPI_CHAR,Dm->rank_xY(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xY,Dm->sendCount_xY,MPI_CHAR,Dm->rank_xY(),sendtag,
+				recvID_Xy,Dm->recvCount_Xy,MPI_CHAR,Dm->rank_Xy(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xz,Dm->sendCount_xz,MPI_CHAR,Dm->rank_xz(),sendtag,
+				recvID_XZ,Dm->recvCount_XZ,MPI_CHAR,Dm->rank_XZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_XZ,Dm->sendCount_XZ,MPI_CHAR,Dm->rank_XZ(),sendtag,
+				recvID_xz,Dm->recvCount_xz,MPI_CHAR,Dm->rank_xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Xz,Dm->sendCount_Xz,MPI_CHAR,Dm->rank_Xz(),sendtag,
+				recvID_xZ,Dm->recvCount_xZ,MPI_CHAR,Dm->rank_xZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_xZ,Dm->sendCount_xZ,MPI_CHAR,Dm->rank_xZ(),sendtag,
+				recvID_Xz,Dm->recvCount_Xz,MPI_CHAR,Dm->rank_Xz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_yz,Dm->sendCount_yz,MPI_CHAR,Dm->rank_yz(),sendtag,
+				recvID_YZ,Dm->recvCount_YZ,MPI_CHAR,Dm->rank_YZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_YZ,Dm->sendCount_YZ,MPI_CHAR,Dm->rank_YZ(),sendtag,
+				recvID_yz,Dm->recvCount_yz,MPI_CHAR,Dm->rank_yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_Yz,Dm->sendCount_Yz,MPI_CHAR,Dm->rank_Yz(),sendtag,
+				recvID_yZ,Dm->recvCount_yZ,MPI_CHAR,Dm->rank_yZ(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
+		MPI_Sendrecv(sendID_yZ,Dm->sendCount_yZ,MPI_CHAR,Dm->rank_yZ(),sendtag,
+				recvID_Yz,Dm->recvCount_Yz,MPI_CHAR,Dm->rank_Yz(),recvtag,Dm->Comm,MPI_STATUS_IGNORE);
 		//......................................................................................
-		UnpackID(Dm->recvList("x"), Dm->recvCount("x") ,recvID_x, id);
-		UnpackID(Dm->recvList("X"), Dm->recvCount("X") ,recvID_X, id);
-		UnpackID(Dm->recvList("y"), Dm->recvCount("y") ,recvID_y, id);
-		UnpackID(Dm->recvList("Y"), Dm->recvCount("Y") ,recvID_Y, id);
-		UnpackID(Dm->recvList("z"), Dm->recvCount("z") ,recvID_z, id);
-		UnpackID(Dm->recvList("Z"), Dm->recvCount("Z") ,recvID_Z, id);
-		UnpackID(Dm->recvList("xy"), Dm->recvCount("xy") ,recvID_xy, id);
-		UnpackID(Dm->recvList("Xy"), Dm->recvCount("Xy") ,recvID_Xy, id);
-		UnpackID(Dm->recvList("xY"), Dm->recvCount("xY") ,recvID_xY, id);
-		UnpackID(Dm->recvList("XY"), Dm->recvCount("XY") ,recvID_XY, id);
-		UnpackID(Dm->recvList("xz"), Dm->recvCount("xz") ,recvID_xz, id);
-		UnpackID(Dm->recvList("Xz"), Dm->recvCount("Xz") ,recvID_Xz, id);
-		UnpackID(Dm->recvList("xZ"), Dm->recvCount("xZ") ,recvID_xZ, id);
-		UnpackID(Dm->recvList("XZ"), Dm->recvCount("XZ") ,recvID_XZ, id);
-		UnpackID(Dm->recvList("yz"), Dm->recvCount("yz") ,recvID_yz, id);
-		UnpackID(Dm->recvList("Yz"), Dm->recvCount("Yz") ,recvID_Yz, id);
-		UnpackID(Dm->recvList("yZ"), Dm->recvCount("yZ") ,recvID_yZ, id);
-		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
+		UnpackID(Dm->recvList_x, Dm->recvCount_x ,recvID_x, id);
+		UnpackID(Dm->recvList_X, Dm->recvCount_X ,recvID_X, id);
+		UnpackID(Dm->recvList_y, Dm->recvCount_y ,recvID_y, id);
+		UnpackID(Dm->recvList_Y, Dm->recvCount_Y ,recvID_Y, id);
+		UnpackID(Dm->recvList_z, Dm->recvCount_z ,recvID_z, id);
+		UnpackID(Dm->recvList_Z, Dm->recvCount_Z ,recvID_Z, id);
+		UnpackID(Dm->recvList_xy, Dm->recvCount_xy ,recvID_xy, id);
+		UnpackID(Dm->recvList_Xy, Dm->recvCount_Xy ,recvID_Xy, id);
+		UnpackID(Dm->recvList_xY, Dm->recvCount_xY ,recvID_xY, id);
+		UnpackID(Dm->recvList_XY, Dm->recvCount_XY ,recvID_XY, id);
+		UnpackID(Dm->recvList_xz, Dm->recvCount_xz ,recvID_xz, id);
+		UnpackID(Dm->recvList_Xz, Dm->recvCount_Xz ,recvID_Xz, id);
+		UnpackID(Dm->recvList_xZ, Dm->recvCount_xZ ,recvID_xZ, id);
+		UnpackID(Dm->recvList_XZ, Dm->recvCount_XZ ,recvID_XZ, id);
+		UnpackID(Dm->recvList_yz, Dm->recvCount_yz ,recvID_yz, id);
+		UnpackID(Dm->recvList_Yz, Dm->recvCount_Yz ,recvID_Yz, id);
+		UnpackID(Dm->recvList_yZ, Dm->recvCount_yZ ,recvID_yZ, id);
+		UnpackID(Dm->recvList_YZ, Dm->recvCount_YZ ,recvID_YZ, id);
 		//......................................................................................
-		// double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
+		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -545,7 +583,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		Dm->Comm.barrier();
+		MPI_Barrier(Dm->Comm);
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -581,7 +619,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 		
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		Dm->Comm.barrier();
+		MPI_Barrier(Dm->Comm);
 		
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
@@ -607,7 +645,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				}
 			}
 		}
-		countGlobal = Dm->Comm.sumReduce( count );
+		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 		if (rank==0){
@@ -647,13 +685,13 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	return final_void_fraction;
 }
 
-double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth)
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth, double WallFactor)
 {
 	int Nx = Dm->Nx;
 	int Ny = Dm->Ny;
 	int Nz = Dm->Nz;
 	int rank = Dm->rank();
-	
+		
 	double count=0.0;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -664,7 +702,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			}
 		}
 	}
-	double count_original = Dm->Comm.sumReduce( count);
+	double count_original=sumReduce( Dm->Comm, count);
 
 	// Estimate morph_delta
 	double morph_delta = 0.0;
@@ -684,8 +722,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					double walldist=BoundaryDist(i,j,k);
-					double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
-					//wallweight = 1.0;
+					double wallweight = WallFactor/ (1+exp(-5.f*(walldist-1.f))); 
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
 					
 					if (Dist(i,j,k) - wallweight*morph_delta < 0.0){
@@ -694,8 +731,8 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 				}
 			}
 		}
-		count = Dm->Comm.sumReduce( count );
-		MAX_DISPLACEMENT = Dm->Comm.maxReduce( MAX_DISPLACEMENT );
+		count=sumReduce( Dm->Comm, count);
+		MAX_DISPLACEMENT = maxReduce( Dm->Comm, MAX_DISPLACEMENT);
 		GrowthEstimate = count - count_original;
 		ERROR = fabs((GrowthEstimate-TargetGrowth) /TargetGrowth);
 
@@ -731,14 +768,14 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double walldist=BoundaryDist(i,j,k);
-				double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
+				double wallweight = WallFactor / (1+exp(-5.f*(walldist-1.f))); 
 				//wallweight = 1.0;
 				Dist(i,j,k) -= wallweight*morph_delta;
 				if (Dist(i,j,k) < 0.0)	count+=1.0;
 			}
 		}
 	}
-	count = Dm->Comm.sumReduce( count );
+	count=sumReduce( Dm->Comm, count);
 
 	return count;
 }
