@@ -58,11 +58,11 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 			}
 		}
 	}
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
+	totalGlobal = Dm->Comm.sumReduce( count );
+	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -131,9 +131,8 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old=0.0;
+	double Rcrit_old;
 
-	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	if (ErodeLabel == 1){
@@ -220,7 +219,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		Dm->Comm.sendrecv(sendID_YZ,Dm->sendCount("YZ"),Dm->rank_YZ(),sendtag,recvID_yz,Dm->recvCount("yz"),Dm->rank_yz(),recvtag);
 		Dm->Comm.sendrecv(sendID_Yz,Dm->sendCount("Yz"),Dm->rank_Yz(),sendtag,recvID_yZ,Dm->recvCount("yZ"),Dm->rank_yZ(),recvtag);
 		Dm->Comm.sendrecv(sendID_yZ,Dm->sendCount("yZ"),Dm->rank_yZ(),sendtag,recvID_Yz,Dm->recvCount("Yz"),Dm->rank_Yz(),recvtag);
- 		//......................................................................................
+		//......................................................................................
 		UnpackID(Dm->recvList("x"), Dm->recvCount("x") ,recvID_x, id);
 		UnpackID(Dm->recvList("X"), Dm->recvCount("X") ,recvID_X, id);
 		UnpackID(Dm->recvList("y"), Dm->recvCount("y") ,recvID_y, id);
@@ -241,7 +240,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
 		//......................................................................................
 
-		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		//double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
 
 		count = 0.f;
 		for (int k=1; k<Nz-1; k++){
@@ -254,7 +253,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		countGlobal = Dm->Comm.sumReduce( count );
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 	/*	if (rank==0){
@@ -286,7 +285,7 @@ double morph_open()
 	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
 
 
-	MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
 
 	count = 0.f;
 	for (int k=1; k<Nz-1; k++){
@@ -299,7 +298,7 @@ double morph_open()
 			}
 		}
 	}
-	MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	countGlobal = Dm->Comm.sumReduce( count );
 	return countGlobal;
 }
 */
@@ -342,11 +341,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 	}
 
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	
 	// total Global is the number of nodes in the pore-space
-	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm->Comm);
+	totalGlobal = Dm->Comm.sumReduce( count );
+	maxdistGlobal = Dm->Comm.sumReduce( maxdist );
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double volume_fraction=totalGlobal/volume;
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
@@ -416,7 +415,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	double deltaR=0.05; // amount to change the radius in voxel units
 	double Rcrit_old;
 
-	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
 
 	double Rcrit_new = maxdistGlobal;
@@ -424,7 +422,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//	Rcrit_new = strtod(argv[2],NULL);
 	//	if (rank==0) printf("Max. distance =%f, Initial critical radius = %f \n",maxdistGlobal,Rcrit_new);
 	//}
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 
 	
 	FILE *DRAIN = fopen("morphdrain.csv","w");
@@ -528,7 +526,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		UnpackID(Dm->recvList("yZ"), Dm->recvCount("yZ") ,recvID_yZ, id);
 		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
 		//......................................................................................
-		MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		// double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -547,7 +545,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
+		Dm->Comm.barrier();
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -583,7 +581,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 		
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
+		Dm->Comm.barrier();
 		
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
@@ -609,7 +607,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				}
 			}
 		}
-		MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		countGlobal = Dm->Comm.sumReduce( count );
 		void_fraction_new = countGlobal/totalGlobal;
 		void_fraction_diff_new = abs(void_fraction_new-VoidFraction);
 		if (rank==0){
@@ -649,13 +647,13 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	return final_void_fraction;
 }
 
-double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth, double WallFactor)
+double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, std::shared_ptr<Domain> Dm, double TargetGrowth)
 {
 	int Nx = Dm->Nx;
 	int Ny = Dm->Ny;
 	int Nz = Dm->Nz;
 	int rank = Dm->rank();
-		
+	
 	double count=0.0;
 	for (int k=1; k<Nz-1; k++){
 		for (int j=1; j<Ny-1; j++){
@@ -666,7 +664,7 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			}
 		}
 	}
-	double count_original=sumReduce( Dm->Comm, count);
+	double count_original = Dm->Comm.sumReduce( count);
 
 	// Estimate morph_delta
 	double morph_delta = 0.0;
@@ -686,7 +684,8 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 			for (int j=1; j<Ny-1; j++){
 				for (int i=1; i<Nx-1; i++){
 					double walldist=BoundaryDist(i,j,k);
-					double wallweight = WallFactor/ (1+exp(-5.f*(walldist-1.f))); 
+					double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
+					//wallweight = 1.0;
 					if (fabs(wallweight*morph_delta) > MAX_DISPLACEMENT) MAX_DISPLACEMENT= fabs(wallweight*morph_delta);
 					
 					if (Dist(i,j,k) - wallweight*morph_delta < 0.0){
@@ -695,8 +694,8 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 				}
 			}
 		}
-		count=sumReduce( Dm->Comm, count);
-		MAX_DISPLACEMENT = maxReduce( Dm->Comm, MAX_DISPLACEMENT);
+		count = Dm->Comm.sumReduce( count );
+		MAX_DISPLACEMENT = Dm->Comm.maxReduce( MAX_DISPLACEMENT );
 		GrowthEstimate = count - count_original;
 		ERROR = fabs((GrowthEstimate-TargetGrowth) /TargetGrowth);
 
@@ -732,14 +731,14 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				double walldist=BoundaryDist(i,j,k);
-				double wallweight = WallFactor / (1+exp(-5.f*(walldist-1.f))); 
+				double wallweight = 1.0 / (1+exp(-5.f*(walldist-1.f))); 
 				//wallweight = 1.0;
 				Dist(i,j,k) -= wallweight*morph_delta;
 				if (Dist(i,j,k) < 0.0)	count+=1.0;
 			}
 		}
 	}
-	count=sumReduce( Dm->Comm, count);
+	count = Dm->Comm.sumReduce( count );
 
 	return count;
 }
