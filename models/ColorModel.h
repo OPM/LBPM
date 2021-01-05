@@ -68,8 +68,8 @@ public:
 	double *Pressure;
 		
 private:
-	MPI_Comm comm;
-    
+	Utilities::MPI comm;
+
 	int dist_mem_size;
 	int neighborSize;
 	// filenames

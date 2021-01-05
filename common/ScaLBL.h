@@ -371,6 +371,10 @@ public:
 	int LastInterior();
 	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np);
+	void Barrier(){
+		ScaLBL_DeviceBarrier();
+		MPI_COMM_SCALBL.barrier();
+	};
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *fq, int Component);

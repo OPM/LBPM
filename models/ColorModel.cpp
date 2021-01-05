@@ -168,9 +168,9 @@ void ScaLBL_ColorModel::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	Averages = std::shared_ptr<SubPhase> ( new SubPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -386,7 +386,7 @@ void ScaLBL_ColorModel::Create(){
 		}
 	}
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] TmpMap;
 	
 	// copy the neighbor list 
@@ -464,9 +464,9 @@ void ScaLBL_ColorModel::Initialize(){
 		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 
-		MPI_Barrier(comm);
+		comm.barrier();
 	}
 
 	if (rank==0)	printf ("Initializing phase field \n");
@@ -653,8 +653,8 @@ void ScaLBL_ColorModel::Run(){
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier();
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 
@@ -675,7 +675,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -691,7 +691,7 @@ void ScaLBL_ColorModel::Run(){
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
@@ -707,8 +707,7 @@ void ScaLBL_ColorModel::Run(){
 		}
 		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		ScaLBL_Comm->Barrier(); 
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -716,7 +715,7 @@ void ScaLBL_ColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -731,7 +730,7 @@ void ScaLBL_ColorModel::Run(){
 				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set boundary conditions
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
@@ -747,8 +746,7 @@ void ScaLBL_ColorModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		ScaLBL_Comm->Barrier(); 
 		//************************************************************************
 		PROFILE_STOP("Update");
 
@@ -992,14 +990,13 @@ void ScaLBL_ColorModel::Run(){
 			}
 			morph_timesteps += analysis_interval;
 		}
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		comm.barrier();
 	}
 	analysis.finish();
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
-	ScaLBL_DeviceBarrier();
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+	ScaLBL_Comm->Barrier();
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -1049,12 +1046,12 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 	
 	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+	comm.barrier();
 	
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+	comm.barrier();
 	
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
@@ -1086,7 +1083,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,Dm->Comm);
-		MPI_Barrier(Dm->Comm);
+		comm.barrier();
 
 		long long count_connected=0;
 		long long count_porespace=0;
@@ -1322,7 +1319,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	if (USE_CONNECTED_NWP){
 		BlobIDstruct new_index;
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
-		MPI_Barrier(Dm->Comm);
+		comm.barrier();
 
 		// only operate on component "0"
 		count = 0.0;
