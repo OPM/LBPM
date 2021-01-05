@@ -293,7 +293,7 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
 	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
 	if (rank==0){
 		printf("Component labels: %lu \n",NLABELS);
@@ -1044,8 +1044,8 @@ double ScaLBL_ColorModel::ImageInit(std::string Filename){
 		}
 	}
 
-	Count=sumReduce( Dm->Comm, Count);
-	PoreCount=sumReduce( Dm->Comm, PoreCount);
+	Count=Dm->Comm.sumReduce(  Count);
+	PoreCount=Dm->Comm.sumReduce(  PoreCount);
 	
 	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Nx*Ny*Nz*sizeof(double));
@@ -1108,9 +1108,9 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 				}
 			}
 		}
-		count_connected=sumReduce( Dm->Comm, count_connected);
-		count_porespace=sumReduce( Dm->Comm, count_porespace);
-		count_water=sumReduce( Dm->Comm, count_water);
+		count_connected=Dm->Comm.sumReduce(  count_connected);
+		count_porespace=Dm->Comm.sumReduce(  count_porespace);
+		count_water=Dm->Comm.sumReduce(  count_water);
 
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -1182,7 +1182,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 				}
 			}
 		}
-		count_morphopen=sumReduce( Dm->Comm, count_morphopen);
+		count_morphopen=Dm->Comm.sumReduce(  count_morphopen);
 		volume_change = double(count_morphopen - count_connected);
 		
 		if (rank==0)  printf("   opening of connected oil %f \n",volume_change/count_connected);
@@ -1268,8 +1268,8 @@ double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
     mass_loss += random_value*seed_water_in_oil;
   }
 
-  count= sumReduce( Dm->Comm, count);
-  mass_loss= sumReduce( Dm->Comm, mass_loss);
+  count= Dm->Comm.sumReduce(  count);
+  mass_loss= Dm->Comm.sumReduce(  mass_loss);
   if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
 
   // Need to initialize Aq, Bq, Den, Phi directly
@@ -1308,7 +1308,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-	double volume_initial = sumReduce( Dm->Comm, count);
+	double volume_initial = Dm->Comm.sumReduce(  count);
 	/*
 	sprintf(LocalRankFilename,"phi_initial.%05i.raw",rank);
 	FILE *INPUT = fopen(LocalRankFilename,"wb");
@@ -1343,8 +1343,8 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 				}
 			}
 		}	
-		volume_connected = sumReduce( Dm->Comm, count);
-		second_biggest = sumReduce( Dm->Comm, second_biggest);
+		volume_connected = Dm->Comm.sumReduce(  count);
+		second_biggest = Dm->Comm.sumReduce(  second_biggest);
 	}
 	else {
 		// use the whole NWP 
@@ -1455,7 +1455,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 			}
 		}
 	}
-	double volume_final= sumReduce( Dm->Comm, count);
+	double volume_final= Dm->Comm.sumReduce(  count);
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
