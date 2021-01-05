@@ -231,7 +231,7 @@ void ScaLBL_Poisson::AssignSolidBoundary(double *poisson_solid)
 	}
 
 	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
 	if (rank==0){
 		printf("LB-Poisson Solver: number of Poisson solid labels: %lu \n",NLABELS);
@@ -324,16 +324,16 @@ void ScaLBL_Poisson::Create(){
 		}
 	}
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] TmpMap;
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	MPI_Barrier(comm);
 	delete [] neighborList;
     // copy node ID
 	//ScaLBL_CopyToDevice(dvcID, Mask->id, sizeof(signed char)*Nx*Ny*Nz);
-	//ScaLBL_DeviceBarrier();
+	//ScaLBL_Comm->Barrier();
 	
     //Initialize solid boundary for electric potential
     ScaLBL_Comm->SetupBounceBackList(Map, Mask->id, Np);
@@ -388,7 +388,7 @@ void ScaLBL_Poisson::Initialize(){
     AssignSolidBoundary(psi_host);//step1
     Potential_Init(psi_host);//step2
 	ScaLBL_CopyToDevice(Psi, psi_host, Nx*Ny*Nz*sizeof(double));
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
     ScaLBL_D3Q7_Poisson_Init(dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
     ScaLBL_D3Q7_Poisson_Init(dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
     delete [] psi_host;
@@ -408,7 +408,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
     
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
-	//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	//ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	//starttime = MPI_Wtime();
 
 	timestep=0;
@@ -421,13 +421,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         
         SolveElectricPotentialAAodd();//update electric potential
         SolvePoissonAAodd(ChargeDensity);//perform collision
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		SolveElectricPotentialAAeven();//update electric potential
         SolvePoissonAAeven(ChargeDensity);//perform collision
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 		//************************************************************************/
 
         // Check convergence of steady-state solution
@@ -509,7 +509,7 @@ void ScaLBL_Poisson::SolveElectricPotentialAAodd(){
 	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
 	ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
-    ScaLBL_DeviceBarrier();
+    ScaLBL_Comm->Barrier();
 	// Set boundary conditions
 	if (BoundaryCondition == 1){
 		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
@@ -523,7 +523,7 @@ void ScaLBL_Poisson::SolveElectricPotentialAAeven(){
 	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
 	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
-    ScaLBL_DeviceBarrier();
+    ScaLBL_Comm->Barrier();
 	// Set boundary conditions
 	if (BoundaryCondition == 1){
 		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
@@ -570,7 +570,7 @@ void ScaLBL_Poisson::DummyChargeDensity(){
     }
 	ScaLBL_AllocateDeviceMemory((void **) &ChargeDensityDummy, sizeof(double)*Np);
 	ScaLBL_CopyToDevice(ChargeDensityDummy, ChargeDensity_host, sizeof(double)*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] ChargeDensity_host;
 }
 
@@ -579,7 +579,7 @@ void ScaLBL_Poisson::getElectricPotential_debug(int timestep){
     DoubleArray PhaseField(Nx,Ny,Nz);
 	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
     ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-    //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
     FILE *OUTFILE;
     sprintf(LocalRankFilename,"Electric_Potential_Time_%i.%05i.raw",timestep,rank);
     OUTFILE = fopen(LocalRankFilename,"wb");
@@ -597,22 +597,22 @@ void ScaLBL_Poisson::getElectricField(DoubleArray &Values_x, DoubleArray &Values
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],Values_x);
         ElectricField_LB_to_Phys(Values_x);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],Values_y);
         ElectricField_LB_to_Phys(Values_y);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],Values_z);
         ElectricField_LB_to_Phys(Values_z);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 }
 
 void ScaLBL_Poisson::getElectricField_debug(int timestep){
 
         //ScaLBL_D3Q7_Poisson_getElectricField(fq,ElectricField,tau,Np);
-        //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
         DoubleArray PhaseField(Nx,Ny,Nz);
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],PhaseField);
@@ -658,7 +658,7 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
 //    ScaLBL_D3Q7_Poisson_ElectricField(NeighborList, dvcMap, dvcID, Psi, ElectricField, BoundaryConditionSolid,
 //                                      Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 //    ScaLBL_Comm_Regular->RecvHalo(Psi);
-//    ScaLBL_DeviceBarrier();
+//    ScaLBL_Comm->Barrier();
 //    if (BoundaryCondition == 1){
 //        ScaLBL_Comm->Poisson_D3Q7_BC_z(dvcMap,Psi,Vin);
 //        ScaLBL_Comm->Poisson_D3Q7_BC_Z(dvcMap,Psi,Vout);
@@ -671,7 +671,7 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
 //
 //        DoubleArray PhaseField(Nx,Ny,Nz);
 //	    ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
-//        //ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+//        //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 //        FILE *OUTFILE;
 //        sprintf(LocalRankFilename,"Electric_Potential.%05i.raw",rank);
 //        OUTFILE = fopen(LocalRankFilename,"wb");
@@ -728,7 +728,7 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
 //	}
 //
 //	for (size_t idx=0; idx<NLABELS; idx++)
-//		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+//		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 //
 //	if (rank==0){
 //		printf("LB-Poisson Solver: number of Poisson solid labels: %lu \n",NLABELS);

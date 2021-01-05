@@ -588,7 +588,7 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 	}
 
 	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
 	if (rank==0){
 		printf("LB Ion Solver: number of ion solid labels: %lu \n",NLABELS);
@@ -684,7 +684,7 @@ void ScaLBL_IonModel::Create(){
         IonSolid_host = new double[Nx*Ny*Nz];
         AssignSolidBoundary(IonSolid_host);
         ScaLBL_CopyToDevice(IonSolid, IonSolid_host, Nx*Ny*Nz*sizeof(double));
-        ScaLBL_DeviceBarrier();
+        ScaLBL_Comm->Barrier();
         delete [] IonSolid_host;
     }
 }        
@@ -782,7 +782,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
     
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
-	//ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	//ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	//starttime = MPI_Wtime();
 
 	for (int ic=0; ic<number_ion_species; ic++){
@@ -795,7 +795,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FROM NORMAL
             ScaLBL_D3Q7_AAodd_IonConcentration(NeighborList, &fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
-            ScaLBL_DeviceBarrier();
+            ScaLBL_Comm->Barrier();
             //--------------------------------------- Set boundary conditions -------------------------------------//
             if (BoundaryConditionInlet[ic]>0){
                 switch (BoundaryConditionInlet[ic]){
@@ -830,7 +830,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             if (BoundaryConditionSolid==1){
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic*Np*7], IonSolid);
-                ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+                ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
             }
 
             // *************EVEN TIMESTEP*************//
@@ -839,7 +839,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             ScaLBL_Comm->SendD3Q7AA(fq, ic); //READ FORM NORMAL
             ScaLBL_D3Q7_AAeven_IonConcentration(&fq[ic*Np*7],&Ci[ic*Np],ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
             ScaLBL_Comm->RecvD3Q7AA(fq, ic); //WRITE INTO OPPOSITE
-            ScaLBL_DeviceBarrier();
+            ScaLBL_Comm->Barrier();
             //--------------------------------------- Set boundary conditions -------------------------------------//
             if (BoundaryConditionInlet[ic]>0){
                 switch (BoundaryConditionInlet[ic]){
@@ -874,7 +874,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             if (BoundaryConditionSolid==1){
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic*Np*7], IonSolid);
-                ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+                ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
             }
         }
     }
@@ -904,7 +904,7 @@ void ScaLBL_IonModel::getIonConcentration(DoubleArray &IonConcentration, const i
 	//This function wirte out the data in a normal layout (by aggregating all decomposed domains)
 
 	ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],IonConcentration);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	IonConcentration_LB_to_Phys(IonConcentration);
 
 }
@@ -914,7 +914,7 @@ void ScaLBL_IonModel::getIonConcentration_debug(int timestep){
     DoubleArray PhaseField(Nx,Ny,Nz);
 	for (int ic=0; ic<number_ion_species; ic++){
 	    ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],PhaseField);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
         IonConcentration_LB_to_Phys(PhaseField);
 
         FILE *OUTFILE;
@@ -955,7 +955,7 @@ void ScaLBL_IonModel::DummyFluidVelocity(){
     }
 	ScaLBL_AllocateDeviceMemory((void **) &FluidVelocityDummy, sizeof(double)*3*Np);
 	ScaLBL_CopyToDevice(FluidVelocityDummy, FluidVelocity_host, sizeof(double)*3*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] FluidVelocity_host;
 }
 
@@ -976,7 +976,7 @@ void ScaLBL_IonModel::DummyElectricField(){
     }
 	ScaLBL_AllocateDeviceMemory((void **) &ElectricFieldDummy, sizeof(double)*3*Np);
 	ScaLBL_CopyToDevice(ElectricFieldDummy, ElectricField_host, sizeof(double)*3*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] ElectricField_host;
 }
 
@@ -1028,7 +1028,7 @@ double ScaLBL_IonModel::CalIonDenConvergence(vector<double> &ci_avg_previous){
 //    DoubleArray PhaseField(Nx,Ny,Nz);
 //	for (int ic=0; ic<number_ion_species; ic++){
 //	    ScaLBL_Comm->RegularLayout(Map,&Ci[ic*Np],PhaseField);
-//        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+//        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 //
 //        FILE *OUTFILE;
 //        sprintf(LocalRankFilename,"Ion%02i.%05i.raw",ic+1,rank);

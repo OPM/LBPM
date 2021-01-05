@@ -267,7 +267,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
 	for (unsigned int idx=0; idx<NLABELS; idx++){
@@ -331,7 +331,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Perme
 			}
 		}
 	}
-    GreyPorosity = sumReduce( Dm->Comm, GreyPorosity_loc);
+    GreyPorosity = Dm->Comm.sumReduce(  GreyPorosity_loc);
     GreyPorosity = GreyPorosity/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
 
 	if (rank==0){
@@ -683,10 +683,10 @@ void ScaLBL_GreyscaleModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs = sumReduce( Dm->Comm, Vs);
-			As = sumReduce( Dm->Comm, As);
-			Hs = sumReduce( Dm->Comm, Hs);
-			Xs = sumReduce( Dm->Comm, Xs);
+			Vs = Dm->Comm.sumReduce(  Vs);
+			As = Dm->Comm.sumReduce(  As);
+			Hs = Dm->Comm.sumReduce(  Hs);
+			Xs = Dm->Comm.sumReduce(  Xs);
 
 			double h = Dm->voxel_length;
 			//double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;

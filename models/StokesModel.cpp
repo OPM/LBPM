@@ -343,7 +343,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
                                      0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
         timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -365,7 +365,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
                                       0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
         //************************************************************************/
     }
 }
@@ -373,25 +373,25 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
 void ScaLBL_StokesModel::getVelocity(DoubleArray &Vel_x, DoubleArray &Vel_y, DoubleArray &Vel_z){
     //get velocity in physical unit [m/sec]
 	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Vel_x);
     Velocity_LB_to_Phys(Vel_x);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Vel_y);
     Velocity_LB_to_Phys(Vel_y);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Vel_z);
     Velocity_LB_to_Phys(Vel_z);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+    ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 }
 
 void ScaLBL_StokesModel::getVelocity_debug(int timestep){
     //get velocity in physical unit [m/sec]
 	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 
     DoubleArray PhaseField(Nx,Ny,Nz);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
@@ -492,7 +492,7 @@ double ScaLBL_StokesModel::CalVelocityConvergence(double& flow_rate_previous,dou
     
     //-----------------------------------------------------
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -574,7 +574,7 @@ void ScaLBL_StokesModel::Run(){
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	starttime = MPI_Wtime();
 	if (rank==0) printf("****************************************************************\n");
 	if (rank==0) printf("LB Single-Fluid Navier-Stokes Solver: timestepMax = %i\n", timestepMax);
@@ -602,7 +602,7 @@ void ScaLBL_StokesModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_MRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
@@ -621,12 +621,12 @@ void ScaLBL_StokesModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 		//************************************************************************/
 		
 		if (timestep%1000==0){
 			ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -681,10 +681,10 @@ void ScaLBL_StokesModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs=sumReduce( Dm->Comm, Vs);
-			As=sumReduce( Dm->Comm, As);
-			Hs=sumReduce( Dm->Comm, Hs);
-			Xs=sumReduce( Dm->Comm, Xs);
+			Vs=Dm->Comm.sumReduce(  Vs);
+			As=Dm->Comm.sumReduce(  As);
+			Hs=Dm->Comm.sumReduce(  Hs);
+			Xs=Dm->Comm.sumReduce(  Xs);
 			double h = Dm->voxel_length;
 			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			if (rank==0) {
@@ -718,7 +718,7 @@ void ScaLBL_StokesModel::VelocityField(){
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
 	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
