@@ -3,7 +3,7 @@
 #include "analysis/analysis.h"
 #include "common/Array.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/ScaLBL.h"
 #include "models/ColorModel.h"
 

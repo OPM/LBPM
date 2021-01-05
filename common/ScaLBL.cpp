@@ -78,43 +78,43 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	BoundaryCondition = Dm->BoundaryCondition;
 	//......................................................................................
 
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 5*sendCount_x*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 5*sendCount_X*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 5*sendCount_y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Y, 5*sendCount_Y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_z, 5*sendCount_z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Z, 5*sendCount_Z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xy, sendCount_xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xY, sendCount_xY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xy, sendCount_Xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XY, sendCount_XY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xz, sendCount_xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xZ, sendCount_xZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xz, sendCount_Xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XZ, sendCount_XZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yz, sendCount_yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yZ, sendCount_yZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Yz, sendCount_Yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &sendbuf_YZ, sendCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, 2*5*sendCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, 2*5*sendCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_y, 2*5*sendCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Y, 2*5*sendCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_z, 2*5*sendCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Z, 2*5*sendCount_Z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xy, 2*sendCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xY, 2*sendCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xy, 2*sendCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XY, 2*sendCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xz, 2*sendCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_xZ, 2*sendCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Xz, 2*sendCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_XZ, 2*sendCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yz, 2*sendCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_yZ, 2*sendCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_Yz, 2*sendCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf_YZ, 2*sendCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_x, 5*recvCount_x*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_X, 5*recvCount_X*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_y, 5*recvCount_y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Y, 5*recvCount_Y*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_z, 5*recvCount_z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Z, 5*recvCount_Z*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xy, recvCount_xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xY, recvCount_xY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xy, recvCount_Xy*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XY, recvCount_XY*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xz, recvCount_xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xZ, recvCount_xZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xz, recvCount_Xz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XZ, recvCount_XZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yz, recvCount_yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yZ, recvCount_yZ*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Yz, recvCount_Yz*sizeof(double));	// Allocate device memory
-	ScaLBL_AllocateZeroCopy((void **) &recvbuf_YZ, recvCount_YZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_x, 2*5*recvCount_x*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_X, 2*5*recvCount_X*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_y, 2*5*recvCount_y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Y, 2*5*recvCount_Y*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_z, 2*5*recvCount_z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Z, 2*5*recvCount_Z*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xy, 2*recvCount_xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xY, 2*recvCount_xY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xy, 2*recvCount_Xy*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XY, 2*recvCount_XY*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xz, 2*recvCount_xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_xZ, 2*recvCount_xZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Xz, 2*recvCount_Xz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_XZ, 2*recvCount_XZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yz, 2*recvCount_yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_yZ, 2*recvCount_yZ*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_Yz, 2*recvCount_Yz*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf_YZ, 2*recvCount_YZ*sizeof(double));	// Allocate device memory
 	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_x, sendCount_x*sizeof(int));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &dvcSendList_X, sendCount_X*sizeof(int));	// Allocate device memory
@@ -174,6 +174,44 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
 
+	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList_x,sendCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList_X,sendCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_y,Dm->sendList_y,sendCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Y,Dm->sendList_Y,sendCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_z,Dm->sendList_z,sendCount_z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Z,Dm->sendList_Z,sendCount_Z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xy,Dm->sendList_xy,sendCount_xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_XY,Dm->sendList_XY,sendCount_XY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xY,Dm->sendList_xY,sendCount_xY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Xy,Dm->sendList_Xy,sendCount_Xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xz,Dm->sendList_xz,sendCount_xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_XZ,Dm->sendList_XZ,sendCount_XZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_xZ,Dm->sendList_xZ,sendCount_xZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Xz,Dm->sendList_Xz,sendCount_Xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_yz,Dm->sendList_yz,sendCount_yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_YZ,Dm->sendList_YZ,sendCount_YZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_yZ,Dm->sendList_yZ,sendCount_yZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcSendList_Yz,Dm->sendList_Yz,sendCount_Yz*sizeof(int));
+	//......................................................................................
+	ScaLBL_CopyToZeroCopy(dvcRecvList_x,Dm->recvList_x,recvCount_x*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_X,Dm->recvList_X,recvCount_X*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_y,Dm->recvList_y,recvCount_y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,Dm->recvList_Y,recvCount_Y*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_z,Dm->recvList_z,recvCount_z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Z,Dm->recvList_Z,recvCount_Z*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xy,Dm->recvList_xy,recvCount_xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_XY,Dm->recvList_XY,recvCount_XY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xY,Dm->recvList_xY,recvCount_xY*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Xy,Dm->recvList_Xy,recvCount_Xy*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xz,Dm->recvList_xz,recvCount_xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_XZ,Dm->recvList_XZ,recvCount_XZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_xZ,Dm->recvList_xZ,recvCount_xZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Xz,Dm->recvList_Xz,recvCount_Xz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_yz,Dm->recvList_yz,recvCount_yz*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_YZ,Dm->recvList_YZ,recvCount_YZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_yZ,Dm->recvList_yZ,recvCount_yZ*sizeof(int));
+	ScaLBL_CopyToZeroCopy(dvcRecvList_Yz,Dm->recvList_Yz,recvCount_Yz*sizeof(int));
+	//......................................................................................
 	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList("x"),sendCount_x*sizeof(int));
 	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList("X"),sendCount_X*sizeof(int));
 	ScaLBL_CopyToZeroCopy(dvcSendList_y,Dm->sendList("y"),sendCount_y*sizeof(int));
@@ -319,7 +357,7 @@ int ScaLBL_Communicator::LastInterior(){
 	return last_interior;
 }
 
-void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count,
+void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
 		int *d3q19_recvlist){
 	int i,j,k,n,nn,idx;
 	int * ReturnDist;
@@ -363,14 +401,18 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	int idx,i,j,k,n;
 
 	// Check that Map has size matching sub-domain
-	if ( (int) Map.size(0) != Nx)
+	if (Map.size(0) != Nx)
 		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Map array dimensions do not match! \n");
 
 	// Initialize Map
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
-				Map(i,j,k) = -2;
+				n = k*Nx*Ny + j*Nx + i;
+				if (id[n] > 0)
+					Map(i,j,k) = -2; // this label is for parallel communication sites
+				else
+					Map(i,j,k) = -1; // this label is for solid bounce-back sites
 			}
 		}
 	}
@@ -520,7 +562,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 			}
 		}
 	}
-
+	
 	//for (idx=0; idx<Np; idx++)	printf("%i: %i %i\n", idx, neighborList[Np],  neighborList[Np+idx]);
 	//.......................................................................
 	// Now map through  SendList and RecvList to update indices
@@ -845,6 +887,238 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	// Clean up
 	delete [] TempBuffer;
 	return(Np);
+}
+
+
+void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np)
+{
+
+    int idx,i,j,k;
+    int neighbor;    
+	// save list of bounce-back distributions and interaction sites
+	n_bb_d3q7 = 0; n_bb_d3q19 = 0;
+	
+	int local_count = 0;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					neighbor=Map(i-1,j,k);
+					if (neighbor==-1)	  local_count++;
+
+					neighbor=Map(i+1,j,k);
+					if (neighbor==-1)	  local_count++;
+
+					neighbor=Map(i,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j,k-1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i+1,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j+1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i+1,j-1,k);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j,k-1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i+1,j,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i-1,j,k+1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i+1,j,k-1);
+					if (neighbor==-1)     local_count++;
+
+					neighbor=Map(i,j-1,k-1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j-1,k+1);
+					if (neighbor==-1)	    local_count++;
+
+					neighbor=Map(i,j+1,k-1);
+					if (neighbor==-1)	    local_count++;
+				}
+			}
+		}
+	}
+	
+	int *bb_dist_tmp = new int [local_count];	
+	int *bb_interactions_tmp = new int [local_count];	
+	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
+	
+	local_count=0;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					int neighbor;    // cycle through the neighbors of lattice site idx
+					neighbor=Map(i-1,j,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 2*Np;
+					}
+
+					neighbor=Map(i+1,j,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++] = idx + 1*Np;
+					}
+
+					neighbor=Map(i,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 4*Np;
+					}
+
+					neighbor=Map(i,j+1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 3*Np;
+					}
+
+					neighbor=Map(i,j,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 6*Np;
+					}
+
+					neighbor=Map(i,j,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 5*Np;
+					}
+				}
+			}
+		}
+	}
+	n_bb_d3q7 = local_count;
+	for (k=1;k<Nz-1;k++){
+		for (j=1;j<Ny-1;j++){
+			for (i=1;i<Nx-1;i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+
+					neighbor=Map(i-1,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 8*Np;
+					}
+
+					neighbor=Map(i+1,j+1,k);
+					if (neighbor==-1)	{
+						bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 7*Np;
+					}
+
+					neighbor=Map(i-1,j+1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 10*Np;
+					}
+
+					neighbor=Map(i+1,j-1,k);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 9*Np;
+					}
+
+					neighbor=Map(i-1,j,k-1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 12*Np;
+					}
+
+					neighbor=Map(i+1,j,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 11*Np;
+					}
+
+					neighbor=Map(i-1,j,k+1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 14*Np;
+					}
+
+					neighbor=Map(i+1,j,k-1);
+					if (neighbor==-1) {
+						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 13*Np;
+					}
+
+					neighbor=Map(i,j-1,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 16*Np;
+					}
+
+					neighbor=Map(i,j+1,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 15*Np;
+					}
+
+					neighbor=Map(i,j-1,k+1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 18*Np;
+					}
+
+					neighbor=Map(i,j+1,k-1);
+					if (neighbor==-1){
+						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
+						bb_dist_tmp[local_count++]=idx + 17*Np;
+					}
+				}
+			}
+		}
+	}
+	n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
+	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
+	ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
+	ScaLBL_DeviceBarrier();
+    
+	delete [] bb_dist_tmp;
+	delete [] bb_interactions_tmp;
+}
+
+void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Dirichlet_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
+void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
+	// fq is a D3Q7 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
 }
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){
@@ -1251,6 +1525,104 @@ void ScaLBL_Communicator::BiRecvD3Q7AA(double *Aq, double *Bq){
 
 }
 
+void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	if (Lock==true){
+		ERROR("ScaLBL Error (SendD3Q7): ScaLBL_Communicator is locked -- did you forget to match Send/Recv calls?");
+	}
+	else{
+		Lock=true;
+	}
+	// assign tag of 19 to D3Q19 communication
+	sendtag = recvtag = 7;
+	ScaLBL_DeviceBarrier();
+	// Pack the distributions
+	//...Packing for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
+
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
+
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
+
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
+
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
+
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
+
+	//...................................................................................
+	// Send all the distributions
+	//...................................................................................
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
+}
+
+
+void ScaLBL_Communicator::RecvD3Q7AA(double *Aq, int Component){
+
+	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
+	//...................................................................................
+	// Wait for completion of D3Q19 communication
+	MPI_COMM_SCALBL.waitAll(6,req1);
+	MPI_COMM_SCALBL.waitAll(6,req2);
+	ScaLBL_DeviceBarrier();
+
+	//...................................................................................
+	// NOTE: AA Routine writes to opposite
+	// Unpack the distributions on the device
+	//...................................................................................
+	//...Unpacking for x face(2,8,10,12,14)................................
+	ScaLBL_D3Q7_Unpack(2,dvcRecvDist_x,0,recvCount_x,recvbuf_x,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q7_Unpack(1,dvcRecvDist_X,0,recvCount_X,recvbuf_X,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q7_Unpack(4,dvcRecvDist_y,0,recvCount_y,recvbuf_y,&Aq[Component*7*N],N);
+	//...................................................................................
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q7_Unpack(3,dvcRecvDist_Y,0,recvCount_Y,recvbuf_Y,&Aq[Component*7*N],N);
+	//...................................................................................
+
+	if (BoundaryCondition > 0){
+		if (kproc != 0){
+			//...Packing for z face(6,12,13,16,17)................................
+			ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
+		}
+		if (kproc != nprocz-1){
+			//...Packing for Z face(5,11,14,15,18)................................
+			ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
+		}
+	}
+	else {
+		//...Packing for z face(6,12,13,16,17)................................
+		ScaLBL_D3Q7_Unpack(6,dvcRecvDist_z,0,recvCount_z,recvbuf_z,&Aq[Component*7*N],N);
+		//...Packing for Z face(5,11,14,15,18)................................
+		ScaLBL_D3Q7_Unpack(5,dvcRecvDist_Z,0,recvCount_Z,recvbuf_Z,&Aq[Component*7*N],N);
+	}
+
+	//...................................................................................
+	Lock=false; // unlock the communicator after communications complete
+	//...................................................................................
+
+}
+
 void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 
 	// NOTE: the center distribution f0 must NOT be at the start of feven, provide offset to start of f2
@@ -1478,6 +1850,7 @@ void ScaLBL_Communicator::RecvHalo(double *data){
 
 void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, DoubleArray &regdata){
 	// Gets data from the device and stores in regular layout
+	int i,j,k,idx;
 	int Nx = map.size(0);
 	int Ny = map.size(1);
 	int Nz = map.size(2);
@@ -1489,10 +1862,11 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	double value;
 	TmpDat = new double [N];
 	ScaLBL_CopyToHost(&TmpDat[0],&data[0], N*sizeof(double));
-	for (int k=0; k<Nz; k++){
-		for (int j=0; j<Ny; j++){
-			for (int i=0; i<Nx; i++){
-				auto idx=map(i,j,k);
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=map(i,j,k);
 				if (!(idx<0)){
 					value=TmpDat[idx];
 					regdata(i,j,k)=value;
@@ -1505,29 +1879,33 @@ void ScaLBL_Communicator::RegularLayout(IntArray map, const double *data, Double
 	delete [] TmpDat;
 }
 
-
-void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB)
-{
-	//double Value=(vA-vB)/(vA+vB);
+void ScaLBL_Communicator::Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == 0) {
-		// Set the phase indicator field and density on the z inlet
-		ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
+		if (BoundaryCondition == 5){
+			//ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,1,0);
+		}
+		else {
+			// Set the phase indicator field and density on the z inlet
+			ScaLBL_Color_BC_z(dvcSendList_z, Map, Phi, Den, vA, vB, sendCount_z, N);
+		}
 		//ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,0);
 	}
 }
 
-void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB)
-{
-	//double Value=(vA-vB)/(vA+vB);
+void ScaLBL_Communicator::Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB){
 	if (kproc == nprocz-1){
+		if (BoundaryCondition == 5){
+			//ScaLBL_CopySlice_z(Phi,Nx,Ny,Nz,Nz-2,Nz-1);
+		}
+		else {
 		// Set the phase indicator field and density on the Z outlet
-		ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
-		//ScaLBL_SetSlice_z(Phi,Value,Nx,Ny,Nz,Nz-1);
+			ScaLBL_Color_BC_Z(dvcSendList_Z, Map, Phi, Den, vA, vB, sendCount_Z, N);
+		}
 	}
+
 }
 
-void ScaLBL_Communicator::D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time)
-{
+void ScaLBL_Communicator::D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time){
     //ScaLBL_D3Q19_Pressure_BC_z(int *LIST,fq,din,Nx,Ny,Nz);
 	if (kproc == 0) {
 		if (time%2==0){
@@ -1572,6 +1950,7 @@ double ScaLBL_Communicator::D3Q19_Flux_BC_z(int *neighborList, double *fq, doubl
 			locsum = ScaLBL_D3Q19_AAeven_Flux_BC_z(dvcSendList_z, fq, flux, InletArea, sendCount_z, N);
 		
 		sum = MPI_COMM_SCALBL.sumReduce( locsum );
+
 		din = flux/InletArea + sum;
 		//if (rank==0) printf("computed din (even) =%f \n",din);
 		if (kproc == 0)
@@ -1590,6 +1969,17 @@ double ScaLBL_Communicator::D3Q19_Flux_BC_z(int *neighborList, double *fq, doubl
 	}
 	//printf("Inlet pressure = %f \n", din);
 	return din;
+}
+
+void ScaLBL_Communicator::D3Q19_Reflection_BC_z(double *fq){
+	if (kproc == 0)
+		ScaLBL_D3Q19_Reflection_BC_z(dvcSendList_z, fq, sendCount_z, N);
+	
+}
+
+void ScaLBL_Communicator::D3Q19_Reflection_BC_Z(double *fq){
+	if (kproc == nprocz-1)
+		ScaLBL_D3Q19_Reflection_BC_Z(dvcSendList_Z, fq, sendCount_Z, N);
 }
 
 void ScaLBL_Communicator::PrintD3Q19(){
@@ -1612,3 +2002,80 @@ void ScaLBL_Communicator::PrintD3Q19(){
 	delete [] TempBuffer;
 }
 
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_z(neighborList, dvcSendList_z, fq, Vin, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Poisson_Potential_BC_Z(neighborList, dvcSendList_Z, fq, Vout, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin){
+	if (kproc == 0) {
+		ScaLBL_Poisson_D3Q7_BC_z(dvcSendList_z, Map, Psi, Vin, sendCount_z);
+	}
+}
+
+void ScaLBL_Communicator::Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout){
+	if (kproc == nprocz-1){
+		ScaLBL_Poisson_D3Q7_BC_Z(dvcSendList_Z, Map, Psi, Vout, sendCount_Z);
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_z(dvcSendList_z, fq, Cin, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(neighborList, dvcSendList_z, fq, Cin, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Concentration_BC_Z(dvcSendList_Z, fq, Cout, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(neighborList, dvcSendList_Z, fq, Cout, sendCount_Z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time){
+	if (kproc == 0) {
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(neighborList, dvcSendList_z, fq, Cin, tau, VelocityZ, sendCount_z, N);
+		}
+	}
+}
+
+void ScaLBL_Communicator::D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time){
+	if (kproc == nprocz-1){
+		if (time%2==0){
+			ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+		}
+		else{
+			ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(neighborList, dvcSendList_Z, fq, Cout, tau, VelocityZ, sendCount_Z, N);
+		}
+	}
+}
