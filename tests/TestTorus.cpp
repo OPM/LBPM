@@ -172,10 +172,10 @@ int main(int argc, char **argv)
     double Ai = Object->A();
     double Hi = Object->H();
     double Xi = Object->X();
-	Vi=sumReduce( Dm->Comm, Vi);
-	Ai=sumReduce( Dm->Comm, Ai);
-	Hi=sumReduce( Dm->Comm, Hi);
-	Xi=sumReduce( Dm->Comm, Xi);
+	Vi=Dm->Comm.sumReduce(  Vi);
+	Ai=Dm->Comm.sumReduce(  Ai);
+	Hi=Dm->Comm.sumReduce(  Hi);
+	Xi=Dm->Comm.sumReduce(  Xi);
 	printf("Vi=%f, Ai=%f, Hi=%f, Xi=%f \n", Vi,Ai,Hi,Xi);
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
