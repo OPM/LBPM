@@ -366,7 +366,7 @@ void ScaLBL_GreyscaleModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
 	MPI_Barrier(comm);
 
 	//...........................................................................
@@ -649,10 +649,10 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-            vax = sumReduce( Mask->Comm, vax_loc);
-            vay = sumReduce( Mask->Comm, vay_loc);
-            vaz = sumReduce( Mask->Comm, vaz_loc);
-            count = sumReduce( Mask->Comm, count_loc);
+	    vax  = Dm->Comm.sumReduce(  vax_loc);
+	    vay  = Dm->Comm.sumReduce(  vay_loc);
+	    vaz  = Dm->Comm.sumReduce(  vaz_loc);
+	    count  = Dm->Comm.sumReduce(  count_loc);
 
 			vax /= count;
 			vay /= count;

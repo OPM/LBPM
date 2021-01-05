@@ -11,7 +11,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
@@ -63,7 +63,7 @@ public:
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];

@@ -167,7 +167,7 @@ void ScaLBL_GreyscaleColorModel::ReadInput(){
         ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
         fillHalo<signed char> fill( MPI_COMM_WORLD, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
         Array<signed char> id_view;
-        id_view.viewRaw( size1, Mask->id );
+        id_view.viewRaw( size1, Mask->id.data());
         fill.copy( input_id, id_view );
         fill.fill( id_view );
 	}
@@ -600,7 +600,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
+       	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
 	MPI_Barrier(comm);
 
 	//...........................................................................

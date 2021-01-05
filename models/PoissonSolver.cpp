@@ -116,11 +116,11 @@ void ScaLBL_Poisson::SetDomain(){
 
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->BoundaryCondition = BoundaryCondition;
 	Mask->BoundaryCondition = BoundaryCondition;
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -148,7 +148,7 @@ void ScaLBL_Poisson::ReadInput(){
     	ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
     	fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
     	Array<signed char> id_view;
-    	id_view.viewRaw( size1, Mask->id );
+    	id_view.viewRaw( size1, Mask->id.data() );
     	fill.copy( input_id, id_view );
     	fill.fill( id_view );
     }
@@ -275,8 +275,8 @@ void ScaLBL_Poisson::Create(){
 	if (rank==0)    printf ("LB-Poisson Solver: Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
-	MPI_Barrier(comm);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
+	comm.barrier();
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
 	//...........................................................................
@@ -329,15 +329,15 @@ void ScaLBL_Poisson::Create(){
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	ScaLBL_Comm->Barrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	delete [] neighborList;
     // copy node ID
 	//ScaLBL_CopyToDevice(dvcID, Mask->id, sizeof(signed char)*Nx*Ny*Nz);
 	//ScaLBL_Comm->Barrier();
 	
     //Initialize solid boundary for electric potential
-    ScaLBL_Comm->SetupBounceBackList(Map, Mask->id, Np);
-	MPI_Barrier(comm);
+    ScaLBL_Comm->SetupBounceBackList(Map, Mask->id.data(), Np);
+	comm.barrier();
 }        
 
 void ScaLBL_Poisson::Potential_Init(double *psi_init){
@@ -408,7 +408,7 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
     
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
-	//ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+	//ScaLBL_Comm->Barrier(); comm.barrier();
 	//starttime = MPI_Wtime();
 
 	timestep=0;
@@ -421,13 +421,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
         
         SolveElectricPotentialAAodd();//update electric potential
         SolvePoissonAAodd(ChargeDensity);//perform collision
-		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
 		SolveElectricPotentialAAeven();//update electric potential
         SolvePoissonAAeven(ChargeDensity);//perform collision
-		ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); comm.barrier();
 		//************************************************************************/
 
         // Check convergence of steady-state solution
@@ -450,9 +450,9 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 					}
 				}
 			}
-			MPI_Allreduce(&psi_loc,&psi_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			
+			psi_avg=Dm->Comm.sumReduce(  psi_loc);
+			count=Dm->Comm.sumReduce(  count_loc);
+
 			psi_avg /= count;
             double psi_avg_mag=psi_avg;
 		    if (psi_avg==0.0) psi_avg_mag=1.0;
@@ -579,7 +579,7 @@ void ScaLBL_Poisson::getElectricPotential_debug(int timestep){
     DoubleArray PhaseField(Nx,Ny,Nz);
 	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
     ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-    //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+    //ScaLBL_Comm->Barrier(); comm.barrier();
     FILE *OUTFILE;
     sprintf(LocalRankFilename,"Electric_Potential_Time_%i.%05i.raw",timestep,rank);
     OUTFILE = fopen(LocalRankFilename,"wb");
@@ -597,22 +597,22 @@ void ScaLBL_Poisson::getElectricField(DoubleArray &Values_x, DoubleArray &Values
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],Values_x);
         ElectricField_LB_to_Phys(Values_x);
-        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); comm.barrier();
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],Values_y);
         ElectricField_LB_to_Phys(Values_y);
-        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); comm.barrier();
 
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],Values_z);
         ElectricField_LB_to_Phys(Values_z);
-        ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); comm.barrier();
 
 }
 
 void ScaLBL_Poisson::getElectricField_debug(int timestep){
 
         //ScaLBL_D3Q7_Poisson_getElectricField(fq,ElectricField,tau,Np);
-        //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+        //ScaLBL_Comm->Barrier(); comm.barrier();
 
         DoubleArray PhaseField(Nx,Ny,Nz);
 	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],PhaseField);
@@ -671,7 +671,7 @@ void ScaLBL_Poisson::ElectricField_LB_to_Phys(DoubleArray &Efield_reg){
 //
 //        DoubleArray PhaseField(Nx,Ny,Nz);
 //	    ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
-//        //ScaLBL_Comm->Barrier(); MPI_Barrier(comm);
+//        //ScaLBL_Comm->Barrier(); comm.barrier();
 //        FILE *OUTFILE;
 //        sprintf(LocalRankFilename,"Electric_Potential.%05i.raw",rank);
 //        OUTFILE = fopen(LocalRankFilename,"wb");
