@@ -174,43 +174,6 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	ScaLBL_AllocateZeroCopy((void **) &dvcRecvDist_YZ, recvCount_YZ*sizeof(int));	// Allocate device memory
 	//......................................................................................
 
-	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList_x,sendCount_x*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList_X,sendCount_X*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_y,Dm->sendList_y,sendCount_y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Y,Dm->sendList_Y,sendCount_Y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_z,Dm->sendList_z,sendCount_z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Z,Dm->sendList_Z,sendCount_Z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xy,Dm->sendList_xy,sendCount_xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_XY,Dm->sendList_XY,sendCount_XY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xY,Dm->sendList_xY,sendCount_xY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Xy,Dm->sendList_Xy,sendCount_Xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xz,Dm->sendList_xz,sendCount_xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_XZ,Dm->sendList_XZ,sendCount_XZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_xZ,Dm->sendList_xZ,sendCount_xZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Xz,Dm->sendList_Xz,sendCount_Xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_yz,Dm->sendList_yz,sendCount_yz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_YZ,Dm->sendList_YZ,sendCount_YZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_yZ,Dm->sendList_yZ,sendCount_yZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcSendList_Yz,Dm->sendList_Yz,sendCount_Yz*sizeof(int));
-	//......................................................................................
-	ScaLBL_CopyToZeroCopy(dvcRecvList_x,Dm->recvList_x,recvCount_x*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_X,Dm->recvList_X,recvCount_X*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_y,Dm->recvList_y,recvCount_y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Y,Dm->recvList_Y,recvCount_Y*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_z,Dm->recvList_z,recvCount_z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Z,Dm->recvList_Z,recvCount_Z*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xy,Dm->recvList_xy,recvCount_xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_XY,Dm->recvList_XY,recvCount_XY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xY,Dm->recvList_xY,recvCount_xY*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Xy,Dm->recvList_Xy,recvCount_Xy*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xz,Dm->recvList_xz,recvCount_xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_XZ,Dm->recvList_XZ,recvCount_XZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_xZ,Dm->recvList_xZ,recvCount_xZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Xz,Dm->recvList_Xz,recvCount_Xz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_yz,Dm->recvList_yz,recvCount_yz*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_YZ,Dm->recvList_YZ,recvCount_YZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_yZ,Dm->recvList_yZ,recvCount_yZ*sizeof(int));
-	ScaLBL_CopyToZeroCopy(dvcRecvList_Yz,Dm->recvList_Yz,recvCount_Yz*sizeof(int));
 	//......................................................................................
 	ScaLBL_CopyToZeroCopy(dvcSendList_x,Dm->sendList("x"),sendCount_x*sizeof(int));
 	ScaLBL_CopyToZeroCopy(dvcSendList_X,Dm->sendList("X"),sendCount_X*sizeof(int));
@@ -357,7 +320,7 @@ int ScaLBL_Communicator::LastInterior(){
 	return last_interior;
 }
 
-void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count,
+void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count,
 		int *d3q19_recvlist){
 	int i,j,k,n,nn,idx;
 	int * ReturnDist;
@@ -387,6 +350,7 @@ void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  i
 	// clean up the work arrays
 	delete [] ReturnDist;
 }
+
 
 int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np){
 	/*

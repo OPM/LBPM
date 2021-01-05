@@ -345,7 +345,6 @@ public:
 	//ScaLBL_Communicator(Domain &Dm, IntArray &Map);
 	~ScaLBL_Communicator();
 	//......................................................................................
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int n_bb_d3q7, n_bb_d3q19; 
@@ -412,8 +411,7 @@ public:
     void PrintD3Q19();
 
 private:
-	//void D3Q19_MapRecv_OLD(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count, int *d3q19_recvlist);
-	void D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count, int *d3q19_recvlist);
+	void D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count, int *d3q19_recvlist);
 
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 	// only one set of Send requests can be active at any time (per instance)
