@@ -68,10 +68,10 @@ public:
     class commWrapper
     {
       public:
-        MPI_Comm comm;
+        Utilities::MPI comm;
         int tag;
         runAnalysis *analysis;
-        commWrapper( int tag, MPI_Comm comm, runAnalysis *analysis );
+        commWrapper( int tag, const Utilities::MPI& comm, runAnalysis *analysis );
         commWrapper( ) = delete;
         commWrapper( const commWrapper &rhs ) = delete;
         commWrapper& operator=( const commWrapper &rhs ) = delete;
@@ -100,8 +100,8 @@ private:
     BlobIDList d_last_id_map;
     std::vector<IO::MeshDataStruct> d_meshData;
     std::string d_restartFile;
-    MPI_Comm d_comm;
-    MPI_Comm d_comms[1024];
+    Utilities::MPI d_comm;
+    Utilities::MPI d_comms[1024];
     volatile bool d_comm_used[1024];
     std::shared_ptr<ScaLBL_Communicator> d_ScaLBL_Comm;
 
