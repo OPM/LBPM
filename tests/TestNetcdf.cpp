@@ -1,7 +1,7 @@
 // Test reading/writing netcdf files
 
 #include "IO/netcdf.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "common/UnitTest.h"
 
@@ -13,8 +13,7 @@ void load( const std::string& );
 
 void test_NETCDF( UnitTest& ut )
 {
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    const int rank = comm.getRank();
+    const int rank = comm_rank( MPI_COMM_WORLD );
     int nprocx = 2;
     int nprocy = 2;
     int nprocz = 2;
@@ -31,7 +30,7 @@ void test_NETCDF( UnitTest& ut )
     auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
     netcdf::write( fid, "tmp", dims, data, info );
     netcdf::close( fid );
-    comm.barrier();
+    MPI_Barrier( MPI_COMM_WORLD );
     // Read the contents of the file we created
     fid = netcdf::open( filename, netcdf::READ );
     Array<float> tmp = netcdf::getVar<float>( fid, "tmp" );

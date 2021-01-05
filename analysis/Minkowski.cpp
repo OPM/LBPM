@@ -4,7 +4,7 @@
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -91,7 +91,21 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 					Xi -= 0.5;
 				}
 				// Euler characteristic -- each vertex shared by four cubes
-				Xi += 0.25*double(object.VertexCount);
+				//Xi += 0.25*double(object.VertexCount);
+				// check if vertices are at corners
+				for (int idx=0; idx<object.VertexCount; idx++){
+				  /*auto P1 = object.vertex.coords(idx);
+					if ( remainder(P1.x,1.0)==0.0 && remainder(P1.y,1.0)==0.0  && remainder(P1.z,1.0)==0.0 ){
+					  Xi += 0.125;
+					}
+					else
+				  */
+					Xi += 0.25;
+				}
+				/*double nside_extern = double(npts);
+				double nside_intern = double(npts)-3.0;
+				EulerChar=0.0;
+				if (npts > 0)	EulerChar = (0.25*nvert - nside_intern - 0.5*nside_extern + nface); */
 			}
 		}
 	}
@@ -109,13 +123,13 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	// convert X for 2D manifold to 3D object
 	Xi *= 0.5;
 	
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 	// Phase averages
-	Vi_global = Dm->Comm.sumReduce( Vi );
-	Xi_global = Dm->Comm.sumReduce( Xi );
-	Ai_global = Dm->Comm.sumReduce( Ai );
-	Ji_global = Dm->Comm.sumReduce( Ji );
-	Dm->Comm.barrier();
+	MPI_Allreduce(&Vi,&Vi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Xi,&Xi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Ai,&Ai_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Allreduce(&Ji,&Ji_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	MPI_Barrier(Dm->Comm);
     PROFILE_STOP("ComputeScalar");
 }
 
@@ -128,7 +142,7 @@ void Minkowski::MeasureObject(){
 	 *    0 - labels the object
 	 *    1 - labels the rest of the 
 	 */
-
+        //DoubleArray smooth_distance(Nx,Ny,Nz);
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
 			for (int i=0; i<Nx; i++){
@@ -137,6 +151,44 @@ void Minkowski::MeasureObject(){
 		}
 	}	
 	CalcDist(distance,id,*Dm);
+	//Mean3D(distance,smooth_distance);
+	//Eikonal(distance, id, *Dm, 20, {true, true, true});
+	ComputeScalar(distance,0.0);
+}
+
+
+void Minkowski::MeasureObject(double factor, const DoubleArray &Phi){
+	/*
+	 *  compute the distance to an object 
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 *    0 - labels the object
+	 *    1 - labels the rest of the 
+	 */
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				distance(i,j,k) =2.0*double(id(i,j,k))-1.0;
+			}
+		}
+	}	
+	CalcDist(distance,id,*Dm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double value = Phi(i,j,k);
+				double dist_value = distance(i,j,k);
+				if (dist_value < 2.5 &&  dist_value > -2.5) {
+					double new_distance = factor*log((1.0+value)/(1.0-value));
+					if (dist_value*new_distance < 0.0 )
+						new_distance = (-1.0)*new_distance;
+					distance(i,j,k) = new_distance;					
+				}
+			}
+		}
+	}
+	
 	ComputeScalar(distance,0.0);
 
 }
@@ -168,7 +220,7 @@ int Minkowski::MeasureConnectedPathway(){
 	double vF=0.0; 
 	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
 //	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
-	Dm->Comm.barrier();
+	MPI_Barrier(Dm->Comm);
 	
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
@@ -183,6 +235,50 @@ int Minkowski::MeasureConnectedPathway(){
 		}
 	}
 	MeasureObject();
+	return n_connected_components; 
+}
+
+int Minkowski::MeasureConnectedPathway(double factor, const DoubleArray &Phi){
+	/*
+	 * compute the connected pathway for object with LABEL in id field
+	 * compute the labels for connected components
+	 * compute the distance to the connected pathway
+	 * 
+	 * THIS ALGORITHM ASSUMES THAT id() is populated with phase id to distinguish objects
+	 */
+	
+	char LABEL = 0;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (id(i,j,k) == LABEL){
+					distance(i,j,k) = 1.0;
+				}
+				else
+					distance(i,j,k) = -1.0;
+			}
+		}
+	}
+	
+	// Extract only the connected part of NWP
+	double vF=0.0; 
+	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
+//	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
+	MPI_Barrier(Dm->Comm);
+	
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if ( label(i,j,k) == 0){
+					id(i,j,k) = 0;
+				}
+				else{
+					id(i,j,k) = 1;
+				}
+			}
+		}
+	}
+	MeasureObject(factor,Phi);
 	return n_connected_components; 
 }
 

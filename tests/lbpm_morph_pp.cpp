@@ -23,9 +23,9 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
+        int rank = comm.getRank();
 	{
 		//.......................................................................
 		// Reading the domain information file
@@ -125,13 +125,13 @@ int main(int argc, char **argv)
 
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		CalcDist(SignDist,id_solid,*Dm);
-		comm.barrier();
+		MPI_Barrier(comm);
 		
 		// Extract only the connected part of NWP
 		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
-		Dm->Comm.barrier();
+		MPI_Barrier(Dm->Comm);
 			
 		int count_connected=0;
 		int count_porespace=0;
@@ -153,9 +153,9 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		count_connected = Dm->Comm.sumReduce( count_connected );
-		count_porespace = Dm->Comm.sumReduce( count_porespace );
-		count_water = Dm->Comm.sumReduce( count_water );
+		count_connected=sumReduce( Dm->Comm, count_connected);
+		count_porespace=sumReduce( Dm->Comm, count_porespace);
+		count_water=sumReduce( Dm->Comm, count_water);
 		
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		count_water = Dm->Comm.sumReduce( count_water );
+		count_water=sumReduce( Dm->Comm, count_water);
 		
 		SW = double(count_water) / count_porespace;
 		if(rank==0) printf("Final saturation: %f \n", SW);
@@ -234,12 +234,12 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 
         auto filename2 = READFILE + ".morph.raw";
 		if (rank==0) printf("Writing file to: %s \n", filename2.c_str());
 		Mask->AggregateLabels(filename2);
 	}
 
-    Utilities::shutdown();
+        Utilities::shutdown();
 }

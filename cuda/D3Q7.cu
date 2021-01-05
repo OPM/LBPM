@@ -1,4 +1,5 @@
 // GPU Functions for D3Q7 Lattice Boltzmann Methods
+#include <stdio.h>
 
 #define NBLOCKS 560
 #define NTHREADS 128
@@ -79,6 +80,25 @@ __global__ void dvc_ScaLBL_D3Q7_Unpack(int q,  int *list,  int start, int count,
 	}
 }
 
+__global__  void dvc_ScaLBL_D3Q7_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f5 = 0.222222222222222222222222 - dist[6*Np+n];
+		dist[6*Np+n] = f5;
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q7_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f6 = 0.222222222222222222222222 - dist[5*Np+n];
+		dist[5*Np+n] = f6;
+	}
+}
 __global__ void dvc_ScaLBL_D3Q7_Init(char *ID, double *f_even, double *f_odd, double *Den, int Nx, int Ny, int Nz)
 {
 	int n,N;
@@ -204,6 +224,24 @@ __global__  void dvc_ScaLBL_D3Q7_Density(char *ID, double *disteven, double *dis
                 Den[n] = f0+f1+f2+f3+f4+f5+f6;
             }
 		}
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_Reflection_BC_z<<<GRID,512>>>(list, dist, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q7_Reflection_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q7_Reflection_BC_Z<<<GRID,512>>>(list, dist, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q7_Reflection_BC_Z (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 

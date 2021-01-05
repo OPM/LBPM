@@ -8,7 +8,7 @@
 #include <fstream>
 
 #include "analysis/TwoPhase.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 		fclose(PHASE);
 	}
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
   } // Limit scope so Domain will free it's communicator
   Utilities::shutdown();
   return 0;

@@ -9,7 +9,7 @@
 #include "analysis/pmmc.h"
 #include "common/Domain.h"
 #include "common/SpherePack.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
 /*
@@ -22,11 +22,14 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
 	Utilities::startup( argc, argv );
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	// parallel domain size (# of sub-domains)
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
@@ -38,6 +41,8 @@ int main(int argc, char **argv)
 	int rank_xz,rank_XZ,rank_xZ,rank_Xz;
 	int rank_yz,rank_YZ,rank_yZ,rank_Yz;
 	//**********************************
+	MPI_Request req1[18],req2[18];
+	MPI_Status stat1[18],stat2[18];
 
 	if (rank == 0){
 		printf("********************************************************\n");
@@ -121,14 +126,14 @@ int main(int argc, char **argv)
 	//.......................................................................
 	if (rank == 0)	printf("Reading the sphere packing \n");
 	if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Broadcast the sphere packing to all processes
-	comm.bcast(cx,nspheres,0);
-	comm.bcast(cy,nspheres,0);
-	comm.bcast(cz,nspheres,0);
-	comm.bcast(rad,nspheres,0);
+	MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
+	MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 	//...........................................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	if (rank == 0) cout << "Domain set." << endl;
 	if (rank == 0){
 		// Compute the Sauter mean diameter
@@ -142,7 +147,7 @@ int main(int argc, char **argv)
 		D = 6.0*(Nx-2)*nprocx*totVol / totArea / Lx;
 		printf("Sauter Mean Diameter (computed from sphere packing) = %f \n",D);
 	}
-	comm.bcast(&D,1,0);
+	MPI_Bcast(&D,1,MPI_DOUBLE,0,comm);
 
 	//.......................................................................
 	SignedDistance(SignDist.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
@@ -175,7 +180,7 @@ int main(int argc, char **argv)
 		}
 	}
 	sum_local = 1.0*sum;
-	porosity = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 	porosity = porosity*iVol_global;
 	if (rank==0) printf("Media porosity = %f \n",porosity);
 
@@ -191,7 +196,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	pore_vol = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
 	
 	//.........................................................
 	// don't perform computations at the eight corners

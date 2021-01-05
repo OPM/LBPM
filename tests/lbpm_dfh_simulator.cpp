@@ -30,7 +30,7 @@ int main(int argc, char **argv)
   int nprocs = comm.getSize();
   auto thread_support = Utilities::MPI::queryThreadSupport();
   if ( rank==0 && thread_support != Utilities::MPI::ThreadSupport::MULTIPLE )
-    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+  std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 	if (rank == 0){
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     Utilities::setErrorHandlers();
 
 	auto filename = argv[1];
-	ScaLBL_DFHModel DFHModel( rank, nprocs, comm.dup() );
+	ScaLBL_DFHModel DFHModel(rank,nprocs,comm);
 	DFHModel.ReadParams(filename);
 	DFHModel.SetDomain();    
 	DFHModel.ReadInput();    
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
-	comm.barrier();
+	MPI_Barrier(comm);
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
     Utilities::shutdown();
 }

@@ -1,6 +1,6 @@
 #include "IO/PIO.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 #include <fstream>
 #include <string>
@@ -36,7 +36,10 @@ static void shutdownFilestream( )
 }
 void Utilities::logOnlyNodeZero( const std::string &filename )
 {
-    int rank = ::Utilities::MPI( MPI_COMM_WORLD ).getRank();
+    int rank = 0;
+    #ifdef USE_MPI
+        MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    #endif
     if ( rank == 0 )
         logAllNodes(filename,true);
 }
@@ -51,7 +54,10 @@ void Utilities::logAllNodes( const std::string &filename, bool singleStream )
     // Open the log stream and redirect output
     std::string full_filename = filename;
     if ( !singleStream ) {
-        int rank = ::Utilities::MPI( MPI_COMM_WORLD ).getRank();
+        int rank = 0;
+        #ifdef USE_MPI
+            MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+        #endif
         char tmp[100];
         sprintf(tmp,".%04i",rank);
         full_filename += std::string(tmp);

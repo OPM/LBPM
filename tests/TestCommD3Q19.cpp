@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 
@@ -166,8 +166,8 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	int check;
 	{
 
@@ -262,14 +262,14 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		sum = comm.sumReduce( sum_local );
+		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
 		double iVol_global=1.f/double((Nx-2)*(Ny-2)*(Nz-2)*nprocx*nprocy*nprocz);
 	    	porosity = 1.0-sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.......................................................................
 
 		//...........................................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
 
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2, iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
-		comm.barrier();
+		MPI_Barrier(comm);
 		//*************************************************************************
 		// First timestep
 		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
@@ -377,8 +377,8 @@ int main(int argc, char **argv)
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
-		comm.barrier();
-		starttime = Utilities::MPI::time();
+		MPI_Barrier(comm);
+		starttime = MPI_Wtime();
 		//.........................................
 
 
@@ -397,13 +397,13 @@ int main(int argc, char **argv)
 			//*********************************************
 
 			ScaLBL_DeviceBarrier();
-			comm.barrier();
+			MPI_Barrier(comm);
 			// Iteration completed!
 			timestep++;
 			//...................................................................
 		}
 		//************************************************************************/
-		stoptime = Utilities::MPI::time();
+		stoptime = MPI_Wtime();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
@@ -429,6 +429,5 @@ int main(int argc, char **argv)
 	comm.barrier();
 	Utilities::shutdown();
 	// ****************************************************
-
 	return check;
 }

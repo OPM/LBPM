@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "models/ColorModel.h"
 
 using namespace std;
@@ -64,11 +64,14 @@ inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius)
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	int check=0;
 	{
 		if (rank == 0){
@@ -92,8 +95,7 @@ int main(int argc, char **argv)
 		ColorModel.Run();	       
 		ColorModel.WriteDebug();
 	}
-    Utilities::shutdown();
-
+        Utilities::shutdown();
 	return check;
 }
 

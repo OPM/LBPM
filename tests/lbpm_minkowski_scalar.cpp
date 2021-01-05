@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -28,11 +28,12 @@
 
 int main(int argc, char **argv)
 {
+
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	{
 		Utilities::setErrorHandlers();
 		PROFILE_START("Main");
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
 			fclose(SEGDAT);
 			printf("Read segmented data from %s \n",Filename.c_str());
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		// Get the rank info
 		int N = (nx+2)*(ny+2)*(nz+2);
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
 						}
 						else{
 							printf("Sending data to process %i \n", rnk);
-							comm.send(tmp,N,rnk,15);
+							MPI_Send(tmp,N,MPI_CHAR,rnk,15,comm);
 						}
 					}
 				}
@@ -161,10 +162,11 @@ int main(int argc, char **argv)
 			printf("Ready to recieve data %i at process %i \n", N,rank);
 			comm.recv(Dm->id.data(),N,0,15);
 		}
-		comm.barrier();
+		MPI_Barrier(comm);
 		
 		// Compute the Minkowski functionals
-		auto Averages = std::make_shared<Minkowski>(Dm);
+		MPI_Barrier(comm);
+		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm));
 
 		// Calculate the distance		
 		// Initialize the domain and communication
@@ -209,7 +211,7 @@ int main(int argc, char **argv)
 	}
 	PROFILE_STOP("Main");
 	PROFILE_SAVE("Minkowski",true);
-    Utilities::shutdown();
+        Utilities::shutdown();
 	return 0;
 }
 

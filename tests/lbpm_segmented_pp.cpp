@@ -117,8 +117,8 @@ int main(int argc, char **argv)
 	// Initialize MPI
 	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+       int rank = comm.getRank();
+       int nprocs = comm.getSize();
 	{	
 		//.......................................................................
 		// Reading the domain information file
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 			fflush(stdout);
 			porosity = ReadFromBlock(Dm->id,Dm->iproc(),Dm->jproc(),Dm->kproc(),nx,ny,nz);
 			
-		    comm.barrier();
+			MPI_Barrier(MPI_COMM_WORLD);
 			if (rank==0) printf("Writing local ID files (poros=%f) \n",porosity);
 			fflush(stdout);
 			FILE *ID = fopen(LocalRankFilename,"wb");

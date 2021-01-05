@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -30,12 +30,13 @@
 
 int main(int argc, char **argv)
 {
+
 	// Initialize MPI
 	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
-    Utilities::setErrorHandlers();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
+        Utilities::setErrorHandlers();
 	PROFILE_START("Main");
 
 	//std::vector<std::string> filenames;
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
       
     }
     netcdf::close( distid );
-	comm.barrier();
+	MPI_Barrier(comm);
 	PROFILE_STOP("ReadDistance");
 	if (rank==0) printf("Finished reading distance =\n");
 
@@ -182,7 +183,7 @@ int main(int argc, char **argv)
         fillFloat[0]->fill( LOCVOL[0] );
     }
     netcdf::close( fid );
-	comm.barrier();
+	MPI_Barrier(comm);
 	PROFILE_STOP("ReadVolume");
 	if (rank==0) printf("Read complete\n");
 

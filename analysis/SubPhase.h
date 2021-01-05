@@ -12,7 +12,7 @@
 #include "analysis/distance.h"
 #include "analysis/Minkowski.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"

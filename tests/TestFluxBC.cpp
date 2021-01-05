@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
@@ -17,7 +17,7 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 
 int main (int argc, char **argv)
 {
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
 	int rank = comm.getRank();
 	int nprocs = comm.getSize();
@@ -90,8 +90,7 @@ int main (int argc, char **argv)
 
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np);
 		comm.barrier();
-
-		//......................device distributions.................................
+		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
 
@@ -149,7 +148,7 @@ int main (int argc, char **argv)
     	double *VEL;
     	VEL= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
-    	ScaLBL_DeviceBarrier(); comm.barrier();
+    	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
     	ScaLBL_CopyToHost(&VEL[0],&dvc_vel[0],SIZE);
 
     	double Q = 0.f;    	
@@ -192,7 +191,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 
 			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -201,7 +200,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); comm.barrier();
+			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 			timestep++;
 			//************************************************************************/
 
@@ -265,6 +264,6 @@ int main (int argc, char **argv)
 
 	}
 	// Finished
-    Utilities::shutdown();
-    return error; 
+        Utilities::shutdown();
+        return error; 
 }

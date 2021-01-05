@@ -33,9 +33,10 @@ int main(int argc, char **argv)
 
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+    MPI_Comm comm;
+    MPI_Comm_dup(MPI_COMM_WORLD,&comm);
+    int rank = comm_rank(comm);
+    int nprocs = comm_size(comm);
 
     if (rank == 0){
 	    printf("********************************************************\n");
@@ -45,7 +46,7 @@ int main(int argc, char **argv)
     // Initialize compute device
     ScaLBL_SetDevice(rank);
     ScaLBL_DeviceBarrier();
-    comm.barrier();
+    MPI_Barrier(comm);
 
     PROFILE_ENABLE(1);
     //PROFILE_ENABLE_TRACE();
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
     Utilities::setErrorHandlers();
 
     auto filename = argv[1];
-    ScaLBL_ColorModel ColorModel(rank,nprocs,comm.dup());
+    ScaLBL_ColorModel ColorModel(rank,nprocs,comm);
     ColorModel.ReadParams(filename);
     ColorModel.SetDomain();    
     ColorModel.ReadInput();    
@@ -70,7 +71,8 @@ int main(int argc, char **argv)
     PROFILE_SAVE(file,level);
     // ****************************************************
 
-    comm.barrier();
+    MPI_Barrier(comm);
+    MPI_Comm_free(&comm);
 
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
 

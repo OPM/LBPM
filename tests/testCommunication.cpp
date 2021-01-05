@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Array.h"
 
 using namespace std;
@@ -15,9 +15,11 @@ using namespace std;
 
 //***************************************************************************************
 
-int test_communication( const Utilities::MPI& comm, int nprocx, int nprocy, int nprocz )
+int test_communication( MPI_Comm comm, int nprocx, int nprocy, int nprocz )
 {
-    int rank = comm.getRank();
+    int rank,nprocs;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
     int iproc,jproc,kproc;
     int sendtag,recvtag;
     if (rank==0)    printf("\nRunning test %i %i %i\n",nprocx,nprocy,nprocz);
@@ -36,7 +38,7 @@ int test_communication( const Utilities::MPI& comm, int nprocx, int nprocy, int 
 	    rank_xy, rank_XY, rank_xY, rank_Xy,
 	    rank_xz, rank_XZ, rank_xZ, rank_Xz,
 	    rank_yz, rank_YZ, rank_yZ, rank_Yz );
-    comm.barrier();
+    MPI_Barrier(comm);
 
     //**********************************
 
@@ -83,7 +85,7 @@ int test_communication( const Utilities::MPI& comm, int nprocx, int nprocy, int 
     sendCount_xy = sendCount_yz = sendCount_xz = sendCount_Xy = sendCount_Yz = sendCount_xZ = 0;
     sendCount_xY = sendCount_yZ = sendCount_Xz = sendCount_XY = sendCount_YZ = sendCount_XZ = 0;
 
-    comm.barrier();
+    MPI_Barrier(comm);
     if (rank==0)    printf ("SendLists are ready on host\n");
     //......................................................................................
     // Use MPI to fill in the recvCounts form the associated processes
@@ -156,7 +158,7 @@ int test_communication( const Utilities::MPI& comm, int nprocx, int nprocy, int 
         recvCount_yz, recvCount_YZ, recvCount_yZ, recvCount_Yz,
         rank_x, rank_y, rank_z, rank_X, rank_Y, rank_Z, rank_xy, rank_XY, rank_xY,
         rank_Xy, rank_xz, rank_XZ, rank_xZ, rank_Xz, rank_yz, rank_YZ, rank_yZ, rank_Yz );
-    comm.barrier();
+    MPI_Barrier(comm);
     if (rank==0)    printf ("RecvLists finished\n");
     
     // Free memory
@@ -179,9 +181,11 @@ int test_communication( const Utilities::MPI& comm, int nprocx, int nprocy, int 
 
 
 template<class TYPE>
-int testHalo( const Utilities::MPI& comm, int nprocx, int nprocy, int nprocz, int depth )
+int testHalo( MPI_Comm comm, int nprocx, int nprocy, int nprocz, int depth )
 {
-    int rank = comm.getRank();
+    int rank,nprocs;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
     if ( rank==0 )
         printf("\nRunning Halo test %i %i %i %i\n",nprocx,nprocy,nprocz,depth);
 
@@ -288,6 +292,7 @@ int main(int argc, char **argv)
     int N_errors_global = comm.sumReduce( N_errors );
     comm.barrier();
     Utilities::shutdown();
+
     if ( rank==0 ) {
         if ( N_errors_global==0 )
             std::cout << "All tests passed\n";

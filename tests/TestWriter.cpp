@@ -8,7 +8,7 @@
 
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -34,9 +34,11 @@ inline double distance( const Point& p )
 // Test writing and reading the given format
 void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& meshData, UnitTest& ut )
 {
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int nprocs = comm.getSize();
-    comm.barrier();
+    int rank, nprocs;
+    MPI_Comm comm = MPI_COMM_WORLD;
+    MPI_Comm_rank(comm,&rank);
+    MPI_Comm_size(comm,&nprocs);
+    MPI_Barrier(comm);
 
     // Get the format
     std::string format2 = format;
@@ -61,7 +63,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
     IO::initialize( "test_"+format, format2, false );
     IO::writeData( 0, meshData, comm );
     IO::writeData( 3, meshData, comm );
-    comm.barrier();
+    MPI_Barrier(comm);
     PROFILE_STOP(format+"-write");
 
     // Get the summary name for reading

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
 #include "IO/Mesh.h"
@@ -69,13 +69,13 @@ int main(int argc, char **argv)
 
             i++;
         }
-        comm.barrier();
+        MPI_Barrier(comm);
         PROFILE_STOP("Read");
 
         // Save the mesh data to a new file
         PROFILE_START("Write");
         IO::writeData( timestep, meshData, MPI_COMM_WORLD );
-        comm.barrier();
+        MPI_Barrier(comm);
         PROFILE_STOP("Write");
     }
 

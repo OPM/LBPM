@@ -25,7 +25,7 @@ std::shared_ptr<Database> loadInputs( )
 
 int main(int argc, char **argv)
 {
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
 	int toReturn = 0;
 	{
@@ -136,6 +136,6 @@ int main(int argc, char **argv)
 		if (count_check > 0)  toReturn=2;
 		else printf("Succeeded. \n");
 	}
-    Utilities::shutdown();
+        Utilities::shutdown();
 	return toReturn;
 }

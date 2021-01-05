@@ -115,9 +115,9 @@ int main(int argc, char **argv)
 {
 	// Initialize MPI
 	Utilities::startup( argc, argv );
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 
 	printf("----------------------------------------------------------\n");
 	printf("Creating single Binary file from restart (8-bit integer)\n");

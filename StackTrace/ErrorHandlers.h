@@ -6,7 +6,7 @@
 
 #include <functional>
 
-#include "common/MPI.h"
+#include "mpi.h"
 
 
 namespace StackTrace

@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -51,6 +51,7 @@ int main(int argc, char **argv)
             printf("Input data file: %s\n",filename.c_str());
         }
 
+	bool FILTER_CONNECTED_COMPONENTS = false;
         auto db = std::make_shared<Database>( filename );
         auto domain_db = db->getDatabase( "Domain" );
         auto uct_db = db->getDatabase( "uCT" );
@@ -81,9 +82,13 @@ int main(int argc, char **argv)
         auto center       = uct_db->getVector<int>( "center" );
         auto CylRad       = uct_db->getScalar<float>( "cylinder_radius" );
         auto maxLevels    = uct_db->getScalar<int>( "max_levels" );
+	
         std::vector<int> offset( 3, 0 );
         if ( uct_db->keyExists( "offset" ) )
             offset = uct_db->getVector<int>( "offset" );
+
+        if ( uct_db->keyExists( "filter_connected_components" ) )
+            FILTER_CONNECTED_COMPONENTS = uct_db->getScalar<bool>( "filter_connected_components" );
 
         // Check that the number of processors >= the number of ranks
         if ( rank==0 ) {
@@ -187,7 +192,7 @@ int main(int argc, char **argv)
             fillFloat[0]->fill( LOCVOL[0] );
         }
         netcdf::close( fid );
-        comm.barrier();
+        MPI_Barrier(comm);
         PROFILE_STOP("ReadVolume");
         if (rank==0) printf("Read complete\n");
 
@@ -250,15 +255,15 @@ int main(int argc, char **argv)
                 }
             }
         }
-        count_plus = Dm[0]->Comm.sumReduce( count_plus);
-        count_minus = Dm[0]->Comm.sumReduce( count_minus);
+        count_plus=sumReduce( Dm[0]->Comm, count_plus);
+        count_minus=sumReduce( Dm[0]->Comm, count_minus);
               if (rank==0) printf("minimum value=%f, max value=%f \n",min_value,max_value);
         if (rank==0) printf("plus=%i, minus=%i \n",count_plus,count_minus);
         ASSERT( count_plus > 0 && count_minus > 0 );
-        comm.barrier();
-        mean_plus = Dm[0]->Comm.sumReduce( mean_plus ) / count_plus;
-        mean_minus = Dm[0]->Comm.sumReduce( mean_minus ) / count_minus;
-        comm.barrier();
+        MPI_Barrier(comm);
+        mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / count_plus;
+        mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / count_minus;
+        MPI_Barrier(comm);
         if (rank==0) printf("    Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
         //if (rank==0) printf("Scale the input data (size = %i) \n",LOCVOL[0].length());
@@ -279,7 +284,7 @@ int main(int argc, char **argv)
 
         // Fill the source data for the coarse meshes
         if (rank==0) printf("Coarsen the mesh for N_levels=%i \n",N_levels);
-        comm.barrier(); 
+        MPI_Barrier(comm); 
         PROFILE_START("CoarsenMesh");
         for (int i=1; i<N_levels; i++) {
             Array<float> filter(ratio[0],ratio[1],ratio[2]);
@@ -295,7 +300,7 @@ int main(int argc, char **argv)
                 printf("   filter_x=%i, filter_y=%i, filter_z=%i \n",int(filter.size(0)),int(filter.size(1)),int(filter.size(2))  );
                 printf("   ratio= %i,%i,%i \n",int(ratio[0]),int(ratio[1]),int(ratio[2])  );
             }
-            comm.barrier();
+            MPI_Barrier(comm);
         }
         PROFILE_STOP("CoarsenMesh");
 
@@ -307,7 +312,7 @@ int main(int argc, char **argv)
                 NonLocalMean.back(), *fillFloat.back(), *Dm.back(), nprocx, 
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         PROFILE_STOP("Solve coarse mesh");
-        comm.barrier();
+        MPI_Barrier(comm);
 
         // Refine the solution
         PROFILE_START("Refine distance");
@@ -321,15 +326,17 @@ int main(int argc, char **argv)
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         }
         PROFILE_STOP("Refine distance");
-        comm.barrier();    
+        MPI_Barrier(comm);    
 
         // Perform a final filter
         PROFILE_START("Filtering final domains");
+	if (FILTER_CONNECTED_COMPONENTS){
         if (rank==0)
             printf("Filtering final domains\n");
         Array<float> filter_Mean, filter_Dist1, filter_Dist2;
         filter_final( ID[0], Dist[0], *fillFloat[0], *Dm[0], filter_Mean, filter_Dist1, filter_Dist2 );
         PROFILE_STOP("Filtering final domains");
+	}
         //removeDisconnected( ID[0], *Dm[0] );
         
         // Write the distance function to a netcdf file
@@ -417,14 +424,14 @@ int main(int argc, char **argv)
             meshData[0].vars.push_back(filter_Dist2_var);
             fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
         #endif
-        comm.barrier();
+        MPI_Barrier(comm);
         if (rank==0) printf("Writing output \n");
         // Write visulization data
         IO::writeData( 0, meshData, comm );
         if (rank==0) printf("Finished. \n");
     
         // Compute the Minkowski functionals
-        comm.barrier();
+        MPI_Barrier(comm);
         auto Averages = std::make_shared<Minkowski>(Dm[0]);
         
         Array <char> phase_label(Nx[0]+2,Ny[0]+2,Nz[0]+2);

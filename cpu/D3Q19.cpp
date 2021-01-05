@@ -421,6 +421,42 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 	return dout;
 }
 
+extern "C" void ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		
+		double f5 = 0.111111111111111111111111 - dist[6*Np+n];
+		double f11 = 0.05555555555555555555556 - dist[12*Np+n];
+		double f14 = 0.05555555555555555555556 - dist[13*Np+n];
+		double f15 = 0.05555555555555555555556 - dist[16*Np+n];
+		double f18 = 0.05555555555555555555556 - dist[17*Np+n];
+		
+		dist[6*Np+n] = f5;
+		dist[12*Np+n] = f11;
+		dist[13*Np+n] = f14;
+		dist[16*Np+n] = f15;
+		dist[17*Np+n] = f18;
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	for (int idx=0; idx<count; idx++){
+		int n = list[idx];
+		
+		double f6 = 0.111111111111111111111111 - dist[5*Np+n];
+		double f12 = 0.05555555555555555555556 - dist[11*Np+n];
+		double f13 = 0.05555555555555555555556 - dist[14*Np+n] ;
+		double f16 = 0.05555555555555555555556 - dist[15*Np+n];
+		double f17 = 0.05555555555555555555556 - dist[18*Np+n];
+		
+		dist[5*Np+n] = f6;
+		dist[11*Np+n] = f12;
+		dist[14*Np+n] = f13;
+		dist[15*Np+n] = f16;
+		dist[18*Np+n] = f17;
+	}
+}
+
 extern "C" void ScaLBL_D3Q19_AAeven_Pressure_BC_z(int *list, double *dist, double din, int count, int Np)
 {
 	// distributions
@@ -676,145 +712,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Pressure_BC_Z(int *d_neighborList, int *list,
 		dist[nr13] = f13;
 		dist[nr16] = f16;
 		dist[nr17] = f17;
-		//...................................................
-	}
-}
-
-extern "C" void ScaLBL_D3Q19_Pressure_BC_z(int *list, double *dist, double din, int count, int Np)
-{
-	int n;
-	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double ux,uy,uz;
-	double Cxz,Cyz;
-
-	for (int idx=0; idx<count; idx++){
-		n = list[idx];
-		//........................................................................
-		// Read distributions from "opposite" memory convention
-		//........................................................................
-		//........................................................................
-		f0 = dist[n];
-		f1 = dist[Np+n];
-		f2 = dist[2*Np+n];
-		f3 = dist[3*Np+n];
-		f4 = dist[4*Np+n];
-		f6 = dist[6*Np+n];
-		f7 = dist[7*Np+n];
-		f8 = dist[8*Np+n];
-		f9 = dist[9*Np+n];
-		f10 = dist[10*Np+n];
-		f12 = dist[12*Np+n];
-		f13 = dist[13*Np+n];
-		f16 = dist[16*Np+n];
-		f17 = dist[17*Np+n];
-		//...................................................
-		//........Determine the inlet flow velocity.........
-		//			uz = -1 + (f0+f3+f4+f1+f2+f7+f8+f10+f9
-		//					   + 2*(f5+f15+f18+f11+f14))/din;
-		//........Set the unknown distributions..............
-		//			f6 = f5 - 0.3333333333333333*din*uz;
-		//			f16 = f15 - 0.1666666666666667*din*uz;
-		//			f17 = f16 - f3 + f4-f15+f18-f7+f8-f10+f9;
-		//			f12= 0.5*(-din*uz+f5+f15+f18+f11+f14-f6-f16-
-		//					  f17+f1-f2-f14+f11+f7-f8-f10+f9);
-		//			f13= -din*uz+f5+f15+f18+f11+f14-f6-f16-f17-f12;
-		// Determine the inlet flow velocity
-		ux = (f1-f2+f7-f8+f9-f10+f11-f12+f13-f14);
-		uy = (f3-f4+f7-f8-f9+f10+f15-f16+f17-f18);
-		uz = din - (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f6+f12+f13+f16+f17));
-
-		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
-		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
-
-		f5 = f6 + 0.33333333333333338*uz;
-		f11 = f12 + 0.16666666666666678*(uz+ux)-Cxz;
-		f14 = f13 + 0.16666666666666678*(uz-ux)+Cxz;
-		f15 = f16 + 0.16666666666666678*(uy+uz)-Cyz;
-		f18 = f17 + 0.16666666666666678*(uz-uy)+Cyz;
-		//........Store in "opposite" memory location..........
-		dist[5*Np+n] = f5;
-		dist[11*Np+n] = f11;
-		dist[14*Np+n] = f14;
-		dist[15*Np+n] = f15;
-		dist[18*Np+n] = f18;
-		
-		/*
-		printf("Site=%i\n",n);
-		printf("ux=%f, uy=%f, uz=%f\n",ux,uy,uz);
-		printf("Cxz=%f, Cyz=%f\n",Cxz,Cyz);
-		n = N;
-		 */
-		//...................................................
-	}
-}
-
-extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(int *list, double *dist, double dout, int count, int Np)
-{
-	int n;
-	// distributions
-	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9;
-	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
-	double ux,uy,uz;
-	double Cxz,Cyz;
-
-	for (int idx=0; idx<count; idx++){
-		n = list[idx];
-		
-		//........................................................................
-		// Read distributions 
-		//........................................................................
-		f0 = dist[n];
-		f1 = dist[Np+n];
-		f2 = dist[2*Np+n];
-		f3 = dist[3*Np+n];
-		f4 = dist[4*Np+n];
-		f5 = dist[5*Np+n];
-		f7 = dist[7*Np+n];
-		f8 = dist[8*Np+n];
-		f9 = dist[9*Np+n];
-		f10 = dist[10*Np+n];
-		f11 = dist[11*Np+n];
-		f14 = dist[14*Np+n];
-		f15 = dist[15*Np+n];
-		f18 = dist[18*Np+n];
-		//........Determine the outlet flow velocity.........
-		//			uz = 1 - (f0+f3+f4+f1+f2+f7+f8+f10+f9+
-		//					  2*(f6+f16+f17+f12+f13))/dout;
-		//...................................................
-		//........Set the Unknown Distributions..............
-		//			f5 = f6 + 0.33333333333333338*dout*uz;
-		//			f15 = f16 + 0.16666666666666678*dout*uz;
-		//			f18 = f15+f3-f4-f16+f17+f7-f8+f10-f9;
-		//			f11= 0.5*(dout*uz+f6+ f16+f17+f12+f13-f5
-		//				  -f15-f18-f1+f2-f13+f12-f7+f8+f10-f9);
-		//			f14= dout*uz+f6+ f16+f17+f12+f13-f5-f15-f18-f11;
-		// Determine the outlet flow velocity
-		//ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-		//uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-		//uz = -1.0 + (f0+f4+f3+f2+f1+f8+f7+f9+f10 + 2*(f6+f16+f17+f12+f13))/dout;
-
-		// Determine the inlet flow velocity
-		ux = f1-f2+f7-f8+f9-f10+f11-f12+f13-f14;
-		uy = f3-f4+f7-f8-f9+f10+f15-f16+f17-f18;
-		uz = -dout + (f0+f1+f2+f3+f4+f7+f8+f9+f10 + 2*(f5+f11+f14+f15+f18));
-
-		Cxz = 0.5*(f1+f7+f9-f2-f10-f8) - 0.3333333333333333*ux;
-		Cyz = 0.5*(f3+f7+f10-f4-f9-f8) - 0.3333333333333333*uy;
-
-		f6 = f5 - 0.33333333333333338*uz;
-		f12 = f11 - 0.16666666666666678*(uz+ux)+Cxz;
-		f13 = f14 - 0.16666666666666678*(uz-ux)-Cxz;
-		f16 = f15 - 0.16666666666666678*(uy+uz)+Cyz;
-		f17 = f18 - 0.16666666666666678*(uz-uy)-Cyz;
-
-		//........Store in "opposite" memory location..........
-		dist[6*Np+n] = f6;
-		dist[12*Np+n] = f12;
-		dist[13*Np+n] = f13;
-		dist[16*Np+n] = f16;
-		dist[17*Np+n] = f17;
 		//...................................................
 	}
 }

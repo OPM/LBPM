@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 
@@ -25,11 +25,14 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	int check=0;
 	{
 		// parallel domain size (# of sub-domains)
@@ -78,7 +81,7 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm->CommInit();
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -205,9 +208,7 @@ int main(int argc, char **argv)
     		}
     	}
 
-	}
-    Utilities::shutdown();
-
-	return check;
+       Utilities::shutdown();
+       return check;
 }
 

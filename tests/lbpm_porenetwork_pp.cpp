@@ -9,21 +9,27 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
 	Utilities::startup( argc, argv );
-    Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	{
 	// parallel domain size (# of sub-domains)
 	int nprocx,nprocy,nprocz;
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
 	//*****************************************
+	MPI_Request req1[18],req2[18];
+	MPI_Status stat1[18],stat2[18];
+	//**********************************
 
 	int nsph,ncyl, BC;
 	nsph = atoi(argv[1]);
@@ -62,20 +68,20 @@ int main(int argc, char **argv)
 	}
 	// **************************************************************
 	// Broadcast simulation parameters from rank 0 to all other procs
-	comm.barrier();
+	MPI_Barrier(comm);
 	// Computational domain
-	comm.bcast(&Nx,1,0);
-	comm.bcast(&Ny,1,0);
-	comm.bcast(&Nz,1,0);
-	comm.bcast(&nprocx,1,0);
-	comm.bcast(&nprocy,1,0);
-	comm.bcast(&nprocz,1,0);
-	comm.bcast(&nspheres,1,0);
-	comm.bcast(&Lx,1,0);
-	comm.bcast(&Ly,1,0);
-	comm.bcast(&Lz,1,0);
+	MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+	MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+	MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+	MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+	MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+	MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+	MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 	//.................................................
-	comm.barrier();
+	MPI_Barrier(comm);
 	
 	// **************************************************************
 	if (nprocs != nprocx*nprocy*nprocz){
@@ -101,7 +107,7 @@ int main(int argc, char **argv)
 	Dm->CommInit();
         std::shared_ptr<TwoPhase> Averages( new TwoPhase(Dm) );
 
-	comm.barrier();
+	MPI_Barrier(comm);
 
 	Nx += 2; Ny += 2; Nz += 2;
 
@@ -266,7 +272,7 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	pore_vol = comm.sumReduce( sum_local );
+	MPI_Allreduce(&sum_local,&pore_vol,1,MPI_DOUBLE,MPI_SUM,comm);
 	if (rank==0) printf("Pore volume = %f \n",pore_vol/double(Nx*Ny*Nz));
 	//.........................................................
 	// don't perform computations at the eight corners

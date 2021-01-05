@@ -9,7 +9,7 @@
 
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Database.h"
 #include "ProfilerApp.h"
 

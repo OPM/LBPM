@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Utilities.h"
 
 
@@ -13,7 +13,7 @@ int main (int argc, char **argv)
     for (int i=0; i<nprocs; i++) {
         if ( rank==i )
             printf("%i of %i: Hello world\n",rank,nprocs);
-        comm.barrier();
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     // Create a memory leak for valgrind to find

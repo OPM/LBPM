@@ -1,3 +1,6 @@
+#ifndef DCEL_INC
+#define DCEL_INC
+
 #include <vector>
 #include "analysis/pmmc.h"
 
@@ -67,6 +70,7 @@ public:
 	Vertex vertex;
 	Halfedge halfedge;
 	void LocalIsosurface(const DoubleArray& A, double value, int i, int j, int k);
+	void Write();
 	int Face(int index);
 	
 	double origin(int edge);
@@ -78,3 +82,7 @@ public:
 private:
 	std::vector<int> FaceData;
 };
+
+void iso_surface(const Array<double>&Field, const double isovalue);
+
+#endif

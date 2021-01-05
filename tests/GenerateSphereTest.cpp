@@ -9,7 +9,7 @@
 //#include "common/pmmc.h"
 #include "common/Domain.h"
 #include "common/SpherePack.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "common/Communication.h"
 
 /*
@@ -70,8 +70,8 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 		}
 	}
 	// total Global is the number of nodes in the pore-space
-	totalGlobal = Dm.Comm.sumReduce( count );
-	maxdistGlobal = Dm.Comm.sumReduce( maxdist );
+	MPI_Allreduce(&count,&totalGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
+	MPI_Allreduce(&maxdist,&maxdistGlobal,1,MPI_DOUBLE,MPI_MAX,Dm.Comm);
 	double volume=double(nprocx*nprocy*nprocz)*double(nx-2)*double(ny-2)*double(nz-2);
 	double porosity=totalGlobal/volume;
 	if (rank==0) printf("Media Porosity: %f \n",porosity);
@@ -145,9 +145,10 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-	double Rcrit_new;
+	double Rcrit_old=0.0;
+	double Rcrit_new=0.0;
 
+	double GlobalNumber = 1.f;
 	int imin,jmin,kmin,imax,jmax,kmax;
     
 	Rcrit_new = maxdistGlobal;
@@ -252,7 +253,7 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
         UnpackID(Dm.recvList("YZ"), Dm.recvCount("YZ") ,recvID_YZ, id);
         //......................................................................................
 
-        //double GlobalNumber = Dm.Comm.sumReduce( LocalNumber );
+        MPI_Allreduce(&LocalNumber,&GlobalNumber,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
 
         count = 0.f;
         for (int k=1; k<Nz-1; k++){
@@ -265,7 +266,7 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
                 }
             }
         }
-        countGlobal = Dm.Comm.sumReduce( count );
+        MPI_Allreduce(&count,&countGlobal,1,MPI_DOUBLE,MPI_SUM,Dm.Comm);
         sw_new = countGlobal/totalGlobal;
         sw_diff_new = abs(sw_new-SW);
         // for test only
@@ -295,11 +296,364 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+Auto-merging tests/test_dcel_tri_normal.cpp
+CONFLICT (content): Merge conflict in tests/test_dcel_tri_normal.cpp
+Auto-merging tests/test_dcel_minkowski.cpp
+CONFLICT (content): Merge conflict in tests/test_dcel_minkowski.cpp
+Auto-merging tests/testCommunication.cpp
+CONFLICT (content): Merge conflict in tests/testCommunication.cpp
+Auto-merging tests/lbpm_uCT_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_uCT_pp.cpp
+Auto-merging tests/lbpm_uCT_maskfilter.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_uCT_maskfilter.cpp
+Auto-merging tests/lbpm_squaretube_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_squaretube_pp.cpp
+Auto-merging tests/lbpm_sphere_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_sphere_pp.cpp
+Auto-merging tests/lbpm_segmented_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_segmented_pp.cpp
+Auto-merging tests/lbpm_segmented_decomp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_segmented_decomp.cpp
+Auto-merging tests/lbpm_refine_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_refine_pp.cpp
+Auto-merging tests/lbpm_random_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_random_pp.cpp
+Auto-merging tests/lbpm_porenetwork_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_porenetwork_pp.cpp
+Auto-merging tests/lbpm_plates_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_plates_pp.cpp
+Auto-merging tests/lbpm_permeability_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_permeability_simulator.cpp
+Auto-merging tests/lbpm_nonnewtonian_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_nonnewtonian_simulator.cpp
+Auto-merging tests/lbpm_nondarcy_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_nondarcy_simulator.cpp
+Auto-merging tests/lbpm_morphopen_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morphopen_pp.cpp
+Auto-merging tests/lbpm_morphdrain_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morphdrain_pp.cpp
+Auto-merging tests/lbpm_morph_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morph_pp.cpp
+Auto-merging tests/lbpm_minkowski_scalar.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_minkowski_scalar.cpp
+Auto-merging tests/lbpm_juanes_bench_disc_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_juanes_bench_disc_pp.cpp
+Auto-merging tests/lbpm_inkbottle_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_inkbottle_pp.cpp
+Auto-merging tests/lbpm_disc_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_disc_pp.cpp
+Auto-merging tests/lbpm_dfh_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_dfh_simulator.cpp
+Auto-merging tests/lbpm_color_simulator.cpp
+Auto-merging tests/lbpm_color_macro_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_color_macro_simulator.cpp
+Auto-merging tests/lbpm_captube_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_captube_pp.cpp
+Auto-merging tests/lbpm_BGK_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_BGK_simulator.cpp
+Auto-merging tests/lb2_Color_blob_wia_mpi.cpp
+CONFLICT (content): Merge conflict in tests/lb2_Color_blob_wia_mpi.cpp
+Auto-merging tests/lb2_CMT_wia.cpp
+CONFLICT (content): Merge conflict in tests/lb2_CMT_wia.cpp
+Auto-merging tests/hello_world.cpp
+CONFLICT (content): Merge conflict in tests/hello_world.cpp
+Auto-merging tests/convertIO.cpp
+CONFLICT (content): Merge conflict in tests/convertIO.cpp
+Auto-merging tests/TestWriter.cpp
+CONFLICT (content): Merge conflict in tests/TestWriter.cpp
+Auto-merging tests/TestTwoPhase.cpp
+CONFLICT (content): Merge conflict in tests/TestTwoPhase.cpp
+Auto-merging tests/TestTorusEvolve.cpp
+CONFLICT (content): Merge conflict in tests/TestTorusEvolve.cpp
+Auto-merging tests/TestTorus.cpp
+CONFLICT (content): Merge conflict in tests/TestTorus.cpp
+Auto-merging tests/TestTopo3D.cpp
+CONFLICT (content): Merge conflict in tests/TestTopo3D.cpp
+Auto-merging tests/TestSubphase.cpp
+CONFLICT (content): Merge conflict in tests/TestSubphase.cpp
+Auto-merging tests/TestSegDist.cpp
+CONFLICT (content): Merge conflict in tests/TestSegDist.cpp
+Auto-merging tests/TestPressVel.cpp
+CONFLICT (content): Merge conflict in tests/TestPressVel.cpp
+Auto-merging tests/TestPoiseuille.cpp
+CONFLICT (content): Merge conflict in tests/TestPoiseuille.cpp
+Auto-merging tests/TestNetcdf.cpp
+CONFLICT (content): Merge conflict in tests/TestNetcdf.cpp
+Auto-merging tests/TestMomentsD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestMomentsD3Q19.cpp
+Auto-merging tests/TestMicroCTReader.cpp
+CONFLICT (content): Merge conflict in tests/TestMicroCTReader.cpp
+Auto-merging tests/TestMassConservationD3Q7.cpp
+CONFLICT (content): Merge conflict in tests/TestMassConservationD3Q7.cpp
+Auto-merging tests/TestMap.cpp
+CONFLICT (content): Merge conflict in tests/TestMap.cpp
+Auto-merging tests/TestMRT.cpp
+CONFLICT (content): Merge conflict in tests/TestMRT.cpp
+Auto-merging tests/TestInterfaceSpeed.cpp
+CONFLICT (content): Merge conflict in tests/TestInterfaceSpeed.cpp
+Auto-merging tests/TestForceMoments.cpp
+CONFLICT (content): Merge conflict in tests/TestForceMoments.cpp
+Auto-merging tests/TestForceD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestForceD3Q19.cpp
+Auto-merging tests/TestFluxBC.cpp
+CONFLICT (content): Merge conflict in tests/TestFluxBC.cpp
+Auto-merging tests/TestDatabase.cpp
+CONFLICT (content): Merge conflict in tests/TestDatabase.cpp
+Auto-merging tests/TestCommD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestCommD3Q19.cpp
+Auto-merging tests/TestColorSquareTube.cpp
+CONFLICT (content): Merge conflict in tests/TestColorSquareTube.cpp
+Auto-merging tests/TestColorMassBounceback.cpp
+CONFLICT (content): Merge conflict in tests/TestColorMassBounceback.cpp
+Auto-merging tests/TestColorGradDFH.cpp
+CONFLICT (content): Merge conflict in tests/TestColorGradDFH.cpp
+Auto-merging tests/TestColorGrad.cpp
+CONFLICT (content): Merge conflict in tests/TestColorGrad.cpp
+Auto-merging tests/TestColorBubble.cpp
+CONFLICT (content): Merge conflict in tests/TestColorBubble.cpp
+Auto-merging tests/TestBubbleDFH.cpp
+CONFLICT (content): Merge conflict in tests/TestBubbleDFH.cpp
+Auto-merging tests/TestBubble.cpp
+CONFLICT (content): Merge conflict in tests/TestBubble.cpp
+Auto-merging tests/TestBlobIdentifyCorners.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobIdentifyCorners.cpp
+Auto-merging tests/TestBlobIdentify.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobIdentify.cpp
+Auto-merging tests/TestBlobAnalyze.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobAnalyze.cpp
+Auto-merging tests/GenerateSphereTest.cpp
+CONFLICT (content): Merge conflict in tests/GenerateSphereTest.cpp
+Auto-merging tests/ComponentLabel.cpp
+CONFLICT (content): Merge conflict in tests/ComponentLabel.cpp
+Auto-merging tests/ColorToBinary.cpp
+CONFLICT (content): Merge conflict in tests/ColorToBinary.cpp
+Auto-merging tests/CMakeLists.txt
+Auto-merging tests/BlobIdentifyParallel.cpp
+CONFLICT (content): Merge conflict in tests/BlobIdentifyParallel.cpp
+Auto-merging tests/BlobAnalyzeParallel.cpp
+CONFLICT (content): Merge conflict in tests/BlobAnalyzeParallel.cpp
+Auto-merging models/MRTModel.cpp
+CONFLICT (content): Merge conflict in models/MRTModel.cpp
+Auto-merging models/DFHModel.cpp
+CONFLICT (content): Merge conflict in models/DFHModel.cpp
+Auto-merging models/ColorModel.cpp
+CONFLICT (content): Merge conflict in models/ColorModel.cpp
+Auto-merging cuda/exe/lb2_Color_pBC_wia_mpi.cpp
+Auto-merging cuda/exe/lb2_Color_mpi.cpp
+Auto-merging cuda/exe/lb2_Color.cu
+Auto-merging cuda/exe/lb1_MRT_mpi.cu
+Auto-merging cuda/exe/lb1_MRT_mpi.cpp
+Auto-merging cuda/D3Q7.cu
+Auto-merging cuda/D3Q19.cu
+Auto-merging cuda/Color.cu
+Auto-merging common/Utilities.cpp
+Auto-merging common/ScaLBL.h
+Auto-merging common/ScaLBL.cpp
+Auto-merging common/MPI_Helpers.hpp
+CONFLICT (modify/delete): common/MPI.h deleted in electrokinetic and modified in HEAD. Version HEAD of common/MPI.h left in tree.
+CONFLICT (modify/delete): common/MPI.cpp deleted in electrokinetic and modified in HEAD. Version HEAD of common/MPI.cpp left in tree.
+Removing common/MPI.I
+Auto-merging common/Domain.h
+CONFLICT (content): Merge conflict in common/Domain.h
+Auto-merging common/Domain.cpp
+CONFLICT (content): Merge conflict in common/Domain.cpp
+Auto-merging common/Communication.h
+Removing cmake/FindHIP.cmake
+Auto-merging analysis/runAnalysis.h
+Auto-merging analysis/runAnalysis.cpp
+CONFLICT (content): Merge conflict in analysis/runAnalysis.cpp
+Auto-merging analysis/morphology.cpp
+CONFLICT (content): Merge conflict in analysis/morphology.cpp
+Auto-merging IO/silo.h
+Auto-merging IO/netcdf.h
+Removing IO/PackData.h
+Removing IO/PackData.cpp
+Auto-merging CMakeLists.txt
+CONFLICT (content): Merge conflict in CMakeLists.txt
+Automatic merge failed; fix conflicts and then commit the result.
+Auto-merging tests/test_dcel_tri_normal.cpp
+CONFLICT (content): Merge conflict in tests/test_dcel_tri_normal.cpp
+Auto-merging tests/test_dcel_minkowski.cpp
+CONFLICT (content): Merge conflict in tests/test_dcel_minkowski.cpp
+Auto-merging tests/testCommunication.cpp
+CONFLICT (content): Merge conflict in tests/testCommunication.cpp
+Auto-merging tests/lbpm_uCT_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_uCT_pp.cpp
+Auto-merging tests/lbpm_uCT_maskfilter.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_uCT_maskfilter.cpp
+Auto-merging tests/lbpm_squaretube_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_squaretube_pp.cpp
+Auto-merging tests/lbpm_sphere_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_sphere_pp.cpp
+Auto-merging tests/lbpm_segmented_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_segmented_pp.cpp
+Auto-merging tests/lbpm_segmented_decomp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_segmented_decomp.cpp
+Auto-merging tests/lbpm_refine_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_refine_pp.cpp
+Auto-merging tests/lbpm_random_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_random_pp.cpp
+Auto-merging tests/lbpm_porenetwork_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_porenetwork_pp.cpp
+Auto-merging tests/lbpm_plates_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_plates_pp.cpp
+Auto-merging tests/lbpm_permeability_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_permeability_simulator.cpp
+Auto-merging tests/lbpm_nonnewtonian_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_nonnewtonian_simulator.cpp
+Auto-merging tests/lbpm_nondarcy_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_nondarcy_simulator.cpp
+Auto-merging tests/lbpm_morphopen_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morphopen_pp.cpp
+Auto-merging tests/lbpm_morphdrain_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morphdrain_pp.cpp
+Auto-merging tests/lbpm_morph_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_morph_pp.cpp
+Auto-merging tests/lbpm_minkowski_scalar.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_minkowski_scalar.cpp
+Auto-merging tests/lbpm_juanes_bench_disc_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_juanes_bench_disc_pp.cpp
+Auto-merging tests/lbpm_inkbottle_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_inkbottle_pp.cpp
+Auto-merging tests/lbpm_disc_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_disc_pp.cpp
+Auto-merging tests/lbpm_dfh_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_dfh_simulator.cpp
+Auto-merging tests/lbpm_color_simulator.cpp
+Auto-merging tests/lbpm_color_macro_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_color_macro_simulator.cpp
+Auto-merging tests/lbpm_captube_pp.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_captube_pp.cpp
+Auto-merging tests/lbpm_BGK_simulator.cpp
+CONFLICT (content): Merge conflict in tests/lbpm_BGK_simulator.cpp
+Auto-merging tests/lb2_Color_blob_wia_mpi.cpp
+CONFLICT (content): Merge conflict in tests/lb2_Color_blob_wia_mpi.cpp
+Auto-merging tests/lb2_CMT_wia.cpp
+CONFLICT (content): Merge conflict in tests/lb2_CMT_wia.cpp
+Auto-merging tests/hello_world.cpp
+CONFLICT (content): Merge conflict in tests/hello_world.cpp
+Auto-merging tests/convertIO.cpp
+CONFLICT (content): Merge conflict in tests/convertIO.cpp
+Auto-merging tests/TestWriter.cpp
+CONFLICT (content): Merge conflict in tests/TestWriter.cpp
+Auto-merging tests/TestTwoPhase.cpp
+CONFLICT (content): Merge conflict in tests/TestTwoPhase.cpp
+Auto-merging tests/TestTorusEvolve.cpp
+CONFLICT (content): Merge conflict in tests/TestTorusEvolve.cpp
+Auto-merging tests/TestTorus.cpp
+CONFLICT (content): Merge conflict in tests/TestTorus.cpp
+Auto-merging tests/TestTopo3D.cpp
+CONFLICT (content): Merge conflict in tests/TestTopo3D.cpp
+Auto-merging tests/TestSubphase.cpp
+CONFLICT (content): Merge conflict in tests/TestSubphase.cpp
+Auto-merging tests/TestSegDist.cpp
+CONFLICT (content): Merge conflict in tests/TestSegDist.cpp
+Auto-merging tests/TestPressVel.cpp
+CONFLICT (content): Merge conflict in tests/TestPressVel.cpp
+Auto-merging tests/TestPoiseuille.cpp
+CONFLICT (content): Merge conflict in tests/TestPoiseuille.cpp
+Auto-merging tests/TestNetcdf.cpp
+CONFLICT (content): Merge conflict in tests/TestNetcdf.cpp
+Auto-merging tests/TestMomentsD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestMomentsD3Q19.cpp
+Auto-merging tests/TestMicroCTReader.cpp
+CONFLICT (content): Merge conflict in tests/TestMicroCTReader.cpp
+Auto-merging tests/TestMassConservationD3Q7.cpp
+CONFLICT (content): Merge conflict in tests/TestMassConservationD3Q7.cpp
+Auto-merging tests/TestMap.cpp
+CONFLICT (content): Merge conflict in tests/TestMap.cpp
+Auto-merging tests/TestMRT.cpp
+CONFLICT (content): Merge conflict in tests/TestMRT.cpp
+Auto-merging tests/TestInterfaceSpeed.cpp
+CONFLICT (content): Merge conflict in tests/TestInterfaceSpeed.cpp
+Auto-merging tests/TestForceMoments.cpp
+CONFLICT (content): Merge conflict in tests/TestForceMoments.cpp
+Auto-merging tests/TestForceD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestForceD3Q19.cpp
+Auto-merging tests/TestFluxBC.cpp
+CONFLICT (content): Merge conflict in tests/TestFluxBC.cpp
+Auto-merging tests/TestDatabase.cpp
+CONFLICT (content): Merge conflict in tests/TestDatabase.cpp
+Auto-merging tests/TestCommD3Q19.cpp
+CONFLICT (content): Merge conflict in tests/TestCommD3Q19.cpp
+Auto-merging tests/TestColorSquareTube.cpp
+CONFLICT (content): Merge conflict in tests/TestColorSquareTube.cpp
+Auto-merging tests/TestColorMassBounceback.cpp
+CONFLICT (content): Merge conflict in tests/TestColorMassBounceback.cpp
+Auto-merging tests/TestColorGradDFH.cpp
+CONFLICT (content): Merge conflict in tests/TestColorGradDFH.cpp
+Auto-merging tests/TestColorGrad.cpp
+CONFLICT (content): Merge conflict in tests/TestColorGrad.cpp
+Auto-merging tests/TestColorBubble.cpp
+CONFLICT (content): Merge conflict in tests/TestColorBubble.cpp
+Auto-merging tests/TestBubbleDFH.cpp
+CONFLICT (content): Merge conflict in tests/TestBubbleDFH.cpp
+Auto-merging tests/TestBubble.cpp
+CONFLICT (content): Merge conflict in tests/TestBubble.cpp
+Auto-merging tests/TestBlobIdentifyCorners.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobIdentifyCorners.cpp
+Auto-merging tests/TestBlobIdentify.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobIdentify.cpp
+Auto-merging tests/TestBlobAnalyze.cpp
+CONFLICT (content): Merge conflict in tests/TestBlobAnalyze.cpp
+Auto-merging tests/GenerateSphereTest.cpp
+CONFLICT (content): Merge conflict in tests/GenerateSphereTest.cpp
+Auto-merging tests/ComponentLabel.cpp
+CONFLICT (content): Merge conflict in tests/ComponentLabel.cpp
+Auto-merging tests/ColorToBinary.cpp
+CONFLICT (content): Merge conflict in tests/ColorToBinary.cpp
+Auto-merging tests/CMakeLists.txt
+Auto-merging tests/BlobIdentifyParallel.cpp
+CONFLICT (content): Merge conflict in tests/BlobIdentifyParallel.cpp
+Auto-merging tests/BlobAnalyzeParallel.cpp
+CONFLICT (content): Merge conflict in tests/BlobAnalyzeParallel.cpp
+Auto-merging models/MRTModel.cpp
+CONFLICT (content): Merge conflict in models/MRTModel.cpp
+Auto-merging models/DFHModel.cpp
+CONFLICT (content): Merge conflict in models/DFHModel.cpp
+Auto-merging models/ColorModel.cpp
+CONFLICT (content): Merge conflict in models/ColorModel.cpp
+Auto-merging cuda/exe/lb2_Color_pBC_wia_mpi.cpp
+Auto-merging cuda/exe/lb2_Color_mpi.cpp
+Auto-merging cuda/exe/lb2_Color.cu
+Auto-merging cuda/exe/lb1_MRT_mpi.cu
+Auto-merging cuda/exe/lb1_MRT_mpi.cpp
+Auto-merging cuda/D3Q7.cu
+Auto-merging cuda/D3Q19.cu
+Auto-merging cuda/Color.cu
+Auto-merging common/Utilities.cpp
+Auto-merging common/ScaLBL.h
+Auto-merging common/ScaLBL.cpp
+Auto-merging common/MPI_Helpers.hpp
+CONFLICT (modify/delete): common/MPI.h deleted in electrokinetic and modified in HEAD. Version HEAD of common/MPI.h left in tree.
+CONFLICT (modify/delete): common/MPI.cpp deleted in electrokinetic and modified in HEAD. Version HEAD of common/MPI.cpp left in tree.
+Removing common/MPI.I
+Auto-merging common/Domain.h
+CONFLICT (content): Merge conflict in common/Domain.h
+Auto-merging common/Domain.cpp
+CONFLICT (content): Merge conflict in common/Domain.cpp
+Auto-merging common/Communication.h
+Removing cmake/FindHIP.cmake
+Auto-merging analysis/runAnalysis.h
+Auto-merging analysis/runAnalysis.cpp
+CONFLICT (content): Merge conflict in analysis/runAnalysis.cpp
+Auto-merging analysis/morphology.cpp
+CONFLICT (content): Merge conflict in analysis/morphology.cpp
+Auto-merging IO/silo.h
+Auto-merging IO/netcdf.h
+Removing IO/PackData.h
+Removing IO/PackData.cpp
+Auto-merging CMakeLists.txt
+CONFLICT (content): Merge conflict in CMakeLists.txt
+Automatic merge failed; fix conflicts and then commit the result.
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;
@@ -389,14 +743,14 @@ int main(int argc, char **argv)
 		//.......................................................................
 		if (rank == 0)	printf("Reading the sphere packing \n");
 		if (rank == 0)	ReadSpherePacking(nspheres,cx,cy,cz,rad);
-		comm.barrier();
+		MPI_Barrier(comm);
 		// Broadcast the sphere packing to all processes
-		comm.bcast(cx,nspheres,0);
-		comm.bcast(cy,nspheres,0);
-		comm.bcast(cz,nspheres,0);
-		comm.bcast(rad,nspheres,0);
+		MPI_Bcast(cx,nspheres,MPI_DOUBLE,0,comm);
+		MPI_Bcast(cy,nspheres,MPI_DOUBLE,0,comm);
+		MPI_Bcast(cz,nspheres,MPI_DOUBLE,0,comm);
+		MPI_Bcast(rad,nspheres,MPI_DOUBLE,0,comm);
 		//...........................................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank == 0){
 			// Compute the Sauter mean diameter
@@ -410,7 +764,7 @@ int main(int argc, char **argv)
 			D = 6.0*(Nx-2)*nprocx*totVol / totArea / Lx;
 			printf("Sauter Mean Diameter (computed from sphere packing) = %f \n",D);
 		}
-		comm.bcast(&D,1,0);
+		MPI_Bcast(&D,1,MPI_DOUBLE,0,comm);
 
 		//.......................................................................
 		SignedDistance(SignDist.data(),nspheres,cx,cy,cz,rad,Lx,Ly,Lz,Nx,Ny,Nz,
@@ -442,7 +796,7 @@ int main(int argc, char **argv)
 			}
 		}
 		sum_local = 1.0*sum;
-		porosity = comm.sumReduce(sum_local);
+		MPI_Allreduce(&sum_local,&porosity,1,MPI_DOUBLE,MPI_SUM,comm);
 		porosity = porosity*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 

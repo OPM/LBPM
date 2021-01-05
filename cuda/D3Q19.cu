@@ -267,7 +267,6 @@ __global__ void dvc_ScaLBL_D3Q19_Init(double *dist, int Np)
 	}
 }
 
-
 //*************************************************************************
 __global__  void dvc_ScaLBL_D3Q19_Swap_Compact(int *neighborList, double *disteven, double *distodd, int Np, int q){
 	int n,nn;
@@ -1728,6 +1727,43 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, 
 		//...................................................
 	}
 }
+__global__  void dvc_ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f5 = 0.111111111111111111111111 - dist[6*Np+n];
+		double f11 = 0.05555555555555555555556 - dist[12*Np+n];
+		double f14 = 0.05555555555555555555556 - dist[13*Np+n];
+		double f15 = 0.05555555555555555555556 - dist[16*Np+n];
+		double f18 = 0.05555555555555555555556 - dist[17*Np+n];
+		
+		dist[6*Np+n] = f5;
+		dist[12*Np+n] = f11;
+		dist[13*Np+n] = f14;
+		dist[16*Np+n] = f15;
+		dist[17*Np+n] = f18;
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f6 = 0.111111111111111111111111 - dist[5*Np+n];
+		double f12 = 0.05555555555555555555556 - dist[11*Np+n];
+		double f13 = 0.05555555555555555555556 - dist[14*Np+n] ;
+		double f16 = 0.05555555555555555555556 - dist[15*Np+n];
+		double f17 = 0.05555555555555555555556 - dist[18*Np+n];
+		
+		dist[5*Np+n] = f6;
+		dist[11*Np+n] = f12;
+		dist[14*Np+n] = f13;
+		dist[15*Np+n] = f16;
+		dist[18*Np+n] = f17;
+	}
+}
 
 __global__  void dvc_ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *d_neighborList, int *list, double *dist, double din, int count, int Np)
 {
@@ -2324,9 +2360,10 @@ extern "C" void ScaLBL_D3Q19_Init(double *dist, int Np){
 	dvc_ScaLBL_D3Q19_Init<<<NBLOCKS,NTHREADS >>>(dist, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AA_Init: %s \n",cudaGetErrorString(err));
+		printf("CUDA error in ScaLBL_D3Q19_Init: %s \n",cudaGetErrorString(err));
 	}
 }
+
 
 extern "C" void ScaLBL_D3Q19_Swap(char *ID, double *disteven, double *distodd, int Nx, int Ny, int Nz){
 	dvc_ScaLBL_D3Q19_Swap<<<NBLOCKS,NTHREADS >>>(ID, disteven, distodd, Nx, Ny, Nz);
@@ -2614,11 +2651,23 @@ extern "C" double deviceReduce(double *in, double* out, int N) {
 	return sum;
 }
 
-//
-//extern "C" void ScaLBL_D3Q19_Pressure_BC_Z(int *list, double *dist, double dout, int count, int Np){
-//	int GRID = count / 512 + 1;
-//	dvc_ScaLBL_D3Q19_Pressure_BC_Z<<<GRID,512>>>(disteven, distodd, dout, Nx, Ny, Nz, outlet);
-//}
+extern "C" void ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_Reflection_BC_z<<<GRID,512>>>(list, dist, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Reflection_BC_z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_Reflection_BC_Z<<<GRID,512>>>(list, dist, count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_Reflection_BC_Z (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
 
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
        double Fy, double Fz){

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 #include "models/ColorModel.h"
 
 std::shared_ptr<Database> loadInputs( int nprocs )
@@ -84,8 +84,11 @@ void InitializeSquareTube(ScaLBL_ColorModel &ColorModel){
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	int check=0;
 	{
 	    Utilities::MPI comm( MPI_COMM_WORLD );
@@ -108,7 +111,7 @@ int main(int argc, char **argv)
 		ColorModel.WriteDebug(); 
  
 	}
-    Utilities::shutdown();
+        Utilities::shutdown();
 	return check;
 }
 

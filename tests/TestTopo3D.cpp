@@ -26,10 +26,10 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-    Utilities::startup( argc, argv );
+        Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	{ // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 		if ( rank==0 ) {
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 		IO::writeData( timestep, visData, comm );
 
 	} // Limit scope so variables that contain communicators will free before MPI_Finialize
-    Utilities::shutdown();
+        Utilities::shutdown();
 	return 0;  
 }
 

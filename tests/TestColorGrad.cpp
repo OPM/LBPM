@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI.h"
+#include "common/MPI_Helpers.h"
 
 using namespace std;
 
@@ -15,11 +15,14 @@ using namespace std;
 //***************************************************************************************
 int main(int argc, char **argv)
 {
+	//*****************************************
+	// ***** MPI STUFF ****************
+	//*****************************************
 	// Initialize MPI
 	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-    int rank = comm.getRank();
-    int nprocs = comm.getSize();
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
@@ -112,20 +115,20 @@ int main(int argc, char **argv)
 		}
 		// **************************************************************
 		// Broadcast simulation parameters from rank 0 to all other procs
-		comm.barrier();
+		MPI_Barrier(comm);
 		//.................................................
-		comm.bcast(&Nx,1,0);
-		comm.bcast(&Ny,1,0);
-		comm.bcast(&Nz,1,0);
-		comm.bcast(&nprocx,1,0);
-		comm.bcast(&nprocy,1,0);
-		comm.bcast(&nprocz,1,0);
-		comm.bcast(&nspheres,1,0);
-		comm.bcast(&Lx,1,0);
-		comm.bcast(&Ly,1,0);
-		comm.bcast(&Lz,1,0);
+		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
+		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
+		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
+		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
+		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
+		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
+		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
 		//.................................................
-		comm.barrier();
+		MPI_Barrier(comm);
 		// **************************************************************
 		// **************************************************************
 
@@ -142,7 +145,7 @@ int main(int argc, char **argv)
 			printf("********************************************************\n");
 		}
 
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		int BoundaryCondition=0;
@@ -171,7 +174,7 @@ int main(int argc, char **argv)
 			}
 		}
 		Dm.CommInit();
-		comm.barrier();
+		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
 
@@ -188,7 +191,7 @@ int main(int argc, char **argv)
 		neighborList= new int[18*Np];
 
 		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np);
-		comm.barrier();
+		MPI_Barrier(comm);
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -259,7 +262,6 @@ int main(int argc, char **argv)
 	comm.barrier();
 	Utilities::shutdown();
 	// ****************************************************
-
 	return check;
 }
 

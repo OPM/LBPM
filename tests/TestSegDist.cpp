@@ -97,13 +97,13 @@ int main(int argc, char **argv)
         }
     }
 
-    comm.barrier();
+    MPI_Barrier(comm);
     if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
 
-    double t1 = Utilities::MPI::time();
+    double t1 = MPI_Wtime();
     DoubleArray Distance(nx,ny,nz);
     CalcDist(Distance,id,Dm,{false,false,false});
-    double t2 = Utilities::MPI::time();
+    double t2 = MPI_Wtime();
     if (rank==0)
         printf("Total time: %f seconds \n",t2-t1);
 
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    err = Dm.Comm.sumReduce( err );
+    err = sumReduce( Dm.Comm, err );
     err = sqrt( err / (nx*ny*nz*nprocs) );
     if (rank==0)
         printf("Mean error %0.4f \n", err);
