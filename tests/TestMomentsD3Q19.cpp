@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include <math.h>
 
@@ -470,7 +470,7 @@ int main (int argc, char **argv)
     for (int i=0; i<nprocs; i++) {
         if ( rank==i )
             printf("%i of %i: TestMoments\n",rank,nprocs);
-        MPI_Barrier(MPI_COMM_WORLD);
+        comm.barrier();
     }
 
     // Create a memory leak for valgrind to find

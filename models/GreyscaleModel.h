@@ -18,7 +18,7 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_GreyscaleModel{
 public:
-	ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_GreyscaleModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_GreyscaleModel();	
 	
 	// functions in they should be run
@@ -76,7 +76,7 @@ public:
     DoubleArray Pressure;
 		
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;

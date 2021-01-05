@@ -15,7 +15,7 @@ void DeleteArray( const TYPE *p )
     delete [] p;
 }
 
-ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -135,9 +135,9 @@ void ScaLBL_GreyscaleColorModel::SetDomain(){
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	Averages = std::shared_ptr<GreyPhaseAnalysis> ( new GreyPhaseAnalysis(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -601,7 +601,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
        	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
-	MPI_Barrier(comm);
+	comm.barrier();
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -740,7 +740,7 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_Comm->Barrier();
 
-		MPI_Barrier(comm);
+		comm.barrier();
 
         if (rank==0)	printf ("Initializing phase field from Restart\n");
         ScaLBL_PhaseField_InitFromRestart(Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
@@ -912,7 +912,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_Comm->Barrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 
@@ -1071,7 +1071,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
                 }
             }
             RESTARTFILE.close();
-		    MPI_Barrier(comm);
+		    comm.barrier();
         }
 		if (timestep%visualization_interval==0){
             WriteVisFiles();

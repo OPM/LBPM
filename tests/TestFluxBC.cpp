@@ -90,7 +90,7 @@ int main (int argc, char **argv)
 
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np);
 		comm.barrier();
-		//......................device distributions.................................
+		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
 		if (rank==0)	printf ("Allocating distributions \n");
 
@@ -148,7 +148,7 @@ int main (int argc, char **argv)
     	double *VEL;
     	VEL= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
-    	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+ 	ScaLBL_Comm->Barrier();
     	ScaLBL_CopyToHost(&VEL[0],&dvc_vel[0],SIZE);
 
     	double Q = 0.f;    	
@@ -191,7 +191,8 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		    	ScaLBL_Comm->Barrier();
+
 			timestep++;
 
 			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -200,7 +201,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		    	ScaLBL_Comm->Barrier();
 			timestep++;
 			//************************************************************************/
 

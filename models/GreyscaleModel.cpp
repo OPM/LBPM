@@ -13,7 +13,7 @@ void DeleteArray( const TYPE *p )
     delete [] p;
 }
 
-ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),tau_eff(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
@@ -121,9 +121,9 @@ void ScaLBL_GreyscaleModel::SetDomain(){
 
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -367,7 +367,7 @@ void ScaLBL_GreyscaleModel::Create(){
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
 	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
-	MPI_Barrier(comm);
+	comm.barrier();
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -454,7 +454,7 @@ void ScaLBL_GreyscaleModel::Initialize(){
 		ScaLBL_CopyToDevice(fq,cfq.get(),19*Np*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
-		MPI_Barrier(comm);
+		comm.barrier();
 	}
 }
 
@@ -487,7 +487,7 @@ void ScaLBL_GreyscaleModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 	
@@ -540,7 +540,7 @@ void ScaLBL_GreyscaleModel::Run(){
 		            ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
         }
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
@@ -580,7 +580,7 @@ void ScaLBL_GreyscaleModel::Run(){
 		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
         }
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_DeviceBarrier(); comm.barrier();
 		//************************************************************************/
 		
 		if (timestep%analysis_interval==0){
@@ -735,7 +735,7 @@ void ScaLBL_GreyscaleModel::Run(){
             RESTARTFILE=fopen(LocalRestartFile,"wb");
             fwrite(cfq.get(),sizeof(double),19*Np,RESTARTFILE);
             fclose(RESTARTFILE);
-		    MPI_Barrier(comm);
+		    comm.barrier();
         }
 	}
 
@@ -743,7 +743,7 @@ void ScaLBL_GreyscaleModel::Run(){
 	PROFILE_SAVE("lbpm_greyscale_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -766,7 +766,7 @@ void ScaLBL_GreyscaleModel::VelocityField(){
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_DeviceBarrier(); comm.barrier();
 	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));

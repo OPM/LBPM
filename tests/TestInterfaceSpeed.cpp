@@ -2,7 +2,7 @@
 #include <math.h>
 
 #include "analysis/TwoPhase.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -21,6 +21,7 @@ int main (int argc, char *argv[])
     Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
+
     // Load inputs
 	string FILENAME = argv[1];
     // Load inputs
@@ -35,7 +36,7 @@ int main (int argc, char *argv[])
 
     Nx+=2; Ny+=2; Nz+=2;
 
-	for (i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;
 
 	Dm->CommInit();
 
@@ -46,9 +47,9 @@ int main (int argc, char *argv[])
 	double dist1,dist2;
 
 	Cx = Cy = Cz = N*0.5;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
 				dist2 = fabs(Cz-k)-HEIGHT;
 
@@ -57,9 +58,9 @@ int main (int argc, char *argv[])
 		} 
 	}
 	Cz += SPEED;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				
 				dist1 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)) - RADIUS;
 				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
@@ -72,9 +73,9 @@ int main (int argc, char *argv[])
 		}   
 	}
 	Cz += SPEED;
-	for (k=0; k<Nz; k++){
-		for (j=0; j<Ny; j++){
-			for (i=0; i<Nx; i++){
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
 				dist2 = sqrt((i-Cx)*(i-Cx)+(j-Cy)*(j-Cy)+(k-Cz)*(k-Cz)) - CAPRAD;
 				dist2 = fabs(Cz-k)-HEIGHT;
 
@@ -144,7 +145,8 @@ int main (int argc, char *argv[])
 	}
 
 	return toReturn;
+
 	comm.barrier();
-        Utilities::shutdown();
 	return 0;
+    Utilities::shutdown();
 }

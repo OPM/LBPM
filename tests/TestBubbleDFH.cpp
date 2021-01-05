@@ -9,7 +9,7 @@
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 		int device=ScaLBL_SetDevice(rank);
 		printf("Using GPU ID %i for rank %i \n",device,rank);
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		PROFILE_ENABLE(1);
 		//PROFILE_ENABLE_TRACE();
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
         // Initialize compute device
         //        int device=ScaLBL_SetDevice(rank);
         ScaLBL_DeviceBarrier();
-        MPI_Barrier(comm);
+        comm.barrier();
 
         Utilities::setErrorHandlers();
 
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
         // Get the rank info
         const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 
-        MPI_Barrier(comm);
+        comm.barrier();
 
         if (nprocs != nprocx*nprocy*nprocz){
             printf("nprocx =  %i \n",nprocx);
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
         // Mask that excludes the solid phase
         auto Mask = std::make_shared<Domain>(domain_db,comm);
-        MPI_Barrier(comm);
+        comm.barrier();
 
         Nx+=2; Ny+=2; Nz += 2;
         int N = Nx*Ny*Nz;
@@ -249,6 +249,7 @@ int main(int argc, char **argv)
 		auto neighborList= new int[18*Npad];
 		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np);
 		comm.barrier();
+
 		//...........................................................................
 		//				MAIN  VARIABLES ALLOCATED HERE
 		//...........................................................................
@@ -384,8 +385,8 @@ int main(int argc, char **argv)
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
-		starttime = MPI_Wtime();
+		comm.barrier();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 		err = 1.0; 	
@@ -434,7 +435,7 @@ int main(int argc, char **argv)
 			}
 			ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->next, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 
 			// *************EVEN TIMESTEP*************
 			timestep++;
@@ -470,9 +471,9 @@ int main(int argc, char **argv)
 			}
 			ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 					alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->next, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			//************************************************************************
-			MPI_Barrier(comm);
+			comm.barrier();
 			PROFILE_STOP("Update");
 
 			// Run the analysis
@@ -484,8 +485,8 @@ int main(int argc, char **argv)
 		PROFILE_SAVE("lbpm_color_simulator",1);
 		//************************************************************************
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
-		stoptime = MPI_Wtime();
+		comm.barrier();
+		stoptime = Utilities::MPI::time();
 		if (rank==0) printf("-------------------------------------------------------------------\n");
 		// Compute the walltime per timestep
 		cputime = (stoptime - starttime)/timestep;
@@ -544,9 +545,9 @@ int main(int argc, char **argv)
 		PROFILE_STOP("Main");
 		PROFILE_SAVE("lbpm_color_simulator",1);
 		// ****************************************************
-		MPI_Barrier(comm);
+		comm.barrier();
 	} // Limit scope so variables that contain communicators will free before MPI_Finialize
-        Utilities::shutdown();
+    Utilities::shutdown();
 	return check;
 }
 

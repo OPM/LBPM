@@ -20,7 +20,7 @@
 
 class ScaLBL_StokesModel{
 public:
-	ScaLBL_StokesModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_StokesModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_StokesModel();	
 	
 	// functions in they should be run

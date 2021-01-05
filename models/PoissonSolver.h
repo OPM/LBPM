@@ -21,7 +21,7 @@
 
 class ScaLBL_Poisson{
 public:
-	ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_Poisson();	
 	
 	// functions in they should be run

@@ -17,7 +17,7 @@
 
 class ScaLBL_MRTModel{
 public:
-	ScaLBL_MRTModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_MRTModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_MRTModel();	
 	
 	// functions in they should be run
@@ -63,7 +63,7 @@ public:
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
 private:
-	Utilities::MPI comm;
+    Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];

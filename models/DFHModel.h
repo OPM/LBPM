@@ -18,7 +18,7 @@ Implementation of color lattice boltzmann model
 
 class ScaLBL_DFHModel{
 public:
-	ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_DFHModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_DFHModel();	
 	
 	// functions in they should be run
@@ -66,7 +66,7 @@ public:
     double *Pressure;
 		
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;

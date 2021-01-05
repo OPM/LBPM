@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
     Utilities::shutdown();
 }

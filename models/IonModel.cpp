@@ -6,7 +6,7 @@
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
-ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_IonModel::ScaLBL_IonModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK),nprocs(NP),timestep(0),timestepMax(0),time_conv(0),kb(0),electron_charge(0),T(0),Vt(0),k2_inv(0),h(0),
 tolerance(0),number_ion_species(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),
 fluidVelx_dummy(0),fluidVely_dummy(0),fluidVelz_dummy(0),

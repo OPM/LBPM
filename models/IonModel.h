@@ -22,7 +22,7 @@
 
 class ScaLBL_IonModel{
 public:
-	ScaLBL_IonModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_IonModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_IonModel();	
 	
 	// functions in they should be run

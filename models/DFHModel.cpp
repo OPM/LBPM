@@ -3,7 +3,7 @@ color lattice boltzmann model
  */
 #include "models/DFHModel.h"
 
-ScaLBL_DFHModel::ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_DFHModel::ScaLBL_DFHModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -114,9 +114,9 @@ void ScaLBL_DFHModel::SetDomain(){
 	id = new char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	rank = Dm->rank();
 }
 
@@ -138,7 +138,7 @@ void ScaLBL_DFHModel::ReadInput(){
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-	MPI_Barrier(comm);
+	comm.barrier();
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
@@ -430,7 +430,8 @@ void ScaLBL_DFHModel::Initialize(){
 			}
 		}
 	}
-	MPI_Allreduce(&count_wet,&count_wet_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	count_wet_global=Dm->Comm.sumReduce(  count_wet);
+
 	if (rank==0)	printf("Wetting phase volume fraction =%f \n",count_wet_global/double(Nx*Ny*Nz*nprocs));
 	// initialize phi based on PhaseLabel (include solid component labels)
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
@@ -452,7 +453,7 @@ void ScaLBL_DFHModel::Initialize(){
 				timestep=0;
 			}
 		}
-		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+		//MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 		// Read in the restart file to CPU buffers
 		double *cPhi = new double[Np];
 		double *cDist = new double[19*Np];
@@ -474,7 +475,7 @@ void ScaLBL_DFHModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 		delete [] cPhi;
 		delete [] cDist;
-		MPI_Barrier(comm);
+		comm.barrier();
 	}
 
 	if (rank==0)    printf ("Initializing phase field \n");
@@ -492,7 +493,7 @@ void ScaLBL_DFHModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 	//************ MAIN ITERATION LOOP ***************************************/
@@ -538,7 +539,7 @@ void ScaLBL_DFHModel::Run(){
 		}
 		ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -574,9 +575,9 @@ void ScaLBL_DFHModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 		//************************************************************************
-		MPI_Barrier(comm);
+		comm.barrier();
 		PROFILE_STOP("Update");
 
 		// Run the analysis
@@ -587,7 +588,7 @@ void ScaLBL_DFHModel::Run(){
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep

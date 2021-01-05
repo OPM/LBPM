@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/MRTModel.h"
 
 void ParallelPlates(ScaLBL_MRTModel &MRT){
@@ -47,14 +47,11 @@ void ParallelPlates(ScaLBL_MRTModel &MRT){
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-        Utilities::startup( argc, argv );
+    Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-        int rank = comm.getRank();
-        int nprocs = comm.getSize();
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check=0;
 	{
 		if (rank == 0){
@@ -76,7 +73,7 @@ int main(int argc, char **argv)
 
 		int SIZE=MRT.Np*sizeof(double);
 		ScaLBL_D3Q19_Momentum(MRT.fq,MRT.Velocity, MRT.Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 		ScaLBL_CopyToHost(&Vz[0],&MRT.Velocity[0],3*SIZE);
 		
 		if (rank == 0) printf("Force: %f,%f,%f \n",MRT.Fx,MRT.Fy,MRT.Fz);
@@ -90,7 +87,7 @@ int main(int argc, char **argv)
 		j=Ny/2; k=Nz/2;
 		if (rank == 0) printf("Channel width=%f \n",W);
 		if (rank == 0) printf("ID flag vz       analytical\n");
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		if (rank == 0) {
 			for (i=0;i<Nx;i++){
@@ -128,6 +125,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-        Utilities::shutdown();
+    Utilities::shutdown();
+
 	return check;
 }
