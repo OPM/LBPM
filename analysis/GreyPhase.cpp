@@ -112,27 +112,27 @@ void GreyPhaseAnalysis::Basic(){
 			}
 		}
 	}
-	Oil.M=sumReduce( Dm->Comm, Oil_local.M);
-	Oil.Px=sumReduce( Dm->Comm, Oil_local.Px);
-	Oil.Py=sumReduce( Dm->Comm, Oil_local.Py);
-	Oil.Pz=sumReduce( Dm->Comm, Oil_local.Pz);
-
-	Water.M=sumReduce( Dm->Comm, Water_local.M);
-	Water.Px=sumReduce( Dm->Comm, Water_local.Px);
-	Water.Py=sumReduce( Dm->Comm, Water_local.Py);
-	Water.Pz=sumReduce( Dm->Comm, Water_local.Pz);
+	Oil.M=Dm->Comm.sumReduce(  Oil_local.M);
+	Oil.Px=Dm->Comm.sumReduce(  Oil_local.Px);
+	Oil.Py=Dm->Comm.sumReduce(  Oil_local.Py);
+	Oil.Pz=Dm->Comm.sumReduce(  Oil_local.Pz);
+				
+	Water.M=Dm->Comm.sumReduce(  Water_local.M);
+	Water.Px=Dm->Comm.sumReduce(  Water_local.Px);
+	Water.Py=Dm->Comm.sumReduce(  Water_local.Py);
+	Water.Pz=Dm->Comm.sumReduce(  Water_local.Pz);
 
 
 	//Oil.p /= Oil.M;	
 	//Water.p /= Water.M;
-	count_w=sumReduce( Dm->Comm, count_w);
-	count_n=sumReduce( Dm->Comm, count_n);
+	count_w=Dm->Comm.sumReduce(  count_w);
+	count_n=Dm->Comm.sumReduce(  count_n);
 	if (count_w > 0.0)
-		Water.p=sumReduce( Dm->Comm, Water_local.p) / count_w;
+		Water.p=Dm->Comm.sumReduce(  Water_local.p) / count_w;
 	else 
 		Water.p = 0.0;
 	if (count_n > 0.0)
-		Oil.p=sumReduce( Dm->Comm, Oil_local.p) / count_n;
+		Oil.p=Dm->Comm.sumReduce(  Oil_local.p) / count_n;
 	else 
 		Oil.p = 0.0;
 

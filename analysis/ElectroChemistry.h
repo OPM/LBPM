@@ -22,8 +22,6 @@
 
 class ElectroChemistryAnalyzer{
 public:
-    MPI_Comm comm;
-    int tag;
 	std::shared_ptr <Domain> Dm;
 	double Volume;
 	// input variables

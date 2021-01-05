@@ -5,7 +5,6 @@ ElectroChemistryAnalyzer::ElectroChemistryAnalyzer(std::shared_ptr <Domain> dm):
 	fillData(dm->Comm,dm->rank_info,{dm->Nx-2,dm->Ny-2,dm->Nz-2},{1,1,1},0,1)
 {
 	
-    MPI_Comm_dup(dm->Comm,&comm);
 	Nx=dm->Nx; Ny=dm->Ny; Nz=dm->Nz;
 	Volume=(Nx-2)*(Ny-2)*(Nz-2)*Dm->nprocx()*Dm->nprocy()*Dm->nprocz()*1.0;
 	
@@ -80,9 +79,9 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 				}
 			}
 		}
-		rho_avg_global[ion]=sumReduce( Dm->Comm, rho_avg_local[ion]);
-		rho_mu_avg_global[ion]=sumReduce( Dm->Comm, rho_mu_avg_local[ion]);
-		rho_psi_avg_global[ion]=sumReduce( Dm->Comm, rho_psi_avg_local[ion]);
+		rho_avg_global[ion]=Dm->Comm.sumReduce(  rho_avg_local[ion]);
+		rho_mu_avg_global[ion]=Dm->Comm.sumReduce(  rho_mu_avg_local[ion]);
+		rho_psi_avg_global[ion]=Dm->Comm.sumReduce(  rho_psi_avg_local[ion]);
 		
 		rho_mu_avg_global[ion] /= rho_avg_global[ion];
 		rho_psi_avg_global[ion] /= rho_avg_global[ion];
@@ -100,8 +99,8 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 				}
 			}
 		}
-		rho_mu_fluctuation_global[ion]=sumReduce( Dm->Comm, rho_mu_fluctuation_local[ion]);
-		rho_psi_fluctuation_global[ion]=sumReduce( Dm->Comm, rho_psi_fluctuation_local[ion]);
+		rho_mu_fluctuation_global[ion]=Dm->Comm.sumReduce(  rho_mu_fluctuation_local[ion]);
+		rho_psi_fluctuation_global[ion]=Dm->Comm.sumReduce(  rho_psi_fluctuation_local[ion]);
 	}
 	
 	if (Dm->rank()==0){	
@@ -217,7 +216,7 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     }
     
     if (vis_db->getWithDefault<bool>( "write_silo", true ))
-    	IO::writeData( timestep, visData, comm );
+    	IO::writeData( timestep, visData, Dm->Comm.comm );
 
 /*    if (vis_db->getWithDefault<bool>( "save_8bit_raw", true )){
     	char CurrentIDFilename[40];
