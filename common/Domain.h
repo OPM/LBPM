@@ -170,7 +170,10 @@ public: // Public variables (need to create accessors instead)
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();
+    
+    void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
     void AggregateLabels( const std::string& filename );
+    void AggregateLabels( const std::string& filename, DoubleArray &UserData );
 
 private:
 
