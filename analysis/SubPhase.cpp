@@ -720,7 +720,7 @@ void SubPhase::AggregateLabels( const std::string& filename )
 			}
 		}
 	}
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 
 	Dm->AggregateLabels( filename );
 
