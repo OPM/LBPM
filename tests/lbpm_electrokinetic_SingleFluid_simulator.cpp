@@ -101,13 +101,16 @@ int main(int argc, char **argv)
             
             timestep++;//AA operations
 
+            if (timestep%Study.analysis_interval==0){
+            	Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
+            }
             if (timestep%Study.visualization_interval==0){
             	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
-              /*  PoissonSolver.getElectricPotential(timestep);
+            	/*  PoissonSolver.getElectricPotential(timestep);
                 PoissonSolver.getElectricField(timestep);
                 IonModel.getIonConcentration(timestep);
                 StokesModel.getVelocity(timestep);
-                */
+            	 */
             }
         }
 

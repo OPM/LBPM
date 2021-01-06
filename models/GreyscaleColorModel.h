@@ -1,5 +1,5 @@
 /*
-Implementation of color lattice boltzmann model
+Implementation of two-fluid greyscale color lattice boltzmann model
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,16 +10,15 @@ Implementation of color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
+#include "analysis/GreyPhase.h"
 #include "common/MPI_Helpers.h"
-#include "common/Database.h"
-#include "common/ScaLBL.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
-class ScaLBL_GreyscaleModel{
+class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM);
-	~ScaLBL_GreyscaleModel();	
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
+	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
 	void ReadParams(string filename);
@@ -30,19 +29,15 @@ public:
 	void Initialize();
 	void Run();
 	void WriteDebug();
-	void VelocityField();
 	
 	bool Restart,pBC;
+	bool REVERSE_FLOW_DIRECTION;
 	int timestep,timestepMax;
 	int BoundaryCondition;
-    int CollisionType;
-	double tau;
-    double tau_eff;
-    double Den;//constant density
-	double tolerance;
+	double tauA,tauB,rhoA,rhoB,alpha,beta;
+    double tauA_eff,tauB_eff;
 	double Fx,Fy,Fz,flux;
-	double din,dout;
-    double dp;//solid particle diameter, unit in voxel
+	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
 	
 	int Nx,Ny,Nz,N,Np;
@@ -52,28 +47,29 @@ public:
 	std::shared_ptr<Domain> Dm;   // this domain is for analysis
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
+        std::shared_ptr<GreyPhaseAnalysis> Averages;
     
     // input database
     std::shared_ptr<Database> db;
     std::shared_ptr<Database> domain_db;
-    std::shared_ptr<Database> greyscale_db;
+    std::shared_ptr<Database> greyscaleColor_db;
     std::shared_ptr<Database> analysis_db;
     std::shared_ptr<Database> vis_db;
 
+    IntArray Map;
     signed char *id;    
 	int *NeighborList;
-	double *fq;
-	double *Permeability;//grey voxel permeability
-	double *Porosity;
+	int *dvcMap;
+	double *fq, *Aq, *Bq;
+	double *Den, *Phi;
+    //double *GreySolidPhi; //Model 2 & 3
+    double *GreySolidGrad;//Model 1 & 4
+	//double *ColorGrad;
 	double *Velocity;
-	double *Pressure_dvc;
-    IntArray Map;
-    DoubleArray SignDist;
-    DoubleArray Velocity_x;
-    DoubleArray Velocity_y;
-    DoubleArray Velocity_z;
-    DoubleArray PorosityMap;
-    DoubleArray Pressure;
+	double *Pressure;
+    double *Porosity_dvc;
+    double *Permeability_dvc;
 		
 private:
 	MPI_Comm comm;
@@ -85,7 +81,15 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
    
-    void AssignComponentLabels(double *Porosity, double *Permeablity);
-    void AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm);
+    //int rank,nprocs;
+    void LoadParams(std::shared_ptr<Database> db0);
+    void AssignComponentLabels();
+    void AssignGreySolidLabels();
+    void AssignGreyPoroPermLabels();
+    void ImageInit(std::string filename);
+    double MorphInit(const double beta, const double morph_delta);
+    double SeedPhaseField(const double seed_water_in_oil);
+    double MorphOpenConnected(double target_volume_change);
+    void WriteVisFiles();
 };
 

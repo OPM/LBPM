@@ -246,6 +246,9 @@ private:
 
 };
 
+//void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
+//void ReadFromFile(const std::string& Filename, DoubleArray &Mesh);
+
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np);
 
 void ReadCheckpoint(char *FILENAME, double *cDen, double *cfq, size_t Np);

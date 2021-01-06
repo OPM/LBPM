@@ -63,7 +63,9 @@ public:
 	Minkowski(std::shared_ptr <Domain> Dm);
 	~Minkowski();
 	void MeasureObject();
+	void MeasureObject(double factor, const DoubleArray &Phi);
 	int MeasureConnectedPathway();
+	int MeasureConnectedPathway(double factor, const DoubleArray &Phi);
 	void ComputeScalar(const DoubleArray& Field, const double isovalue);
 
 	void PrintAll();
