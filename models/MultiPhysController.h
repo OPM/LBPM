@@ -13,7 +13,7 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 

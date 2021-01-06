@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/ColorModel.h"
 
 std::shared_ptr<Database> loadInputs( int nprocs )

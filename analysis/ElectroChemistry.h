@@ -8,7 +8,7 @@
 #include <vector>
 #include "common/Domain.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "analysis/distance.h"

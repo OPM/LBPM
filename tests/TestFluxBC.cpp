@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 

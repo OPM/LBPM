@@ -8,7 +8,7 @@
 #include <fstream>
 
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/ColorModel.h"
 
 inline void InitializeBubble(ScaLBL_ColorModel &ColorModel, double BubbleRadius){

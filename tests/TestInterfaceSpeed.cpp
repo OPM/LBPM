@@ -21,7 +21,8 @@ int main (int argc, char *argv[])
     Utilities::startup( argc, argv );
     Utilities::MPI comm( MPI_COMM_WORLD );
     int rank = comm.getRank();
-
+    int toReturn = 0;
+    {
     // Load inputs
 	string FILENAME = argv[1];
     // Load inputs
@@ -114,7 +115,6 @@ int main (int argc, char *argv[])
 	printf("-------------------------------- \n");	
 	//.........................................................................	
 	
-	int toReturn = 0;
 	if (fabs(Averages->awn - 2*PI*RADIUS*RADIUS)/(2*PI*RADIUS*RADIUS) > 0.02){
 		toReturn = 1;
 		printf("TestCylinderArea.cpp: error tolerance exceeded for wn area \n");
@@ -144,9 +144,8 @@ int main (int argc, char *argv[])
 		toReturn = 7;
 	}
 
-	return toReturn;
-
 	comm.barrier();
-	return 0;
-    Utilities::shutdown();
+    }
+        Utilities::shutdown();
+	return toReturn;
 }

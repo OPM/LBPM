@@ -6,7 +6,7 @@
 #include <array>
 
 #include "common/Array.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 
 

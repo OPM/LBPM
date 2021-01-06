@@ -12,7 +12,7 @@ Implementation of color lattice boltzmann model
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
