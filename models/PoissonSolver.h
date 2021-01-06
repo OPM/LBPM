@@ -32,8 +32,8 @@ public:
 	void SetDomain();
 	void ReadInput();
 	void Create();
-	void Initialize();
-	void Run(double *ChargeDensity);
+	void Initialize(double time_conv_from_Study);
+	void Run(double *ChargeDensity,int timestep_from_Study);
     void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
     void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y, DoubleArray &Values_z);
@@ -101,8 +101,8 @@ private:
     void AssignSolidBoundary(double *poisson_solid);
     void Potential_Init(double *psi_init);
     void ElectricField_LB_to_Phys(DoubleArray &Efield_reg);
-    void SolveElectricPotentialAAodd();
-    void SolveElectricPotentialAAeven();
+    void SolveElectricPotentialAAodd(int timestep_from_Study);
+    void SolveElectricPotentialAAeven(int timestep_from_Study);
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);

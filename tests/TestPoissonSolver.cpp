@@ -64,17 +64,18 @@ int main(int argc, char **argv)
         PoissonSolver.DummyChargeDensity();   
 
         if (PoissonSolver.TestPeriodic==true){
-            if (rank==0) printf("Testing periodic voltage input is enabled. Total test time is %.3g[s], saving data every %.3g[s];
-                                 user-specified time resolution is %.3g[s/lt]\n",
+            if (rank==0) printf("Testing periodic voltage input is enabled. Total test time is %.3g[s], saving data every %.3g[s]; user-specified time resolution is %.3g[s/lt]\n",
                                 PoissonSolver.TestPeriodicTime,PoissonSolver.TestPeriodicSaveInterval,PoissonSolver.TestPeriodicTimeConv);
             int timestep = 0;
-            while (timestep<(PoissonSolver.TestPeriodicTime/PoissonSolver.TestPeriodicTimeConv)){
+            int timeMax = int(PoissonSolver.TestPeriodicTime/PoissonSolver.TestPeriodicTimeConv);
+            int timeSave = int(PoissonSolver.TestPeriodicSaveInterval/PoissonSolver.TestPeriodicTimeConv);
+            while (timestep<timeMax){
                 timestep++;
                 PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,timestep);
-                if (timestep%(PoissonSolver.TestPeriodicSaveInterval/PoissonSolver.TestPeriodicTimeConv)==0){
+                if (timestep%timeSave==0){
                     if (rank==0) printf("   Time = %.3g[s]; saving electric potential and field\n",timestep*PoissonSolver.TestPeriodicTimeConv);
-                    PoissonSolver.getElectricPotential_debug(timestep*PoissonSolver.TestPeriodicTimeConv);
-                    PoissonSolver.getElectricField_debug(timestep*PoissonSolver.TestPeriodicTimeConv);
+                    PoissonSolver.getElectricPotential_debug(timestep);
+                    PoissonSolver.getElectricField_debug(timestep);
                 }
             }
         }

@@ -139,8 +139,17 @@ void ScaLBL_Poisson::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
-	Dm->BoundaryCondition = BoundaryCondition;
-	Mask->BoundaryCondition = BoundaryCondition;
+    if (BoundaryConditionInlet==0 && BoundaryConditionOutlet==0){
+        Dm->BoundaryCondition   = 0;
+        Mask->BoundaryCondition = 0;
+    }
+    else if (BoundaryConditionInlet>0 && BoundaryConditionOutlet>0){
+        Dm->BoundaryCondition   = 1;
+        Mask->BoundaryCondition = 1;
+    }
+    else {//i.e. non-periodic and periodic BCs are mixed
+        ERROR("Error: check the type of inlet and outlet boundary condition! Mixed periodic and non-periodic BCs are found!\n");
+    }
 	Dm->CommInit();
 	MPI_Barrier(comm);
 	
@@ -378,7 +387,7 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 if (electric_db->keyExists( "Vin" )){
                     Vin = electric_db->getScalar<double>( "Vin" );
                 }
-                if (rank==0) printf("LB-Poisson Solver: inlet boundary; fixed electric potential Vin = %.3g \n",Vin);
+                if (rank==0) printf("LB-Poisson Solver: inlet boundary; fixed electric potential Vin = %.3g [V]\n",Vin);
                 break;
             case 2:
                 if (electric_db->keyExists( "Vin0" )){//voltage amplitude; unit: Volt
@@ -398,12 +407,12 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 }
                 if (rank==0){
                     if (Vin_Type==1){
-                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Sin[2*pi*%.3g*(t+%.3g)] \n",Vin,freqIn,t0_In);
-                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin,freqIn,t0_In);
+                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Sin[2*pi*%.3g*(t+%.3g)] [V]\n",Vin0,freqIn,t0_In);
+                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin0,freqIn,t0_In);
                     }
                     else if (Vin_Type==2){
-                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Cos[2*pi*%.3g*(t+%.3g)] \n",Vin,freqIn,t0_In);
-                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin,freqIn,t0_In);
+                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Cos[2*pi*%.3g*(t+%.3g)] [V] \n",Vin0,freqIn,t0_In);
+                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin0,freqIn,t0_In);
                     } 
                 } 
                 break;
@@ -415,7 +424,7 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 if (electric_db->keyExists( "Vout" )){
                     Vout = electric_db->getScalar<double>( "Vout" );
                 }
-                if (rank==0) printf("LB-Poisson Solver: outlet boundary; fixed electric potential Vin = %.3g \n",Vout);
+                if (rank==0) printf("LB-Poisson Solver: outlet boundary; fixed electric potential Vout = %.3g [V] \n",Vout);
                 break;
             case 2:
                 if (electric_db->keyExists( "Vout0" )){//voltage amplitude; unit: Volt
@@ -435,12 +444,12 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
                 }
                 if (rank==0){
                     if (Vout_Type==1){
-                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Sin[2*pi*%.3g*(t+%.3g)] \n",Vout,freqOut,t0_Out);
-                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout,freqOut,t0_Out);
+                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Sin[2*pi*%.3g*(t+%.3g)] [V]\n",Vout0,freqOut,t0_Out);
+                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout0,freqOut,t0_Out);
                     }
                     else if (Vout_Type==2){
-                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Cos[2*pi*%.3g*(t+%.3g)] \n",Vout,freqOut,t0_Out);
-                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout,freqOut,t0_Out);
+                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Cos[2*pi*%.3g*(t+%.3g)] [V]\n",Vout0,freqOut,t0_Out);
+                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout0,freqOut,t0_Out);
                     } 
                 } 
                 break;
@@ -489,7 +498,7 @@ void ScaLBL_Poisson::Initialize(double time_conv_from_Study){
     double *psi_host;
     psi_host = new double [Nx*Ny*Nz];
     time_conv = time_conv_from_Study;
-    AssignSolidBoundary(psi_host,time_conv);//step1
+    AssignSolidBoundary(psi_host);//step1
     Potential_Init(psi_host);//step2
 	ScaLBL_CopyToDevice(Psi, psi_host, Nx*Ny*Nz*sizeof(double));
 	ScaLBL_DeviceBarrier();
