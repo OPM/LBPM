@@ -492,11 +492,10 @@ int main(int argc, char **argv)
 	// ***** MPI STUFF ****************
 	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
@@ -805,8 +804,13 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
+<<<<<<< HEAD
+	comm.barrier();
+	Utilities::shutdown();
+=======
 	MPI_Barrier(comm);
 	MPI_Finalize();
+>>>>>>> electrokinetic
 	// ****************************************************
 
 	return check;

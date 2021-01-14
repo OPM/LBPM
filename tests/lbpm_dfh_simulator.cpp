@@ -24,14 +24,13 @@ using namespace std;
 int main(int argc, char **argv)
 {
   // Initialize MPI
-  int provided_thread_support = -1;
-  MPI_Init_thread(&argc,&argv,MPI_THREAD_MULTIPLE,&provided_thread_support);
-  MPI_Comm comm;
-  MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-  int rank = comm_rank(comm);
-  int nprocs = comm_size(comm);
-  if ( rank==0 && provided_thread_support<MPI_THREAD_MULTIPLE )
-    std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+  Utilities::startup( argc, argv );
+  Utilities::MPI comm( MPI_COMM_WORLD );
+  int rank = comm.getRank();
+  int nprocs = comm.getSize();
+  auto thread_support = Utilities::MPI::queryThreadSupport();
+  if ( rank==0 && thread_support != Utilities::MPI::ThreadSupport::MULTIPLE )
+  std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
 	if (rank == 0){
@@ -59,10 +58,9 @@ int main(int argc, char **argv)
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_color_simulator",1);
 	// ****************************************************
-	MPI_Barrier(comm);
+	comm.barrier();
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
-  MPI_Comm_free(&comm);
-  MPI_Finalize();
+    Utilities::shutdown();
 }
 
 

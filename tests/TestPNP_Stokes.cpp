@@ -21,25 +21,25 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-    // Initialize MPI and error handlers
+	// Initialize MPI
     Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 
     { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
-        MPI_Comm comm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-        int rank = comm_rank(comm);
-        int nprocs = comm_size(comm);
 
         if (rank == 0){
             printf("********************************************************\n");
             printf("Running Test for LB-Poisson-Ion Coupling \n");
             printf("********************************************************\n");
         }
-        // Initialize compute device
-        ScaLBL_SetDevice(rank);
-        ScaLBL_DeviceBarrier();
-        MPI_Barrier(comm);
+		// Initialize compute device
+		int device=ScaLBL_SetDevice(rank);
+        NULL_USE( device );
+		ScaLBL_DeviceBarrier();
+		comm.barrier();
 
         PROFILE_ENABLE(1);
         //PROFILE_ENABLE_TRACE();
@@ -107,10 +107,10 @@ int main(int argc, char **argv)
             }
         }
 
-        PoissonSolver.getElectricPotential(timestep);
-        PoissonSolver.getElectricField(timestep);
-        IonModel.getIonConcentration(timestep);
-        StokesModel.getVelocity(timestep);
+        PoissonSolver.getElectricPotential_debug(timestep);
+        PoissonSolver.getElectricField_debug(timestep);
+        IonModel.getIonConcentration_debug(timestep);
+        StokesModel.getVelocity_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");
@@ -118,9 +118,7 @@ int main(int argc, char **argv)
         PROFILE_STOP("Main");
         PROFILE_SAVE("TestPNP_Stokes",1);
         // ****************************************************
-        
-        MPI_Barrier(comm);
-        MPI_Comm_free(&comm);
+
 
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
 

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <math.h>
 #include <time.h>
 #include <exception>
@@ -12,7 +13,7 @@
 
 #include "common/Array.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Database.h"
 
@@ -63,7 +64,7 @@ private:
 class Domain{
 public:
     //! Default constructor
-    Domain( std::shared_ptr<Database> db, MPI_Comm Communicator);
+    Domain( std::shared_ptr<Database> db, const Utilities::MPI& Communicator);
 
     //! Obsolete constructor
     Domain( int nx, int ny, int nz, int rnk, int npx, int npy, int npz, 
@@ -116,11 +117,9 @@ public: // Public variables (need to create accessors instead)
     double porosity;
     RankInfoStruct rank_info;
 
-    MPI_Comm Comm;        // MPI Communicator for this domain
+    Utilities::MPI Comm;        // MPI Communicator for this domain
 
     int BoundaryCondition;
-
-    MPI_Group Group;    // Group of processors associated with this domain
 
     //**********************************
     // MPI ranks for all 18 neighbors
@@ -157,31 +156,22 @@ public: // Public variables (need to create accessors instead)
     // Get the actual D3Q19 communication counts (based on location of solid phase)
     // Discrete velocity set symmetry implies the sendcount = recvcount
     //......................................................................................
-    int sendCount_x, sendCount_y, sendCount_z, sendCount_X, sendCount_Y, sendCount_Z;
-    int sendCount_xy, sendCount_yz, sendCount_xz, sendCount_Xy, sendCount_Yz, sendCount_xZ;
-    int sendCount_xY, sendCount_yZ, sendCount_Xz, sendCount_XY, sendCount_YZ, sendCount_XZ;
-    //......................................................................................
-    int *sendList_x, *sendList_y, *sendList_z, *sendList_X, *sendList_Y, *sendList_Z;
-    int *sendList_xy, *sendList_yz, *sendList_xz, *sendList_Xy, *sendList_Yz, *sendList_xZ;
-    int *sendList_xY, *sendList_yZ, *sendList_Xz, *sendList_XY, *sendList_YZ, *sendList_XZ;
-    //......................................................................................
-    int recvCount_x, recvCount_y, recvCount_z, recvCount_X, recvCount_Y, recvCount_Z;
-    int recvCount_xy, recvCount_yz, recvCount_xz, recvCount_Xy, recvCount_Yz, recvCount_xZ;
-    int recvCount_xY, recvCount_yZ, recvCount_Xz, recvCount_XY, recvCount_YZ, recvCount_XZ;
-    //......................................................................................
-    int *recvList_x, *recvList_y, *recvList_z, *recvList_X, *recvList_Y, *recvList_Z;
-    int *recvList_xy, *recvList_yz, *recvList_xz, *recvList_Xy, *recvList_Yz, *recvList_xZ;
-    int *recvList_xY, *recvList_yZ, *recvList_Xz, *recvList_XY, *recvList_YZ, *recvList_XZ;
+    inline int recvCount( const char* dir ) const { return getRecvList( dir ).size(); }
+    inline int sendCount( const char* dir ) const { return getSendList( dir ).size(); }
+    inline const int* recvList( const char* dir ) const { return getRecvList( dir ).data(); }
+    inline const int* sendList( const char* dir ) const { return getSendList( dir ).data(); }
+
     //......................................................................................    
     // Solid indicator function
-    signed char *id;
+    std::vector<signed char> id;
 
     void ReadIDs();
     void Decomp( const std::string& filename );
-    void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 
     int PoreCount();
+    
+    void ReadFromFile(const std::string& Filename,const std::string& Datatype, double *UserData);
     void AggregateLabels( const std::string& filename );
     void AggregateLabels( const std::string& filename, DoubleArray &UserData );
 
@@ -193,22 +183,18 @@ private:
     
 	//......................................................................................
 	MPI_Request req1[18], req2[18];
-	MPI_Status stat1[18],stat2[18];
+    //......................................................................................
+    std::vector<int> sendList_x, sendList_y, sendList_z, sendList_X, sendList_Y, sendList_Z;
+    std::vector<int> sendList_xy, sendList_yz, sendList_xz, sendList_Xy, sendList_Yz, sendList_xZ;
+    std::vector<int> sendList_xY, sendList_yZ, sendList_Xz, sendList_XY, sendList_YZ, sendList_XZ;
+    //......................................................................................
+    std::vector<int> recvList_x, recvList_y, recvList_z, recvList_X, recvList_Y, recvList_Z;
+    std::vector<int> recvList_xy, recvList_yz, recvList_xz, recvList_Xy, recvList_Yz, recvList_xZ;
+    std::vector<int> recvList_xY, recvList_yZ, recvList_Xz, recvList_XY, recvList_YZ, recvList_XZ;
+    //......................................................................................
+    const std::vector<int>& getRecvList( const char* dir ) const;
+    const std::vector<int>& getSendList( const char* dir ) const;
 
-    int *sendBuf_x, *sendBuf_y, *sendBuf_z, *sendBuf_X, *sendBuf_Y, *sendBuf_Z;
-    int *sendBuf_xy, *sendBuf_yz, *sendBuf_xz, *sendBuf_Xy, *sendBuf_Yz, *sendBuf_xZ;
-    int *sendBuf_xY, *sendBuf_yZ, *sendBuf_Xz, *sendBuf_XY, *sendBuf_YZ, *sendBuf_XZ;
-    //......................................................................................
-    int *recvBuf_x, *recvBuf_y, *recvBuf_z, *recvBuf_X, *recvBuf_Y, *recvBuf_Z;
-    int *recvBuf_xy, *recvBuf_yz, *recvBuf_xz, *recvBuf_Xy, *recvBuf_Yz, *recvBuf_xZ;
-    int *recvBuf_xY, *recvBuf_yZ, *recvBuf_Xz, *recvBuf_XY, *recvBuf_YZ, *recvBuf_XZ;
-    //......................................................................................
-    double *sendData_x, *sendData_y, *sendData_z, *sendData_X, *sendData_Y, *sendData_Z;
-    double *sendData_xy, *sendData_yz, *sendData_xz, *sendData_Xy, *sendData_Yz, *sendData_xZ;
-    double *sendData_xY, *sendData_yZ, *sendData_Xz, *sendData_XY, *sendData_YZ, *sendData_XZ;
-    double *recvData_x, *recvData_y, *recvData_z, *recvData_X, *recvData_Y, *recvData_Z;
-    double *recvData_xy, *recvData_yz, *recvData_xz, *recvData_Xy, *recvData_Yz, *recvData_xZ;
-    double *recvData_xY, *recvData_yZ, *recvData_Xz, *recvData_XY, *recvData_YZ, *recvData_XZ;
 };
 
 

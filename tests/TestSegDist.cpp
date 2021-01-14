@@ -39,11 +39,10 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    int rank, nprocs;
-    MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
     {
 
 
@@ -98,13 +97,13 @@ int main(int argc, char **argv)
         }
     }
 
-    MPI_Barrier(comm);
+    comm.barrier();
     if (rank==0) printf("Initialized! Converting to Signed Distance function \n");
 
-    double t1 = MPI_Wtime();
+    double t1 = Utilities::MPI::time();
     DoubleArray Distance(nx,ny,nz);
     CalcDist(Distance,id,Dm,{false,false,false});
-    double t2 = MPI_Wtime();
+    double t2 = Utilities::MPI::time();
     if (rank==0)
         printf("Total time: %f seconds \n",t2-t1);
 
@@ -116,7 +115,7 @@ int main(int argc, char **argv)
             }
         }
     }
-    err = sumReduce( Dm.Comm, err );
+    err = Dm.Comm.sumReduce( err );
     err = sqrt( err / (nx*ny*nz*nprocs) );
     if (rank==0)
         printf("Mean error %0.4f \n", err);
@@ -142,8 +141,7 @@ int main(int argc, char **argv)
     IO::writeData( "testSegDist", data, MPI_COMM_WORLD );
 
     }
-    MPI_Barrier(comm);
-    MPI_Finalize();
+    Utilities::shutdown();
     return 0;
 
 }

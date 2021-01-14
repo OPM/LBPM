@@ -4,8 +4,13 @@
 ADD_LBPM_EXECUTABLE( lbpm_color_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_permeability_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_greyscale_simulator )
+<<<<<<< HEAD
 ADD_LBPM_EXECUTABLE( lbpm_greyscaleColor_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_SingleFluid_simulator )
+=======
+ADD_LBPM_EXECUTABLE( lbpm_electrokinetic_SingleFluid_simulator )
+ADD_LBPM_EXECUTABLE( lbpm_greyscaleColor_simulator )
+>>>>>>> FOM
 #ADD_LBPM_EXECUTABLE( lbpm_BGK_simulator )
 #ADD_LBPM_EXECUTABLE( lbpm_color_macro_simulator )
 ADD_LBPM_EXECUTABLE( lbpm_dfh_simulator )
@@ -41,6 +46,7 @@ ADD_LBPM_EXECUTABLE( TestPoissonSolver )
 ADD_LBPM_EXECUTABLE( TestIonModel )
 ADD_LBPM_EXECUTABLE( TestNernstPlanck )
 ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
+
 
 
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
@@ -88,6 +94,7 @@ ENDIF()
 
 # Sample test that will run with 1, 2, and 4 processors, failing with 4 or more procs
 ADD_LBPM_TEST_1_2_4( hello_world )
+ADD_LBPM_TEST_1_2_4( test_MPI )
 ADD_LBPM_TEST( TestColorBubble ../example/Bubble/input.db)
 ADD_LBPM_TEST( TestColorSquareTube ../example/Bubble/input.db)
 

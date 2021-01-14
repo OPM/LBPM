@@ -4,8 +4,7 @@
 #include "models/MRTModel.h"
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
-
-ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_MRTModel::ScaLBL_MRTModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -86,9 +85,9 @@ void ScaLBL_MRTModel::SetDomain(){
 	
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -116,7 +115,7 @@ void ScaLBL_MRTModel::ReadInput(){
     	ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
     	fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
     	Array<signed char> id_view;
-    	id_view.viewRaw( size1, Mask->id );
+    	id_view.viewRaw( size1, Mask->id.data() );
     	fill.copy( input_id, id_view );
     	fill.fill( id_view );
     }
@@ -173,8 +172,9 @@ void ScaLBL_MRTModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
-	MPI_Barrier(comm);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	comm.barrier();
+
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
 	//...........................................................................
@@ -193,7 +193,7 @@ void ScaLBL_MRTModel::Create(){
 	if (rank==0)    printf ("Setting up device map and neighbor list \n");
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
-	MPI_Barrier(comm);
+	comm.barrier();
 	
 }        
 
@@ -228,7 +228,7 @@ void ScaLBL_MRTModel::Run(){
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_DeviceBarrier(); comm.barrier();
 	starttime = MPI_Wtime();
 	if (rank==0) printf("Beginning AA timesteps, timestepMax = %i \n", timestepMax);
 	if (rank==0) printf("********************************************************\n");
@@ -255,7 +255,7 @@ void ScaLBL_MRTModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_MRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
@@ -274,12 +274,12 @@ void ScaLBL_MRTModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 		//************************************************************************/
 		
 		if (timestep%1000==0){
 			ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_DeviceBarrier(); comm.barrier();
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -300,11 +300,11 @@ void ScaLBL_MRTModel::Run(){
 						}
 					}
 				}
-			}
-			MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			}		
+			vax=Dm->Comm.sumReduce( vax_loc);
+			vay=Dm->Comm.sumReduce( vay_loc);
+			vaz=Dm->Comm.sumReduce( vaz_loc);
+			count=Dm->Comm.sumReduce( count_loc);
 			
 			vax /= count;
 			vay /= count;
@@ -334,10 +334,11 @@ void ScaLBL_MRTModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs=sumReduce( Dm->Comm, Vs);
-			As=sumReduce( Dm->Comm, As);
-			Hs=sumReduce( Dm->Comm, Hs);
-			Xs=sumReduce( Dm->Comm, Xs);
+			Vs=Dm->Comm.sumReduce( Vs);
+			As=Dm->Comm.sumReduce( As);
+			Hs=Dm->Comm.sumReduce( Hs);
+			Xs=Dm->Comm.sumReduce( Xs);
+
 			double h = Dm->voxel_length;
 			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			if (rank==0) {
@@ -371,7 +372,7 @@ void ScaLBL_MRTModel::VelocityField(){
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_DeviceBarrier(); comm.barrier();
 	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));

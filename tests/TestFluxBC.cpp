@@ -1,5 +1,5 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
@@ -17,10 +17,10 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 
 int main (int argc, char **argv)
 {
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	int rank = MPI_WORLD_RANK();
-	int nprocs = MPI_WORLD_SIZE();
+        Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 
 	// set the error code
 	// Note: the error code should be consistent across all processors
@@ -88,8 +88,8 @@ int main (int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 
-		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
-		MPI_Barrier(comm);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
+		comm.barrier();
 
 		//......................device distributions.................................
 		int dist_mem_size = Np*sizeof(double);
@@ -149,7 +149,7 @@ int main (int argc, char **argv)
     	double *VEL;
     	VEL= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
-    	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+ 	ScaLBL_Comm->Barrier();
     	ScaLBL_CopyToHost(&VEL[0],&dvc_vel[0],SIZE);
 
     	double Q = 0.f;    	
@@ -192,7 +192,8 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		    	ScaLBL_Comm->Barrier();
+
 			timestep++;
 
 			ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -201,7 +202,7 @@ int main (int argc, char **argv)
 			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
 			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
 			ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->next, Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		    	ScaLBL_Comm->Barrier();
 			timestep++;
 			//************************************************************************/
 
@@ -265,7 +266,6 @@ int main (int argc, char **argv)
 
 	}
 	// Finished
-	MPI_Barrier(comm);
-	MPI_Finalize();
-    return error; 
+        Utilities::shutdown();
+        return error; 
 }

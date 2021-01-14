@@ -13,7 +13,7 @@ void DeleteArray( const TYPE *p )
     delete [] p;
 }
 
-ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_GreyscaleModel::ScaLBL_GreyscaleModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),tau_eff(0),Den(0),Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
@@ -121,9 +121,9 @@ void ScaLBL_GreyscaleModel::SetDomain(){
 
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -267,7 +267,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
 	for (unsigned int idx=0; idx<NLABELS; idx++){
@@ -291,6 +291,56 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	}
 }
 
+void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm)
+{
+    double *Porosity_host, *Permeability_host;
+    Porosity_host = new double[N];
+    Permeability_host = new double[N];
+	double POROSITY=0.f;
+	double PERMEABILITY=0.f;
+    //Initialize a weighted porosity after considering grey voxels
+    double GreyPorosity_loc=0.0;
+    GreyPorosity=0.0;
+    //double label_count_loc = 0.0;
+    //double label_count_glb = 0.0;
+
+    Mask->ReadFromFile(File_poro[0],File_poro[1],Porosity_host);
+    Mask->ReadFromFile(File_perm[0],File_perm[1],Permeability_host);
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int idx = Map(i,j,k);
+				if (!(idx < 0)){
+				    int n = k*Nx*Ny+j*Nx+i;
+                    POROSITY = Porosity_host[n];
+                    PERMEABILITY = Permeability_host[n];
+                    if (POROSITY<=0.0){
+                        ERROR("Error: Porosity for grey voxels must be 0.0 < Porosity <= 1.0 !\n");
+                    }
+                    else if (PERMEABILITY<=0.0){
+                        ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
+                    }
+                    else{
+                        Porosity[idx] = POROSITY;
+                        Permeability[idx] = PERMEABILITY;
+                        GreyPorosity_loc += POROSITY;
+                        //label_count_loc += 1.0;
+                    }
+                }
+			}
+		}
+	}
+    GreyPorosity = Dm->Comm.sumReduce(  GreyPorosity_loc);
+    GreyPorosity = GreyPorosity/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+
+	if (rank==0){
+        printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
+        printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
+	}
+    delete [] Porosity_host;
+    delete [] Permeability_host;
+}
 
 void ScaLBL_GreyscaleModel::Create(){
 	/*
@@ -316,8 +366,8 @@ void ScaLBL_GreyscaleModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
-	MPI_Barrier(comm);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	comm.barrier();
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -344,7 +394,19 @@ void ScaLBL_GreyscaleModel::Create(){
 	double *Poros, *Perm;
 	Poros = new double[Np];
 	Perm  = new double[Np];
-	AssignComponentLabels(Poros,Perm);
+    if (greyscale_db->keyExists("FileVoxelPorosityMap")){
+        //NOTE: FileVoxel**Map is a vector, including "file_name, datatype"
+		auto File_poro = greyscale_db->getVector<std::string>( "FileVoxelPorosityMap" );
+		auto File_perm = greyscale_db->getVector<std::string>( "FileVoxelPermeabilityMap" );
+	    AssignComponentLabels(Poros,Perm,File_poro,File_perm);
+    }
+    else if (greyscale_db->keyExists("PorosityList")){
+        //initialize voxel porosity and perm from the input list
+	    AssignComponentLabels(Poros,Perm);
+    }
+    else {
+		ERROR("Error: PorosityList or FilenameVoxelPorosityMap cannot be found! \n");
+    }
 	ScaLBL_CopyToDevice(Porosity, Poros, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
     delete [] Poros;
@@ -392,7 +454,7 @@ void ScaLBL_GreyscaleModel::Initialize(){
 		ScaLBL_CopyToDevice(fq,cfq.get(),19*Np*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
-		MPI_Barrier(comm);
+		comm.barrier();
 	}
 }
 
@@ -425,7 +487,7 @@ void ScaLBL_GreyscaleModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 	
@@ -478,7 +540,7 @@ void ScaLBL_GreyscaleModel::Run(){
 		            ScaLBL_D3Q19_AAodd_Greyscale_IMRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
         }
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
@@ -518,7 +580,7 @@ void ScaLBL_GreyscaleModel::Run(){
 		            ScaLBL_D3Q19_AAeven_Greyscale_IMRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx, rlx_eff, Fx, Fy, Fz,Porosity,Permeability,Velocity,Den,Pressure_dvc);
                     break;
         }
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_DeviceBarrier(); comm.barrier();
 		//************************************************************************/
 		
 		if (timestep%analysis_interval==0){
@@ -587,10 +649,10 @@ void ScaLBL_GreyscaleModel::Run(){
 					}
 				}
 			}
-            vax = sumReduce( Mask->Comm, vax_loc);
-            vay = sumReduce( Mask->Comm, vay_loc);
-            vaz = sumReduce( Mask->Comm, vaz_loc);
-            count = sumReduce( Mask->Comm, count_loc);
+	    vax  = Dm->Comm.sumReduce(  vax_loc);
+	    vay  = Dm->Comm.sumReduce(  vay_loc);
+	    vaz  = Dm->Comm.sumReduce(  vaz_loc);
+	    count  = Dm->Comm.sumReduce(  count_loc);
 
 			vax /= count;
 			vay /= count;
@@ -621,10 +683,10 @@ void ScaLBL_GreyscaleModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs = sumReduce( Dm->Comm, Vs);
-			As = sumReduce( Dm->Comm, As);
-			Hs = sumReduce( Dm->Comm, Hs);
-			Xs = sumReduce( Dm->Comm, Xs);
+			Vs = Dm->Comm.sumReduce(  Vs);
+			As = Dm->Comm.sumReduce(  As);
+			Hs = Dm->Comm.sumReduce(  Hs);
+			Xs = Dm->Comm.sumReduce(  Xs);
 
 			double h = Dm->voxel_length;
 			//double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
@@ -673,7 +735,7 @@ void ScaLBL_GreyscaleModel::Run(){
             RESTARTFILE=fopen(LocalRestartFile,"wb");
             fwrite(cfq.get(),sizeof(double),19*Np,RESTARTFILE);
             fclose(RESTARTFILE);
-		    MPI_Barrier(comm);
+		    comm.barrier();
         }
 	}
 
@@ -681,7 +743,7 @@ void ScaLBL_GreyscaleModel::Run(){
 	PROFILE_SAVE("lbpm_greyscale_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier();
 	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
@@ -704,7 +766,7 @@ void ScaLBL_GreyscaleModel::VelocityField(){
 /*	Minkowski Morphology(Mask);
 	int SIZE=Np*sizeof(double);
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_DeviceBarrier(); comm.barrier();
 	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
 
 	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));

@@ -3,6 +3,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/stat.h>
 #include <iostream>
 #include <exception>
@@ -11,13 +12,16 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
+#ifndef ScaLBL_POISSON_INC
+#define ScaLBL_POISSON_INC
+
 class ScaLBL_Poisson{
 public:
-	ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_Poisson();	
 	
 	// functions in they should be run
@@ -28,9 +32,9 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *ChargeDensity);
-    void getElectricPotential(int timestep);
+    void getElectricPotential(DoubleArray &ReturnValues);
     void getElectricPotential_debug(int timestep);
-    void getElectricField(int timestep);
+    void getElectricField(DoubleArray &Values_x, DoubleArray &Values_y, DoubleArray &Values_z);
     void getElectricField_debug(int timestep);
     void DummyChargeDensity();//for debugging
 
@@ -45,6 +49,7 @@ public:
     double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;
     double Vin, Vout;
     double chargeDen_dummy;//for debugging
+    bool WriteLog;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -72,13 +77,14 @@ public:
     double *ChargeDensityDummy;// for debugging
 
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
     char LocalRestartFile[40];
     char OutputFilename[200];
+	FILE *TIMELOG;
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
@@ -90,5 +96,7 @@ private:
     //void SolveElectricField();
     void SolvePoissonAAodd(double *ChargeDensity);
     void SolvePoissonAAeven(double *ChargeDensity);
+    void getConvergenceLog(int timestep,double error);
     
 };
+#endif

@@ -13,13 +13,13 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
 class ScaLBL_Multiphys_Controller{
 public:
-	ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_Multiphys_Controller();	
 	
 	void ReadParams(string filename);
@@ -44,7 +44,7 @@ public:
     std::shared_ptr<Database> study_db;
 
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];

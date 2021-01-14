@@ -119,12 +119,10 @@ inline void ReadFromRank(char *FILENAME, DoubleArray &Phase, DoubleArray &Pressu
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
-
+	Utilities::startup( argc, argv );
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	printf("----------------------------------------------------------\n");
 	printf("COMPUTING TCAT ANALYSIS FOR NON-WETTING PHASE FEATURES \n");
 	printf("----------------------------------------------------------\n");
@@ -433,8 +431,8 @@ int main(int argc, char **argv)
 	fclose(DISTANCE);
 	*/
 	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
+	comm.barrier();
+	Utilities::shutdown();
 	// ****************************************************
 }
 

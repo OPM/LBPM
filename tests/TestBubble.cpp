@@ -991,7 +991,6 @@ int main(int argc, char **argv)
     // ****************************************************
     MPI_Barrier(comm);
   } // Limit scope so variables that contain communicators will free before MPI_Finialize
-  MPI_Comm_free(&comm);
-  MPI_Finalize();
+  Utilities::shutdown();
   return 0;
 }

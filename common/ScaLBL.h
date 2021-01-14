@@ -70,6 +70,49 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
+// ION TRANSPORT MODEL
+
+extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np);
+
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                      double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
+extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
+
+// LBM Poisson solver
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,
+        int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,
+        int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList,int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+//maybe deprecated
+//extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
+//        int strideY, int strideZ,int start, int finish, int Np);
+
+// LBM Stokes Model (adapted from MRT model)
+
+extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_MRT(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz,
                                               double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
@@ -78,12 +121,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 // ION TRANSPORT MODEL
@@ -129,6 +172,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, do
 
 extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
                 double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np);
+
+extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np);
 
 // MRT MODEL
 extern "C" void ScaLBL_D3Q19_AAeven_MRT(double *dist, int start, int finish, int Np, double rlx_setA, double rlx_setB, double Fx,
@@ -231,6 +276,14 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(int *d_neighborList, in
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+
 class ScaLBL_Communicator{
 public:
 	//......................................................................................
@@ -239,7 +292,6 @@ public:
 	//ScaLBL_Communicator(Domain &Dm, IntArray &Map);
 	~ScaLBL_Communicator();
 	//......................................................................................
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;
 	int n_bb_d3q7, n_bb_d3q19; 
@@ -266,6 +318,10 @@ public:
 	int LastInterior();
 	
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
+	void Barrier(){
+		ScaLBL_DeviceBarrier();
+		MPI_COMM_SCALBL.barrier();
+	};
 	void SendD3Q19AA(double *dist);
 	void RecvD3Q19AA(double *dist);
 	void SendD3Q7AA(double *fq, int Component);
@@ -282,31 +338,31 @@ public:
     void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
     void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
 
-	// Routines to set boundary conditions
-	void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
-	void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);
-	void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
-	void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
-	void D3Q19_Reflection_BC_z(double *fq);
-	void D3Q19_Reflection_BC_Z(double *fq);
-	double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
-	void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
-	void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
+    // Routines to set boundary conditions
+    void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
+    void Color_BC_Z(int *Map, double *Phi, double *Den, double vA, double vB);
+    void D3Q19_Pressure_BC_z(int *neighborList, double *fq, double din, int time);
+    void D3Q19_Pressure_BC_Z(int *neighborList, double *fq, double dout, int time);
+    void D3Q19_Reflection_BC_z(double *fq);
+    void D3Q19_Reflection_BC_Z(double *fq);
+    double D3Q19_Flux_BC_z(int *neighborList, double *fq, double flux, int time);
+    void D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
+    void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
+    void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
+    void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
+    void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
+    void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
+    void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
+    void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
     void GreyscaleSC_Pressure_BC_Z(int *neighborList, double *fqA, double *fqB, double doutA, double doutB, int time);
-	void D3Q7_Poisson_Potential_BC_z(int *neighborList, double *fq, double Vin, int time);
-	void D3Q7_Poisson_Potential_BC_Z(int *neighborList, double *fq, double Vout, int time);
-	void Poisson_D3Q7_BC_z(int *Map, double *Psi, double Vin);
-	void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
-	void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
-	void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
-
-	// Debugging and unit testing functions
-	void PrintD3Q19();
+    // Debugging and unit testing functions
+    void PrintD3Q19();
 
 private:
-	//void D3Q19_MapRecv_OLD(int q, int Cqx, int Cqy, int Cqz, int *list,  int start, int count, int *d3q19_recvlist);
-	void D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, int *list,  int start, int count, int *d3q19_recvlist);
+	void D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *list,  int start, int count, int *d3q19_recvlist);
 
 	bool Lock; 	// use Lock to make sure only one call at a time to protect data in transit
 	// only one set of Send requests can be active at any time (per instance)
@@ -317,9 +373,8 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	MPI_Group Group;	// Group of processors associated with this domain
+	Utilities::MPI MPI_COMM_SCALBL;		// MPI Communicator for this domain
 	MPI_Request req1[18],req2[18];
-	MPI_Status stat1[18],stat2[18];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................

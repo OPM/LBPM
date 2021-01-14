@@ -31,7 +31,7 @@ using StackTrace::Utilities::sleep_s;
  * \param argc              argc from main
  * \param argv              argv from main
  */
-void startup( int argc, char **argv );
+void startup( int argc, char **argv, bool multiple=true );
 
 /*!
  * \brief Stop MPI, error handlers

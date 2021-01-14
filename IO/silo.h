@@ -6,7 +6,7 @@
 #include <array>
 
 #include "common/Array.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 
 
@@ -30,7 +30,7 @@ enum class VariableDataType { DOUBLE, FLOAT, INT, UNKNOWN };
 
 /*!
  * @brief  Open silo file
- * @detailed  This function opens a silo file
+ * @details  This function opens a silo file
  * @param[in] filename      File to open
  * @param[in] mode          Open the file for reading or writing
  * @return This function returns a handle to the file
@@ -40,7 +40,7 @@ DBfile* open( const std::string& filename, FileMode mode );
 
 /*!
  * @brief  Close silo file
- * @detailed  This function closes a silo file
+ * @details  This function closes a silo file
  * @param[in] fid           Handle to the open file
 */
 void close( DBfile* fid );
@@ -48,7 +48,7 @@ void close( DBfile* fid );
 
 /*!
  * @brief  Get the variable type
- * @detailed  This function returns the type of variable data
+ * @details  This function returns the type of variable data
  * @param[in] fid           Handle to the open file
  * @param[in] name          Name of variable
 */
@@ -57,7 +57,7 @@ VariableDataType varDataType( DBfile *dbfile, const std::string& name );
 
 /*!
  * @brief  Write data to silo
- * @detailed  This function writes an arbitrary array to silo
+ * @details  This function writes an arbitrary array to silo
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Variable name
  * @param[in] data          Data to write
@@ -68,7 +68,7 @@ void write( DBfile* fid, const std::string& varname, const std::vector<TYPE>& da
 
 /*!
  * @brief  Write data to silo
- * @detailed  This function writes an arbitrary array to silo
+ * @details  This function writes an arbitrary array to silo
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Variable name
  * @return                  Data read
@@ -79,7 +79,7 @@ std::vector<TYPE> read( DBfile* fid, const std::string& varname );
 
 /*!
  * @brief  Write a uniform grid
- * @detailed  This function writes a uniform grid to silo as a Quadmesh
+ * @details  This function writes a uniform grid to silo as a Quadmesh
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] range         Range of mesh { xmin, xmax, ymin, ymax, zmin, zmax }
@@ -92,7 +92,7 @@ void writeUniformMesh( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Read a uniform grid
- * @detailed  This function reads a uniform grid from silo
+ * @details  This function reads a uniform grid from silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[out] range         Range of mesh { xmin, xmax, ymin, ymax, zmin, zmax }
@@ -104,7 +104,7 @@ void readUniformMesh( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Write a uniform grid variable
- * @detailed  This function writes a uniform grid variable to silo as a Quadmesh
+ * @details  This function writes a uniform grid variable to silo as a Quadmesh
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] N             Number of cells in each direction
@@ -119,7 +119,7 @@ void writeUniformMeshVariable( DBfile* fid, const std::string& meshname, const s
 
 /*!
  * @brief  Read a uniform mesh grid variable
- * @detailed  This function read a uniform mesh variable to silo
+ * @details  This function read a uniform mesh variable to silo
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Variable name
  * @return                  Variable data
@@ -130,7 +130,7 @@ Array<TYPE> readUniformMeshVariable( DBfile* fid, const std::string& varname );
 
 /*!
  * @brief  Write a pointmesh
- * @detailed  This function writes a pointmesh to silo
+ * @details  This function writes a pointmesh to silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] ndim          Number of dimensions
@@ -144,7 +144,7 @@ void writePointMesh( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Read a pointmesh
- * @detailed  This function reads a pointmesh from silo
+ * @details  This function reads a pointmesh from silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @return                  Returns the coordinates as a N x ndim array 
@@ -155,7 +155,7 @@ Array<TYPE> readPointMesh( DBfile* fid, const std::string& meshname );
 
 /*!
  * @brief  Write a pointmesh grid variable
- * @detailed  This function writes a pointmesh variable to silo
+ * @details  This function writes a pointmesh variable to silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] varname       Variable name
@@ -168,7 +168,7 @@ void writePointMeshVariable( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Read a pointmesh grid variable
- * @detailed  This function reads a pointmesh variable from silo
+ * @details  This function reads a pointmesh variable from silo
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Variable name
  * @return                  Variable data
@@ -179,7 +179,7 @@ Array<TYPE> readPointMeshVariable( DBfile* fid, const std::string& varname );
 
 /*!
  * @brief  Write a triangle mesh
- * @detailed  This function writes a triangle (or simplex) based mesh to silo
+ * @details  This function writes a triangle (or simplex) based mesh to silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] ndim          Number of dimensions for the coordinates
@@ -196,7 +196,7 @@ void writeTriMesh( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Read a triangle mesh
- * @detailed  This function reads a triangle (or simplex) based mesh to silo
+ * @details  This function reads a triangle (or simplex) based mesh to silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] coords        Coordinates of the points
@@ -208,8 +208,9 @@ void readTriMesh( DBfile* fid, const std::string& meshname, Array<TYPE>& coords,
 
 /*!
  * @brief  Write a triangle mesh grid variable
- * @detailed  This function writes a triangle mesh variable to silo
+ * @details  This function writes a triangle mesh variable to silo
  * @param[in] fid           Handle to the open file
+ * @param[in] ndim          Number of dimensions
  * @param[in] meshname      Mesh name
  * @param[in] varname       Variable name
  * @param[in] data          Variable data
@@ -222,7 +223,7 @@ void writeTriMeshVariable( DBfile* fid, int ndim, const std::string& meshname,
 
 /*!
  * @brief  Read a triangle mesh grid variable
- * @detailed  This function read a triangle mesh variable to silo
+ * @details  This function read a triangle mesh variable to silo
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Variable name
  * @return                  Variable data
@@ -233,7 +234,7 @@ Array<TYPE> readTriMeshVariable( DBfile* fid, const std::string& varname );
 
 /*!
  * @brief  Write a multimesh
- * @detailed  This function writes a multimesh to silo
+ * @details  This function writes a multimesh to silo
  * @param[in] fid           Handle to the open file
  * @param[in] meshname      Mesh name
  * @param[in] subMeshNames  Names of the sub meshes in the form "filename:meshname"
@@ -246,7 +247,7 @@ void writeMultiMesh( DBfile* fid, const std::string& meshname,
 
 /*!
  * @brief  Write a multivariable
- * @detailed  This function writes a multivariable to silo
+ * @details  This function writes a multivariable to silo
  * @return This function returns a handle to the file
  * @param[in] fid           Handle to the open file
  * @param[in] varname       Mesh name

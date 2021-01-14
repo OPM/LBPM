@@ -94,8 +94,9 @@ void load( const std::string& filename )
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
-    int rank = comm_rank(MPI_COMM_WORLD);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    const int rank = comm.getRank();
     UnitTest ut;
     PROFILE_START("Main");
 
@@ -114,8 +115,8 @@ int main(int argc, char **argv)
     PROFILE_SAVE("TestNetcdf");
 
     // Close MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
+    comm.barrier();
+    Utilities::shutdown();
     return N_errors;
 }
 

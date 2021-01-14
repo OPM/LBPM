@@ -1,6 +1,6 @@
 #include "models/MultiPhysController.h"
 
-ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK),nprocs(NP),Restart(0),timestepMax(0),num_iter_Stokes(0),num_iter_Ion(0),
 analysis_interval(0),visualization_interval(0),tolerance(0),comm(COMM)
 {

@@ -3,7 +3,7 @@
 #include "analysis/analysis.h"
 #include "common/Array.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/ScaLBL.h"
 #include "models/ColorModel.h"
 
@@ -462,7 +462,7 @@ private:
 /******************************************************************
  *  MPI comm wrapper for use with analysis                         *
  ******************************************************************/
-runAnalysis::commWrapper::commWrapper( int tag_, MPI_Comm comm_, runAnalysis* analysis_ ):
+runAnalysis::commWrapper::commWrapper( int tag_, const Utilities::MPI& comm_, runAnalysis* analysis_ ):
             comm(comm_),
             tag(tag_),
             analysis(analysis_)
@@ -479,7 +479,7 @@ runAnalysis::commWrapper::~commWrapper()
 {
     if ( tag == -1 )
         return;
-    MPI_Barrier( comm );
+    comm.barrier();
     analysis->d_comm_used[tag] = false;
 }
 runAnalysis::commWrapper runAnalysis::getComm( )
@@ -496,10 +496,10 @@ runAnalysis::commWrapper runAnalysis::getComm( )
         if ( tag == -1 )
             ERROR("Unable to get comm");
     }
-    MPI_Bcast( &tag, 1, MPI_INT, 0, d_comm );
+    tag = d_comm.bcast( tag, 0 );
     d_comm_used[tag] = true;
-    if ( d_comms[tag] == MPI_COMM_NULL )
-        MPI_Comm_dup( MPI_COMM_WORLD, &d_comms[tag] );
+    if ( d_comms[tag].isNull() )
+        d_comms[tag] = d_comm.dup();
     return commWrapper(tag,d_comms[tag],this);
 }
 
@@ -507,14 +507,19 @@ runAnalysis::commWrapper runAnalysis::getComm( )
 /******************************************************************
  *  Constructor/Destructors                                        *
  ******************************************************************/
-runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruct& rank_info, std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr <Domain> Dm,
-        int Np, bool Regular, IntArray Map ):
-            d_Np( Np ),
-            d_regular ( Regular),
-            d_rank_info( rank_info ),
-            d_Map( Map ),
-            d_fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1),
-            d_ScaLBL_Comm( ScaLBL_Comm)
+runAnalysis::runAnalysis( std::shared_ptr<Database> input_db,
+                          const RankInfoStruct& rank_info,
+                          std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm,
+                          std::shared_ptr<Domain> Dm,
+                          int Np,
+                          bool Regular,
+                          IntArray Map ):
+    d_Np( Np ),
+    d_regular ( Regular),
+    d_rank_info( rank_info ),
+    d_Map( Map ),
+    d_comm( Dm->Comm.dup() ),
+    d_ScaLBL_Comm( ScaLBL_Comm)
 {
 
 	auto db = input_db->getDatabase( "Analysis" );
@@ -529,6 +534,9 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
 
     char rankString[20];
     sprintf(rankString,"%05d",Dm->rank());
+    d_n[0] = Dm->Nx-2;
+    d_n[1] = Dm->Ny-2;
+    d_n[2] = Dm->Nz-2;
     d_N[0] = Dm->Nx;
     d_N[1] = Dm->Ny;
     d_N[2] = Dm->Nz;
@@ -552,7 +560,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     d_restartFile = restart_file + "." + rankString;
     
     
-    d_rank = MPI_WORLD_RANK();
+    d_rank = d_comm.getRank();
     writeIDMap(ID_map_struct(),0,id_map_filename);
     // Initialize IO for silo
     IO::initialize("","silo","false");
@@ -560,7 +568,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
     d_meshData.resize(1);
 
     d_meshData[0].meshName = "domain";
-    d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
+    d_meshData[0].mesh = std::make_shared<IO::DomainMesh>( d_rank_info,d_n[0],d_n[1],d_n[2],Dm->Lx,Dm->Ly,Dm->Lz );
     auto PhaseVar = std::make_shared<IO::Variable>();
     auto PressVar = std::make_shared<IO::Variable>();
     auto VxVar = std::make_shared<IO::Variable>();
@@ -573,7 +581,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
         PhaseVar->name = "phase";
         PhaseVar->type = IO::VariableType::VolumeVariable;
         PhaseVar->dim = 1;
-        PhaseVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        PhaseVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(PhaseVar);
     }
 
@@ -581,7 +589,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
         PressVar->name = "Pressure";
         PressVar->type = IO::VariableType::VolumeVariable;
         PressVar->dim = 1;
-        PressVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        PressVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(PressVar);
     }
 
@@ -589,17 +597,17 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
         VxVar->name = "Velocity_x";
         VxVar->type = IO::VariableType::VolumeVariable;
         VxVar->dim = 1;
-        VxVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        VxVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(VxVar);
         VyVar->name = "Velocity_y";
         VyVar->type = IO::VariableType::VolumeVariable;
         VyVar->dim = 1;
-        VyVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        VyVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(VyVar);
         VzVar->name = "Velocity_z";
         VzVar->type = IO::VariableType::VolumeVariable;
         VzVar->dim = 1;
-        VzVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        VzVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(VzVar);
     }
 
@@ -607,7 +615,7 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
         SignDistVar->name = "SignDist";
         SignDistVar->type = IO::VariableType::VolumeVariable;
         SignDistVar->dim = 1;
-        SignDistVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        SignDistVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(SignDistVar);
     }
 
@@ -615,17 +623,14 @@ runAnalysis::runAnalysis(std::shared_ptr<Database> input_db, const RankInfoStruc
         BlobIDVar->name = "BlobID";
         BlobIDVar->type = IO::VariableType::VolumeVariable;
         BlobIDVar->dim = 1;
-        BlobIDVar->data.resize(Dm->Nx-2,Dm->Ny-2,Dm->Nz-2);
+        BlobIDVar->data.resize(d_n[0],d_n[1],d_n[2]);
         d_meshData[0].vars.push_back(BlobIDVar);
     }
     
 
     // Initialize the comms
-    MPI_Comm_dup(MPI_COMM_WORLD,&d_comm);
-    for (int i=0; i<1024; i++) {
-        d_comms[i] = MPI_COMM_NULL;
+    for (int i=0; i<1024; i++)
         d_comm_used[i] = false;
-    }
     // Initialize the threads
     int N_threads = db->getWithDefault<int>( "N_threads", 4 );
     auto method = db->getWithDefault<std::string>( "load_balance", "default" );
@@ -635,12 +640,6 @@ runAnalysis::~runAnalysis( )
 {
     // Finish processing analysis
     finish();
-    // Clear internal data
-    MPI_Comm_free( &d_comm );
-    for (int i=0; i<1024; i++) {
-        if ( d_comms[i] != MPI_COMM_NULL )
-            MPI_Comm_free(&d_comms[i]);
-    }
 }
 void runAnalysis::finish( )
 {
@@ -654,7 +653,7 @@ void runAnalysis::finish( )
     d_wait_subphase.reset();
     d_wait_restart.reset();
     // Syncronize
-    MPI_Barrier( d_comm );
+    d_comm.barrier();
     PROFILE_STOP("finish");
 }
 
@@ -677,15 +676,15 @@ void runAnalysis::createThreads( const std::string& method, int N_threads )
     if ( method == "none" )
         return;
     // Check if we have thread support
-    int thread_support;
-    MPI_Query_thread( &thread_support );
-    if ( thread_support < MPI_THREAD_MULTIPLE ) {
-        std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
-        return;
-    }
+    auto thread_support = Utilities::MPI::queryThreadSupport();
+    if ( thread_support != Utilities::MPI::ThreadSupport::MULTIPLE && N_threads > 0 )
+        std::cerr << "Warning: Failed to start MPI with necessary thread support, errors may occur\n";
     // Create the threads
     const auto cores = d_tpool.getProcessAffinity();
-    if ( cores.empty() ) {
+    if ( N_threads == 0 ) {
+        // Special case to serials the analysis for debugging
+        d_tpool.setNumThreads( 0 );
+    } else if ( cores.empty() ) {
         // We were not able to get the cores for the process
         d_tpool.setNumThreads( N_threads );
     } else if ( method == "default" ) {
@@ -907,12 +906,12 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
     // Spawn a thread to write the restart file
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
-    	auto Restart_db = input_db->cloneDatabase();
-	//	Restart_db->putScalar<bool>( "Restart", true );
+
     	if (d_rank==0) {
-	  //	std::ofstream OutStream("Restart.db");
-	  //	Restart_db->print(OutStream, "");
-	  //	OutStream.close();
+    		input_db->putScalar<bool>( "Restart", true );
+    		std::ofstream OutStream("Restart.db");
+    		input_db->print(OutStream, "");
+    		OutStream.close();
     	}
     	// Write the restart file (using a seperate thread)
         auto work = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
@@ -924,7 +923,9 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
     //    if ( matches(type,AnalysisType::CreateRestart) ) {
     if (timestep%d_restart_interval==0){
         // Write the vis files
-        auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, d_fillData, getComm() );
+        commWrapper comm = getComm();
+        fillHalo<double> fillData( comm.comm, d_rank_info, d_n, {1,1,1}, 0, 1 );
+        auto work = new WriteVisWorkItem( timestep, d_meshData, Averages, fillData, std::move( comm ) );
         work->add_dependency(d_wait_blobID);
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_vis);
@@ -1009,26 +1010,28 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     	cfq = std::shared_ptr<double>(new double[19*d_Np],DeleteArray<double>);
     	ScaLBL_CopyToHost(cfq.get(),fq,19*d_Np*sizeof(double));
     	ScaLBL_CopyToHost(cDen.get(),Den,2*d_Np*sizeof(double));
-    	// clone the input database to avoid modifying shared data
-    	auto Restart_db = input_db->cloneDatabase();
-    	auto tmp_color_db =  Restart_db->getDatabase( "Color" );
-    	tmp_color_db->putScalar<int>("timestep",timestep);    		
-    	tmp_color_db->putScalar<bool>( "Restart", true );
-    	Restart_db->putDatabase("Color", tmp_color_db);
+
     	if (d_rank==0) {
+    		color_db->putScalar<int>("timestep",timestep);    		
+    		color_db->putScalar<bool>( "Restart", true );
+    		input_db->putDatabase("Color", color_db);
     		std::ofstream OutStream("Restart.db");
-    		Restart_db->print(OutStream, "");
+    		input_db->print(OutStream, "");
     		OutStream.close();
+  
     	}
     	// Write the restart file (using a seperate thread)
     	auto work1 = new WriteRestartWorkItem(d_restartFile.c_str(),cDen,cfq,d_Np);
     	work1->add_dependency(d_wait_restart);
     	d_wait_restart = d_tpool.add_work(work1);
+
     }
     
     if (timestep%d_visualization_interval==0){
         // Write the vis files
-         auto work = new IOWorkItem( timestep, input_db, d_meshData, Averages, d_fillData, getComm() );
+        commWrapper comm = getComm();
+        fillHalo<double> fillData( comm.comm, d_rank_info, d_n, {1,1,1}, 0, 1 );
+        auto work = new IOWorkItem( timestep, input_db, d_meshData, Averages, fillData, std::move( comm ) );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
         work->add_dependency(d_wait_vis);
@@ -1061,7 +1064,9 @@ void runAnalysis::WriteVisData(int timestep, std::shared_ptr<Database> input_db,
     PROFILE_START("write vis",1);
 
     // if (Averages.WriteVis == true){
-    auto work2 = new IOWorkItem(timestep, input_db, d_meshData, Averages, d_fillData, getComm() );
+    commWrapper comm = getComm();
+    fillHalo<double> fillData( comm.comm, d_rank_info, d_n, {1,1,1}, 0, 1 );
+    auto work2 = new IOWorkItem(timestep, input_db, d_meshData, Averages, fillData, std::move( comm ) );
     work2->add_dependency(d_wait_vis);
     d_wait_vis = d_tpool.add_work(work2);
 
