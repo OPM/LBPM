@@ -804,13 +804,8 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-<<<<<<< HEAD
 	comm.barrier();
 	Utilities::shutdown();
-=======
-	MPI_Barrier(comm);
-	MPI_Finalize();
->>>>>>> electrokinetic
 	// ****************************************************
 
 	return check;

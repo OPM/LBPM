@@ -9,7 +9,7 @@ color lattice boltzmann model
 #include <stdlib.h>
 #include <time.h>
 
-ScaLBL_FreeLeeModel::ScaLBL_FreeLeeModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_FreeLeeModel::ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),W(0),gamma(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -107,9 +107,9 @@ void ScaLBL_FreeLeeModel::SetDomain(){
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 
-	MPI_Barrier(comm);
+	comm.barrier()
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier()
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -206,8 +206,8 @@ void ScaLBL_FreeLeeModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,2);
-	MPI_Barrier(comm);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,2);
+	comm.barrier()
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -335,7 +335,7 @@ void ScaLBL_FreeLeeModel::Initialize(){
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
-		MPI_Barrier(comm);
+		comm.barrier()
 	}
 
 	if (rank==0)	printf ("Initializing phase field \n");
@@ -371,7 +371,7 @@ void ScaLBL_FreeLeeModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
+	comm.barrier()
 	starttime = MPI_Wtime();
 	//.........................................
 

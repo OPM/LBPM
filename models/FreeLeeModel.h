@@ -18,7 +18,7 @@ Implementation of Lee et al JCP 2016 lattice boltzmann model
 
 class ScaLBL_FreeLeeModel{
 public:
-	ScaLBL_FreeLeeModel(int RANK, int NP, MPI_Comm COMM);
+  ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_FreeLeeModel();	
 	
 	// functions in they should be run
@@ -70,7 +70,7 @@ public:
 	DoubleArray SignDist;
 		
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;
