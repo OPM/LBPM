@@ -6,7 +6,7 @@
 
 //Model-1 & 4
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
+		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -512,6 +512,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
+            //Pressure[n] = rho/3.f/porosity;
+            Pressure[n] = rho/3.f;
 
 			//........................................................................
 			//..............carry out relaxation process..............................
@@ -767,7 +769,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Ma
 
 //Model-1 & 4
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
+        double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -1217,6 +1219,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
+            //Pressure[n] = rho/3.f/porosity;
+            Pressure[n] = rho/3.f;
 
 			//........................................................................
 			//..............carry out relaxation process..............................
@@ -1443,6 +1447,37 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 	}
 }
 
+__global__ void dvc_ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	int idx;
+	double nA,nB;
+
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		idx =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+		if (idx<finish) {
+
+			nA = Den[idx];
+			nB = Den[Np+idx];
+
+			Aq[idx]=0.3333333333333333*nA;
+			Aq[Np+idx]=0.1111111111111111*nA;
+			Aq[2*Np+idx]=0.1111111111111111*nA;
+			Aq[3*Np+idx]=0.1111111111111111*nA;
+			Aq[4*Np+idx]=0.1111111111111111*nA;
+			Aq[5*Np+idx]=0.1111111111111111*nA;
+			Aq[6*Np+idx]=0.1111111111111111*nA;
+
+			Bq[idx]=0.3333333333333333*nB;
+			Bq[Np+idx]=0.1111111111111111*nB;
+			Bq[2*Np+idx]=0.1111111111111111*nB;
+			Bq[3*Np+idx]=0.1111111111111111*nB;
+			Bq[4*Np+idx]=0.1111111111111111*nB;
+			Bq[5*Np+idx]=0.1111111111111111*nB;
+			Bq[6*Np+idx]=0.1111111111111111*nB;
+		}
+	}
+}
 ////Model-2&3
 //__global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 //		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, 
@@ -2918,14 +2953,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 
 //Model-1 & 4
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	//cudaProfilerStart();
 	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor, cudaFuncCachePreferL1);
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, 
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, Pressure,
             rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2937,14 +2972,15 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 
 //Model-1 & 4
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
 	//cudaProfilerStart();
 	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor, cudaFuncCachePreferL1);
 	
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel, 
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel,Pressure,
+
 			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
@@ -2954,6 +2990,13 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map,
 	//cudaProfilerStop();
 }
 
+extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
+	dvc_ScaLBL_PhaseField_InitFromRestart<<<NBLOCKS,NTHREADS >>>(Den, Aq, Bq, start, finish, Np); 
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_PhaseField_InitFromRestart: %s \n",cudaGetErrorString(err));
+	}
+}
 ////Model-2&3
 //extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
 //        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 

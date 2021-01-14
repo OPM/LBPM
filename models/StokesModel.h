@@ -1,6 +1,9 @@
 /*
  * Multi-relaxation time LBM Model
  */
+#ifndef ScaLBL_StokesModel_INC
+#define ScaLBL_StokesModel_INC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -31,7 +34,7 @@ public:
 	void Run();
 	void Run_Lite(double *ChargeDensity, double *ElectricField);
 	void VelocityField();
-    void getVelocity(int timestep);
+    void getVelocity(DoubleArray &Velx, DoubleArray &Vel_y, DoubleArray &Vel_z);
     void getVelocity_debug(int timestep);
     double CalVelocityConvergence(double& flow_rate_previous,double *ChargeDensity, double *ElectricField);
 	
@@ -69,7 +72,6 @@ public:
     double *Pressure;
     
     //Minkowski Morphology;
-		
     DoubleArray Velocity_x;
     DoubleArray Velocity_y;
     DoubleArray Velocity_z;
@@ -87,3 +89,4 @@ private:
     void Velocity_LB_to_Phys(DoubleArray &Vel_reg);
     vector<double> computeElectricForceAvg(double *ChargeDensity, double *ElectricField);
 };
+#endif

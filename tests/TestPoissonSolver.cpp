@@ -53,14 +53,37 @@ int main(int argc, char **argv)
         PoissonSolver.SetDomain();    
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
-        PoissonSolver.Initialize();   
+        if (PoissonSolver.TestPeriodic==true){
+            PoissonSolver.Initialize(PoissonSolver.TestPeriodicTimeConv);   
+        }
+        else {
+            PoissonSolver.Initialize(0);   
+        }
 
         //Initialize dummy charge density for test
         PoissonSolver.DummyChargeDensity();   
 
-        PoissonSolver.Run(PoissonSolver.ChargeDensityDummy);
-        PoissonSolver.getElectricPotential(1);
-        PoissonSolver.getElectricField(1);
+        if (PoissonSolver.TestPeriodic==true){
+            if (rank==0) printf("Testing periodic voltage input is enabled. Total test time is %.3g[s], saving data every %.3g[s]; user-specified time resolution is %.3g[s/lt]\n",
+                                PoissonSolver.TestPeriodicTime,PoissonSolver.TestPeriodicSaveInterval,PoissonSolver.TestPeriodicTimeConv);
+            int timestep = 0;
+            int timeMax = int(PoissonSolver.TestPeriodicTime/PoissonSolver.TestPeriodicTimeConv);
+            int timeSave = int(PoissonSolver.TestPeriodicSaveInterval/PoissonSolver.TestPeriodicTimeConv);
+            while (timestep<timeMax){
+                timestep++;
+                PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,timestep);
+                if (timestep%timeSave==0){
+                    if (rank==0) printf("   Time = %.3g[s]; saving electric potential and field\n",timestep*PoissonSolver.TestPeriodicTimeConv);
+                    PoissonSolver.getElectricPotential_debug(timestep);
+                    PoissonSolver.getElectricField_debug(timestep);
+                }
+            }
+        }
+        else {
+            PoissonSolver.Run(PoissonSolver.ChargeDensityDummy,1);
+            PoissonSolver.getElectricPotential_debug(1);
+            PoissonSolver.getElectricField_debug(1);
+        }
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

@@ -10,8 +10,7 @@ Implementation of two-fluid greyscale color lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "analysis/TwoPhase.h"
-#include "analysis/runAnalysis.h"
+#include "analysis/GreyPhase.h"
 #include "common/MPI_Helpers.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
@@ -40,7 +39,6 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
-    bool greyMode;//run greyColor model if true
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -50,8 +48,7 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-    //std::shared_ptr<TwoPhase> Averages;
-    std::shared_ptr<SubPhase> Averages;
+        std::shared_ptr<GreyPhaseAnalysis> Averages;
     
     // input database
     std::shared_ptr<Database> db;
@@ -89,9 +86,10 @@ private:
     void AssignComponentLabels();
     void AssignGreySolidLabels();
     void AssignGreyPoroPermLabels();
-    double ImageInit(std::string filename);
+    void ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
     double MorphOpenConnected(double target_volume_change);
+    void WriteVisFiles();
 };
 

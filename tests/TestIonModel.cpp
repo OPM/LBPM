@@ -76,7 +76,7 @@ int main(int argc, char **argv)
                 error = IonModel.CalIonDenConvergence(ci_avg_previous);
             }
         }
-        IonModel.getIonConcentration(timestep);
+        IonModel.getIonConcentration_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

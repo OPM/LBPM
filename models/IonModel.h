@@ -1,6 +1,10 @@
 /*
  * Ion transporte LB Model
  */
+
+#ifndef ScaLBL_IonModel_INC
+#define ScaLBL_IonModel_INC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -30,7 +34,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
-    void getIonConcentration(int timestep);
+    void getIonConcentration(DoubleArray &IonConcentration, const int ic);
     void getIonConcentration_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
@@ -39,7 +43,6 @@ public:
 	//bool Restart,pBC;
 	int timestep;
     vector<int> timestepMax;
-	int BoundaryCondition;
 	int BoundaryConditionSolid;
     double h;//domain resolution, unit [um/lu]
     double kb,electron_charge,T,Vt;
@@ -49,11 +52,13 @@ public:
     double Ex_dummy,Ey_dummy,Ez_dummy;
 	
 	int number_ion_species;
+	vector<int> BoundaryConditionInlet;
+	vector<int> BoundaryConditionOutlet;
     vector<double> IonDiffusivity;//User input unit [m^2/sec]
     vector<int> IonValence;
     vector<double> IonConcentration;//unit [mol/m^3]
-    vector<double> Cin;//unit [mol/m^3]
-    vector<double> Cout;//unit [mol/m^3]
+    vector<double> Cin;//inlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
+    vector<double> Cout;//outlet boundary value, can be either concentration [mol/m^3] or flux [mol/m^2/sec]
 	vector<double> tau;
 	vector<double> time_conv;
 	
@@ -94,3 +99,4 @@ private:
     void AssignIonConcentration_FromFile(double *Ci,const vector<std::string> &File_ion);
     void IonConcentration_LB_to_Phys(DoubleArray &Den_reg);
 };
+#endif

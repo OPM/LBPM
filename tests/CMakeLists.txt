@@ -43,6 +43,7 @@ ADD_LBPM_EXECUTABLE( TestNernstPlanck )
 ADD_LBPM_EXECUTABLE( TestPNP_Stokes )
 
 
+
 CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_DIR}/cylindertest ${CMAKE_CURRENT_BINARY_DIR}/cylindertest COPYONLY )
 
 # Add the tests

@@ -8,8 +8,11 @@
 ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, MPI_Comm COMM):
 rank(RANK), nprocs(NP),timestep(0),timestepMax(0),tau(0),k2_inv(0),tolerance(0),h(0),
 epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),Vin(0),Vout(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),analysis_interval(0),
-chargeDen_dummy(0),
-nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+chargeDen_dummy(0),WriteLog(0),nprocx(0),nprocy(0),nprocz(0),
+BoundaryConditionInlet(0),BoundaryConditionOutlet(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),
+Vin0(0),freqIn(0),t0_In(0),Vin_Type(0),Vout0(0),freqOut(0),t0_Out(0),Vout_Type(0),
+TestPeriodic(0),TestPeriodicTime(0),TestPeriodicTimeConv(0),TestPeriodicSaveInterval(0),   
+comm(COMM)
 {
 
 }
@@ -33,9 +36,12 @@ void ScaLBL_Poisson::ReadParams(string filename){
     epsilonR = 78.4;//default dielectric constant of water
     epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
     analysis_interval = 1000; 
-    Vin  = 1.0; //Boundary-z (inlet)  electric potential
-    Vout = 1.0; //Boundary-Z (outlet) electric potential
     chargeDen_dummy = 1.0e-3;//For debugging;unit=[C/m^3]
+    WriteLog = false;
+    TestPeriodic = false;
+    TestPeriodicTime = 1.0;//unit: [sec]
+    TestPeriodicTimeConv = 0.01; //unit [sec/lt]
+    TestPeriodicSaveInterval = 0.1; //unit [sec]
 
 	// LB-Poisson Model parameters
 	if (electric_db->keyExists( "timestepMax" )){
@@ -53,6 +59,21 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (electric_db->keyExists( "DummyChargeDen" )){
 		chargeDen_dummy = electric_db->getScalar<double>( "DummyChargeDen" );
 	}
+	if (electric_db->keyExists( "WriteLog" )){
+		WriteLog = electric_db->getScalar<bool>( "WriteLog" );
+	}
+	if (electric_db->keyExists( "TestPeriodic" )){
+		TestPeriodic = electric_db->getScalar<bool>( "TestPeriodic" );
+	}
+	if (electric_db->keyExists( "TestPeriodicTime" )){
+		TestPeriodicTime = electric_db->getScalar<double>( "TestPeriodicTime" );
+	}
+	if (electric_db->keyExists( "TestPeriodicTimeConv" )){
+		TestPeriodicTimeConv = electric_db->getScalar<double>( "TestPeriodicTimeConv" );
+	}
+	if (electric_db->keyExists( "TestPeriodicSaveInterval" )){
+		TestPeriodicSaveInterval = electric_db->getScalar<double>( "TestPeriodicSaveInterval" );
+	}
 
     // Read solid boundary condition specific to Poisson equation
     BoundaryConditionSolid = 1;
@@ -61,10 +82,15 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	}
     // Read boundary condition for electric potential
     // BC = 0: normal periodic BC
-    // BC = 1: fixed inlet and outlet potential
-    BoundaryCondition = 0;
-	if (electric_db->keyExists( "BC" )){
-		BoundaryCondition = electric_db->getScalar<int>( "BC" );
+    // BC = 1: fixed electric potential
+    // BC = 2: sine/cosine periodic electric potential (need extra input parameters)
+    BoundaryConditionInlet = 0;
+    BoundaryConditionOutlet = 0;
+	if (electric_db->keyExists( "BC_Inlet" )){
+		BoundaryConditionInlet = electric_db->getScalar<int>( "BC_Inlet" );
+	}
+	if (electric_db->keyExists( "BC_Outlet" )){
+		BoundaryConditionOutlet = electric_db->getScalar<int>( "BC_Outlet" );
 	}
 
 	// Read domain parameters
@@ -113,8 +139,17 @@ void ScaLBL_Poisson::SetDomain(){
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
 	MPI_Barrier(comm);
-	Dm->BoundaryCondition = BoundaryCondition;
-	Mask->BoundaryCondition = BoundaryCondition;
+    if (BoundaryConditionInlet==0 && BoundaryConditionOutlet==0){
+        Dm->BoundaryCondition   = 0;
+        Mask->BoundaryCondition = 0;
+    }
+    else if (BoundaryConditionInlet>0 && BoundaryConditionOutlet>0){
+        Dm->BoundaryCondition   = 1;
+        Mask->BoundaryCondition = 1;
+    }
+    else {//i.e. non-periodic and periodic BCs are mixed
+        ERROR("Error: check the type of inlet and outlet boundary condition! Mixed periodic and non-periodic BCs are found!\n");
+    }
 	Dm->CommInit();
 	MPI_Barrier(comm);
 	
@@ -338,15 +373,91 @@ void ScaLBL_Poisson::Create(){
 
 void ScaLBL_Poisson::Potential_Init(double *psi_init){
 
-    if (BoundaryCondition==1){
-	    if (electric_db->keyExists( "Vin" )){
-	    	Vin = electric_db->getScalar<double>( "Vin" );
-	    }
-	    if (electric_db->keyExists( "Vout" )){
-	    	Vout = electric_db->getScalar<double>( "Vout" );
-	    }
+    //set up default boundary input parameters
+    Vin0 = Vout0 = 1.0; //unit: [V]
+    freqIn = freqOut = 50.0; //unit: [Hz]
+    t0_In = t0_Out = 0.0; //unit: [sec]
+    Vin_Type = Vout_Type = 1; //1->sin; 2->cos
+    Vin  = 1.0; //Boundary-z (inlet)  electric potential
+    Vout = 1.0; //Boundary-Z (outlet) electric potential
+
+    if (BoundaryConditionInlet>0){
+        switch (BoundaryConditionInlet){
+            case 1:
+                if (electric_db->keyExists( "Vin" )){
+                    Vin = electric_db->getScalar<double>( "Vin" );
+                }
+                if (rank==0) printf("LB-Poisson Solver: inlet boundary; fixed electric potential Vin = %.3g [V]\n",Vin);
+                break;
+            case 2:
+                if (electric_db->keyExists( "Vin0" )){//voltage amplitude; unit: Volt
+                    Vin0 = electric_db->getScalar<double>( "Vin0" );
+                }
+                if (electric_db->keyExists( "freqIn" )){//unit: Hz
+                    freqIn = electric_db->getScalar<double>( "freqIn" );
+                }
+                if (electric_db->keyExists( "t0_In" )){//timestep shift, unit: lt
+                    t0_In = electric_db->getScalar<double>( "t0_In" );
+                }
+                if (electric_db->keyExists( "Vin_Type" )){
+                    //type=1 -> sine
+                    //tyep=2 -> cosine
+                    Vin_Type = electric_db->getScalar<int>( "Vin_Type" );
+                    if (Vin_Type>2 || Vin_Type<=0) ERROR("Error: user-input Vin_Type is currently not supported!  \n");
+                }
+                if (rank==0){
+                    if (Vin_Type==1){
+                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Sin[2*pi*%.3g*(t+%.3g)] [V]\n",Vin0,freqIn,t0_In);
+                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin0,freqIn,t0_In);
+                    }
+                    else if (Vin_Type==2){
+                        printf("LB-Poisson Solver: inlet boundary; periodic electric potential Vin = %.3g*Cos[2*pi*%.3g*(t+%.3g)] [V] \n",Vin0,freqIn,t0_In);
+                        printf("                                   V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vin0,freqIn,t0_In);
+                    } 
+                } 
+                break;
+        }
+    }
+    if (BoundaryConditionOutlet>0){
+        switch (BoundaryConditionOutlet){
+            case 1:
+                if (electric_db->keyExists( "Vout" )){
+                    Vout = electric_db->getScalar<double>( "Vout" );
+                }
+                if (rank==0) printf("LB-Poisson Solver: outlet boundary; fixed electric potential Vout = %.3g [V] \n",Vout);
+                break;
+            case 2:
+                if (electric_db->keyExists( "Vout0" )){//voltage amplitude; unit: Volt
+                    Vout0 = electric_db->getScalar<double>( "Vout0" );
+                }
+                if (electric_db->keyExists( "freqOut" )){//unit: Hz
+                    freqOut = electric_db->getScalar<double>( "freqOut" );
+                }
+                if (electric_db->keyExists( "t0_Out" )){//timestep shift, unit: lt
+                    t0_Out = electric_db->getScalar<double>( "t0_Out" );
+                }
+                if (electric_db->keyExists( "Vout_Type" )){
+                    //type=1 -> sine
+                    //tyep=2 -> cosine
+                    Vout_Type = electric_db->getScalar<int>( "Vout_Type" );
+                    if (Vout_Type>2 || Vin_Type<=0) ERROR("Error: user-input Vout_Type is currently not supported!  \n");
+                }
+                if (rank==0){
+                    if (Vout_Type==1){
+                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Sin[2*pi*%.3g*(t+%.3g)] [V]\n",Vout0,freqOut,t0_Out);
+                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout0,freqOut,t0_Out);
+                    }
+                    else if (Vout_Type==2){
+                        printf("LB-Poisson Solver: outlet boundary; periodic electric potential Vout = %.3g*Cos[2*pi*%.3g*(t+%.3g)] [V]\n",Vout0,freqOut,t0_Out);
+                        printf("                                    V0 = %.3g [V], frequency = %.3g [Hz], timestep shift = %.3g [sec] \n",Vout0,freqOut,t0_Out);
+                    } 
+                } 
+                break;
+        }
     }
     //By default only periodic BC is applied and Vin=Vout=1.0, i.e. there is no potential gradient along Z-axis
+    if (BoundaryConditionInlet==2)  Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,t0_In,Vin_Type,0);
+    if (BoundaryConditionOutlet==2) Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,t0_Out,Vout_Type,0);
     double slope = (Vout-Vin)/(Nz-2);
     double psi_linearized;
 	for (int k=0;k<Nz;k++){
@@ -370,10 +481,15 @@ void ScaLBL_Poisson::Potential_Init(double *psi_init){
     }
 }
 
+double ScaLBL_Poisson::getBoundaryVoltagefromPeriodicBC(double V0, double freq, double t0, int V_type, int time_step){
+    return V0*(V_type==1)*sin(2.0*M_PI*freq*time_conv*(time_step+t0/time_conv))+V0*(V_type==2)*cos(2.0*M_PI*freq*time_conv*(time_step+t0/time_conv));
+}
 
-void ScaLBL_Poisson::Initialize(){
+void ScaLBL_Poisson::Initialize(double time_conv_from_Study){
 	/*
 	 * This function initializes model
+     * "time_conv_from_Study" is the phys to LB time conversion factor, unit=[sec/lt]
+     * which is used for periodic voltage input for inlet and outlet boundaries
 	 */
     if (rank==0)    printf ("LB-Poisson Solver: initializing D3Q7 distributions\n");
     //NOTE the initialization involves two steps:
@@ -381,6 +497,7 @@ void ScaLBL_Poisson::Initialize(){
     //2. Initialize electric potential for pore nodes
     double *psi_host;
     psi_host = new double [Nx*Ny*Nz];
+    time_conv = time_conv_from_Study;
     AssignSolidBoundary(psi_host);//step1
     Potential_Init(psi_host);//step2
 	ScaLBL_CopyToDevice(Psi, psi_host, Nx*Ny*Nz*sizeof(double));
@@ -390,17 +507,17 @@ void ScaLBL_Poisson::Initialize(){
     delete [] psi_host;
     
     //extra treatment for halo layer
-    if (BoundaryCondition==1){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
-		}
-    }
+    //if (BoundaryCondition==1){
+	//	if (Dm->kproc()==0){
+	//		ScaLBL_SetSlice_z(Psi,Vin,Nx,Ny,Nz,0);
+	//	}
+	//	if (Dm->kproc() == nprocz-1){
+	//		ScaLBL_SetSlice_z(Psi,Vout,Nx,Ny,Nz,Nz-1);
+	//	}
+    //}
 }
 
-void ScaLBL_Poisson::Run(double *ChargeDensity){
+void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
     
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
@@ -415,13 +532,13 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 		// *************ODD TIMESTEP*************//
         timestep++;
         
-        SolveElectricPotentialAAodd();//update electric potential
+        SolveElectricPotentialAAodd(timestep_from_Study);//update electric potential
         SolvePoissonAAodd(ChargeDensity);//perform collision
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 
 		// *************EVEN TIMESTEP*************//
 		timestep++;
-		SolveElectricPotentialAAeven();//update electric potential
+		SolveElectricPotentialAAeven(timestep_from_Study);//update electric potential
         SolvePoissonAAeven(ChargeDensity);//perform collision
 		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
 		//************************************************************************/
@@ -456,6 +573,9 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 			psi_avg_previous = psi_avg;
         }
 	}
+    if(WriteLog==true){
+        getConvergenceLog(timestep,error);
+    }
 
 	//************************************************************************/
 	//stoptime = MPI_Wtime();
@@ -475,29 +595,88 @@ void ScaLBL_Poisson::Run(double *ChargeDensity){
 
 }
 
-void ScaLBL_Poisson::SolveElectricPotentialAAodd(){
+void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
+    if (rank==0){
+		bool WriteHeader=false;
+		TIMELOG = fopen("PoissonSolver_Convergence.csv","r");
+		if (TIMELOG != NULL)
+			fclose(TIMELOG);
+		else
+			WriteHeader=true;
+
+		TIMELOG = fopen("PoissonSolver_Convergence.csv","a+");
+		if (WriteHeader)
+		{
+			fprintf(TIMELOG,"Timestep Error\n");				
+            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
+            fflush(TIMELOG);
+		}
+        else {
+            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
+            fflush(TIMELOG);
+        }
+    }
+}
+
+void ScaLBL_Poisson::SolveElectricPotentialAAodd(int timestep_from_Study){
 	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FROM NORMAL
 	ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
     ScaLBL_DeviceBarrier();
 	// Set boundary conditions
-	if (BoundaryCondition == 1){
-		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
-		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+	if (BoundaryConditionInlet > 0){
+        switch (BoundaryConditionInlet){
+            case 1:
+                ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                break;
+            case 2:
+                Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,t0_In,Vin_Type,timestep_from_Study);
+                ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                break;
+        }
+	}
+	if (BoundaryConditionOutlet > 0){
+        switch (BoundaryConditionOutlet){
+            case 1:
+		        ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                break;
+            case 2:
+                Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,t0_Out,Vout_Type,timestep_from_Study);
+		        ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                break;
+        }
 	}
     //-------------------------//
 	ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(NeighborList, dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
 }
 
-void ScaLBL_Poisson::SolveElectricPotentialAAeven(){
+void ScaLBL_Poisson::SolveElectricPotentialAAeven(int timestep_from_Study){
 	ScaLBL_Comm->SendD3Q7AA(fq, 0); //READ FORM NORMAL
 	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm->RecvD3Q7AA(fq, 0); //WRITE INTO OPPOSITE
     ScaLBL_DeviceBarrier();
 	// Set boundary conditions
-	if (BoundaryCondition == 1){
-		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
-		ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+	if (BoundaryConditionInlet > 0){
+        switch (BoundaryConditionInlet){
+            case 1:
+                ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                break;
+            case 2:
+                Vin  = getBoundaryVoltagefromPeriodicBC(Vin0,freqIn,t0_In,Vin_Type,timestep_from_Study);
+                ScaLBL_Comm->D3Q7_Poisson_Potential_BC_z(NeighborList, fq,  Vin, timestep);
+                break;
+        }
+	}
+	if (BoundaryConditionOutlet > 0){
+        switch (BoundaryConditionOutlet){
+            case 1:
+		        ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                break;
+            case 2:
+                Vout = getBoundaryVoltagefromPeriodicBC(Vout0,freqOut,t0_Out,Vout_Type,timestep_from_Study);
+		        ScaLBL_Comm->D3Q7_Poisson_Potential_BC_Z(NeighborList, fq, Vout, timestep);
+                break;
+        }
 	}
     //-------------------------//
 	ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(dvcMap, fq, Psi, 0, ScaLBL_Comm->LastExterior(), Np);
@@ -557,38 +736,26 @@ void ScaLBL_Poisson::getElectricPotential_debug(int timestep){
     fclose(OUTFILE);
 }
 
-void ScaLBL_Poisson::getElectricPotential(int timestep){
+void ScaLBL_Poisson::getElectricPotential(DoubleArray &ReturnValues){
     //This function wirte out the data in a normal layout (by aggregating all decomposed domains)
-    DoubleArray PhaseField(Nx,Ny,Nz);
 	//ScaLBL_Comm->RegularLayout(Map,Psi,PhaseField);
-    ScaLBL_CopyToHost(PhaseField.data(),Psi,sizeof(double)*Nx*Ny*Nz);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-    
-    sprintf(OutputFilename,"Electric_Potential_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
+    ScaLBL_CopyToHost(ReturnValues.data(),Psi,sizeof(double)*Nx*Ny*Nz);
 }
 
-void ScaLBL_Poisson::getElectricField(int timestep){
+void ScaLBL_Poisson::getElectricField(DoubleArray &Values_x, DoubleArray &Values_y, DoubleArray &Values_z){
 
-        DoubleArray PhaseField(Nx,Ny,Nz);
-
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[0*Np],Values_x);
+        ElectricField_LB_to_Phys(Values_x);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_X_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[1*Np],Values_y);
+        ElectricField_LB_to_Phys(Values_y);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_Y_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
 
-	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],PhaseField);
-        ElectricField_LB_to_Phys(PhaseField);
+	    ScaLBL_Comm->RegularLayout(Map,&ElectricField[2*Np],Values_z);
+        ElectricField_LB_to_Phys(Values_z);
         ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-        sprintf(OutputFilename,"ElectricField_Z_Time_%i.raw",timestep);
-        Mask->AggregateLabels(OutputFilename,PhaseField);
+
 }
 
 void ScaLBL_Poisson::getElectricField_debug(int timestep){

@@ -12,6 +12,7 @@
 #include "models/PoissonSolver.h"
 #include "models/MultiPhysController.h"
 #include "common/Utilities.h"
+#include "analysis/ElectroChemistry.h"
 
 using namespace std;
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
         ScaLBL_IonModel IonModel(rank,nprocs,comm);
         ScaLBL_Poisson PoissonSolver(rank,nprocs,comm); 
         ScaLBL_Multiphys_Controller Study(rank,nprocs,comm);//multiphysics controller coordinating multi-model coupling
-
+        
         // Load controller information
         Study.ReadParams(filename);
 
@@ -68,7 +69,10 @@ int main(int argc, char **argv)
 
         IonModel.SetDomain();    
         IonModel.ReadInput();    
-        IonModel.Create();       
+        IonModel.Create();      
+        
+        // Create analysis object
+        ElectroChemistryAnalyzer Analysis(IonModel.Dm);
 
         // Get internal iteration number
         StokesModel.timestepMax = Study.getStokesNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
@@ -76,38 +80,42 @@ int main(int argc, char **argv)
 
         IonModel.timestepMax = Study.getIonNumIter_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
         IonModel.Initialize();   
+        // Get maximal time converting factor based on Sotkes and Ion solvers
+        Study.getTimeConvMax_PNP_coupling(StokesModel.time_conv,IonModel.time_conv);
 
         // Initialize LB-Poisson model
         PoissonSolver.ReadParams(filename);
         PoissonSolver.SetDomain();    
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
-        PoissonSolver.Initialize();   
+        PoissonSolver.Initialize(Study.time_conv_max);   
 
 
         int timestep=0;
         while (timestep < Study.timestepMax){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,timestep);//solve Poisson equtaion to get steady-state electrical potental
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
             timestep++;//AA operations
 
+            if (timestep%Study.analysis_interval==0){
+            	Analysis.Basic(IonModel,PoissonSolver,StokesModel,timestep);
+            }
             if (timestep%Study.visualization_interval==0){
-                PoissonSolver.getElectricPotential(timestep);
+            	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
+            	/*  PoissonSolver.getElectricPotential(timestep);
                 PoissonSolver.getElectricField(timestep);
                 IonModel.getIonConcentration(timestep);
                 StokesModel.getVelocity(timestep);
+            	 */
             }
         }
 
         if (rank==0) printf("Save simulation raw data at maximum timestep\n");
-        PoissonSolver.getElectricPotential(timestep);
-        PoissonSolver.getElectricField(timestep);
-        IonModel.getIonConcentration(timestep);
-        StokesModel.getVelocity(timestep);
+    	Analysis.WriteVis(IonModel,PoissonSolver,StokesModel,Study.db,timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

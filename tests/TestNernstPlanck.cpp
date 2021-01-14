@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         PoissonSolver.SetDomain();    
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
-        PoissonSolver.Initialize();   
+        PoissonSolver.Initialize(0);   
 
         int timestep=0;
         double error = 1.0;
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax && error > Study.tolerance){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,0);//solve Poisson equtaion to get steady-state electrical potental
             IonModel.Run(IonModel.FluidVelocityDummy,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
             timestep++;//AA operations
@@ -87,9 +87,9 @@ int main(int argc, char **argv)
             }
         }
 
-        PoissonSolver.getElectricPotential(timestep);
-        PoissonSolver.getElectricField(timestep);
-        IonModel.getIonConcentration(timestep);
+        PoissonSolver.getElectricPotential_debug(timestep);
+        PoissonSolver.getElectricField_debug(timestep);
+        IonModel.getIonConcentration_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");

@@ -223,3 +223,125 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, in
 		dist[nr6] = f6;
 	}
 }
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    int n;
+    double uz;
+	for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f6 = dist[5*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*f6-0.5*uz*fsum_partial/tau)/(1.0-0.5/tau+0.5*uz/tau); 
+		dist[6*Np+n] = f5;
+	}
+}
+
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    int n;
+    double uz;
+	for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		f0 = dist[n];
+		f1 = dist[2*Np+n];
+		f2 = dist[1*Np+n];
+		f3 = dist[4*Np+n];
+		f4 = dist[3*Np+n];
+		f5 = dist[6*Np+n];
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*f5+0.5*uz*fsum_partial/tau)/(1.0-0.5/tau-0.5*uz/tau); 
+		dist[5*Np+n] = f6;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    int n;
+    int nread,nr5;
+    double uz;
+	for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+		nread = d_neighborList[n+5*Np];
+		f6 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f6;
+        uz = VelocityZ[n];
+		//...................................................
+        f5 =(FluxIn+(1.0-0.5/tau)*f6-0.5*uz*fsum_partial/tau)/(1.0-0.5/tau+0.5*uz/tau); 
+
+		// Unknown distributions
+		nr5 = d_neighborList[n+4*Np];
+		dist[nr5] = f5;
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double FluxIn, double tau, double *VelocityZ, int count, int Np){
+    //NOTE: FluxIn is the inward flux
+    double f0,f1,f2,f3,f4,f5,f6;
+    double fsum_partial;
+    int n;
+    int nread,nr6;
+    double uz;
+
+	for (int idx=0; idx<count; idx++){
+		n = list[idx];
+		f0 = dist[n];
+
+		nread = d_neighborList[n];
+		f1 = dist[nread];
+
+		nread = d_neighborList[n+2*Np];
+		f3 = dist[nread];
+
+		nread = d_neighborList[n+4*Np];
+		f5 = dist[nread];
+
+		nread = d_neighborList[n+Np];
+		f2 = dist[nread];
+
+		nread = d_neighborList[n+3*Np];
+		f4 = dist[nread];
+
+        fsum_partial = f0+f1+f2+f3+f4+f5;
+        uz = VelocityZ[n];
+		//...................................................
+        f6 =(FluxIn+(1.0-0.5/tau)*f5+0.5*uz*fsum_partial/tau)/(1.0-0.5/tau-0.5*uz/tau); 
+
+		// unknown distributions
+		nr6 = d_neighborList[n+5*Np];
+		dist[nr6] = f6;
+	}
+}

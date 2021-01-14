@@ -165,6 +165,7 @@ Domain::~Domain()
 	delete [] recvData_yZ;  delete [] recvData_Yz;  delete [] recvData_YZ;
 	// Free id
 	delete [] id;
+ 
 	// Free the communicator
 	if ( Comm != MPI_COMM_WORLD && Comm != MPI_COMM_NULL ) {
 		MPI_Comm_free(&Comm);
@@ -674,6 +675,7 @@ void Domain::Decomp( const std::string& Filename )
     if (rank()==0) printf("Media porosity = %f \n",porosity);
  	//.........................................................
 }
+
 
 void Domain::AggregateLabels( const std::string& filename ){
 	
@@ -1231,7 +1233,7 @@ void Domain::CommunicateMeshHalo(DoubleArray &Mesh)
 	UnpackMeshData(recvList_YZ, recvCount_YZ ,recvData_YZ, MeshData);
 }
 
-// Ideally stuff below here should be moved somewhere else -- doesn't really belong here
+// TODO Ideally stuff below here should be moved somewhere else -- doesn't really belong here
 void WriteCheckpoint(const char *FILENAME, const double *cDen, const double *cfq, size_t Np)
 {
     double value;

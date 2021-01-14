@@ -291,6 +291,56 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	}
 }
 
+void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity,double *Permeability,const vector<std::string> &File_poro,const vector<std::string> &File_perm)
+{
+    double *Porosity_host, *Permeability_host;
+    Porosity_host = new double[N];
+    Permeability_host = new double[N];
+	double POROSITY=0.f;
+	double PERMEABILITY=0.f;
+    //Initialize a weighted porosity after considering grey voxels
+    double GreyPorosity_loc=0.0;
+    GreyPorosity=0.0;
+    //double label_count_loc = 0.0;
+    //double label_count_glb = 0.0;
+
+    Mask->ReadFromFile(File_poro[0],File_poro[1],Porosity_host);
+    Mask->ReadFromFile(File_perm[0],File_perm[1],Permeability_host);
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int idx = Map(i,j,k);
+				if (!(idx < 0)){
+				    int n = k*Nx*Ny+j*Nx+i;
+                    POROSITY = Porosity_host[n];
+                    PERMEABILITY = Permeability_host[n];
+                    if (POROSITY<=0.0){
+                        ERROR("Error: Porosity for grey voxels must be 0.0 < Porosity <= 1.0 !\n");
+                    }
+                    else if (PERMEABILITY<=0.0){
+                        ERROR("Error: Permeability for grey voxel must be > 0.0 ! \n");
+                    }
+                    else{
+                        Porosity[idx] = POROSITY;
+                        Permeability[idx] = PERMEABILITY;
+                        GreyPorosity_loc += POROSITY;
+                        //label_count_loc += 1.0;
+                    }
+                }
+			}
+		}
+	}
+    GreyPorosity = sumReduce( Dm->Comm, GreyPorosity_loc);
+    GreyPorosity = GreyPorosity/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+
+	if (rank==0){
+        printf("Image resolution: %.5g [um/voxel]\n",Dm->voxel_length);
+        printf("The weighted porosity, considering both open and grey voxels, is %.3g\n",GreyPorosity);
+	}
+    delete [] Porosity_host;
+    delete [] Permeability_host;
+}
 
 void ScaLBL_GreyscaleModel::Create(){
 	/*
@@ -344,7 +394,19 @@ void ScaLBL_GreyscaleModel::Create(){
 	double *Poros, *Perm;
 	Poros = new double[Np];
 	Perm  = new double[Np];
-	AssignComponentLabels(Poros,Perm);
+    if (greyscale_db->keyExists("FileVoxelPorosityMap")){
+        //NOTE: FileVoxel**Map is a vector, including "file_name, datatype"
+		auto File_poro = greyscale_db->getVector<std::string>( "FileVoxelPorosityMap" );
+		auto File_perm = greyscale_db->getVector<std::string>( "FileVoxelPermeabilityMap" );
+	    AssignComponentLabels(Poros,Perm,File_poro,File_perm);
+    }
+    else if (greyscale_db->keyExists("PorosityList")){
+        //initialize voxel porosity and perm from the input list
+	    AssignComponentLabels(Poros,Perm);
+    }
+    else {
+		ERROR("Error: PorosityList or FilenameVoxelPorosityMap cannot be found! \n");
+    }
 	ScaLBL_CopyToDevice(Porosity, Poros, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability, Perm, Np*sizeof(double));
     delete [] Poros;
