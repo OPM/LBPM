@@ -10,7 +10,7 @@ Implementation of Lee et al JCP 2016 lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 #include "common/ScaLBL.h"

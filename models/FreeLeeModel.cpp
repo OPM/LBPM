@@ -107,9 +107,9 @@ void ScaLBL_FreeLeeModel::SetDomain(){
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 
-	comm.barrier()
+	comm.barrier();
 	Dm->CommInit();
-	comm.barrier()
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -139,7 +139,7 @@ void ScaLBL_FreeLeeModel::ReadInput(){
         ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
         fillHalo<signed char> fill( MPI_COMM_WORLD, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
         Array<signed char> id_view;
-        id_view.viewRaw( size1, Mask->id );
+        id_view.viewRaw( size1, Mask->id.data() );
         fill.copy( input_id, id_view );
         fill.fill( id_view );
 	}
@@ -207,7 +207,7 @@ void ScaLBL_FreeLeeModel::Create(){
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
 	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,2);
-	comm.barrier()
+	comm.barrier();
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -335,7 +335,7 @@ void ScaLBL_FreeLeeModel::Initialize(){
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
-		comm.barrier()
+		comm.barrier();
 	}
 
 	if (rank==0)	printf ("Initializing phase field \n");
@@ -371,7 +371,7 @@ void ScaLBL_FreeLeeModel::Run(){
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	comm.barrier()
+	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
 
@@ -460,8 +460,7 @@ void ScaLBL_FreeLeeModel::Run(){
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		*/
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		ScaLBL_Comm->Barrier();
 		//************************************************************************
 		PROFILE_STOP("Update");
 	}
