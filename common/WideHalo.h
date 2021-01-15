@@ -11,7 +11,8 @@ public:
 	ScaLBLWideHalo_Communicator(std::shared_ptr <Domain> Dm, int width);
 	~ScaLBLWideHalo_Communicator();
 	//......................................................................................
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
+	//MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
+	Utilities::MPI MPI_COMM_SCALBL;
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;     // original domain structure
 	int Nxh,Nyh,Nzh,Nh; // with wide halo
@@ -32,7 +33,6 @@ public:
 	double *recvbuf_xyz, *recvbuf_Xyz, *recvbuf_xYz, *recvbuf_XYz;
 	double *recvbuf_xyZ, *recvbuf_XyZ, *recvbuf_xYZ, *recvbuf_XYZ;
 	//......................................................................................
-
 	int LastExterior();
 	int FirstInterior();
 	int LastInterior();
