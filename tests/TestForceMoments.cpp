@@ -179,8 +179,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 
 		neighborList= new int[18*Np];
-		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np);
-
+		ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
 
 	        if (rank == 0) PrintNeighborList(neighborList,Np, rank);
 

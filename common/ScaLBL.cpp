@@ -351,8 +351,7 @@ void ScaLBL_Communicator::D3Q19_MapRecv(int Cqx, int Cqy, int Cqz, const int *li
 	delete [] ReturnDist;
 }
 
-
-int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np){
+int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width){
 	/*
 	 * Generate a memory optimized layout
 	 *   id[n] == 0 implies that site n should be ignored (treat as a mask)
@@ -395,28 +394,26 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					// Counts for the six faces
-					if (i==1)       Map(n)=idx++;
-					else if (j==1)  Map(n)=idx++;
-					else if (k==1)  Map(n)=idx++;
-					else if (i==Nx-2)  Map(n)=idx++;
-					else if (j==Ny-2)  Map(n)=idx++;
-					else if (k==Nz-2)  Map(n)=idx++;
+					if (i>0 && i<=width)        Map(n)=idx++;
+					else if (j>0 && j<=width)  Map(n)=idx++;
+					else if (k>0 && k<=width)  Map(n)=idx++;
+					else if (i>Nx-width-2 && i<Nx-1)  Map(n)=idx++;
+					else if (j>Ny-width-2 && j<Ny-1)  Map(n)=idx++;
+					else if (k>Nz-width-2 && k<Nz-1)  Map(n)=idx++;
 				}
 			}
 		}
 	}
 	next=idx;
-	
-	//printf("Interior... \n");
-	
+
 	// ********* Interior **********
 	// align the next read
 	first_interior=(next/16 + 1)*16;
 	idx = first_interior;
 	// Step 2/2: Next loop over the domain interior in block-cyclic fashion
-	for (k=2; k<Nz-2; k++){
-		for (j=2; j<Ny-2; j++){
-			for (i=2; i<Nx-2; i++){
+	for (k=width+1; k<Nz-width-1; k++){
+		for (j=width+1; j<Ny-width-1; j++){
+			for (i=width+1; i<Nx-width-1; i++){
 				// Local index (regular layout)
 				n = k*Nx*Ny + j*Nx + i;
 				if (id[n] > 0 ){

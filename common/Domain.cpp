@@ -1,5 +1,5 @@
 // Created by James McClure
-// Copyright 2008-2013
+// Copyright 2008-2020
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>

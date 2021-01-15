@@ -58,7 +58,7 @@ extern void GlobalFlipScaLBL_D3Q19_Init(double *dist, IntArray Map, int Np, int 
 	X = Nx*nprocx;
 	Y = Ny*nprocy;
 	Z = Nz*nprocz;
-    NULL_USE(Z);
+        NULL_USE(Z);
 
 	for (k=0; k<Nz; k++){ 
 		for (j=0; j<Ny; j++){
@@ -283,8 +283,9 @@ int main(int argc, char **argv)
 		auto neighborList= new int[18*Npad];
 		IntArray Map(Nx,Ny,Nz);
 		Map.fill(-2);		
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
 		comm.barrier();
+
 		int neighborSize=18*Np*sizeof(int);
 		//......................device distributions.................................
 		dist_mem_size = Np*sizeof(double);
