@@ -30,8 +30,8 @@ int main(int argc, char **argv)
 	int rank,nprocs;
 	Utilities::startup( argc, argv );
 	Utilities::MPI comm( MPI_COMM_WORLD );
-        int rank = comm.getRank();
-        int nprocs = comm.getSize();
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 	{
 		// parallel domain size (# of sub-domains)
 		int nprocx,nprocy,nprocz;

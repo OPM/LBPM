@@ -58,12 +58,11 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
     rank_xyZ = rank_info.rank[0][0][2]; 
     rank_XyZ = rank_info.rank[2][0][2]; 
     rank_xYZ = rank_info.rank[0][2][2]; 
- 
 	MPI_COMM_SCALBL.barrier();
 	
 	/*  Fill in communications patterns for the lists */
 	/*       Send lists    */
-	sendCount_x = getHaloBlock(width,2*width,width,Nyh-width,width,Nzh-width,dvcSendList_x);
+	sendCount_x =getHaloBlock(width,2*width,width,Nyh-width,width,Nzh-width,dvcSendList_x);
 	sendCount_X =getHaloBlock(Nxh-2*width,Nxh-width,width,Nyh-width,width,Nzh-width,dvcSendList_X);
 	sendCount_y =getHaloBlock(width,Nxh-width,width,2*width,width,Nzh-width,dvcSendList_y);
 	sendCount_Y =getHaloBlock(width,Nxh-width,Nyh-2*width,Nyh-width,width,Nzh-width,dvcSendList_Y);
