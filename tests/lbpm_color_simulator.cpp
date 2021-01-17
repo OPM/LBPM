@@ -79,5 +79,3 @@ int main(int argc, char **argv)
 
   Utilities::shutdown();
 }
-
-

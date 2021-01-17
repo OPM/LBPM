@@ -190,6 +190,7 @@ void SubPhase::Basic(){
 				if (Phi(n) != Phi(n)){
 					// check for NaN
 					Phi(n) = 0.0;
+					//printf("Nan at %i %i %i \n",i,j,k);
 				}
 			}
 		}
@@ -344,7 +345,7 @@ void SubPhase::Basic(){
 			}
 		}
 	}
-	printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
+	//printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
 	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
 	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
 	/* normalize wetting interactions */

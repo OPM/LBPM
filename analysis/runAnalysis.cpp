@@ -978,8 +978,7 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         /*if (d_regular)
             d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phi);
         else */
-        ScaLBL_CopyToHost(Averages.Phi.data(),Phi,N*sizeof(double));
-        
+        	ScaLBL_CopyToHost(Averages.Phi.data(),Phi,N*sizeof(double));
         // copy other variables        
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);
