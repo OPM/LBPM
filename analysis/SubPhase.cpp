@@ -40,7 +40,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
-			fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn ");				
+			fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 			fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
 			fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 			fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
@@ -65,7 +65,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		sprintf(LocalRankFilename,"%s%s","subphase.csv.",LocalRankString);
 		SUBPHASE = fopen(LocalRankFilename,"a+");
 		//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
-		fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn ");				
+		fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 		fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
 		fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 		fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
@@ -93,7 +93,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn vw vn pw pn\n");				
+			fprintf(TIMELOG,"sw krw krn vw vn pw pn wet\n");				
 		}
 	}
 }
@@ -109,7 +109,7 @@ SubPhase::~SubPhase()
 void SubPhase::Write(int timestep)
 {
 	if (Dm->rank()==0){
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_value_global); 
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
@@ -125,7 +125,7 @@ void SubPhase::Write(int timestep)
 		fflush(SUBPHASE);
 	}
 	else{
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_value);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.p, wd.p, nc.p, nd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
@@ -171,6 +171,9 @@ void SubPhase::Basic(){
 
 	double count_w = 0.0;
 	double count_n = 0.0;
+	
+	total_wetting_interaction = count_wetting_interaction = 0.0;
+	total_wetting_interaction_global = count_wetting_interaction_global=0.0;
 	
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -226,9 +229,120 @@ void SubPhase::Basic(){
 						count_w += 1.0;
 					}
 				}
+				else {
+					// solid wetting assessment
+					double wetval = Phi(i,j,k);
+					double local_wetting_interaction = 0.0;
+					double local_wetting_weight=0.0;
+					int nq = (k)*Nx*Ny+(j)*Nx+(i+1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					int nq = (k)*Nx*Ny+(j)*Nx+(i-1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					int nq = (k)*Nx*Ny+(j+1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					int nq = (k)*Nx*Ny+(j-1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					int nq = (k+1)*Nx*Ny+(j)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					int nq = (k-1)*Nx*Ny+(j)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += (Phi(nq)-wetval);
+						 local_wetting_weight += 1.0;
+					}
+					// x, y interactions
+					int nq = (k)*Nx*Ny+(j+1)*Nx+(i+1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k)*Nx*Ny+(j-1)*Nx+(i-1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k)*Nx*Ny+(j-1)*Nx+(i+1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k)*Nx*Ny+(j+1)*Nx+(i-1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					// xz interactions
+					int nq = (k+1)*Nx*Ny+(j)*Nx+(i+1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k-1)*Nx*Ny+(j)*Nx+(i-1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k+1)*Nx*Ny+(j)*Nx+(i-1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k-1)*Nx*Ny+(j)*Nx+(i+1);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					// yz interactions
+					int nq = (k+1)*Nx*Ny+(j+1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k-1)*Nx*Ny+(j-1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k+1)*Nx*Ny+(j-1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					int nq = (k-1)*Nx*Ny+(j+1)*Nx+(i);
+					if ( Dm->id[nq] > 0 ) {
+						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
+						 local_wetting_weight += 0.5;
+					}
+					/*  interaction due to this solid site*/
+					total_wetting_interaction += 0.5*local_wetting_interaction;
+					if (local_wetting_weight > 0.0)
+						count_wetting_interaction += local_wetting_weight;
+				}
 			}
 		}
 	}
+	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
+	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
+	/* normalize wetting interactions */
+	if (count_wetting_interaction > 0.0)
+		total_wetting_interaction /= count_wetting_interaction;
+	if (count_wetting_interaction_global > 0.0)
+		total_wetting_interaction_global /= count_wetting_interaction_global;
+	
 	gwb.V=Dm->Comm.sumReduce(  wb.V);
 	gnb.V=Dm->Comm.sumReduce(  nb.V);
 	gwb.M=Dm->Comm.sumReduce(  wb.M);
@@ -303,7 +417,7 @@ void SubPhase::Basic(){
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p); 
+		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p, total_wetting_interaction_global); 
 		fflush(TIMELOG);
 	}
 	if (err==true){
