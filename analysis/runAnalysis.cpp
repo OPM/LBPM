@@ -940,6 +940,8 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
  ******************************************************************/
 void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
+    int N = d_N[0]*d_N[1]*d_N[2];
+    NULL_USE( N );
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
 	auto vis_db =  input_db->getDatabase( "Visualization" );
@@ -973,7 +975,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         PROFILE_START("Copy-Wait",1);
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
-        // copy other variables
+        if (d_regular)
+            d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phi);
+        else
+            ScaLBL_CopyToHost(Averages.Phi.data(),Phi,N*sizeof(double));
+        // copy other variables        
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Den[d_Np],Averages.Rho_w);
