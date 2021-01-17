@@ -187,6 +187,10 @@ void SubPhase::Basic(){
 					double phi = (nA-nB)/(nA+nB);
 					Phi(n) = phi;
 				}
+				if (Phi(n) != Phi(n)){
+					// check for NaN
+					Phi(n) = 0.0;
+				}
 			}
 		}
 	}
@@ -328,13 +332,19 @@ void SubPhase::Basic(){
 						 local_wetting_weight += 0.5;
 					}
 					/*  interaction due to this solid site*/
-					total_wetting_interaction += 0.5*local_wetting_interaction;
-					if (local_wetting_weight > 0.0)
-						count_wetting_interaction += local_wetting_weight;
+					if (local_wetting_interaction == local_wetting_interaction){
+						total_wetting_interaction += 0.5*local_wetting_interaction;
+						if (local_wetting_weight > 0.0)
+							count_wetting_interaction += local_wetting_weight;
+					}
+					else{
+						//printf("Check interaction at %i %i %i \n",i,j,k);
+					}
 				}
 			}
 		}
 	}
+	printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
 	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
 	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
 	/* normalize wetting interactions */

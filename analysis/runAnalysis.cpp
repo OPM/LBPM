@@ -975,10 +975,11 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
         PROFILE_START("Copy-Wait",1);
         PROFILE_STOP("Copy-Wait",1);
         PROFILE_START("Copy-State",1);
-        if (d_regular)
+        /*if (d_regular)
             d_ScaLBL_Comm->RegularLayout(d_Map,Phi,Averages.Phi);
-        else
-            ScaLBL_CopyToHost(Averages.Phi.data(),Phi,N*sizeof(double));
+        else */
+        ScaLBL_CopyToHost(Averages.Phi.data(),Phi,N*sizeof(double));
+        
         // copy other variables        
         d_ScaLBL_Comm->RegularLayout(d_Map,Pressure,Averages.Pressure);
         d_ScaLBL_Comm->RegularLayout(d_Map,&Den[0],Averages.Rho_n);

@@ -35,8 +35,8 @@ int main(int argc, char **argv)
 
   // Initialize MPI and error handlers
   auto multiple = db->getWithDefault<bool>( "MPI_THREAD_MULTIPLE", true );
-  Utilities::startup( argc, argv, multiple );
-  Utilities::MPI::changeProfileLevel( 1 );
+  //Utilities::startup( argc, argv, multiple );
+  //Utilities::MPI::changeProfileLevel( 1 );
 
   { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
