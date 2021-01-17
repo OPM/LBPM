@@ -50,7 +50,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 			fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 			fprintf(SUBPHASE,"Vnc Anc Hnc Xnc ");					 	// nc region
-			fprintf(SUBPHASE,"Vnd And Hnd Xnd Nnd ");					// nd region
+			fprintf(SUBPHASE,"Vnd And Hnd Xnd Nnd ");					// nd regionin
 			fprintf(SUBPHASE,"Vi Ai Hi Xi ");					 		// interface region 
 			fprintf(SUBPHASE,"Vic Aic Hic Xic Nic\n");					// interface region 
 
@@ -109,7 +109,7 @@ SubPhase::~SubPhase()
 void SubPhase::Write(int timestep)
 {
 	if (Dm->rank()==0){
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_value_global); 
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction_global); 
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
@@ -125,7 +125,7 @@ void SubPhase::Write(int timestep)
 		fflush(SUBPHASE);
 	}
 	else{
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_value);
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.p, wd.p, nc.p, nd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
@@ -156,7 +156,7 @@ void SubPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, dou
 }
 
 void SubPhase::Basic(){
-	int i,j,k,n,imin,jmin,kmin,kmax;
+	int i,j,k,n,imin,jmin,kmin,kmax, nq;
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
@@ -234,95 +234,95 @@ void SubPhase::Basic(){
 					double wetval = Phi(i,j,k);
 					double local_wetting_interaction = 0.0;
 					double local_wetting_weight=0.0;
-					int nq = (k)*Nx*Ny+(j)*Nx+(i+1);
+					nq = (k)*Nx*Ny+(j)*Nx+(i+1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
-					int nq = (k)*Nx*Ny+(j)*Nx+(i-1);
+					nq = (k)*Nx*Ny+(j)*Nx+(i-1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
-					int nq = (k)*Nx*Ny+(j+1)*Nx+(i);
+					nq = (k)*Nx*Ny+(j+1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
-					int nq = (k)*Nx*Ny+(j-1)*Nx+(i);
+					nq = (k)*Nx*Ny+(j-1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
-					int nq = (k+1)*Nx*Ny+(j)*Nx+(i);
+					nq = (k+1)*Nx*Ny+(j)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
-					int nq = (k-1)*Nx*Ny+(j)*Nx+(i);
+					nq = (k-1)*Nx*Ny+(j)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += (Phi(nq)-wetval);
 						 local_wetting_weight += 1.0;
 					}
 					// x, y interactions
-					int nq = (k)*Nx*Ny+(j+1)*Nx+(i+1);
+					nq = (k)*Nx*Ny+(j+1)*Nx+(i+1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k)*Nx*Ny+(j-1)*Nx+(i-1);
+					nq = (k)*Nx*Ny+(j-1)*Nx+(i-1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k)*Nx*Ny+(j-1)*Nx+(i+1);
+					nq = (k)*Nx*Ny+(j-1)*Nx+(i+1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k)*Nx*Ny+(j+1)*Nx+(i-1);
+					nq = (k)*Nx*Ny+(j+1)*Nx+(i-1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
 					// xz interactions
-					int nq = (k+1)*Nx*Ny+(j)*Nx+(i+1);
+					nq = (k+1)*Nx*Ny+(j)*Nx+(i+1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k-1)*Nx*Ny+(j)*Nx+(i-1);
+					nq = (k-1)*Nx*Ny+(j)*Nx+(i-1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k+1)*Nx*Ny+(j)*Nx+(i-1);
+					nq = (k+1)*Nx*Ny+(j)*Nx+(i-1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k-1)*Nx*Ny+(j)*Nx+(i+1);
+					nq = (k-1)*Nx*Ny+(j)*Nx+(i+1);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
 					// yz interactions
-					int nq = (k+1)*Nx*Ny+(j+1)*Nx+(i);
+					nq = (k+1)*Nx*Ny+(j+1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k-1)*Nx*Ny+(j-1)*Nx+(i);
+					nq = (k-1)*Nx*Ny+(j-1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k+1)*Nx*Ny+(j-1)*Nx+(i);
+					nq = (k+1)*Nx*Ny+(j-1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
 					}
-					int nq = (k-1)*Nx*Ny+(j+1)*Nx+(i);
+					nq = (k-1)*Nx*Ny+(j+1)*Nx+(i);
 					if ( Dm->id[nq] > 0 ) {
 						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
 						 local_wetting_weight += 0.5;
