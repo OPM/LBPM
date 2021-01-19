@@ -157,7 +157,7 @@ void SubPhase::SetParams(double rhoA, double rhoB, double tauA, double tauB, dou
 }
 
 void SubPhase::Basic(){
-	int i,j,k,n,imin,jmin,kmin,kmax, nq;
+	int i,j,k,n,imin,jmin,kmin,kmax;
 
 	// If external boundary conditions are set, do not average over the inlet
 	kmin=1; kmax=Nz-1;
@@ -182,7 +182,7 @@ void SubPhase::Basic(){
 				double fx = (Phi(i+1,j,k) - 2.0*Phi(i,j,k) + Phi(i-1,j,k));
 				double fy = (Phi(i,j+1,k) - 2.0*Phi(i,j,k) + Phi(i,j-1,k));
 				double fz = (Phi(i,j,k+1) - 2.0*Phi(i,j,k) + Phi(i,j,k-1));
-				Laplacian(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
+				Laplacian(i,j,k) = 0.5*(fx + fy + fz);
 			}
 		}
 	}
