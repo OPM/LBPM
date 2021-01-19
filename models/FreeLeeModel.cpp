@@ -32,8 +32,8 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	tauA = tauB = 1.0;
 	rhoA = rhoB = 1.0;
 	Fx = Fy = Fz = 0.0;
-	gamma=1e-3;
-	W=5;
+	gamma=1e-3;//surface tension
+	W=5.0;//interfacial thickness
 	Restart=false;
 	din=dout=1.0;
 	flux=0.0;
@@ -220,7 +220,7 @@ void ScaLBL_FreeLeeModel::Create(){
 	//...........................................................................
 	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
 	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
-	ScaLBL_AllocateDeviceMemory((void **) &fq, 19*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &gqbar, 19*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &hq, 7*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &mu_phi, dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Den, dist_mem_size);
@@ -239,10 +239,11 @@ void ScaLBL_FreeLeeModel::Create(){
 			for (int i=1; i<Nx-1; i++){
 				int idx=Map(i,j,k);
 				if (!(idx < 0))
-					TmpMap[idx] = k*Nx*Ny+j*Nx+i;
+					TmpMap[idx] = ScaLBL_Comm_WideHalo->Map(i,j,k);
 			}
 		}
 	}
+    //TODO The following check needs update!
 	// check that TmpMap is valid
 	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
 		auto n = TmpMap[idx];
@@ -264,21 +265,255 @@ void ScaLBL_FreeLeeModel::Create(){
 	
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
-	// initialize phi based on PhaseLabel (include solid component labels)
 }        
 
-/********************************************************
- * AssignComponentLabels                                 *
- ********************************************************/
+void ScaLBL_FreeLeeModel::AssignComponentLabels()
+{
+	double *phase;
+	phase = new double[Nh];
+
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = greyscaleColor_db->getVector<int>( "ComponentLabels" );
+	auto AffinityList = greyscaleColor_db->getVector<double>( "ComponentAffinity" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
+	}
+
+	double label_count[NLABELS];
+	double label_count_global[NLABELS];
+
+	// Assign the labels
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+	for (int k=1;k<Nzh-1;k++){
+		for (int j=1;j<Nyh-1;j++){
+			for (int i=1;i<Nxh-1;i++){
+				int n = (k-1)*Nx*Ny+(j-1)*Nx+(i-1);
+				int nh = k*Nxh*Nyh+j*Nxh+i;
+				VALUE=id[n];
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+						label_count[idx] += 1.0;
+						idx = NLABELS;
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+					}
+				}
+				// fluid labels are reserved
+				if (VALUE == 1) AFFINITY=1.0;
+				else if (VALUE == 2) AFFINITY=-1.0;
+				phase[n] = AFFINITY;
+			}
+		}
+	}
+
+	// Set Dm to match Mask
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
+	
+	for (size_t idx=0; idx<NLABELS; idx++)
+		label_count_global[idx] = sumReduce( Dm->Comm, label_count[idx]);
+
+	if (rank==0){
+		printf("Number of component labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+			printf("   label=%d, affinity=%f, volume fraction==%f\n",VALUE,AFFINITY,volume_fraction); 
+		}
+	}
+
+    //compute color gradient and laplacian of phase field
+
+
+
+
+
+    //copy all data to device
+	ScaLBL_CopyToDevice(Phi, phase, N*sizeof(double));
+	ScaLBL_DeviceBarrier();
+	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+    delete [] phase;
+}
+
+void ScaLBL_FreeLeeModel::AssignChemPotential_ColorGrad()
+{
+    double *SolidPotential_host = new double [Nx*Ny*Nz];
+	double *GreySolidGrad_host  = new double [3*Np];
+
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+	}
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=id[n];
+	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+						idx = NLABELS;
+						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
+					}
+				}
+				SolidPotential_host[n] = AFFINITY;
+			}
+		}
+	}
+
+    // Calculate grey-solid color-gradient
+	double *Dst;
+	Dst = new double [3*3*3];
+	for (int kk=0; kk<3; kk++){
+		for (int jj=0; jj<3; jj++){
+			for (int ii=0; ii<3; ii++){
+				int index = kk*9+jj*3+ii;
+				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
+			}
+		}
+	}
+	double w_face = 1.f;
+	double w_edge = 0.5;
+	double w_corner = 0.f;
+	//local 
+	Dst[13] = 0.f;
+	//faces
+	Dst[4] = w_face;
+	Dst[10] = w_face;
+	Dst[12] = w_face;
+	Dst[14] = w_face;
+	Dst[16] = w_face;
+	Dst[22] = w_face;
+	// corners
+	Dst[0] = w_corner;
+	Dst[2] = w_corner;
+	Dst[6] = w_corner;
+	Dst[8] = w_corner;
+	Dst[18] = w_corner;
+	Dst[20] = w_corner;
+	Dst[24] = w_corner;
+	Dst[26] = w_corner;
+	// edges
+	Dst[1] = w_edge;
+	Dst[3] = w_edge;
+	Dst[5] = w_edge;
+	Dst[7] = w_edge;
+	Dst[9] = w_edge;
+	Dst[11] = w_edge;
+	Dst[15] = w_edge;
+	Dst[17] = w_edge;
+	Dst[19] = w_edge;
+	Dst[21] = w_edge;
+	Dst[23] = w_edge;
+	Dst[25] = w_edge;
+
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0)){
+					double phi_x = 0.f;
+					double phi_y = 0.f;
+					double phi_z = 0.f;
+					for (int kk=0; kk<3; kk++){
+						for (int jj=0; jj<3; jj++){
+							for (int ii=0; ii<3; ii++){
+
+								int index = kk*9+jj*3+ii;
+								double weight= Dst[index];
+
+								int idi=i+ii-1;
+								int idj=j+jj-1;
+								int idk=k+kk-1;
+
+								if (idi < 0) idi=0;
+								if (idj < 0) idj=0;
+								if (idk < 0) idk=0;
+								if (!(idi < Nx)) idi=Nx-1;
+								if (!(idj < Ny)) idj=Ny-1;
+								if (!(idk < Nz)) idk=Nz-1;
+
+								int nn = idk*Nx*Ny + idj*Nx + idi;
+								double vec_x = double(ii-1);
+								double vec_y = double(jj-1);
+								double vec_z = double(kk-1);
+								double GWNS=SolidPotential_host[nn];
+								phi_x += GWNS*weight*vec_x;
+								phi_y += GWNS*weight*vec_y;
+								phi_z += GWNS*weight*vec_z;
+							}
+						}
+					}
+                    if (Averages->SDs(i,j,k)<2.0){
+                        GreySolidGrad_host[idx+0*Np] = phi_x;
+                        GreySolidGrad_host[idx+1*Np] = phi_y;
+                        GreySolidGrad_host[idx+2*Np] = phi_z;
+                    }
+                    else{
+                        GreySolidGrad_host[idx+0*Np] = 0.0;
+                        GreySolidGrad_host[idx+1*Np] = 0.0;
+                        GreySolidGrad_host[idx+2*Np] = 0.0;
+                    }
+				}
+			}
+		}
+	}
+
+
+	if (rank==0){
+		printf("Number of Grey-solid labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+		}
+	}
+    
+    
+	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
+	ScaLBL_DeviceBarrier();
+    delete [] SolidPotential_host;
+    delete [] GreySolidGrad_host;
+    delete [] Dst;
+}
 
 void ScaLBL_FreeLeeModel::Initialize(){
-	
-	if (rank==0)	printf ("Initializing distributions \n");
-	ScaLBL_D3Q19_Init(fq, Np);
 	/*
 	 * This function initializes model
 	 */
+	if (rank==0)	printf ("Initializing phase field, chemical potential and color gradient\n");
+	AssignComponentLabels_ChemPotential_ColorGrad();//initialize phase field Phi
+
+	//if (rank==0)	printf ("Initializing chemical potential and color gradient \n");
+    //AssignChemPotential_ColorGrad();
+
+	if (rank==0)	printf ("Initializing distributions for momentum transport\n");
+	ScaLBL_D3Q19_FreeLeeModel_Init(gqbar, mu_phi, ColorGrad, Fx, Fy, Fz, Np);
+
+	if (rank==0)	printf ("Initializing density field and distributions for phase-field transport\n");
+	ScaLBL_FreeLeeModel_PhaseField_Init(dvcMap, Phi, Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_FreeLeeModel_PhaseField_Init(dvcMap, Phi, Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+
 	if (Restart == true){
+        //TODO need to revise this function
 		if (rank==0){
 			printf("Reading restart file! \n");
 		}
@@ -292,7 +527,7 @@ void ScaLBL_FreeLeeModel::Initialize(){
 		cDen = new double[2*Np];
 		cDist = new double[19*Np];
 		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-        ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+        //ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
     	
 		ifstream File(LocalRestartFile,ios::binary);
 		int idx;
@@ -333,14 +568,13 @@ void ScaLBL_FreeLeeModel::Initialize(){
 		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
-		ScaLBL_DeviceBarrier();
-
+		ScaLBL_Comm->Barrier();
 		comm.barrier();
-	}
 
-	if (rank==0)	printf ("Initializing phase field \n");
-	//ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	//ScaLBL_PhaseField_Init(dvcMap, Phi, Den, hq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        if (rank==0)	printf ("Initializing phase and density fields on device from Restart\n");
+        ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	}
 
 	// establish reservoirs for external bC
 	if (BoundaryCondition == 1 || BoundaryCondition == 2 ||  BoundaryCondition == 3 || BoundaryCondition == 4 ){
@@ -382,27 +616,30 @@ void ScaLBL_FreeLeeModel::Run(){
 		PROFILE_START("Update");
 		// *************ODD TIMESTEP*************
 		timestep++;
-		/*		// Compute the Phase indicator field
+        //-------------------------------------------------------------------------------------------------------------------
+		// Compute the Phase indicator field
 		// Read for hq, Bq happens in this routine (requires communication)
-		ScaLBL_Comm->BiSendD3Q7AA(hq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, hq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->BiRecvD3Q7AA(hq,Bq); //WRITE INTO OPPOSITE
+		//ScaLBL_Comm->SendD3Q7AA(hq); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q7AA(hq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q7AA(hq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, hq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, hq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
+            //TODO to be revised
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
 		// Halo exchange for phase field
-		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_WideHalo->Send(Phi);
 
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_Regular->RecvHalo(Phi);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm_WideHalo->Recv(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
@@ -417,7 +654,7 @@ void ScaLBL_FreeLeeModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
-		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_DeviceBarrier(); 
 		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
@@ -425,24 +662,24 @@ void ScaLBL_FreeLeeModel::Run(){
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
-		ScaLBL_Comm->BiSendD3Q7AA(hq,Bq); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, hq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm->BiRecvD3Q7AA(hq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->SendD3Q7AA(hq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, hq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q7AA(hq); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
-		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, hq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, hq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
 		// Halo exchange for phase field
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_WideHalo->Send(Phi);
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_Regular->RecvHalo(Phi);
-		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm_WideHalo->Recv(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_DeviceBarrier();
 		// Set boundary conditions
 		if (BoundaryCondition == 3){
@@ -459,7 +696,6 @@ void ScaLBL_FreeLeeModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, hq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		*/
 		ScaLBL_Comm->Barrier();
 		//************************************************************************
 		PROFILE_STOP("Update");

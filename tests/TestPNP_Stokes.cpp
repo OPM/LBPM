@@ -82,7 +82,7 @@ int main(int argc, char **argv)
         PoissonSolver.SetDomain();    
         PoissonSolver.ReadInput();    
         PoissonSolver.Create();       
-        PoissonSolver.Initialize();   
+        PoissonSolver.Initialize(0);   
 
 
         int timestep=0;
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
         while (timestep < Study.timestepMax && error > Study.tolerance){
             
             timestep++;
-            PoissonSolver.Run(IonModel.ChargeDensity);//solve Poisson equtaion to get steady-state electrical potental
+            PoissonSolver.Run(IonModel.ChargeDensity,0);//solve Poisson equtaion to get steady-state electrical potental
             StokesModel.Run_Lite(IonModel.ChargeDensity, PoissonSolver.ElectricField);// Solve the N-S equations to get velocity
             IonModel.Run(StokesModel.Velocity,PoissonSolver.ElectricField); //solve for ion transport and electric potential
             
