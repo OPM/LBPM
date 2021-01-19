@@ -243,20 +243,19 @@ void ScaLBL_FreeLeeModel::Create(){
 			}
 		}
 	}
-    //TODO The following check needs update!
 	// check that TmpMap is valid
 	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
 		auto n = TmpMap[idx];
-		if (n > Nx*Ny*Nz){
+		if (n > Nxh*Nyh*Nzh){
 			printf("Bad value! idx=%i \n", n);
-			TmpMap[idx] = Nx*Ny*Nz-1;
+			TmpMap[idx] = Nxh*Nyh*Nzh-1;
 		}
 	}
 	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
 		auto n = TmpMap[idx];
-		if ( n > Nx*Ny*Nz ){
+		if ( n > Nxh*Nyh*Nzh ){
 			printf("Bad value! idx=%i \n",n);
-			TmpMap[idx] = Nx*Ny*Nz-1;
+			TmpMap[idx] = Nxh*Nyh*Nzh-1;
 		}
 	}
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
