@@ -242,9 +242,21 @@ void ScaLBL_ColorModel::ReadInput(){
 	if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 	CalcDist(Averages->SDs,id_solid,*Mask);
 	Solid.ComputeScalar(Averages->SDs,0.0);
+	/* save averages */
+	Averages->solid.V = Solid.Vi;
+	Averages->solid.A = Solid.Ai;
+	Averages->solid.H = Solid.Ji;
+	Averages->solid.X = Solid.Xi;
+	Averages->gsolid.V = Solid.Vi_global;
+	Averages->gsolid.A = Solid.Ai_global;
+	Averages->gsolid.H = Solid.Ji_global;
+	Averages->gsolid.X = Solid.Xi_global;
+	/* write to file */
 	if (rank == 0) {
-		printf("Vs As Hs Xs\n");
-		printf("%.8g %.8g %.8g %.8g\n",Solid.Vi_global,Solid.Ai_global,Solid.Ji_global,Solid.Xi_global);
+		FILE *SOLID = fopen("solid.csv","w");
+		fprintf(SOLID,"Vs As Hs Xs\n");
+		fprintf(SOLID,"%.8g %.8g %.8g %.8g\n",Solid.Vi_global,Solid.Ai_global,Solid.Ji_global,Solid.Xi_global);
+		fclose(SOLID);
 	}
 	if (rank == 0) cout << "Domain set." << endl;
 	
