@@ -68,11 +68,11 @@ public:
 	 * 		b - bulk (total)
 	 */
 	// local entities
-	phase wc,wd,wb,nc,nd,nb;
+	phase wc,wd,wb,nc,nd,nb,solid;
 	interface iwn,iwnc;
 	
 	// global entities
-	phase gwc,gwd,gwb,gnc,gnd,gnb;
+	phase gwc,gwd,gwb,gnc,gnd,gnb,gsolid;
 	interface giwn,giwnc;
 	/* fluid-solid wetting interaction */
 	double total_wetting_interaction, count_wetting_interaction;
@@ -88,6 +88,7 @@ public:
 	DoubleArray Rho_w;	// density field 
 	DoubleArray Phi;		// phase indicator field
 	DoubleArray DelPhi;		// Magnitude of Gradient of the phase indicator field
+	DoubleArray Laplacian;  // laplacian of phase indicator field
 	DoubleArray Pressure; 	// pressure field
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;

@@ -20,6 +20,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 	Pressure.resize(Nx,Ny,Nz);      Pressure.fill(0);
 	Phi.resize(Nx,Ny,Nz);         	Phi.fill(0);
 	DelPhi.resize(Nx,Ny,Nz);        DelPhi.fill(0);
+	Laplacian.resize(Nx,Ny,Nz);     Laplacian.fill(0);
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
@@ -172,8 +173,21 @@ void SubPhase::Basic(){
 	double count_w = 0.0;
 	double count_n = 0.0;
 	
-	total_wetting_interaction = count_wetting_interaction = 0.0;
-	total_wetting_interaction_global = count_wetting_interaction_global=0.0;
+	/* compute the laplacian */
+ 	Dm->CommunicateMeshHalo(Phi);
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				// Compute all of the derivatives using finite differences
+				double fx = (Phi(i+1,j,k) - 2.0*Phi(i,j,k) + Phi(i-1,j,k));
+				double fy = (Phi(i,j+1,k) - 2.0*Phi(i,j,k) + Phi(i,j-1,k));
+				double fz = (Phi(i,j,k+1) - 2.0*Phi(i,j,k) + Phi(i,j,k-1));
+				Laplacian(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
+			}
+		}
+	}
+	Dm->Comm.barrier();
+ 	Dm->CommunicateMeshHalo(Laplacian);
 	
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -234,132 +248,20 @@ void SubPhase::Basic(){
 						count_w += 1.0;
 					}
 				}
-				else {
-					// solid wetting assessment
-					double wetval = Phi(i,j,k);
-					//if (wetval != wetval) printf("%f at %i %i %i \n",wetval,i,j,k);
-					double local_wetting_interaction = 0.0;
-					double local_wetting_weight=0.0;
-					nq = (k)*Nx*Ny+(j)*Nx+(i+1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 1\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					nq = (k)*Nx*Ny+(j)*Nx+(i-1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 2\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					nq = (k)*Nx*Ny+(j+1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 3\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					nq = (k)*Nx*Ny+(j-1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 4\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					nq = (k+1)*Nx*Ny+(j)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 5\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					nq = (k-1)*Nx*Ny+(j)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 6\n",i,j,k);
-						 local_wetting_interaction += (Phi(nq)-wetval);
-						 local_wetting_weight += 1.0;
-					}
-					// x, y interactions
-					nq = (k)*Nx*Ny+(j+1)*Nx+(i+1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 7\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k)*Nx*Ny+(j-1)*Nx+(i-1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 8\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k)*Nx*Ny+(j-1)*Nx+(i+1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 9\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k)*Nx*Ny+(j+1)*Nx+(i-1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 10\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					// xz interactions
-					nq = (k+1)*Nx*Ny+(j)*Nx+(i+1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 11\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k-1)*Nx*Ny+(j)*Nx+(i-1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 12\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k+1)*Nx*Ny+(j)*Nx+(i-1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 13\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k-1)*Nx*Ny+(j)*Nx+(i+1);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 14\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					// yz interactions
-					nq = (k+1)*Nx*Ny+(j+1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 15\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k-1)*Nx*Ny+(j-1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 16\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k+1)*Nx*Ny+(j-1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 17\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					nq = (k-1)*Nx*Ny+(j+1)*Nx+(i);
-					if ( Dm->id[nq] > 0 ) {
-						 //if (Phi(nq)!=Phi(nq)) printf("%i %i %i : 18\n",i,j,k);
-						 local_wetting_interaction += 0.5*(Phi(nq)-wetval);
-						 local_wetting_weight += 0.5;
-					}
-					/*  interaction due to this solid site*/
-					if (local_wetting_interaction == local_wetting_interaction){
-						total_wetting_interaction += 0.5*local_wetting_interaction;
-						if (local_wetting_weight > 0.0)
-							count_wetting_interaction += local_wetting_weight;
-					}
-					else{
-						//printf("Check interaction at %i %i %i \n",i,j,k);
-					}
+			}
+		}
+	}
+	
+	total_wetting_interaction = count_wetting_interaction = 0.0;
+	total_wetting_interaction_global = count_wetting_interaction_global=0.0;
+	for (k=kmin; k<kmax; k++){
+		for (j=jmin; j<Ny-1; j++){
+			for (i=imin; i<Nx-1; i++){
+				n = k*Nx*Ny + j*Nx + i;
+				// compute contribution of wetting terms (within two voxels of solid)
+				if ( Dm->id[n] > 0  && SDs(i,j,k) < 2.0 ){
+					count_wetting_interaction += 1.0;
+					total_wetting_interaction += Laplacian(i,j,k);
 				}
 			}
 		}
@@ -367,11 +269,12 @@ void SubPhase::Basic(){
 	//printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
 	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
 	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
-	/* normalize wetting interactions */
+	/* normalize wetting interactions  <-- Don't do this if normalizing laplacian (use solid surface area)
 	if (count_wetting_interaction > 0.0)
 		total_wetting_interaction /= count_wetting_interaction;
 	if (count_wetting_interaction_global > 0.0)
 		total_wetting_interaction_global /= count_wetting_interaction_global;
+	*/
 	
 	gwb.V=Dm->Comm.sumReduce(  wb.V);
 	gnb.V=Dm->Comm.sumReduce(  nb.V);

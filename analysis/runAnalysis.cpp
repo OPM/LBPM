@@ -940,7 +940,10 @@ void runAnalysis::run(int timestep, std::shared_ptr<Database> input_db, TwoPhase
  ******************************************************************/
 void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPhase &Averages, const double *Phi, double *Pressure, double *Velocity, double *fq, double *Den)
 {
-    int N = d_N[0]*d_N[1]*d_N[2];
+    int Nx = d_N[0];
+    int Ny = d_N[1];
+    int Nz = d_N[2];
+    int N = Nx*Ny*Nz;
     NULL_USE( N );
     // Check which analysis steps we need to perform
 	auto color_db =  input_db->getDatabase( "Color" );
@@ -1036,7 +1039,7 @@ void runAnalysis::basic(int timestep, std::shared_ptr<Database> input_db, SubPha
     if (timestep%d_visualization_interval==0){
         // Write the vis files
         commWrapper comm = getComm();
-        fillHalo<double> fillData( comm.comm, d_rank_info, d_n, {1,1,1}, 0, 1 );
+        fillHalo<double> fillData( comm.comm, d_rank_info, {Nx-2,Ny-2,Nz-2}, {1,1,1}, 0, 1 );
         auto work = new IOWorkItem( timestep, input_db, d_meshData, Averages, fillData, std::move( comm ) );
         work->add_dependency(d_wait_analysis);
         work->add_dependency(d_wait_subphase);
