@@ -1,3 +1,18 @@
+/*
+  Copyright 2013--2018 James E. McClure, Virginia Polytechnic & State University
+
+  This file is part of the Open Porous Media project (OPM).
+  OPM is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  OPM is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  You should have received a copy of the GNU General Public License
+  along with OPM.  If not, see <http://www.gnu.org/licenses/>.
+*/
 /* ScaLBL.h 
  *  Header file for Scalable Lattice Boltzmann Library
  *  Separate implementations for GPU and CPU must both follow the conventions defined in this header
@@ -119,6 +134,59 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_MRT(double *dist, int start, int f
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Fx, double Fy, double Fz, 
                                              double *Poros,double *Perm, double *Velocity,double Den,double *Pressure);
+
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
+        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
+		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
+        double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
+		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_IonConcentration(int *neighborList, double *dist, double *Den, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_IonConcentration(double *dist, double *Den, int start, int finish, int Np);
+
+
+extern "C" void ScaLBL_D3Q7_AAodd_Ion(int *neighborList, double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                      double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Ion(double *dist, double *Den, double *Velocity, double *ElectricField, 
+                                       double Di, int zi, double rlx, double Vt, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_Init(double *dist, double *Den, double DenInit, int Np);
+extern "C" void ScaLBL_D3Q7_Ion_Init_FromFile(double *dist, double *Den, int Np);
+
+extern "C" void ScaLBL_D3Q7_Ion_ChargeDensity(double *Den, double *ChargeDensity, int IonValence, int ion_component, int start, int finish, int Np);
+
+// LBM Poisson solver
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson(int *neighborList,int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,
+        int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson(int *Map, double *dist, double *Den_charge, double *Psi, double *ElectricField, double tau, double epsilon_LB,
+        int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAodd_Poisson_ElectricPotential(int *neighborList,int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Poisson_ElectricPotential(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_Poisson_Init(int *Map, double *dist, double *Psi, int start, int finish, int Np);
+
+//maybe deprecated
+//extern "C" void ScaLBL_D3Q7_Poisson_ElectricField(int *neighborList, int *Map, signed char *ID, double *Psi, double *ElectricField, int SolidBC,
+//        int strideY, int strideZ,int start, int finish, int Np);
+
+// LBM Stokes Model (adapted from MRT model)
+
+extern "C" void ScaLBL_D3Q19_AAeven_StokesMRT(double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                double Gx, double Gy, double Gz,double rho0, double den_scale, double h, double time_conv, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_StokesMRT(int *neighborList, double *dist, double *Velocity, double *ChargeDensity, double *ElectricField, double rlx_setA, double rlx_setB, 
+                double Gx, double Gy, double Gz, double rho0, double den_scale, double h, double time_conv,int start, int finish, int Np);
+
 // GREYSCALE FREE-ENERGY MODEL (Two-component)
 
 //extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleFE(double *dist, double *Aq, double *Bq, double *Den,
@@ -404,6 +472,10 @@ public:
 	void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
 	void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
 	void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+	void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
+	void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
+        void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
+        void GreyscaleSC_Pressure_BC_Z(int *neighborList, double *fqA, double *fqB, double doutA, double doutB, int time);
 	void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
 	void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
         void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
