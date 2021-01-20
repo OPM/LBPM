@@ -310,6 +310,35 @@ ScaLBL_Communicator::~ScaLBL_Communicator(){
 	// destrutor does nothing (bad idea)
 	// -- note that there needs to be a way to free memory allocated on the device!!!
 }
+double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np){
+	/* EACH MPI PROCESS GETS ITS OWN MEASUREMENT*/
+	/* use MRT kernels to check performance without communication / synchronization */
+	int TIMESTEPS=500;
+	double RLX_SETA=1.0;
+	double RLX_SETB = 8.f*(2.f-RLX_SETA)/(8.f-RLX_SETA);
+	double FX = 0.0;
+	double FY = 0.0;
+	double FZ = 0.0;
+	//.......create and start timer............
+	double starttime,stoptime,cputime;
+	Barrier();
+	starttime = MPI_Wtime();
+	//.........................................
+	for (int t=0; t<TIMESTEPS; t++){
+		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAeven_MRT(fq, FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAeven_MRT(fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+	}
+	stoptime = MPI_Wtime();
+	Barrier();
+	// Compute the walltime per timestep
+	cputime = (stoptime - starttime)/TIMESTEPS;
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+	return MLUPS;
+
+}	
 int ScaLBL_Communicator::LastExterior(){
 	return next;
 }
