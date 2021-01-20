@@ -88,7 +88,6 @@ public:
 	DoubleArray Rho_w;	// density field 
 	DoubleArray Phi;		// phase indicator field
 	DoubleArray DelPhi;		// Magnitude of Gradient of the phase indicator field
-	DoubleArray Laplacian;  // laplacian of phase indicator field
 	DoubleArray Pressure; 	// pressure field
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;

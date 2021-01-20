@@ -20,7 +20,6 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 	Pressure.resize(Nx,Ny,Nz);      Pressure.fill(0);
 	Phi.resize(Nx,Ny,Nz);         	Phi.fill(0);
 	DelPhi.resize(Nx,Ny,Nz);        DelPhi.fill(0);
-	Laplacian.resize(Nx,Ny,Nz);     Laplacian.fill(0);
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
@@ -179,15 +178,14 @@ void SubPhase::Basic(){
 		for (int j=1; j<Ny-1; j++){
 			for (int i=1; i<Nx-1; i++){
 				// Compute all of the derivatives using finite differences
-				double fx = (Phi(i+1,j,k) - 2.0*Phi(i,j,k) + Phi(i-1,j,k));
-				double fy = (Phi(i,j+1,k) - 2.0*Phi(i,j,k) + Phi(i,j-1,k));
-				double fz = (Phi(i,j,k+1) - 2.0*Phi(i,j,k) + Phi(i,j,k-1));
-				Laplacian(i,j,k) = 0.5*(fx + fy + fz);
+				double fx = 0.5*(Phi(i+1,j,k) - Phi(i-1,j,k));
+				double fy = 0.5*(Phi(i,j+1,k) - Phi(i,j-1,k));
+				double fz = 0.5*(Phi(i,j,k+1) - Phi(i,j,k-1));
+				DelPhi(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
 			}
 		}
 	}
-	Dm->Comm.barrier();
- 	Dm->CommunicateMeshHalo(Laplacian);
+ 	Dm->CommunicateMeshHalo(DelPhi);
 	
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
@@ -261,7 +259,7 @@ void SubPhase::Basic(){
 				// compute contribution of wetting terms (within two voxels of solid)
 				if ( Dm->id[n] > 0  && SDs(i,j,k) < 2.0 ){
 					count_wetting_interaction += 1.0;
-					total_wetting_interaction += Laplacian(i,j,k);
+					total_wetting_interaction += DelPhi(i,j,k);
 				}
 			}
 		}
