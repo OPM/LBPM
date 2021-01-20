@@ -26,6 +26,8 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
+	dout = 1.0;
+	din = 1.0;
 
 	// Color Model parameters
 	if (mrt_db->keyExists( "timestepMax" )){
@@ -194,7 +196,8 @@ void ScaLBL_MRTModel::Create(){
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	comm.barrier();
-	
+	double MLUPS = ScaLBL_Comm->GetPerformance(NeighborList,fq,Np);
+	printf("  MLPUS=%f from rank %i\n",MLUPS,rank);
 }        
 
 void ScaLBL_MRTModel::Initialize(){

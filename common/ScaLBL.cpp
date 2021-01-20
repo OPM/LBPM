@@ -319,6 +319,7 @@ double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np
 	double FX = 0.0;
 	double FY = 0.0;
 	double FZ = 0.0;
+    ScaLBL_D3Q19_Init(fq, Np);
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
 	Barrier();
@@ -333,7 +334,7 @@ double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np
 	stoptime = MPI_Wtime();
 	Barrier();
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/TIMESTEPS;
+	cputime = 0.5*(stoptime - starttime)/TIMESTEPS;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 	return MLUPS;
