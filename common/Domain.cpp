@@ -558,17 +558,13 @@ void Domain::Decomp( const std::string& Filename )
 	int64_t z_transition_size = (nprocz*nz - (global_Nz - zStart))/2;
 	if (z_transition_size < 0) z_transition_size=0;
 
-	char LocalRankFilename[40];
-	char *loc_id;
-	loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
-
 	// Set up the sub-domains
 	if (RANK==0){
 		printf("Distributing subdomains across %i processors \n",nprocs);
 		printf("Process grid: %i x %i x %i \n",nprocx,nprocy,nprocz);
 		printf("Subdomain size: %i x %i x %i \n",nx,ny,nz);
 		printf("Size of transition region: %ld \n", z_transition_size);
-
+	    auto loc_id = new char [(nx+2)*(ny+2)*(nz+2)];
 		for (int kp=0; kp<nprocz; kp++){
 			for (int jp=0; jp<nprocy; jp++){
 				for (int ip=0; ip<nprocx; ip++){
@@ -609,6 +605,7 @@ void Domain::Decomp( const std::string& Filename )
 						Comm.send(loc_id,N,rnk,15);
 					}
 					// Write the data for this rank data 
+	                char LocalRankFilename[40];
 					sprintf(LocalRankFilename,"ID.%05i",rnk+rank_offset);
 					FILE *ID = fopen(LocalRankFilename,"wb");
 					fwrite(loc_id,1,(nx+2)*(ny+2)*(nz+2),ID);
@@ -616,9 +613,8 @@ void Domain::Decomp( const std::string& Filename )
 				}
 			}
 		}
-
-	}
-	else{
+        delete [] loc_id;
+	} else {
 		// Recieve the subdomain from rank = 0
 		//printf("Ready to recieve data %i at process %i \n", N,rank);
 		Comm.recv(id.data(),N,0,15);
@@ -645,6 +641,7 @@ void Domain::Decomp( const std::string& Filename )
     porosity = sum*iVol_global;
     if (rank()==0) printf("Media porosity = %f \n",porosity);
  	//.........................................................
+    delete [] SegData;
 }
 
 void Domain::AggregateLabels( const std::string& filename ){
@@ -669,8 +666,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 	int local_size = (nx-2)*(ny-2)*(nz-2);
 	long int full_size = long(full_nx)*long(full_ny)*long(full_nz);
 	
-	signed char *LocalID;
-	LocalID = new signed char [local_size];
+	auto LocalID = new signed char [local_size];
 		
 	//printf("aggregate labels: local size=%i, global size = %i",local_size, full_size);
 	// assign the ID for the local sub-region
@@ -687,8 +683,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 
 	// populate the FullID 
 	if (rank() == 0){
-		signed char *FullID;
-		FullID = new signed char [full_size];
+		auto FullID = new signed char [full_size];
 		// first handle local ID for rank 0
 		for (int k=1; k<nz-1; k++){
 			for (int j=1; j<ny-1; j++){
@@ -727,6 +722,7 @@ void Domain::AggregateLabels( const std::string& filename ){
 		FILE *OUTFILE = fopen(filename.c_str(),"wb");
 		fwrite(FullID,1,full_size,OUTFILE);
 		fclose(OUTFILE);
+        delete [] FullID;
 	}
 	else{
 		// send LocalID to rank=0
@@ -734,8 +730,8 @@ void Domain::AggregateLabels( const std::string& filename ){
 		int dstrank = 0;
 		Comm.send(LocalID,local_size,dstrank,tag);
 	}
+    delete [] LocalID;
 	Comm.barrier();
-
 }
 
 /********************************************************
@@ -1232,11 +1228,10 @@ void Domain::ReadFromFile(const std::string& Filename,const std::string& Datatyp
     //       user needs to modify the input file accordingly before LBPM simulator read
     //       the input file.
 	//........................................................................................
-	int rank_offset = 0;
 	int RANK = rank();
 	int nprocs, nprocx, nprocy, nprocz, nx, ny, nz;
 	int64_t global_Nx,global_Ny,global_Nz;
-	int64_t i,j,k,n;
+	int64_t i,j,k;
     //TODO These offset we may still need them
 	int64_t xStart,yStart,zStart;
 	xStart=yStart=zStart=0;
@@ -1393,7 +1388,6 @@ void Domain::AggregateLabels( const std::string& filename, DoubleArray &UserData
 	for (int k=1; k<nz-1; k++){
 		for (int j=1; j<ny-1; j++){
 			for (int i=1; i<nx-1; i++){
-				int n = k*nx*ny+j*nx+i;
 				double local_id_val = UserData(i,j,k); 
 				LocalID[(k-1)*(nx-2)*(ny-2) + (j-1)*(nx-2) + i-1] = local_id_val;
 			}

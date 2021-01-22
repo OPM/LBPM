@@ -10,14 +10,31 @@ color lattice boltzmann model
 #include <time.h>
 
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
-Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
-Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
+    rank(RANK), nprocs(NP), Restart(0), timestep(0), timestepMax(0),
+    tauA(0), tauB(0), rhoA(0), rhoB(0), alpha(0), beta(0),
+    Fx(0), Fy(0), Fz(0), flux(0), din(0), dout(0),
+    inletA(0), inletB(0), outletA(0), outletB(0),
+    Nx(0), Ny(0), Nz(0), N(0), Np(0), nprocx(0), nprocy(0), nprocz(0),
+    BoundaryCondition(0), Lx(0), Ly(0), Lz(0), id(nullptr),
+    NeighborList(nullptr), dvcMap(nullptr), fq(nullptr), Aq(nullptr), Bq(nullptr),
+    Den(nullptr), Phi(nullptr), ColorGrad(nullptr), Velocity(nullptr), Pressure(nullptr),
+    comm(COMM)
 {
 	REVERSE_FLOW_DIRECTION = false;
 }
-ScaLBL_ColorModel::~ScaLBL_ColorModel(){
-
+ScaLBL_ColorModel::~ScaLBL_ColorModel()
+{
+    delete [] id;
+	ScaLBL_FreeDeviceMemory( NeighborList );
+	ScaLBL_FreeDeviceMemory( dvcMap );
+	ScaLBL_FreeDeviceMemory( fq );
+	ScaLBL_FreeDeviceMemory( Aq );
+	ScaLBL_FreeDeviceMemory( Bq );
+	ScaLBL_FreeDeviceMemory( Den );
+	ScaLBL_FreeDeviceMemory( Phi );		
+	ScaLBL_FreeDeviceMemory( Pressure );
+	ScaLBL_FreeDeviceMemory( Velocity );
+	ScaLBL_FreeDeviceMemory( ColorGrad );
 }
 
 /*void ScaLBL_ColorModel::WriteCheckpoint(const char *FILENAME, const double *cPhi, const double *cfq, int Np)
@@ -408,11 +425,13 @@ void ScaLBL_ColorModel::Create(){
 	
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+    delete [] neighborList;
 	// initialize phi based on PhaseLabel (include solid component labels)
 	double *PhaseLabel;
 	PhaseLabel = new double[N];
 	AssignComponentLabels(PhaseLabel);
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
+    delete [] PhaseLabel;
 }        
 
 /********************************************************
@@ -1097,7 +1116,6 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 		ScaLBL_CopyToHost(phase.data(), Phi, N*sizeof(double));
 
 		// Extract only the connected part of NWP
-		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,Averages->SDs,vF,vS,phase_label,Dm->Comm);
 		comm.barrier();
@@ -1334,7 +1352,6 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	double volume_connected = 0.0;
        	double second_biggest = 0.0;
 	if (USE_CONNECTED_NWP){
-		BlobIDstruct new_index;
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,Averages->SDs,vF,vS,phase_label,comm);
 		comm.barrier();
 

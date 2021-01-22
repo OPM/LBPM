@@ -8,10 +8,14 @@ Copyright (c) 2012 UT-Battelle, LLC
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-Collection of administrative costs for redistribution of the source code or binary form is allowed. However, collection of a royalty or other fee in excess of good faith amount for cost recovery for such redistribution is prohibited.
+Redistribution and use in source and binary forms, with or without modification, are permitted
+provided that the following conditions are met: Redistributions of source code must retain the above
+copyright notice, this list of conditions and the following disclaimer. Redistributions in binary
+form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the distribution. Collection of
+administrative costs for redistribution of the source code or binary form is allowed. However,
+collection of a royalty or other fee in excess of good faith amount for cost recovery for such
+redistribution is prohibited.
 
 */
 
@@ -274,6 +278,8 @@ public: // Member functions
      * \brief Return the global ranks for the comm
      * \details  This returns a vector which contains the global ranks for each
      *   member of the communicator.  The global ranks are defined according to WORLD comm.
+     *   Note: this function is a blocking collective on the current communicator
+     *      (unless the current communicator is global, self, or null)
      */
     std::vector<int> globalRanks() const;
 
@@ -796,7 +802,8 @@ public: // Member functions
      * @brief This function sends and recieves data using a blocking call
      */
     template<class type>
-    void sendrecv( const type *sendbuf, int sendcount, int dest, int sendtag, type *recvbuf, int recvcount, int source, int recvtag ) const;
+    void sendrecv( const type *sendbuf, int sendcount, int dest, int sendtag, type *recvbuf,
+        int recvcount, int source, int recvtag ) const;
 
 
     /*!
@@ -1125,9 +1132,6 @@ private: // data members
 
     // The rank and size of the communicator
     int comm_rank, comm_size;
-
-    // The ranks of the comm in the global comm
-    mutable int *volatile d_ranks;
 
     // Some attributes
     int d_maxTag;
