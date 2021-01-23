@@ -1,5 +1,7 @@
 /* Implement Mixed Gradient (Lee et al. JCP 2016)*/
 #include <cuda.h>
+#include <stdio.h>
+#include <cuda_profiler_api.h>
 
 #define NBLOCKS 560
 #define NTHREADS 128
@@ -11,12 +13,13 @@ __global__ void dvc_ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gr
 			{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 			{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 
-	int i,j,k,n,N;
+	int i,j,k,n,N,idx;
 	int np,np2,nm; // neighbors
 	double v,vp,vp2,vm; // values at neighbors
 	double grad;
+	N = Nx*Ny*Nz;
 
-	int S = N/NBLOCKS/NTHREADS + 1;
+	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
 
 		//........Get 1-D index for this thread....................

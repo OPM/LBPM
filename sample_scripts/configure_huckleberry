@@ -26,5 +26,5 @@ cmake                                    \
     -D USE_TIMER=0				 \
     ~/LBPM-WIA
 
-make VERBOSE=1 -j8 && make install
+make VERBOSE=1 -j4 && make install
 
