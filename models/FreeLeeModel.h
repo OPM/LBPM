@@ -35,7 +35,8 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB;
-	double W,gamma;
+    double tauM;//relaxation time for phase field (or mass)
+	double W,gamma,kappa,beta;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
 	
