@@ -62,7 +62,7 @@ public:
     signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
-	double *fq, *hq;
+	double *gqbar, *hq;
 	double *mu_phi, *Den, *Phi;
 	double *ColorGrad;
 	double *Velocity;
@@ -82,6 +82,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
+	void AssignComponentLabels_ChemPotential_ColorGrad();
 
 };
 

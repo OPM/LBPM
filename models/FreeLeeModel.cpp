@@ -51,6 +51,9 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	if (freelee_db->keyExists( "tauB" )){
 		tauB = freelee_db->getScalar<double>( "tauB" );
 	}
+	if (freelee_db->keyExists( "tauM" )){
+		tauM = freelee_db->getScalar<double>( "tauM" );
+	}
 	if (freelee_db->keyExists( "rhoA" )){
 		rhoA = freelee_db->getScalar<double>( "rhoA" );
 	}
@@ -282,8 +285,8 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	signed char VALUE=0;
 	double AFFINITY=0.f;
 
-	auto LabelList = greyscaleColor_db->getVector<int>( "ComponentLabels" );
-	auto AffinityList = greyscaleColor_db->getVector<double>( "ComponentAffinity" );
+	auto LabelList = freelee_db->getVector<int>( "ComponentLabels" );
+	auto AffinityList = freelee_db->getVector<double>( "ComponentAffinity" );
 
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
@@ -337,7 +340,7 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
 	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx] = sumReduce( Dm->Comm, label_count[idx]);
+		label_count_global[idx] = Dm->Comm.sumReduce(label_count[idx]);
 
 	if (rank==0){
 		printf("Number of component labels: %lu \n",NLABELS);
@@ -350,7 +353,7 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	}
 
     //compute color gradient and laplacian of phase field
-	double *ColorGrad_host, mu_phi_host;
+	double *ColorGrad_host, *mu_phi_host;
 	ColorGrad_host = new double[3*Np];
 	mu_phi_host    = new double[Np];
 
@@ -461,6 +464,7 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	ScaLBL_CopyToDevice(Phi, phase, Nh*sizeof(double));
 	ScaLBL_CopyToDevice(ColorGrad, ColorGrad_host, 3*Np*sizeof(double));
 	ScaLBL_CopyToDevice(mu_phi, mu_phi_host, Np*sizeof(double));
+	ScaLBL_Comm->Barrier();
 	comm.barrier();
     delete [] phase;
     delete [] ColorGrad_host;
@@ -536,14 +540,15 @@ void ScaLBL_FreeLeeModel::Initialize(){
 		
 		// Copy the restart data to the GPU
 		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
-		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
+		ScaLBL_CopyToDevice(gqbar,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
 		ScaLBL_Comm->Barrier();
 		comm.barrier();
 
         if (rank==0)	printf ("Initializing phase and density fields on device from Restart\n");
-        ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        //TODO the following function is to be updated.
+        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
+        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	}
 
 	// establish reservoirs for external bC
@@ -575,7 +580,7 @@ void ScaLBL_FreeLeeModel::Run(){
 
 	//.......create and start timer............
 	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	comm.barrier();
 	starttime = MPI_Wtime();
 	//.........................................
@@ -593,7 +598,7 @@ void ScaLBL_FreeLeeModel::Run(){
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -606,28 +611,27 @@ void ScaLBL_FreeLeeModel::Run(){
 		// Halo exchange for phase field
 		ScaLBL_Comm_WideHalo->Send(Phi);
 
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
-			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, gqbar, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
 		}
 		if (BoundaryCondition == 4){
-			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, gqbar, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
 		}
 		else if (BoundaryCondition == 5){
-			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
-			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		ScaLBL_Comm->Barrier(); 
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -635,7 +639,7 @@ void ScaLBL_FreeLeeModel::Run(){
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -646,25 +650,25 @@ void ScaLBL_FreeLeeModel::Run(){
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
 		ScaLBL_Comm_WideHalo->Send(Phi);
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set boundary conditions
 		if (BoundaryCondition == 3){
-			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
-			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, gqbar, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
 		}
 		else if (BoundaryCondition == 4){
-			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
-			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, gqbar, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
 		}
 		else if (BoundaryCondition == 5){
-			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
-			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier();
 		//************************************************************************
