@@ -297,6 +297,7 @@ public:
 	int FirstInterior();
 	int LastInterior();
 	
+	double GetPerformance(int *NeighborList, double *fq, int Np);
 	int MemoryOptimizedLayoutAA(IntArray &Map, int *neighborList, signed char *id, int Np, int width);
 	void Barrier(){
 		ScaLBL_DeviceBarrier();

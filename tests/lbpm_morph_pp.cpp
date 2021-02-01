@@ -128,7 +128,6 @@ int main(int argc, char **argv)
 		comm.barrier();
 		
 		// Extract only the connected part of NWP
-		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
 		Dm->Comm.barrier();
