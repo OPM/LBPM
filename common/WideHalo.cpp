@@ -67,7 +67,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	sendCount_y =getHaloBlock(width,Nxh-width,width,2*width,width,Nzh-width,dvcSendList_y);
 	sendCount_Y =getHaloBlock(width,Nxh-width,Nyh-2*width,Nyh-width,width,Nzh-width,dvcSendList_Y);
 	sendCount_z =getHaloBlock(width,Nxh-width,width,Nyh-width,width,2*width,dvcSendList_z);
-	sendCount_X =getHaloBlock(width,Nxh-width,width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_Z);
+	sendCount_Z =getHaloBlock(width,Nxh-width,width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_Z);
 	// xy
 	sendCount_xy =getHaloBlock(width,2*width,width,2*width,width,Nzh-width,dvcSendList_xy);
 	sendCount_xY =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,width,Nzh-width,dvcSendList_xY);
@@ -87,7 +87,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	sendCount_xyz =getHaloBlock(width,2*width,width,2*width,width,2*width,dvcSendList_xyz);
 	sendCount_xyZ =getHaloBlock(width,2*width,width,2*width,Nzh-2*width,Nzh-width,dvcSendList_xyZ);
 	sendCount_xYz =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,width,2*width,dvcSendList_xYz);
-	sendCount_xYz =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_xYZ);
+	sendCount_xYZ =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_xYZ);
 	sendCount_Xyz =getHaloBlock(Nxh-2*width,Nxh-width,width,2*width,width,2*width,dvcSendList_Xyz);
 	sendCount_XyZ =getHaloBlock(Nxh-2*width,Nxh-width,width,2*width,Nzh-2*width,Nzh-width,dvcSendList_XyZ);
 	sendCount_XYz =getHaloBlock(Nxh-2*width,Nxh-width,Nyh-2*width,Nyh-width,width,2*width,dvcSendList_XYz);

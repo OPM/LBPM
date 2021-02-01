@@ -99,7 +99,7 @@ private:
 		int count = 0;
 		int *List;
 		List = new int [(imax-imin)*(jmax-jmin)*(kmax-kmin)];
-		for (int k=kmin; k<kmax; k++){
+		for (k=kmin; k<kmax; k++){
 			for (j=jmin; j<jmax; j++){
 				for (i=imin; i<imax; i++){
 					List[count++] =  k*Nxh*Nyh + j*Nxh + i;
