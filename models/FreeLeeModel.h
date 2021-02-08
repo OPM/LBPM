@@ -26,10 +26,14 @@ public:
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
-	void Create();
-	void Initialize();
-	void Run();
-	void WriteDebug();
+	void Create_TwoFluid();
+	void Initialize_TwoFluid();
+	void Run_TwoFluid();
+	void WriteDebug_TwoFluid();
+	void Create_SingleFluid();
+	void Initialize_SingleFluid();
+	void Run_SingleFluid();
+	void WriteDebug_SingleFluid();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;

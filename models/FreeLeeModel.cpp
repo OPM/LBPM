@@ -193,9 +193,9 @@ void ScaLBL_FreeLeeModel::ReadInput(){
 
 }
 
-void ScaLBL_FreeLeeModel::Create(){
+void ScaLBL_FreeLeeModel::Create_TwoFluid(){
 	/*
-	 *  This function creates the variables needed to run a LBM 
+	 *  This function creates the variables needed to run two-fluid Lee model
 	 */
 	//.........................................................
 	// Initialize communication structures in averaging domain
@@ -207,7 +207,7 @@ void ScaLBL_FreeLeeModel::Create(){
 	// Create a communicator for the device (will use optimized layout)
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
-	ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	//ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 	ScaLBL_Comm_WideHalo  = std::shared_ptr<ScaLBLWideHalo_Communicator>(new ScaLBLWideHalo_Communicator(Mask,2));
 
 	// create the layout for the LBM
@@ -273,6 +273,51 @@ void ScaLBL_FreeLeeModel::Create(){
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	comm.barrier();
 	delete [] TmpMap;
+	delete [] neighborList;
+}        
+
+void ScaLBL_FreeLeeModel::Create_SingleFluid(){
+	/*
+	 *  This function creates the variables needed to run single-fluid Lee model
+	 */
+	//.........................................................
+	// Initialize communication structures in averaging domain
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];
+	Mask->CommInit();
+	Np=Mask->PoreCount();
+	//...........................................................................
+	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device (will use optimized layout)
+	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
+	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+
+	// create the layout for the LBM
+	int Npad=(Np/16 + 2)*16;
+	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
+	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
+	auto neighborList= new int[18*Npad];
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	comm.barrier();
+
+	//...........................................................................
+	//                MAIN  VARIABLES ALLOCATED HERE
+	//...........................................................................
+	// LBM variables
+	if (rank==0)    printf ("Allocating distributions \n");
+	//......................device distributions.................................
+	dist_mem_size = Np*sizeof(double);
+	neighborSize=18*(Np*sizeof(int));
+	//...........................................................................
+	ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+	ScaLBL_AllocateDeviceMemory((void **) &gqbar, 19*dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
+	//...........................................................................
+	// Update GPU data structures
+	if (rank==0)	printf ("Setting up device map and neighbor list \n");
+	// copy the neighbor list 
+	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+	comm.barrier();
 	delete [] neighborList;
 }        
 
@@ -482,15 +527,15 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
     delete [] Dst;
 }
 
-void ScaLBL_FreeLeeModel::Initialize(){
+void ScaLBL_FreeLeeModel::Initialize_TwoFluid(){
 	/*
-	 * This function initializes model
+	 * This function initializes two-fluid Lee model
 	 */
 	if (rank==0)	printf ("Initializing phase field, chemical potential and color gradient\n");
 	AssignComponentLabels_ChemPotential_ColorGrad();//initialize phase field Phi
 
 	if (rank==0)	printf ("Initializing distributions for momentum transport\n");
-	ScaLBL_D3Q19_FreeLeeModel_Init(gqbar, mu_phi, ColorGrad, Fx, Fy, Fz, Np);
+	ScaLBL_D3Q19_FreeLeeModel_TwoFluid_Init(gqbar, mu_phi, ColorGrad, Fx, Fy, Fz, Np);
 
 	if (rank==0)	printf ("Initializing density field and distributions for phase-field transport\n");
 	ScaLBL_FreeLeeModel_PhaseField_Init(dvcMap, Phi, Den, hq, ColorGrad, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
@@ -578,7 +623,84 @@ void ScaLBL_FreeLeeModel::Initialize(){
 	//ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 }
 
-void ScaLBL_FreeLeeModel::Run(){
+void ScaLBL_FreeLeeModel::Initialize_SingleFluid(){
+	/*
+	 * This function initializes single-fluid Lee model
+	 */
+	if (rank==0)	printf ("Initializing distributions for momentum transport\n");
+	ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(gqbar, Fx, Fy, Fz, Np);
+
+	if (Restart == true){
+        //TODO need to revise this function
+        //remove the phase-related part
+
+
+
+//		if (rank==0){
+//			printf("Reading restart file! \n");
+//		}
+//
+//		// Read in the restart file to CPU buffers
+//		int *TmpMap;
+//		TmpMap = new int[Np];
+//		
+//		double *cPhi, *cDist, *cDen;
+//		cPhi = new double[N];
+//		cDen = new double[2*Np];
+//		cDist = new double[19*Np];
+//		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
+//        //ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
+//    	
+//		ifstream File(LocalRestartFile,ios::binary);
+//		int idx;
+//		double value,va,vb;
+//		for (int n=0; n<Np; n++){
+//			File.read((char*) &va, sizeof(va));
+//			File.read((char*) &vb, sizeof(vb));
+//			cDen[n]    = va;
+//			cDen[Np+n] = vb;
+//		}
+//		for (int n=0; n<Np; n++){
+//			// Read the distributions
+//			for (int q=0; q<19; q++){
+//				File.read((char*) &value, sizeof(value));
+//				cDist[q*Np+n] = value;
+//			}
+//		}
+//		File.close();
+//		
+//		for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
+//			va = cDen[n];
+//			vb = cDen[Np + n];
+//			value = (va-vb)/(va+vb);
+//			idx = TmpMap[n];
+//			if (!(idx < 0) && idx<N)
+//				cPhi[idx] = value;
+//		}
+//		for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
+//		  va = cDen[n];
+//		  vb = cDen[Np + n];
+//		  	value = (va-vb)/(va+vb);
+//		  	idx = TmpMap[n];
+//		  	if (!(idx < 0) && idx<N)
+//		  		cPhi[idx] = value;
+//		}
+//		
+//		// Copy the restart data to the GPU
+//		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
+//		ScaLBL_CopyToDevice(gqbar,cDist,19*Np*sizeof(double));
+//		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
+//		ScaLBL_Comm->Barrier();
+//		comm.barrier();
+//
+//        if (rank==0)	printf ("Initializing phase and density fields on device from Restart\n");
+//        //TODO the following function is to be updated.
+//        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
+//        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	}
+}
+
+void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
@@ -704,8 +826,105 @@ void ScaLBL_FreeLeeModel::Run(){
 	// ************************************************************************
 }
 
+void ScaLBL_FreeLeeModel::Run_SingleFluid(){
+	int nprocs=nprocx*nprocy*nprocz;
+	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
+	
+	if (rank==0){
+		printf("********************************************************\n");
+		printf("No. of timesteps: %i \n", timestepMax);
+		fflush(stdout);
+	}
 
-void ScaLBL_FreeLeeModel::WriteDebug(){
+	//.......create and start timer............
+	double starttime,stoptime,cputime;
+	ScaLBL_Comm->Barrier();
+	comm.barrier();
+	starttime = MPI_Wtime();
+	//.........................................
+
+	//************ MAIN ITERATION LOOP ***************************************/
+	PROFILE_START("Loop");
+	while (timestep < timestepMax ) {
+		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
+		PROFILE_START("Update");
+		// *************ODD TIMESTEP*************
+		timestep++;
+        //-------------------------------------------------------------------------------------------------------------------
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(NeighborList, gqbar, Velocity, Pressure, tau, rho0, Fx, Fy, Fz, 
+                                                        ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set boundary conditions
+        // TODO to be revised!
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, gqbar, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
+		}
+		if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, gqbar, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
+		}
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(NeighborList, gqbar, Velocity, Pressure, tau, rho0, Fx, Fy, Fz, 
+                                                        0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier(); 
+
+		// *************EVEN TIMESTEP*************
+		timestep++;
+        //-------------------------------------------------------------------------------------------------------------------
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(gqbar, Velocity, Pressure, tau, rho0, Fx, Fy, Fz, 
+                                                         ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set boundary conditions
+        // TODO to be revised!
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, gqbar, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
+		}
+		else if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, gqbar, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, gqbar, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
+		}
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(gqbar, Velocity, Pressure, tau, rho0, Fx, Fy, Fz, 
+                                                         0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier();
+		//************************************************************************
+		PROFILE_STOP("Update");
+	}
+	PROFILE_STOP("Loop");
+	PROFILE_SAVE("lbpm_color_simulator",1);
+	//************************************************************************
+	stoptime = MPI_Wtime();
+	if (rank==0) printf("-------------------------------------------------------------------\n");
+	// Compute the walltime per timestep
+	cputime = (stoptime - starttime)/timestep;
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+
+	if (rank==0) printf("********************************************************\n");
+	if (rank==0) printf("CPU time = %f \n", cputime);
+	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	MLUPS *= nprocs;
+	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+	if (rank==0) printf("********************************************************\n");
+
+	// ************************************************************************
+}
+
+void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	// Copy back final phase indicator field and convert to regular layout
 	DoubleArray PhaseData(Nxh,Nyh,Nzh);
 	//ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
@@ -774,4 +993,38 @@ void ScaLBL_FreeLeeModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,CGZ_FILE);
 	fclose(CGZ_FILE);
 */
+}
+
+void ScaLBL_FreeLeeModel::WriteDebug_SingleFluid(){
+
+	DoubleArray PhaseData(Nxh,Nyh,Nzh);
+
+	// Copy back final phase indicator field and convert to regular layout
+	ScaLBL_Comm->RegularLayout(Map,Pressure,PhaseField);
+	FILE *PFILE;
+	sprintf(LocalRankFilename,"Pressure.%05i.raw",rank);
+	PFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,PFILE);
+	fclose(PFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
+	FILE *VELX_FILE;
+	sprintf(LocalRankFilename,"Velocity_X.%05i.raw",rank);
+	VELX_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELX_FILE);
+	fclose(VELX_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
+	FILE *VELY_FILE;
+	sprintf(LocalRankFilename,"Velocity_Y.%05i.raw",rank);
+	VELY_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELY_FILE);
+	fclose(VELY_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
+	FILE *VELZ_FILE;
+	sprintf(LocalRankFilename,"Velocity_Z.%05i.raw",rank);
+	VELZ_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,VELZ_FILE);
+	fclose(VELZ_FILE);
 }

@@ -180,7 +180,9 @@ extern "C" void ScaLBL_D3Q19_Gradient_DFH(int *NeighborList, double *Phi, double
 
 // FREE ENERGY LEE MODEL
 
-extern "C" void ScaLBL_D3Q19_FreeLeeModel_Init(double *gqbar, double *mu_phi, double *ColorGrad, double Fx, double Fy, double Fz, int Np);
+extern "C" void ScaLBL_D3Q19_FreeLeeModel_TwoFluid_Init(double *gqbar, double *mu_phi, double *ColorGrad, double Fx, double Fy, double Fz, int Np);
+
+extern "C" void ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(double *gqbar, double Fx, double Fy, double Fz, int Np);
 
 extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, double *Den, double *hq, double *ColorGrad, 
                                                     double rhonA, double rhoB, double tauM, double W, int start, int finish, int Np);
@@ -198,6 +200,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
                                                 double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
+                                                                double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, double *Vel, double *Pressure, 
+                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np);
 
 
 // BOUNDARY CONDITION ROUTINES
