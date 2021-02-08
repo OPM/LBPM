@@ -39,6 +39,7 @@ public:
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB;
+    double tau, rho0;//only for single-fluid Lee model
     double tauM;//relaxation time for phase field (or mass)
 	double W,gamma,kappa,beta;
 	double Fx,Fy,Fz,flux;

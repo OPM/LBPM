@@ -30,7 +30,7 @@ int main( int argc, char **argv )
 
         if (rank == 0){
             printf("********************************************************\n");
-            printf("Running Free Energy Lee LBM	\n");
+            printf("Running Single-Fluid Solver based on Lee LBM	\n");
             printf("********************************************************\n");
         }
         // Initialize compute device
@@ -51,13 +51,13 @@ int main( int argc, char **argv )
         LeeModel.ReadParams( filename );
         LeeModel.SetDomain();    
         LeeModel.ReadInput();    
-        LeeModel.Create_TwoFluid();       
-        LeeModel.Initialize_TwoFluid();   
-        LeeModel.Run_TwoFluid();	       
-        LeeModel.WriteDebug_TwoFluid();
+        LeeModel.Create_SingleFluid()();       
+        LeeModel.Initialize_SingleFluid()();   
+        LeeModel.Run_SingleFluid()();	       
+        LeeModel.WriteDebug_SingleFluid()();
 
         PROFILE_STOP("Main");
-        auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_simulator" );
+        auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_SingleFluidBGK_simulator" );
         auto level = db->getWithDefault<int>( "TimerLevel", 1 );
         PROFILE_SAVE( file,level );
         // ****************************************************

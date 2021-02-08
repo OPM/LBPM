@@ -12,6 +12,7 @@ color lattice boltzmann model
 ScaLBL_FreeLeeModel::ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauM(0),rhoA(0),rhoB(0),W(0),gamma(0),kappa(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
+tau(0),rho0(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	
@@ -32,6 +33,8 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	tauA = tauB = 1.0;
     tauM = 1.0;//relaxation time for phase field
 	rhoA = rhoB = 1.0;
+    tau = 1.0;//only for single-fluid Lee model
+    rho0 = 1.0;//only for single-fluid Lee model
 	Fx = Fy = Fz = 0.0;
 	gamma=1e-3;//surface tension
 	W=5.0;//interfacial thickness
@@ -45,6 +48,9 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	if (freelee_db->keyExists( "timestepMax" )){
 		timestepMax = freelee_db->getScalar<int>( "timestepMax" );
 	}
+	if (freelee_db->keyExists( "tau" )){//only for single-fluid Lee model
+		tau = freelee_db->getScalar<double>( "tau" );
+	}
 	if (freelee_db->keyExists( "tauA" )){
 		tauA = freelee_db->getScalar<double>( "tauA" );
 	}
@@ -53,6 +59,9 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	}
 	if (freelee_db->keyExists( "tauM" )){
 		tauM = freelee_db->getScalar<double>( "tauM" );
+	}
+	if (freelee_db->keyExists( "rho0" )){
+		rho0 = freelee_db->getScalar<double>( "rho0" );
 	}
 	if (freelee_db->keyExists( "rhoA" )){
 		rhoA = freelee_db->getScalar<double>( "rhoA" );
