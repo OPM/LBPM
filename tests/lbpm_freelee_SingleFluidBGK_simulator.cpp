@@ -51,10 +51,10 @@ int main( int argc, char **argv )
         LeeModel.ReadParams( filename );
         LeeModel.SetDomain();    
         LeeModel.ReadInput();    
-        LeeModel.Create_SingleFluid()();       
-        LeeModel.Initialize_SingleFluid()();   
-        LeeModel.Run_SingleFluid()();	       
-        LeeModel.WriteDebug_SingleFluid()();
+        LeeModel.Create_SingleFluid();       
+        LeeModel.Initialize_SingleFluid();   
+        LeeModel.Run_SingleFluid();	       
+        LeeModel.WriteDebug_SingleFluid();
 
         PROFILE_STOP("Main");
         auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_SingleFluidBGK_simulator" );

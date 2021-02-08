@@ -1006,7 +1006,7 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 
 void ScaLBL_FreeLeeModel::WriteDebug_SingleFluid(){
 
-	DoubleArray PhaseData(Nxh,Nyh,Nzh);
+	DoubleArray PhaseField(Nx,Ny,Nz);
 
 	// Copy back final phase indicator field and convert to regular layout
 	ScaLBL_Comm->RegularLayout(Map,Pressure,PhaseField);
