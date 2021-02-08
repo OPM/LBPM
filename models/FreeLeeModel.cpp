@@ -466,6 +466,16 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	ScaLBL_CopyToDevice(mu_phi, mu_phi_host, Np*sizeof(double));
 	ScaLBL_Comm->Barrier();
 	comm.barrier();
+
+    //debug
+    //save the phase field and check it
+	//FILE *OUTFILE;
+	//sprintf(LocalRankFilename,"Phase_Init.%05i.raw",rank);
+	//OUTFILE = fopen(LocalRankFilename,"wb");
+	//fwrite(phase,8,Nh,OUTFILE);
+	//fclose(OUTFILE);
+
+
     delete [] phase;
     delete [] ColorGrad_host;
     delete [] mu_phi_host;
