@@ -124,7 +124,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	recvCount_XyZ =getHaloBlock(Nxh-width,Nxh,0,width,Nzh-width,Nzh,dvcRecvList_XyZ);
 	recvCount_XYz =getHaloBlock(Nxh-width,Nxh,Nyh-width,Nyh,0,width,dvcRecvList_XYz);
 	recvCount_XYZ =getHaloBlock(Nxh-width,Nxh,Nyh-width,Nyh,Nzh-width,Nzh,dvcRecvList_XYZ);
-	
+
 	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, sendCount_x*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, sendCount_X*sizeof(double));	// Allocate device memory
@@ -288,6 +288,7 @@ void ScaLBLWideHalo_Communicator::Send(double *data){
 	req1[25] = MPI_COMM_SCALBL.Isend(&sendCount_xYZ,1,rank_xYZ,sendtag+25);
 	req2[25] = MPI_COMM_SCALBL.Irecv(&recvCount_Xyz,1,rank_Xyz,recvtag+25);
 	//...................................................................................
+
 }
 
 

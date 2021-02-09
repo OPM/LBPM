@@ -95,7 +95,7 @@ private:
 	int *dvcRecvList_xyZ,*dvcRecvList_XyZ,*dvcRecvList_xYZ,*dvcRecvList_XYZ;
 	//......................................................................................
 
-	inline int getHaloBlock(int imin, int imax, int jmin, int jmax, int kmin, int kmax, int *dvcList){
+	inline int getHaloBlock(int imin, int imax, int jmin, int jmax, int kmin, int kmax, int *& dvcList){
 		int count = 0;
 		int *List;
 		List = new int [(imax-imin)*(jmax-jmin)*(kmax-kmin)];
