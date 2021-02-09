@@ -15,7 +15,7 @@ extern "C" void ScaLBL_D3Q19_FreeLeeModel_TwoFluid_Init(double *gqbar, double *m
         cg_y = ColorGrad[1*Np+n];
         cg_z = ColorGrad[2*Np+n];
         
-		gqbar[0*Np+n]  = 0.3333333333333333;
+		gqbar[0*Np+n]  = 0.3333333333333333*p;
 		gqbar[1*Np+n]  = 0.055555555555555555*(p - 0.5*(chem*cg_x+Fx));		//double(100*n)+1.f;
 		gqbar[2*Np+n]  = 0.055555555555555555*(p - 0.5*(-chem*cg_x-Fx));	//double(100*n)+2.f;
 		gqbar[3*Np+n]  = 0.055555555555555555*(p - 0.5*(chem*cg_y+Fy));	//double(100*n)+3.f;
@@ -47,7 +47,7 @@ extern "C" void ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(double *gqbar, double
 
 	for (n=0; n<Np; n++){
         
-		gqbar[0*Np+n]  = 0.3333333333333333;
+		gqbar[0*Np+n]  = 0.3333333333333333*p;
 		gqbar[1*Np+n]  = 0.055555555555555555*(p - 0.5*(Fx));		//double(100*n)+1.f;
 		gqbar[2*Np+n]  = 0.055555555555555555*(p - 0.5*(-Fx));	//double(100*n)+2.f;
 		gqbar[3*Np+n]  = 0.055555555555555555*(p - 0.5*(Fy));	//double(100*n)+3.f;
@@ -461,9 +461,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 		m18 = dist[nr18];
 
         //compute fluid velocity
-        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx));
-        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy));
-        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz));
+        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
+        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
+        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
                   +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);
@@ -1050,9 +1050,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 		m18 = dist[17*Np+n];
 
         //compute fluid velocity
-        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx));
-        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy));
-        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz));
+        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
+        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
+        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
                   +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);
@@ -1489,9 +1489,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborLis
 		m18 = dist[nr18];
 
         //compute fluid velocity
-        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(Fx));
-        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(Fy));
-        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(Fz));
+        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(Fx)/3.0);
+        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(Fy)/3.0);
+        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(Fz)/3.0);
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17);
 
@@ -1738,9 +1738,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, d
 		m18 = dist[17*Np+n];
 
         //compute fluid velocity
-        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(Fx));
-        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(Fy));
-        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(Fz));
+        ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(Fx)/3.0);
+        uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(Fy)/3.0);
+        uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(Fz)/3.0);
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17);
 
