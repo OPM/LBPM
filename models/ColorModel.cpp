@@ -9,6 +9,7 @@ color lattice boltzmann model
 #include <stdlib.h>
 #include <time.h>
 
+
 ScaLBL_ColorModel::ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM):
     rank(RANK), nprocs(NP), Restart(0), timestep(0), timestepMax(0),
     tauA(0), tauB(0), rhoA(0), rhoB(0), alpha(0), beta(0),
@@ -1600,3 +1601,47 @@ void ScaLBL_ColorModel::WriteDebug(){
 	fclose(CGZ_FILE);
 */
 }
+
+FlowAdaptor::FlowAdaptor(ScaLBL_ColorModel &M){
+	Nx = M.Dm->Nx;
+	Ny = M.Dm->Ny;
+	Nz = M.Dm->Nz;
+	timestep=-1;
+	timestep_previous=-1;	
+	
+	phi.resize(Nx,Ny,Nz);         phi.fill(0);	    // phase indicator field
+	phi_t.resize(Nx,Ny,Nz);       phi_t.fill(0);	// time derivative for the phase indicator field
+}
+
+FlowAdaptor::~FlowAdaptor(){
+	
+}
+
+double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){	
+	
+    double INTERFACE_CUTOFF = M.color_db->getWithDefault<double>( "move_interface_cutoff", 0.975 );
+    double MOVE_INTERFACE_FACTOR = M.color_db->getWithDefault<double>( "move_interface_factor", 10.0 );
+
+    ScaLBL_CopyToHost( phi.data(), M.Phi, Nx*Ny*Nz* sizeof( double ) );
+    /* compute the local derivative of phase indicator field */
+    double beta = M.beta;
+    double factor = 0.5/beta;
+    for (int n=0; n<Nx*Ny*Nz; n++){
+    	/* compute the distance to the interface */
+    	double value1 = M.Averages->Phi(n);
+    	double dist1 = factor*log((1.0+value1)/(1.0-value1));
+    	double value2 = phi(n);
+    	double dist2 = factor*log((1.0+value2)/(1.0-value2));
+    	phi_t(n) = value2;
+    	if (value1 < INTERFACE_CUTOFF && value1 > -1*INTERFACE_CUTOFF && value2 < INTERFACE_CUTOFF && value2 > -1*INTERFACE_CUTOFF ){
+    		/* time derivative of distance */
+    		double dxdt = 0.125*(dist2-dist1);
+    		/* extrapolate to move the distance further */
+    		double dist3 = dist2 + MOVE_INTERFACE_FACTOR*dxdt;
+    		/* compute the new phase interface */
+    		phi_t(n) = (2.f*(exp(-2.f*beta*(dist3)))/(1.f+exp(-2.f*beta*(dist3))) - 1.f);
+    	}
+	}
+    ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
+}
+
