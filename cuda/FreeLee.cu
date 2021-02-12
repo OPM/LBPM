@@ -2,6 +2,9 @@
 
 #define STOKES
 
+#define NBLOCKS 1024
+#define NTHREADS 256
+
 __global__ void dvc_ScaLBL_D3Q19_FreeLeeModel_TwoFluid_Init(double *gqbar, double *mu_phi, double *ColorGrad, double Fx, double Fy, double Fz, int Np)
 {
 	int n;
