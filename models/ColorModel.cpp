@@ -288,10 +288,15 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 
 	auto LabelList = color_db->getVector<int>( "ComponentLabels" );
 	auto AffinityList = color_db->getVector<double>( "ComponentAffinity" );
+	auto WettingConvention = color_db->getWithDefault<std::string>( "WettingConvention", "none" );
 
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
+	}
+
+	if (WettingConvention == "SCAL"){
+	  for (size_t idx=0; idx<NLABELS; idx++) AffinityList[idx] *= -1.0;
 	}
 
 	double label_count[NLABELS];
