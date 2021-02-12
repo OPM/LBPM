@@ -485,10 +485,8 @@ void ScaLBL_GreyscaleModel::Run(){
 	}
 
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
 	//.........................................
 	
 	Minkowski Morphology(Mask);
@@ -500,6 +498,7 @@ void ScaLBL_GreyscaleModel::Run(){
     double rlx_eff = 1.0/tau_eff;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		// *************ODD TIMESTEP*************//
@@ -744,10 +743,10 @@ void ScaLBL_GreyscaleModel::Run(){
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 

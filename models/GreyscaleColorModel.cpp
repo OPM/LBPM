@@ -910,10 +910,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	}
 
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_Comm->Barrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
 	//.........................................
 
 	//************ MAIN ITERATION LOOP ***************************************/
@@ -923,6 +921,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	auto current_db = db->cloneDatabase();
 	//runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
@@ -1319,10 +1318,10 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
 	ScaLBL_Comm->Barrier();
-		stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 

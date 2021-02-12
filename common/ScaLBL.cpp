@@ -1,5 +1,8 @@
 #include "common/ScaLBL.h"
 
+#include <chrono>
+
+
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
 	Lock=false; // unlock the communicator
@@ -411,20 +414,19 @@ double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np
 	double FZ = 0.0;
     ScaLBL_D3Q19_Init(fq, Np);
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	Barrier();
-	starttime = MPI_Wtime();
-	//.........................................
+    auto t1 = std::chrono::system_clock::now();
 	for (int t=0; t<TIMESTEPS; t++){
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
 		ScaLBL_D3Q19_AAeven_MRT(fq, FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
 		ScaLBL_D3Q19_AAeven_MRT(fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
 	}
-	stoptime = MPI_Wtime();
+    auto t2 = std::chrono::system_clock::now();
 	Barrier();
 	// Compute the walltime per timestep
-	cputime = 0.5*(stoptime - starttime)/TIMESTEPS;
+    double diff = std::chrono::duration<double>( t2 - t1 ).count();
+	double cputime = 0.5*diff/TIMESTEPS;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 	return MLUPS;
