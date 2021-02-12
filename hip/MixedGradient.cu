@@ -1,5 +1,4 @@
 /* Implement Mixed Gradient (Lee et al. JCP 2016)*/
-#include <cuda.h>
 #include <stdio.h>
 //#include <cuda_profiler_api.h>
 #include "hip/hip_runtime.h"
@@ -10,7 +9,7 @@
 
 __global__ void dvc_ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradient, int start, int finish, int Np, int Nx, int Ny, int Nz)
 {
-	static int D3Q19[18][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+	static const int D3Q19[18][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
 			{1,1,0},{-1,-1,0},{1,-1,0},{-1,1,0},
 			{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 			{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
@@ -66,13 +65,13 @@ __global__ void dvc_ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gr
 
 extern "C" void ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradient, int start, int finish, int Np, int Nx, int Ny, int Nz)
 {
-	cudaProfilerStart();
+	hipProfilerStart();
 	dvc_ScaLBL_D3Q19_MixedGradient<<<NBLOCKS,NTHREADS >>>(Map, Phi, Gradient, start, finish, Np, Nx, Ny, Nz);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("hip error in ScaLBL_D3Q19_MixedGradient: %s \n",hipGetErrorString(err));
 	}
-	cudaProfilerStop();
+	hipProfilerStop();
 }
 
