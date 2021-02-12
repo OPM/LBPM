@@ -1238,6 +1238,7 @@ double ScaLBL_ColorModel::MorphOpenConnected(double target_volume_change){
 	}
 	return(volume_change);
 }
+
 double ScaLBL_ColorModel::SeedPhaseField(const double seed_water_in_oil){
   srand(time(NULL));
   double mass_loss =0.f;
@@ -1626,6 +1627,8 @@ double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){
     /* compute the local derivative of phase indicator field */
     double beta = M.beta;
     double factor = 0.5/beta;
+    double total_interface_displacement = 0.0;
+    double total_interface_sites = 0.0;
     for (int n=0; n<Nx*Ny*Nz; n++){
     	/* compute the distance to the interface */
     	double value1 = M.Averages->Phi(n);
@@ -1640,8 +1643,27 @@ double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){
     		double dist3 = dist2 + MOVE_INTERFACE_FACTOR*dxdt;
     		/* compute the new phase interface */
     		phi_t(n) = (2.f*(exp(-2.f*beta*(dist3)))/(1.f+exp(-2.f*beta*(dist3))) - 1.f);
+    		total_interface_displacement += fabs(MOVE_INTERFACE_FACTOR*dxdt);
+    		total_interface_sites += 1.0;
     	}
 	}
     ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
+    
+    
+/*	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
+	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
+		if (Dm->kproc()==0){
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (Dm->kproc() == nprocz-1){
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+	*/
 }
 
