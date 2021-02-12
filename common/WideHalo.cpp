@@ -67,7 +67,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	sendCount_y =getHaloBlock(width,Nxh-width,width,2*width,width,Nzh-width,dvcSendList_y);
 	sendCount_Y =getHaloBlock(width,Nxh-width,Nyh-2*width,Nyh-width,width,Nzh-width,dvcSendList_Y);
 	sendCount_z =getHaloBlock(width,Nxh-width,width,Nyh-width,width,2*width,dvcSendList_z);
-	sendCount_X =getHaloBlock(width,Nxh-width,width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_Z);
+	sendCount_Z =getHaloBlock(width,Nxh-width,width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_Z);
 	// xy
 	sendCount_xy =getHaloBlock(width,2*width,width,2*width,width,Nzh-width,dvcSendList_xy);
 	sendCount_xY =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,width,Nzh-width,dvcSendList_xY);
@@ -87,7 +87,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	sendCount_xyz =getHaloBlock(width,2*width,width,2*width,width,2*width,dvcSendList_xyz);
 	sendCount_xyZ =getHaloBlock(width,2*width,width,2*width,Nzh-2*width,Nzh-width,dvcSendList_xyZ);
 	sendCount_xYz =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,width,2*width,dvcSendList_xYz);
-	sendCount_xYz =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_xYZ);
+	sendCount_xYZ =getHaloBlock(width,2*width,Nyh-2*width,Nyh-width,Nzh-2*width,Nzh-width,dvcSendList_xYZ);
 	sendCount_Xyz =getHaloBlock(Nxh-2*width,Nxh-width,width,2*width,width,2*width,dvcSendList_Xyz);
 	sendCount_XyZ =getHaloBlock(Nxh-2*width,Nxh-width,width,2*width,Nzh-2*width,Nzh-width,dvcSendList_XyZ);
 	sendCount_XYz =getHaloBlock(Nxh-2*width,Nxh-width,Nyh-2*width,Nyh-width,width,2*width,dvcSendList_XYz);
@@ -124,7 +124,7 @@ ScaLBLWideHalo_Communicator::ScaLBLWideHalo_Communicator(std::shared_ptr <Domain
 	recvCount_XyZ =getHaloBlock(Nxh-width,Nxh,0,width,Nzh-width,Nzh,dvcRecvList_XyZ);
 	recvCount_XYz =getHaloBlock(Nxh-width,Nxh,Nyh-width,Nyh,0,width,dvcRecvList_XYz);
 	recvCount_XYZ =getHaloBlock(Nxh-width,Nxh,Nyh-width,Nyh,Nzh-width,Nzh,dvcRecvList_XYZ);
-	
+
 	//......................................................................................
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_x, sendCount_x*sizeof(double));	// Allocate device memory
 	ScaLBL_AllocateZeroCopy((void **) &sendbuf_X, sendCount_X*sizeof(double));	// Allocate device memory
@@ -288,6 +288,7 @@ void ScaLBLWideHalo_Communicator::Send(double *data){
 	req1[25] = MPI_COMM_SCALBL.Isend(&sendCount_xYZ,1,rank_xYZ,sendtag+25);
 	req2[25] = MPI_COMM_SCALBL.Irecv(&recvCount_Xyz,1,rank_Xyz,recvtag+25);
 	//...................................................................................
+
 }
 
 
@@ -297,10 +298,9 @@ ScaLBLWideHalo_Communicator::~ScaLBLWideHalo_Communicator()
 void ScaLBLWideHalo_Communicator::Recv(double *data){
 
 	//...................................................................................
-	MPI_Waitall(26,req1,stat1);
-	MPI_Waitall(26,req2,stat2);
+	Utilities::MPI::waitAll(26,req1);
+	Utilities::MPI::waitAll(26,req2);
 	ScaLBL_DeviceBarrier();
-	//...................................................................................
 	//...................................................................................
 	ScaLBL_Scalar_Unpack(dvcRecvList_x, recvCount_x,recvbuf_x, data, Nh);
 	ScaLBL_Scalar_Unpack(dvcRecvList_y, recvCount_y,recvbuf_y, data, Nh);

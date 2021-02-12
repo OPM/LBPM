@@ -26,16 +26,22 @@ public:
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
-	void Create();
-	void Initialize();
-	void Run();
-	void WriteDebug();
+	void Create_TwoFluid();
+	void Initialize_TwoFluid();
+	void Run_TwoFluid();
+	void WriteDebug_TwoFluid();
+	void Create_SingleFluid();
+	void Initialize_SingleFluid();
+	void Run_SingleFluid();
+	void WriteDebug_SingleFluid();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB;
-	double W,gamma;
+    double tau, rho0;//only for single-fluid Lee model
+    double tauM;//relaxation time for phase field (or mass)
+	double W,gamma,kappa,beta;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
 	
@@ -61,7 +67,7 @@ public:
     signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
-	double *fq, *hq;
+	double *gqbar, *hq;
 	double *mu_phi, *Den, *Phi;
 	double *ColorGrad;
 	double *Velocity;
@@ -81,6 +87,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
+	void AssignComponentLabels_ChemPotential_ColorGrad();
 
 };
 

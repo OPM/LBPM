@@ -89,9 +89,25 @@ __global__ void sum_kernel_block(double *sum, double *input, int n)
 
 __inline__ __device__
 double warpReduceSum(double val) {
+#if 0
 	for (int offset = warpSize/2; offset > 0; offset /= 2)
 		val += __shfl_down_sync(0xFFFFFFFF, val, offset, 32);
 	return val;
+#else
+    short int id = threadIdx.x % warpSize;
+    __shared__ double tmp[64];
+    tmp[id] = val;
+    __syncthreads();
+    if ( warpSize == 64) {
+        tmp[id] += tmp[id+32]; __syncthreads();
+    }
+    tmp[id] += tmp[id+16]; __syncthreads();
+    tmp[id] += tmp[id+8]; __syncthreads();
+    tmp[id] += tmp[id+4]; __syncthreads();
+    tmp[id] += tmp[id+2]; __syncthreads();
+    tmp[id] += tmp[id+1]; __syncthreads();
+    return tmp[0];
+#endif
 }
 
 __inline__ __device__
@@ -1730,6 +1746,44 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_Pressure_BC_Z(int *list, double *dist, 
 	}
 }
 
+__global__  void dvc_ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f5 = 0.111111111111111111111111 - dist[6*Np+n];
+		double f11 = 0.05555555555555555555556 - dist[12*Np+n];
+		double f14 = 0.05555555555555555555556 - dist[13*Np+n];
+		double f15 = 0.05555555555555555555556 - dist[16*Np+n];
+		double f18 = 0.05555555555555555555556 - dist[17*Np+n];
+		
+		dist[6*Np+n] = f5;
+		dist[12*Np+n] = f11;
+		dist[13*Np+n] = f14;
+		dist[16*Np+n] = f15;
+		dist[17*Np+n] = f18;
+	}
+}
+
+__global__  void dvc_ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int idx, n;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		n = list[idx];
+		double f6 = 0.111111111111111111111111 - dist[5*Np+n];
+		double f12 = 0.05555555555555555555556 - dist[11*Np+n];
+		double f13 = 0.05555555555555555555556 - dist[14*Np+n] ;
+		double f16 = 0.05555555555555555555556 - dist[15*Np+n];
+		double f17 = 0.05555555555555555555556 - dist[18*Np+n];
+		
+		dist[5*Np+n] = f6;
+		dist[11*Np+n] = f12;
+		dist[14*Np+n] = f13;
+		dist[15*Np+n] = f16;
+		dist[18*Np+n] = f17;
+	}
+}
+
 __global__  void dvc_ScaLBL_D3Q19_AAodd_Pressure_BC_z(int *d_neighborList, int *list, double *dist, double din, int count, int Np)
 {
 	int idx, n;
@@ -2603,6 +2657,24 @@ extern "C" double ScaLBL_D3Q19_Flux_BC_Z(double *disteven, double *distodd, doub
 
 	return dout;
 
+}
+
+extern "C" void ScaLBL_D3Q19_Reflection_BC_z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_Reflection_BC_z<<<GRID,512>>>(list, dist, count, Np);
+	hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("HIP error in ScaLBL_D3Q19_Reflection_BC_z (kernel): %s \n",hipGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q19_Reflection_BC_Z(int *list, double *dist, int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_D3Q19_Reflection_BC_Z<<<GRID,512>>>(list, dist, count, Np);
+	hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("HIP error in ScaLBL_D3Q19_Reflection_BC_Z (kernel): %s \n",hipGetErrorString(err));
+	}
 }
 
 extern "C" double deviceReduce(double *in, double* out, int N) {

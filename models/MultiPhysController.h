@@ -27,6 +27,7 @@ public:
     int getStokesNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
     vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
     //void getIonNumIter_PNP_coupling(double StokesTimeConv,vector<double> &IonTimeConv,vector<int> &IonTimeMax);
+    void getTimeConvMax_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
 	
 	bool Restart;
     int timestepMax;
@@ -35,6 +36,7 @@ public:
     int analysis_interval;
     int visualization_interval;
     double tolerance;
+    double time_conv_max;
     //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
 	int rank,nprocs;
