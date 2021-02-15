@@ -298,10 +298,9 @@ ScaLBLWideHalo_Communicator::~ScaLBLWideHalo_Communicator()
 void ScaLBLWideHalo_Communicator::Recv(double *data){
 
 	//...................................................................................
-	MPI_Waitall(26,req1,stat1);
-	MPI_Waitall(26,req2,stat2);
+	Utilities::MPI::waitAll(26,req1);
+	Utilities::MPI::waitAll(26,req2);
 	ScaLBL_DeviceBarrier();
-	//...................................................................................
 	//...................................................................................
 	ScaLBL_Scalar_Unpack(dvcRecvList_x, recvCount_x,recvbuf_x, data, Nh);
 	ScaLBL_Scalar_Unpack(dvcRecvList_y, recvCount_y,recvbuf_y, data, Nh);

@@ -784,7 +784,7 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
 	//.......create and start timer............
 	//double starttime,stoptime,cputime;
 	//ScaLBL_Comm->Barrier(); comm.barrier();
-	//starttime = MPI_Wtime();
+    //auto t1 = std::chrono::system_clock::now();
 
 	for (int ic=0; ic<number_ion_species; ic++){
         timestep=0;
@@ -886,10 +886,10 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
         ScaLBL_D3Q7_Ion_ChargeDensity(Ci, ChargeDensity, IonValence[ic], ic, 0, ScaLBL_Comm->LastExterior(), Np);
     }
 	//************************************************************************/
-	//stoptime = MPI_Wtime();
 	//if (rank==0) printf("-------------------------------------------------------------------\n");
 	//// Compute the walltime per timestep
-	//cputime = (stoptime - starttime)/timestep;
+    //auto t2 = std::chrono::system_clock::now();
+	//double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	//// Performance obtained from each node
 	//double MLUPS = double(Np)/cputime/1000000;
 

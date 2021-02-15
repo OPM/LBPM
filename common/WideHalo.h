@@ -4,6 +4,7 @@ This class implements support for halo widths larger than 1
 #ifndef WideHalo_H
 #define WideHalo_H
 #include "common/ScaLBL.h"
+#include "common/MPI.h"
 
 class ScaLBLWideHalo_Communicator{
 public:
@@ -52,9 +53,7 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Request req1[26],req2[26];
-	MPI_Status stat1[26],stat2[26];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................

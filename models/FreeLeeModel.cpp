@@ -747,14 +747,9 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		fflush(stdout);
 	}
 
-	//.......create and start timer............
-	double starttime,stoptime,cputime;
-	ScaLBL_Comm->Barrier();
-	comm.barrier();
-	starttime = MPI_Wtime();
-	//.........................................
-
 	//************ MAIN ITERATION LOOP ***************************************/
+	comm.barrier();
+    auto t1 = std::chrono::system_clock::now();
 	PROFILE_START("Loop");
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -846,10 +841,10 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 
@@ -874,14 +869,13 @@ void ScaLBL_FreeLeeModel::Run_SingleFluid(){
 	}
 
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_Comm->Barrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
 	//.........................................
 
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
@@ -944,10 +938,10 @@ void ScaLBL_FreeLeeModel::Run_SingleFluid(){
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 

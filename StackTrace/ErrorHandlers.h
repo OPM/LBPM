@@ -3,10 +3,9 @@
 
 
 #include "StackTrace/StackTrace.h"
+#include "common/MPI.h"
 
 #include <functional>
-
-#include "mpi.h"
 
 
 namespace StackTrace

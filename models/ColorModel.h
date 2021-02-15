@@ -30,6 +30,7 @@ public:
 	void Initialize();
 	void Run();
 	void WriteDebug();
+	void getPhaseField(DoubleArray &f);
 	
 	bool Restart,pBC;
 	bool REVERSE_FLOW_DIRECTION;
@@ -84,5 +85,18 @@ private:
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
     double MorphOpenConnected(double target_volume_change);
+};
+
+class FlowAdaptor{
+public:
+	FlowAdaptor(ScaLBL_ColorModel &M);
+	~FlowAdaptor();
+	double MoveInterface(ScaLBL_ColorModel &M);
+	DoubleArray phi;
+	DoubleArray phi_t;
+private:
+	int Nx, Ny, Nz;
+	int timestep;
+	int timestep_previous;
 };
 

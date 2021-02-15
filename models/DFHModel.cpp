@@ -490,14 +490,10 @@ void ScaLBL_DFHModel::Run(){
 
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)    printf("No. of timesteps: %i \n", timestepMax);
-	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	starttime = MPI_Wtime();
-	//.........................................
 	//************ MAIN ITERATION LOOP ***************************************/
-
+    auto t1 = std::chrono::system_clock::now();
 	bool Regular = true;
 	PROFILE_START("Loop");
 	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
@@ -589,10 +585,10 @@ void ScaLBL_DFHModel::Run(){
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
 	comm.barrier();
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 	if (rank==0) printf("********************************************************\n");
