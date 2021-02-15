@@ -236,12 +236,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-        phi = Phi[n];// load phase field
 		// local relaxation time
 		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
@@ -383,9 +383,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
         chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
         chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
-		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14))*0.25;//the factor of 0.25 comes from the denominator of Eq.30
-		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18))*0.25;
-		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18))*0.25;
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
 		// q=0
 		m0 = dist[n];
@@ -842,12 +842,12 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-        phi = Phi[n];// load phase field
 		// local relaxation time
 		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
@@ -989,9 +989,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
         chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
         chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
-		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14))*0.25;//the factor of 0.25 comes from the denominator of Eq.30
-		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18))*0.25;
-		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18))*0.25;
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
 		// q=0
 		m0 = dist[n];

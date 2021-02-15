@@ -529,6 +529,34 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 	//fwrite(phase,8,Nh,OUTFILE);
 	//fclose(OUTFILE);
 
+	DoubleArray PhaseField(Nx,Ny,Nz);
+	FILE *OUTFILE;
+	ScaLBL_Comm->RegularLayout(Map,mu_phi_host,PhaseField);
+	sprintf(LocalRankFilename,"Chem_Init.%05i.raw",rank);
+	OUTFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,OUTFILE);
+	fclose(OUTFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[0],PhaseField);
+	FILE *CGX_FILE;
+	sprintf(LocalRankFilename,"Gradient_X_Init.%05i.raw",rank);
+	CGX_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGX_FILE);
+	fclose(CGX_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[Np],PhaseField);
+	FILE *CGY_FILE;
+	sprintf(LocalRankFilename,"Gradient_Y_Init.%05i.raw",rank);
+	CGY_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGY_FILE);
+	fclose(CGY_FILE);
+
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[2*Np],PhaseField);
+	FILE *CGZ_FILE;
+	sprintf(LocalRankFilename,"Gradient_Z_Init.%05i.raw",rank);
+	CGZ_FILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CGZ_FILE);
+	fclose(CGZ_FILE);
 
     delete [] phase;
     delete [] ColorGrad_host;
