@@ -1917,7 +1917,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, d
 	}
 }
 
-extern "C" void ScaLBL_D3Q9_MGTest(int *Map, double *Phi,double *ColorGrad, int start, int finish, Np){
+extern "C" void ScaLBL_D3Q9_MGTest(int *Map, double *Phi,double *ColorGrad,int strideY, int strideZ, int start, int finish, int Np){
 
 	int n,nn,nn2x,ijk;
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;

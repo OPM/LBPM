@@ -1069,7 +1069,7 @@ void ScaLBL_FreeLeeModel::Create_DummyPhase_MGTest(){
 	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
 	// Create a communicator for the device (will use optimized layout)
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
-	//ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 	//ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 	ScaLBL_Comm_WideHalo  = std::shared_ptr<ScaLBLWideHalo_Communicator>(new ScaLBLWideHalo_Communicator(Mask,2));
 
@@ -1174,9 +1174,9 @@ void ScaLBL_FreeLeeModel::MGTest(){
 	comm.barrier();
 
 	ScaLBL_Comm_WideHalo->Send(Phi);
-    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	ScaLBL_Comm_WideHalo->Send(Phi);
-    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nx,Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm_WideHalo->Recv(Phi);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nx,Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 
     //check the sum of ColorGrad
     double cgx_loc = 0.0;
@@ -1186,12 +1186,12 @@ void ScaLBL_FreeLeeModel::MGTest(){
     double *ColorGrad_host;
 	ColorGrad_host = new double [3*Np];
 	ScaLBL_CopyToHost(&ColorGrad_host[0],&ColorGrad[0], 3*Np*sizeof(double));
-    for (int i = ScaLBL_Comm->FirstInterior(), i<ScaLBL_Comm->LastInterior(),i++){
+    for (int i = ScaLBL_Comm->FirstInterior(); i<ScaLBL_Comm->LastInterior();i++){
         cgx_loc+=ColorGrad_host[0*Np+i];
         cgy_loc+=ColorGrad_host[1*Np+i];
         cgz_loc+=ColorGrad_host[2*Np+i];
     }
-    for (int i = 0, i<ScaLBL_Comm->LastExterior(),i++){
+    for (int i = 0; i<ScaLBL_Comm->LastExterior();i++){
         cgx_loc+=ColorGrad_host[0*Np+i];
         cgy_loc+=ColorGrad_host[1*Np+i];
         cgz_loc+=ColorGrad_host[2*Np+i];
@@ -1200,9 +1200,9 @@ void ScaLBL_FreeLeeModel::MGTest(){
     cgy=Dm->Comm.sumReduce( cgy_loc);
     cgz=Dm->Comm.sumReduce( cgz_loc);
     if (rank==0){
-        printf("Sum of all x-component of the mixed gradient = %.2g",cgx);
-        printf("Sum of all y-component of the mixed gradient = %.2g",cgy);
-        printf("Sum of all z-component of the mixed gradient = %.2g",cgz);
+        printf("Sum of all x-component of the mixed gradient = %.2g \n",cgx);
+        printf("Sum of all y-component of the mixed gradient = %.2g \n",cgy);
+        printf("Sum of all z-component of the mixed gradient = %.2g \n",cgz);
     }
 
     delete [] ColorGrad_host;

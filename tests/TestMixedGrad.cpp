@@ -22,7 +22,7 @@ inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel){
 			for (i=0;i<Nx;i++){
 				n = k*Nx*Ny + j*Nz + i;
                 LeeModel.Mask->id[n]=1;
-                LeeMOdel.id[n] = LeeModel.Mask->id[n];
+                LeeModel.id[n] = LeeModel.Mask->id[n];
 			}
 		}
 	}
@@ -68,7 +68,7 @@ int main( int argc, char **argv )
         LeeModel.SetDomain();
         Initialize_DummyPhaseField(LeeModel);
         LeeModel.Create_DummyPhase_MGTest();     
-        LeeModel.MGTest()
+        LeeModel.MGTest();
 
         PROFILE_STOP( "Main" );
         auto file  = db->getWithDefault<std::string>( "TimerFile", "TestMixedGrad" );
