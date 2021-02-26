@@ -1059,3 +1059,151 @@ void ScaLBL_FreeLeeModel::WriteDebug_SingleFluid(){
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 }
+
+void ScaLBL_FreeLeeModel::Create_DummyPhase_MGTest(){
+	// Initialize communication structures in averaging domain
+	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i];
+	Mask->CommInit();
+	Np=Mask->PoreCount();
+	//...........................................................................
+	if (rank==0)    printf ("Create ScaLBL_Communicator \n");
+	// Create a communicator for the device (will use optimized layout)
+	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
+	//ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	//ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	ScaLBL_Comm_WideHalo  = std::shared_ptr<ScaLBLWideHalo_Communicator>(new ScaLBLWideHalo_Communicator(Mask,2));
+
+	// create the layout for the LBM
+	int Npad=(Np/16 + 2)*16;
+	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
+	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
+	auto neighborList= new int[18*Npad];
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,2);
+	comm.barrier();
+
+	//...........................................................................
+	//                MAIN  VARIABLES ALLOCATED HERE
+	//...........................................................................
+	// LBM variables
+	if (rank==0)    printf ("Allocating distributions \n");
+	//......................device distributions.................................
+	dist_mem_size = Np*sizeof(double);
+	neighborSize=18*(Np*sizeof(int));
+	//...........................................................................
+	//ScaLBL_AllocateDeviceMemory((void **) &NeighborList, neighborSize);
+	ScaLBL_AllocateDeviceMemory((void **) &dvcMap, sizeof(int)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &gqbar, 19*dist_mem_size);
+	//ScaLBL_AllocateDeviceMemory((void **) &hq, 7*dist_mem_size);
+	//ScaLBL_AllocateDeviceMemory((void **) &mu_phi, dist_mem_size);
+	//ScaLBL_AllocateDeviceMemory((void **) &Den, dist_mem_size);
+	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nh);		
+	//ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
+	//ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
+	ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
+	//...........................................................................
+	// Update GPU data structures
+	if (rank==0)	printf ("Setting up device map and neighbor list \n");
+	fflush(stdout);
+	int *TmpMap;
+	TmpMap=new int[Np];
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0))
+					TmpMap[idx] = ScaLBL_Comm_WideHalo->Map(i,j,k);
+			}
+		}
+	}
+	// check that TmpMap is valid
+	for (int idx=0; idx<ScaLBL_Comm->LastExterior(); idx++){
+		auto n = TmpMap[idx];
+		if (n > Nxh*Nyh*Nzh){
+			printf("Bad value! idx=%i \n", n);
+			TmpMap[idx] = Nxh*Nyh*Nzh-1;
+		}
+	}
+	for (int idx=ScaLBL_Comm->FirstInterior(); idx<ScaLBL_Comm->LastInterior(); idx++){
+		auto n = TmpMap[idx];
+		if ( n > Nxh*Nyh*Nzh ){
+			printf("Bad value! idx=%i \n",n);
+			TmpMap[idx] = Nxh*Nyh*Nzh-1;
+		}
+	}
+    // copy the device map
+	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
+	// copy the neighbor list 
+	//ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
+	comm.barrier();
+
+	double *phase;
+	phase = new double[Nh];
+
+	for (int k=0;k<Nzh;k++){
+		for (int j=0;j<Nyh;j++){
+			for (int i=0;i<Nxh;i++){
+
+                //idx for double-halo array 'phase'
+				int nh = k*Nxh*Nyh+j*Nxh+i;
+
+                //idx for single-halo array Mask->id[n]
+                int x=i-1;
+                int y=j-1;
+                int z=k-1;
+				if (x<0)   x=0;
+				if (y<0)   y=0;
+				if (z<0)   z=0;
+				if (x>=Nx) x=Nx-1;
+				if (y>=Ny) y=Ny-1;
+				if (z>=Nz) z=Nz-1;
+				int n = z*Nx*Ny+y*Nx+x;
+				phase[nh]=id[n];
+			}
+		}
+	}
+	ScaLBL_CopyToDevice(Phi, phase, Nh*sizeof(double));
+	ScaLBL_Comm->Barrier();
+	comm.barrier();
+	delete [] TmpMap;
+	delete [] neighborList;
+    delete [] phase;
+}
+
+void ScaLBL_FreeLeeModel::MGTest(){
+
+	comm.barrier();
+
+	ScaLBL_Comm_WideHalo->Send(Phi);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+	ScaLBL_Comm_WideHalo->Send(Phi);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad, 0, ScaLBL_Comm->LastExterior(), Np);
+
+    //check the sum of ColorGrad
+    double cgx_loc = 0.0;
+    double cgy_loc = 0.0;
+    double cgz_loc = 0.0;
+    double cgx,cgy,cgz;
+    double *ColorGrad_host;
+	ColorGrad_host = new double [3*Np];
+	ScaLBL_CopyToHost(&ColorGrad_host[0],&ColorGrad[0], 3*Np*sizeof(double));
+    for (int i = ScaLBL_Comm->FirstInterior(), i<ScaLBL_Comm->LastInterior(),i++){
+        cgx_loc+=ColorGrad_host[0*Np+i];
+        cgy_loc+=ColorGrad_host[1*Np+i];
+        cgz_loc+=ColorGrad_host[2*Np+i];
+    }
+    for (int i = 0, i<ScaLBL_Comm->LastExterior(),i++){
+        cgx_loc+=ColorGrad_host[0*Np+i];
+        cgy_loc+=ColorGrad_host[1*Np+i];
+        cgz_loc+=ColorGrad_host[2*Np+i];
+    }
+    cgx=Dm->Comm.sumReduce( cgx_loc);
+    cgy=Dm->Comm.sumReduce( cgy_loc);
+    cgz=Dm->Comm.sumReduce( cgz_loc);
+    if (rank==0){
+        printf("Sum of all x-component of the mixed gradient = %.2g",cgx);
+        printf("Sum of all y-component of the mixed gradient = %.2g",cgy);
+        printf("Sum of all z-component of the mixed gradient = %.2g",cgz);
+    }
+
+    delete [] ColorGrad_host;
+}

@@ -34,6 +34,9 @@ public:
 	void Initialize_SingleFluid();
 	void Run_SingleFluid();
 	void WriteDebug_SingleFluid();
+    // test utilities
+    void Create_DummyPhase_MGTest();
+    void MGTest();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;

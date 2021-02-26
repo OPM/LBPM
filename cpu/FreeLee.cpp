@@ -1916,3 +1916,167 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, d
         Pressure[n] = p;
 	}
 }
+
+extern "C" void ScaLBL_D3Q9_MGTest(int *Map, double *Phi,double *ColorGrad, int start, int finish, Np){
+
+	int n,nn,nn2x,ijk;
+	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double m0,m3,m5,m7;
+	double mm1,mm2,mm4,mm6,mm8,mm9,mm10,mm11,mm12,mm13,mm14,mm15,mm16,mm17,mm18;
+	double mm3,mm5,mm7;
+    //double nx,ny,nz;//normal color gradient
+    double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
+    double phi;
+
+	for (int n=start; n<finish; n++){
+
+		// Get the 1D index based on regular data layout
+		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
+		//					COMPUTE THE COLOR GRADIENT
+		//........................................................................
+		//.................Read Phase Indicator Values............................
+		//........................................................................
+		nn = ijk-1;							// neighbor index (get convention)
+		m1 = Phi[nn];						// get neighbor for phi - 1
+		//........................................................................
+		nn = ijk+1;							// neighbor index (get convention)
+		m2 = Phi[nn];						// get neighbor for phi - 2
+		//........................................................................
+		nn = ijk-strideY;							// neighbor index (get convention)
+		m3 = Phi[nn];					// get neighbor for phi - 3
+		//........................................................................
+		nn = ijk+strideY;							// neighbor index (get convention)
+		m4 = Phi[nn];					// get neighbor for phi - 4
+		//........................................................................
+		nn = ijk-strideZ;						// neighbor index (get convention)
+		m5 = Phi[nn];					// get neighbor for phi - 5
+		//........................................................................
+		nn = ijk+strideZ;						// neighbor index (get convention)
+		m6 = Phi[nn];					// get neighbor for phi - 6
+		//........................................................................
+		nn = ijk-strideY-1;						// neighbor index (get convention)
+		m7 = Phi[nn];					// get neighbor for phi - 7
+		//........................................................................
+		nn = ijk+strideY+1;						// neighbor index (get convention)
+		m8 = Phi[nn];					// get neighbor for phi - 8
+		//........................................................................
+		nn = ijk+strideY-1;						// neighbor index (get convention)
+		m9 = Phi[nn];					// get neighbor for phi - 9
+		//........................................................................
+		nn = ijk-strideY+1;						// neighbor index (get convention)
+		m10 = Phi[nn];					// get neighbor for phi - 10
+		//........................................................................
+		nn = ijk-strideZ-1;						// neighbor index (get convention)
+		m11 = Phi[nn];					// get neighbor for phi - 11
+		//........................................................................
+		nn = ijk+strideZ+1;						// neighbor index (get convention)
+		m12 = Phi[nn];					// get neighbor for phi - 12
+		//........................................................................
+		nn = ijk+strideZ-1;						// neighbor index (get convention)
+		m13 = Phi[nn];					// get neighbor for phi - 13
+		//........................................................................
+		nn = ijk-strideZ+1;						// neighbor index (get convention)
+		m14 = Phi[nn];					// get neighbor for phi - 14
+		//........................................................................
+		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+		m15 = Phi[nn];					// get neighbor for phi - 15
+		//........................................................................
+		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+		m16 = Phi[nn];					// get neighbor for phi - 16
+		//........................................................................
+		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+		m17 = Phi[nn];					// get neighbor for phi - 17
+		//........................................................................
+		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+		m18 = Phi[nn];					// get neighbor for phi - 18
+
+        // compute mixed difference (Eq.30, A.Fukhari et al. JCP 315(2016) 434-457)
+		//........................................................................
+		nn2x = ijk-2;							// neighbor index (get convention)
+		mm1 = Phi[nn2x];						// get neighbor for phi - 1
+        mm1 = 0.25*(-mm1+5.0*m1-3.0*phi-m2);
+		//........................................................................
+		nn2x = ijk+2;							// neighbor index (get convention)
+		mm2 = Phi[nn2x];						// get neighbor for phi - 2
+        mm2 = 0.25*(-mm2+5.0*m2-3.0*phi-m1);
+		//........................................................................
+		nn2x = ijk-strideY*2;							// neighbor index (get convention)
+		mm3 = Phi[nn2x];					// get neighbor for phi - 3
+        mm3 = 0.25*(-mm3+5.0*m3-3.0*phi-m4);
+		//........................................................................
+		nn2x = ijk+strideY*2;							// neighbor index (get convention)
+		mm4 = Phi[nn2x];					// get neighbor for phi - 4
+        mm4 = 0.25*(-mm4+5.0*m4-3.0*phi-m3);
+		//........................................................................
+		nn2x = ijk-strideZ*2;						// neighbor index (get convention)
+		mm5 = Phi[nn2x];					// get neighbor for phi - 5
+        mm5 = 0.25*(-mm5+5.0*m5-3.0*phi-m6);
+		//........................................................................
+		nn2x = ijk+strideZ*2;						// neighbor index (get convention)
+		mm6 = Phi[nn2x];					// get neighbor for phi - 6
+        mm6 = 0.25*(-mm6+5.0*m6-3.0*phi-m5);
+		//........................................................................
+		nn2x = ijk-strideY*2-2;						// neighbor index (get convention)
+		mm7 = Phi[nn2x];					// get neighbor for phi - 7
+        mm7 = 0.25*(-mm7+5.0*m7-3.0*phi-m8);
+		//........................................................................
+		nn2x = ijk+strideY*2+2;						// neighbor index (get convention)
+		mm8 = Phi[nn2x];					// get neighbor for phi - 8
+        mm8 = 0.25*(-mm8+5.0*m8-3.0*phi-m7);
+		//........................................................................
+		nn2x = ijk+strideY*2-2;						// neighbor index (get convention)
+		mm9 = Phi[nn2x];					// get neighbor for phi - 9
+        mm9 = 0.25*(-mm9+5.0*m9-3.0*phi-m10);
+		//........................................................................
+		nn2x = ijk-strideY*2+2;						// neighbor index (get convention)
+		mm10 = Phi[nn2x];					// get neighbor for phi - 10
+        mm10 = 0.25*(-mm10+5.0*m10-3.0*phi-m9);
+		//........................................................................
+		nn2x = ijk-strideZ*2-2;						// neighbor index (get convention)
+		mm11 = Phi[nn2x];					// get neighbor for phi - 11
+        mm11 = 0.25*(-mm11+5.0*m11-3.0*phi-m12);
+		//........................................................................
+		nn2x = ijk+strideZ*2+2;						// neighbor index (get convention)
+		mm12 = Phi[nn2x];					// get neighbor for phi - 12
+        mm12 = 0.25*(-mm12+5.0*m12-3.0*phi-m11);
+		//........................................................................
+		nn2x = ijk+strideZ*2-2;						// neighbor index (get convention)
+		mm13 = Phi[nn2x];					// get neighbor for phi - 13
+        mm13 = 0.25*(-mm13+5.0*m13-3.0*phi-m14);
+		//........................................................................
+		nn2x = ijk-strideZ*2+2;						// neighbor index (get convention)
+		mm14 = Phi[nn2x];					// get neighbor for phi - 14
+        mm14 = 0.25*(-mm14+5.0*m14-3.0*phi-m13);
+		//........................................................................
+		nn2x = ijk-strideZ*2-strideY*2;					// neighbor index (get convention)
+		mm15 = Phi[nn2x];					// get neighbor for phi - 15
+        mm15 = 0.25*(-mm15+5.0*m15-3.0*phi-m16);
+		//........................................................................
+		nn2x = ijk+strideZ*2+strideY*2;					// neighbor index (get convention)
+		mm16 = Phi[nn2x];					// get neighbor for phi - 16
+        mm16 = 0.25*(-mm16+5.0*m16-3.0*phi-m15);
+		//........................................................................
+		nn2x = ijk+strideZ*2-strideY*2;					// neighbor index (get convention)
+		mm17 = Phi[nn2x];					// get neighbor for phi - 17
+        mm17 = 0.25*(-mm17+5.0*m17-3.0*phi-m18);
+		//........................................................................
+		nn2x = ijk-strideZ*2+strideY*2;					// neighbor index (get convention)
+		mm18 = Phi[nn2x];					// get neighbor for phi - 18
+        mm18 = 0.25*(-mm18+5.0*m18-3.0*phi-m17);
+
+
+		//............Compute the Color Gradient...................................
+		//nx = -3.0*1.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+		//ny = -3.0*1.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+		//nz = -3.0*1.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+		//............Compute the Mixed Gradient...................................
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
+
+		ColorGrad[0*Np+n] = mgx;
+		ColorGrad[1*Np+n] = mgy;
+		ColorGrad[2*Np+n] = mgz;
+    }
+}
