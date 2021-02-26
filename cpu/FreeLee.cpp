@@ -236,12 +236,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-		// local relaxation time
-		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
         phi = Phi[ijk];// load phase field
+
+		// local relaxation time
+		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
@@ -842,12 +844,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-		// local relaxation time
-		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
         phi = Phi[ijk];// load phase field
+
+		// local relaxation time
+		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
