@@ -39,6 +39,8 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
+    bool RecoloringOff;//recoloring can be turn off for grey nodes if this is true
+    double W;//wetting strength paramter for capillary pressure penalty for grey nodes
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;

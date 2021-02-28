@@ -1452,7 +1452,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 		 double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 
 	int n,nn,ijk,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
@@ -1472,12 +1472,12 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
-    double Fcpx,Fcpy,Fcpz;
+    double cp;//capillary pressure penalty - pressure term
 
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
-    double c0, c1; //Guo's model parameters
+    //double c0, c1; //Guo's model parameters
     double tau_eff;
     double mu_eff;//kinematic viscosity
     double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
@@ -1606,16 +1606,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nx = nx/ColorMag;
 			ny = ny/ColorMag;
 			nz = nz/ColorMag;		
-            //----------- Introduce capillary penalty force -------------------------
-            //NOTE: apply only to grey nodes
-            Fcpx = 0.5*alpha*C*W/sqrt(perm)*nx;
-            Fcpy = 0.5*alpha*C*W/sqrt(perm)*ny;
-            Fcpz = 0.5*alpha*C*W/sqrt(perm)*nz;
-            if (porosity==1.0){
-                Fcpx = 0.0;
-                Fcpy = 0.0;
-                Fcpz = 0.0;
-            }
 
 			// q=0
 			fq = dist[n];
@@ -1939,14 +1929,14 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			m18 -= fq;
 			
             //// Compute greyscale related parameters
-            ux = (jx/rho0+0.5*porosity*Gx+0.5*Fcpx/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uy = (jy/rho0+0.5*porosity*Gy+0.5*Fcpy/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uz = (jz/rho0+0.5*porosity*Gz+0.5*Fcpz/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+            ux = (jx/rho0+0.5*porosity*Gx)/(1.0+0.5*porosity*mu_eff/perm);
+            uy = (jy/rho0+0.5*porosity*Gy)/(1.0+0.5*porosity*mu_eff/perm);
+            uz = (jz/rho0+0.5*porosity*Gz)/(1.0+0.5*porosity*mu_eff/perm);
 
             //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx)+Fcpx;
-            Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy)+Fcpy;
-            Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz)+Fcpz;
+            Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx);
+            Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy);
+            Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz);
             if (porosity==1.0){
                 Fx=rho0*(porosity*Gx);
                 Fy=rho0*(porosity*Gy);
@@ -1959,6 +1949,14 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			Velocity[2*Np+n] = uz;
             //Pressure[n] = rho/3.f/porosity;
             Pressure[n] = rho/3.f;
+
+            //----------- Introduce capillary penalty force -------------------------
+            //NOTE: apply only to grey nodes
+            cp = 0.1*tanh(W*alpha*phi/sqrt(perm));//the extra factor of 0.1 is to make sure cp is bounded within [-0.1,0.1]
+            if (porosity==1.0){
+                cp = 0.0;
+            }
+            rho += cp;//pressure perturbation
 
 			//........................................................................
 			//..............carry out relaxation process..............................
@@ -2220,7 +2218,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
 	double fq;
 	// conserved momemnts
@@ -2235,12 +2233,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
-    double Fcpx,Fcpy,Fcpz;
+    double cp;//capillary pressure penalty - pressure term
 
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
-    double c0, c1; //Guo's model parameters
+    //double c0, c1; //Guo's model parameters
     double tau_eff;
     double mu_eff;//kinematic viscosity
     double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
@@ -2640,30 +2638,19 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			m17 -= fq;
 			m18 -= fq;
 
-            // Compute greyscale related parameters
-            c0 = 0.5*(1.0+porosity*0.5*mu_eff/perm);
-            if (porosity==1.0) c0 = 0.5;//i.e. apparent pore nodes
-            //GeoFun = 1.75/sqrt(150.0*porosity*porosity*porosity);
-            c1 = porosity*0.5*GeoFun/sqrt(perm);
-            if (porosity==1.0) c1 = 0.0;//i.e. apparent pore nodes
-
-            vx = jx/rho0+0.5*(porosity*Gx);
-            vy = jy/rho0+0.5*(porosity*Gy);
-            vz = jz/rho0+0.5*(porosity*Gz);
-            v_mag=sqrt(vx*vx+vy*vy+vz*vz);
-            ux = vx/(c0+sqrt(c0*c0+c1*v_mag));
-            uy = vy/(c0+sqrt(c0*c0+c1*v_mag));
-            uz = vz/(c0+sqrt(c0*c0+c1*v_mag));
-            u_mag=sqrt(ux*ux+uy*uy+uz*uz);
+            //// Compute greyscale related parameters
+            ux = (jx/rho0+0.5*porosity*Gx)/(1.0+0.5*porosity*mu_eff/perm);
+            uy = (jy/rho0+0.5*porosity*Gy)/(1.0+0.5*porosity*mu_eff/perm);
+            uz = (jz/rho0+0.5*porosity*Gz)/(1.0+0.5*porosity*mu_eff/perm);
 
             //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = rho0*(-porosity*mu_eff/perm*ux - porosity*GeoFun/sqrt(perm)*u_mag*ux + porosity*Gx);
-            Fy = rho0*(-porosity*mu_eff/perm*uy - porosity*GeoFun/sqrt(perm)*u_mag*uy + porosity*Gy);
-            Fz = rho0*(-porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
+            Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx);
+            Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy);
+            Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz);
             if (porosity==1.0){
-                Fx=rho0*(Gx);
-                Fy=rho0*(Gy);
-                Fz=rho0*(Gz);
+                Fx=rho0*(porosity*Gx);
+                Fy=rho0*(porosity*Gy);
+                Fz=rho0*(porosity*Gz);
             }
 
 			// write the velocity 
@@ -2672,6 +2659,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			Velocity[2*Np+n] = uz;
             //Pressure[n] = rho/3.f/porosity;
             Pressure[n] = rho/3.f;
+
+            //----------- Introduce capillary penalty force -------------------------
+            //NOTE: apply only to grey nodes
+            cp = 0.1*tanh(W*alpha*phi/sqrt(perm));//the extra factor of 0.1 is to make sure cp is bounded within [-0.1,0.1]
+            if (porosity==1.0){
+                cp = 0.0;
+            }
+            rho += cp;//pressure perturbation
 
 			//........................................................................
 			//..............carry out relaxation process..............................
@@ -2854,6 +2849,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
@@ -2869,6 +2865,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
@@ -2883,6 +2880,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
@@ -4448,6 +4446,37 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 		printf("CUDA error in ScaLBL_PhaseField_InitFromRestart: %s \n",cudaGetErrorString(err));
 	}
 }
+
+//Model-1 & 4 with capillary pressure penalty
+extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
+        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
+		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, Pressure,
+            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColor_CP: %s \n",cudaGetErrorString(err));
+	}
+
+}
+
+//Model-1 & 4 with capillary pressure penalty
+extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
+        double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
+		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel,Pressure,
+			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_GreyscaleColor_CP: %s \n",cudaGetErrorString(err));
+	}
+}
+
 ////Model-2&3
 //extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
 //        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
