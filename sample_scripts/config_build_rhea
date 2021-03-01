@@ -27,7 +27,6 @@ cmake                                        \
     -D CMAKE_CXX_STD=11 			     \
     -D USE_TIMER=false			     \
     -D TIMER_DIRECTORY=${HOME}/timerutility/build/opt  \
-    -D MPI_COMPILER:BOOL=TRUE                \
        -D MPIEXEC=aprun                      \
        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D USE_CUDA=0                            \

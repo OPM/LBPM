@@ -36,6 +36,5 @@ cmake                                       \
 
 # MPI_THREAD_MULTIPLE=1 MV2_USE_RDMA_CM=0 MV2_USE_RDMA_CM= MV2_NUM_HCAS=1 MV2_USE_CUDA=1 MV2_ENABLE_AFFINITY=0 srun -n 2 -N 1 --cpu-bind=v -c 1 ./test_MPI
 
-#        -D MPI_COMPILER:BOOL=TRUE           \
 #        -D MPIEXEC=mpirun                   \
 #        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \

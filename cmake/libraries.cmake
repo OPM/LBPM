@@ -41,9 +41,7 @@ ENDMACRO()
 # Macro to find and configure the MPI libraries
 MACRO( CONFIGURE_MPI )
     # Determine if we want to use MPI
-    CHECK_ENABLE_FLAG(USE_MPI 1 )
     CHECK_ENABLE_FLAG( USE_MPI 1 )
-    MESSAGE("MPIEXEC = ${MPIEXEC}")
     IF ( USE_MPI )
         MESSAGE( "Configuring MPI" )
         IF ( MPIEXEC )

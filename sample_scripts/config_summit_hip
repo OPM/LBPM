@@ -21,7 +21,6 @@ cmake                                       \
         -D HIP_NVCC_OPTIONS="-arch sm_70"   \
         -D LINK_LIBRARIES="/sw/summit/cuda/9.2.148/lib64/libcudart.so"   \
     -D USE_MPI=1                            \
-        -D MPI_COMPILER:BOOL=TRUE           \
     -D USE_NETCDF=0                         \
     -D USE_SILO=1                           \
         -D SILO_DIRECTORY=${TPL_DIR}/silo   \
