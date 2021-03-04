@@ -1009,11 +1009,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior());
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -1073,11 +1073,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the Phase indicator field
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior());
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL

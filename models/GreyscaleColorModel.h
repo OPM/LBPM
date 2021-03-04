@@ -50,7 +50,8 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-        std::shared_ptr<GreyPhaseAnalysis> Averages;
+	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular_2;
+    std::shared_ptr<GreyPhaseAnalysis> Averages;
     
     // input database
     std::shared_ptr<Database> db;
@@ -72,6 +73,7 @@ public:
 	double *Pressure;
     double *Porosity_dvc;
     double *Permeability_dvc;
+    double *Psi;
 		
 private:
 	Utilities::MPI comm;

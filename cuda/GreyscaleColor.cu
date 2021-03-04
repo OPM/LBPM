@@ -1472,7 +1472,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
-    double psi;//greyscale potential
 
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
@@ -2256,7 +2255,6 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
-    double psi;//greyscale potential
 
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
@@ -2974,7 +2972,7 @@ __global__ void dvc_ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, d
 }
 
 __global__  void dvc_ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
-                                                      int start, int finish){
+                                                      int start, int finish, int Np){
 	int idx,n;
     double phi,psi;
     double cap_penalty;
@@ -4521,12 +4519,12 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi,double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, Pressure,
-            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm, Vel, Pressure,
+            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColor_CP: %s \n",cudaGetErrorString(err));
@@ -4536,12 +4534,12 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel,Pressure,
-			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm,Vel,Pressure,
+			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -4550,9 +4548,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *M
 }
 
 extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
-		int start, int finish){
+		int start, int finish, int Np){
 
-	dvc_ScaLBL_Update_GreyscalePotential<<<NBLOCKS,NTHREADS >>>(Map, Phi, Psi, Poro, Perm, alpha, W, start, finish);
+	dvc_ScaLBL_Update_GreyscalePotential<<<NBLOCKS,NTHREADS >>>(Map, Phi, Psi, Poro, Perm, alpha, W, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
