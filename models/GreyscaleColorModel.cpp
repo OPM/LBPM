@@ -220,6 +220,7 @@ void ScaLBL_GreyscaleColorModel::ReadInput(){
 	
 }
 
+
 void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 {
     // Initialize impermeability solid nodes and grey nodes
@@ -264,6 +265,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
+
 						label_count[idx] += 1.0;
 						idx = NLABELS;
 						//Mask->id[n] = 0; // set mask to zero since this is an immobile component
@@ -583,6 +585,71 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
     delete [] Permeability;
 }
 
+void ScaLBL_GreyscaleColorModel::AssignGreyscalePotential()
+{
+    double *psi;//greyscale potential
+	psi = new double[N];
+
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = greyscaleColor_db->getVector<int>( "ComponentLabels" );
+	auto AffinityList = greyscaleColor_db->getVector<double>( "ComponentAffinity" );
+	NLABELS=LabelList.size();
+
+    //first, copy over normal phase field
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=id[n];
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];
+						idx = NLABELS;
+					}
+				}
+				// fluid labels are reserved
+				if (VALUE == 1) AFFINITY=1.0;
+				else if (VALUE == 2) AFFINITY=-1.0;
+				psi[n] = AFFINITY;
+			}
+		}
+	}
+
+    //second, scale the phase field for grey nodes
+	double Cap_Penalty=1.f;
+	auto GreyLabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
+	auto PermeabilityList = greyscaleColor_db->getVector<double>( "PermeabilityList" );
+	NLABELS=GreyLabelList.size();
+
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=id[n];
+                Cap_Penalty=1.f;
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+					if (VALUE == GreyLabelList[idx]){
+						Cap_Penalty=alpha*W/sqrt(PermeabilityList[idx]/Dm->voxel_length/Dm->voxel_length);
+						idx = NLABELS;
+					}
+				}
+                //update greyscale potential
+                psi[n] = psi[n]*Cap_Penalty;
+			}
+		}
+	}
+
+	ScaLBL_CopyToDevice(Psi, psi, N*sizeof(double));
+	ScaLBL_Comm->Barrier();
+    delete [] psi;
+}
+
 void ScaLBL_GreyscaleColorModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -603,6 +670,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	// ScaLBL_Communicator ScaLBL_Comm(Mask); // original
 	ScaLBL_Comm  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 	ScaLBL_Comm_Regular  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
+	ScaLBL_Comm_Regular_2  = std::shared_ptr<ScaLBL_Communicator>(new ScaLBL_Communicator(Mask));
 
 	int Npad=(Np/16 + 2)*16;
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
@@ -627,6 +695,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	ScaLBL_AllocateDeviceMemory((void **) &Bq, 7*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Den, 2*dist_mem_size);
 	ScaLBL_AllocateDeviceMemory((void **) &Phi, sizeof(double)*Nx*Ny*Nz);		
+	ScaLBL_AllocateDeviceMemory((void **) &Psi, sizeof(double)*Nx*Ny*Nz);//greyscale potential		
 	ScaLBL_AllocateDeviceMemory((void **) &Pressure, sizeof(double)*Np);
 	ScaLBL_AllocateDeviceMemory((void **) &Velocity, 3*sizeof(double)*Np);
 	//ScaLBL_AllocateDeviceMemory((void **) &ColorGrad, 3*sizeof(double)*Np);
@@ -675,6 +744,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	AssignComponentLabels();//do open/black/grey nodes initialization
     AssignGreySolidLabels();
     AssignGreyPoroPermLabels(); 
+    AssignGreyscalePotential(); 
 	Averages->SetParams(rhoA,rhoB,tauA,tauB,Fx,Fy,Fz,alpha,beta,GreyPorosity);
 	ScaLBL_Comm->RegularLayout(Map,Porosity_dvc,Averages->Porosity);//porosity doesn't change over time
 }        
@@ -939,9 +1009,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Read for Aq, Bq happens in this routine (requires communication)
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior());
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
@@ -951,10 +1023,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular_2->SendHalo(Psi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Psi, GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
-                alpha, beta, Fx, Fy, Fz, RecoloringOff, W, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+                alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
         //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
@@ -963,6 +1036,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
         //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular_2->RecvHalo(Psi);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -981,9 +1055,9 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Psi, GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                alpha, beta, Fx, Fy, Fz, RecoloringOff, W, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+                alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
         //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
@@ -999,9 +1073,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Compute the Phase indicator field
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior());
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+        ScaLBL_Update_GreyscalePotential(dvcMap,Phi,Psi,Porosity_dvc,Permeability_dvc,alpha,W,0,ScaLBL_Comm->LastExterior());
 
 		// Perform the collision operation
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -1011,10 +1087,11 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_Comm_Regular_2->SendHalo(Psi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, Psi, GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                alpha, beta, Fx, Fy, Fz, RecoloringOff, W, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+                alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
         //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
@@ -1023,6 +1100,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity, 
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
         //        alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular_2->RecvHalo(Psi);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -1041,9 +1119,9 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, Psi, GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
-                alpha, beta, Fx, Fy, Fz, RecoloringOff, W, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+                alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
         //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidGrad,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,

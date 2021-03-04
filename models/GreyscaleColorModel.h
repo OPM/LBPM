@@ -88,6 +88,7 @@ private:
     void AssignComponentLabels();
     void AssignGreySolidLabels();
     void AssignGreyPoroPermLabels();
+    void AssignGreyscalePotential();
     void ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
