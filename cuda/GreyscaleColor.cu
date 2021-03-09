@@ -1452,7 +1452,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
 		 double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 
 	int n,nn,ijk,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
@@ -1609,9 +1609,20 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
 			//............Compute the Greyscale Potential Gradient.....................
-			Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-			Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-			Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+			Fcpx = 0.0;
+			Fcpy = 0.0;
+			Fcpz = 0.0;
+            if (porosity!=1.0){
+                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+                Fcpx *= alpha*W/sqrt(perm); 
+                Fcpy *= alpha*W/sqrt(perm); 
+                Fcpz *= alpha*W/sqrt(perm); 
+            }
 
 
             //correct the normal color gradient by considering the effect of grey solid
@@ -2240,7 +2251,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
 	double fq;
 	// conserved momemnts
@@ -2392,9 +2403,20 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
 			//............Compute the Greyscale Potential Gradient.....................
-			Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-			Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-			Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+			Fcpx = 0.0;
+			Fcpy = 0.0;
+			Fcpz = 0.0;
+            if (porosity!=1.0){
+                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+                Fcpx *= alpha*W/sqrt(perm); 
+                Fcpy *= alpha*W/sqrt(perm); 
+                Fcpz *= alpha*W/sqrt(perm); 
+            }
 
             //correct the normal color gradient by considering the effect of grey solid
             nx = nx_phase + (1.0-porosity)*nx_gs; 
@@ -4521,10 +4543,10 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
         double *Phi,double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 
 	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm, Vel, Pressure,
-            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
+            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColor_CP: %s \n",cudaGetErrorString(err));
@@ -4536,10 +4558,10 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
 		double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
 
 	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm,Vel,Pressure,
-			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
+			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
