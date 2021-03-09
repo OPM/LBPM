@@ -1677,6 +1677,13 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 	fwrite(PhaseField.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
 
+	ScaLBL_CopyToHost(PhaseField.data(), Psi, sizeof(double)*N);
+	FILE *PSIFILE;
+	sprintf(LocalRankFilename,"Psi.%05i.raw",rank);
+	PSIFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,PSIFILE);
+	fclose(PSIFILE);
+
     ScaLBL_Comm->RegularLayout(Map,&Den[0],PhaseField);
 	FILE *AFILE;
 	sprintf(LocalRankFilename,"A.%05i.raw",rank);
