@@ -778,25 +778,25 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 
         //-------------------------------- BGK collison for phase field ---------------------------------//
 		// q = 0
-		hq[n] = h0 - (h0 - 0.33333333333333333*phi)/tauM;
+		hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
 
 		// q = 1
-		hq[nr2] = h1 - (h1 - 0.1111111111111111*(phi*(1.0 + 3.0*ux) - (M*nx*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr2] = h1 - (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 2
-		hq[nr1] = h2 - (h2 - 0.1111111111111111*(phi*(1.0 - 3.0*ux) + (M*nx*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr1] = h2 - (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 3
-		hq[nr4] = h3 - (h3 - 0.1111111111111111*(phi*(1.0 + 3.0*uy) - (M*ny*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr4] = h3 - (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 4
-		hq[nr3] = h4 - (h4 - 0.1111111111111111*(phi*(1.0 - 3.0*uy) + (M*ny*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr3] = h4 - (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 5
-		hq[nr6] = h5 - (h5 - 0.1111111111111111*(phi*(1.0 + 3.0*uz) - (M*nz*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr6] = h5 - (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 6
-		hq[nr5] = h6 - (h6 - 0.1111111111111111*(phi*(1.0 - 3.0*uz) + (M*nz*(1 - 4*phi*phi))/W)/tauM);
+		hq[nr5] = h6 - (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
 		//........................................................................
 
         //Update velocity on device
@@ -1369,25 +1369,25 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 
         //-------------------------------- BGK collison for phase field ---------------------------------//
 		// q = 0
-		hq[n] = h0 - (h0 - 0.33333333333333333*phi)/tauM;
+		hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
 
 		// q = 1
-		hq[1*Np+n] = h1 - (h1 - 0.1111111111111111*(phi*(1.0 + 3.0*ux) - (M*nx*(1 - 4*phi*phi))/W)/tauM);
+		hq[1*Np+n] = h1 - (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 2
-		hq[2*Np+n] = h2 - (h2 - 0.1111111111111111*(phi*(1.0 - 3.0*ux) + (M*nx*(1 - 4*phi*phi))/W)/tauM);
+		hq[2*Np+n] = h2 - (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 3
-		hq[3*Np+n] = h3 - (h3 - 0.1111111111111111*(phi*(1.0 + 3.0*uy) - (M*ny*(1 - 4*phi*phi))/W)/tauM);
+		hq[3*Np+n] = h3 - (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 4
-		hq[4*Np+n] = h4 - (h4 - 0.1111111111111111*(phi*(1.0 - 3.0*uy) + (M*ny*(1 - 4*phi*phi))/W)/tauM);
+		hq[4*Np+n] = h4 - (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 5
-		hq[5*Np+n] = h5 - (h5 - 0.1111111111111111*(phi*(1.0 + 3.0*uz) - (M*nz*(1 - 4*phi*phi))/W)/tauM);
+		hq[5*Np+n] = h5 - (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
 
 		// q = 6
-		hq[6*Np+n] = h6 - (h6 - 0.1111111111111111*(phi*(1.0 - 3.0*uz) + (M*nz*(1 - 4*phi*phi))/W)/tauM);
+		hq[6*Np+n] = h6 - (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
 		//........................................................................
 
         //Update velocity on device
