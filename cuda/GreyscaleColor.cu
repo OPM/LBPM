@@ -1604,9 +1604,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			m18 = Phi[nn];					// get neighbor for phi - 18
             gp18 = Psi[nn];
 			//............Compute the Color Gradient...................................
-			nx_phase = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny_phase = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx_phase = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny_phase = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz_phase = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
 
             //correct the normal color gradient by considering the effect of grey solid
@@ -1628,26 +1628,33 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nz = nz/ColorMag;		
 
 			//............Compute the Greyscale Potential Gradient.....................
-			Fcpx = 0.0;
-			Fcpy = 0.0;
-			Fcpz = 0.0;
-            if (porosity!=1.0){
-                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
-                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-                Fcpx *= alpha*W/sqrt(perm); 
-                Fcpy *= alpha*W/sqrt(perm); 
-                Fcpz *= alpha*W/sqrt(perm); 
-                double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-                double Fcp_mag = Fcp_mag_temp;
-                if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
-                nx = Fcpx/Fcp_mag;
-                ny = Fcpy/Fcp_mag;
-                nz = Fcpz/Fcp_mag;
-            }
+//			Fcpx = 0.0;
+//			Fcpy = 0.0;
+//			Fcpz = 0.0;
+//            if (porosity!=1.0){
+//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+//                Fcpx *= alpha*W/sqrt(perm); 
+//                Fcpy *= alpha*W/sqrt(perm); 
+//                Fcpz *= alpha*W/sqrt(perm); 
+//                //double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+//                //double Fcp_mag = Fcp_mag_temp;
+//                //if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
+//                //nx = Fcpx/Fcp_mag;
+//                //ny = Fcpy/Fcp_mag;
+//                //nz = Fcpz/Fcp_mag;
+//            }
+            Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+            Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+            Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            //NOTE for open node (porosity=1.0),Fcp=0.0
+            Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
+            Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
+            Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
 
 			// q=0
 			fq = dist[n];
@@ -2404,9 +2411,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			m18 = Phi[nn];					// get neighbor for phi - 18
             gp18 = Psi[nn];
 			//............Compute the Color Gradient...................................
-			nx_phase = -(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny_phase = -(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz_phase = -(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+			nx_phase = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny_phase = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz_phase = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
 
             //correct the normal color gradient by considering the effect of grey solid
@@ -2428,26 +2435,33 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			nz = nz/ColorMag;		
 
 			//............Compute the Greyscale Potential Gradient.....................
-			Fcpx = 0.0;
-			Fcpy = 0.0;
-			Fcpz = 0.0;
-            if (porosity!=1.0){
-                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
-                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-                Fcpx *= alpha*W/sqrt(perm); 
-                Fcpy *= alpha*W/sqrt(perm); 
-                Fcpz *= alpha*W/sqrt(perm); 
-                double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-                double Fcp_mag = Fcp_mag_temp;
-                if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
-                nx = Fcpx/Fcp_mag;
-                ny = Fcpy/Fcp_mag;
-                nz = Fcpz/Fcp_mag;
-            }
+//			Fcpx = 0.0;
+//			Fcpy = 0.0;
+//			Fcpz = 0.0;
+//            if (porosity!=1.0){
+//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+//                Fcpx *= alpha*W/sqrt(perm); 
+//                Fcpy *= alpha*W/sqrt(perm); 
+//                Fcpz *= alpha*W/sqrt(perm); 
+//                double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+//                double Fcp_mag = Fcp_mag_temp;
+//                if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
+//                nx = Fcpx/Fcp_mag;
+//                ny = Fcpy/Fcp_mag;
+//                nz = Fcpz/Fcp_mag;
+//            }
+            Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+            Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+            Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            //NOTE for open node (porosity=1.0),Fcp=0.0
+            Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
+            Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
+            Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
 
 
 			// q=0
