@@ -2194,7 +2194,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
@@ -2213,7 +2213,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
@@ -2233,7 +2233,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
@@ -2928,7 +2928,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
@@ -2944,7 +2944,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
@@ -2959,7 +2959,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //if (RecoloringOff==true && porosity !=1.0) delta=0;
+            if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
 			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
