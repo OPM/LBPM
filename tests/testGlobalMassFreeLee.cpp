@@ -86,7 +86,7 @@ int main( int argc, char **argv )
     	fwrite(DensityChange.data(),8,Nx*Ny*Nz,OUTFILE);
     	fclose(OUTFILE);
    
-        LeeModel.WriteDebug_TwoFluid();
+        //LeeModel.WriteDebug_TwoFluid();
 
         PROFILE_STOP("Main");
         // ****************************************************

@@ -776,7 +776,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		ScaLBL_Comm_WideHalo->Send(Phi);
 
 		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
-				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -794,13 +794,16 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
 		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
-				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
+		
+		printf("write debug \n");
+		WriteDebug_TwoFluid();
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
-		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMAL
+		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMA
 		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -815,7 +818,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		}
 		ScaLBL_Comm_WideHalo->Send(Phi);
 		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
-				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -833,7 +836,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
 		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
-				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier();
 		//************************************************************************
 		PROFILE_STOP("Update");
@@ -905,6 +908,7 @@ void ScaLBL_FreeLeeModel::Run_SingleFluid(){
 		ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(NeighborList, gqbar, Velocity, Pressure, tau, rho0, Fx, Fy, Fz, 
                                                         0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
+
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -1003,7 +1007,7 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	fwrite(PhaseField.data(),8,N,VELZ_FILE);
 	fclose(VELZ_FILE);
 
-/*	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&ColorGrad[0],PhaseField);
 	FILE *CGX_FILE;
 	sprintf(LocalRankFilename,"Gradient_X.%05i.raw",rank);
 	CGX_FILE = fopen(LocalRankFilename,"wb");
@@ -1023,7 +1027,7 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	CGZ_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,CGZ_FILE);
 	fclose(CGZ_FILE);
-*/
+
 }
 
 void ScaLBL_FreeLeeModel::WriteDebug_SingleFluid(){

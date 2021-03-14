@@ -69,6 +69,7 @@ int main( int argc, char **argv )
         Initialize_DummyPhaseField(LeeModel);
         LeeModel.Create_DummyPhase_MGTest();     
         LeeModel.MGTest();
+        LeeModel.WriteDebug_TwoFluid();
 
         PROFILE_STOP( "Main" );
         auto file  = db->getWithDefault<std::string>( "TimerFile", "TestMixedGrad" );
