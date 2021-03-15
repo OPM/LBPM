@@ -9,14 +9,15 @@
 #include "common/Utilities.h"
 #include "models/FreeLeeModel.h"
 
-inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel){
+inline void Initialize_Mask(ScaLBL_FreeLeeModel &LeeModel){
 	// initialize a bubble
 	int i,j,k,n;
 	int rank = LeeModel.Mask->rank();
 	int Nx = LeeModel.Mask->Nx;
 	int Ny = LeeModel.Mask->Ny;
 	int Nz = LeeModel.Mask->Nz;
-	if (rank == 0) cout << "Setting up dummy phase field..." << endl;
+	if (rank == 0) printf(" initialize mask...\n");
+
 	for (k=0;k<Nz;k++){
 		for (j=0;j<Ny;j++){
 			for (i=0;i<Nx;i++){
@@ -28,6 +29,33 @@ inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel){
 	}
 }
 
+inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel, double ax, double ay, double az){
+	// initialize a bubble
+	int i,j,k,n;
+	int rank = LeeModel.Mask->rank();
+	int Nx = LeeModel.Mask->Nx;
+	int Ny = LeeModel.Mask->Ny;
+	int Nz = LeeModel.Mask->Nz;
+	if (rank == 0) printf("Setting up dummy phase field with gradient {x,y,z} = {%f , %f , %f}...\n",ax,ay,az);
+	
+	double * Dummy;
+	int Nh = (Nx+2)*(Ny+2)*(Nz+2);
+	Dummy = new double [(Nx+2)*(Ny+2)*(Nz+2)];
+	for (k=0;k<Nz;k++){
+		for (j=0;j<Ny;j++){
+			for (i=0;i<Nx;i++){
+				n = k*Nx*Ny + j*Nz + i;
+                LeeModel.Mask->id[n]=1;
+                LeeModel.id[n] = LeeModel.Mask->id[n];
+                int nh = (k+1)*(Nx+2)*(Ny+2) + (j+1)*(Nx+2) + i+1;
+                Dummy[nh] = ax*double(i) + ay*double(j) + az*double(k);
+			}
+		}
+	}
+	ScaLBL_CopyToDevice(LeeModel.Phi, Dummy, sizeof(double)*Nh);
+	
+	LeeModel.MGTest();
+}
 
 int main( int argc, char **argv )
 {
@@ -66,14 +94,14 @@ int main( int argc, char **argv )
         ScaLBL_FreeLeeModel LeeModel( rank, nprocs, comm );
         LeeModel.ReadParams( filename );
         LeeModel.SetDomain();
-        Initialize_DummyPhaseField(LeeModel);
-        LeeModel.Create_DummyPhase_MGTest();     
-        LeeModel.MGTest();
+        Initialize_Mask(LeeModel);
+        //LeeModel.Create_DummyPhase_MGTest(); 
+        LeeModel.Create_TwoFluid(); 
+        
+        Initialize_DummyPhaseField(LeeModel,1.0, 2.0, 3.0);
         LeeModel.WriteDebug_TwoFluid();
 
         PROFILE_STOP( "Main" );
-        auto file  = db->getWithDefault<std::string>( "TimerFile", "TestMixedGrad" );
-        auto level = db->getWithDefault<int>( "TimerLevel", 1 );
         PROFILE_SAVE( file, level );
         // ****************************************************
 

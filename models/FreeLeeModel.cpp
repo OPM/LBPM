@@ -10,9 +10,9 @@ color lattice boltzmann model
 #include <time.h>
 
 ScaLBL_FreeLeeModel::ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM):
-rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauM(0),rhoA(0),rhoB(0),W(0),gamma(0),kappa(0),beta(0),
+rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(2),tauA(1.0),tauB(1.0),tauM(1.0),rhoA(1.0),rhoB(1.0),W(5.0),gamma(0.001),kappa(0.0075),beta(0.0024),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
-tau(0),rho0(0),
+tau(1.0),rho0(1.0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 	
@@ -797,7 +797,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
 		
-		printf("write debug \n");
+		printf("write debug strideY=%i strideZ = %i \n",Nxh, Nxh*Nyh);
 		WriteDebug_TwoFluid();
 
 		// *************EVEN TIMESTEP*************
@@ -1178,9 +1178,9 @@ void ScaLBL_FreeLeeModel::MGTest(){
 	comm.barrier();
 
 	ScaLBL_Comm_WideHalo->Send(Phi);
-    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nx,Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nxh,Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	ScaLBL_Comm_WideHalo->Recv(Phi);
-    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nx,Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+    ScaLBL_D3Q9_MGTest(dvcMap,Phi,ColorGrad,Nxh,Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 
     //check the sum of ColorGrad
     double cgx_loc = 0.0;
