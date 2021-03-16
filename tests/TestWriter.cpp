@@ -31,12 +31,96 @@ inline double distance( const Point& p )
 }
 
 
+bool checkMesh( const std::vector<IO::MeshDataStruct>& meshData, const std::string& format, std::shared_ptr<IO::Mesh> mesh )
+{
+
+    // Get direct access to the meshes used to test the reader
+    const auto pointmesh = dynamic_cast<IO::PointList*>(  meshData[0].mesh.get() );
+    const auto trimesh   = dynamic_cast<IO::TriMesh*>(    meshData[1].mesh.get() );
+    const auto trilist   = dynamic_cast<IO::TriList*>(    meshData[2].mesh.get() );
+    const auto domain    = dynamic_cast<IO::DomainMesh*>( meshData[3].mesh.get() );
+    const size_t N_tri = trimesh->A.size();
+    if ( mesh->className() == "pointmesh" ) {
+        // Check the pointmesh
+        auto pmesh = IO::getPointList(mesh);
+        if ( pmesh.get()==NULL )
+            return false;
+        if ( pmesh->points.size() != pointmesh->points.size() )
+            return false;
+    }
+    if ( mesh->className() == "trimesh" || mesh->className() == "trilist" ) {
+        // Check the trimesh/trilist
+        auto mesh1 = IO::getTriMesh(mesh);
+        auto mesh2 = IO::getTriList(mesh);
+        if ( mesh1.get()==NULL || mesh2.get()==NULL )
+            return false;                 
+        if ( mesh1->A.size()!=N_tri || mesh1->B.size()!=N_tri || mesh1->C.size()!=N_tri || 
+             mesh2->A.size()!=N_tri || mesh2->B.size()!=N_tri || mesh2->C.size()!=N_tri ) 
+            return false;                 
+        const std::vector<Point>& P1 = mesh1->vertices->points;
+        const std::vector<int>& A1 = mesh1->A;
+        const std::vector<int>& B1 = mesh1->B;
+        const std::vector<int>& C1 = mesh1->C;
+        const std::vector<Point>& A2 = mesh2->A;
+        const std::vector<Point>& B2 = mesh2->B;
+        const std::vector<Point>& C2 = mesh2->C;
+        const std::vector<Point>& A = trilist->A;
+        const std::vector<Point>& B = trilist->B;
+        const std::vector<Point>& C = trilist->C;
+        for (size_t i=0; i<N_tri; i++) {
+            if ( !approx_equal(P1[A1[i]],A[i]) || !approx_equal(P1[B1[i]],B[i]) || !approx_equal(P1[C1[i]],C[i]) )
+                return false;
+            if ( !approx_equal(A2[i],A[i]) || !approx_equal(B2[i],B[i]) || !approx_equal(C2[i],C[i]) )
+                return false;
+        }
+    }
+    if ( mesh->className() == "domain" && format!="old" ) {
+        // Check the domain mesh
+        const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
+        if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
+            return false;
+        if ( mesh1.nx!=domain->nx || mesh1.ny!=domain->ny || mesh1.nz!=domain->nz )
+            return false;
+        if ( mesh1.Lx!=domain->Lx || mesh1.Ly!=domain->Ly || mesh1.Lz!=domain->Lz )
+            return false;
+    }
+    return true;
+}
+
+
+bool checkVar( const std::string& format, std::shared_ptr<IO::Mesh> mesh,
+    std::shared_ptr<IO::Variable> variable1, std::shared_ptr<IO::Variable> variable2 )
+{
+    if ( format=="new" )
+        IO::reformatVariable( *mesh, *variable2 );
+    bool pass = true;
+    const IO::Variable& var1 = *variable1;
+    const IO::Variable& var2 = *variable2;
+    pass = var1.name == var2.name;
+    pass = pass && var1.dim == var2.dim;
+    pass = pass && var1.type == var2.type;
+    pass = pass && var1.data.length() == var2.data.length();
+    if ( pass ) {
+        for (size_t m=0; m<var1.data.length(); m++)
+            pass = pass && approx_equal(var1.data(m),var2.data(m));
+    }
+    return pass;
+}
+
+
 // Test writing and reading the given format
 void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& meshData, UnitTest& ut )
 {
+    PROFILE_SCOPED( path, 0, timer );
+
     Utilities::MPI comm( MPI_COMM_WORLD );
     int nprocs = comm.getSize();
     comm.barrier();
+
+
+    // Set the path for the writer
+    std::string path = "test_" + format;
+
 
     // Get the format
     std::string format2 = format;
@@ -49,6 +133,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
         precision = IO::DataType::Float;
     }
 
+
     // Set the precision for the variables
     for ( auto& data : meshData ) {
         data.precision = precision;
@@ -57,123 +142,59 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
     }
 
     // Write the data
-    PROFILE_START(format+"-write");
-    IO::initialize( "test_"+format, format2, false );
+    IO::initialize( path, format2, false );
     IO::writeData( 0, meshData, comm );
     IO::writeData( 3, meshData, comm );
     comm.barrier();
-    PROFILE_STOP(format+"-write");
 
-    // Get the summary name for reading
-    std::string path = "test_" + format;
-    std::string summary_name;
-    if ( format=="old" || format=="new" )
-        summary_name = "summary.LBM";
-    else if ( format=="silo-float" || format=="silo-double" )
-        summary_name = "LBM.visit";
-    else
-        ERROR("Unknown format");
 
-    // Get direct access to the meshes used to test the reader
-    const auto pointmesh = dynamic_cast<IO::PointList*>(  meshData[0].mesh.get() );
-    const auto trimesh   = dynamic_cast<IO::TriMesh*>(    meshData[1].mesh.get() );
-    const auto trilist   = dynamic_cast<IO::TriList*>(    meshData[2].mesh.get() );
-    const auto domain    = dynamic_cast<IO::DomainMesh*>( meshData[3].mesh.get() );
-    const size_t N_tri = trimesh->A.size();
-
-    // Get a list of the timesteps 
-    PROFILE_START(format+"-read-timesteps");
-    auto timesteps = IO::readTimesteps( path + "/" + summary_name );
-    PROFILE_STOP(format+"-read-timesteps");
+    // Get a list of the timesteps
+    auto timesteps = IO::readTimesteps( path, format2 );
     if ( timesteps.size()==2 )
         ut.passes(format+": Corrent number of timesteps");
     else
         ut.failure(format+": Incorrent number of timesteps");
 
-    // Check the mesh lists
+
+    // Test the simple read interface
+    bool pass = true;
+    for ( const auto& timestep : timesteps ) {
+        auto data = IO::readData( path, timestep );
+        pass = pass && data.size() == meshData.size();
+        for ( size_t i=0; i<data.size(); i++ ) {
+            pass = pass && checkMesh( meshData, format, data[i].mesh );
+        }
+    }
+    if ( pass )
+        ut.passes( format + ": Simple read interface" );
+    else
+        ut.failure( format + ": Simple read interface" );
+
+
+    // Test reading each mesh domain
     for ( const auto& timestep : timesteps ) {
         // Load the list of meshes and check its size
-        PROFILE_START(format+"-read-getMeshList");
         auto databaseList = IO::getMeshList(path,timestep);
-        PROFILE_STOP(format+"-read-getMeshList");
         if ( databaseList.size()==meshData.size() )
             ut.passes(format+": Corrent number of meshes found");
         else
             ut.failure(format+": Incorrent number of meshes found");
         // Check the number of domains for each mesh
-        bool pass = true;
-        for ( const auto& database : databaseList )
-            pass = pass && (int)database.domains.size()==nprocs;
-        if ( pass ) {
-            ut.passes(format+": Corrent number of domains for mesh");
-        } else {
-            ut.failure(format+": Incorrent number of domains for mesh");
-            continue;
-        }
-        // For each domain, load the mesh and check its data
         for ( const auto& database : databaseList ) {
-            pass = true;
-            for (size_t k=0; k<database.domains.size(); k++) {
-                PROFILE_START(format+"-read-getMesh");
+            int N_domains = database.domains.size();
+            if ( N_domains != nprocs ) {
+                ut.failure( format + ": Incorrent number of domains for mesh" );
+                continue;
+            }
+            // For each domain, load the mesh and check its data
+            bool pass = true;
+            for (int k=0; k<N_domains; k++) {
                 auto mesh = IO::getMesh(path,timestep,database,k);
-                PROFILE_STOP(format+"-read-getMesh");
-                if ( mesh.get()==NULL ) {
-                    printf("Failed to load %s\n",database.name.c_str());
+                if ( !mesh ) {
+                    ut.failure( "Failed to load " + database.name );
                     pass = false;
-                    break;
-                }
-                if ( database.name=="pointmesh" ) {
-                    // Check the pointmesh
-                    auto pmesh = IO::getPointList(mesh);
-                    if ( pmesh.get()==NULL ) {
-                        pass = false;
-                        break;
-                    }
-                    if ( pmesh->points.size() != pointmesh->points.size() ) {
-                        pass = false;
-                        break;
-                    }                    
-                }
-                if ( database.name=="trimesh" || database.name=="trilist" ) {
-                    // Check the trimesh/trilist
-                    auto mesh1 = IO::getTriMesh(mesh);
-                    auto mesh2 = IO::getTriList(mesh);
-                    if ( mesh1.get()==NULL || mesh2.get()==NULL ) {
-                        pass = false;
-                        break;
-                    }
-                    if ( mesh1->A.size()!=N_tri || mesh1->B.size()!=N_tri || mesh1->C.size()!=N_tri || 
-                         mesh2->A.size()!=N_tri || mesh2->B.size()!=N_tri || mesh2->C.size()!=N_tri ) 
-                    {
-                        pass = false;
-                        break;
-                    }
-                    const std::vector<Point>& P1 = mesh1->vertices->points;
-                    const std::vector<int>& A1 = mesh1->A;
-                    const std::vector<int>& B1 = mesh1->B;
-                    const std::vector<int>& C1 = mesh1->C;
-                    const std::vector<Point>& A2 = mesh2->A;
-                    const std::vector<Point>& B2 = mesh2->B;
-                    const std::vector<Point>& C2 = mesh2->C;
-                    const std::vector<Point>& A = trilist->A;
-                    const std::vector<Point>& B = trilist->B;
-                    const std::vector<Point>& C = trilist->C;
-                    for (size_t i=0; i<N_tri; i++) {
-                        if ( !approx_equal(P1[A1[i]],A[i]) || !approx_equal(P1[B1[i]],B[i]) || !approx_equal(P1[C1[i]],C[i]) )
-                            pass = false;
-                        if ( !approx_equal(A2[i],A[i]) || !approx_equal(B2[i],B[i]) || !approx_equal(C2[i],C[i]) )
-                            pass = false;
-                    }
-                }
-                if ( database.name=="domain" && format!="old" ) {
-                    // Check the domain mesh
-                    const IO::DomainMesh& mesh1 = *std::dynamic_pointer_cast<IO::DomainMesh>(mesh);
-                    if ( mesh1.nprocx!=domain->nprocx || mesh1.nprocy!=domain->nprocy || mesh1.nprocz!=domain->nprocz )
-                        pass = false;
-                    if ( mesh1.nx!=domain->nx || mesh1.ny!=domain->ny || mesh1.nz!=domain->nz )
-                        pass = false;
-                    if ( mesh1.Lx!=domain->Lx || mesh1.Ly!=domain->Ly || mesh1.Lz!=domain->Lz )
-                        pass = false;
+                } else {
+                    pass = pass && checkMesh( meshData, format, mesh );
                 }
             }
             if ( pass ) {
@@ -185,31 +206,19 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
             // Load the variables and check their data
             if ( format=="old" )
                 continue;   // Old format does not support variables
-            const IO::MeshDataStruct* mesh0 = NULL;
+            const IO::MeshDataStruct* mesh0 = nullptr;
             for (size_t k=0; k<meshData.size(); k++) {
                 if ( meshData[k].meshName == database.name ) {
                     mesh0 = &meshData[k];
                     break;
                 }
             }
-            for (size_t k=0; k<database.domains.size(); k++) {
+            for (int k=0; k<N_domains; k++) {
                 auto mesh = IO::getMesh(path,timestep,database,k);
                 for (size_t v=0; v<mesh0->vars.size(); v++) {
                     PROFILE_START(format+"-read-getVariable");
                     auto variable = IO::getVariable(path,timestep,database,k,mesh0->vars[v]->name);
-                    if ( format=="new" )
-                        IO::reformatVariable( *mesh, *variable );
-                    PROFILE_STOP(format+"-read-getVariable");
-                    const IO::Variable& var1 = *mesh0->vars[v];
-                    const IO::Variable& var2 = *variable;
-                    pass = var1.name == var2.name;
-                    pass = pass && var1.dim == var2.dim;
-                    pass = pass && var1.type == var2.type;
-                    pass = pass && var1.data.length() == var2.data.length();
-                    if ( pass ) {
-                        for (size_t m=0; m<var1.data.length(); m++)
-                            pass = pass && approx_equal(var1.data(m),var2.data(m));
-                    }
+                    pass = checkVar( format, mesh, mesh0->vars[v], variable );
                     if ( pass ) {
                         ut.passes(format+": Variable \"" + variable->name + "\" matched");
                     } else {

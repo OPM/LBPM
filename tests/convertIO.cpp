@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     std::string path = IO::getPath( filename );
 
     // Read the timesteps
-    auto timesteps = IO::readTimesteps( filename );
+    auto timesteps = IO::readTimesteps( filename, "old" );
 
     // Loop through the timesteps, reading/writing the data
     IO::initialize( "", format, false );

@@ -17,8 +17,27 @@ namespace IO {
 std::string getPath( const std::string& filename );
 
 
-//! List the timesteps in the given directors (dumps.LBPM)
-std::vector<std::string> readTimesteps( const std::string& filename );
+/*!
+ * @brief  Read the timestep list
+ * @details  This function reads the timestep list from the summary file.
+ * @param[in] path          The path to use for reading
+ * @param[in] format        The data format to use:
+ *                          old - Old mesh format (provided for backward compatibility)
+ *                          new - New format, 1 file/process
+ *                          silo - Silo
+ * @return append        Append any existing data (default is false)
+ */
+std::vector<std::string> readTimesteps( const std::string& path, const std::string& format );
+
+
+/*!
+ * @brief  Read the data for the timestep
+ * @details  This function reads the mesh and variable data provided for the given timestep.
+ *    Note: this function requires that the number of ranks of the comm match the number of ranks in the meshes
+ * @param[in] path          The path to use for reading
+ * @param[in] timestep      The timestep iteration
+ */
+std::vector<IO::MeshDataStruct> readData( const std::string& path, const std::string& timestep, const Utilities::MPI &comm = MPI_COMM_WORLD );
 
 
 //! Read the list of mesh databases for the given timestep

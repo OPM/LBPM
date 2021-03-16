@@ -37,10 +37,19 @@ std::string IO::getPath( const std::string& filename )
 }
 
 
-// List the timesteps in the given directors (dumps.LBPM)
-std::vector<std::string> IO::readTimesteps( const std::string& filename )
+// List the timesteps in the given directory (dumps.LBPM)
+std::vector<std::string> IO::readTimesteps( const std::string& path, const std::string& format )
 {
+    // Get the name of the summary filename
+    std::string filename = path + "/";
+    if ( format=="old" || format=="new" )
+        filename += "summary.LBM";
+    else if ( format=="silo" )
+        filename += "LBM.visit";
+    else
+        ERROR( "Unknown format: " + format );
     PROFILE_START("readTimesteps");
+    // Read the data
     FILE *fid= fopen(filename.c_str(),"rb");
     if ( fid==NULL )
         ERROR("Error opening file");
@@ -59,6 +68,29 @@ std::vector<std::string> IO::readTimesteps( const std::string& filename )
     fclose(fid);
     PROFILE_STOP("readTimesteps");
     return timesteps;
+    return timesteps;
+}
+
+
+// Read the data for the given timestep
+std::vector<IO::MeshDataStruct> IO::readData( const std::string& path, const std::string& timestep, const Utilities::MPI &comm )
+{
+    // Get the mesh databases
+    auto db = IO::getMeshList( path, timestep );
+    // Create the data
+    std::vector<IO::MeshDataStruct> data( db .size() );
+    for ( size_t i=0; i<data.size(); i++ ) {
+        ASSERT( (int) db [i].domains.size() == comm.getSize() );
+        int domain = comm.getRank();
+        data[i].precision = IO::DataType::Double;
+        data[i].meshName = db [i].name;
+        data[i].mesh = getMesh( path, timestep, db [i], domain );
+        data[i].vars.resize( db[i].variables.size() );
+        for ( size_t j=0; j<db[i].variables.size(); j++ )
+            data[i].vars[j] = getVariable( path, timestep, db[i], domain, db[i].variables[j].name );
+        data[i].check();
+    }
+    return data;
 }
 
 

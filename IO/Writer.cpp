@@ -76,7 +76,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat( const std::vector<IO
         domain.offset = 0;
         mesh_entry.domains.push_back(domain);
         if ( !meshData[i].vars.empty() ) {
-            printf("Warning: variables are not supported with this format\n");
+            printf("Warning: variables are not supported with this format (original)\n");
             //for (size_t j=0; j<meshData[i].vars.size(); j++)
             //    mesh_entry.variables.push_back( meshData[i].vars[j]->name );
         }
