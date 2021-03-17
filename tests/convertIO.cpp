@@ -5,14 +5,13 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
 #include "IO/Mesh.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 #include "ProfilerApp.h"
-
 
 int main(int argc, char **argv)
 {
@@ -38,7 +37,7 @@ int main(int argc, char **argv)
     std::string path = IO::getPath( filename );
 
     // Read the timesteps
-    auto timesteps = IO::readTimesteps( filename, "old" );
+    auto timesteps = IO::readTimesteps( filename, "silo" );
 
     // Loop through the timesteps, reading/writing the data
     IO::initialize( "", format, false );
@@ -63,19 +62,20 @@ int main(int argc, char **argv)
             // Read the variables
             for ( auto var : database.variables ) {
                 auto varData = IO::getVariable( path, timestep, database, rank, var.name );
+		printf("reformat %s \n",var.name);
                 IO::reformatVariable( *meshData[i].mesh, *varData );
                 meshData[i].vars.push_back( varData );
             }
 
             i++;
         }
-        MPI_Barrier(comm);
+	comm.barrier();
         PROFILE_STOP("Read");
 
         // Save the mesh data to a new file
         PROFILE_START("Write");
         IO::writeData( timestep, meshData, MPI_COMM_WORLD );
-        MPI_Barrier(comm);
+	comm.barrier();
         PROFILE_STOP("Write");
     }
 
