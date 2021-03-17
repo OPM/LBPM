@@ -53,6 +53,8 @@ int main( int argc, char **argv )
         LeeModel.ReadInput();    
         LeeModel.Create_TwoFluid();       
         LeeModel.Initialize_TwoFluid(); 
+        /* check neighbors */
+        
         
         /* Copy the initial density to test that global mass is conserved */
         int Nx = LeeModel.Dm->Nx;

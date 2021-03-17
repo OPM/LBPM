@@ -29,6 +29,7 @@ inline void Initialize_Mask(ScaLBL_FreeLeeModel &LeeModel){
 	}
 }
 
+
 inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel, double ax, double ay, double az){
 	// initialize a bubble
 	int i,j,k,n;
@@ -57,12 +58,94 @@ inline void Initialize_DummyPhaseField(ScaLBL_FreeLeeModel &LeeModel, double ax,
 	LeeModel.MGTest();
 }
 
+inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
+	int i,j,k,iq,stride,nread;
+	int Nxh = LeeModel.Nxh;
+	int Nyh = LeeModel.Nyh;
+	int Np = LeeModel.Np;
+	
+	int *TmpMap;
+	TmpMap = new int[Np];
+	ScaLBL_CopyToHost(TmpMap, LeeModel.dvcMap, Np*sizeof(int));
+	
+	int *neighborList;
+	neighborList = new int[18*Np];
+	ScaLBL_CopyToHost(neighborList, LeeModel.NeighborList, 18*Np*sizeof(int));
+	printf("Check stride for interior neighbors \n");
+	int count = 0;
+	for (int n=LeeModel.ScaLBL_Comm->LastInterior(); n<LeeModel.ScaLBL_Comm->LastInterior(); n++){
+		// q=0
+			int idx = TmpMap[n];
+			k = idx/Nxh/Nyh;
+			j = (idx-k*Nxh*Nyh)/Nxh;
+			i = (idx-k*Nxh*Nyh -j*Nxh);
+
+			// q=1
+			nread = neighborList[n]; 
+			iq = TmpMap[nread];
+			stride = idx - iq;
+			if (stride != 1){
+				printf(" %i, %i, %i   q = 1 stride=%i \n ",i,j,k,stride);
+				count++;
+			}
+			
+			// q=2
+			nread = neighborList[n+Np]; 
+			iq = TmpMap[nread];
+			stride = iq - idx;
+			if (stride != 1){
+				printf(" %i, %i, %i   q = 2 stride=%i \n ",i,j,k,stride);
+				count++;
+			}
+			
+
+			// q=3
+			nread = neighborList[n+2*Np]; 
+			iq = TmpMap[nread];
+			stride = idx - iq;
+			if (stride != Nxh){
+				printf(" %i, %i, %i   q = 3 stride=%i \n ",i,j,k,stride);
+				count++;
+			}
+
+			// q = 4
+			nread = neighborList[n+3*Np]; 
+			iq = TmpMap[nread];
+			stride = iq-idx;
+			if (stride != Nxh){
+				printf(" %i, %i, %i   q = 4 stride=%i \n ",i,j,k,stride);
+				count++;
+			}
+			
+
+			// q=5
+			nread = neighborList[n+4*Np];
+			iq = TmpMap[nread];
+			stride = idx - iq;
+			if (stride != Nxh*Nyh){
+				count++;
+				printf(" %i, %i, %i   q = 5 stride=%i \n ",i,j,k,stride);
+			}
+			
+			// q = 6
+			nread = neighborList[n+5*Np];
+			iq = TmpMap[nread];
+			stride = iq - idx;
+			if (stride != Nxh*Nyh){
+				count++;
+				printf(" %i, %i, %i   q = 6 stride=%i \n ",i,j,k,stride);
+			}
+
+	}
+	return count;
+}
+
 int main( int argc, char **argv )
 {
 
     // Initialize
     Utilities::startup( argc, argv );
-
+    int errors = 0;
     // Load the input database
     auto db = std::make_shared<Database>( argv[1] );
 
@@ -98,6 +181,8 @@ int main( int argc, char **argv )
         //LeeModel.Create_DummyPhase_MGTest(); 
         LeeModel.Create_TwoFluid(); 
         
+        errors=MultiHaloNeighborCheck(LeeModel);
+        
         Initialize_DummyPhaseField(LeeModel,1.0, 2.0, 3.0);
         LeeModel.WriteDebug_TwoFluid();
 
@@ -109,6 +194,6 @@ int main( int argc, char **argv )
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
 
     Utilities::shutdown();
-    return 0;
+    return errors;
 
 }
