@@ -73,7 +73,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 	ScaLBL_CopyToHost(neighborList, LeeModel.NeighborList, 18*Np*sizeof(int));
 	printf("Check stride for interior neighbors \n");
 	int count = 0;
-	for (int n=LeeModel.ScaLBL_Comm->LastInterior(); n<LeeModel.ScaLBL_Comm->LastInterior(); n++){
+	for (int n=LeeModel.ScaLBL_Comm->FirstInterior(); n<LeeModel.ScaLBL_Comm->LastInterior(); n++){
 		// q=0
 			int idx = TmpMap[n];
 			k = idx/Nxh/Nyh;
@@ -82,7 +82,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 
 			// q=1
 			nread = neighborList[n]; 
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = idx - iq;
 			if (stride != 1){
 				printf(" %i, %i, %i   q = 1 stride=%i \n ",i,j,k,stride);
@@ -91,7 +91,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 			
 			// q=2
 			nread = neighborList[n+Np]; 
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = iq - idx;
 			if (stride != 1){
 				printf(" %i, %i, %i   q = 2 stride=%i \n ",i,j,k,stride);
@@ -101,7 +101,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 
 			// q=3
 			nread = neighborList[n+2*Np]; 
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = idx - iq;
 			if (stride != Nxh){
 				printf(" %i, %i, %i   q = 3 stride=%i \n ",i,j,k,stride);
@@ -110,7 +110,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 
 			// q = 4
 			nread = neighborList[n+3*Np]; 
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = iq-idx;
 			if (stride != Nxh){
 				printf(" %i, %i, %i   q = 4 stride=%i \n ",i,j,k,stride);
@@ -120,7 +120,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 
 			// q=5
 			nread = neighborList[n+4*Np];
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = idx - iq;
 			if (stride != Nxh*Nyh){
 				count++;
@@ -129,7 +129,7 @@ inline int MultiHaloNeighborCheck(ScaLBL_FreeLeeModel &LeeModel){
 			
 			// q = 6
 			nread = neighborList[n+5*Np];
-			iq = TmpMap[nread];
+			iq = TmpMap[nread%Np];
 			stride = iq - idx;
 			if (stride != Nxh*Nyh){
 				count++;
