@@ -35,7 +35,7 @@ ADD_LBPM_EXECUTABLE( GenerateSphereTest )
 #ADD_LBPM_EXECUTABLE( BlobAnalysis )
 #ADD_LBPM_EXECUTABLE( BlobIdentify )
 #ADD_LBPM_EXECUTABLE( BlobIdentifyParallel )
-#ADD_LBPM_EXECUTABLE( convertIO )
+ADD_LBPM_EXECUTABLE( convertIO )
 #ADD_LBPM_EXECUTABLE( DataAggregator )
 #ADD_LBPM_EXECUTABLE( BlobAnalyzeParallel )(
 ADD_LBPM_EXECUTABLE( lbpm_minkowski_scalar )

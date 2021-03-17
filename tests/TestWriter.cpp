@@ -159,7 +159,7 @@ void testWriter( const std::string& format, std::vector<IO::MeshDataStruct>& mes
     // Test the simple read interface
     bool pass = true;
     for ( const auto& timestep : timesteps ) {
-        auto data = IO::readData( path, timestep );
+        auto data = IO::readData( path, timestep, comm.getRank() );
         pass = pass && data.size() == meshData.size();
         for ( size_t i=0; i<data.size(); i++ ) {
             pass = pass && checkMesh( meshData, format, data[i].mesh );
