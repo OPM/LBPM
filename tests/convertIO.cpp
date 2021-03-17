@@ -12,7 +12,6 @@
 #include "IO/Writer.h"
 #include "ProfilerApp.h"
 
-
 int main(int argc, char **argv)
 {
     // Initialize MPI
@@ -23,6 +22,7 @@ int main(int argc, char **argv)
     PROFILE_START("Main");
 
     { // Limit scope
+
 
         Utilities::MPI comm( MPI_COMM_WORLD );
         // Get inputs
