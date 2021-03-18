@@ -3021,30 +3021,33 @@ __global__ void dvc_ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, d
 	}
 }
 
-__global__  void dvc_ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
-                                                      int start, int finish, int Np){
-	int idx,n;
-    double phi,psi;
-    double cap_penalty;
-    double porosity,perm;
-
-	int S = Np/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
-		if (n<finish) {
-			idx = Map[n];
-			phi = Phi[idx];
-            porosity = Poro[n];
-            perm = Perm[n];    
-            cap_penalty = 1.0;
-
-            if (porosity!=1.0) cap_penalty = alpha*W/sqrt(perm);
-            psi = cap_penalty*phi;
-            Psi[idx] = psi;
-		}
-	}
-}
+//NOTE: so far it seems that we don't need this greyscale potental update;
+//      if we compute a grey-potential first, and take its gradient to work out the capillary penalty force, it is highly unstable;
+//      this is because the grey-potential is simply a scaling of the normal phase field, but such scaling create some artificial gradient at the open-grey interface
+//__global__  void dvc_ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
+//                                                      int start, int finish, int Np){
+//	int idx,n;
+//    double phi,psi;
+//    double cap_penalty;
+//    double porosity,perm;
+//
+//	int S = Np/NBLOCKS/NTHREADS + 1;
+//	for (int s=0; s<S; s++){
+//		//........Get 1-D index for this thread....................
+//		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+//		if (n<finish) {
+//			idx = Map[n];
+//			phi = Phi[idx];
+//            porosity = Poro[n];
+//            perm = Perm[n];    
+//            cap_penalty = 1.0;
+//
+//            if (porosity!=1.0) cap_penalty = alpha*W/sqrt(perm);
+//            psi = cap_penalty*phi;
+//            Psi[idx] = psi;
+//		}
+//	}
+//}
 
 
 ////Model-2&3
@@ -4597,16 +4600,16 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *M
 	}
 }
 
-extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
-		int start, int finish, int Np){
-
-	dvc_ScaLBL_Update_GreyscalePotential<<<NBLOCKS,NTHREADS >>>(Map, Phi, Psi, Poro, Perm, alpha, W, start, finish, Np);
-
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_Update_GreyscalePotential: %s \n",cudaGetErrorString(err));
-	}
-}
+//extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
+//		int start, int finish, int Np){
+//
+//	dvc_ScaLBL_Update_GreyscalePotential<<<NBLOCKS,NTHREADS >>>(Map, Phi, Psi, Poro, Perm, alpha, W, start, finish, Np);
+//
+//	cudaError_t err = cudaGetLastError();
+//	if (cudaSuccess != err){
+//		printf("CUDA error in ScaLBL_Update_GreyscalePotential: %s \n",cudaGetErrorString(err));
+//	}
+//}
 
 ////Model-2&3
 //extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
