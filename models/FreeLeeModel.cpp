@@ -760,24 +760,30 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		// Compute the Phase indicator field
 		// Read for hq happens in this routine (requires communication)
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
-		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL
+		// Halo exchange for phase field
+		ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, 0, ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_WideHalo->Send(Phi);
+		ScaLBL_Comm_WideHalo->Recv(Phi);
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
             //TODO to be revised
+			// Need to add BC for hq!!!
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-		// Halo exchange for phase field
-		ScaLBL_Comm_WideHalo->Send(Phi);
 
+		printf("write debug strideY=%i strideZ = %i \n",Nxh, Nxh*Nyh);
+		WriteDebug_TwoFluid();
+		
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL		
 		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_WideHalo->Recv(Phi);
+
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		// Set BCs
@@ -793,33 +799,34 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
+
 		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
 		
-		printf("write debug strideY=%i strideZ = %i \n",Nxh, Nxh*Nyh);
-		WriteDebug_TwoFluid();
-
+				
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMA
-		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
-		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
 		// Halo exchange for phase field
+		ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_WideHalo->Send(Phi);
+		ScaLBL_Comm_WideHalo->Recv(Phi);
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-		ScaLBL_Comm_WideHalo->Send(Phi);
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
+
 		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		// Set boundary conditions
@@ -964,6 +971,32 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	DoubleArray PhaseData(Nxh,Nyh,Nzh);
 	//ScaLBL_Comm->RegularLayout(Map,Phi,PhaseField);
 	ScaLBL_CopyToHost(PhaseData.data(), Phi, sizeof(double)*Nh);
+	/*
+	IntArray MapData(Np);
+	ScaLBL_CopyToHost(MapData.data(), dvcMap, sizeof(int)*Np);
+	FILE *MAP;
+	sprintf(LocalRankFilename,"Map.%05i.raw",rank);
+	MAP = fopen(LocalRankFilename,"wb");
+	fwrite(MapData.data(),4,Np,MAP);
+	fclose(MAP);
+	
+	FILE *NB;
+	//IntArray Neighbors(18,Np);
+	//ScaLBL_CopyToHost(Neighbors.data(), NeighborList, sizeof(int)*Np*18);
+	sprintf(LocalRankFilename,"neighbors.%05i.raw",rank);
+	NB = fopen(LocalRankFilename,"wb");
+	fwrite(NeighborList,4,18*Np,NB);
+	fclose(NB);
+
+	FILE *DIST;
+	DoubleArray DistData(7, Np);
+	ScaLBL_CopyToHost(DistData.data(), hq, 7*sizeof(double)*Np);
+	sprintf(LocalRankFilename,"h.%05i.raw",rank);
+	DIST = fopen(LocalRankFilename,"wb");
+	fwrite(DistData.data(),8,7*Np,DIST);
+	fclose(DIST);
+	
+	*/
 
 	FILE *OUTFILE;
 	sprintf(LocalRankFilename,"Phase.%05i.raw",rank);
@@ -972,6 +1005,17 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	fclose(OUTFILE);
 
 	DoubleArray PhaseField(Nx,Ny,Nz);
+	FILE *DIST;
+	for (int q=0; q<7; q++){
+		ScaLBL_Comm->RegularLayout(Map,&hq[q*Np],PhaseField);
+
+		sprintf(LocalRankFilename,"h%i.%05i.raw",q,rank);
+		DIST = fopen(LocalRankFilename,"wb");
+		fwrite(PhaseField.data(),8,Nx*Ny*Nz,DIST);
+		fclose(DIST);
+
+	}
+
     ScaLBL_Comm->RegularLayout(Map,Den,PhaseField);
 	FILE *AFILE;
 	sprintf(LocalRankFilename,"Density.%05i.raw",rank);
@@ -1082,7 +1126,7 @@ void ScaLBL_FreeLeeModel::Create_DummyPhase_MGTest(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,2);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
 	comm.barrier();
 
 	//...........................................................................

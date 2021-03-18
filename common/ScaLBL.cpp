@@ -516,9 +516,9 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					// Counts for the six faces
-					if (i>0 && i<=width)        Map(n)=idx++;
-					else if (j>0 && j<=width)  Map(n)=idx++;
-					else if (k>0 && k<=width)  Map(n)=idx++;
+					if (i>0 && i<=width)              Map(n)=idx++;
+					else if (j>0 && j<=width)         Map(n)=idx++;
+					else if (k>0 && k<=width) 		  Map(n)=idx++;
 					else if (i>Nx-width-2 && i<Nx-1)  Map(n)=idx++;
 					else if (j>Ny-width-2 && j<Ny-1)  Map(n)=idx++;
 					else if (k>Nz-width-2 && k<Nz-1)  Map(n)=idx++;
@@ -1623,35 +1623,31 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
-
-	//...Packing for X face(1,7,9,11,13)................................
-	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
-
-	//...Packing for y face(4,8,9,16,18).................................
-	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
-
-	//...Packing for Y face(3,7,10,15,17).................................
-	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
-
-	//...Packing for z face(6,12,13,16,17)................................
-	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
-
-	//...Packing for Z face(5,11,14,15,18)................................
-	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
-
-	//...................................................................................
-	// Send all the distributions
-	//...................................................................................
 	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
 	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
 	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
 	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
 	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
 	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
 	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
 	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
 	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
 	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
 	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
 	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
 }
