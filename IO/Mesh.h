@@ -14,15 +14,28 @@
 namespace IO {
 
 
-//! Possible variable types
-enum class VariableType : unsigned char {
-    NodeVariable    = 1,
-    EdgeVariable    = 2,
-    SurfaceVariable = 3,
-    VolumeVariable  = 4,
-    NullVariable    = 0
+//! Enums to define types
+enum class VariableType {
+    NodeVariable,
+    EdgeVariable,
+    SurfaceVariable,
+    VolumeVariable,
+    NullVariable
 };
-enum class DataType : unsigned char { Double = 1, Float = 2, Int = 2, Null = 0 };
+enum class DataType { Double, Float, Int, Null };
+enum class MeshType { PointMesh, SurfaceMesh, VolumeMesh, Unknown };
+enum class FileFormat { OLD, NEW, NEW_SINGLE, SILO };
+
+
+//! Convert enums to/from strings (more future-proof than static_cast<int>)
+std::string getString( VariableType );
+std::string getString( DataType );
+std::string getString( MeshType );
+std::string getString( FileFormat );
+VariableType getVariableType( const std::string & );
+DataType getDataType( const std::string & );
+MeshType getMeshType( const std::string & );
+FileFormat getFileFormat( const std::string & );
 
 
 /*! \class Mesh
@@ -216,7 +229,7 @@ struct MeshDataStruct {
     //! Empty constructor
     MeshDataStruct() : precision( DataType::Double ) {}
     //! Check the data
-    bool check() const;
+    bool check( bool abort = true ) const;
 };
 
 

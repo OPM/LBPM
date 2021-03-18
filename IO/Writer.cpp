@@ -110,7 +110,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat(
         mesh_entry.name      = meshData[i].meshName;
         mesh_entry.type      = meshType( *mesh );
         mesh_entry.meshClass = meshData[i].mesh->className();
-        mesh_entry.format    = 1;
+        mesh_entry.format    = IO::FileFormat::OLD;
         IO::DatabaseEntry domain;
         domain.name   = domainname;
         domain.file   = filename;
@@ -171,7 +171,7 @@ static std::vector<IO::MeshDatabase> writeMeshesOrigFormat(
 
 // Create the database entry for the mesh data
 static IO::MeshDatabase getDatabase(
-    const std::string &filename, const IO::MeshDataStruct &mesh, int format, int rank )
+    const std::string &filename, const IO::MeshDataStruct &mesh, IO::FileFormat format, int rank )
 {
     char domainname[100];
     sprintf( domainname, "%s_%05i", mesh.meshName.c_str(), rank );
@@ -209,8 +209,8 @@ static IO::MeshDatabase getDatabase(
 
 
 // Write a mesh (and variables) to a file
-static IO::MeshDatabase write_domain(
-    FILE *fid, const std::string &filename, const IO::MeshDataStruct &mesh, int format, int rank )
+static IO::MeshDatabase write_domain( FILE *fid, const std::string &filename,
+    const IO::MeshDataStruct &mesh, IO::FileFormat format, int rank )
 {
     const int level = 0;
     // Create the MeshDatabase
@@ -225,19 +225,17 @@ static IO::MeshDatabase write_domain(
     delete[]( char * ) data.second;
     // Write the variables
     for ( size_t i = 0; i < mesh.vars.size(); i++ ) {
+        ASSERT( mesh.vars[i]->type != IO::VariableType::NullVariable );
         std::pair<std::string, std::string> key( domain.name, mesh.vars[i]->name );
-        IO::DatabaseEntry &variable = database.variable_data[key];
-        variable.offset             = ftell( fid );
-        int dim                     = mesh.vars[i]->dim;
-        int type                    = static_cast<int>( mesh.vars[i]->type );
-        size_t N                    = mesh.vars[i]->data.length();
-        if ( type == static_cast<int>( IO::VariableType::NullVariable ) ) {
-            ERROR( "Variable type not set" );
-        }
-        size_t N_mesh = mesh.mesh->numberPointsVar( mesh.vars[i]->type );
+        auto &variable  = database.variable_data[key];
+        variable.offset = ftell( fid );
+        int dim         = mesh.vars[i]->dim;
+        auto type       = getString( mesh.vars[i]->type );
+        size_t N        = mesh.vars[i]->data.length();
+        size_t N_mesh   = mesh.mesh->numberPointsVar( mesh.vars[i]->type );
         ASSERT( N == dim * N_mesh );
-        fprintf( fid, "Var: %s-%05i-%s: %i, %i, %lu, %lu, double\n", database.name.c_str(), rank,
-            variable.name.c_str(), dim, type, N_mesh, N * sizeof( double ) );
+        fprintf( fid, "Var: %s-%05i-%s: %i, %s, %lu, %lu, double\n", database.name.c_str(), rank,
+            variable.name.c_str(), dim, type.data(), N_mesh, N * sizeof( double ) );
         fwrite( mesh.vars[i]->data.data(), sizeof( double ), N, fid );
         fprintf( fid, "\n" );
     }
@@ -259,7 +257,7 @@ static void writeSiloPointMesh(
         z[i] = points[i].z;
     }
     const TYPE *coords[] = { x.data(), y.data(), z.data() };
-    silo::writePointMesh<TYPE>( fid, meshname, 3, points.size(), coords );
+    IO::silo::writePointMesh<TYPE>( fid, meshname, 3, points.size(), coords );
 }
 static void writeSiloPointList(
     DBfile *fid, const IO::MeshDataStruct &meshData, IO::MeshDatabase database )
@@ -281,19 +279,19 @@ static void writeSiloPointList(
         z[i] = points[i].z;
     }
     const double *coords[] = { x.data(), y.data(), z.data() };
-    silo::writePointMesh( fid, meshname, 3, points.size(), coords );
+    IO::silo::writePointMesh( fid, meshname, 3, points.size(), coords );
     for ( size_t i = 0; i < meshData.vars.size(); i++ ) {
         const IO::Variable &var = *meshData.vars[i];
         if ( var.precision == IO::DataType::Double ) {
-            silo::writePointMeshVariable( fid, meshname, var.name, var.data );
+            IO::silo::writePointMeshVariable( fid, meshname, var.name, var.data );
         } else if ( var.precision == IO::DataType::Float ) {
             Array<float> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writePointMeshVariable( fid, meshname, var.name, data2 );
+            IO::silo::writePointMeshVariable( fid, meshname, var.name, data2 );
         } else if ( var.precision == IO::DataType::Int ) {
             Array<int> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writePointMeshVariable( fid, meshname, var.name, data2 );
+            IO::silo::writePointMeshVariable( fid, meshname, var.name, data2 );
         } else {
             ERROR( "Unsupported format" );
         }
@@ -312,7 +310,7 @@ static void writeSiloTriMesh( DBfile *fid, const IO::TriMesh &mesh, const std::s
     }
     const TYPE *coords[] = { x.data(), y.data(), z.data() };
     const int *tri[]     = { mesh.A.data(), mesh.B.data(), mesh.C.data() };
-    silo::writeTriMesh<TYPE>( fid, meshname, 3, 2, points.size(), coords, mesh.A.size(), tri );
+    IO::silo::writeTriMesh<TYPE>( fid, meshname, 3, 2, points.size(), coords, mesh.A.size(), tri );
 }
 static void writeSiloTriMesh2( DBfile *fid, const IO::MeshDataStruct &meshData,
     const IO::TriMesh &mesh, IO::MeshDatabase database )
@@ -327,17 +325,16 @@ static void writeSiloTriMesh2( DBfile *fid, const IO::MeshDataStruct &meshData,
     }
     for ( size_t i = 0; i < meshData.vars.size(); i++ ) {
         const IO::Variable &var = *meshData.vars[i];
-        auto type               = static_cast<silo::VariableType>( var.type );
         if ( var.precision == IO::DataType::Double ) {
-            silo::writeTriMeshVariable( fid, 3, meshname, var.name, var.data, type );
+            IO::silo::writeTriMeshVariable( fid, 3, meshname, var.name, var.data, var.type );
         } else if ( var.precision == IO::DataType::Float ) {
             Array<float> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writeTriMeshVariable( fid, 3, meshname, var.name, data2, type );
+            IO::silo::writeTriMeshVariable( fid, 3, meshname, var.name, data2, var.type );
         } else if ( var.precision == IO::DataType::Int ) {
             Array<int> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writeTriMeshVariable( fid, 3, meshname, var.name, data2, type );
+            IO::silo::writeTriMeshVariable( fid, 3, meshname, var.name, data2, var.type );
         } else {
             ERROR( "Unsupported format" );
         }
@@ -367,30 +364,29 @@ static void writeSiloDomainMesh(
         ( info.kz + 1 ) * mesh.Lz / info.nz };
     std::array<int, 3> N        = { mesh.nx, mesh.ny, mesh.nz };
     auto meshname               = database.domains[0].name;
-    silo::writeUniformMesh<3>( fid, meshname, range, N );
-    silo::write<int>(
+    IO::silo::writeUniformMesh<3>( fid, meshname, range, N );
+    IO::silo::write<int>(
         fid, meshname + "_rankinfo", { mesh.rank, mesh.nprocx, mesh.nprocy, mesh.nprocz } );
     for ( size_t i = 0; i < meshData.vars.size(); i++ ) {
         const auto &var = *meshData.vars[i];
-        auto type       = static_cast<silo::VariableType>( var.type );
         if ( var.precision == IO::DataType::Double ) {
-            silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, var.data, type );
+            IO::silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, var.data, var.type );
         } else if ( var.precision == IO::DataType::Float ) {
             Array<float> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, data2, type );
+            IO::silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, data2, var.type );
         } else if ( var.precision == IO::DataType::Int ) {
             Array<int> data2( var.data.size() );
             data2.copy( var.data );
-            silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, data2, type );
+            IO::silo::writeUniformMeshVariable<3>( fid, meshname, N, var.name, data2, var.type );
         } else {
             ERROR( "Unsupported format" );
         }
     }
 }
 // Write a mesh (and variables) to a file
-static IO::MeshDatabase write_domain_silo(
-    DBfile *fid, const std::string &filename, const IO::MeshDataStruct &mesh, int format, int rank )
+static IO::MeshDatabase write_domain_silo( DBfile *fid, const std::string &filename,
+    const IO::MeshDataStruct &mesh, IO::FileFormat format, int rank )
 {
     // Create the MeshDatabase
     auto database = getDatabase( filename, mesh, format, rank );
@@ -432,7 +428,7 @@ std::pair<int, int> getSiloMeshType( const std::string &meshClass )
 void writeSiloSummary(
     const std::vector<IO::MeshDatabase> &meshes_written, const std::string &filename )
 {
-    auto fid = silo::open( filename, silo::CREATE );
+    auto fid = IO::silo::open( filename, IO::silo::CREATE );
     for ( const auto &data : meshes_written ) {
         auto type = getSiloMeshType( data.meshClass );
         std::vector<int> meshTypes( data.domains.size(), type.first );
@@ -440,22 +436,23 @@ void writeSiloSummary(
         std::vector<std::string> meshNames;
         for ( const auto &tmp : data.domains )
             meshNames.push_back( tmp.file + ":" + tmp.name );
-        silo::writeMultiMesh( fid, data.name, meshNames, meshTypes );
+        IO::silo::writeMultiMesh( fid, data.name, meshNames, meshTypes );
         for ( const auto &variable : data.variables ) {
             std::vector<std::string> varnames;
             for ( const auto &tmp : data.domains )
                 varnames.push_back( tmp.file + ":" + variable.name );
-            silo::writeMultiVar( fid, variable.name, varnames, varTypes );
+            IO::silo::writeMultiVar( fid, variable.name, varnames, varTypes );
         }
     }
-    silo::close( fid );
+    IO::silo::close( fid );
 }
 #endif
 
 
 // Write the mesh data in the new format
 static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
-    const std::vector<IO::MeshDataStruct> &meshData, const std::string &path, int format, int rank )
+    const std::vector<IO::MeshDataStruct> &meshData, const std::string &path, IO::FileFormat format,
+    int rank )
 {
     std::vector<IO::MeshDatabase> meshes_written;
     char filename[100], fullpath[200];
@@ -473,19 +470,20 @@ static std::vector<IO::MeshDatabase> writeMeshesNewFormat(
 
 // Write the mesh data to silo
 static std::vector<IO::MeshDatabase> writeMeshesSilo(
-    const std::vector<IO::MeshDataStruct> &meshData, const std::string &path, int format, int rank )
+    const std::vector<IO::MeshDataStruct> &meshData, const std::string &path, IO::FileFormat format,
+    int rank )
 {
 #ifdef USE_SILO
     std::vector<IO::MeshDatabase> meshes_written;
     char filename[100], fullpath[200];
     sprintf( filename, "%05i.silo", rank );
     sprintf( fullpath, "%s/%s", path.c_str(), filename );
-    auto fid = silo::open( fullpath, silo::CREATE );
+    auto fid = IO::silo::open( fullpath, IO::silo::CREATE );
     for ( size_t i = 0; i < meshData.size(); i++ ) {
         auto mesh = meshData[i].mesh;
         meshes_written.push_back( write_domain_silo( fid, filename, meshData[i], format, rank ) );
     }
-    silo::close( fid );
+    IO::silo::close( fid );
     return meshes_written;
 #else
     NULL_USE( meshData );
@@ -509,10 +507,8 @@ void IO::writeData( const std::string &subdir, const std::vector<IO::MeshDataStr
     PROFILE_START( "writeData" );
     int rank = Utilities::MPI( MPI_COMM_WORLD ).getRank();
     // Check the meshData before writing
-    for ( const auto &data : meshData ) {
-        if ( !data.check() )
-            ERROR( "Error in meshData" );
-    }
+    for ( const auto &data : meshData )
+        ASSERT( data.check() );
     // Create the output directory
     std::string path = global_IO_path + "/" + subdir;
     recursiveMkdir( path, S_IRWXU | S_IRGRP );
@@ -523,10 +519,10 @@ void IO::writeData( const std::string &subdir, const std::vector<IO::MeshDataStr
         meshes_written = writeMeshesOrigFormat( meshData, path, rank );
     } else if ( global_IO_format == Format::NEW ) {
         // Write the new format (double precision)
-        meshes_written = writeMeshesNewFormat( meshData, path, 2, rank );
+        meshes_written = writeMeshesNewFormat( meshData, path, IO::FileFormat::NEW, rank );
     } else if ( global_IO_format == Format::SILO ) {
         // Write silo
-        meshes_written = writeMeshesSilo( meshData, path, 4, rank );
+        meshes_written = writeMeshesSilo( meshData, path, IO::FileFormat::SILO, rank );
     } else {
         ERROR( "Unknown format" );
     }

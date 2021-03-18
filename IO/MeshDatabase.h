@@ -13,13 +13,6 @@
 
 namespace IO {
 
-class Mesh;
-
-
-//! Enum to identify mesh type
-// enum class MeshType : char { PointMesh=1, SurfaceMesh=2, VolumeMesh=3, Unknown=-1 };
-enum class MeshType { PointMesh = 1, SurfaceMesh = 2, VolumeMesh = 3, Unknown = -1 };
-
 
 //! Helper struct for containing offsets for the mesh info
 struct DatabaseEntry {
@@ -56,7 +49,7 @@ struct MeshDatabase {
     std::string name;                   //!< Name of the mesh
     MeshType type;                      //!< Mesh type
     std::string meshClass;              //!< Mesh class
-    unsigned char format;               //!< Data format (1: old, 2: new, 3: new (single), 4: silo)
+    FileFormat format;                  //!< Data format (1: old, 2: new, 3: new (single), 4: silo)
     std::vector<DatabaseEntry> domains; //!< List of the domains
     std::vector<VariableDatabase> variables;            //!< List of the variables
     std::map<variable_id, DatabaseEntry> variable_data; //!< Data for the variables

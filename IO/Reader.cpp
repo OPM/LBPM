@@ -155,7 +155,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
 {
     PROFILE_START( "getMesh" );
     std::shared_ptr<IO::Mesh> mesh;
-    if ( meshDatabase.format == 1 ) {
+    if ( meshDatabase.format == FileFormat::OLD ) {
         // Old format (binary doubles)
         std::string filename = path + "/" + timestep + "/" + meshDatabase.domains[domain].file;
         FILE *fid            = fopen( filename.c_str(), "rb" );
@@ -206,7 +206,8 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
             ERROR( "Unknown mesh type" );
         }
         delete[] data;
-    } else if ( meshDatabase.format == 2 ) {
+    } else if ( meshDatabase.format == FileFormat::NEW ||
+                meshDatabase.format == FileFormat::NEW_SINGLE ) {
         const DatabaseEntry &database = meshDatabase.domains[domain];
         std::string filename          = path + "/" + timestep + "/" + database.file;
         FILE *fid                     = fopen( filename.c_str(), "rb" );
@@ -233,7 +234,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
         }
         mesh->unpack( std::pair<size_t, void *>( bytes, data ) );
         delete[] data;
-    } else if ( meshDatabase.format == 4 ) {
+    } else if ( meshDatabase.format == FileFormat::SILO ) {
         // Reading a silo file
 #ifdef USE_SILO
         const DatabaseEntry &database = meshDatabase.domains[domain];
@@ -301,12 +302,11 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
     const MeshDatabase &meshDatabase, int domain, const std::string &variable )
 {
     std::pair<std::string, std::string> key( meshDatabase.domains[domain].name, variable );
-    std::map<std::pair<std::string, std::string>, DatabaseEntry>::const_iterator it;
-    it = meshDatabase.variable_data.find( key );
+    auto it = meshDatabase.variable_data.find( key );
     if ( it == meshDatabase.variable_data.end() )
         return std::shared_ptr<IO::Variable>();
     std::shared_ptr<IO::Variable> var;
-    if ( meshDatabase.format == 2 ) {
+    if ( meshDatabase.format == FileFormat::NEW || meshDatabase.format == FileFormat::NEW_SINGLE ) {
         const DatabaseEntry &database = it->second;
         std::string filename          = path + "/" + timestep + "/" + database.file;
         FILE *fid                     = fopen( filename.c_str(), "rb" );
@@ -318,13 +318,13 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
         std::vector<std::string> values = splitList( &line[i2 + 1], ',' );
         ASSERT( values.size() == 5 );
         int dim               = atoi( values[0].c_str() );
-        int type              = atoi( values[1].c_str() );
+        auto type             = values[1];
         size_t N              = atol( values[2].c_str() );
         size_t bytes          = atol( values[3].c_str() );
         std::string precision = values[4];
         var                   = std::shared_ptr<IO::Variable>( new IO::Variable() );
         var->dim              = dim;
-        var->type             = static_cast<IO::VariableType>( type );
+        var->type             = getVariableType( type );
         var->name             = variable;
         var->data.resize( N, dim );
         if ( precision == "double" ) {
@@ -334,7 +334,7 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
             ERROR( "Format not implimented" );
         }
         fclose( fid );
-    } else if ( meshDatabase.format == 4 ) {
+    } else if ( meshDatabase.format == FileFormat::SILO ) {
         // Reading a silo file
 #ifdef USE_SILO
         const auto &database  = meshDatabase.domains[domain];

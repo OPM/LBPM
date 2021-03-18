@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "IO/IOHelpers.h"
 #include "common/Utilities.h"
 
 #include <limits>
@@ -28,16 +29,23 @@ Mesh::~Mesh() {}
 /****************************************************
  * MeshDataStruct                                    *
  ****************************************************/
-bool MeshDataStruct::check() const
+#define checkResult( pass, msg ) \
+    do {                         \
+        if ( !( pass ) ) {       \
+            if ( abort )         \
+                ERROR( msg );    \
+            return false;        \
+        }                        \
+    } while ( 0 )
+bool MeshDataStruct::check( bool abort ) const
 {
-    bool pass = mesh != nullptr;
     for ( const auto &var : vars ) {
-        pass = pass && static_cast<int>( var->type ) >= 1 && static_cast<int>( var->type ) <= 3;
-        pass = pass && !var->data.empty();
-    }
-    if ( !pass ) {
-        std::cerr << "Invalid variable detected\n";
-        return false;
+        checkResult( var->type == VariableType::NodeVariable ||
+                         var->type == VariableType::EdgeVariable ||
+                         var->type == VariableType::SurfaceVariable ||
+                         var->type == VariableType::VolumeVariable,
+            "Invalid data type" );
+        checkResult( !var->data.empty(), "Variable data is empty" );
     }
     const std::string &meshClass = mesh->className();
     if ( meshClass == "PointList" ) {
@@ -45,7 +53,9 @@ bool MeshDataStruct::check() const
         ASSERT( mesh2 );
         for ( const auto &var : vars ) {
             if ( var->type == IO::VariableType::NodeVariable ) {
-                pass = pass && var->data.size() == ArraySize( mesh2->points.size(), var->dim );
+                size_t N_points = mesh2->points.size();
+                checkResult( var->data.size( 0 ) == N_points, "sizeof NodeVariable" );
+                checkResult( var->data.size( 1 ) == var->dim, "sizeof NodeVariable" );
             } else if ( var->type == IO::VariableType::EdgeVariable ) {
                 ERROR( "Invalid type for PointList" );
             } else if ( var->type == IO::VariableType::SurfaceVariable ) {
@@ -61,15 +71,16 @@ bool MeshDataStruct::check() const
         ASSERT( mesh2 );
         for ( const auto &var : vars ) {
             if ( var->type == IO::VariableType::NodeVariable ) {
-                pass = pass &&
-                       var->data.size() == ArraySize( mesh2->vertices->points.size(), var->dim );
+                size_t N_points = mesh2->vertices->points.size();
+                checkResult( var->data.size( 0 ) == N_points, "sizeof NodeVariable" );
+                checkResult( var->data.size( 1 ) == var->dim, "sizeof NodeVariable" );
             } else if ( var->type == IO::VariableType::EdgeVariable ) {
                 ERROR( "Not finished" );
             } else if ( var->type == IO::VariableType::SurfaceVariable ) {
                 ERROR( "Not finished" );
             } else if ( var->type == IO::VariableType::VolumeVariable ) {
-                pass = pass && var->data.size( 0 ) == mesh2->A.size() &&
-                       var->data.size( 1 ) == var->dim;
+                checkResult( var->data.size( 0 ) == mesh2->A.size(), "sizeof VolumeVariable" );
+                checkResult( var->data.size( 1 ) == var->dim, "sizeof VolumeVariable" );
             } else {
                 ERROR( "Invalid variable type" );
             }
@@ -90,14 +101,16 @@ bool MeshDataStruct::check() const
             } else {
                 ERROR( "Invalid variable type" );
             }
-            if ( var->data.size() == ArraySize( varSize[0] * varSize[1] * varSize[2], varSize[3] ) )
+            if ( var->data.size( 0 ) == varSize[0] * varSize[1] * varSize[2] &&
+                 var->data.size( 1 ) == varSize[3] )
                 var->data.resize( varSize );
-            pass = pass && var->data.size() == varSize;
+            for ( int d = 0; d < 4; d++ )
+                checkResult( var->data.size( d ) == varSize[d], "DomainMesh Variable" );
         }
     } else {
         ERROR( "Unknown mesh class: " + mesh->className() );
     }
-    return pass;
+    return true;
 }
 
 
@@ -476,6 +489,131 @@ std::shared_ptr<const TriMesh> getTriMesh( std::shared_ptr<const Mesh> mesh )
 std::shared_ptr<const TriList> getTriList( std::shared_ptr<const Mesh> mesh )
 {
     return getTriList( std::const_pointer_cast<Mesh>( mesh ) );
+}
+
+
+/****************************************************
+ * Convert enum values                               *
+ ****************************************************/
+std::string getString( VariableType type )
+{
+    if ( type == VariableType::NodeVariable )
+        return "node";
+    else if ( type == VariableType::EdgeVariable )
+        return "edge";
+    else if ( type == VariableType::SurfaceVariable )
+        return "face";
+    else if ( type == VariableType::VolumeVariable )
+        return "cell";
+    else if ( type == VariableType::NullVariable )
+        return "null";
+    else
+        ERROR( "Invalid type" );
+    return "";
+}
+VariableType getVariableType( const std::string &type_in )
+{
+    auto type = deblank( type_in );
+    if ( type == "node" )
+        return VariableType::NodeVariable;
+    else if ( type == "edge" || type == "1" )
+        return VariableType::EdgeVariable;
+    else if ( type == "face" )
+        return VariableType::SurfaceVariable;
+    else if ( type == "cell" || type == "3" )
+        return VariableType::VolumeVariable;
+    else if ( type == "null" )
+        return VariableType::NullVariable;
+    else
+        ERROR( "Invalid type: " + type );
+    return VariableType::NullVariable;
+}
+std::string getString( DataType type )
+{
+    if ( type == DataType::Double )
+        return "double";
+    else if ( type == DataType::Float )
+        return "float";
+    else if ( type == DataType::Int )
+        return "int";
+    else if ( type == DataType::Null )
+        return "null";
+    else
+        ERROR( "Invalid type" );
+    return "";
+}
+DataType getDataType( const std::string &type_in )
+{
+    auto type = deblank( type_in );
+    if ( type == "double" )
+        return DataType::Double;
+    else if ( type == "float" )
+        return DataType::Float;
+    else if ( type == "int" )
+        return DataType::Int;
+    else if ( type == "null" )
+        return DataType::Null;
+    else
+        ERROR( "Invalid type: " + type );
+    return DataType::Null;
+}
+std::string getString( MeshType type )
+{
+    if ( type == MeshType::PointMesh )
+        return "PointMesh";
+    else if ( type == MeshType::SurfaceMesh )
+        return "SurfaceMesh";
+    else if ( type == MeshType::VolumeMesh )
+        return "VolumeMesh";
+    else if ( type == MeshType::Unknown )
+        return "unknown";
+    else
+        ERROR( "Invalid type" );
+    return "";
+}
+MeshType getMeshType( const std::string &type_in )
+{
+    auto type = deblank( type_in );
+    if ( type == "PointMesh" || type == "1" )
+        return MeshType::PointMesh;
+    else if ( type == "SurfaceMesh" || type == "2" )
+        return MeshType::SurfaceMesh;
+    else if ( type == "VolumeMesh" || type == "3" )
+        return MeshType::VolumeMesh;
+    else if ( type == "unknown" || type == "-1" )
+        return MeshType::Unknown;
+    else
+        ERROR( "Invalid type: " + type );
+    return MeshType::Unknown;
+}
+std::string getString( FileFormat type )
+{
+    if ( type == FileFormat::OLD )
+        return "old";
+    else if ( type == FileFormat::NEW )
+        return "new";
+    else if ( type == FileFormat::NEW_SINGLE )
+        return "new(single)";
+    else if ( type == FileFormat::SILO )
+        return "silo";
+    else
+        ERROR( "Invalid type" );
+    return "";
+}
+FileFormat getFileFormat( const std::string &type_in )
+{
+    auto type = deblank( type_in );
+    if ( type == "old" || type == "1" )
+        return FileFormat::OLD;
+    else if ( type == "new" || type == "2" )
+        return FileFormat::NEW;
+    else if ( type == "new(single)" || type == "3" )
+        return FileFormat::NEW_SINGLE;
+    else if ( type == "silo" || type == "4" )
+        return FileFormat::SILO;
+    else
+        ERROR( "Invalid type: " + type );
+    return FileFormat::SILO;
 }
 
 

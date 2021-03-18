@@ -10,7 +10,7 @@
 #include <silo.h>
 
 
-namespace silo {
+namespace IO::silo {
 
 
 /****************************************************
@@ -34,16 +34,16 @@ void close( DBfile *fid ) { DBClose( fid ); }
 /****************************************************
  * Helper functions                                  *
  ****************************************************/
-VariableDataType varDataType( DBfile *fid, const std::string &name )
+DataType varDataType( DBfile *fid, const std::string &name )
 {
-    auto type              = DBGetVarType( fid, name.c_str() );
-    VariableDataType type2 = VariableDataType::UNKNOWN;
+    auto type      = DBGetVarType( fid, name.c_str() );
+    DataType type2 = DataType::Null;
     if ( type == DB_DOUBLE )
-        type2 = VariableDataType::DOUBLE;
+        type2 = DataType::Double;
     else if ( type == DB_FLOAT )
-        type2 = VariableDataType::FLOAT;
+        type2 = DataType::Float;
     else if ( type == DB_INT )
-        type2 = VariableDataType::INT;
+        type2 = DataType::Int;
     return type2;
 }
 
@@ -99,7 +99,7 @@ void writeMultiVar( DBfile *fid, const std::string &varname,
 }
 
 
-}; // namespace silo
+}; // namespace IO::silo
 
 
 #else

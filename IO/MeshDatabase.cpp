@@ -13,38 +13,31 @@
 #include <ProfilerApp.h>
 
 
-// MeshType
-template<>
-size_t packsize<IO::MeshType>( const IO::MeshType &rhs )
-{
-    return sizeof( IO::MeshType );
-}
-template<>
-void pack<IO::MeshType>( const IO::MeshType &rhs, char *buffer )
-{
-    memcpy( buffer, &rhs, sizeof( IO::MeshType ) );
-}
-template<>
-void unpack<IO::MeshType>( IO::MeshType &data, const char *buffer )
-{
-    memcpy( &data, buffer, sizeof( IO::MeshType ) );
-}
-// Variable::VariableType
-template<>
-size_t packsize<IO::VariableType>( const IO::VariableType &rhs )
-{
-    return sizeof( IO::VariableType );
-}
-template<>
-void pack<IO::VariableType>( const IO::VariableType &rhs, char *buffer )
-{
-    memcpy( buffer, &rhs, sizeof( IO::VariableType ) );
-}
-template<>
-void unpack<IO::VariableType>( IO::VariableType &data, const char *buffer )
-{
-    memcpy( &data, buffer, sizeof( IO::VariableType ) );
-}
+// Default pack/unpack
+// clang-format off
+#define INSTANTIATE_PACK( TYPE )                            \
+    template<>                                              \
+    size_t packsize<TYPE>( const TYPE &rhs )                \
+    {                                                       \
+        return sizeof( TYPE );                              \
+    }                                                       \
+    template<>                                              \
+    void pack<TYPE>( const TYPE &rhs, char *buffer )        \
+    {                                                       \
+        memcpy( buffer, &rhs, sizeof( IO::MeshType ) );     \
+    }                                                       \
+    template<>                                              \
+    void unpack<TYPE>( TYPE &data, const char *buffer )     \
+    {                                                       \
+        memcpy( &data, buffer, sizeof( IO::MeshType ) );    \
+    }
+INSTANTIATE_PACK( IO::VariableType )
+INSTANTIATE_PACK( IO::DataType )
+INSTANTIATE_PACK( IO::MeshType )
+INSTANTIATE_PACK( IO::FileFormat )
+// clang-format on
+
+
 // DatabaseEntry
 template<>
 size_t packsize<IO::DatabaseEntry>( const IO::DatabaseEntry &rhs )
@@ -327,8 +320,7 @@ std::vector<MeshDatabase> gatherAll(
     // Return the results
     std::vector<MeshDatabase> data2( data.size() );
     size_t i = 0;
-    for ( std::map<std::string, MeshDatabase>::iterator it = data.begin(); it != data.end();
-          ++it, ++i )
+    for ( auto it = data.begin(); it != data.end(); ++it, ++i )
         data2[i] = it->second;
     PROFILE_STOP( "gatherAll-unpack", 2 );
     PROFILE_STOP( "gatherAll" );
@@ -343,19 +335,19 @@ void write( const std::vector<MeshDatabase> &meshes, const std::string &filename
     FILE *fid = fopen( filename.c_str(), "wb" );
     for ( size_t i = 0; i < meshes.size(); i++ ) {
         fprintf( fid, "%s\n", meshes[i].name.c_str() );
-        fprintf( fid, "   type: %i\n", static_cast<int>( meshes[i].type ) );
+        fprintf( fid, "   type: %s\n", getString( meshes[i].type ).data() );
         fprintf( fid, "   meshClass: %s\n", meshes[i].meshClass.c_str() );
-        fprintf( fid, "   format: %i\n", static_cast<int>( meshes[i].format ) );
+        fprintf( fid, "   format: %s\n", getString( meshes[i].format ).data() );
         for ( size_t j = 0; j < meshes[i].domains.size(); j++ )
             fprintf( fid, "   domain: %s\n", meshes[i].domains[j].write().c_str() );
         fprintf( fid, "   variables: " );
         for ( size_t j = 0; j < meshes[i].variables.size(); j++ ) {
             const VariableDatabase &var = meshes[i].variables[j];
-            fprintf( fid, "%s|%i|%i; ", var.name.c_str(), static_cast<int>( var.type ), var.dim );
+            fprintf( fid, "%s|%s|%i; ", var.name.data(), getString( var.type ).data(), var.dim );
         }
         fprintf( fid, "\n" );
-        std::map<std::pair<std::string, std::string>, DatabaseEntry>::const_iterator it;
-        for ( it = meshes[i].variable_data.begin(); it != meshes[i].variable_data.end(); ++it ) {
+        for ( auto it = meshes[i].variable_data.begin(); it != meshes[i].variable_data.end();
+              ++it ) {
             const char *domain   = it->first.first.c_str();
             const char *variable = it->first.second.c_str();
             fprintf(
@@ -386,9 +378,9 @@ std::vector<MeshDatabase> read( const std::string &filename )
             name.resize( name.size() - 1 );
             meshes.back().name = name;
         } else if ( strncmp( line, "   format:", 10 ) == 0 ) {
-            meshes.back().format = static_cast<unsigned char>( atoi( &line[10] ) );
+            meshes.back().format = getFileFormat( &line[10] );
         } else if ( strncmp( line, "   type:", 8 ) == 0 ) {
-            meshes.back().type = static_cast<MeshType>( atoi( &line[8] ) );
+            meshes.back().type = getMeshType( &line[8] );
         } else if ( strncmp( line, "   meshClass:", 13 ) == 0 ) {
             meshes.back().meshClass = deblank( std::string( &line[13] ) );
         } else if ( strncmp( line, "   domain:", 10 ) == 0 ) {
@@ -402,7 +394,7 @@ std::vector<MeshDatabase> read( const std::string &filename )
                 std::vector<std::string> tmp = splitList( variables[i].c_str(), '|' );
                 ASSERT( tmp.size() == 3 );
                 mesh.variables[i].name = tmp[0];
-                mesh.variables[i].type = static_cast<VariableType>( atoi( tmp[1].c_str() ) );
+                mesh.variables[i].type = getVariableType( tmp[1] );
                 mesh.variables[i].dim  = atoi( tmp[2].c_str() );
             }
         } else if ( strncmp( line, "   variable(", 12 ) == 0 ) {

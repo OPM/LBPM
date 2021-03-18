@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "IO/Mesh.h"
 #include "common/Array.h"
 #include "common/Communication.h"
 #include "common/MPI.h"
@@ -17,20 +18,10 @@ typedef int DBfile;
 #endif
 
 
-namespace silo {
+namespace IO::silo {
 
 
 enum FileMode { READ, WRITE, CREATE };
-
-enum class VariableType : int {
-    NodeVariable    = 1,
-    EdgeVariable    = 2,
-    SurfaceVariable = 2,
-    VolumeVariable  = 3,
-    NullVariable    = 0
-};
-
-enum class VariableDataType { DOUBLE, FLOAT, INT, UNKNOWN };
 
 
 /*!
@@ -57,7 +48,7 @@ void close( DBfile *fid );
  * @param[in] fid           Handle to the open file
  * @param[in] name          Name of variable
  */
-VariableDataType varDataType( DBfile *dbfile, const std::string &name );
+DataType varDataType( DBfile *dbfile, const std::string &name );
 
 
 /*!
@@ -265,7 +256,7 @@ void writeMultiVar( DBfile *fid, const std::string &varname,
     const std::vector<std::string> &subVarNames, const std::vector<int> &subVarTypes );
 
 
-}; // namespace silo
+}; // namespace IO::silo
 #endif
 
 #include "IO/silo.hpp"
