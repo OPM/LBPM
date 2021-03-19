@@ -155,6 +155,12 @@ extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *NeighborList, int *Map, double
 extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
 			int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q7_AAodd_Color(int *neighborList, int *Map, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *ColorGrad, double *Vel, double rhoA, double rhoB, double beta, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q7_AAeven_Color(int *Map, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *ColorGrad, double *Vel, double rhoA, double rhoB, double beta, int start, int finish, int Np);
+
 extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *Phi, double *ColorGrad, int start, int finish, int Np, int Nx, int Ny, int Nz);
 
 extern "C" void ScaLBL_D3Q19_MixedGradient(int *Map, double *Phi, double *Gradient, int start, int finish, int Np, int Nx, int Ny, int Nz);
