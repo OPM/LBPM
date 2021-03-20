@@ -223,6 +223,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 	double ux,uy,uz;
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double factor = 1.0;
 
 	for (int n=start; n<finish; n++){
 
@@ -273,12 +274,12 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 
         //-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
+		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
 		//........................................................................
 		
 		/*Update the distributions */
@@ -314,6 +315,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 	double ux,uy,uz;
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double factor = 1.0;
 
 	for (int n=start; n<finish; n++){
 
@@ -348,12 +350,12 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 
 		//-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
+		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
 		//........................................................................
 
 		/*Update the distributions */
@@ -1200,6 +1202,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
         ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
         uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
         uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
+
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
                   +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);

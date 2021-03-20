@@ -776,9 +776,6 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-
-		printf("write debug strideY=%i strideZ = %i \n",Nxh, Nxh*Nyh);
-		WriteDebug_TwoFluid();
 		
 		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL		
 		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
@@ -865,6 +862,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
 	if (rank==0) printf("********************************************************\n");
 
+	WriteDebug_TwoFluid();
 	// ************************************************************************
 }
 
