@@ -778,7 +778,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		}
 		
 		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL		
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
@@ -797,7 +797,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
 
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
 		
@@ -822,7 +822,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 		}
 		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
 
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
@@ -839,7 +839,7 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier();
 		//************************************************************************
