@@ -244,7 +244,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 		//Normalize the Color Gradient
 		C = sqrt(nx*nx+ny*ny+nz*nz);
 		double ColorMag = C;
-		if (C < 1.0e-8) ColorMag=1.0;
+		if (C < 1.0e-12) ColorMag=1.0;
 		nx = nx/ColorMag;
 		ny = ny/ColorMag;
 		nz = nz/ColorMag;		
@@ -292,15 +292,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 		hq[nr6] = h5;
 		hq[nr5] = h6;
 		//........................................................................
-		
-		//phi = h0+h1+h2+h3+h4+h5+h6;
-		
-		// save the number densities
-		//Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
-		
-		// save the phase indicator field
-		//Phi[idx] = phi; 
-		
+
 	}
 }
 
@@ -335,7 +327,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 		//Normalize the Color Gradient
 		C = sqrt(nx*nx+ny*ny+nz*nz);
 		double ColorMag = C;
-		if (C < 1.0e-8) ColorMag=1.0;
+		if (C < 1.0e-12) ColorMag=1.0;
 		nx = nx/ColorMag;
 		ny = ny/ColorMag;
 		nz = nz/ColorMag;
@@ -368,15 +360,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 		hq[5*Np+n] = h5;
 		hq[6*Np+n] = h6;
 		//........................................................................
-
-		//phi = h0+h1+h2+h3+h4+h5+h6;
-
-		// save the number densities
-		//Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
-
-		// save the phase indicator field
-		//Phi[idx] = phi; 
-
+		
 	}
 }
 
@@ -408,8 +392,8 @@ extern "C" void ScaLBL_D3Q7_ComputePhaseField(int *Map,  double *hq, double *Den
 }
 
 
-extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
-                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, double *dist, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
+                                                double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
 	int nn,nn2x,ijk;
@@ -960,8 +944,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
-                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+                                                double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
 	int nn,nn2x,ijk;
