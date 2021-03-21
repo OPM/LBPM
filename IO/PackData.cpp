@@ -4,102 +4,101 @@
 
 
 /********************************************************
-* Concrete implimentations for packing/unpacking        *
-********************************************************/
+ * Concrete implimentations for packing/unpacking        *
+ ********************************************************/
 // unsigned char
 template<>
-size_t packsize<unsigned char>( const unsigned char& rhs )
+size_t packsize<unsigned char>( const unsigned char &rhs )
 {
-    return sizeof(unsigned char);
+    return sizeof( unsigned char );
 }
 template<>
-void pack<unsigned char>( const unsigned char& rhs, char *buffer )
+void pack<unsigned char>( const unsigned char &rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(unsigned char));
+    memcpy( buffer, &rhs, sizeof( unsigned char ) );
 }
 template<>
-void unpack<unsigned char>( unsigned char& data, const char *buffer )
+void unpack<unsigned char>( unsigned char &data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(unsigned char));
+    memcpy( &data, buffer, sizeof( unsigned char ) );
 }
 // char
 template<>
-size_t packsize<char>( const char& rhs )
+size_t packsize<char>( const char &rhs )
 {
-    return sizeof(char);
+    return sizeof( char );
 }
 template<>
-void pack<char>( const char& rhs, char *buffer )
+void pack<char>( const char &rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(char));
+    memcpy( buffer, &rhs, sizeof( char ) );
 }
 template<>
-void unpack<char>( char& data, const char *buffer )
+void unpack<char>( char &data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(char));
+    memcpy( &data, buffer, sizeof( char ) );
 }
 // int
 template<>
-size_t packsize<int>( const int& rhs )
+size_t packsize<int>( const int &rhs )
 {
-    return sizeof(int);
+    return sizeof( int );
 }
 template<>
-void pack<int>( const int& rhs, char *buffer )
+void pack<int>( const int &rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(int));
+    memcpy( buffer, &rhs, sizeof( int ) );
 }
 template<>
-void unpack<int>( int& data, const char *buffer )
+void unpack<int>( int &data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(int));
+    memcpy( &data, buffer, sizeof( int ) );
 }
 // unsigned int
 template<>
-size_t packsize<unsigned int>( const unsigned int& rhs )
+size_t packsize<unsigned int>( const unsigned int &rhs )
 {
-    return sizeof(unsigned int);
+    return sizeof( unsigned int );
 }
 template<>
-void pack<unsigned int>( const unsigned int& rhs, char *buffer )
+void pack<unsigned int>( const unsigned int &rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(int));
+    memcpy( buffer, &rhs, sizeof( int ) );
 }
 template<>
-void unpack<unsigned int>( unsigned int& data, const char *buffer )
+void unpack<unsigned int>( unsigned int &data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(int));
+    memcpy( &data, buffer, sizeof( int ) );
 }
 // size_t
 template<>
-size_t packsize<size_t>( const size_t& rhs )
+size_t packsize<size_t>( const size_t &rhs )
 {
-    return sizeof(size_t);
+    return sizeof( size_t );
 }
 template<>
-void pack<size_t>( const size_t& rhs, char *buffer )
+void pack<size_t>( const size_t &rhs, char *buffer )
 {
-    memcpy(buffer,&rhs,sizeof(size_t));
+    memcpy( buffer, &rhs, sizeof( size_t ) );
 }
 template<>
-void unpack<size_t>( size_t& data, const char *buffer )
+void unpack<size_t>( size_t &data, const char *buffer )
 {
-    memcpy(&data,buffer,sizeof(size_t));
+    memcpy( &data, buffer, sizeof( size_t ) );
 }
 // std::string
 template<>
-size_t packsize<std::string>( const std::string& rhs )
+size_t packsize<std::string>( const std::string &rhs )
 {
-    return rhs.size()+1;
+    return rhs.size() + 1;
 }
 template<>
-void pack<std::string>( const std::string& rhs, char *buffer )
+void pack<std::string>( const std::string &rhs, char *buffer )
 {
-    memcpy(buffer,rhs.c_str(),rhs.size()+1);
+    memcpy( buffer, rhs.c_str(), rhs.size() + 1 );
 }
 template<>
-void unpack<std::string>( std::string& data, const char *buffer )
+void unpack<std::string>( std::string &data, const char *buffer )
 {
-    data = std::string(buffer);
+    data = std::string( buffer );
 }
-

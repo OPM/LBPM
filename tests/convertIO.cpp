@@ -5,85 +5,66 @@
 #include <stdexcept>
 #include <fstream>
 
-#include "common/MPI_Helpers.h"
-#include "common/Communication.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include "IO/Mesh.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
 #include "ProfilerApp.h"
 
-
 int main(int argc, char **argv)
 {
-  // Initialize MPI
-  Utilities::startup( argc, argv );
-  Utilities::MPI comm( MPI_COMM_WORLD );
-  int rank = comm.getRank();
-  int nprocs = comm.getSize();
-  Utilities::setErrorHandlers();
-  PROFILE_ENABLE(2);
-  PROFILE_ENABLE_TRACE();
-  PROFILE_START("Main");
-  { // Limit scope
+    // Initialize MPI
+    Utilities::startup( argc, argv );
+    Utilities::setErrorHandlers();
+    PROFILE_ENABLE(2);
+    PROFILE_ENABLE_TRACE();
+    PROFILE_START("Main");
 
-    // Get inputs
-    if ( argc != 3 ) {
-        std::cerr << "Error calling convertIO:\n";
-        std::cerr << "   convertIO input_file format\n";
-        return -1;
-    }
-    std::string filename = argv[1];
-    std::string format = argv[2];
-    std::string path = IO::getPath( filename );
+    { // Limit scope
 
-    // Read the timesteps
-    auto timesteps = IO::readTimesteps( filename );
 
-    // Loop through the timesteps, reading/writing the data
-    IO::initialize( "", format, false );
-    for ( auto timestep : timesteps ) {
-        
-        // Read the list of MeshDatabase
-        auto databases = IO::getMeshList( path, timestep );
-
-        // Build the MeshDataStruct
-        std::vector<IO::MeshDataStruct> meshData(databases.size());
-
-        // Loop through the database
-        int i = 0;
-        PROFILE_START("Read");
-        for ( const auto& database : databases ) {
-            
-            // Read the appropriate mesh domain
-            ASSERT( (int) database.domains.size() == nprocs );
-            meshData[i].meshName = database.name;
-            meshData[i].mesh = IO::getMesh( path, timestep, database, rank );
-
-            // Read the variables
-            for ( auto var : database.variables ) {
-                auto varData = IO::getVariable( path, timestep, database, rank, var.name );
-                IO::reformatVariable( *meshData[i].mesh, *varData );
-                meshData[i].vars.push_back( varData );
-            }
-
-            i++;
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        // Get inputs
+        if ( argc != 5 ) {
+            std::cerr << "Error calling convertIO:\n";
+            std::cerr << "   convertIO <input_path> <input_format> <output_path> <output_format>\n";
+            return -1;
         }
-        MPI_Barrier(comm);
-        PROFILE_STOP("Read");
+        std::string path_in = argv[1];
+        std::string format_in = argv[2];
+        std::string path_out = argv[3];
+        std::string format_out = argv[4];
 
-        // Save the mesh data to a new file
-        PROFILE_START("Write");
-        IO::writeData( timestep, meshData, MPI_COMM_WORLD );
-        MPI_Barrier(comm);
-        PROFILE_STOP("Write");
-    }
+        // Check that we have enough ranks to load and write the data
+        // This is really only a bottleneck for the writer
+        int N_domains = IO::maxDomains( path_in, format_in, comm );
+        ASSERT( comm.getSize() == N_domains );
 
-  } // Limit scope
-  PROFILE_STOP("Main");
-  PROFILE_SAVE("convertData",true);
-  comm.barrier();
-  Utilities::shutdown();
-  return 0;
+        // Read the timesteps
+        auto timesteps = IO::readTimesteps( path_in, format_in );
+
+        // Loop through the timesteps, reading/writing the data
+        IO::initialize( path_out, format_out, false );
+        for ( auto timestep : timesteps ) {
+            
+            // Set the domain to read (needs to be the current rank for the writer to be valid)
+            int domain = comm.getRank();
+
+            // Get the maximum number of domains for the 
+            auto data = IO::readData( path_in, timestep, domain );
+
+            // Save the mesh data to a new file
+            IO::writeData( timestep, data, comm );
+
+        }
+
+    } // Limit scope
+
+    // shutdown
+    PROFILE_STOP("Main");
+    PROFILE_SAVE("convertData",true);
+    Utilities::shutdown();
+    return 0;
 }
 
