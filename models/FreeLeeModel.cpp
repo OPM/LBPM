@@ -31,7 +31,7 @@ void ScaLBL_FreeLeeModel::getPhase(DoubleArray &PhaseValues){
 	for (int k=1; k<Nzh-1; k++){
 		for (int j=1; j<Nyh-1; j++){
 			for (int i=1; i<Nxh-1; i++){
-				PhaseValues(i-1,j-1,k-1) = PhaseData(i,j,k);
+				PhaseValues(i-1,j-1,k-1) = PhaseWideHalo(i,j,k);
 			}
 		}
 	}
@@ -776,21 +776,17 @@ void ScaLBL_FreeLeeModel::Initialize_SingleFluid(){
 	}
 }
 
-void ScaLBL_FreeLeeModel::Run_TwoFluid(){
+double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 	int nprocs=nprocx*nprocy*nprocz;
-	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
 	
-	if (rank==0){
-		printf("********************************************************\n");
-		printf("No. of timesteps: %i \n", timestepMax);
-		fflush(stdout);
-	}
-
+	int START_TIME = timestep;
+	int EXIT_TIME = min(returntime, timestepMax);
 	//************ MAIN ITERATION LOOP ***************************************/
 	comm.barrier();
     auto t1 = std::chrono::system_clock::now();
 	PROFILE_START("Loop");
-	while (timestep < timestepMax ) {
+	
+	while (timestep < EXIT_TIME ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
 		// *************ODD TIMESTEP*************
@@ -890,19 +886,11 @@ void ScaLBL_FreeLeeModel::Run_TwoFluid(){
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
     auto t2 = std::chrono::system_clock::now();
-	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / (EXIT_TIME-START_TIME);
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 
-	if (rank==0) printf("********************************************************\n");
-	if (rank==0) printf("CPU time = %f \n", cputime);
-	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
-	MLUPS *= nprocs;
-	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
-	if (rank==0) printf("********************************************************\n");
-
-	WriteDebug_TwoFluid();
-	// ************************************************************************
+	return MLUPS;
 }
 
 void ScaLBL_FreeLeeModel::Run_SingleFluid(){

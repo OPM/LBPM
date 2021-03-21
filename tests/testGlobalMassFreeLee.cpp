@@ -63,7 +63,7 @@ int main( int argc, char **argv )
         DoubleArray DensityInit(Nx,Ny,Nz);
         LeeModel.ScaLBL_Comm->RegularLayout(LeeModel.Map,LeeModel.Den,DensityInit);
         
-        LeeModel.Run_TwoFluid();	
+        double MLUPS = LeeModel.Run_TwoFluid(LeeModel.timestepMax);	
         
         DoubleArray DensityFinal(Nx,Ny,Nz);
         LeeModel.ScaLBL_Comm->RegularLayout(LeeModel.Map,LeeModel.Den,DensityFinal);

@@ -8,6 +8,7 @@
 
 #include "common/Utilities.h"
 #include "models/FreeLeeModel.h"
+#include "analysis/FreeEnergy.h"
 
 //*******************************************************************
 // Implementation of Free-Energy Two-Phase LBM (Lee model)
@@ -52,10 +53,33 @@ int main( int argc, char **argv )
         LeeModel.SetDomain();    
         LeeModel.ReadInput();    
         LeeModel.Create_TwoFluid();       
+        
+        FreeEnergyAnalyzer Analysis(LeeModel.Dm);
+        
         LeeModel.Initialize_TwoFluid();   
-        LeeModel.Run_TwoFluid();	       
-        LeeModel.WriteDebug_TwoFluid();
-
+        
+        /*** RUN MAIN TIMESTEPS HERE ************/
+        double MLUPS=0.0;
+        int timestep = 0;
+        int visualization_time = LeeModel.timestepMax;
+    	if (LeeModel.vis_db->keyExists( "visualizataion_interval" )){
+    		visualization_time = LeeModel.vis_db->getScalar<int>( "visualizataion_interval" );
+    		timestep += visualization_time;
+    	}
+        while (LeeModel.timestep < LeeModel.timestepMax){
+        	MLUPS = LeeModel.Run_TwoFluid(timestep);
+        	if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
+        	Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
+        	timestep += visualization_time;
+        }
+        //LeeModel.WriteDebug_TwoFluid();
+    	if (rank==0) printf("********************************************************\n");
+    	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+    	MLUPS *= nprocs;
+    	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
+    	if (rank==0) printf("********************************************************\n");
+    	// ************************************************************************
+    	
         PROFILE_STOP("Main");
         auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_simulator" );
         auto level = db->getWithDefault<int>( "TimerLevel", 1 );
