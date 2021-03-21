@@ -76,8 +76,12 @@ public:
 	double *Velocity;
 	double *Pressure;
 	
+	void getPhase(DoubleArray &PhaseValues);
+	void getPotential(DoubleArray &PressureValues, DoubleArray &MuValues);
+	void getVelocity(DoubleArray &Vx, DoubleArray &Vy, DoubleArray &Vz);
+	
 	DoubleArray SignDist;
-		
+	
 private:
 	Utilities::MPI comm;
     

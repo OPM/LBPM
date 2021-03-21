@@ -20,6 +20,45 @@ Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),
 ScaLBL_FreeLeeModel::~ScaLBL_FreeLeeModel(){
 
 }
+
+
+void ScaLBL_FreeLeeModel::getPhase(DoubleArray &PhaseValues){
+	
+	DoubleArray PhaseWideHalo(Nxh,Nyh,Nzh);
+	ScaLBL_CopyToHost(PhaseWideHalo.data(), Phi, sizeof(double)*Nh);
+	
+	// use halo width = 1 for analysis data
+	for (int k=1; k<Nzh-1; k++){
+		for (int j=1; j<Nyh-1; j++){
+			for (int i=1; i<Nxh-1; i++){
+				PhaseValues(i-1,j-1,k-1) = PhaseData(i,j,k);
+			}
+		}
+	}
+}
+
+void ScaLBL_FreeLeeModel::getPotential(DoubleArray &PressureValues, DoubleArray &MuValues){
+	
+	ScaLBL_Comm->RegularLayout(Map,Pressure,PressureValues);
+    ScaLBL_Comm->Barrier(); comm.barrier();
+
+	ScaLBL_Comm->RegularLayout(Map,mu_phi,MuValues);
+    ScaLBL_Comm->Barrier(); comm.barrier();
+
+}
+
+void ScaLBL_FreeLeeModel::getVelocity(DoubleArray &Vel_x, DoubleArray &Vel_y, DoubleArray &Vel_z){
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Vel_x);
+    ScaLBL_Comm->Barrier(); comm.barrier();
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Vel_y);
+    ScaLBL_Comm->Barrier(); comm.barrier();
+
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Vel_z);
+    ScaLBL_Comm->Barrier(); comm.barrier();
+}
+
 void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
