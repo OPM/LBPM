@@ -83,6 +83,7 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
     double theta;//anti-diffusion term
     double cs2_inv = 4.5;//inverse of speed of sound for D3Q7
     double M = 1.0/cs2_inv*(tauM-0.5);//diffusivity (or mobility)
+    double factor = 1.0;
 
 	for (idx=start; idx<finish; idx++){
 
@@ -103,7 +104,7 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 		ny = ny/ColorMag_temp;
 		nz = nz/ColorMag_temp;		
 
-        theta = M*cs2_inv*(1-4.0*phi*phi)/W;
+        theta = M*cs2_inv*(1-factor*phi*phi)/W;
         theta = 0; // try more diffusive initial condition
         
 		hq[0*Np+idx]=0.3333333333333333*(phi);
@@ -224,12 +225,14 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
     double factor = 1.0;
+    double theta;
 
 	for (int n=start; n<finish; n++){
 
 		/* load phase indicator field */
 		idx = Map[n];
 		phi = Phi[idx];
+        theta = 4.5*M*2.0*(1-phi*phi)/W;
 
 		/* velocity */
 		ux = Vel[0*Np+n];
@@ -274,12 +277,18 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 
         //-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+//		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+//		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+//		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+//		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+//		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+//		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h1 -= (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
+		h2 -= (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
+		h3 -= (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
+		h4 -= (h4 + 0.1111111111111111*ny*theta - phi*(0.1111111111111111 - 0.5*uy))/tauM;
+		h5 -= (h5 - 0.1111111111111111*nz*theta - phi*(0.1111111111111111 + 0.5*uz))/tauM;
+		h6 -= (h6 + 0.1111111111111111*nz*theta - phi*(0.1111111111111111 - 0.5*uz))/tauM; 
 		//........................................................................
 		
 		/*Update the distributions */
@@ -308,12 +317,14 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
     double factor = 1.0;
+    double theta;
 
 	for (int n=start; n<finish; n++){
 
 		/* load phase indicator field */
 		idx = Map[n];
 		phi = Phi[idx];
+        theta = 4.5*M*2.0*(1-phi*phi)/W;
 
 		/* velocity */
 		ux = Vel[0*Np+n];
@@ -342,12 +353,18 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 
 		//-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+//		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+//		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+//		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+//		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+//		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+//		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h1 -= (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
+		h2 -= (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
+		h3 -= (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
+		h4 -= (h4 + 0.1111111111111111*ny*theta - phi*(0.1111111111111111 - 0.5*uy))/tauM;
+		h5 -= (h5 - 0.1111111111111111*nz*theta - phi*(0.1111111111111111 + 0.5*uz))/tauM;
+		h6 -= (h6 + 0.1111111111111111*nz*theta - phi*(0.1111111111111111 - 0.5*uz))/tauM; 
 		//........................................................................
 
 		/*Update the distributions */

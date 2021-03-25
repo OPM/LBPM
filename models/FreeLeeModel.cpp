@@ -77,8 +77,10 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	Fx = Fy = Fz = 0.0;
 	gamma=1e-3;//surface tension
 	W=5.0;//interfacial thickness
-    beta = 12.0*gamma/W;
-    kappa = 3.0*gamma*W/2.0;//beta and kappa are related to surface tension \gamma
+    //beta = 12.0*gamma/W;
+    //kappa = 3.0*gamma*W/2.0;//beta and kappa are related to surface tension \gamma
+    beta = 0.75*gamma/W;
+    kappa = 0.375*gamma*W;//beta and kappa are related to surface tension \gamma
 	Restart=false;
 	din=dout=1.0;
 	flux=0.0;
@@ -136,8 +138,10 @@ void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
     //update secondary parameters
-    beta = 12.0*gamma/W;
-    kappa = 3.0*gamma*W/2.0;//beta and kappa are related to surface tension \gamma
+    //beta = 12.0*gamma/W;
+    //kappa = 3.0*gamma*W/2.0;//beta and kappa are related to surface tension \gamma
+    beta = 0.75*gamma/W;
+    kappa = 0.375*gamma*W;//beta and kappa are related to surface tension \gamma
 	//if (BoundaryCondition==4) flux *= rhoA; // mass flux must adjust for density (see formulation for details)
 
 	BoundaryCondition = 0;
@@ -1054,6 +1058,13 @@ void ScaLBL_FreeLeeModel::WriteDebug_TwoFluid(){
 	PFILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,PFILE);
 	fclose(PFILE);
+
+	ScaLBL_Comm->RegularLayout(Map,mu_phi,PhaseField);
+	FILE *CHEMFILE;
+	sprintf(LocalRankFilename,"ChemPotential.%05i.raw",rank);
+	CHEMFILE = fopen(LocalRankFilename,"wb");
+	fwrite(PhaseField.data(),8,N,CHEMFILE);
+	fclose(CHEMFILE);
 
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
 	FILE *VELX_FILE;
