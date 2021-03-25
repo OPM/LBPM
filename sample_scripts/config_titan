@@ -9,7 +9,6 @@ cmake                                    \
         -D CMAKE_CUDA_FLAGS="-arch sm_35" \
         -D CMAKE_CUDA_HOST_COMPILER="/usr/bin/gcc" \
     -D USE_MPI=1                            \
-        -D MPI_COMPILER:BOOL=TRUE           \
         -D MPIEXEC=aprun                   \
         -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     ${HOME}/LBPM-WIA
