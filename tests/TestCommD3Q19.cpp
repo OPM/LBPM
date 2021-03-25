@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -164,11 +164,10 @@ inline void UnpackID(int *list, int count, char *recvbuf, char *ID){
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	int check;
 	{
 
@@ -263,14 +262,14 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Allreduce(&sum_local,&sum,1,MPI_DOUBLE,MPI_SUM,comm);
+		sum = comm.sumReduce( sum_local );
 		double iVol_global=1.f/double((Nx-2)*(Ny-2)*(Nz-2)*nprocx*nprocy*nprocz);
 	    	porosity = 1.0-sum*iVol_global;
 		if (rank==0) printf("Media porosity = %f \n",porosity);
 		//.......................................................................
 
 		//...........................................................................
-		MPI_Barrier(comm);
+		comm.barrier();
 		if (rank == 0) cout << "Domain set." << endl;
 		//...........................................................................
 
@@ -284,8 +283,9 @@ int main(int argc, char **argv)
 		auto neighborList= new int[18*Npad];
 		IntArray Map(Nx,Ny,Nz);
 		Map.fill(-2);		
-		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
-		MPI_Barrier(comm);
+		Np = ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
+		comm.barrier();
+
 		int neighborSize=18*Np*sizeof(int);
 		//......................device distributions.................................
 		dist_mem_size = Np*sizeof(double);
@@ -355,7 +355,7 @@ int main(int argc, char **argv)
 		GlobalFlipScaLBL_D3Q19_Init(fq_host, Map, Np, Nx-2, Ny-2, Nz-2, iproc,jproc,kproc,nprocx,nprocy,nprocz);
 		ScaLBL_CopyToDevice(fq, fq_host, 19*dist_mem_size);
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
+		comm.barrier();
 		//*************************************************************************
 		// First timestep
 		ScaLBL_Comm.SendD3Q19AA(fq); //READ FROM NORMAL
@@ -378,8 +378,8 @@ int main(int argc, char **argv)
 
 		//.......create and start timer............
 		double starttime,stoptime,cputime;
-		MPI_Barrier(comm);
-		starttime = MPI_Wtime();
+		comm.barrier();
+		starttime = Utilities::MPI::time();
 		//.........................................
 
 
@@ -398,13 +398,13 @@ int main(int argc, char **argv)
 			//*********************************************
 
 			ScaLBL_DeviceBarrier();
-			MPI_Barrier(comm);
+			comm.barrier();
 			// Iteration completed!
 			timestep++;
 			//...................................................................
 		}
 		//************************************************************************/
-		stoptime = MPI_Wtime();
+		stoptime = Utilities::MPI::time();
 		//	cout << "CPU time: " << (stoptime - starttime) << " seconds" << endl;
 		cputime = stoptime - starttime;
 		//	cout << "Lattice update rate: "<< double(Nx*Ny*Nz*timestep)/cputime/1000000 <<  " MLUPS" << endl;
@@ -427,8 +427,8 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Aggregated communication bandwidth = %f Gbit/sec \n",nprocs*ScaLBL_Comm.CommunicationCount*64*timestep/1e9);
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
+	comm.barrier();
+	Utilities::shutdown();
 	// ****************************************************
 
 	return check;

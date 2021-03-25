@@ -7,10 +7,10 @@ Color {
     beta  = 0.95;
     F = 0, 0, 0
     Restart = false
-    timestepMax = 3000
+    timestepMax = 500
     flux = 0.0
     ComponentLabels = -2, -1
-    ComponentAffinity = -1.0, -0.5;
+    ComponentAffinity = 1.0, 1.0;
 }
 
 Domain {
@@ -26,13 +26,14 @@ Domain {
 }
 
 Analysis {
-    blobid_interval = 1000      // Frequency to perform blob identification
-    analysis_interval = 1000    // Frequency to perform analysis
-    restart_interval = 1000    // Frequency to write restart data
-    visualization_interval = 1000        // Frequency to write visualization data
+    analysis_interval = 100    // Frequency to perform analysis
+    visualization_interval = 500
+    subphase_analysis_interval = 100
+    restart_interval = 100000
     restart_file = "Restart"    // Filename to use for restart file (will append rank)
     N_threads    = 4            // Number of threads to use
     load_balance = "independent" // Load balance method to use: "none", "default", "independent"
 }
 
-
+Visualization {
+}

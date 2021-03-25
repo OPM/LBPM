@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "hip/hip_runtime.h"
 
 #define NBLOCKS 1024
 #define NTHREADS 256
@@ -295,17 +296,17 @@ extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int
 	
     dvc_ScaLBL_D3Q19_AAeven_BGK<<<NBLOCKS,NTHREADS >>>(dist,start,finish,Np,rlx,Fx,Fy,Fz);
 
-    cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAeven_BGK: %s \n",cudaGetErrorString(err));
+    hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_BGK: %s \n",hipGetErrorString(err));
 	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
     dvc_ScaLBL_D3Q19_AAodd_BGK<<<NBLOCKS,NTHREADS >>>(neighborList,dist,start,finish,Np,rlx,Fx,Fy,Fz);
 
-    cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q19_AAeven_BGK: %s \n",cudaGetErrorString(err));
+    hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_BGK: %s \n",hipGetErrorString(err));
 	}
 }

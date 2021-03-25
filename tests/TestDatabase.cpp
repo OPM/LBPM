@@ -9,7 +9,7 @@
 
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Database.h"
 #include "ProfilerApp.h"
 
@@ -17,11 +17,8 @@
 // Main
 int main(int argc, char **argv)
 {
-    int rank,nprocs;
-    MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
     Utilities::setAbortBehavior(true,2);
     Utilities::setErrorHandlers();
     UnitTest ut;
@@ -69,8 +66,7 @@ int main(int argc, char **argv)
 
     // Finished
     PROFILE_SAVE("TestDatabase",true);
-    MPI_Barrier(comm);
-    MPI_Finalize();
+    Utilities::shutdown();
     return err;
 }
 

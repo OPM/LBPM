@@ -1,8 +1,8 @@
 #include "models/MultiPhysController.h"
 
-ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_Multiphys_Controller::ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK),nprocs(NP),Restart(0),timestepMax(0),num_iter_Stokes(0),num_iter_Ion(0),
-analysis_interval(0),visualization_interval(0),tolerance(0),comm(COMM)
+analysis_interval(0),visualization_interval(0),tolerance(0),time_conv_max(0),comm(COMM)
 {
 
 }
@@ -25,6 +25,7 @@ void ScaLBL_Multiphys_Controller::ReadParams(string filename){
     analysis_interval = 500;
     visualization_interval = 10000;
     tolerance = 1.0e-6;
+    time_conv_max = 0.0;
 	
     // load input parameters
 	if (study_db->keyExists( "timestepMax" )){
@@ -134,4 +135,13 @@ vector<int> ScaLBL_Multiphys_Controller::getIonNumIter_PNP_coupling(double Stoke
         }
     }
     return num_iter_ion;
+}
+
+void ScaLBL_Multiphys_Controller::getTimeConvMax_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv){
+    //Return maximum of the time converting factor from Stokes and ion solvers
+    vector<double> TimeConv;
+
+    TimeConv.assign(IonTimeConv.begin(),IonTimeConv.end());
+    TimeConv.insert(TimeConv.begin(),StokesTimeConv);
+    time_conv_max = *max_element(TimeConv.begin(),TimeConv.end());
 }

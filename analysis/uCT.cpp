@@ -228,8 +228,7 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     Array<float>& Mean, Array<float>& Dist1, Array<float>& Dist2 )
 {
     PROFILE_SCOPED(timer,"filter_final");
-	int rank;
-	MPI_Comm_rank(Dm.Comm,&rank);
+	int rank = Dm.Comm.getRank();
     int Nx = Dm.Nx-2;
     int Ny = Dm.Ny-2;
     int Nz = Dm.Nz-2;
@@ -242,7 +241,7 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     float tmp = 0;
     for (size_t i=0; i<Dist0.length(); i++)
         tmp += Dist0(i)*Dist0(i);
-    tmp = sqrt( sumReduce(Dm.Comm,tmp) / sumReduce(Dm.Comm,(float)Dist0.length()) );
+    tmp = sqrt( Dm.Comm.sumReduce(tmp) / Dm.Comm.sumReduce<float>(Dist0.length()) );
     const float dx1 = 0.3*tmp;
     const float dx2 = 1.05*dx1;
     if (rank==0)
@@ -285,7 +284,7 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
     Phase.fill(1);
     ComputeGlobalBlobIDs( Nx, Ny, Nz, Dm.rank_info, Phase, SignDist, 0, 0, GlobalBlobID, Dm.Comm );
     fillInt.fill(GlobalBlobID);
-    int N_blobs = maxReduce(Dm.Comm,GlobalBlobID.max()+1);
+    int N_blobs = Dm.Comm.maxReduce(GlobalBlobID.max()+1);
     std::vector<float> mean(N_blobs,0);
     std::vector<int> count(N_blobs,0);
     for (int k=1; k<=Nz; k++) {
@@ -321,8 +320,8 @@ void filter_final( Array<char>& ID, Array<float>& Dist,
             }
         }
     }
-    mean = sumReduce(Dm.Comm,mean);
-    count = sumReduce(Dm.Comm,count);
+    mean = Dm.Comm.sumReduce(mean);
+    count = Dm.Comm.sumReduce(count);
     for (size_t i=0; i<mean.size(); i++)
         mean[i] /= count[i];
     /*if (rank==0) {

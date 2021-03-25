@@ -64,11 +64,11 @@ Array<uint8_t> readMicroCT( const std::string& filename )
 
 
 // Read the compressed micro CT data and distribute
-Array<uint8_t> readMicroCT( const Database& domain, MPI_Comm comm )
+Array<uint8_t> readMicroCT( const Database& domain, const Utilities::MPI& comm )
 {
     // Get the local problem info
     auto n = domain.getVector<int>( "n" );
-    int rank = comm_rank(MPI_COMM_WORLD);
+    int rank = comm.getRank();
     auto nproc = domain.getVector<int>( "nproc" );
     RankInfoStruct rankInfo( rank, nproc[0], nproc[1], nproc[2] );
     

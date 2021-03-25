@@ -14,17 +14,18 @@ namespace IO {
 
 /*!
  * @brief  Initialize the writer
- * @details  This function initializes the writer to the given path.  All subsequent
- *    writes will occur in this directory.  If this is not called, then it will default
- *    to the current path.
+ * @details  This function initializes the writer to the given path.
+ *    All subsequent writes will occur in this directory.
+ *    If this is not called, then it will default to the current path.
  * @param[in] path          The path to use for writes
  * @param[in] format        The data format to use:
- *                          old - Old mesh format (provided for backward compatibility, cannot write variables)
- *                          new - New format, 1 file/process
- *                          silo - Silo
+ *                              old - Old mesh format
+ *                                    (provided for backward compatibility, cannot write variables)
+ *                              new - New format, 1 file/process silo - Silo
  * @param[in] append        Append any existing data (default is false)
  */
-void initialize( const std::string& path="", const std::string& format="silo", bool append=false );
+void initialize(
+    const std::string &path = "", const std::string &format = "silo", bool append = false );
 
 
 /*!
@@ -34,7 +35,8 @@ void initialize( const std::string& path="", const std::string& format="silo", b
  * @param[in] meshData      The data to write
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
-void writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>& meshData, MPI_Comm comm );
+void writeData( const std::string &subdir, const std::vector<IO::MeshDataStruct> &meshData,
+    const Utilities::MPI &comm );
 
 
 /*!
@@ -44,14 +46,15 @@ void writeData( const std::string& subdir, const std::vector<IO::MeshDataStruct>
  * @param[in] meshData      The data to write
  * @param[in] comm          The comm to use for writing (usually MPI_COMM_WORLD or a dup thereof)
  */
-inline void writeData( int timestep, const std::vector<IO::MeshDataStruct>& meshData, MPI_Comm comm )
+inline void writeData(
+    int timestep, const std::vector<IO::MeshDataStruct> &meshData, const Utilities::MPI &comm )
 {
     char subdir[100];
-    sprintf(subdir,"vis%03i",timestep);
+    sprintf( subdir, "vis%03i", timestep );
     writeData( subdir, meshData, comm );
 }
 
 
-} // IO namespace
+} // namespace IO
 
 #endif

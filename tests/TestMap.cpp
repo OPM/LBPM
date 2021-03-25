@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -26,15 +26,9 @@ std::shared_ptr<Database> loadInputs( int nprocs )
 //***************************************************************************************
 int main(int argc, char **argv)
 {
-	//*****************************************
-	// ***** MPI STUFF ****************
-	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
 	int check=0;
 	{
 
@@ -45,6 +39,7 @@ int main(int argc, char **argv)
 				{1,0,1},{-1,0,-1},{1,0,-1},{-1,0,1},
 				{0,1,1},{0,-1,-1},{0,1,-1},{0,-1,1}};
 
+        int rank = comm.getRank();
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running unit test: TestMap	\n");
@@ -52,7 +47,7 @@ int main(int argc, char **argv)
 		}
 		
 	    // Load inputs
-	    auto db = loadInputs( nprocs );
+	    auto db = loadInputs( comm.getSize() );
 	    int Nx = db->getVector<int>( "n" )[0];
 	    int Ny = db->getVector<int>( "n" )[1];
 	    int Nz = db->getVector<int>( "n" )[2];
@@ -93,8 +88,8 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Npad];
 
-		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
-		MPI_Barrier(comm);
+		Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Dm->id.data(),Np,1);
+		comm.barrier();
 		
 		// Check the neighborlist
 		printf("Check neighborlist: exterior %i, first interior %i last interior %i \n",ScaLBL_Comm->LastExterior(),ScaLBL_Comm->FirstInterior(),ScaLBL_Comm->LastInterior());
@@ -196,10 +191,7 @@ int main(int argc, char **argv)
 		delete [] TmpMap;
 
 	}
-	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
-	// ****************************************************
+    Utilities::shutdown();
 
 	return check;
 }

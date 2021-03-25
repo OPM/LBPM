@@ -4,6 +4,7 @@ This class implements support for halo widths larger than 1
 #ifndef WideHalo_H
 #define WideHalo_H
 #include "common/ScaLBL.h"
+#include "common/MPI.h"
 
 class ScaLBLWideHalo_Communicator{
 public:
@@ -11,7 +12,8 @@ public:
 	ScaLBLWideHalo_Communicator(std::shared_ptr <Domain> Dm, int width);
 	~ScaLBLWideHalo_Communicator();
 	//......................................................................................
-	MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
+	//MPI_Comm MPI_COMM_SCALBL;		// MPI Communicator
+	Utilities::MPI MPI_COMM_SCALBL;
 	unsigned long int CommunicationCount,SendCount,RecvCount;
 	int Nx,Ny,Nz,N;     // original domain structure
 	int Nxh,Nyh,Nzh,Nh; // with wide halo
@@ -32,7 +34,6 @@ public:
 	double *recvbuf_xyz, *recvbuf_Xyz, *recvbuf_xYz, *recvbuf_XYz;
 	double *recvbuf_xyZ, *recvbuf_XyZ, *recvbuf_xYZ, *recvbuf_XYZ;
 	//......................................................................................
-
 	int LastExterior();
 	int FirstInterior();
 	int LastInterior();
@@ -52,9 +53,7 @@ private:
 	int sendtag,recvtag;
 	// Give the object it's own MPI communicator
 	RankInfoStruct rank_info;
-	MPI_Group Group;	// Group of processors associated with this domain
 	MPI_Request req1[26],req2[26];
-	MPI_Status stat1[26],stat2[26];
 	//......................................................................................
 	// MPI ranks for all 18 neighbors
 	//......................................................................................
@@ -95,11 +94,11 @@ private:
 	int *dvcRecvList_xyZ,*dvcRecvList_XyZ,*dvcRecvList_xYZ,*dvcRecvList_XYZ;
 	//......................................................................................
 
-	inline int getHaloBlock(int imin, int imax, int jmin, int jmax, int kmin, int kmax, int *dvcList){
+	inline int getHaloBlock(int imin, int imax, int jmin, int jmax, int kmin, int kmax, int *& dvcList){
 		int count = 0;
 		int *List;
 		List = new int [(imax-imin)*(jmax-jmin)*(kmax-kmin)];
-		for (int k=kmin; k<kmax; k++){
+		for (k=kmin; k<kmax; k++){
 			for (j=jmin; j<jmax; j++){
 				for (i=imin; i<imax; i++){
 					List[count++] =  k*Nxh*Nyh + j*Nxh + i;

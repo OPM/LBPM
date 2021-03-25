@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -31,11 +31,10 @@ int main(int argc, char **argv)
 {
 
     // Initialize MPI
-    int rank, nprocs;
-    MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
     {
         Utilities::setErrorHandlers();
         PROFILE_START("Main");
@@ -193,7 +192,7 @@ int main(int argc, char **argv)
             fillFloat[0]->fill( LOCVOL[0] );
         }
         netcdf::close( fid );
-        MPI_Barrier(comm);
+        comm.barrier();
         PROFILE_STOP("ReadVolume");
         if (rank==0) printf("Read complete\n");
 
@@ -256,15 +255,15 @@ int main(int argc, char **argv)
                 }
             }
         }
-        count_plus=sumReduce( Dm[0]->Comm, count_plus);
-        count_minus=sumReduce( Dm[0]->Comm, count_minus);
+        count_plus = Dm[0]->Comm.sumReduce( count_plus);
+        count_minus = Dm[0]->Comm.sumReduce( count_minus);
               if (rank==0) printf("minimum value=%f, max value=%f \n",min_value,max_value);
         if (rank==0) printf("plus=%i, minus=%i \n",count_plus,count_minus);
         ASSERT( count_plus > 0 && count_minus > 0 );
-        MPI_Barrier(comm);
-        mean_plus = sumReduce( Dm[0]->Comm, mean_plus ) / count_plus;
-        mean_minus = sumReduce( Dm[0]->Comm, mean_minus ) / count_minus;
-        MPI_Barrier(comm);
+        comm.barrier();
+        mean_plus = Dm[0]->Comm.sumReduce( mean_plus ) / count_plus;
+        mean_minus = Dm[0]->Comm.sumReduce( mean_minus ) / count_minus;
+        comm.barrier();
         if (rank==0) printf("    Region 1 mean (+): %f, Region 2 mean (-): %f \n",mean_plus, mean_minus);
 
         //if (rank==0) printf("Scale the input data (size = %i) \n",LOCVOL[0].length());
@@ -285,7 +284,7 @@ int main(int argc, char **argv)
 
         // Fill the source data for the coarse meshes
         if (rank==0) printf("Coarsen the mesh for N_levels=%i \n",N_levels);
-        MPI_Barrier(comm); 
+        comm.barrier();
         PROFILE_START("CoarsenMesh");
         for (int i=1; i<N_levels; i++) {
             Array<float> filter(ratio[0],ratio[1],ratio[2]);
@@ -301,7 +300,7 @@ int main(int argc, char **argv)
                 printf("   filter_x=%i, filter_y=%i, filter_z=%i \n",int(filter.size(0)),int(filter.size(1)),int(filter.size(2))  );
                 printf("   ratio= %i,%i,%i \n",int(ratio[0]),int(ratio[1]),int(ratio[2])  );
             }
-            MPI_Barrier(comm);
+            comm.barrier();
         }
         PROFILE_STOP("CoarsenMesh");
 
@@ -313,7 +312,7 @@ int main(int argc, char **argv)
                 NonLocalMean.back(), *fillFloat.back(), *Dm.back(), nprocx, 
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         PROFILE_STOP("Solve coarse mesh");
-        MPI_Barrier(comm);
+        comm.barrier();
 
         // Refine the solution
         PROFILE_START("Refine distance");
@@ -327,7 +326,7 @@ int main(int argc, char **argv)
                 rough_cutoff, lamda, nlm_sigsq, nlm_depth);
         }
         PROFILE_STOP("Refine distance");
-        MPI_Barrier(comm);    
+        comm.barrier();
 
         // Perform a final filter
         PROFILE_START("Filtering final domains");
@@ -425,14 +424,14 @@ int main(int argc, char **argv)
             meshData[0].vars.push_back(filter_Dist2_var);
             fillDouble[0]->copy( filter_Dist2, filter_Dist2_var->data );
         #endif
-        MPI_Barrier(comm);
+        comm.barrier();
         if (rank==0) printf("Writing output \n");
         // Write visulization data
         IO::writeData( 0, meshData, comm );
         if (rank==0) printf("Finished. \n");
     
         // Compute the Minkowski functionals
-        MPI_Barrier(comm);
+        comm.barrier();
         auto Averages = std::make_shared<Minkowski>(Dm[0]);
         
         Array <char> phase_label(Nx[0]+2,Ny[0]+2,Nz[0]+2);
@@ -464,8 +463,8 @@ int main(int argc, char **argv)
     }
     PROFILE_STOP("Main");
     PROFILE_SAVE("lbpm_uCT_pp",true);
-    MPI_Barrier(comm);
-    MPI_Finalize();
+    comm.barrier();
+    Utilities::shutdown();
     return 0;
 }
 

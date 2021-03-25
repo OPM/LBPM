@@ -23,21 +23,22 @@ int main(int argc, char **argv)
     Utilities::startup( argc, argv );
 
     { // Limit scope so variables that contain communicators will free before MPI_Finialize
-
-        MPI_Comm comm;
-        MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-        int rank = comm_rank(comm);
-        int nprocs = comm_size(comm);
+    	// Initialize MPI
+    	Utilities::startup( argc, argv );
+    	Utilities::MPI comm( MPI_COMM_WORLD );
+    	int rank = comm.getRank();
+    	int nprocs = comm.getSize();
 
         if (rank == 0){
             printf("**************************************\n");
             printf("Running Test for Ion Transport \n");
             printf("**************************************\n");
         }
-        // Initialize compute device
-        ScaLBL_SetDevice(rank);
-        ScaLBL_DeviceBarrier();
-        MPI_Barrier(comm);
+    	// Initialize compute device
+    	int device=ScaLBL_SetDevice(rank);
+        NULL_USE( device );
+    	ScaLBL_DeviceBarrier();
+    	comm.barrier();
 
         PROFILE_ENABLE(1);
         //PROFILE_ENABLE_TRACE();
@@ -62,7 +63,6 @@ int main(int argc, char **argv)
         IonModel.DummyFluidVelocity();
         IonModel.DummyElectricField();
 
-
         int timestep=0;
         double error = 1.0;
         vector<double>ci_avg_previous{0.0,0.0};//assuming 1:1 solution
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
                 error = IonModel.CalIonDenConvergence(ci_avg_previous);
             }
         }
-        IonModel.getIonConcentration(timestep);
+        IonModel.getIonConcentration_debug(timestep);
 
         if (rank==0) printf("Maximum timestep is reached and the simulation is completed\n");
         if (rank==0) printf("*************************************************************\n");
@@ -85,8 +85,7 @@ int main(int argc, char **argv)
         PROFILE_SAVE("TestIonModel",1);
         // ****************************************************
         
-        MPI_Barrier(comm);
-        MPI_Comm_free(&comm);
+    	comm.barrier();
 
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
 

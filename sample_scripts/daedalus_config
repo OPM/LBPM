@@ -12,7 +12,6 @@ i    -D CMAKE_CXX_COMPILER:PATH=/home/christopher/openmpi/install_dir/bin/mpicxx
     -D USE_DOXYGEN=false \
  #   -D CMAKE_C_FLAGS="-std=gnu++11 -w"    \
  #   -D CMAKE_CXX_FLAGS="-std=gnu++11 -w"    \
-    -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=/home/christopher/openmpi/install_dir/bin/mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Release     \

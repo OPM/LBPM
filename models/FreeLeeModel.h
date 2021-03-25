@@ -10,15 +10,18 @@ Implementation of Lee et al JCP 2016 lattice boltzmann model
 #include <fstream>
 
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 #include "common/ScaLBL.h"
 #include "common/WideHalo.h"
 
+#ifndef ScaLBL_FreeLeeModel_INC
+#define ScaLBL_FreeLeeModel_INC
+
 class ScaLBL_FreeLeeModel{
 public:
-	ScaLBL_FreeLeeModel(int RANK, int NP, MPI_Comm COMM);
+  ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_FreeLeeModel();	
 	
 	// functions in they should be run
@@ -26,16 +29,27 @@ public:
 	void ReadParams(std::shared_ptr<Database> db0);
 	void SetDomain();
 	void ReadInput();
-	void Create();
-	void Initialize();
-	void Run();
-	void WriteDebug();
+	void Create_TwoFluid();
+	void Initialize_TwoFluid();
+	double Run_TwoFluid(int returntime);
+
+	void WriteDebug_TwoFluid();
+	void Create_SingleFluid();
+	void Initialize_SingleFluid();
+	void Run_SingleFluid();
+	
+	void WriteDebug_SingleFluid();
+    // test utilities
+    void Create_DummyPhase_MGTest();
+    void MGTest();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
 	int BoundaryCondition;
 	double tauA,tauB,rhoA,rhoB;
-	double W,gamma;
+    double tau, rho0;//only for single-fluid Lee model
+    double tauM;//relaxation time for phase field (or mass)
+	double W,gamma,kappa,beta;
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
 	
@@ -61,16 +75,20 @@ public:
     signed char *id;    
 	int *NeighborList;
 	int *dvcMap;
-	double *fq, *hq;
+	double *gqbar, *hq;
 	double *mu_phi, *Den, *Phi;
 	double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
 	
+	void getPhase(DoubleArray &PhaseValues);
+	void getPotential(DoubleArray &PressureValues, DoubleArray &MuValues);
+	void getVelocity(DoubleArray &Vx, DoubleArray &Vy, DoubleArray &Vz);
+	
 	DoubleArray SignDist;
-		
+	
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;
@@ -81,6 +99,7 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
+	void AssignComponentLabels_ChemPotential_ColorGrad();
 
 };
-
+#endif

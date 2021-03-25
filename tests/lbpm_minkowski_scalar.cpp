@@ -14,7 +14,7 @@
 #include "common/Array.h"
 #include "common/Domain.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Mesh.h"
 #include "IO/Writer.h"
@@ -30,11 +30,10 @@ int main(int argc, char **argv)
 {
 
 	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+        Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        //int nprocs = comm.getSize();
 	{
 		Utilities::setErrorHandlers();
 		PROFILE_START("Main");
@@ -65,108 +64,21 @@ int main(int argc, char **argv)
 		auto nx = size[0];
 		auto ny = size[1];
 		auto nz = size[2];
-		auto nprocx = nproc[0];
+		/*auto nprocx = nproc[0];
 		auto nprocy = nproc[1];
 		auto nprocz = nproc[2];
 		auto Nx = SIZE[0];
 		auto Ny = SIZE[1];
 		auto Nz = SIZE[2];
-		
+		*/
 		int i,j,k,n;
 
-		char *SegData = NULL;
-		// Rank=0 reads the entire segmented data and distributes to worker processes
-		if (rank==0){
-			printf("Dimensions of segmented image: %i x %i x %i \n",Nx,Ny,Nz);
-			SegData = new char[Nx*Ny*Nz];
-			FILE *SEGDAT = fopen(Filename.c_str(),"rb");
-			if (SEGDAT==NULL) ERROR("Error reading segmented data");
-			size_t ReadSeg;
-			ReadSeg=fread(SegData,1,Nx*Ny*Nz,SEGDAT);
-			if (ReadSeg != size_t(Nx*Ny*Nz)) printf("lbpm_segmented_decomp: Error reading segmented data (rank=%i)\n",rank);
-			fclose(SEGDAT);
-			printf("Read segmented data from %s \n",Filename.c_str());
-		}
-		MPI_Barrier(comm);
-
-		// Get the rank info
-		int N = (nx+2)*(ny+2)*(nz+2);
-		
-		std::shared_ptr<Domain> Dm (new Domain(domain_db,comm));
-		for (k=0;k<nz+2;k++){
-			for (j=0;j<ny+2;j++){
-				for (i=0;i<nx+2;i++){
-					n = k*(nx+2)*(ny+2)+j*(nx+2)+i;
-					Dm->id[n] = 1;
-				}
-			}
-		}
+		std::shared_ptr<Domain> Dm  = std::shared_ptr<Domain>(new Domain(domain_db,comm));      // full domain for analysis
+		comm.barrier();
 		Dm->CommInit();
-
-		int z_transition_size = 0;
-		int xStart = 0;
-		int yStart = 0;
-		int zStart = 0;
-		// Set up the sub-domains
-		if (rank==0){
-			printf("Distributing subdomain across %i processors \n",nprocs);
-			printf("Process grid: %i x %i x %i \n",Dm->nprocx(),Dm->nprocy(),Dm->nprocz());
-			printf("Subdomain size: %i \n",N);
-			//printf("Size of transition region: %i \n", z_transition_size);
-			char *tmp;
-			tmp = new char[N];
-			for (int kp=0; kp<nprocz; kp++){
-				for (int jp=0; jp<nprocy; jp++){
-					for (int ip=0; ip<nprocx; ip++){
-						// rank of the process that gets this subdomain
-						int rnk = kp*Dm->nprocx()*Dm->nprocy() + jp*Dm->nprocx() + ip;
-						// Pack and send the subdomain for rnk
-						for (k=0;k<nz+2;k++){
-							for (j=0;j<ny+2;j++){
-								for (i=0;i<nx+2;i++){
-									int x = xStart + ip*nx + i-1;
-									int y = yStart + jp*ny + j-1;
-									//		int z = zStart + kp*nz + k-1;
-									int z = zStart + kp*nz + k-1 - z_transition_size;
-									if (x<xStart) 	x=xStart;
-									if (!(x<Nx))	x=Nx-1;
-									if (y<yStart) 	y=yStart;
-									if (!(y<Ny))	y=Ny-1;
-									if (z<zStart) 	z=zStart;
-									if (!(z<Nz))	z=Nz-1;
-									int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-									int nglobal = z*Nx*Ny+y*Nx+x;
-									tmp[nlocal] = SegData[nglobal];
-								}
-							}
-						}
-						if (rnk==0){
-							for (k=0;k<nz+2;k++){
-								for (j=0;j<ny+2;j++){
-									for (i=0;i<nx+2;i++){
-										int nlocal = k*(nx+2)*(ny+2) + j*(nx+2) + i;
-										Dm->id[nlocal] = tmp[nlocal];
-									}
-								}
-							}
-						}
-						else{
-							printf("Sending data to process %i \n", rnk);
-							MPI_Send(tmp,N,MPI_CHAR,rnk,15,comm);
-						}
-					}
-				}
-			}
-		}
-		else{
-			// Recieve the subdomain from rank = 0
-			printf("Ready to recieve data %i at process %i \n", N,rank);
-			MPI_Recv(Dm->id,N,MPI_CHAR,0,15,comm,MPI_STATUS_IGNORE);
-		}
-		MPI_Barrier(comm);
 		
 		// Compute the Minkowski functionals
-		MPI_Barrier(comm);
+		comm.barrier();
 		std::shared_ptr<Minkowski> Averages(new Minkowski(Dm));
 
 		// Calculate the distance		
@@ -212,8 +124,7 @@ int main(int argc, char **argv)
 	}
 	PROFILE_STOP("Main");
 	PROFILE_SAVE("Minkowski",true);
-	MPI_Barrier(comm);
-	MPI_Finalize();
+        Utilities::shutdown();
 	return 0;
 }
 

@@ -23,11 +23,9 @@
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
 	{
 		//.......................................................................
 		// Reading the domain information file
@@ -123,7 +121,7 @@ int main(int argc, char **argv)
 		if (rank==0) printf("Initialized solid phase -- Converting to Signed Distance function \n");
 		CalcDist(SignDist,id_solid,*Dm);
 
-		MPI_Barrier(comm);
+		comm.barrier();
 
 		// Run the morphological opening
 		MorphOpen(SignDist, id, Dm, SW, ErodeLabel, OpenLabel);
@@ -198,13 +196,12 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		MPI_Barrier(comm);
+		comm.barrier();
 
         auto filename2 = READFILE + ".morphopen.raw";
 		if (rank==0) printf("Writing file to: %s \n", filename2.data());
 		Mask->AggregateLabels(filename2);
 	}
 
-	MPI_Barrier(comm);
-	MPI_Finalize();
+    Utilities::shutdown();
 }

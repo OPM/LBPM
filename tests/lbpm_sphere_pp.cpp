@@ -26,11 +26,10 @@ int main(int argc, char **argv)
 	// ***** MPI STUFF ****************
 	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::startup( argc, argv );
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 	// parallel domain size (# of sub-domains)
 	int iproc,jproc,kproc;
 	int sendtag,recvtag;
@@ -217,7 +216,7 @@ int main(int argc, char **argv)
 	fclose(ID);
 
 	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
+	comm.barrier();
+	Utilities::shutdown();
 	// ****************************************************
 }

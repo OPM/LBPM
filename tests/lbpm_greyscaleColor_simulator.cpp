@@ -19,27 +19,25 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
-    // Initialize MPI and error handlers
+	// Initialize MPI
     Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 
     { // Limit scope so variables that contain communicators will free before MPI_Finialize
-  
-      MPI_Comm comm;
-      MPI_Comm_dup(MPI_COMM_WORLD,&comm);
-      int rank = comm_rank(comm);
-      int nprocs = comm_size(comm);
-  
+
       if (rank == 0){
-	      printf("****************************************\n");
-	      printf("Running Greyscale Two-Phase Calculation \n");
-	      printf("****************************************\n");
+    	  printf("****************************************\n");
+    	  printf("Running Greyscale Two-Phase Calculation \n");
+    	  printf("****************************************\n");
       }
       // Initialize compute device
-      ScaLBL_SetDevice(rank);
+      int device=ScaLBL_SetDevice(rank);
+      NULL_USE( device );
       ScaLBL_DeviceBarrier();
-      MPI_Barrier(comm);
-  
+      comm.barrier();
+
       PROFILE_ENABLE(1);
       //PROFILE_ENABLE_TRACE();
       //PROFILE_ENABLE_MEMORY();
@@ -60,9 +58,6 @@ int main(int argc, char **argv)
       PROFILE_STOP("Main");
       PROFILE_SAVE("lbpm_greyscaleColor_simulator",1);
       // ****************************************************
-  
-      MPI_Barrier(comm);
-      MPI_Comm_free(&comm);
   
     } // Limit scope so variables that contain communicators will free before MPI_Finialize
 

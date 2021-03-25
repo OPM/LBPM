@@ -1,7 +1,7 @@
 // Test reading/writing netcdf files
 
 #include "IO/netcdf.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Communication.h"
 #include "common/UnitTest.h"
 
@@ -13,7 +13,8 @@ void load( const std::string& );
 
 void test_NETCDF( UnitTest& ut )
 {
-    const int rank = comm_rank( MPI_COMM_WORLD );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
     int nprocx = 2;
     int nprocy = 2;
     int nprocz = 2;
@@ -26,11 +27,11 @@ void test_NETCDF( UnitTest& ut )
     size_t z = info.kz*data.size(2);
     const char* filename = "test.nc";
     std::vector<int> dim = { (int) data.size(0)*nprocx, (int) data.size(1)*nprocy, (int) data.size(2)*nprocz };
-    int fid = netcdf::open( filename, netcdf::CREATE, MPI_COMM_WORLD );
+    int fid = netcdf::open( filename, netcdf::CREATE, comm );
     auto dims =  netcdf::defDim( fid, {"X", "Y", "Z"}, dim );
     netcdf::write( fid, "tmp", dims, data, info );
     netcdf::close( fid );
-    MPI_Barrier( MPI_COMM_WORLD );
+    comm.barrier();
     // Read the contents of the file we created
     fid = netcdf::open( filename, netcdf::READ );
     Array<float> tmp = netcdf::getVar<float>( fid, "tmp" );
@@ -94,8 +95,9 @@ void load( const std::string& filename )
 int main(int argc, char **argv)
 {
     // Initialize MPI
-    MPI_Init(&argc,&argv);
-    int rank = comm_rank(MPI_COMM_WORLD);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    const int rank = comm.getRank();
     UnitTest ut;
     PROFILE_START("Main");
 
@@ -114,8 +116,8 @@ int main(int argc, char **argv)
     PROFILE_SAVE("TestNetcdf");
 
     // Close MPI
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
+    comm.barrier();
+    Utilities::shutdown();
     return N_errors;
 }
 

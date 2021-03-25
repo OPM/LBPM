@@ -1,12 +1,18 @@
+
 //*************************************************************************
 // Lattice Boltzmann Simulator for Single Phase Flow in Porous Media
 // James E. McCLure
 //*************************************************************************
-#include <stdio.h>
+#include <stdio.h>	// Initialize MPI
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
+	int check;
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 
 using namespace std;
 
@@ -18,11 +24,10 @@ int main(int argc, char **argv)
 	// ***** MPI STUFF ****************
 	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 	int check;
 	{
 		// parallel domain size (# of sub-domains)
@@ -47,97 +52,19 @@ int main(int argc, char **argv)
 		int Nx,Ny,Nz;
 		int i,j,k,n;
 		int dim = 3;
+		Nx = Ny = Nz = 32;
+		Lx = Ly = Lz = 1.0;
 		//if (rank == 0) printf("dim=%d\n",dim);
 		int timestep = 0;
 		int timesteps = 100;
 		int centralNode = 2;
 
-		double tauA = 1.0;
-		double tauB = 1.0;
-		double rhoA = 1.0;
-		double rhoB = 1.0;
-		double alpha = 0.005;
-		double beta = 0.95;
-		
-		double tau = 1.0;
-		double mu=(tau-0.5)/3.0;
-		double rlx_setA=1.0/tau;
-		double rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
-
-		Fx = Fy = 0.f;
-		Fz = 0.f;
-
-		if (rank==0){
-			//.......................................................................
-			// Reading the domain information file
-			//.......................................................................
-		        if (nprocs==1){
-				nprocx=nprocy=nprocz=1;
-				Nx=Ny=Nz=3;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==2){
-				nprocx=2; nprocy=1;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				Nx = dim; Ny = dim; Nz = dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==4){
-				nprocx=nprocy=2;
-				nprocz=1;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			else if (nprocs==8){
-				nprocx=nprocy=nprocz=2;
-				Nx=Ny=Nz=dim;
-				nspheres=0;
-				Lx=Ly=Lz=1;
-			}
-			//.......................................................................
-		}
-		// **************************************************************
-		// Broadcast simulation parameters from rank 0 to all other procs
-		MPI_Barrier(comm);
-		//.................................................
-		MPI_Bcast(&Nx,1,MPI_INT,0,comm);
-		MPI_Bcast(&Ny,1,MPI_INT,0,comm);
-		MPI_Bcast(&Nz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocx,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocy,1,MPI_INT,0,comm);
-		MPI_Bcast(&nprocz,1,MPI_INT,0,comm);
-		MPI_Bcast(&nspheres,1,MPI_INT,0,comm);
-		MPI_Bcast(&Lx,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Ly,1,MPI_DOUBLE,0,comm);
-		MPI_Bcast(&Lz,1,MPI_DOUBLE,0,comm);
-		//.................................................
-		MPI_Barrier(comm);
-		// **************************************************************
-		// **************************************************************
-
-		if (nprocs != nprocx*nprocy*nprocz){
-			printf("nprocx =  %i \n",nprocx);
-			printf("nprocy =  %i \n",nprocy);
-			printf("nprocz =  %i \n",nprocz);
-			INSIST(nprocs == nprocx*nprocy*nprocz,"Fatal error in processor count!");
-		}
-
-		if (rank==0){
-			printf("********************************************************\n");
-			printf("Sub-domain size = %i x %i x %i\n",Nx,Ny,Nz);
-			printf("********************************************************\n");
-		}
-
-		MPI_Barrier(comm);
 
 		double iVol_global = 1.0/Nx/Ny/Nz/nprocx/nprocy/nprocz;
 		int BoundaryCondition=0;
 
-		std::shared_ptr<Domain> Dm  = std::shared_ptr<Domain>(new Domain(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition));     
+		Domain Dm(Nx,Ny,Nz,rank,nprocx,nprocy,nprocz,Lx,Ly,Lz,BoundaryCondition);
+
 		Nx += 2;
 		Ny += 2;
 		Nz += 2;
@@ -151,7 +78,7 @@ int main(int argc, char **argv)
 			for (j=0;j<Ny;j++){
 				for (i=0;i<Nx;i++){
 					n = k*Nx*Ny+j*Nx+i;
-					Dm->id[n]=1;
+					Dm.id[n]=1;
 					Np++;
 					// Initialize gradient ColorGrad = (1,2,3)
 					double value=double(3*k+2*j+i);
@@ -159,7 +86,7 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		Dm->CommInit();
+		Dm.CommInit();
 		MPI_Barrier(comm);
 		if (rank == 0) cout << "Domain set." << endl;
 		if (rank==0)	printf ("Create ScaLBL_Communicator \n");
@@ -176,7 +103,7 @@ int main(int argc, char **argv)
 		IntArray Map(Nx,Ny,Nz);
 		neighborList= new int[18*Np];
 
-		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm->id,Np,1);
+		ScaLBL_Comm.MemoryOptimizedLayoutAA(Map,neighborList,Dm.id,Np,1);
 		MPI_Barrier(comm);
 
 		//......................device distributions.................................
@@ -230,7 +157,7 @@ int main(int argc, char **argv)
     		for (j=1;j<Ny-1;j++){
     			for (i=1;i<Nx-1;i++){
     				n = k*Nx*Ny+j*Nx+i;
-    				if (Dm->id[n] > 0){
+    				if (Dm.id[n] > 0){
     					int idx = Map(i,j,k);
     					CX=COLORGRAD[idx];
     					CY=COLORGRAD[Np+idx];
@@ -245,10 +172,9 @@ int main(int argc, char **argv)
 
 	}
 	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
+	comm.barrier();
+	Utilities::shutdown();
 	// ****************************************************
-
 	return check;
 }
 

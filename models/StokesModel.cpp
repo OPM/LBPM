@@ -5,7 +5,7 @@
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
-ScaLBL_StokesModel::ScaLBL_StokesModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_StokesModel::ScaLBL_StokesModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),h(0),nu_phys(0),rho_phys(0),rho0(0),den_scale(0),time_conv(0),tolerance(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -189,11 +189,11 @@ void ScaLBL_StokesModel::SetDomain(){
 	
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	//Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->BoundaryCondition = BoundaryCondition;
 	Mask->BoundaryCondition = BoundaryCondition;
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -221,7 +221,7 @@ void ScaLBL_StokesModel::ReadInput(){
     	ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
     	fillHalo<signed char> fill( comm, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
     	Array<signed char> id_view;
-    	id_view.viewRaw( size1, Mask->id );
+    	id_view.viewRaw( size1, Mask->id.data() );
     	fill.copy( input_id, id_view );
     	fill.fill( id_view );
     }
@@ -278,8 +278,9 @@ void ScaLBL_StokesModel::Create(){
 	if (rank==0)    printf ("LB Single-Fluid Solver: Set up memory efficient layout \n");
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np,1);
-	MPI_Barrier(comm);
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	comm.barrier();
+
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
 	//...........................................................................
@@ -298,7 +299,7 @@ void ScaLBL_StokesModel::Create(){
 	if (rank==0)    printf ("LB Single-Fluid Solver: Setting up device map and neighbor list \n");
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
-	MPI_Barrier(comm);
+	comm.barrier();
 	
 }        
 
@@ -343,7 +344,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
                                      0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); comm.barrier();
 
         timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
@@ -365,41 +366,33 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
                                       0, ScaLBL_Comm->LastExterior(), Np);
-        ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+        ScaLBL_Comm->Barrier(); comm.barrier();
         //************************************************************************/
     }
 }
 
-void ScaLBL_StokesModel::getVelocity(int timestep){
+void ScaLBL_StokesModel::getVelocity(DoubleArray &Vel_x, DoubleArray &Vel_y, DoubleArray &Vel_z){
     //get velocity in physical unit [m/sec]
 	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); comm.barrier();
 
-    DoubleArray PhaseField(Nx,Ny,Nz);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Vel_x);
+    Velocity_LB_to_Phys(Vel_x);
+    ScaLBL_Comm->Barrier(); comm.barrier();
 
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-    sprintf(OutputFilename,"Velocity_X_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Vel_y);
+    Velocity_LB_to_Phys(Vel_y);
+    ScaLBL_Comm->Barrier(); comm.barrier();
 
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-    sprintf(OutputFilename,"Velocity_Y_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
-
-	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],PhaseField);
-    Velocity_LB_to_Phys(PhaseField);
-    ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-    sprintf(OutputFilename,"Velocity_Z_Time_%i.raw",timestep);
-    Mask->AggregateLabels(OutputFilename,PhaseField);
+	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Vel_z);
+    Velocity_LB_to_Phys(Vel_z);
+    ScaLBL_Comm->Barrier(); comm.barrier();
 }
 
 void ScaLBL_StokesModel::getVelocity_debug(int timestep){
     //get velocity in physical unit [m/sec]
 	ScaLBL_D3Q19_Momentum(fq, Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); comm.barrier();
 
     DoubleArray PhaseField(Nx,Ny,Nz);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],PhaseField);
@@ -477,10 +470,10 @@ vector<double> ScaLBL_StokesModel::computeElectricForceAvg(double *ChargeDensity
         count_loc+=1.0;
     }
 
-	MPI_Allreduce(&Fx_loc,&Fx_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&Fy_loc,&Fy_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&Fz_loc,&Fz_avg,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+	Fx_avg=Dm->Comm.sumReduce(  Fx_loc);
+	Fy_avg=Dm->Comm.sumReduce(  Fy_loc);
+	Fz_avg=Dm->Comm.sumReduce(  Fz_loc);
+	count=Dm->Comm.sumReduce(  count_loc);
 	
 	Fx_avg /= count;
 	Fy_avg /= count;
@@ -500,7 +493,7 @@ double ScaLBL_StokesModel::CalVelocityConvergence(double& flow_rate_previous,dou
     
     //-----------------------------------------------------
 	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+	ScaLBL_Comm->Barrier(); comm.barrier();
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 	ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -522,11 +515,11 @@ double ScaLBL_StokesModel::CalVelocityConvergence(double& flow_rate_previous,dou
 			}
 		}
 	}
-	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	
+	vax=Dm->Comm.sumReduce(  vax_loc);
+	vay=Dm->Comm.sumReduce(  vay_loc);
+	vaz=Dm->Comm.sumReduce(  vaz_loc);
+	count=Dm->Comm.sumReduce(  count_loc);
+
 	vax /= count;
 	vay /= count;
 	vaz /= count;
@@ -580,16 +573,14 @@ void ScaLBL_StokesModel::Run(){
 		}
 	}
 
-	//.......create and start timer............
-	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-	starttime = MPI_Wtime();
+	ScaLBL_Comm->Barrier(); comm.barrier();
 	if (rank==0) printf("****************************************************************\n");
 	if (rank==0) printf("LB Single-Fluid Navier-Stokes Solver: timestepMax = %i\n", timestepMax);
 	if (rank==0) printf("****************************************************************\n");
 	timestep=0;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
@@ -610,7 +601,7 @@ void ScaLBL_StokesModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); comm.barrier();
 		timestep++;
 		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
 		ScaLBL_D3Q19_AAeven_MRT(fq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
@@ -629,12 +620,12 @@ void ScaLBL_StokesModel::Run(){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
 		}
 		ScaLBL_D3Q19_AAeven_MRT(fq, 0, ScaLBL_Comm->LastExterior(), Np, rlx_setA, rlx_setB, Fx, Fy, Fz);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_Comm->Barrier(); comm.barrier();
 		//************************************************************************/
 		
 		if (timestep%1000==0){
 			ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-			ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+			ScaLBL_Comm->Barrier(); comm.barrier();
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[0],Velocity_x);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[Np],Velocity_y);
 			ScaLBL_Comm->RegularLayout(Map,&Velocity[2*Np],Velocity_z);
@@ -656,10 +647,12 @@ void ScaLBL_StokesModel::Run(){
 					}
 				}
 			}
-			MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-			MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
+			
+			vax=Dm->Comm.sumReduce(  vax_loc);
+			vay=Dm->Comm.sumReduce(  vay_loc);
+			vaz=Dm->Comm.sumReduce(  vaz_loc);
+			count=Dm->Comm.sumReduce(  count_loc);
+
 			
 			vax /= count;
 			vay /= count;
@@ -689,10 +682,10 @@ void ScaLBL_StokesModel::Run(){
 			double As = Morphology.A();
 			double Hs = Morphology.H();
 			double Xs = Morphology.X();
-			Vs=sumReduce( Dm->Comm, Vs);
-			As=sumReduce( Dm->Comm, As);
-			Hs=sumReduce( Dm->Comm, Hs);
-			Xs=sumReduce( Dm->Comm, Xs);
+			Vs=Dm->Comm.sumReduce(  Vs);
+			As=Dm->Comm.sumReduce(  As);
+			Hs=Dm->Comm.sumReduce(  Hs);
+			Xs=Dm->Comm.sumReduce(  Xs);
 			double h = Dm->voxel_length;
 			double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			if (rank==0) {
@@ -705,10 +698,10 @@ void ScaLBL_StokesModel::Run(){
 		}
 	}
 	//************************************************************************/
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 
@@ -722,51 +715,6 @@ void ScaLBL_StokesModel::Run(){
 }
 
 void ScaLBL_StokesModel::VelocityField(){
-
-/*	Minkowski Morphology(Mask);
-	int SIZE=Np*sizeof(double);
-	ScaLBL_D3Q19_Momentum(fq,Velocity, Np);
-	ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
-	ScaLBL_CopyToHost(&VELOCITY[0],&Velocity[0],3*SIZE);
-
-	memcpy(Morphology.SDn.data(), Distance.data(), Nx*Ny*Nz*sizeof(double));
-	Morphology.Initialize();
-	Morphology.UpdateMeshValues();
-	Morphology.ComputeLocal();
-	Morphology.Reduce();
-	
-	double count_loc=0;
-	double count;
-	double vax,vay,vaz;
-	double vax_loc,vay_loc,vaz_loc;
-	vax_loc = vay_loc = vaz_loc = 0.f;
-	for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	
-	for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
-		vax_loc += VELOCITY[n];
-		vay_loc += VELOCITY[Np+n];
-		vaz_loc += VELOCITY[2*Np+n];
-		count_loc+=1.0;
-	}
-	MPI_Allreduce(&vax_loc,&vax,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vay_loc,&vay,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&vaz_loc,&vaz,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	MPI_Allreduce(&count_loc,&count,1,MPI_DOUBLE,MPI_SUM,Mask->Comm);
-	
-	vax /= count;
-	vay /= count;
-	vaz /= count;
-	
-	double mu = (tau-0.5)/3.f;
-	if (rank==0) printf("Fx Fy Fz mu Vs As Js Xs vx vy vz\n");
-	if (rank==0) printf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",Fx, Fy, Fz, mu, 
-						Morphology.V(),Morphology.A(),Morphology.J(),Morphology.X(),vax,vay,vaz);
-						*/
 	
 	std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);

@@ -13,13 +13,13 @@
 
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "analysis/Minkowski.h"
 #include "ProfilerApp.h"
 
 class ScaLBL_Multiphys_Controller{
 public:
-	ScaLBL_Multiphys_Controller(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_Multiphys_Controller(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_Multiphys_Controller();	
 	
 	void ReadParams(string filename);
@@ -27,6 +27,7 @@ public:
     int getStokesNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
     vector<int> getIonNumIter_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
     //void getIonNumIter_PNP_coupling(double StokesTimeConv,vector<double> &IonTimeConv,vector<int> &IonTimeMax);
+    void getTimeConvMax_PNP_coupling(double StokesTimeConv,const vector<double> &IonTimeConv);
 	
 	bool Restart;
     int timestepMax;
@@ -35,6 +36,7 @@ public:
     int analysis_interval;
     int visualization_interval;
     double tolerance;
+    double time_conv_max;
     //double SchmidtNum;//Schmidt number = kinematic_viscosity/mass_diffusivity
 
 	int rank,nprocs;
@@ -44,7 +46,7 @@ public:
     std::shared_ptr<Database> study_db;
 
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
 	
 	// filenames
     char LocalRankString[8];
