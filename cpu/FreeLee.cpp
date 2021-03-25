@@ -1686,7 +1686,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
         //TODO - maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
-        //if (fabs(chem)<1.0e-12) chem=0.0;
+        if (fabs(chem)<1.0e-12) chem=0.0;
 
 		// q=0
 		m0 = dist[n];
@@ -2302,7 +2302,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
         //TODO - maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
-        //if (fabs(chem)<1.0e-12) chem=0.0;
+        if (fabs(chem)<1.0e-12) chem=0.0;
 
 		// q=0
 		m0 = dist[n];
