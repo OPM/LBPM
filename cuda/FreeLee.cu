@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <cuda_profiler_api.h>
 
 #define STOKES
@@ -189,7 +190,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList,
 __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 
-	int idx,nr1,nr2,nr3,nr4,nr5,nr6;
+	int n,idx,nr1,nr2,nr3,nr4,nr5,nr6;
 	double h0,h1,h2,h3,h4,h5,h6;
 	double nx,ny,nz,C;
 	double ux,uy,uz;
@@ -380,7 +381,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map,
         double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
         int strideY, int strideZ, int start, int finish, int Np){
 
-	int nn,nn2x,ijk;
+	int n,nn,nn2x,ijk;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
@@ -936,8 +937,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, dou
         double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
         int strideY, int strideZ, int start, int finish, int Np){
 
-	int nn,nn2x,ijk;
-	//int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
+	int n,nn,nn2x,ijk;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
     double chem;//chemical potential
@@ -2013,7 +2013,7 @@ extern "C" void ScaLBL_D3Q19_FreeLeeModel_TwoFluid_Init(double *gqbar, double *m
 
 extern "C" void ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(double *gqbar, double Fx, double Fy, double Fz, int Np){
 
-	ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init<<<NBLOCKS,NTHREADS >>>( gqbar, Fx, Fy, Fz, Np);
+	dvc_ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init<<<NBLOCKS,NTHREADS >>>( gqbar, Fx, Fy, Fz, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init: %s \n",cudaGetErrorString(err));
@@ -2023,7 +2023,7 @@ extern "C" void ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(double *gqbar, double
 extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, double *Den, double *hq, double *ColorGrad, 
                                                     double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 	
-	ScaLBL_FreeLeeModel_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, hq, ColorGrad, rhoA, rhoB, tauM, W, start, finish, Np);
+	dvc_ScaLBL_FreeLeeModel_PhaseField_Init<<<NBLOCKS,NTHREADS >>>(Map, Phi, Den, hq, ColorGrad, rhoA, rhoB, tauM, W, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_FreeLeeModel_PhaseField_Init: %s \n",cudaGetErrorString(err));
@@ -2034,8 +2034,8 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
                                                           double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np)
 {
-	cudaFuncSetCacheConfig(ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, cudaFuncCachePreferL1);
-	ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
              rhoA,  rhoB, tauM, W, start, finish,  Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2046,8 +2046,8 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 
-	cudaFuncSetCacheConfig(ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, cudaFuncCachePreferL1);
-	ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_AAeven_FreeLee_PhaseField: %s \n",cudaGetErrorString(err));
@@ -2057,13 +2057,12 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 
 extern "C" void ScaLBL_D3Q7_ComputePhaseField(int *Map,  double *hq, double *Den, double *Phi, double rhoA, double rhoB, int start, int finish, int Np){
 
-	cudaFuncSetCacheConfig(ScaLBL_D3Q7_ComputePhaseField, cudaFuncCachePreferL1);
-	ScaLBL_D3Q7_ComputePhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_ComputePhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_ComputePhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q7_ComputePhaseField: %s \n",cudaGetErrorString(err));
 	}
-	
 }
 
 
@@ -2071,8 +2070,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
                                                 double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	cudaFuncSetCacheConfig(ScaLBL_D3Q19_AAodd_FreeLeeModel, cudaFuncCachePreferL1);
-	ScaLBL_D3Q19_AAodd_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(neighborList, Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(neighborList, Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2084,8 +2083,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
                                                 double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	cudaFuncSetCacheConfig(ScaLBL_D3Q19_AAeven_FreeLeeModel, cudaFuncCachePreferL1);
-	ScaLBL_D3Q19_AAeven_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
@@ -2097,9 +2096,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	cudaFuncSetCacheConfig(ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK, cudaFuncCachePreferL1);
-	ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Vel, Pressure, 
-            tau,  Fx, Fy, Fz, start, finish, Np);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Vel, Pressure, 
+            tau, rho0, Fx, Fy, Fz, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK: %s \n",cudaGetErrorString(err));
@@ -2109,12 +2108,15 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborLis
 extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, double *Vel, double *Pressure, 
                                                                  double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	cudaFuncSetCacheConfig(ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK, cudaFuncCachePreferL1);
-	ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(dist, Vel, Pressure, 
-            tau,  Fx, Fy, Fz, start, finish, Np);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(dist, Vel, Pressure, 
+            tau, rho0,  Fx, Fy, Fz, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK: %s \n",cudaGetErrorString(err));
 	}
 }
 
+
+extern "C" void ScaLBL_D3Q9_MGTest(int *Map, double *Phi,double *ColorGrad,int strideY, int strideZ, int start, int finish, int Np){
+}
