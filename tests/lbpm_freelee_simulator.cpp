@@ -62,8 +62,8 @@ int main( int argc, char **argv )
         double MLUPS=0.0;
         int timestep = 0;
         int visualization_time = LeeModel.timestepMax;
-    	if (LeeModel.vis_db->keyExists( "visualizataion_interval" )){
-    		visualization_time = LeeModel.vis_db->getScalar<int>( "visualizataion_interval" );
+    	if (LeeModel.vis_db->keyExists( "visualization_interval" )){
+    		visualization_time = LeeModel.vis_db->getScalar<int>( "visualization_interval" );
     		timestep += visualization_time;
     	}
         while (LeeModel.timestep < LeeModel.timestepMax){
