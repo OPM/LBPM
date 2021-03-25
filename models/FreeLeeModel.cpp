@@ -1,4 +1,4 @@
-/*
+u*
 color lattice boltzmann model
  */
 #include "models/FreeLeeModel.h"
@@ -799,27 +799,31 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 		// Compute the Phase indicator field
 		// Read for hq happens in this routine (requires communication)
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMAL
-		ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		//ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
-		ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(NeighborList, dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
+		//ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(NeighborList, dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		// Halo exchange for phase field
-		ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, 0, ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_WideHalo->Send(Phi);
-		ScaLBL_Comm_WideHalo->Recv(Phi);
+		//ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, 0, ScaLBL_Comm->LastInterior(), Np);
+		//ScaLBL_Comm_WideHalo->Send(Phi);
+		//ScaLBL_Comm_WideHalo->Recv(Phi);
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
             //TODO to be revised
 			// Need to add BC for hq!!!
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-		
-		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FROM NORMAL		
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
-				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-
+		// Halo exchange for phase field
+		ScaLBL_Comm_WideHalo->Send(Phi);
+		//ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
+		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		// Set BCs
@@ -836,8 +840,10 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
 
-		ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
-				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
+		//ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
+		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
 		
 				
@@ -845,24 +851,29 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 		timestep++;
 		// Compute the Phase indicator field
 		ScaLBL_Comm->SendD3Q7AA(hq,0); //READ FROM NORMA
-		ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		//ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->RecvD3Q7AA(hq,0); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
-		ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB,  0, ScaLBL_Comm->LastExterior(), Np);
+		//ScaLBL_D3Q7_AAeven_FreeLee_PhaseField(dvcMap, hq, Den, Phi, ColorGrad, Velocity, rhoA, rhoB, tauM, W, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
-		// Halo exchange for phase field
-		ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_Comm_WideHalo->Send(Phi);
-		ScaLBL_Comm_WideHalo->Recv(Phi);
+		//ScaLBL_D3Q7_ComputePhaseField(dvcMap, hq, Den, Phi, rhoA, rhoB, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		//ScaLBL_Comm_WideHalo->Send(Phi);
+		//ScaLBL_Comm_WideHalo->Recv(Phi);
+		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
 		if (BoundaryCondition > 0 && BoundaryCondition < 5){
 			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
 			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
 		}
-		ScaLBL_Comm->SendD3Q19AA(gqbar); //READ FORM NORMAL
-
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
-				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		// Halo exchange for phase field
+		ScaLBL_Comm_WideHalo->Send(Phi);
+		//ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
+		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
 		ScaLBL_Comm->Barrier();
 		// Set boundary conditions
@@ -878,8 +889,10 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 			ScaLBL_Comm->D3Q19_Reflection_BC_z(gqbar);
 			ScaLBL_Comm->D3Q19_Reflection_BC_Z(gqbar);
 		}
-		ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
-				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
+		//ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
+		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+				                        kappa, beta, W, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier();
 		//************************************************************************
 		PROFILE_STOP("Update");
