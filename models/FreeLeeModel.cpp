@@ -1,4 +1,4 @@
-u*
+/*
 color lattice boltzmann model
  */
 #include "models/FreeLeeModel.h"
