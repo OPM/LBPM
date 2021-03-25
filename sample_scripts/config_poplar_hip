@@ -1,0 +1,40 @@
+module load cmake
+#module load llvm
+module load mpich
+module load hdf5
+module load rocm
+
+export HDF5_DIR=${HDF5DIR}
+export SILO_DIR=/ccs/proj/csc380/mcclurej/install/silo/4.10.2/
+
+# configure
+rm -rf CMake*
+cmake                                       \
+    -D CMAKE_BUILD_TYPE:STRING=Release      \
+    -D CMAKE_C_COMPILER:PATH=clang          \
+    -D CMAKE_CXX_COMPILER:PATH=clang++      \
+    -D CMAKE_CXX_STANDARD=14                \
+    -D USE_HIP=1                            \
+        -D LINK_LIBRARIES=/opt/rocm-3.8.0/hip/lib/libamdhip64.so \
+    -D USE_CUDA=0                           \
+        -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg -lineinfo" \
+        -D CMAKE_CUDA_HOST_COMPILER="gcc"   \
+    -D USE_MPI=0                            \
+    -D USE_HDF5=1                           \
+        -D HDF5_DIRECTORY="$HDF5_DIR"	    \
+        -D HDF5_LIB="$HDF5_DIR/lib/libhdf5.a" \
+     -D USE_SILO=0                          \
+        -D SILO_LIB="$SILO_DIR/lib/libsiloh5.a" \
+        -D SILO_DIRECTORY="$SILO_DIR"	    \
+    -D USE_DOXYGEN:BOOL=false		    \
+    -D USE_TIMER=0			    \
+    ~/repos/LBPM-WIA
+
+
+#        -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg -lineinfo" \
+#        -D CMAKE_CUDA_HOST_COMPILER="/sw/summit/gcc/6.4.0/bin/gcc" \
+
+# MPI_THREAD_MULTIPLE=1 MV2_USE_RDMA_CM=0 MV2_USE_RDMA_CM= MV2_NUM_HCAS=1 MV2_USE_CUDA=1 MV2_ENABLE_AFFINITY=0 srun -n 2 -N 1 --cpu-bind=v -c 1 ./test_MPI
+
+#        -D MPIEXEC=mpirun                   \
+#        -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \

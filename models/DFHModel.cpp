@@ -3,7 +3,7 @@ color lattice boltzmann model
  */
 #include "models/DFHModel.h"
 
-ScaLBL_DFHModel::ScaLBL_DFHModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_DFHModel::ScaLBL_DFHModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -81,13 +81,18 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	outletA=0.f;
 	outletB=1.f;
 
-	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
+	BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	if (color_db->keyExists( "BC" )){
+		BoundaryCondition = color_db->getScalar<int>( "BC" );
+	}
+	else if (domain_db->keyExists( "BC" )){
+		BoundaryCondition = domain_db->getScalar<int>( "BC" );
+	}
 
 	// Read domain parameters
 	auto L = domain_db->getVector<double>( "L" );
 	auto size = domain_db->getVector<int>( "n" );
 	auto nproc = domain_db->getVector<int>( "nproc" );
-	BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	Nx = size[0];
 	Ny = size[1];
 	Nz = size[2];
@@ -97,6 +102,8 @@ void ScaLBL_DFHModel::ReadParams(string filename){
 	nprocx = nproc[0];
 	nprocy = nproc[1];
 	nprocz = nproc[2];
+	
+	if (BoundaryCondition==4) flux = din*rhoA; // mass flux must adjust for density (see formulation for details)
 
 }
 void ScaLBL_DFHModel::SetDomain(){
@@ -107,9 +114,9 @@ void ScaLBL_DFHModel::SetDomain(){
 	id = new char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	Averages = std::shared_ptr<TwoPhase> ( new TwoPhase(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	rank = Dm->rank();
 }
 
@@ -131,7 +138,7 @@ void ScaLBL_DFHModel::ReadInput(){
 	sprintf(LocalRankString,"%05d",rank);
 	sprintf(LocalRankFilename,"%s%s","SignDist.",LocalRankString);
 	ReadBinaryFile(LocalRankFilename, Averages->SDs.data(), N);
-	MPI_Barrier(comm);
+	comm.barrier();
 	if (rank == 0) cout << "Domain set." << endl;
 }
 
@@ -205,9 +212,8 @@ void ScaLBL_DFHModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
-	MPI_Barrier(comm);
-
+	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	ScaLBL_Comm->Barrier();
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
 	//...........................................................................
@@ -424,7 +430,8 @@ void ScaLBL_DFHModel::Initialize(){
 			}
 		}
 	}
-	MPI_Allreduce(&count_wet,&count_wet_global,1,MPI_DOUBLE,MPI_SUM,comm);
+	count_wet_global=Dm->Comm.sumReduce(  count_wet);
+
 	if (rank==0)	printf("Wetting phase volume fraction =%f \n",count_wet_global/double(Nx*Ny*Nz*nprocs));
 	// initialize phi based on PhaseLabel (include solid component labels)
 	ScaLBL_CopyToDevice(Phi, PhaseLabel, Np*sizeof(double));
@@ -446,7 +453,7 @@ void ScaLBL_DFHModel::Initialize(){
 				timestep=0;
 			}
 		}
-		MPI_Bcast(&timestep,1,MPI_INT,0,comm);
+		//MPI_Bcast(&timestep,1,MPI_INT,0,comm);
 		// Read in the restart file to CPU buffers
 		double *cPhi = new double[Np];
 		double *cDist = new double[19*Np];
@@ -468,7 +475,7 @@ void ScaLBL_DFHModel::Initialize(){
 		ScaLBL_DeviceBarrier();
 		delete [] cPhi;
 		delete [] cDist;
-		MPI_Barrier(comm);
+		comm.barrier();
 	}
 
 	if (rank==0)    printf ("Initializing phase field \n");
@@ -483,14 +490,10 @@ void ScaLBL_DFHModel::Run(){
 
 	if (rank==0) printf("********************************************************\n");
 	if (rank==0)    printf("No. of timesteps: %i \n", timestepMax);
-	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
-	starttime = MPI_Wtime();
-	//.........................................
+	comm.barrier();
 	//************ MAIN ITERATION LOOP ***************************************/
-
+    auto t1 = std::chrono::system_clock::now();
 	bool Regular = true;
 	PROFILE_START("Loop");
 	runAnalysis analysis( analysis_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
@@ -532,7 +535,7 @@ void ScaLBL_DFHModel::Run(){
 		}
 		ScaLBL_D3Q19_AAodd_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 
 		// *************EVEN TIMESTEP*************
 		timestep++;
@@ -568,9 +571,9 @@ void ScaLBL_DFHModel::Run(){
 		}
 		ScaLBL_D3Q19_AAeven_DFH(NeighborList, fq, Aq, Bq, Den, Phi, Gradient, SolidPotential, rhoA, rhoB, tauA, tauB,
 				alpha, beta, Fx, Fy, Fz,  0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); MPI_Barrier(comm);
+		ScaLBL_DeviceBarrier(); comm.barrier();
 		//************************************************************************
-		MPI_Barrier(comm);
+		comm.barrier();
 		PROFILE_STOP("Update");
 
 		// Run the analysis
@@ -581,11 +584,11 @@ void ScaLBL_DFHModel::Run(){
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
 	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
-	stoptime = MPI_Wtime();
+	comm.barrier();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 	if (rank==0) printf("********************************************************\n");

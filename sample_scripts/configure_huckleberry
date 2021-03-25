@@ -14,7 +14,6 @@ cmake                                    \
     -D CMAKE_CXX_COMPILER:PATH=mpicxx        \
     -D CMAKE_C_FLAGS="-fPIC"            \
     -D CMAKE_CXX_FLAGS="-fPIC"          \
-    -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Release     \
@@ -28,5 +27,5 @@ cmake                                    \
     -D USE_TIMER=0				 \
     $LBPM_SOURCE_DIR
 
-make VERBOSE=1 -j8 && make install
+make VERBOSE=1 -j4 && make install
 

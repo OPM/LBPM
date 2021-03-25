@@ -24,7 +24,7 @@
 #endif
 
 #ifdef USE_MPI
-#include "mpi.h"
+#include "common/MPI.h"
 #endif
 
 #include <algorithm>
@@ -53,7 +53,7 @@ static std::mutex Utilities_mutex;
 /****************************************************************************
  *  Function to perform the default startup/shutdown sequences               *
  ****************************************************************************/
-void Utilities::startup( int argc, char **argv )
+void Utilities::startup( int argc, char **argv, bool multiple )
 {
     NULL_USE( argc );
     NULL_USE( argv );
@@ -62,15 +62,19 @@ void Utilities::startup( int argc, char **argv )
     Utilities::setenv( "MKL_NUM_THREADS", "1" );
     // Start MPI
 #ifdef USE_MPI
-    int provided;
-    MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided );
-    if ( provided < MPI_THREAD_MULTIPLE ) {
-        int rank;
-        MPI_Comm_rank( MPI_COMM_WORLD, &rank );
-        if ( rank == 0 )
-            std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+    if ( multiple ) {
+        int provided;
+        MPI_Init_thread( &argc, &argv, MPI_THREAD_MULTIPLE, &provided );
+        if ( provided < MPI_THREAD_MULTIPLE ) {
+            int rank;
+            MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+            if ( rank == 0 )
+                std::cerr << "Warning: Failed to start MPI with necessary thread support, thread support will be disabled" << std::endl;
+        }
+        StackTrace::globalCallStackInitialize( MPI_COMM_WORLD );
+    } else {
+        MPI_Init( &argc, &argv );
     }
-    StackTrace::globalCallStackInitialize( MPI_COMM_WORLD );
 #endif
     // Set the error handlers
     Utilities::setAbortBehavior( true, 3 );

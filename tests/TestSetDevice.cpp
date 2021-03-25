@@ -1,24 +1,25 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 #include "common/ScaLBL.h"
 
 int main (int argc, char **argv)
-{
-	MPI_Init(&argc,&argv);
-    int rank = MPI_WORLD_RANK();
-    int nprocs = MPI_WORLD_SIZE();
+{    
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+	int rank = comm.getRank();
+	int nprocs = comm.getSize();
 
     for (int i=0; i<nprocs; i++) {
         if ( rank==i )
             printf("%i of %i: Hello world\n",rank,nprocs);
-        MPI_Barrier(MPI_COMM_WORLD);
+        comm.barrier();
     }
 
     // Initialize compute device
     ScaLBL_SetDevice(rank);
     ScaLBL_DeviceBarrier();
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm.barrier();
 
     // Create a memory leak for valgrind to find
     if ( nprocs==1 ) {
@@ -29,9 +30,6 @@ int main (int argc, char **argv)
     // set the error code
     // Note: the error code should be consistent across all processors
     int error = 0;
-    
-    // Finished
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Finalize();
+    Utilities::shutdown();
     return error; 
 }

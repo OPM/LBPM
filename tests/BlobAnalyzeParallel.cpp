@@ -100,11 +100,10 @@ inline void  WriteBlobStates(TwoPhase TCAT, double D, double porosity){
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-    MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+	Utilities::startup( argc, argv );
+        Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
     Utilities::setAbortBehavior( true, true, true );
     Utilities::setErrorHandlers();
 	PROFILE_ENABLE(0);
@@ -482,8 +481,8 @@ int main(int argc, char **argv)
     fclose(BLOBS);*/
     PROFILE_STOP("main");
     PROFILE_SAVE("BlobIdentifyParallel",false);
-    MPI_Barrier(comm);
-    MPI_Finalize();
+    comm.barrier();
+    Utilities::shutdown();
     return 0;  
 }
 

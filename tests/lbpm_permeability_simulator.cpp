@@ -9,7 +9,7 @@
 #include "common/ScaLBL.h"
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/MRTModel.h"
 //#define WRITE_SURFACES
 
@@ -24,11 +24,10 @@ using namespace std;
 int main(int argc, char **argv)
 {
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 	{
 		if (rank == 0){
 			printf("********************************************************\n");
@@ -39,7 +38,7 @@ int main(int argc, char **argv)
 		int device=ScaLBL_SetDevice(rank);
         NULL_USE( device );
 		ScaLBL_DeviceBarrier();
-		MPI_Barrier(comm);
+		comm.barrier();
 		
 		ScaLBL_MRTModel MRT(rank,nprocs,comm);
 		auto filename = argv[1];
@@ -51,8 +50,5 @@ int main(int argc, char **argv)
 		MRT.Run();	 
 		MRT.VelocityField();
 	}
-	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
-	// ****************************************************
+    Utilities::shutdown();
 }

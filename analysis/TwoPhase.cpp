@@ -37,7 +37,7 @@
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -914,7 +914,7 @@ void TwoPhase::ComponentAverages()
 		}
 	}
 
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	if (Dm->rank()==0){
 		printf("Component averages computed locally -- reducing result... \n");
 	}
@@ -922,14 +922,14 @@ void TwoPhase::ComponentAverages()
 	RecvBuffer.resize(BLOB_AVG_COUNT,NumberComponents_NWP);
 
 /*	for (int b=0; b<NumberComponents_NWP; b++){
-		MPI_Barrier(Dm->Comm);
-		MPI_Allreduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+		Dm->Comm.barrier();
+		Dm->Comm.sumReduce(&ComponentAverages_NWP(0,b),&RecvBuffer(0),BLOB_AVG_COUNT);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_NWP(idx,b)=RecvBuffer(idx);
 	}
 	*/
-	MPI_Barrier(Dm->Comm);
-	MPI_Allreduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT*NumberComponents_NWP,					MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	//	MPI_Reduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm->Comm);
+	Dm->Comm.barrier();
+	Dm->Comm.sumReduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT*NumberComponents_NWP);
+	//	Dm->Comm.sumReduce(ComponentAverages_NWP.data(),RecvBuffer.data(),BLOB_AVG_COUNT);
 
 	if (Dm->rank()==0){
 		printf("rescaling... \n");
@@ -1025,9 +1025,8 @@ void TwoPhase::ComponentAverages()
 
 	// reduce the wetting phase averages
 	for (int b=0; b<NumberComponents_WP; b++){
-		MPI_Barrier(Dm->Comm);
-//		MPI_Allreduce(&ComponentAverages_WP(0,b),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-		MPI_Reduce(&ComponentAverages_WP(0,b),RecvBuffer.data(),BLOB_AVG_COUNT,MPI_DOUBLE,MPI_SUM,0,Dm->Comm);
+		Dm->Comm.barrier();
+		Dm->Comm.sumReduce(&ComponentAverages_WP(0,b),RecvBuffer.data(),BLOB_AVG_COUNT);
 		for (int idx=0; idx<BLOB_AVG_COUNT; idx++) ComponentAverages_WP(idx,b)=RecvBuffer(idx);
 	}
 	
@@ -1110,43 +1109,48 @@ void TwoPhase::Reduce()
 	int i;
 	double iVol_global=1.0/Volume;
 	//...........................................................................
-	MPI_Barrier(Dm->Comm);
-	MPI_Allreduce(&nwp_volume,&nwp_volume_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&wp_volume,&wp_volume_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&awn,&awn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&ans,&ans_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&aws,&aws_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&lwns,&lwns_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&As,&As_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Jwn,&Jwn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Kwn,&Kwn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&KGwns,&KGwns_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&KNwns,&KNwns_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&efawns,&efawns_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&wwndnw,&wwndnw_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&wwnsdnwn,&wwnsdnwn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Jwnwwndnw,&Jwnwwndnw_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
+	Dm->Comm.barrier();
+	nwp_volume_global = Dm->Comm.sumReduce( nwp_volume );
+	wp_volume_global = Dm->Comm.sumReduce( wp_volume );
+	awn_global = Dm->Comm.sumReduce( awn );
+	ans_global = Dm->Comm.sumReduce( ans );
+	aws_global = Dm->Comm.sumReduce( aws );
+	lwns_global = Dm->Comm.sumReduce( lwns );
+	As_global = Dm->Comm.sumReduce( As );
+	Jwn_global = Dm->Comm.sumReduce( Jwn );
+	Kwn_global = Dm->Comm.sumReduce( Kwn );
+	KGwns_global = Dm->Comm.sumReduce( KGwns );
+	KNwns_global = Dm->Comm.sumReduce( KNwns );
+	efawns_global = Dm->Comm.sumReduce( efawns );
+	wwndnw_global = Dm->Comm.sumReduce( wwndnw );
+	wwnsdnwn_global = Dm->Comm.sumReduce( wwnsdnwn );
+	Jwnwwndnw_global = Dm->Comm.sumReduce( Jwnwwndnw );
 	// Phase averages
-	MPI_Allreduce(&vol_w,&vol_w_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&vol_n,&vol_n_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&paw,&paw_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&pan,&pan_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&vaw(0),&vaw_global(0),3,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&van(0),&van_global(0),3,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&vawn(0),&vawn_global(0),3,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&vawns(0),&vawns_global(0),3,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Gwn(0),&Gwn_global(0),6,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Gns(0),&Gns_global(0),6,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Gws(0),&Gws_global(0),6,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&trawn,&trawn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&trJwn,&trJwn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&trRwn,&trRwn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&euler,&euler_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&An,&An_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Jn,&Jn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Kn,&Kn_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-
-	MPI_Barrier(Dm->Comm);
+	vol_w_global = Dm->Comm.sumReduce( vol_w );
+	vol_n_global = Dm->Comm.sumReduce( vol_n );
+	paw_global = Dm->Comm.sumReduce( paw );
+	pan_global = Dm->Comm.sumReduce( pan );
+	for (int idx=0; idx<3; idx++)
+		vaw_global(idx) = Dm->Comm.sumReduce( vaw(idx) );
+	for (int idx=0; idx<3; idx++)
+		van_global(idx) = Dm->Comm.sumReduce( van(idx));
+	for (int idx=0; idx<3; idx++)
+		vawn_global(idx) = Dm->Comm.sumReduce( vawn(idx) );
+	for (int idx=0; idx<3; idx++)
+		vawns_global(idx) = Dm->Comm.sumReduce( vawns(idx) );
+	for (int idx=0; idx<6; idx++){
+		Gwn_global(idx) = Dm->Comm.sumReduce( Gwn(idx) );
+		Gns_global(idx) = Dm->Comm.sumReduce( Gns(idx) );
+		Gws_global(idx) = Dm->Comm.sumReduce( Gws(idx) );
+	}
+	trawn_global = Dm->Comm.sumReduce( trawn );
+	trJwn_global = Dm->Comm.sumReduce( trJwn );
+	trRwn_global = Dm->Comm.sumReduce( trRwn );
+	euler_global = Dm->Comm.sumReduce( euler );
+	An_global = Dm->Comm.sumReduce( An );
+	Jn_global = Dm->Comm.sumReduce( Jn );
+	Kn_global = Dm->Comm.sumReduce( Kn );
+	Dm->Comm.barrier();
 
 	// Normalize the phase averages
 	// (density of both components = 1.0)

@@ -33,9 +33,9 @@
 
 #include "IO/PIO.h"
 
+#include <cstdio>
 #include <iostream>
 #include <stdarg.h>
-#include <cstdio>
 
 
 namespace IO {
@@ -43,17 +43,17 @@ namespace IO {
 
 inline int printp( const char *format, ... )
 {
-    va_list ap; 
-    va_start(ap,format); 
+    va_list ap;
+    va_start( ap, format );
     char tmp[1024];
-    int n = vsprintf(tmp,format,ap);
-    va_end(ap);
+    int n = vsprintf( tmp, format, ap );
+    va_end( ap );
     pout << tmp;
     pout.flush();
     return n;
 }
 
 
-} // IO namespace
+} // namespace IO
 
 #endif

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "common/ScaLBL.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "models/ColorModel.h"
 
 std::shared_ptr<Database> loadInputs( int nprocs )
@@ -88,13 +88,12 @@ int main(int argc, char **argv)
 	// ***** MPI STUFF ****************
 	//*****************************************
 	// Initialize MPI
-	int rank,nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
+        Utilities::startup( argc, argv );
 	int check=0;
 	{
+	    Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
 		if (rank == 0){
 			printf("********************************************************\n");
 			printf("Running Color Model: TestColor	\n");
@@ -112,11 +111,7 @@ int main(int argc, char **argv)
 		ColorModel.WriteDebug(); 
  
 	}
-	// ****************************************************
-	MPI_Barrier(comm);
-	MPI_Finalize();
-	// ****************************************************
-
+        Utilities::shutdown();
 	return check;
 }
 

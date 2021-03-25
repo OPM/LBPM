@@ -20,7 +20,7 @@
 #include "common/Domain.h"
 #include "common/Communication.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
@@ -139,13 +139,13 @@ void Minkowski::ComputeScalar(const DoubleArray& Field, const double isovalue)
 	// convert X for 2D manifold to 3D object
 	Xi *= 0.5;
 	
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	// Phase averages
-	MPI_Allreduce(&Vi,&Vi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Xi,&Xi_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Ai,&Ai_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Allreduce(&Ji,&Ji_global,1,MPI_DOUBLE,MPI_SUM,Dm->Comm);
-	MPI_Barrier(Dm->Comm);
+	Vi_global = Dm->Comm.sumReduce( Vi );
+	Xi_global = Dm->Comm.sumReduce( Xi );
+	Ai_global = Dm->Comm.sumReduce( Ai );
+	Ji_global = Dm->Comm.sumReduce( Ji );
+	Dm->Comm.barrier();
     PROFILE_STOP("ComputeScalar");
 }
 
@@ -236,7 +236,7 @@ int Minkowski::MeasureConnectedPathway(){
 	double vF=0.0; 
 	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
 //	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
 	
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){
@@ -277,10 +277,11 @@ int Minkowski::MeasureConnectedPathway(double factor, const DoubleArray &Phi){
 	}
 	
 	// Extract only the connected part of NWP
-	double vF=0.0; 
+	double vF=0.0;
 	n_connected_components = ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,Dm->rank_info,distance,distance,vF,vF,label,Dm->Comm);
 //	int n_connected_components = ComputeGlobalPhaseComponent(Nx-2,Ny-2,Nz-2,Dm->rank_info,const IntArray &PhaseID, int &VALUE, BlobIDArray &GlobalBlobID, Dm->Comm )
-	MPI_Barrier(Dm->Comm);
+	Dm->Comm.barrier();
+
 	
 	for (int k=0; k<Nz; k++){
 		for (int j=0; j<Ny; j++){

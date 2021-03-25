@@ -32,12 +32,11 @@ int main(int argc, char **argv)
 {
 
 	// Initialize MPI
-	int rank, nprocs;
-	MPI_Init(&argc,&argv);
-	MPI_Comm comm = MPI_COMM_WORLD;
-	MPI_Comm_rank(comm,&rank);
-	MPI_Comm_size(comm,&nprocs);
-    Utilities::setErrorHandlers();
+	Utilities::startup( argc, argv );
+	Utilities::MPI comm( MPI_COMM_WORLD );
+        int rank = comm.getRank();
+        int nprocs = comm.getSize();
+        Utilities::setErrorHandlers();
 	PROFILE_START("Main");
 
 	//std::vector<std::string> filenames;
@@ -447,8 +446,8 @@ int main(int argc, char **argv)
 
 	PROFILE_STOP("Main");
 	PROFILE_SAVE("lbpm_uCT_maskfilter",true);
-	MPI_Barrier(comm);
-	MPI_Finalize();
+	comm.barrier();
+	Utilities::shutdown();
 	return 0;
 }
 
