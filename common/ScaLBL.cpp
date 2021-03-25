@@ -1,5 +1,8 @@
 #include "common/ScaLBL.h"
 
+#include <chrono>
+
+
 ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 	//......................................................................................
 	Lock=false; // unlock the communicator
@@ -306,10 +309,129 @@ ScaLBL_Communicator::ScaLBL_Communicator(std::shared_ptr <Domain> Dm){
 }
 
 
-ScaLBL_Communicator::~ScaLBL_Communicator(){
-	// destrutor does nothing (bad idea)
-	// -- note that there needs to be a way to free memory allocated on the device!!!
+ScaLBL_Communicator::~ScaLBL_Communicator()
+{
+
+	ScaLBL_FreeDeviceMemory( sendbuf_x );
+	ScaLBL_FreeDeviceMemory( sendbuf_X );
+	ScaLBL_FreeDeviceMemory( sendbuf_y );
+	ScaLBL_FreeDeviceMemory( sendbuf_Y );
+	ScaLBL_FreeDeviceMemory( sendbuf_z );
+	ScaLBL_FreeDeviceMemory( sendbuf_Z );
+	ScaLBL_FreeDeviceMemory( sendbuf_xy );
+	ScaLBL_FreeDeviceMemory( sendbuf_xY );
+	ScaLBL_FreeDeviceMemory( sendbuf_Xy );
+	ScaLBL_FreeDeviceMemory( sendbuf_XY );
+	ScaLBL_FreeDeviceMemory( sendbuf_xz );
+	ScaLBL_FreeDeviceMemory( sendbuf_xZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_Xz );
+	ScaLBL_FreeDeviceMemory( sendbuf_XZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_yz );
+	ScaLBL_FreeDeviceMemory( sendbuf_yZ );
+	ScaLBL_FreeDeviceMemory( sendbuf_Yz );
+	ScaLBL_FreeDeviceMemory( sendbuf_YZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_x );
+	ScaLBL_FreeDeviceMemory( recvbuf_X );
+	ScaLBL_FreeDeviceMemory( recvbuf_y );
+	ScaLBL_FreeDeviceMemory( recvbuf_Y );
+	ScaLBL_FreeDeviceMemory( recvbuf_z );
+	ScaLBL_FreeDeviceMemory( recvbuf_Z );
+	ScaLBL_FreeDeviceMemory( recvbuf_xy );
+	ScaLBL_FreeDeviceMemory( recvbuf_xY );
+	ScaLBL_FreeDeviceMemory( recvbuf_Xy );
+	ScaLBL_FreeDeviceMemory( recvbuf_XY );
+	ScaLBL_FreeDeviceMemory( recvbuf_xz );
+	ScaLBL_FreeDeviceMemory( recvbuf_xZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_Xz );
+	ScaLBL_FreeDeviceMemory( recvbuf_XZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_yz );
+	ScaLBL_FreeDeviceMemory( recvbuf_yZ );
+	ScaLBL_FreeDeviceMemory( recvbuf_Yz );
+	ScaLBL_FreeDeviceMemory( recvbuf_YZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_x );
+	ScaLBL_FreeDeviceMemory( dvcSendList_X );
+	ScaLBL_FreeDeviceMemory( dvcSendList_y );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Y );
+	ScaLBL_FreeDeviceMemory( dvcSendList_z );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Z );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xy );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xY );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Xy );
+	ScaLBL_FreeDeviceMemory( dvcSendList_XY );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_xZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Xz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_XZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_yz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_yZ );
+	ScaLBL_FreeDeviceMemory( dvcSendList_Yz );
+	ScaLBL_FreeDeviceMemory( dvcSendList_YZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_x );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_X );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_y );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Y );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_z );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Z );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xY );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_XY );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_xZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_XZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_yZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_Yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvList_YZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_x );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_X );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_y );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Y );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_z );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Z );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xY );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Xy );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_XY );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_xZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Xz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_XZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_yZ );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_Yz );
+	ScaLBL_FreeDeviceMemory( dvcRecvDist_YZ );
 }
+double ScaLBL_Communicator::GetPerformance(int *NeighborList, double *fq, int Np){
+	/* EACH MPI PROCESS GETS ITS OWN MEASUREMENT*/
+	/* use MRT kernels to check performance without communication / synchronization */
+	int TIMESTEPS=500;
+	double RLX_SETA=1.0;
+	double RLX_SETB = 8.f*(2.f-RLX_SETA)/(8.f-RLX_SETA);
+	double FX = 0.0;
+	double FY = 0.0;
+	double FZ = 0.0;
+    ScaLBL_D3Q19_Init(fq, Np);
+	//.......create and start timer............
+	Barrier();
+    auto t1 = std::chrono::system_clock::now();
+	for (int t=0; t<TIMESTEPS; t++){
+		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq,  FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAodd_MRT(NeighborList, fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAeven_MRT(fq, FirstInterior(), LastInterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+		ScaLBL_D3Q19_AAeven_MRT(fq, 0, LastExterior(), Np, RLX_SETA, RLX_SETB, FX, FY, FZ);
+	}
+    auto t2 = std::chrono::system_clock::now();
+	Barrier();
+	// Compute the walltime per timestep
+    double diff = std::chrono::duration<double>( t2 - t1 ).count();
+	double cputime = 0.5*diff/TIMESTEPS;
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+	return MLUPS;
+
+}	
 int ScaLBL_Communicator::LastExterior(){
 	return next;
 }
@@ -364,7 +486,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 	int idx,i,j,k,n;
 
 	// Check that Map has size matching sub-domain
-	if (Map.size(0) != Nx)
+	if ( (int) Map.size(0) != Nx)
 		ERROR("ScaLBL_Communicator::MemoryOptimizedLayout: Map array dimensions do not match! \n");
 
 	// Initialize Map
@@ -394,9 +516,9 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 				n = k*Nx*Ny+j*Nx+i;
 				if (id[n] > 0){
 					// Counts for the six faces
-					if (i>0 && i<=width)        Map(n)=idx++;
-					else if (j>0 && j<=width)  Map(n)=idx++;
-					else if (k>0 && k<=width)  Map(n)=idx++;
+					if (i>0 && i<=width)              Map(n)=idx++;
+					else if (j>0 && j<=width)         Map(n)=idx++;
+					else if (k>0 && k<=width) 		  Map(n)=idx++;
 					else if (i>Nx-width-2 && i<Nx-1)  Map(n)=idx++;
 					else if (j>Ny-width-2 && j<Ny-1)  Map(n)=idx++;
 					else if (k>Nz-width-2 && k<Nz-1)  Map(n)=idx++;
@@ -1501,35 +1623,31 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
-
-	//...Packing for X face(1,7,9,11,13)................................
-	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
-
-	//...Packing for y face(4,8,9,16,18).................................
-	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
-
-	//...Packing for Y face(3,7,10,15,17).................................
-	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
-
-	//...Packing for z face(6,12,13,16,17)................................
-	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
-
-	//...Packing for Z face(5,11,14,15,18)................................
-	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
-
-	//...................................................................................
-	// Send all the distributions
-	//...................................................................................
 	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
 	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	
+	//...Packing for X face(1,7,9,11,13)................................
+	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
 	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
 	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	
+	//...Packing for y face(4,8,9,16,18).................................
+	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
 	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
 	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	
+	//...Packing for Y face(3,7,10,15,17).................................
+	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
 	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
 	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	
+	//...Packing for z face(6,12,13,16,17)................................
+	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
 	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
 	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	
+	//...Packing for Z face(5,11,14,15,18)................................
+	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
 	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
 	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
 }

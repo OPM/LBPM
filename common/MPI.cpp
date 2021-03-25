@@ -401,7 +401,6 @@ MPI_CLASS::MPI_CLASS()
     communicator = MPI_CLASS_COMM_NULL;
     d_maxTag     = mpi_max_tag;
 #endif
-    d_ranks       = nullptr;
     d_count       = nullptr;
     d_manage      = false;
     comm_rank     = 0;
@@ -435,8 +434,6 @@ void MPI_CLASS::reset()
             ++N_MPI_Comm_destroyed;
 #endif
         }
-        if ( d_ranks != nullptr )
-            delete[] d_ranks;
         delete d_count;
     }
     if ( d_currentTag == nullptr ) {
@@ -448,7 +445,6 @@ void MPI_CLASS::reset()
     }
     d_manage     = false;
     d_count      = nullptr;
-    d_ranks      = nullptr;
     comm_rank    = 0;
     comm_size    = 1;
     d_maxTag     = 0;
@@ -467,7 +463,6 @@ MPI_CLASS::MPI_CLASS( const MPI_CLASS &comm )
       d_manage( comm.d_manage ),
       comm_rank( comm.comm_rank ),
       comm_size( comm.comm_size ),
-      d_ranks( comm.d_ranks ),
       d_maxTag( comm.d_maxTag ),
       d_currentTag( comm.d_currentTag )
 {
@@ -490,7 +485,6 @@ MPI_CLASS::MPI_CLASS( MPI_CLASS &&rhs ) : MPI_CLASS()
     std::swap( profile_level, rhs.profile_level );
     std::swap( comm_rank, rhs.comm_rank );
     std::swap( comm_size, rhs.comm_size );
-    std::swap( d_ranks, rhs.d_ranks );
     std::swap( d_maxTag, rhs.d_maxTag );
     std::swap( d_currentTag, rhs.d_currentTag );
     std::swap( d_count, rhs.d_count );
@@ -511,7 +505,6 @@ MPI_CLASS &MPI_CLASS::operator=( const MPI_CLASS &comm )
     this->communicator = comm.communicator;
     this->comm_rank    = comm.comm_rank;
     this->comm_size    = comm.comm_size;
-    this->d_ranks      = comm.d_ranks;
     this->d_isNull     = comm.d_isNull;
     this->d_manage     = comm.d_manage;
     this->d_maxTag     = comm.d_maxTag;
@@ -537,7 +530,6 @@ MPI_CLASS &MPI_CLASS::operator=( MPI_CLASS &&rhs )
     std::swap( profile_level, rhs.profile_level );
     std::swap( comm_rank, rhs.comm_rank );
     std::swap( comm_size, rhs.comm_size );
-    std::swap( d_ranks, rhs.d_ranks );
     std::swap( d_maxTag, rhs.d_maxTag );
     std::swap( d_currentTag, rhs.d_currentTag );
     std::swap( d_count, rhs.d_count );
@@ -560,7 +552,6 @@ std::atomic_int d_global_count_self   = { 1 };
 MPI_CLASS::MPI_CLASS( MPI_Comm comm, bool manage )
 {
     d_count       = nullptr;
-    d_ranks       = nullptr;
     d_manage      = false;
     tmp_alignment = -1;
     // Check if we are using our version of comm_world
@@ -623,11 +614,7 @@ MPI_CLASS::MPI_CLASS( MPI_Comm comm, bool manage )
     }
     if ( d_manage )
         ++N_MPI_Comm_created;
-    // Create d_ranks
-    if ( comm_size > 1 ) {
-        d_ranks    = new int[comm_size];
-        d_ranks[0] = -1;
-    }
+
 #else
     // We are not using MPI, intialize based on the communicator
     NULL_USE( manage );
@@ -636,7 +623,7 @@ MPI_CLASS::MPI_CLASS( MPI_Comm comm, bool manage )
     d_maxTag  = mpi_max_tag;
     d_isNull  = communicator == MPI_COMM_NULL;
     if ( d_isNull )
-        comm_size    = 0;
+        comm_size = 0;
 #endif
     if ( communicator == MPI_CLASS_COMM_WORLD ) {
         d_currentTag = d_global_currentTag_world1;
@@ -663,34 +650,32 @@ MPI_CLASS::MPI_CLASS( MPI_Comm comm, bool manage )
  ************************************************************************/
 std::vector<int> MPI_CLASS::globalRanks() const
 {
-    // Get my global rank if it has not been set
-    static int myGlobalRank = -1;
-    if ( myGlobalRank == -1 ) {
-#ifdef USE_MPI
-        if ( MPI_active() )
-            MPI_Comm_rank( MPI_CLASS_COMM_WORLD, &myGlobalRank );
-#else
-        myGlobalRank = 0;
-#endif
-    }
-    // Check if we are dealing with a serial or null communicator
-    if ( comm_size == 1 )
-        return std::vector<int>( 1, myGlobalRank );
-    if ( d_ranks == nullptr || communicator == MPI_COMM_NULL )
+    if ( d_isNull )
         return std::vector<int>();
-    // Fill d_ranks if necessary
-    if ( d_ranks[0] == -1 ) {
-        if ( communicator == MPI_CLASS_COMM_WORLD ) {
-            for ( int i = 0; i < comm_size; i++ )
-                d_ranks[i] = i;
-        } else {
-
-            MPI_ASSERT( myGlobalRank != -1 );
-            this->allGather( myGlobalRank, d_ranks );
-        }
+#ifdef USE_MPI
+    // Get my global rank and size if it has not been set
+    static int globalRank = -1;
+    static int globalSize = -1;
+    if ( globalRank == -1 && MPI_active() ) {
+        MPI_Comm_rank( MPI_CLASS_COMM_WORLD, &globalRank );
+        MPI_Comm_size( MPI_CLASS_COMM_WORLD, &globalSize );
     }
-    // Return d_ranks
-    return std::vector<int>( d_ranks, d_ranks + comm_size );
+    // Check if we are dealing with a serial or global communicator
+    if ( comm_size == 1 )
+        return std::vector<int>( 1, globalRank );
+    if ( comm_size == globalSize ) {
+        std::vector<int> ranks( globalSize );
+        for ( int i = 0; i < globalSize; i++ )
+            ranks[i] = i;
+        return ranks;
+    }
+    // Get the global rank from each rank in the communicator
+    auto ranks = allGather( globalRank );
+    std::sort( ranks.begin(), ranks.end() );
+    return ranks;
+#else
+    return std::vector<int>( 1, 1 );
+#endif
 }
 
 
@@ -2806,49 +2791,44 @@ MPI_Request MPI_CLASS::IrecvBytes(
 }
 
 
-
 /************************************************************************
  *  sendrecv                                                             *
  ************************************************************************/
 #if defined( USE_MPI )
 template<>
-void MPI_CLASS::sendrecv<char>( const char* sendbuf, int sendcount, int dest, int sendtag,
-                                char* recvbuf, int recvcount, int source, int recvtag ) const
+void MPI_CLASS::sendrecv<char>( const char *sendbuf, int sendcount, int dest, int sendtag,
+    char *recvbuf, int recvcount, int source, int recvtag ) const
 {
     PROFILE_START( "sendrecv<char>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_CHAR, dest, sendtag, 
-                  recvbuf, recvcount, MPI_CHAR, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
+    MPI_Sendrecv( sendbuf, sendcount, MPI_CHAR, dest, sendtag, recvbuf, recvcount, MPI_CHAR, source,
+        recvtag, communicator, MPI_STATUS_IGNORE );
     PROFILE_STOP( "sendrecv<char>", profile_level );
 }
 template<>
-void MPI_CLASS::sendrecv<int>( const int* sendbuf, int sendcount, int dest, int sendtag,
-                               int* recvbuf, int recvcount, int source, int recvtag ) const
+void MPI_CLASS::sendrecv<int>( const int *sendbuf, int sendcount, int dest, int sendtag,
+    int *recvbuf, int recvcount, int source, int recvtag ) const
 {
     PROFILE_START( "sendrecv<int>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_INT, dest, sendtag, 
-                  recvbuf, recvcount, MPI_INT, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
+    MPI_Sendrecv( sendbuf, sendcount, MPI_INT, dest, sendtag, recvbuf, recvcount, MPI_INT, source,
+        recvtag, communicator, MPI_STATUS_IGNORE );
     PROFILE_STOP( "sendrecv<int>", profile_level );
 }
 template<>
-void MPI_CLASS::sendrecv<float>( const float* sendbuf, int sendcount, int dest, int sendtag,
-                                 float* recvbuf, int recvcount, int source, int recvtag ) const
+void MPI_CLASS::sendrecv<float>( const float *sendbuf, int sendcount, int dest, int sendtag,
+    float *recvbuf, int recvcount, int source, int recvtag ) const
 {
     PROFILE_START( "sendrecv<float>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_FLOAT, dest, sendtag, 
-                  recvbuf, recvcount, MPI_FLOAT, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
+    MPI_Sendrecv( sendbuf, sendcount, MPI_FLOAT, dest, sendtag, recvbuf, recvcount, MPI_FLOAT,
+        source, recvtag, communicator, MPI_STATUS_IGNORE );
     PROFILE_STOP( "sendrecv<float>", profile_level );
 }
 template<>
-void MPI_CLASS::sendrecv<double>( const double* sendbuf, int sendcount, int dest, int sendtag,
-                                  double* recvbuf, int recvcount, int source, int recvtag ) const
+void MPI_CLASS::sendrecv<double>( const double *sendbuf, int sendcount, int dest, int sendtag,
+    double *recvbuf, int recvcount, int source, int recvtag ) const
 {
     PROFILE_START( "sendrecv<double>", profile_level );
-    MPI_Sendrecv( sendbuf, sendcount, MPI_DOUBLE, dest, sendtag, 
-                  recvbuf, recvcount, MPI_DOUBLE, source, recvtag,
-                  communicator, MPI_STATUS_IGNORE );
+    MPI_Sendrecv( sendbuf, sendcount, MPI_DOUBLE, dest, sendtag, recvbuf, recvcount, MPI_DOUBLE,
+        source, recvtag, communicator, MPI_STATUS_IGNORE );
     PROFILE_STOP( "sendrecv<double>", profile_level );
 }
 #endif
@@ -3815,17 +3795,16 @@ MPI MPI::loadBalance( double local, std::vector<double> work )
     MPI_ASSERT( (int) work.size() == getSize() );
     auto perf = allGather( local );
     std::vector<int> I( work.size() );
-    for ( size_t i=0; i<work.size(); i++)
+    for ( size_t i = 0; i < work.size(); i++ )
         I[i] = i;
     auto J = I;
     quicksort( perf, I );
     quicksort( work, J );
     std::vector<int> key( work.size() );
-    for ( size_t i=0; i<work.size(); i++)
+    for ( size_t i = 0; i < work.size(); i++ )
         key[J[i]] = I[i];
     return split( 0, key[getRank()] );
 }
 
 
 } // namespace Utilities
-

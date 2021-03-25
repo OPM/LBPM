@@ -26,6 +26,8 @@ void ScaLBL_MRTModel::ReadParams(string filename){
 	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
+	dout = 1.0;
+	din = 1.0;
 
 	// Color Model parameters
 	if (mrt_db->keyExists( "timestepMax" )){
@@ -194,7 +196,8 @@ void ScaLBL_MRTModel::Create(){
 	// copy the neighbor list 
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	comm.barrier();
-	
+	double MLUPS = ScaLBL_Comm->GetPerformance(NeighborList,fq,Np);
+	printf("  MLPUS=%f from rank %i\n",MLUPS,rank);
 }        
 
 void ScaLBL_MRTModel::Initialize(){
@@ -227,14 +230,13 @@ void ScaLBL_MRTModel::Run(){
 	}
 
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
 	ScaLBL_DeviceBarrier(); comm.barrier();
-	starttime = MPI_Wtime();
 	if (rank==0) printf("Beginning AA timesteps, timestepMax = %i \n", timestepMax);
 	if (rank==0) printf("********************************************************\n");
 	timestep=0;
 	double error = 1.0;
 	double flow_rate_previous = 0.0;
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax && error > tolerance) {
 		//************************************************************************/
 		timestep++;
@@ -351,10 +353,10 @@ void ScaLBL_MRTModel::Run(){
 		}
 	}
 	//************************************************************************/
-	stoptime = MPI_Wtime();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 

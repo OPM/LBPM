@@ -159,6 +159,13 @@ int main(int argc, char **argv)
 		// copy the neighbor list 
 		ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 		// initialize phi based on PhaseLabel (include solid component labels)
+		for (k=1;k<Nz-1;k++){
+			for (j=1;j<Ny-1;j++){
+				for (i=1;i<Nx-1;i++){
+					PhaseLabel[n] = 0.2;
+				}
+			}
+		}
 		ScaLBL_CopyToDevice(Phi, PhaseLabel, N*sizeof(double));
 		//...........................................................................
 
@@ -171,7 +178,6 @@ int main(int argc, char **argv)
     	COLORGRAD= new double [3*Np];
     	int SIZE=3*Np*sizeof(double);
     	ScaLBL_CopyToHost(&COLORGRAD[0],&ColorGrad[0],SIZE);
-
 
     	double CX,CY,CZ;
     	for (k=1;k<Nz-1;k++){

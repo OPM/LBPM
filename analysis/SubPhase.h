@@ -68,12 +68,16 @@ public:
 	 * 		b - bulk (total)
 	 */
 	// local entities
-	phase wc,wd,wb,nc,nd,nb;
+	phase wc,wd,wb,nc,nd,nb,solid;
 	interface iwn,iwnc;
 	
 	// global entities
-	phase gwc,gwd,gwb,gnc,gnd,gnb;
+	phase gwc,gwd,gwb,gnc,gnd,gnb,gsolid;
 	interface giwn,giwnc;
+	/* fluid-solid wetting interaction */
+	double total_wetting_interaction, count_wetting_interaction;
+	double total_wetting_interaction_global, count_wetting_interaction_global;
+	
 	//...........................................................................
     int Nx,Ny,Nz;
 	IntArray PhaseID;		// Phase ID array (solid=0, non-wetting=1, wetting=2)

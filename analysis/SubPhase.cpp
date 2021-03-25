@@ -40,7 +40,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
-			fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn ");				
+			fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 			fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
 			fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 			fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
@@ -50,7 +50,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 			fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 			fprintf(SUBPHASE,"Vnc Anc Hnc Xnc ");					 	// nc region
-			fprintf(SUBPHASE,"Vnd And Hnd Xnd Nnd ");					// nd region
+			fprintf(SUBPHASE,"Vnd And Hnd Xnd Nnd ");					// nd regionin
 			fprintf(SUBPHASE,"Vi Ai Hi Xi ");					 		// interface region 
 			fprintf(SUBPHASE,"Vic Aic Hic Xic Nic\n");					// interface region 
 
@@ -65,7 +65,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		sprintf(LocalRankFilename,"%s%s","subphase.csv.",LocalRankString);
 		SUBPHASE = fopen(LocalRankFilename,"a+");
 		//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
-		fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn ");				
+		fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 		fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
 		fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
 		fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
@@ -93,7 +93,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn vw vn pw pn\n");				
+			fprintf(TIMELOG,"sw krw krn vw vn pw pn wet\n");				
 		}
 	}
 }
@@ -109,7 +109,7 @@ SubPhase::~SubPhase()
 void SubPhase::Write(int timestep)
 {
 	if (Dm->rank()==0){
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn); 
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction_global); 
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.p, gwd.p, gnc.p, gnd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
@@ -125,7 +125,7 @@ void SubPhase::Write(int timestep)
 		fflush(SUBPHASE);
 	}
 	else{
-		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn);
+		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.p, wd.p, nc.p, nd.p);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
@@ -172,6 +172,21 @@ void SubPhase::Basic(){
 	double count_w = 0.0;
 	double count_n = 0.0;
 	
+	/* compute the laplacian */
+ 	Dm->CommunicateMeshHalo(Phi);
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				// Compute all of the derivatives using finite differences
+				double fx = 0.5*(Phi(i+1,j,k) - Phi(i-1,j,k));
+				double fy = 0.5*(Phi(i,j+1,k) - Phi(i,j-1,k));
+				double fz = 0.5*(Phi(i,j,k+1) - Phi(i,j,k-1));
+				DelPhi(i,j,k) = sqrt(fx*fx+fy*fy+fz*fz);
+			}
+		}
+	}
+ 	Dm->CommunicateMeshHalo(DelPhi);
+	
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
@@ -183,6 +198,11 @@ void SubPhase::Basic(){
 					double nB = Rho_w(n);
 					double phi = (nA-nB)/(nA+nB);
 					Phi(n) = phi;
+				}
+				if (Phi(n) != Phi(n)){
+					// check for NaN
+					Phi(n) = 0.0;
+					//printf("Nan at %i %i %i \n",i,j,k);
 				}
 			}
 		}
@@ -229,6 +249,31 @@ void SubPhase::Basic(){
 			}
 		}
 	}
+	
+	total_wetting_interaction = count_wetting_interaction = 0.0;
+	total_wetting_interaction_global = count_wetting_interaction_global=0.0;
+	for (k=kmin; k<kmax; k++){
+		for (j=jmin; j<Ny-1; j++){
+			for (i=imin; i<Nx-1; i++){
+				n = k*Nx*Ny + j*Nx + i;
+				// compute contribution of wetting terms (within two voxels of solid)
+				if ( Dm->id[n] > 0  && SDs(i,j,k) < 2.0 ){
+					count_wetting_interaction += 1.0;
+					total_wetting_interaction += DelPhi(i,j,k);
+				}
+			}
+		}
+	}
+	//printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
+	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
+	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
+	/* normalize wetting interactions  <-- Don't do this if normalizing laplacian (use solid surface area)
+	if (count_wetting_interaction > 0.0)
+		total_wetting_interaction /= count_wetting_interaction;
+	if (count_wetting_interaction_global > 0.0)
+		total_wetting_interaction_global /= count_wetting_interaction_global;
+	*/
+	
 	gwb.V=Dm->Comm.sumReduce(  wb.V);
 	gnb.V=Dm->Comm.sumReduce(  nb.V);
 	gwb.M=Dm->Comm.sumReduce(  wb.M);
@@ -303,7 +348,7 @@ void SubPhase::Basic(){
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.5g %.5g %.5g %.5g %.5g %.5g %.5g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p); 
+		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p, total_wetting_interaction_global); 
 		fflush(TIMELOG);
 	}
 	if (err==true){

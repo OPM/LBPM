@@ -16,6 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
+
+#ifndef ScaLBL_ColorModel_INC
+#define ScaLBL_ColorModel_INC
+
 class ScaLBL_ColorModel{
 public:
 	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
@@ -29,7 +33,9 @@ public:
 	void Create();
 	void Initialize();
 	void Run();
+	double Run(int returntime);
 	void WriteDebug();
+	void getPhaseField(DoubleArray &f);
 	
 	bool Restart,pBC;
 	bool REVERSE_FLOW_DIRECTION;
@@ -85,4 +91,18 @@ private:
     double SeedPhaseField(const double seed_water_in_oil);
     double MorphOpenConnected(double target_volume_change);
 };
+
+class FlowAdaptor{
+public:
+	FlowAdaptor(ScaLBL_ColorModel &M);
+	~FlowAdaptor();
+	double MoveInterface(ScaLBL_ColorModel &M);
+	DoubleArray phi;
+	DoubleArray phi_t;
+private:
+	int Nx, Ny, Nz;
+	int timestep;
+	int timestep_previous;
+};
+#endif
 

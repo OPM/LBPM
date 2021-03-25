@@ -7,7 +7,6 @@ cmake                                    \
     -D CMAKE_C_FLAGS="-g "         \
     -D CMAKE_CXX_FLAGS="-g -Wno-deprecated-declarations"      \
     -D CXX_STD=11 	   \
-    -D MPI_COMPILER:BOOL=TRUE            \
     -D MPIEXEC=mpirun                     \
     -D USE_EXT_MPI_FOR_SERIAL_TESTS:BOOL=TRUE \
     -D CMAKE_BUILD_TYPE:STRING=Debug     \

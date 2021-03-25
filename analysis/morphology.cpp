@@ -542,7 +542,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		}
 		
 		// Extract only the connected part of NWP
-		BlobIDstruct new_index;
 		double vF=0.0; double vS=0.0;
 		ComputeGlobalBlobIDs(nx-2,ny-2,nz-2,Dm->rank_info,phase,SignDist,vF,vS,phase_label,Dm->Comm);
 		Dm->Comm.barrier();
@@ -703,12 +702,14 @@ double MorphGrow(DoubleArray &BoundaryDist, DoubleArray &Dist, Array<char> &id, 
 
 		if (rank == 0) printf("     delta=%f, growth=%f, max. displacement = %f \n",morph_delta, GrowthEstimate, MAX_DISPLACEMENT);
 		// Now adjust morph_delta
-		double step_size = (TargetGrowth - GrowthEstimate)*(morph_delta - morph_delta_previous) / (GrowthEstimate - GrowthPrevious);
-		GrowthPrevious = GrowthEstimate;
-		morph_delta_previous = morph_delta;
-		morph_delta += step_size;
+		if (fabs(GrowthEstimate - GrowthPrevious) > 0.0) {
+			double step_size = (TargetGrowth - GrowthEstimate)*(morph_delta - morph_delta_previous) / (GrowthEstimate - GrowthPrevious);
+			GrowthPrevious = GrowthEstimate;
+			morph_delta_previous = morph_delta;
+			morph_delta += step_size;
+		}
 		if (morph_delta / morph_delta_previous > 2.0 ) morph_delta = morph_delta_previous*2.0;
-				
+
 		//MAX_DISPLACEMENT *= max(TargetGrowth/GrowthEstimate,1.25);
 		
 		if (morph_delta > 0.0 ){

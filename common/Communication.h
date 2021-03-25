@@ -67,6 +67,10 @@ public:
     //!  Destructor
     ~fillHalo( );
 
+    fillHalo() = delete;
+    fillHalo(const fillHalo&) = delete;
+    fillHalo& operator=(const fillHalo&) = delete;
+
     /*!
      * @brief  Communicate the halos
      * @param[in] array         The array on which we fill the halos
@@ -93,9 +97,6 @@ private:
     TYPE *mem;
     TYPE *send[3][3][3], *recv[3][3][3];
     MPI_Request send_req[3][3][3], recv_req[3][3][3];
-    fillHalo();                             // Private empty constructor
-    fillHalo(const fillHalo&);              // Private copy constructor
-    fillHalo& operator=(const fillHalo&);   // Private assignment operator
     void pack( const Array<TYPE>& array, int i, int j, int k, TYPE *buffer );
     void unpack( Array<TYPE>& array, int i, int j, int k, const TYPE *buffer );
 };
