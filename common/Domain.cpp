@@ -620,12 +620,16 @@ void Domain::Decomp( const std::string& Filename )
 		Comm.recv(id.data(),N,0,15);
 	}
 	Comm.barrier();
-	
+    ComputePorosity();
+    delete [] SegData;
+}
+
+void Domain::ComputePorosity(){
 	// Compute the porosity
 	double sum;
 	double sum_local=0.0;
-	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocs);
-	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx*(Ny-2)*nprocy*((Nz-2)*nprocz-6));
+	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocx()*nprocy()*nprocz());
+	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
 	//.........................................................
     for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
         for (int j=1;j<Ny-1;j++){
@@ -640,8 +644,8 @@ void Domain::Decomp( const std::string& Filename )
     sum = Comm.sumReduce(sum_local);
     porosity = sum*iVol_global;
     if (rank()==0) printf("Media porosity = %f \n",porosity);
- 	//.........................................................
-    delete [] SegData;
+    //.........................................................
+
 }
 
 void Domain::AggregateLabels( const std::string& filename ){
