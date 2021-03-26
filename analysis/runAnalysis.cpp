@@ -714,6 +714,139 @@ runAnalysis::runAnalysis( std::shared_ptr<Database> input_db, const RankInfoStru
     auto method   = db->getWithDefault<std::string>( "load_balance", "default" );
     createThreads( method, N_threads );
 }
+
+runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
+/*	std::shared_ptr<Database> input_db, const RankInfoStruct &rank_info,
+    std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr<Domain> Dm, int Np,
+    bool Regular, IntArray Map )
+    : d_Np( Np ),
+      d_regular( Regular ),
+      d_rank_info( rank_info ),
+      d_Map( Map ),
+      d_comm( Dm->Comm.dup() ),
+      d_ScaLBL_Comm( ScaLBL_Comm )*/
+{
+	
+	d_comm = ColorModel.Dm->Comm.dup();
+	d_Np = ColorModel.Np;
+	bool Regular = false;
+	
+	auto input_db = ColorModel.db;
+    auto db     = input_db->getDatabase( "Analysis" );
+    auto vis_db = input_db->getDatabase( "Visualization" );
+
+    // Ids of work items to use for dependencies
+    ThreadPool::thread_id_t d_wait_blobID;
+    ThreadPool::thread_id_t d_wait_analysis;
+    ThreadPool::thread_id_t d_wait_vis;
+    ThreadPool::thread_id_t d_wait_restart;
+    ThreadPool::thread_id_t d_wait_subphase;
+
+    char rankString[20];
+    sprintf( rankString, "%05d", ColorModel.Dm->rank() );
+    d_n[0] = ColorModel.Dm->Nx - 2;
+    d_n[1] = ColorModel.Dm->Ny - 2;
+    d_n[2] = ColorModel.Dm->Nz - 2;
+    d_N[0] = ColorModel.Dm->Nx;
+    d_N[1] = ColorModel.Dm->Ny;
+    d_N[2] = ColorModel.Dm->Nz;
+
+    d_restart_interval           = db->getScalar<int>( "restart_interval" );
+    d_analysis_interval          = db->getScalar<int>( "analysis_interval" );
+    d_subphase_analysis_interval = INT_MAX;
+    d_visualization_interval     = INT_MAX;
+    d_blobid_interval            = INT_MAX;
+    if ( db->keyExists( "blobid_interval" ) ) {
+        d_blobid_interval = db->getScalar<int>( "blobid_interval" );
+    }
+    if ( db->keyExists( "visualization_interval" ) ) {
+        d_visualization_interval = db->getScalar<int>( "visualization_interval" );
+    }
+    if ( db->keyExists( "subphase_analysis_interval" ) ) {
+        d_subphase_analysis_interval = db->getScalar<int>( "subphase_analysis_interval" );
+    }
+
+    auto restart_file = db->getScalar<std::string>( "restart_file" );
+    d_restartFile     = restart_file + "." + rankString;
+
+
+    d_rank = d_comm.getRank();
+    writeIDMap( ID_map_struct(), 0, id_map_filename );
+    // Initialize IO for silo
+    IO::initialize( "", "silo", "false" );
+    // Create the MeshDataStruct
+    d_meshData.resize( 1 );
+
+    d_meshData[0].meshName = "domain";
+    d_meshData[0].mesh     = std::make_shared<IO::DomainMesh>(
+        d_rank_info, d_n[0], d_n[1], d_n[2], ColorModel.Dm->Lx, ColorModel.Dm->Ly, ColorModel.Dm->Lz );
+    auto PhaseVar    = std::make_shared<IO::Variable>();
+    auto PressVar    = std::make_shared<IO::Variable>();
+    auto VxVar       = std::make_shared<IO::Variable>();
+    auto VyVar       = std::make_shared<IO::Variable>();
+    auto VzVar       = std::make_shared<IO::Variable>();
+    auto SignDistVar = std::make_shared<IO::Variable>();
+    auto BlobIDVar   = std::make_shared<IO::Variable>();
+
+    if ( vis_db->getWithDefault<bool>( "save_phase_field", true ) ) {
+        PhaseVar->name = "phase";
+        PhaseVar->type = IO::VariableType::VolumeVariable;
+        PhaseVar->dim  = 1;
+        PhaseVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( PhaseVar );
+    }
+
+    if ( vis_db->getWithDefault<bool>( "save_pressure", false ) ) {
+        PressVar->name = "Pressure";
+        PressVar->type = IO::VariableType::VolumeVariable;
+        PressVar->dim  = 1;
+        PressVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( PressVar );
+    }
+
+    if ( vis_db->getWithDefault<bool>( "save_velocity", false ) ) {
+        VxVar->name = "Velocity_x";
+        VxVar->type = IO::VariableType::VolumeVariable;
+        VxVar->dim  = 1;
+        VxVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( VxVar );
+        VyVar->name = "Velocity_y";
+        VyVar->type = IO::VariableType::VolumeVariable;
+        VyVar->dim  = 1;
+        VyVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( VyVar );
+        VzVar->name = "Velocity_z";
+        VzVar->type = IO::VariableType::VolumeVariable;
+        VzVar->dim  = 1;
+        VzVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( VzVar );
+    }
+
+    if ( vis_db->getWithDefault<bool>( "save_distance", false ) ) {
+        SignDistVar->name = "SignDist";
+        SignDistVar->type = IO::VariableType::VolumeVariable;
+        SignDistVar->dim  = 1;
+        SignDistVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( SignDistVar );
+    }
+
+    if ( vis_db->getWithDefault<bool>( "save_connected_components", false ) ) {
+        BlobIDVar->name = "BlobID";
+        BlobIDVar->type = IO::VariableType::VolumeVariable;
+        BlobIDVar->dim  = 1;
+        BlobIDVar->data.resize( d_n[0], d_n[1], d_n[2] );
+        d_meshData[0].vars.push_back( BlobIDVar );
+    }
+
+
+    // Initialize the comms
+    for ( int i = 0; i < 1024; i++ )
+        d_comm_used[i] = false;
+    // Initialize the threads
+    int N_threads = db->getWithDefault<int>( "N_threads", 4 );
+    auto method   = db->getWithDefault<std::string>( "load_balance", "default" );
+    createThreads( method, N_threads );
+}
 runAnalysis::~runAnalysis()
 {
     // Finish processing analysis

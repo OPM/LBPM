@@ -12,6 +12,22 @@ Color {
     ComponentAffinity = -1.0, 1.0, -1.0
 }
 
+FreeLee {
+    tauA = 1.0;  
+    tauB = 1.0;  
+    tauM = 1.0;//relaxation parameter for the phase field
+    rhoA   = 1.0;  
+    rhoB   = 1.0;  
+    gamma = 1.0e-4;//surface tension parameter in Lee model
+    W = 3.0; //theoretical interfacial thickness in Lee model; unit:[voxel]
+    F = 0, 0, 0
+    Restart = false
+    timestepMax = 1000
+    flux = 0.0
+    ComponentLabels = 0
+    ComponentAffinity = -1.0
+}
+
 Domain {
     nproc = 1, 1, 1     // Number of processors (Npx,Npy,Npz)
     n = 80, 80, 80      // Size of local domain (Nx,Ny,Nz)
