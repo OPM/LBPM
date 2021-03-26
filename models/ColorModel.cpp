@@ -1626,7 +1626,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 
 	delta_volume = (volume_final-volume_initial);
 	if (rank == 0)  printf("MorphInit: change fluid volume fraction by %f \n", delta_volume/volume_initial);
-	if (rank == 0)  printf("   new saturation =  %f \n", volume_final/(0.238323*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs)));
+	if (rank == 0)  printf("   new saturation =  %f \n", volume_final/(Mask->Porosity()*double((Nx-2)*(Ny-2)*(Nz-2)*nprocs)));
 
 	// 6. copy back to the device
 	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
