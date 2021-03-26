@@ -154,7 +154,7 @@ void Domain::initialize( std::shared_ptr<Database> db )
 	if (rank_info.kz < nproc[2]-1) outlet_layers_z = 0;
     // Fill remaining variables
 	N = Nx*Ny*Nz;
-	Volume = nx*ny*nx*nproc[0]*nproc[1]*nproc[2]*1.0;
+	Volume = nx*ny*nz*nproc[0]*nproc[1]*nproc[2]*1.0;
 
 	if (myrank==0) printf("voxel length = %f micron \n", voxel_length);
 
@@ -1466,4 +1466,3 @@ void Domain::AggregateLabels( const std::string& filename, DoubleArray &UserData
 	Comm.barrier();
 
 }
-
