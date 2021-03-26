@@ -8,7 +8,6 @@
 
 #include "common/Utilities.h"
 #include "models/FreeLeeModel.h"
-#include "analysis/FreeEnergy.h"
 
 //*******************************************************************
 // Implementation of Free-Energy Two-Phase LBM (Lee model)
@@ -53,37 +52,45 @@ int main( int argc, char **argv )
         LeeModel.SetDomain();    
         LeeModel.ReadInput();    
         LeeModel.Create_TwoFluid();       
+        LeeModel.Initialize_TwoFluid(); 
+        /* check neighbors */
         
-        FreeEnergyAnalyzer Analysis(LeeModel.Dm);
         
-        LeeModel.Initialize_TwoFluid();   
+        /* Copy the initial density to test that global mass is conserved */
+        int Nx = LeeModel.Dm->Nx;
+        int Ny = LeeModel.Dm->Ny;
+        int Nz = LeeModel.Dm->Nz;
+        DoubleArray DensityInit(Nx,Ny,Nz);
+        LeeModel.ScaLBL_Comm->RegularLayout(LeeModel.Map,LeeModel.Den,DensityInit);
         
-        /*** RUN MAIN TIMESTEPS HERE ************/
-        double MLUPS=0.0;
-        int timestep = 0;
-        int visualization_time = LeeModel.timestepMax;
-    	if (LeeModel.vis_db->keyExists( "visualization_interval" )){
-    		visualization_time = LeeModel.vis_db->getScalar<int>( "visualization_interval" );
-    		timestep += visualization_time;
-    	}
-        while (LeeModel.timestep < LeeModel.timestepMax){
-        	MLUPS = LeeModel.Run_TwoFluid(timestep);
-        	if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
-        	Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
-        	timestep += visualization_time;
+        double MLUPS = LeeModel.Run_TwoFluid(LeeModel.timestepMax);	
+        
+        DoubleArray DensityFinal(Nx,Ny,Nz);
+        LeeModel.ScaLBL_Comm->RegularLayout(LeeModel.Map,LeeModel.Den,DensityFinal);
+        
+        DoubleArray DensityChange(Nx,Ny,Nz);
+        double totalChange=0.0;
+        for (int k=1; k<Nz-1; k++){
+            for (int j=1; j<Ny-1; j++){
+                for (int i=1; i<Nx-1; i++){
+                	double change = DensityFinal(i,j,k)-DensityInit(i,j,k);
+                	DensityChange(i,j,k) = change;
+                	totalChange += change;
+                }
+            }
         }
+        printf("Density change, %f\n", totalChange);
+        
+    	FILE *OUTFILE;
+        char LocalRankFilename[40];
+    	sprintf(LocalRankFilename,"DensityChange.%05i.raw",rank);
+    	OUTFILE = fopen(LocalRankFilename,"wb");
+    	fwrite(DensityChange.data(),8,Nx*Ny*Nz,OUTFILE);
+    	fclose(OUTFILE);
+   
         //LeeModel.WriteDebug_TwoFluid();
-    	if (rank==0) printf("********************************************************\n");
-    	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
-    	MLUPS *= nprocs;
-    	if (rank==0) printf("Lattice update rate (total)= %f MLUPS \n", MLUPS);
-    	if (rank==0) printf("********************************************************\n");
-    	// ************************************************************************
-    	
+
         PROFILE_STOP("Main");
-        auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_simulator" );
-        auto level = db->getWithDefault<int>( "TimerLevel", 1 );
-        PROFILE_SAVE( file,level );
         // ****************************************************
 
 

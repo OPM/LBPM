@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 
 #define STOKES
 
@@ -70,6 +71,8 @@ extern "C" void ScaLBL_D3Q19_FreeLeeModel_SingleFluid_Init(double *gqbar, double
 		gqbar[17*Np+n] = 0.0277777777777778*(p-0.5*(Fy-Fz)); ;  //double(100*n)+17.f;
 		gqbar[18*Np+n] = 0.0277777777777778*(p-0.5*(-Fy+Fz));;  //double(100*n)+18.f;
 	}
+	
+	
 }
 
 extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, double *Den, double *hq, double *ColorGrad, 
@@ -101,7 +104,8 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 		nz = nz/ColorMag_temp;		
 
         theta = M*cs2_inv*(1-4.0*phi*phi)/W;
-
+        theta = 0; // try more diffusive initial condition
+        
 		hq[0*Np+idx]=0.3333333333333333*(phi);
 		hq[1*Np+idx]=0.1111111111111111*(phi+theta*nx);
 		hq[2*Np+idx]=0.1111111111111111*(phi-theta*nx);
@@ -116,7 +120,7 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, 
                                                           double rhoA, double rhoB, int start, int finish, int Np){
 
-	int idx,n,nread;
+	int idx,nread;
 	double fq,phi;
 
 	for (int n=start; n<finish; n++){
@@ -161,12 +165,15 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int
 		// save the phase indicator field
 		idx = Map[n];
 		Phi[idx] = phi; 
+		
 	}
 }
 
+
+
 extern "C" void ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq, double *Den, double *Phi, 
 			                                               double rhoA, double rhoB, int start, int finish, int Np){
-	int idx,n;
+	int idx;
 	double fq,phi;
 	for (int n=start; n<finish; n++){
 		
@@ -207,11 +214,189 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq,
 	}	
 }
 
-extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
-                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
+                                                          double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
+
+	int idx,nr1,nr2,nr3,nr4,nr5,nr6;
+	double h0,h1,h2,h3,h4,h5,h6;
+	double nx,ny,nz,C;
+	double ux,uy,uz;
+	double phi;
+    double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double factor = 1.0;
+
+	for (int n=start; n<finish; n++){
+
+		/* load phase indicator field */
+		idx = Map[n];
+		phi = Phi[idx];
+
+		/* velocity */
+		ux = Vel[0*Np+n];
+		uy = Vel[1*Np+n];
+		uz = Vel[2*Np+n];
+
+        /*color gradient */
+		nx = ColorGrad[0*Np+n];
+		ny = ColorGrad[1*Np+n];
+		nz = ColorGrad[2*Np+n];
+		
+		//Normalize the Color Gradient
+		C = sqrt(nx*nx+ny*ny+nz*nz);
+		double ColorMag = C;
+		if (C < 1.0e-12) ColorMag=1.0;
+		nx = nx/ColorMag;
+		ny = ny/ColorMag;
+		nz = nz/ColorMag;		
+
+		// q=1
+		nr1 = neighborList[n]; 
+		nr2 = neighborList[n+Np]; 
+		nr3 = neighborList[n+2*Np]; 
+		nr4 = neighborList[n+3*Np];
+		nr5 = neighborList[n+4*Np];
+		nr6 = neighborList[n+5*Np];
+		
+		//q=0
+		h0 = hq[n];
+		//q=1
+		h1 = hq[nr1]; 
+		//q=2
+		h2 = hq[nr2];  
+		//q=3
+		h3 = hq[nr3];
+		//q=4
+		h4 = hq[nr4];
+		//q=5
+		h5 = hq[nr5];
+		//q=6
+		h6 = hq[nr6];
+
+        //-------------------------------- BGK collison for phase field ---------------------------------//
+		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
+		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		//........................................................................
+		
+		/*Update the distributions */
+		// q = 0
+		hq[n] = h0;
+		hq[nr2] = h1;
+		hq[nr1] = h2;
+		hq[nr4] = h3;
+		hq[nr3] = h4;
+		hq[nr6] = h5;
+		hq[nr5] = h6;
+		//........................................................................
+
+	}
+}
+
+
+
+extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
+		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
+
+	int idx,n;
+	double h0,h1,h2,h3,h4,h5,h6;
+	double nx,ny,nz,C;
+	double ux,uy,uz;
+	double phi;
+    double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double factor = 1.0;
+
+	for (int n=start; n<finish; n++){
+
+		/* load phase indicator field */
+		idx = Map[n];
+		phi = Phi[idx];
+
+		/* velocity */
+		ux = Vel[0*Np+n];
+		uy = Vel[1*Np+n];
+		uz = Vel[2*Np+n];
+
+		/*color gradient */
+		nx = ColorGrad[0*Np+n];
+		ny = ColorGrad[1*Np+n];
+		nz = ColorGrad[2*Np+n];
+		//Normalize the Color Gradient
+		C = sqrt(nx*nx+ny*ny+nz*nz);
+		double ColorMag = C;
+		if (C < 1.0e-12) ColorMag=1.0;
+		nx = nx/ColorMag;
+		ny = ny/ColorMag;
+		nz = nz/ColorMag;
+
+		h0 = hq[n];
+		h1 = hq[2*Np+n]; 
+		h2 = hq[Np+n];  
+		h3 = hq[4*Np+n];
+		h4 = hq[3*Np+n];
+		h5 = hq[6*Np+n];
+		h6 = hq[5*Np+n];
+
+		//-------------------------------- BGK collison for phase field ---------------------------------//
+		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
+		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
+		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
+		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
+		//........................................................................
+
+		/*Update the distributions */
+		// q = 0
+		hq[n] = h0;
+		hq[Np+n] = h1;
+		hq[2*Np+n] = h2;
+		hq[3*Np+n] = h3;
+		hq[4*Np+n] = h4;
+		hq[5*Np+n] = h5;
+		hq[6*Np+n] = h6;
+		//........................................................................
+		
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_ComputePhaseField(int *Map,  double *hq, double *Den, double *Phi, double rhoA, double rhoB, int start, int finish, int Np){
+	int idx,n;
+	double h0,h1,h2,h3,h4,h5,h6;
+	double phi;
+
+	for (int n=start; n<finish; n++){
+
+		h0 = hq[n];
+		h1 = hq[1*Np+n]; 
+		h2 = hq[2*Np+n];  
+		h3 = hq[3*Np+n];
+		h4 = hq[4*Np+n];
+		h5 = hq[5*Np+n];
+		h6 = hq[6*Np+n];
+
+		phi = h0+h1+h2+h3+h4+h5+h6;
+
+		// save the number densities
+		Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+
+		// save the phase indicator field
+		idx = Map[n];
+		Phi[idx] = phi; 
+
+	}
+}
+
+
+extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, double *dist, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
+                                                double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	int n,nn,nn2x,ijk;
+	int nn,nn2x,ijk;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
@@ -228,20 +413,22 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
     double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
 
 	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
-    double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
+    //double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
 	double tau;//position dependent LB relaxation time for fluid
-    double C,theta;
-    double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    //double C,theta;
+    // double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
 
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-        phi = Phi[n];// load phase field
-		// local relaxation time
-		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
+
+		// local relaxation time
+		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
@@ -383,9 +570,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
         chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
         chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
-		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14))*0.25;//the factor of 0.25 comes from the denominator of Eq.30
-		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18))*0.25;
-		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18))*0.25;
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
 		// q=0
 		m0 = dist[n];
@@ -741,62 +928,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
         0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
         //----------------------------------------------------------------------------------------------------------------------------------------//
 
-
-        // ----------------------------- compute phase field evolution ----------------------------------------
-		//Normalize the Color Gradient
-		C = sqrt(nx*nx+ny*ny+nz*nz);
-		double ColorMag = C;
-		if (C==0.0) ColorMag=1.0;
-		nx = nx/ColorMag;
-		ny = ny/ColorMag;
-		nz = nz/ColorMag;		
-        //compute surface tension-related parameter
-        theta = M*4.5*(1-4.0*phi*phi)/W;
-
-        //load distributions of phase field
-		//q=0
-		h0 = hq[n];
-		//q=1
-		h1 = hq[nr1]; 
-
-		//q=2
-		h2 = hq[nr2];  
-
-		//q=3
-		h3 = hq[nr3];
-
-		//q=4
-		h4 = hq[nr4];
-
-		//q=5
-		h5 = hq[nr5];
-
-		//q=6
-		h6 = hq[nr6];
-
-        //-------------------------------- BGK collison for phase field ---------------------------------//
-		// q = 0
-		hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
-
-		// q = 1
-		hq[nr2] = h1 - (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 2
-		hq[nr1] = h2 - (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 3
-		hq[nr4] = h3 - (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 4
-		hq[nr3] = h4 - (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 5
-		hq[nr6] = h5 - (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 6
-		hq[nr5] = h6 - (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-		//........................................................................
-
         //Update velocity on device
 		Vel[0*Np+n] = ux;
 		Vel[1*Np+n] = uy;
@@ -813,11 +944,11 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
 	}
 }
 
-extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
-                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+                                                double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	int n,nn,nn2x,ijk;
+	int nn,nn2x,ijk;
 	//int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
@@ -834,20 +965,22 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
     double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
 
 	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
-    double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
+    //double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
 	double tau;//position dependent LB relaxation time for fluid
-    double C,theta;
-    double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    //double C,theta;
+    //double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
 
 	for (int n=start; n<finish; n++){
 
 		rho0 = Den[n];//load density
-        phi = Phi[n];// load phase field
-		// local relaxation time
-		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
+
+		// local relaxation time
+		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
 		//					COMPUTE THE COLOR GRADIENT
 		//........................................................................
 		//.................Read Phase Indicator Values............................
@@ -989,9 +1122,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
         chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
         chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
-		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14))*0.25;//the factor of 0.25 comes from the denominator of Eq.30
-		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18))*0.25;
-		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18))*0.25;
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
 		// q=0
 		m0 = dist[n];
@@ -1053,6 +1186,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
         ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
         uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
         uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
+
         //compute pressure
         p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
                   +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);
@@ -1330,62 +1464,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
         0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
         //----------------------------------------------------------------------------------------------------------------------------------------//
 
-
-        // ----------------------------- compute phase field evolution ----------------------------------------
-		//Normalize the Color Gradient
-		C = sqrt(nx*nx+ny*ny+nz*nz);
-		double ColorMag = C;
-		if (C==0.0) ColorMag=1.0;
-		nx = nx/ColorMag;
-		ny = ny/ColorMag;
-		nz = nz/ColorMag;		
-        //compute surface tension-related parameter
-        theta = M*4.5*(1-4.0*phi*phi)/W;
-
-        //load distributions of phase field
-		//q=0
-		h0 = hq[n];
-		//q=1
-		h1 = hq[2*Np+n]; 
-
-		//q=2
-		h2 = hq[1*Np+n];  
-
-		//q=3
-		h3 = hq[4*Np+n];
-
-		//q=4
-		h4 = hq[3*Np+n];
-
-		//q=5
-		h5 = hq[6*Np+n];
-
-		//q=6
-		h6 = hq[5*Np+n];
-
-        //-------------------------------- BGK collison for phase field ---------------------------------//
-		// q = 0
-		hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
-
-		// q = 1
-		hq[1*Np+n] = h1 - (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 2
-		hq[2*Np+n] = h2 - (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 3
-		hq[3*Np+n] = h3 - (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 4
-		hq[4*Np+n] = h4 - (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 5
-		hq[5*Np+n] = h5 - (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-
-		// q = 6
-		hq[6*Np+n] = h6 - (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - 4*phi*phi))/W)/tauM;
-		//........................................................................
-
         //Update velocity on device
 		Vel[0*Np+n] = ux;
 		Vel[1*Np+n] = uy;
@@ -1405,7 +1483,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 	
-	int n;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
@@ -1672,7 +1749,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborLis
 extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, double *Vel, double *Pressure, 
                                                                  double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 	
-	int n;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
 	// distribution functions
@@ -1915,4 +1991,168 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, d
         //Update pressure on device
         Pressure[n] = p;
 	}
+}
+
+extern "C" void ScaLBL_D3Q9_MGTest(int *Map, double *Phi,double *ColorGrad,int strideY, int strideZ, int start, int finish, int Np){
+
+	int nn,nn2x,ijk;
+	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+	double m3,m5,m7;
+	double mm1,mm2,mm4,mm6,mm8,mm9,mm10,mm11,mm12,mm13,mm14,mm15,mm16,mm17,mm18;
+	double mm3,mm5,mm7;
+    //double nx,ny,nz;//normal color gradient
+    double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
+    double phi;
+
+	for (int n=start; n<finish; n++){
+
+		// Get the 1D index based on regular data layout
+		ijk = Map[n];
+        phi = Phi[ijk];// load phase field
+		//					COMPUTE THE COLOR GRADIENT
+		//........................................................................
+		//.................Read Phase Indicator Values............................
+		//........................................................................
+		nn = ijk-1;							// neighbor index (get convention)
+		m1 = Phi[nn];						// get neighbor for phi - 1
+		//........................................................................
+		nn = ijk+1;							// neighbor index (get convention)
+		m2 = Phi[nn];						// get neighbor for phi - 2
+		//........................................................................
+		nn = ijk-strideY;							// neighbor index (get convention)
+		m3 = Phi[nn];					// get neighbor for phi - 3
+		//........................................................................
+		nn = ijk+strideY;							// neighbor index (get convention)
+		m4 = Phi[nn];					// get neighbor for phi - 4
+		//........................................................................
+		nn = ijk-strideZ;						// neighbor index (get convention)
+		m5 = Phi[nn];					// get neighbor for phi - 5
+		//........................................................................
+		nn = ijk+strideZ;						// neighbor index (get convention)
+		m6 = Phi[nn];					// get neighbor for phi - 6
+		//........................................................................
+		nn = ijk-strideY-1;						// neighbor index (get convention)
+		m7 = Phi[nn];					// get neighbor for phi - 7
+		//........................................................................
+		nn = ijk+strideY+1;						// neighbor index (get convention)
+		m8 = Phi[nn];					// get neighbor for phi - 8
+		//........................................................................
+		nn = ijk+strideY-1;						// neighbor index (get convention)
+		m9 = Phi[nn];					// get neighbor for phi - 9
+		//........................................................................
+		nn = ijk-strideY+1;						// neighbor index (get convention)
+		m10 = Phi[nn];					// get neighbor for phi - 10
+		//........................................................................
+		nn = ijk-strideZ-1;						// neighbor index (get convention)
+		m11 = Phi[nn];					// get neighbor for phi - 11
+		//........................................................................
+		nn = ijk+strideZ+1;						// neighbor index (get convention)
+		m12 = Phi[nn];					// get neighbor for phi - 12
+		//........................................................................
+		nn = ijk+strideZ-1;						// neighbor index (get convention)
+		m13 = Phi[nn];					// get neighbor for phi - 13
+		//........................................................................
+		nn = ijk-strideZ+1;						// neighbor index (get convention)
+		m14 = Phi[nn];					// get neighbor for phi - 14
+		//........................................................................
+		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+		m15 = Phi[nn];					// get neighbor for phi - 15
+		//........................................................................
+		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+		m16 = Phi[nn];					// get neighbor for phi - 16
+		//........................................................................
+		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+		m17 = Phi[nn];					// get neighbor for phi - 17
+		//........................................................................
+		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+		m18 = Phi[nn];					// get neighbor for phi - 18
+
+        // compute mixed difference (Eq.30, A.Fukhari et al. JCP 315(2016) 434-457)
+		//........................................................................
+		nn2x = ijk-2;							// neighbor index (get convention)
+		mm1 = Phi[nn2x];						// get neighbor for phi - 1
+        mm1 = 0.25*(-mm1+5.0*m1-3.0*phi-m2);
+		//........................................................................
+		nn2x = ijk+2;							// neighbor index (get convention)
+		mm2 = Phi[nn2x];						// get neighbor for phi - 2
+        mm2 = 0.25*(-mm2+5.0*m2-3.0*phi-m1);
+		//........................................................................
+		nn2x = ijk-strideY*2;							// neighbor index (get convention)
+		mm3 = Phi[nn2x];					// get neighbor for phi - 3
+        mm3 = 0.25*(-mm3+5.0*m3-3.0*phi-m4);
+		//........................................................................
+		nn2x = ijk+strideY*2;							// neighbor index (get convention)
+		mm4 = Phi[nn2x];					// get neighbor for phi - 4
+        mm4 = 0.25*(-mm4+5.0*m4-3.0*phi-m3);
+		//........................................................................
+		nn2x = ijk-strideZ*2;						// neighbor index (get convention)
+		mm5 = Phi[nn2x];					// get neighbor for phi - 5
+        mm5 = 0.25*(-mm5+5.0*m5-3.0*phi-m6);
+		//........................................................................
+		nn2x = ijk+strideZ*2;						// neighbor index (get convention)
+		mm6 = Phi[nn2x];					// get neighbor for phi - 6
+        mm6 = 0.25*(-mm6+5.0*m6-3.0*phi-m5);
+		//........................................................................
+		nn2x = ijk-strideY*2-2;						// neighbor index (get convention)
+		mm7 = Phi[nn2x];					// get neighbor for phi - 7
+        mm7 = 0.25*(-mm7+5.0*m7-3.0*phi-m8);
+		//........................................................................
+		nn2x = ijk+strideY*2+2;						// neighbor index (get convention)
+		mm8 = Phi[nn2x];					// get neighbor for phi - 8
+        mm8 = 0.25*(-mm8+5.0*m8-3.0*phi-m7);
+		//........................................................................
+		nn2x = ijk+strideY*2-2;						// neighbor index (get convention)
+		mm9 = Phi[nn2x];					// get neighbor for phi - 9
+        mm9 = 0.25*(-mm9+5.0*m9-3.0*phi-m10);
+		//........................................................................
+		nn2x = ijk-strideY*2+2;						// neighbor index (get convention)
+		mm10 = Phi[nn2x];					// get neighbor for phi - 10
+        mm10 = 0.25*(-mm10+5.0*m10-3.0*phi-m9);
+		//........................................................................
+		nn2x = ijk-strideZ*2-2;						// neighbor index (get convention)
+		mm11 = Phi[nn2x];					// get neighbor for phi - 11
+        mm11 = 0.25*(-mm11+5.0*m11-3.0*phi-m12);
+		//........................................................................
+		nn2x = ijk+strideZ*2+2;						// neighbor index (get convention)
+		mm12 = Phi[nn2x];					// get neighbor for phi - 12
+        mm12 = 0.25*(-mm12+5.0*m12-3.0*phi-m11);
+		//........................................................................
+		nn2x = ijk+strideZ*2-2;						// neighbor index (get convention)
+		mm13 = Phi[nn2x];					// get neighbor for phi - 13
+        mm13 = 0.25*(-mm13+5.0*m13-3.0*phi-m14);
+		//........................................................................
+		nn2x = ijk-strideZ*2+2;						// neighbor index (get convention)
+		mm14 = Phi[nn2x];					// get neighbor for phi - 14
+        mm14 = 0.25*(-mm14+5.0*m14-3.0*phi-m13);
+		//........................................................................
+		nn2x = ijk-strideZ*2-strideY*2;					// neighbor index (get convention)
+		mm15 = Phi[nn2x];					// get neighbor for phi - 15
+        mm15 = 0.25*(-mm15+5.0*m15-3.0*phi-m16);
+		//........................................................................
+		nn2x = ijk+strideZ*2+strideY*2;					// neighbor index (get convention)
+		mm16 = Phi[nn2x];					// get neighbor for phi - 16
+        mm16 = 0.25*(-mm16+5.0*m16-3.0*phi-m15);
+		//........................................................................
+		nn2x = ijk+strideZ*2-strideY*2;					// neighbor index (get convention)
+		mm17 = Phi[nn2x];					// get neighbor for phi - 17
+        mm17 = 0.25*(-mm17+5.0*m17-3.0*phi-m18);
+		//........................................................................
+		nn2x = ijk-strideZ*2+strideY*2;					// neighbor index (get convention)
+		mm18 = Phi[nn2x];					// get neighbor for phi - 18
+        mm18 = 0.25*(-mm18+5.0*m18-3.0*phi-m17);
+
+
+		//............Compute the Color Gradient...................................
+		//nx = -3.0*1.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+		//ny = -3.0*1.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+		//nz = -3.0*1.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+		//............Compute the Mixed Gradient...................................
+		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
+		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
+		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
+
+		ColorGrad[0*Np+n] = mgx;
+		ColorGrad[1*Np+n] = mgy;
+		ColorGrad[2*Np+n] = mgz;
+    }
 }

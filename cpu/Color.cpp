@@ -2489,10 +2489,200 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 	}	
 }
 
+
+extern "C" void ScaLBL_D3Q7_AAodd_Color(int *neighborList, int *Map, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *ColorGrad, double *Vel, double rhoA, double rhoB, double beta, int start, int finish, int Np){
+
+	int nr1,nr2,nr3,nr4,nr5,nr6;
+	double nA,nB; // number density
+	double a1,b1,a2,b2,nAB,delta;
+	double C,nx,ny,nz; //color gradient magnitude and direction
+	double ux,uy,uz;
+	double phi;
+	// Instantiate mass transport distributions
+	// Stationary value - distribution 0
+	for (int n=start; n<finish; n++){
+		/* neighbors */
+		nr1 = neighborList[n+0*Np];
+		nr2 = neighborList[n+1*Np];
+		nr3 = neighborList[n+2*Np];
+		nr4 = neighborList[n+3*Np];
+		nr5 = neighborList[n+4*Np];
+		nr6 = neighborList[n+5*Np];
+		
+		/* load velocity */
+		ux = Vel[n];
+		uy = Vel[Np+n];
+		uz = Vel[2*Np+n];
+	
+		/* load color gradient */
+		nx = ColorGrad[n];
+		ny = ColorGrad[Np+n];
+		nz = ColorGrad[2*Np+n];
+		C = sqrt(nx*nx+ny*ny+nz*nz);
+		double ColorMag = C;
+		if (C==0.0) ColorMag=1.0;
+		nx = nx/ColorMag;
+		ny = ny/ColorMag;
+		nz = nz/ColorMag;		
+		
+		// read the component number densities
+		nA = Den[n];
+		nB = Den[Np + n];
+
+		// compute phase indicator field
+		phi=(nA-nB)/(nA+nB);
+		nAB = 1.0/(nA+nB);
+		Aq[n] = 0.3333333333333333*nA;
+		Bq[n] = 0.3333333333333333*nB;
+
+		//...............................................
+		// q = 0,2,4
+		// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+		delta = beta*nA*nB*nAB*0.1111111111111111*nx;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+
+		// q = 1
+		//nread = neighborList[n+Np];
+		Aq[nr2] = a1;
+		Bq[nr2] = b1;
+		// q=2
+		//nread = neighborList[n];
+		Aq[nr1] = a2;
+		Bq[nr1] = b2;
+
+		//...............................................
+		// Cq = {0,1,0}
+		delta = beta*nA*nB*nAB*0.1111111111111111*ny;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+
+		// q = 3
+		//nread = neighborList[n+3*Np];
+		Aq[nr4] = a1;
+		Bq[nr4] = b1;
+		// q = 4
+		//nread = neighborList[n+2*Np];
+		Aq[nr3] = a2;
+		Bq[nr3] = b2;
+
+		//...............................................
+		// q = 4
+		// Cq = {0,0,1}
+		delta = beta*nA*nB*nAB*0.1111111111111111*nz;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+
+		// q = 5
+		//nread = neighborList[n+5*Np];
+		Aq[nr6] = a1;
+		Bq[nr6] = b1;
+		// q = 6
+		//nread = neighborList[n+4*Np];
+		Aq[nr5] = a2;
+		Bq[nr5] = b2;
+		//...............................................
+	}	
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_Color(int *Map, double *Aq, double *Bq, double *Den, 
+		double *Phi, double *ColorGrad, double *Vel, double rhoA, double rhoB, double beta,  int start, int finish, int Np){
+
+	double nA,nB; // number density
+	double a1,b1,a2,b2,nAB,delta;
+	double C,nx,ny,nz; //color gradient magnitude and direction
+	double ux,uy,uz;
+	double phi;
+	// Instantiate mass transport distributions
+	// Stationary value - distribution 0
+	for (int n=start; n<finish; n++){
+		/* load velocity */
+		ux = Vel[n];
+		uy = Vel[Np+n];
+		uz = Vel[2*Np+n];
+	
+		/* load color gradient */
+		nx = ColorGrad[n];
+		ny = ColorGrad[Np+n];
+		nz = ColorGrad[2*Np+n];
+		C = sqrt(nx*nx+ny*ny+nz*nz);
+		double ColorMag = C;
+		if (C==0.0) ColorMag=1.0;
+		nx = nx/ColorMag;
+		ny = ny/ColorMag;
+		nz = nz/ColorMag;	
+		
+		// read the component number densities
+		nA = Den[n];
+		nB = Den[Np + n];
+		
+		nAB = 1.0/(nA+nB);
+		Aq[n] = 0.3333333333333333*nA;
+		Bq[n] = 0.3333333333333333*nB;
+
+		//...............................................
+		// q = 0,2,4
+		// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+		delta = beta*nA*nB*nAB*0.1111111111111111*nx;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+
+		Aq[1*Np+n] = a1;
+		Bq[1*Np+n] = b1;
+		Aq[2*Np+n] = a2;
+		Bq[2*Np+n] = b2;
+
+		//...............................................
+		// q = 2
+		// Cq = {0,1,0}
+		delta = beta*nA*nB*nAB*0.1111111111111111*ny;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+
+		Aq[3*Np+n] = a1;
+		Bq[3*Np+n] = b1;
+		Aq[4*Np+n] = a2;
+		Bq[4*Np+n] = b2;
+		//...............................................
+		// q = 4
+		// Cq = {0,0,1}
+		delta = beta*nA*nB*nAB*0.1111111111111111*nz;
+		if (!(nA*nB*nAB>0)) delta=0;
+		a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
+		b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
+		a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
+		b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+
+		Aq[5*Np+n] = a1;
+		Bq[5*Np+n] = b1;
+		Aq[6*Np+n] = a2;
+		Bq[6*Np+n] = b2;
+		//...............................................
+
+	}	
+}
+
+		
 extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double *Aq, double *Bq, 
 			double *Den, double *Phi, int start, int finish, int Np){
 
-	int idx,n,nread;
+	int idx,nread;
 	double fq,nA,nB;
 
 	for (int n=start; n<finish; n++){
@@ -2579,7 +2769,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double
 
 extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
 			int start, int finish, int Np){
-	int idx,n,nread;
+	int idx,nread;
 	double fq,nA,nB;
 	for (int n=start; n<finish; n++){
 		

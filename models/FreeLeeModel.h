@@ -16,6 +16,9 @@ Implementation of Lee et al JCP 2016 lattice boltzmann model
 #include "common/ScaLBL.h"
 #include "common/WideHalo.h"
 
+#ifndef ScaLBL_FreeLeeModel_INC
+#define ScaLBL_FreeLeeModel_INC
+
 class ScaLBL_FreeLeeModel{
 public:
   ScaLBL_FreeLeeModel(int RANK, int NP, const Utilities::MPI& COMM);
@@ -28,12 +31,17 @@ public:
 	void ReadInput();
 	void Create_TwoFluid();
 	void Initialize_TwoFluid();
-	void Run_TwoFluid();
+	double Run_TwoFluid(int returntime);
+
 	void WriteDebug_TwoFluid();
 	void Create_SingleFluid();
 	void Initialize_SingleFluid();
 	void Run_SingleFluid();
+	
 	void WriteDebug_SingleFluid();
+    // test utilities
+    void Create_DummyPhase_MGTest();
+    void MGTest();
 	
 	bool Restart,pBC;
 	int timestep,timestepMax;
@@ -73,8 +81,12 @@ public:
 	double *Velocity;
 	double *Pressure;
 	
+	void getPhase(DoubleArray &PhaseValues);
+	void getPotential(DoubleArray &PressureValues, DoubleArray &MuValues);
+	void getVelocity(DoubleArray &Vx, DoubleArray &Vy, DoubleArray &Vz);
+	
 	DoubleArray SignDist;
-		
+	
 private:
 	Utilities::MPI comm;
     
@@ -90,4 +102,4 @@ private:
 	void AssignComponentLabels_ChemPotential_ColorGrad();
 
 };
-
+#endif

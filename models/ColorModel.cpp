@@ -531,6 +531,121 @@ void ScaLBL_ColorModel::Initialize(){
 	ScaLBL_CopyToHost(Averages->Phi.data(),Phi,N*sizeof(double));
 }
 
+double ScaLBL_ColorModel::Run(int returntime){
+	int nprocs=nprocx*nprocy*nprocz;
+
+	//************ MAIN ITERATION LOOP ***************************************/
+	comm.barrier();
+	PROFILE_START("Loop");
+	//std::shared_ptr<Database> analysis_db;
+	bool Regular = false;
+	auto current_db = db->cloneDatabase();
+	auto t1 = std::chrono::system_clock::now();
+	int START_TIMESTEP = timestep;
+	int EXIT_TIMESTEP = min(timestepMax,returntime);
+	while (timestep < EXIT_TIMESTEP ) {
+		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
+		PROFILE_START("Update");
+		// *************ODD TIMESTEP*************
+		timestep++;
+		// Compute the Phase indicator field
+		// Read for Aq, Bq happens in this routine (requires communication)
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
+		if (BoundaryCondition > 0 && BoundaryCondition < 5){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
+		// Halo exchange for phase field
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+
+		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set BCs
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
+		ScaLBL_D3Q19_AAodd_Color(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier(); 
+
+		// *************EVEN TIMESTEP*************
+		timestep++;
+		// Compute the Phase indicator field
+		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
+
+		// Perform the collision operation
+		ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
+		// Halo exchange for phase field
+		if (BoundaryCondition > 0 && BoundaryCondition < 5){
+			ScaLBL_Comm->Color_BC_z(dvcMap, Phi, Den, inletA, inletB);
+			ScaLBL_Comm->Color_BC_Z(dvcMap, Phi, Den, outletA, outletB);
+		}
+		ScaLBL_Comm_Regular->SendHalo(Phi);
+		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
+		ScaLBL_Comm_Regular->RecvHalo(Phi);
+		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
+		ScaLBL_Comm->Barrier();
+		// Set boundary conditions
+		if (BoundaryCondition == 3){
+			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 4){
+			din = ScaLBL_Comm->D3Q19_Flux_BC_z(NeighborList, fq, flux, timestep);
+			ScaLBL_Comm->D3Q19_Pressure_BC_Z(NeighborList, fq, dout, timestep);
+		}
+		else if (BoundaryCondition == 5){
+			ScaLBL_Comm->D3Q19_Reflection_BC_z(fq);
+			ScaLBL_Comm->D3Q19_Reflection_BC_Z(fq);
+		}
+		ScaLBL_D3Q19_AAeven_Color(dvcMap, fq, Aq, Bq, Den, Phi, Velocity, rhoA, rhoB, tauA, tauB,
+				alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
+		ScaLBL_Comm->Barrier(); 
+		//************************************************************************
+	}
+	PROFILE_STOP("Update");
+
+	PROFILE_STOP("Loop");
+	PROFILE_SAVE("lbpm_color_simulator",1);
+	//************************************************************************
+	// Compute the walltime per timestep
+	auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / (timestep - START_TIMESTEP);
+	// Performance obtained from each node
+	double MLUPS = double(Np)/cputime/1000000;
+
+	if (rank==0) printf("********************************************************\n");
+	if (rank==0) printf("CPU time = %f \n", cputime);
+	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
+	return(MLUPS);
+	MLUPS *= nprocs;
+
+}
+
 void ScaLBL_ColorModel::Run(){
 	int nprocs=nprocx*nprocy*nprocz;
 	const RankInfoStruct rank_info(rank,nprocx,nprocy,nprocz);
@@ -580,7 +695,6 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "krA_morph_factor" )){
 		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
 	}
-	
 	/* defaults for simulation protocols */
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
 	if (protocol == "image sequence"){
@@ -625,7 +739,7 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
 		if (rank == 0) printf("Seed water in oil %f (seed_water) \n",seed_water);
-		USE_SEED = true;
+		ASSERT(protocol == "seed water");
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
@@ -655,7 +769,6 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
-
 
 	if (rank==0){
 		printf("********************************************************\n");
@@ -1320,7 +1433,7 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 	double vF = 0.f;
 	double vS = 0.f;
 	double delta_volume;
-	double WallFactor = 0.0;
+	double WallFactor = 1.0;
 	bool USE_CONNECTED_NWP = false;
 
 	DoubleArray phase(Nx,Ny,Nz);
@@ -1343,6 +1456,11 @@ double ScaLBL_ColorModel::MorphInit(const double beta, const double target_delta
 		}
 	}
 	double volume_initial = Dm->Comm.sumReduce(  count);
+	double PoreVolume = Dm->Volume*Dm->Porosity();
+	/*ensure target isn't an absurdly small fraction of pore volume */
+	if (volume_initial < target_delta_volume*PoreVolume){
+		volume_initial = target_delta_volume*PoreVolume;
+	}
 	/*
 	sprintf(LocalRankFilename,"phi_initial.%05i.raw",rank);
 	FILE *INPUT = fopen(LocalRankFilename,"wb");
