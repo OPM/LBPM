@@ -1,0 +1,31 @@
+module load gcc/7.4.0
+module load spectrum-mpi
+module load cmake
+module load cuda/9.2.148
+module load hip/1.5-cuda9
+
+export TPL_DIR=/gpfs/alpine/eng101/proj-shared/Mark/install
+
+rm -rf CMake*
+
+cmake                                       \
+    -D CMAKE_BUILD_TYPE:STRING=Release      \
+    -D CMAKE_C_COMPILER:PATH=mpicc          \
+    -D CMAKE_CXX_COMPILER:PATH=mpic++       \
+    -D CMAKE_CXX_STANDARD=14                \
+    -D DISABLE_LTO=1                        \
+    -D USE_CUDA=0                           \
+        -D CMAKE_CUDA_FLAGS="-arch sm_70"   \
+        -D CMAKE_CUDA_HOST_COMPILER="/sw/summit/gcc/7.4.0/bin/gcc" \
+    -D USE_HIP=1                            \
+        -D HIP_NVCC_OPTIONS="-arch sm_70"   \
+        -D LINK_LIBRARIES="/sw/summit/cuda/9.2.148/lib64/libcudart.so"   \
+    -D USE_MPI=1                            \
+    -D USE_NETCDF=0                         \
+    -D USE_SILO=1                           \
+        -D SILO_DIRECTORY=${TPL_DIR}/silo   \
+        -D HDF5_DIRECTORY=${TPL_DIR}/hdf5   \
+   -D USE_TIMER=1                          \
+        -D TIMER_DIRECTORY=${TPL_DIR}/timer \
+    -D USE_DOXYGEN=0                        \
+    ${HOME}/repos/LBPM-WIA

@@ -1,18 +1,19 @@
 #include <iostream>
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "common/Utilities.h"
 
 
 int main (int argc, char **argv)
 {
-	MPI_Init(&argc,&argv);
-    int rank = MPI_WORLD_RANK();
-    int nprocs = MPI_WORLD_SIZE();
+    Utilities::startup( argc, argv );
+    Utilities::MPI comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int nprocs = comm.getSize();
 
     for (int i=0; i<nprocs; i++) {
         if ( rank==i )
             printf("%i of %i: Hello world\n",rank,nprocs);
-        MPI_Barrier(MPI_COMM_WORLD);
+        comm.barrier();
     }
 
     // Create a memory leak for valgrind to find
@@ -26,7 +27,6 @@ int main (int argc, char **argv)
     int error = 0;
     
     // Finished
-	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Finalize();
+    Utilities::shutdown();
     return error; 
 }

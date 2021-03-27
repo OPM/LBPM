@@ -12,13 +12,17 @@ Implementation of color lattice boltzmann model
 #include "common/Communication.h"
 #include "analysis/TwoPhase.h"
 #include "analysis/runAnalysis.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
+
+#ifndef ScaLBL_ColorModel_INC
+#define ScaLBL_ColorModel_INC
+
 class ScaLBL_ColorModel{
 public:
-	ScaLBL_ColorModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_ColorModel();	
 	
 	// functions in they should be run
@@ -29,7 +33,9 @@ public:
 	void Create();
 	void Initialize();
 	void Run();
+	double Run(int returntime);
 	void WriteDebug();
+	void getPhaseField(DoubleArray &f);
 	
 	bool Restart,pBC;
 	bool REVERSE_FLOW_DIRECTION;
@@ -68,8 +74,8 @@ public:
 	double *Pressure;
 		
 private:
-	MPI_Comm comm;
-    
+	Utilities::MPI comm;
+
 	int dist_mem_size;
 	int neighborSize;
 	// filenames
@@ -85,4 +91,18 @@ private:
     double SeedPhaseField(const double seed_water_in_oil);
     double MorphOpenConnected(double target_volume_change);
 };
+
+class FlowAdaptor{
+public:
+	FlowAdaptor(ScaLBL_ColorModel &M);
+	~FlowAdaptor();
+	double MoveInterface(ScaLBL_ColorModel &M);
+	DoubleArray phi;
+	DoubleArray phi_t;
+private:
+	int Nx, Ny, Nz;
+	int timestep;
+	int timestep_previous;
+};
+#endif
 

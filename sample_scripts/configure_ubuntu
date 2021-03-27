@@ -1,0 +1,22 @@
+#!/bin/bash
+
+cmake -D CMAKE_C_COMPILER:PATH=/opt/arden/openmpi/3.1.2/bin/mpicc          \
+    -D CMAKE_CXX_COMPILER:PATH=/opt/arden/openmpi/3.1.2/bin/mpicxx        \
+    -D CMAKE_C_FLAGS="-O3 -fPIC"         \
+    -D CMAKE_CXX_FLAGS="-O3 -fPIC "      \
+    -D CMAKE_CXX_STANDARD=14    \
+    -D MPIEXEC=mpirun                     \
+    -D CMAKE_BUILD_TYPE:STRING=Release     \
+    -D CUDA_FLAGS="-arch sm_35"          \
+    -D CUDA_HOST_COMPILER="/usr/bin/gcc" \
+    -D HDF5_DIRECTORY="/opt/arden/hdf5/1.8.12" \
+    -D HDF5_LIB="/opt/arden/hdf5/1.8.12/lib/libhdf5.a"\
+    -D USE_SILO=1 \
+    -D SILO_LIB="/opt/arden/silo/4.10.2/lib/libsiloh5.a" \
+    -D SILO_DIRECTORY="/opt/arden/silo/4.10.2" \
+    -D USE_NETCDF=0  \
+    -D NETCDF_DIRECTORY="/opt/arden/netcdf/4.6.1" \
+    -D USE_CUDA=0                        \
+    -D USE_TIMER=0 \
+    ~/Programs/LBPM-WIA
+

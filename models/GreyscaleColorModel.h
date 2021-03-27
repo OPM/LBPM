@@ -11,13 +11,13 @@ Implementation of two-fluid greyscale color lattice boltzmann model
 
 #include "common/Communication.h"
 #include "analysis/GreyPhase.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
 class ScaLBL_GreyscaleColorModel{
 public:
-	ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM);
+	ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM);
 	~ScaLBL_GreyscaleColorModel();	
 	
 	// functions in they should be run
@@ -72,7 +72,7 @@ public:
     double *Permeability_dvc;
 		
 private:
-	MPI_Comm comm;
+	Utilities::MPI comm;
     
 	int dist_mem_size;
 	int neighborSize;

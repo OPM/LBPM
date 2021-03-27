@@ -15,7 +15,7 @@ void DeleteArray( const TYPE *p )
     delete [] p;
 }
 
-ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, MPI_Comm COMM):
+ScaLBL_GreyscaleColorModel::ScaLBL_GreyscaleColorModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tauA(0),tauB(0),tauA_eff(0),tauB_eff(0),rhoA(0),rhoB(0),alpha(0),beta(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),inletA(0),inletB(0),outletA(0),outletB(0),GreyPorosity(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
@@ -135,9 +135,9 @@ void ScaLBL_GreyscaleColorModel::SetDomain(){
 	id = new signed char [N];
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = 1;               // initialize this way
 	Averages = std::shared_ptr<GreyPhaseAnalysis> ( new GreyPhaseAnalysis(Dm) ); // TwoPhase analysis object
-	MPI_Barrier(comm);
+	comm.barrier();
 	Dm->CommInit();
-	MPI_Barrier(comm);
+	comm.barrier();
 	// Read domain parameters
 	rank = Dm->rank();	
 	nprocx = Dm->nprocx();
@@ -167,7 +167,7 @@ void ScaLBL_GreyscaleColorModel::ReadInput(){
         ASSERT( (int) size1[0] == size0[0]+2 && (int) size1[1] == size0[1]+2 && (int) size1[2] == size0[2]+2 );
         fillHalo<signed char> fill( MPI_COMM_WORLD, Mask->rank_info, size0, { 1, 1, 1 }, 0, 1 );
         Array<signed char> id_view;
-        id_view.viewRaw( size1, Mask->id );
+        id_view.viewRaw( size1, Mask->id.data());
         fill.copy( input_id, id_view );
         fill.fill( id_view );
 	}
@@ -273,7 +273,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
 	for (size_t idx=0; idx<NLABELS; idx++)
-		label_count_global[idx] = sumReduce( Dm->Comm, label_count[idx]);
+		label_count_global[idx] = Dm->Comm.sumReduce(  label_count[idx]);
 
 	if (rank==0){
 		printf("Number of component labels: %lu \n",NLABELS);
@@ -286,8 +286,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 	}
 
 	ScaLBL_CopyToDevice(Phi, phase, N*sizeof(double));
-	ScaLBL_DeviceBarrier();
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+	ScaLBL_Comm->Barrier();
     delete [] phase;
 }
 
@@ -447,7 +446,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//Model-4
     
     
 	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
     delete [] SolidPotential_host;
     delete [] GreySolidGrad_host;
     delete [] Dst;
@@ -545,7 +544,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=sumReduce( Dm->Comm, label_count[idx]);
+	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
@@ -571,7 +570,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 
 	ScaLBL_CopyToDevice(Porosity_dvc, Porosity, Np*sizeof(double));
 	ScaLBL_CopyToDevice(Permeability_dvc, Permeability, Np*sizeof(double));
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
     delete [] Porosity;
     delete [] Permeability;
 }
@@ -601,8 +600,8 @@ void ScaLBL_GreyscaleColorModel::Create(){
 	if (rank==0)    printf ("Set up memory efficient layout, %i | %i | %i \n", Np, Npad, N);
 	Map.resize(Nx,Ny,Nz);       Map.fill(-2);
 	auto neighborList= new int[18*Npad];
-	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id,Np);
-	MPI_Barrier(comm);
+       	Np = ScaLBL_Comm->MemoryOptimizedLayoutAA(Map,neighborList,Mask->id.data(),Np,1);
+	comm.barrier();
 
 	//...........................................................................
 	//                MAIN  VARIABLES ALLOCATED HERE
@@ -658,7 +657,7 @@ void ScaLBL_GreyscaleColorModel::Create(){
 		}
 	}
 	ScaLBL_CopyToDevice(dvcMap, TmpMap, sizeof(int)*Np);
-	ScaLBL_DeviceBarrier();
+	ScaLBL_Comm->Barrier();
 	delete [] TmpMap;
 	
 	// copy the neighbor list 
@@ -739,9 +738,9 @@ void ScaLBL_GreyscaleColorModel::Initialize(){
 		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
 		ScaLBL_CopyToDevice(fq,cDist,19*Np*sizeof(double));
 		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 
-		MPI_Barrier(comm);
+		comm.barrier();
 
         if (rank==0)	printf ("Initializing phase field from Restart\n");
         ScaLBL_PhaseField_InitFromRestart(Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
@@ -911,10 +910,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	}
 
 	//.......create and start timer............
-	double starttime,stoptime,cputime;
-	ScaLBL_DeviceBarrier();
-	MPI_Barrier(comm);
-	starttime = MPI_Wtime();
+	ScaLBL_Comm->Barrier();
+	comm.barrier();
 	//.........................................
 
 	//************ MAIN ITERATION LOOP ***************************************/
@@ -924,6 +921,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	auto current_db = db->cloneDatabase();
 	//runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
+    auto t1 = std::chrono::system_clock::now();
 	while (timestep < timestepMax ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
 		PROFILE_START("Update");
@@ -934,7 +932,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAodd_PhaseField(NeighborList, dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -955,7 +953,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set BCs
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
@@ -978,16 +976,15 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //ScaLBL_D3Q19_AAodd_GreyscaleColor(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
         //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-
+		ScaLBL_Comm->Barrier(); 
+		
 		// *************EVEN TIMESTEP*************
 		timestep++;
 		// Compute the Phase indicator field
 		ScaLBL_Comm->BiSendD3Q7AA(Aq,Bq); //READ FROM NORMAL
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm->BiRecvD3Q7AA(Aq,Bq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		ScaLBL_D3Q7_AAeven_PhaseField(dvcMap, Aq, Bq, Den, Phi, 0, ScaLBL_Comm->LastExterior(), Np);
 
 		// Perform the collision operation
@@ -1008,7 +1005,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //        alpha, beta, Fx, Fy, Fz,  Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_Regular->RecvHalo(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(fq); //WRITE INTO OPPOSITE
-		ScaLBL_DeviceBarrier();
+		ScaLBL_Comm->Barrier();
 		// Set boundary conditions
 		if (BoundaryCondition == 3){
 			ScaLBL_Comm->D3Q19_Pressure_BC_z(NeighborList, fq, din, timestep);
@@ -1031,9 +1028,8 @@ void ScaLBL_GreyscaleColorModel::Run(){
         //ScaLBL_D3Q19_AAeven_GreyscaleColor(dvcMap, fq, Aq, Bq, Den, Phi,GreySolidPhi,Porosity_dvc,Permeability_dvc,Velocity,
         //        rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
         //        alpha, beta, Fx, Fy, Fz, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_DeviceBarrier(); 
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-		//************************************************************************
+		ScaLBL_Comm->Barrier(); 
+				//************************************************************************
 		PROFILE_STOP("Update");
 
         //TODO For temporary use - writing Restart and Vis files should be included in the analysis framework in the future
@@ -1074,7 +1070,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
                 }
             }
             RESTARTFILE.close();
-		    MPI_Barrier(comm);
+		    comm.barrier();
         }
 		if (timestep%visualization_interval==0){
             WriteVisFiles();
@@ -1315,18 +1311,17 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			}
 			morph_timesteps += analysis_interval;
 		}
-		MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+		ScaLBL_Comm->Barrier();
 	}
 	//analysis.finish();
 	PROFILE_STOP("Loop");
 	PROFILE_SAVE("lbpm_color_simulator",1);
 	//************************************************************************
-	ScaLBL_DeviceBarrier();
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
-	stoptime = MPI_Wtime();
+	ScaLBL_Comm->Barrier();
 	if (rank==0) printf("-------------------------------------------------------------------\n");
 	// Compute the walltime per timestep
-	cputime = (stoptime - starttime)/timestep;
+    auto t2 = std::chrono::system_clock::now();
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / timestep;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 
@@ -1369,14 +1364,14 @@ void ScaLBL_GreyscaleColorModel::ImageInit(std::string Filename){
 //			}
 //		}
 //	}
-//	Count=sumReduce( Dm->Comm, Count);
-//	PoreCount=sumReduce( Dm->Comm, PoreCount);
+//	Count=Dm->Comm.sumReduce(  Count);
+//	PoreCount=Dm->Comm.sumReduce(  PoreCount);
 //	if (rank==0) printf("   new saturation: %f (%f / %f) \n", Count / PoreCount, Count, PoreCount);
 	
 	ScaLBL_D3Q19_Init(fq, Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
 	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	MPI_Barrier(ScaLBL_Comm->MPI_COMM_SCALBL);
+	ScaLBL_Comm->Barrier();
 	
 	//ScaLBL_CopyToHost(Averages->Phi.data(),Phi,Nx*Ny*Nz*sizeof(double));
 
@@ -1447,8 +1442,8 @@ double ScaLBL_GreyscaleColorModel::SeedPhaseField(const double seed_water_in_oil
     mass_loss += random_value*seed_water_in_oil;
   }
 
-  count= sumReduce( Dm->Comm, count);
-  mass_loss= sumReduce( Dm->Comm, mass_loss);
+  count= Dm->Comm.sumReduce(  count);
+  mass_loss= Dm->Comm.sumReduce(  mass_loss);
   if (rank == 0) printf("Remove mass %.5g from %.5g voxels \n",mass_loss,count);
 
   // Need to initialize Aq, Bq, Den, Phi directly
@@ -1828,7 +1823,7 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 //    
 //    
 //	ScaLBL_CopyToDevice(GreySolidGrad, GreySolidGrad_host, 3*Np*sizeof(double));
-//	ScaLBL_DeviceBarrier();
+//	ScaLBL_Comm->Barrier();
 //    delete [] SolidPotential_host;
 //    delete [] GreySolidGrad_host;
 //    delete [] Dst;
@@ -1976,7 +1971,7 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 //	}
 //    
 //	ScaLBL_CopyToDevice(GreySolidPhi, GreySolidPhi_host, Nx*Ny*Nz*sizeof(double));
-//	ScaLBL_DeviceBarrier();
+//	ScaLBL_Comm->Barrier();
 //
 //    //debug
 //	//FILE *OUTFILE;
@@ -2047,7 +2042,7 @@ void ScaLBL_GreyscaleColorModel::WriteDebug(){
 //	}
 //    
 //	ScaLBL_CopyToDevice(GreySolidPhi, GreySolidPhi_host, Nx*Ny*Nz*sizeof(double));
-//	ScaLBL_DeviceBarrier();
+//	ScaLBL_Comm->Barrier();
 //
 //    //debug
 //	FILE *OUTFILE;

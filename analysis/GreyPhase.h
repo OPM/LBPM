@@ -10,7 +10,7 @@
 #include "common/Communication.h"
 #include "analysis/analysis.h"
 #include "common/Utilities.h"
-#include "common/MPI_Helpers.h"
+#include "common/MPI.h"
 #include "IO/MeshDatabase.h"
 #include "IO/Reader.h"
 #include "IO/Writer.h"
