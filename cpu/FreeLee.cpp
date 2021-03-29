@@ -161,9 +161,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int
 		fq = hq[nread];
 		phi += fq;
 		
-		if (phi > 1.f)   phi = 1.0;
-		if (phi < -1.f)  phi = -1.0;
-
 		// save the number densities
 		Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
 		
@@ -209,9 +206,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq,
 		// q = 6
 		fq = hq[5*Np+n];
 		phi += fq;
-
-		if (phi > 1.f)   phi = 1.0;
-		if (phi < -1.f)  phi = -1.0;
 
 		// save the number densities
 		Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
