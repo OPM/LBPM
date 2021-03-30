@@ -1523,6 +1523,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 	double tau;//position dependent LB relaxation time for fluid
     double C,theta;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double phi_temp;
 
 	for (int n=start; n<finish; n++){
 
@@ -1531,6 +1532,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
         phi = Phi[ijk];// load phase field
+        phi_temp = phi;
+        if (phi>1.f) phi_temp=1.0;
+        if (phi<-1.f) phi_temp=-1.0;
 
 		// local relaxation time
 		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
@@ -1673,8 +1677,10 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		ny = -3.0*1.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
 		nz = -3.0*1.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 		//............Compute the Chemical Potential...............................
-        chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
-        chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+        //chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
+        //chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+        chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi_temp+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi_temp));//intermediate var, i.e. the laplacian
+        chem = 4.0*beta*phi_temp*(phi_temp+1.0)*(phi_temp-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
 		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
 		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
@@ -1685,7 +1691,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		if (C<1.0e-12) nx=ny=nz=0.0;
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
-        //TODO - maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
+        //maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
         if (fabs(chem)<1.0e-12) chem=0.0;
 
 		// q=0
@@ -2052,7 +2058,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		ny = ny/ColorMag;
 		nz = nz/ColorMag;		
         //compute surface tension-related parameter
-        theta = 4.5*M*2.0*(1-phi*phi)/W;
+        //theta = 4.5*M*2.0*(1-phi*phi)/W;
+        theta = 4.5*M*2.0*(1-phi_temp*phi_temp)/W;
 
         //load distributions of phase field
 		//q=0
@@ -2139,6 +2146,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 	double tau;//position dependent LB relaxation time for fluid
     double C,theta;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double phi_temp;
 
 	for (int n=start; n<finish; n++){
 
@@ -2147,6 +2155,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
         phi = Phi[ijk];// load phase field
+        phi_temp = phi;
+        if (phi>1.f) phi_temp=1.0;
+        if (phi<-1.f) phi_temp=-1.0;
 
 		// local relaxation time
 		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
@@ -2289,8 +2300,10 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 		ny = -3.0*1.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
 		nz = -3.0*1.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 		//............Compute the Chemical Potential...............................
-        chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
-        chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+        //chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
+        //chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+        chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi_temp+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi_temp));//intermediate var, i.e. the laplacian
+        chem = 4.0*beta*phi_temp*(phi_temp+1.0)*(phi_temp-1.0)-kappa*chem;
 		//............Compute the Mixed Gradient...................................
 		mgx = -3.0*1.0/18.0*(mm1-mm2+0.5*(mm7-mm8+mm9-mm10+mm11-mm12+mm13-mm14));
 		mgy = -3.0*1.0/18.0*(mm3-mm4+0.5*(mm7-mm8-mm9+mm10+mm15-mm16+mm17-mm18));
@@ -2301,7 +2314,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 		if (C<1.0e-12) nx=ny=nz=0.0;
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
-        //TODO - maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
+        //maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
         if (fabs(chem)<1.0e-12) chem=0.0;
 
 		// q=0
@@ -2651,7 +2664,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 		ny = ny/ColorMag;
 		nz = nz/ColorMag;		
         //compute surface tension-related parameter
-        theta = 4.5*M*2.0*(1-phi*phi)/W;
+        //theta = 4.5*M*2.0*(1-phi*phi)/W;
+        theta = 4.5*M*2.0*(1-phi_temp*phi_temp)/W;
 
         //load distributions of phase field
 		//q=0
