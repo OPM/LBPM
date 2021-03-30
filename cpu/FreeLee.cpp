@@ -2048,6 +2048,158 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
         0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
         //----------------------------------------------------------------------------------------------------------------------------------------//
 
+//        //------------------------------------------ BCK collison without mixed grad ------------------------------------------------------------//
+//		// q=0
+//		dist[n] = m0 - (m0-feq0)/tau + 0.25*(2*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) + 
+//     (nx*ux + ny*uy + nz*uz)*(2*chem*(ux*ux + uy*uy + uz*uz) + 
+//        0.3333333333333333*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*uz)))); 
+//
+//		// q = 1
+//		dist[nr2] = m1 - (m1-feq1)/tau + 0.125*(2*(Fx*(-1 + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+//     (nx*(-1 + ux) + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz))));
+//
+//		// q=2
+//		dist[nr1] = m2 - (m2-feq2)/tau + 0.125*(2*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+//        0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+//     (nx + nx*ux + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*uz))));
+//
+//		// q = 3
+//		dist[nr4] = m3 - (m3-feq3)/tau + 0.125*(2*(Fx*ux + Fy*(-1 + uy) + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+//        0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*ux + ny*(-1 + uy) + nz*uz)*(-2*chem*(uy*uy) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 4
+//		dist[nr3] = m4 - (m4-feq4)/tau + 0.125*(2*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+//        0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (ny + nx*ux + ny*uy + nz*uz)*(-2*chem*(uy*uy) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 5
+//		dist[nr6] = m5 - (m5-feq5)/tau + 0.125*(2*(Fx*ux + Fy*uy + Fz*(-1 + uz))*(-0.2222222222222222 - uz*uz + 
+//        0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*ux + ny*uy + nz*(-1 + uz))*(-2*chem*(uz*uz) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 6
+//		dist[nr5] = m6 - (m6-feq6)/tau + 0.125*(2*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uz*uz + 
+//        0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) + 
+//     (nz + nx*ux + ny*uy + nz*uz)*(-2*chem*(uz*uz) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 7
+//		dist[nr8] = m7 - (m7-feq7)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+//      (0.2222222222222222 + (ux + uy)*(ux + uy) - 
+//        0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*(-1 + ux) + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 8
+//		dist[nr7] = m8 - (m8-feq8)/tau + 0.0625*(2*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux + uy)*(ux + uy) + 
+//        0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (nx + ny + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 9
+//		dist[nr10] = m9 - (m9-feq9)/tau + 0.0625*(2*(Fy + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+//        0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (ny + nx*(-1 + ux) + ny*uy + nz*uz)*
+//      (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 10
+//		dist[nr9] = m10 - (m10-feq10)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+//        0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*(1 + ux) + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 11
+//		dist[nr12] = m11 - (m11-feq11)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*uy + Fz*(-1 + uz))*
+//      (0.2222222222222222 + (ux + uz)*(ux + uz) - 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*(-1 + ux) + ny*uy + nz*(-1 + uz))*
+//      (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 12
+//		dist[nr11] = m12 - (m12-feq12)/tau + 0.0625*(2*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))
+//       + (nx + nz + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 13
+//		dist[nr14] = m13 - (m13-feq13)/tau + 0.0625*(2*(Fz + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//     (nz + nx*(-1 + ux) + ny*uy + nz*uz)*
+//      (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q= 14
+//		dist[nr13] = m14 - (m14-feq14)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*uy + Fz*(-1 + uz))*
+//      (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+//        0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*(1 + ux) + ny*uy + nz*(-1 + uz))*
+//      (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 15
+//		dist[nr16] = m15 - (m15-feq15)/tau + 0.0625*(-2*(Fx*ux + Fy*(-1 + uy) + Fz*(-1 + uz))*
+//      (0.2222222222222222 + (uy + uz)*(uy + uz) - 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))
+//       + (nx*ux + ny*(-1 + uy) + nz*(-1 + uz))*
+//      (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 16
+//		dist[nr15] = m16 - (m16-feq16)/tau + 0.0625*(2*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))
+//       + (ny + nz + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 17
+//		dist[nr18] = m17 - (m17-feq17)/tau + 0.0625*(2*(Fz + Fx*ux + Fy*(-1 + uy) + Fz*uz)*
+//      (-0.2222222222222222 - (uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))
+//       + (nz + nx*ux + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 18
+//		dist[nr17] = m18 - (m18-feq18)/tau + 0.0625*(2*(Fx*ux + Fy*(1 + uy) + Fz*(-1 + uz))*
+//      (-0.2222222222222222 - (uy - uz)*(uy - uz) + 
+//        0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*ux + ny*(1 + uy) + nz*(-1 + uz))*
+//      (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
+//        //----------------------------------------------------------------------------------------------------------------------------------------//
 
         // ----------------------------- compute phase field evolution ----------------------------------------
 		//Normalize the Color Gradient
@@ -2654,6 +2806,158 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
         0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
         //----------------------------------------------------------------------------------------------------------------------------------------//
 
+//        //----------------------------------------- BCK collison without mixed grad ------------------------------------------------------------//
+//		// q=0
+//		dist[n] = m0 - (m0-feq0)/tau + 0.25*(2*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) + 
+//     (nx*ux + ny*uy + nz*uz)*(2*chem*(ux*ux + uy*uy + uz*uz) + 
+//        0.3333333333333333*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*uz))));
+//
+//		// q = 1
+//		dist[1*Np+n] = m1 - (m1-feq1)/tau + 0.125*(2*(Fx*(-1 + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+//     (nx*(-1 + ux) + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz))));
+//
+//		// q=2
+//		dist[2*Np+n] = m2 - (m2-feq2)/tau + 0.125*(2*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+//        0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+//     (nx + nx*ux + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*uz))));
+//
+//		// q = 3
+//		dist[3*Np+n] = m3 - (m3-feq3)/tau + 0.125*(2*(Fx*ux + Fy*(-1 + uy) + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+//        0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*ux + ny*(-1 + uy) + nz*uz)*(-2*chem*(uy*uy) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 4
+//		dist[4*Np+n] = m4 - (m4-feq4)/tau + 0.125*(2*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+//        0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (ny + nx*ux + ny*uy + nz*uz)*(-2*chem*(uy*uy) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 5
+//		dist[5*Np+n] = m5 - (m5-feq5)/tau + 0.125*(2*(Fx*ux + Fy*uy + Fz*(-1 + uz))*(-0.2222222222222222 - uz*uz + 
+//        0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*ux + ny*uy + nz*(-1 + uz))*(-2*chem*(uz*uz) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 6
+//		dist[6*Np+n] = m6 - (m6-feq6)/tau + 0.125*(2*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uz*uz + 
+//        0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) + 
+//     (nz + nx*ux + ny*uy + nz*uz)*(-2*chem*(uz*uz) + 
+//        0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 7
+//		dist[7*Np+n] = m7 - (m7-feq7)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+//      (0.2222222222222222 + (ux + uy)*(ux + uy) - 
+//        0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*(-1 + ux) + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 8
+//		dist[8*Np+n] = m8 - (m8-feq8)/tau + 0.0625*(2*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux + uy)*(ux + uy) + 
+//        0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (nx + ny + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 9
+//		dist[9*Np+n] = m9 - (m9-feq9)/tau + 0.0625*(2*(Fy + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+//        0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//     (ny + nx*(-1 + ux) + ny*uy + nz*uz)*
+//      (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 10
+//		dist[10*Np+n] = m10 - (m10-feq10)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+//        0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//     (nx*(1 + ux) + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+//
+//		// q = 11
+//		dist[11*Np+n] = m11 - (m11-feq11)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*uy + Fz*(-1 + uz))*
+//      (0.2222222222222222 + (ux + uz)*(ux + uz) - 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*(-1 + ux) + ny*uy + nz*(-1 + uz))*
+//      (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 12
+//		dist[12*Np+n] = m12 - (m12-feq12)/tau + 0.0625*(2*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))
+//       + (nx + nz + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 13
+//		dist[13*Np+n] = m13 - (m13-feq13)/tau + 0.0625*(2*(Fz + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+//        0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//     (nz + nx*(-1 + ux) + ny*uy + nz*uz)*
+//      (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+//
+//		// q= 14
+//		dist[14*Np+n] = m14 - (m14-feq14)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*uy + Fz*(-1 + uz))*
+//      (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+//        0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*(1 + ux) + ny*uy + nz*(-1 + uz))*
+//      (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 15
+//		dist[15*Np+n] = m15 - (m15-feq15)/tau + 0.0625*(-2*(Fx*ux + Fy*(-1 + uy) + Fz*(-1 + uz))*
+//      (0.2222222222222222 + (uy + uz)*(uy + uz) - 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))
+//       + (nx*ux + ny*(-1 + uy) + nz*(-1 + uz))*
+//      (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))));
+//
+//		// q = 16
+//		dist[16*Np+n] = m16 - (m16-feq16)/tau + 0.0625*(2*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*
+//      (-0.2222222222222222 - (uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))
+//       + (ny + nz + nx*ux + ny*uy + nz*uz)*
+//      (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 17
+//		dist[17*Np+n] = m17 - (m17-feq17)/tau + 0.0625*(2*(Fz + Fx*ux + Fy*(-1 + uy) + Fz*uz)*
+//      (-0.2222222222222222 - (uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))
+//       + (nz + nx*ux + ny*(-1 + uy) + nz*uz)*
+//      (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))));
+//
+//		// q = 18
+//		dist[18*Np+n] = m18 - (m18-feq18)/tau + 0.0625*(2*(Fx*ux + Fy*(1 + uy) + Fz*(-1 + uz))*
+//      (-0.2222222222222222 - (uy - uz)*(uy - uz) + 
+//        0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//     (nx*ux + ny*(1 + uy) + nz*(-1 + uz))*
+//      (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+//         (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+//        0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
+//        //----------------------------------------------------------------------------------------------------------------------------------------//
 
         // ----------------------------- compute phase field evolution ----------------------------------------
 		//Normalize the Color Gradient
