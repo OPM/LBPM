@@ -40,7 +40,7 @@ public:
 	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
     bool RecoloringOff;//recoloring can be turn off for grey nodes if this is true
-    double W;//wetting strength paramter for capillary pressure penalty for grey nodes
+    //double W;//wetting strength paramter for capillary pressure penalty for grey nodes
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -67,13 +67,14 @@ public:
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
     //double *GreySolidPhi; //Model 2 & 3
-    double *GreySolidGrad;//Model 1 & 4
+    //double *GreySolidGrad;//Model 1 & 4
+    double *GreySolidW;
 	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
     double *Porosity_dvc;
     double *Permeability_dvc;
-    double *Psi;
+    //double *Psi;
 		
 private:
 	Utilities::MPI comm;
@@ -90,7 +91,7 @@ private:
     void AssignComponentLabels();
     void AssignGreySolidLabels();
     void AssignGreyPoroPermLabels();
-    void AssignGreyscalePotential();
+    //void AssignGreyscalePotential();
     void ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
