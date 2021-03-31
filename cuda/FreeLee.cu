@@ -132,157 +132,6 @@ __global__ void dvc_ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, d
 	}
 }
 
-__global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, 
-                                                          double rhoA, double rhoB, int start, int finish, int Np){
-
-	int idx,n,nread;
-	double fq,phi;
-	int S = Np/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
-
-		if ( n<finish ){
-
-			// q=0
-			fq = hq[n];
-			phi = fq;
-
-			// q=1
-			nread = neighborList[n]; 
-			fq = hq[nread];
-			phi += fq;
-
-			// q=2
-			nread = neighborList[n+Np]; 
-			fq = hq[nread];  
-			phi += fq;
-
-			// q=3
-			nread = neighborList[n+2*Np]; 
-			fq = hq[nread];
-			phi += fq;
-
-			// q = 4
-			nread = neighborList[n+3*Np]; 
-			fq = hq[nread];
-			phi += fq;
-
-			// q=5
-			nread = neighborList[n+4*Np];
-			fq = hq[nread];
-			phi += fq;
-
-			// q = 6
-			nread = neighborList[n+5*Np];
-			fq = hq[nread];
-			phi += fq;
-
-			// save the number densities
-			Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
-
-			// save the phase indicator field
-			idx = Map[n];
-			Phi[idx] = phi; 
-		}
-	}
-}
-
-__global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
-		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
-
-	int n,idx,nr1,nr2,nr3,nr4,nr5,nr6;
-	double h0,h1,h2,h3,h4,h5,h6;
-	double nx,ny,nz,C;
-	double ux,uy,uz;
-	double phi, theta;
-	double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
-	//double factor = 1.0;
-	//	for (int n=start; n<finish; n++){
-	int S = Np/NBLOCKS/NTHREADS + 1;
-	for (int s=0; s<S; s++){
-		//........Get 1-D index for this thread....................
-		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
-
-		if ( n<finish ){		
-			/* load phase indicator field */
-			idx = Map[n];
-			phi = Phi[idx];
-	        theta = 4.5*M*2.0*(1-phi*phi)/W;
-
-			/* velocity */
-			ux = Vel[0*Np+n];
-			uy = Vel[1*Np+n];
-			uz = Vel[2*Np+n];
-
-	        /*color gradient */
-			nx = ColorGrad[0*Np+n];
-			ny = ColorGrad[1*Np+n];
-			nz = ColorGrad[2*Np+n];
-			
-			//Normalize the Color Gradient
-			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C < 1.0e-12) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
-
-			// q=1
-			nr1 = neighborList[n]; 
-			nr2 = neighborList[n+Np]; 
-			nr3 = neighborList[n+2*Np]; 
-			nr4 = neighborList[n+3*Np];
-			nr5 = neighborList[n+4*Np];
-			nr6 = neighborList[n+5*Np];
-			
-			//q=0
-			h0 = hq[n];
-			//q=1
-			h1 = hq[nr1]; 
-			//q=2
-			h2 = hq[nr2];  
-			//q=3
-			h3 = hq[nr3];
-			//q=4
-			h4 = hq[nr4];
-			//q=5
-			h5 = hq[nr5];
-			//q=6
-			h6 = hq[nr6];
-
-	        //-------------------------------- BGK collison for phase field ---------------------------------//
-			h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-	//		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-	//		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-	//		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-	//		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-	//		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-	//		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-			h1 -= (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
-			h2 -= (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
-			h3 -= (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
-			h4 -= (h4 + 0.1111111111111111*ny*theta - phi*(0.1111111111111111 - 0.5*uy))/tauM;
-			h5 -= (h5 - 0.1111111111111111*nz*theta - phi*(0.1111111111111111 + 0.5*uz))/tauM;
-			h6 -= (h6 + 0.1111111111111111*nz*theta - phi*(0.1111111111111111 - 0.5*uz))/tauM; 
-			//........................................................................
-			
-			/*Update the distributions */
-			// q = 0
-			hq[n] = h0;
-			hq[nr2] = h1;
-			hq[nr1] = h2;
-			hq[nr4] = h3;
-			hq[nr3] = h4;
-			hq[nr6] = h5;
-			hq[nr5] = h6;
-			//........................................................................
-			
-		}
-	}
-}
-
-
 __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 	
@@ -2728,7 +2577,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *
 __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, 
 		double rhoA, double rhoB, int start, int finish, int Np){
 
-	int idx,nread;
+	int n,idx,nread;
 	double fq,phi;
 
 	//	for (int n=start; n<finish; n++){
@@ -2786,7 +2635,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList,
 
 __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq, double *Den, double *Phi, 
 		double rhoA, double rhoB, int start, int finish, int Np){
-	int idx;
+	int idx,n;
 	double fq,phi;
 	//	for (int n=start; n<finish; n++){
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -2796,7 +2645,6 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double 
 
 		if ( n<finish ){
 
-		}
 		// q=0
 		fq = hq[n];
 		phi = fq;
@@ -3395,24 +3243,24 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
                                                           double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np)
 {
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, cudaFuncCachePreferL1);
-	dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
-             rhoA,  rhoB, tauM, W, start, finish,  Np);
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAodd_FreeLee_PhaseField: %s \n",cudaGetErrorString(err));
-	}
+//	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, cudaFuncCachePreferL1);
+//	dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
+ //            rhoA,  rhoB, tauM, W, start, finish,  Np);
+//	cudaError_t err = cudaGetLastError();
+//	if (cudaSuccess != err){
+//		printf("CUDA error in ScaLBL_D3Q7_AAodd_FreeLee_PhaseField: %s \n",cudaGetErrorString(err));
+//	}
 }
 
 extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, cudaFuncCachePreferL1);
-	dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
-	cudaError_t err = cudaGetLastError();
-	if (cudaSuccess != err){
-		printf("CUDA error in ScaLBL_D3Q7_AAeven_FreeLee_PhaseField: %s \n",cudaGetErrorString(err));
-	}
+//	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, cudaFuncCachePreferL1);
+//	dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
+//	cudaError_t err = cudaGetLastError();
+//	if (cudaSuccess != err){
+//		printf("CUDA error in ScaLBL_D3Q7_AAeven_FreeLee_PhaseField: %s \n",cudaGetErrorString(err));
+//	}
 }
 
 
