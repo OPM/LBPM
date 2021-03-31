@@ -72,7 +72,7 @@ int main( int argc, char **argv )
         	Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
         	timestep += visualization_time;
         }
-        //LeeModel.WriteDebug_TwoFluid();
+        LeeModel.WriteDebug_TwoFluid();
     	if (rank==0) printf("********************************************************\n");
     	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
     	MLUPS *= nprocs;
