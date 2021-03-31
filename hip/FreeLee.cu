@@ -195,9 +195,9 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int 
 	double h0,h1,h2,h3,h4,h5,h6;
 	double nx,ny,nz,C;
 	double ux,uy,uz;
-	double phi;
+	double phi, theta;
 	double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
-	double factor = 1.0;
+	//double factor = 1.0;
 	//	for (int n=start; n<finish; n++){
 	int S = Np/NBLOCKS/NTHREADS + 1;
 	for (int s=0; s<S; s++){
@@ -290,7 +290,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq,
 	double h0,h1,h2,h3,h4,h5,h6;
 	double nx,ny,nz,C;
 	double ux,uy,uz;
-	double phi;
+	double phi, theta;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
     double factor = 1.0;
 	int S = Np/NBLOCKS/NTHREADS + 1;
@@ -302,7 +302,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq,
 			/* load phase indicator field */
 			idx = Map[n];
 			phi = Phi[idx];
-	        theta = 4.5*M*2.0*(1-phi*phi)/W;
+	                theta = 4.5*M*2.0*(1-phi*phi)/W;
 
 			/* velocity */
 			ux = Vel[0*Np+n];
@@ -1494,6 +1494,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, 
         double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
         int strideY, int strideZ, int start, int finish, int Np){
 
+	int n,nn,nn2x,ijk;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
@@ -2723,7 +2724,117 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *
     	}
     }
 }
-    	}
+
+__global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, 
+		double rhoA, double rhoB, int start, int finish, int Np){
+
+	int idx,nread;
+	double fq,phi;
+
+	//	for (int n=start; n<finish; n++){
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+		if ( n<finish ){
+			// q=0
+			fq = hq[n];
+			phi = fq;
+
+			// q=1
+			nread = neighborList[n]; 
+			fq = hq[nread];
+			phi += fq;
+
+			// q=2
+			nread = neighborList[n+Np]; 
+			fq = hq[nread];  
+			phi += fq;
+
+			// q=3
+			nread = neighborList[n+2*Np]; 
+			fq = hq[nread];
+			phi += fq;
+
+			// q = 4
+			nread = neighborList[n+3*Np]; 
+			fq = hq[nread];
+			phi += fq;
+
+			// q=5
+			nread = neighborList[n+4*Np];
+			fq = hq[nread];
+			phi += fq;
+
+			// q = 6
+			nread = neighborList[n+5*Np];
+			fq = hq[nread];
+			phi += fq;
+
+			// save the number densities
+			Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+
+			// save the phase indicator field
+			idx = Map[n];
+			Phi[idx] = phi; 
+		}
+	}
+}
+
+
+
+__global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq, double *Den, double *Phi, 
+		double rhoA, double rhoB, int start, int finish, int Np){
+	int idx;
+	double fq,phi;
+	//	for (int n=start; n<finish; n++){
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+		if ( n<finish ){
+
+		}
+		// q=0
+		fq = hq[n];
+		phi = fq;
+
+		// q=1
+		fq = hq[2*Np+n];
+		phi += fq;
+
+		// f2 = hq[10*Np+n];
+		fq = hq[1*Np+n];
+		phi += fq;
+
+		// q=3
+		fq = hq[4*Np+n];
+		phi += fq;
+
+		// q = 4
+		fq = hq[3*Np+n];
+		phi += fq;
+
+		// q=5
+		fq = hq[6*Np+n];
+		phi += fq;
+
+		// q = 6
+		fq = hq[5*Np+n];
+		phi += fq;
+
+		// save the number densities
+		Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+
+		// save the phase indicator field
+		idx = Map[n];
+		Phi[idx] = phi; 
+	}
+}	
+}
+
 __global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
 		double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
@@ -3352,6 +3463,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("hip error in ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined: %s \n",hipGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int *Map, double *dist, double *hq, double *Den, double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
@@ -3364,7 +3476,27 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("hip error in ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined: %s \n",hipGetErrorString(err));
-		
+	}	
+}
+
+extern "C" void ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, 
+                                                          double rhoA, double rhoB, int start, int finish, int Np){
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField<<<NBLOCKS,NTHREADS >>>( neighborList, Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
+	hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("hip error in ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField: %s \n",hipGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField(int *Map, double *hq, double *Den, double *Phi, double rhoA, double rhoB, int start, int finish, int Np){
+
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
+	hipError_t err = hipGetLastError();
+	if (hipSuccess != err){
+		printf("hip error in ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField: %s \n",hipGetErrorString(err));
+	}
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
