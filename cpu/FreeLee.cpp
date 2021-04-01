@@ -83,7 +83,6 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
     double theta;//anti-diffusion term
     double cs2_inv = 4.5;//inverse of speed of sound for D3Q7
     double M = 1.0/cs2_inv*(tauM-0.5);//diffusivity (or mobility)
-    double factor = 1.0;
 
 	for (idx=start; idx<finish; idx++){
 
@@ -104,9 +103,7 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 		ny = ny/ColorMag_temp;
 		nz = nz/ColorMag_temp;		
 
-        //theta = M*cs2_inv*(1-factor*phi*phi)/W;
-        theta = 4.5*M*2.0*(1-phi*phi)/W;
-        //theta = 0; // try more diffusive initial condition
+        theta = M*cs2_inv*2.0*(1-phi*phi)/W;
         
 		hq[0*Np+idx]=0.3333333333333333*(phi);
 		hq[1*Np+idx]=0.1111111111111111*(phi+theta*nx);
@@ -225,7 +222,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 	double ux,uy,uz;
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
-    double factor = 1.0;
     double theta;
 
 	for (int n=start; n<finish; n++){
@@ -278,12 +274,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 
         //-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-//		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-//		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-//		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-//		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-//		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-//		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
 		h1 -= (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
 		h2 -= (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
 		h3 -= (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
@@ -317,7 +307,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 	double ux,uy,uz;
 	double phi;
     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
-    double factor = 1.0;
     double theta;
 
 	for (int n=start; n<finish; n++){
@@ -354,12 +343,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 
 		//-------------------------------- BGK collison for phase field ---------------------------------//
 		h0 -= (h0 - 0.3333333333333333*phi)/tauM;
-//		h1 -= (h1 - phi*(0.1111111111111111 + 0.5*ux) - (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-//		h2 -= (h2 - phi*(0.1111111111111111 - 0.5*ux) + (0.5*M*nx*(1 - factor*phi*phi))/W)/tauM;
-//		h3 -= (h3 - phi*(0.1111111111111111 + 0.5*uy) - (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-//		h4 -= (h4 - phi*(0.1111111111111111 - 0.5*uy) + (0.5*M*ny*(1 - factor*phi*phi))/W)/tauM;
-//		h5 -= (h5 - phi*(0.1111111111111111 + 0.5*uz) - (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
-//		h6 -= (h6 - phi*(0.1111111111111111 - 0.5*uz) + (0.5*M*nz*(1 - factor*phi*phi))/W)/tauM;
 		h1 -= (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
 		h2 -= (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
 		h3 -= (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
@@ -1518,7 +1501,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
     double nx,ny,nz;//normal color gradient
     double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
 
-	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
 	double tau;//position dependent LB relaxation time for fluid
     double C,theta;
@@ -1687,11 +1669,11 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
         //de-noise color gradient and mixed gradient
-		C = sqrt(nx*nx+ny*ny+nz*nz);
-		if (C<1.0e-12) nx=ny=nz=0.0;
+		c = sqrt(nx*nx+ny*ny+nz*nz);
+		if (c<1.0e-12) nx=ny=nz=0.0;
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
-        //maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
+        //maybe you can also de-noise chemical potential ? within the bulk phase chem should be zero
         if (fabs(chem)<1.0e-12) chem=0.0;
 
 		// q=0
@@ -2278,7 +2260,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
 	int n,nn,nn2x,ijk;
-	//int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
     double ux,uy,uz;//fluid velocity 
     double p;//pressure
     double chem;//chemical potential
@@ -2293,7 +2274,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
     double nx,ny,nz;//normal color gradient
     double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
 
-	//double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
     double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
 	double tau;//position dependent LB relaxation time for fluid
     double C,theta;
