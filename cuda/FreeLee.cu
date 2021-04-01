@@ -187,6 +187,57 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList,
 	}
 }
 
+__global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField( int *Map, double *hq, double *Den, double *Phi,
+		double rhoA, double rhoB, int start, int finish, int Np){
+	
+	int idx,n;
+	double fq, phi;
+
+	int S = Np/NBLOCKS/NTHREADS + 1;
+	for (int s=0; s<S; s++){
+		//........Get 1-D index for this thread....................
+		n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+		if ( n<finish ){
+
+            // q=0
+            fq = hq[n];
+            phi = fq;
+            
+            // q=1
+            fq = hq[2*Np+n];
+            phi += fq;
+
+            // f2 = hq[10*Np+n];
+            fq = hq[1*Np+n];
+            phi += fq;
+
+            // q=3
+            fq = hq[4*Np+n];
+            phi += fq;
+
+            // q = 4
+            fq = hq[3*Np+n];
+            phi += fq;
+
+            // q=5
+            fq = hq[6*Np+n];
+            phi += fq;
+
+            // q = 6
+            fq = hq[5*Np+n];
+            phi += fq;
+
+            // save the number densities
+            Den[n] = rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
+
+            // save the phase indicator field
+            idx = Map[n];
+            Phi[idx] = phi; 	
+		}
+	}
+}
+
 __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 
@@ -275,7 +326,6 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int 
 		}
 	}
 }
-
 
 __global__ void dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
@@ -1668,8 +1718,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, 
     		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
     		
             //de-noise color gradient and mixed gradient
-            c = sqrt(nx*nx+ny*ny+nz*nz);
-            if (c<1.0e-12) nx=ny=nz=0.0;
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            if (C<1.0e-12) nx=ny=nz=0.0;
             double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
             if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
             //maybe you can also de-noise chemical potential ? within the bulk phase chem should be zero
@@ -3290,6 +3340,27 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 	}
 }
 
+extern "C" void ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi,
+                                                          double rhoA, double rhoB, int start, int finish, int Np)
+{
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q7_AAodd_FreeLeeModel_PhaseField: %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField( int *Map, double *hq, double *Den, double *Phi, 
+		                                                    double rhoA, double rhoB, int start, int finish, int Np){
+
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q7_AAeven_FreeLeeModel_PhaseField: %s \n",cudaGetErrorString(err));
+	}
+}
 
 extern "C" void ScaLBL_D3Q7_ComputePhaseField(int *Map,  double *hq, double *Den, double *Phi, double rhoA, double rhoB, int start, int finish, int Np){
 

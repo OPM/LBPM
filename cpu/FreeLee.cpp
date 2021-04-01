@@ -1669,8 +1669,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
 		mgz = -3.0*1.0/18.0*(mm5-mm6+0.5*(mm11-mm12-mm13+mm14+mm15-mm16-mm17+mm18));
 		
         //de-noise color gradient and mixed gradient
-		c = sqrt(nx*nx+ny*ny+nz*nz);
-		if (c<1.0e-12) nx=ny=nz=0.0;
+		C = sqrt(nx*nx+ny*ny+nz*nz);
+		if (C<1.0e-12) nx=ny=nz=0.0;
 		double mg_mag = sqrt(mgx*mgx+mgy*mgy+mgz*mgz);
 		if (mg_mag<1.0e-12) mgx=mgy=mgz=0.0;
         //maybe you can also de-noise chemical potential ? within the bulk phase chem should be zero
