@@ -93,7 +93,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn vw vn pw pn wet\n");				
+			fprintf(TIMELOG,"sw krw krn vw vn force pw pn wet\n");				
 		}
 	}
 }
@@ -348,7 +348,7 @@ void SubPhase::Basic(){
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, gwb.p, gnb.p, total_wetting_interaction_global); 
+		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, force_mag, gwb.p, gnb.p, total_wetting_interaction_global); 
 		fflush(TIMELOG);
 	}
 	if (err==true){

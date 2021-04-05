@@ -4,7 +4,7 @@
 #source /gpfs/gpfs_stage1/b6p315aa/setup/setup-mpi.sh
 module load cmake gcc
 module load cuda
-
+#/ccs/proj/csc380/mcclurej
 export HDF5_DIR=/ccs/proj/csc380/mcclurej/install/hdf5/1.8.12/
 export SILO_DIR=/ccs/proj/csc380/mcclurej/install/silo/4.10.2/
 export NETCDF_DIR=/ccs/proj/geo136/install/netcdf/4.6.1
@@ -28,7 +28,7 @@ cmake                                       \
      -D USE_SILO=1                        \
         -D SILO_LIB="$SILO_DIR/lib/libsiloh5.a"    \
    	-D SILO_DIRECTORY="$SILO_DIR"		     \
-    -D USE_NETCDF=1				     \
+    -D USE_NETCDF=0				     \
         -D NETCDF_DIRECTORY="$NETCDF_DIR"	     \
     -D USE_DOXYGEN:BOOL=false		        \
     -D USE_TIMER=0			                \
