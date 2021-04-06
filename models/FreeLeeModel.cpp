@@ -63,6 +63,7 @@ void ScaLBL_FreeLeeModel::getData_RegularLayout(const double *data, DoubleArray 
 	// Gets data (in optimized layout) from the HOST and stores in regular layout
     // Primarly for debugging
 	int i,j,k,idx;
+    int n;
 
 	// initialize the array
 	regdata.fill(0.f);
@@ -72,7 +73,7 @@ void ScaLBL_FreeLeeModel::getData_RegularLayout(const double *data, DoubleArray 
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
 				n=k*Nx*Ny+j*Nx+i;
-				idx=map(i,j,k);
+				idx=Map(i,j,k);
 				if (!(idx<0)){
 					value=data[idx];
 					regdata(i,j,k)=value;
