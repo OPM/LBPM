@@ -846,7 +846,7 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 		ScaLBL_Comm_WideHalo->Send(Phi);
 		//ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
 		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
@@ -867,7 +867,7 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 
 		//ScaLBL_D3Q19_AAodd_FreeLeeModel(NeighborList, dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
 		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder(NeighborList, dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier(); 
 		
@@ -896,7 +896,7 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 		ScaLBL_Comm_WideHalo->Send(Phi);
 		//ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, 
 		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 		ScaLBL_Comm_WideHalo->Recv(Phi);
 		ScaLBL_Comm->RecvD3Q19AA(gqbar); //WRITE INTO OPPOSITE
@@ -916,7 +916,7 @@ double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
 		}
 		//ScaLBL_D3Q19_AAeven_FreeLeeModel(dvcMap, gqbar, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB,
 		//		                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
-		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
+		ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder(dvcMap, gqbar, hq, Den, Phi, mu_phi, Velocity, Pressure, ColorGrad, rhoA, rhoB, tauA, tauB, tauM,
 				                        kappa, beta, W, Fx, Fy, Fz, Nxh, Nxh*Nyh, 0, ScaLBL_Comm->LastExterior(), Np);
 		ScaLBL_Comm->Barrier();
 		//************************************************************************

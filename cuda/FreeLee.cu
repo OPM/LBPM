@@ -2760,6 +2760,1794 @@ __global__ void dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *
 	}
 }
 
+__global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder(int *neighborList, int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
+        double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+        int strideY, int strideZ, int start, int finish, int Np){
+
+	int n,nn,ijk;
+	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
+    double ux,uy,uz;//fluid velocity 
+    double p;//pressure
+    double chem;//chemical potential
+    double phi; //phase field
+    double rho0;//fluid density
+	// register variables for neighbors of phase field
+    double m0;
+    // w(|c|^2) = 1 
+	double m1,m2,m3,m4,m5,m6;
+    // w(|c|^2) = 2
+	double m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+    // w(|c|^2) = 3
+    double m19,m20,m21,m22,m23,m24,m25,m26;
+    // w(|c|^2) = 4
+    double m27,m28,m29,m30,m31,m32;
+    // w(|c|^2) = 5
+    double m33,m34,m35,m36,m37,m38,m39,m40,m41,m42,m43,m44,m45,m46,m47,m48,m49,m50,m51,m52,m53,m54,m55,m56;
+    // w(|c|^2) = 6
+    double m57,m58,m59,m60,m61,m62,m63,m64,m65,m66,m67,m68,m69,m70,m71,m72,m73,m74,m75,m76,m77,m78,m79,m80;
+    // w(|c|^2) = 8
+    double m81,m82,m83,m84,m85,m86,m87,m88,m89,m90,m91,m92;
+	//double mm1,mm2,mm4,mm6,mm8,mm9,mm10,mm11,mm12,mm13,mm14,mm15,mm16,mm17,mm18;
+	//double mm3,mm5,mm7;
+    double feq0,feq1,feq2,feq3,feq4,feq5,feq6,feq7,feq8,feq9,feq10,feq11,feq12,feq13,feq14,feq15,feq16,feq17,feq18;
+    double nx,ny,nz;//normal color gradient
+    //double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
+
+    double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
+	double tau;//position dependent LB relaxation time for fluid
+    double C,theta;
+     double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double phi_temp;
+
+    int S = Np/NBLOCKS/NTHREADS + 1;
+    for (int s=0; s<S; s++){
+    	//........Get 1-D index for this thread....................
+    	n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+    	if ( n<finish ){
+    		rho0 = Den[n];//load density
+
+    		// Get the 1D index based on regular data layout
+    		ijk = Map[n];
+            phi = Phi[ijk];// load phase field
+            phi_temp = phi;
+            if (phi>1.f) phi_temp=1.0;
+            if (phi<-1.f) phi_temp=-1.0;
+
+    		// local relaxation time
+    		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
+    		//					COMPUTE THE COLOR GRADIENT
+    		//........................................................................
+    		//.................Read Phase Indicator Values............................
+    		//........................................................................
+            //-------------------
+            //--- w(|c|^2) = 1--- 
+            //-------------------
+    		nn = ijk-1;							// neighbor index (get convention)
+    		m2 = Phi[nn];						// get neighbor for phi - 1
+    		//........................................................................
+    		nn = ijk+1;							// neighbor index (get convention)
+    		m1 = Phi[nn];						// get neighbor for phi - 2
+    		//........................................................................
+    		nn = ijk-strideY;							// neighbor index (get convention)
+    		m4 = Phi[nn];					// get neighbor for phi - 3
+    		//........................................................................
+    		nn = ijk+strideY;							// neighbor index (get convention)
+    		m3 = Phi[nn];					// get neighbor for phi - 4
+    		//........................................................................
+    		nn = ijk-strideZ;						// neighbor index (get convention)
+    		m6 = Phi[nn];					// get neighbor for phi - 5
+    		//........................................................................
+    		nn = ijk+strideZ;						// neighbor index (get convention)
+    		m5 = Phi[nn];					// get neighbor for phi - 6
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 2--- 
+            //-------------------
+    		nn = ijk-strideY-1;						// neighbor index (get convention)
+    		m8 = Phi[nn];					// get neighbor for phi - 7
+    		//........................................................................
+    		nn = ijk+strideY+1;						// neighbor index (get convention)
+    		m7 = Phi[nn];					// get neighbor for phi - 8
+    		//........................................................................
+    		nn = ijk+strideY-1;						// neighbor index (get convention)
+    		m10 = Phi[nn];					// get neighbor for phi - 9
+    		//........................................................................
+    		nn = ijk-strideY+1;						// neighbor index (get convention)
+    		m9 = Phi[nn];					// get neighbor for phi - 10
+    		//........................................................................
+    		nn = ijk-strideZ-1;						// neighbor index (get convention)
+    		m12 = Phi[nn];					// get neighbor for phi - 11
+    		//........................................................................
+    		nn = ijk+strideZ+1;						// neighbor index (get convention)
+    		m11 = Phi[nn];					// get neighbor for phi - 12
+    		//........................................................................
+    		nn = ijk+strideZ-1;						// neighbor index (get convention)
+    		m14 = Phi[nn];					// get neighbor for phi - 13
+    		//........................................................................
+    		nn = ijk-strideZ+1;						// neighbor index (get convention)
+    		m13 = Phi[nn];					// get neighbor for phi - 14
+    		//........................................................................
+    		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+    		m16 = Phi[nn];					// get neighbor for phi - 15
+    		//........................................................................
+    		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+    		m15 = Phi[nn];					// get neighbor for phi - 16
+    		//........................................................................
+    		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+    		m18 = Phi[nn];					// get neighbor for phi - 17
+    		//........................................................................
+    		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+    		m17 = Phi[nn];					// get neighbor for phi - 18
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 3--- 
+            //-------------------
+            // c19 = (1,1,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+strideY+1;	
+    		m19 = Phi[nn];			
+    		//........................................................................
+            // c20 = (-1,-1,-1)
+    		nn = ijk-strideZ-strideY-1;	
+    		m20 = Phi[nn];			
+    		//........................................................................
+            // c21 = (1,-1,1)
+    		nn = ijk+strideZ-strideY+1;	
+    		m21 = Phi[nn];			
+    		//........................................................................
+            // c22 = (-1,1,-1)
+    		nn = ijk-strideZ+strideY-1;	
+    		m22 = Phi[nn];			
+    		//........................................................................
+            // c23 = (1,1,-1)
+    		nn = ijk-strideZ+strideY+1;	
+    		m23 = Phi[nn];			
+    		//........................................................................
+            // c24 = (-1,-1,1)
+    		nn = ijk+strideZ-strideY-1;	
+    		m24 = Phi[nn];			
+    		//........................................................................
+            // c25 = (-1,1,1)
+    		nn = ijk+strideZ+strideY-1;	
+    		m25 = Phi[nn];			
+    		//........................................................................
+            // c26 = (1,-1,-1)
+    		nn = ijk-strideZ-strideY+1;	
+    		m26 = Phi[nn];			
+    		//........................................................................
+            
+            //-------------------
+            //--- w(|c|^2) = 4--- 
+            //-------------------
+            // c27 = (2,0,0) = (cx,cy,cz)
+    		nn = ijk+2;		
+    		m27 = Phi[nn];			
+    		//........................................................................
+            // c28 = (-2,0,0) = (cx,cy,cz)
+    		nn = ijk-2;		
+    		m28 = Phi[nn];			
+    		//........................................................................
+            // c29 = (0,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY;		
+    		m29 = Phi[nn];			
+    		//........................................................................
+            // c30 = (0,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY;		
+    		m30 = Phi[nn];			
+    		//........................................................................
+            // c31 = (0,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ;		
+    		m31 = Phi[nn];			
+    		//........................................................................
+            // c32 = (0,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ;		
+    		m32 = Phi[nn];			
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 5--- 
+            //-------------------
+            // c33 = (1,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY+1;				
+    		m33 = Phi[nn];					
+    		//........................................................................
+            // c34 = (-1,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY-1;				
+    		m34 = Phi[nn];					
+    		//........................................................................
+            // c35 = (2,1,0) = (cx,cy,cz)
+    		nn = ijk+strideY+2;				
+    		m35 = Phi[nn];					
+    		//........................................................................
+            // c36 = (-2,-1,0) = (cx,cy,cz)
+    		nn = ijk-strideY-2;				
+    		m36 = Phi[nn];					
+    		//........................................................................
+            // c37 = (1,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY+1;				
+    		m37 = Phi[nn];					
+    		//........................................................................
+            // c38 = (-1,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY-1;				
+    		m38 = Phi[nn];					
+    		//........................................................................
+            // c39 = (2,-1,0) = (cx,cy,cz)
+    		nn = ijk-strideY+2;				
+    		m39 = Phi[nn];					
+    		//........................................................................
+            // c40 = (-2,1,0) = (cx,cy,cz)
+    		nn = ijk+strideY-2;				
+    		m40 = Phi[nn];					
+    		//........................................................................
+            // c41 = (1,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ+1;				
+    		m41 = Phi[nn];					
+    		//........................................................................
+            // c42 = (-1,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ-1;				
+    		m42 = Phi[nn];					
+    		//........................................................................
+            // c43 = (2,0,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+2;				
+    		m43 = Phi[nn];					
+    		//........................................................................
+            // c44 = (-2,0,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ-2;				
+    		m44 = Phi[nn];					
+    		//........................................................................
+            // c45 = (1,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ+1;				
+    		m45 = Phi[nn];					
+    		//........................................................................
+            // c46 = (-1,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ-1;				
+    		m46 = Phi[nn];					
+    		//........................................................................
+            // c47 = (2,0,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ+2;				
+    		m47 = Phi[nn];					
+    		//........................................................................
+            // c48 = (-2,0,1) = (cx,cy,cz)
+    		nn = ijk+strideZ-2;				
+    		m48 = Phi[nn];					
+    		//........................................................................
+            // c49 = (0,1,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ+strideY;				
+    		m49 = Phi[nn];					
+    		//........................................................................
+            // c50 = (0,-1,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ-strideY;				
+    		m50 = Phi[nn];					
+    		//........................................................................
+            // c51 = (0,2,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+2*strideY;				
+    		m51 = Phi[nn];					
+    		//........................................................................
+            // c52 = (0,-2,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ-2*strideY;				
+    		m52 = Phi[nn];					
+    		//........................................................................
+            // c53 = (0,1,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ+strideY;				
+    		m53 = Phi[nn];					
+    		//........................................................................
+            // c54 = (0,-1,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ-strideY;				
+    		m54 = Phi[nn];					
+    		//........................................................................
+            // c55 = (0,2,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ+2*strideY;				
+    		m55 = Phi[nn];					
+    		//........................................................................
+            // c56 = (0,-2,1) = (cx,cy,cz)
+    		nn = ijk+strideZ-2*strideY;				
+    		m56 = Phi[nn];					
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 6--- 
+            //-------------------
+            // c57 = (1,1,2) = (cx,cy,cz)
+    		nn = ijk+1+strideY+2*strideZ;				
+    		m57 = Phi[nn];					
+    		//........................................................................
+            // c58 = (-1,-1,-2) = (cx,cy,cz)
+    		nn = ijk-1-strideY-2*strideZ;				
+    		m58 = Phi[nn];					
+    		//........................................................................
+            // c59 = (1,2,1) = (cx,cy,cz)
+    		nn = ijk+1+2*strideY+strideZ;				
+    		m59 = Phi[nn];					
+    		//........................................................................
+            // c60 = (-1,-2,-1) = (cx,cy,cz)
+    		nn = ijk-1-2*strideY-strideZ;				
+    		m60 = Phi[nn];					
+    		//........................................................................
+            // c61 = (2,1,1) = (cx,cy,cz)
+    		nn = ijk+2+strideY+strideZ;				
+    		m61 = Phi[nn];					
+    		//........................................................................
+            // c62 = (-2,-1,-1) = (cx,cy,cz)
+    		nn = ijk-2-strideY-strideZ;				
+    		m62 = Phi[nn];					
+    		//........................................................................
+            // c63 = (-1,1,2) = (cx,cy,cz)
+    		nn = ijk-1+strideY+2*strideZ;				
+    		m63 = Phi[nn];					
+    		//........................................................................
+            // c64 = (1,-1,-2) = (cx,cy,cz)
+    		nn = ijk+1-strideY-2*strideZ;				
+    		m64 = Phi[nn];					
+    		//........................................................................
+            // c65 = (1,-1,2) = (cx,cy,cz)
+    		nn = ijk+1-strideY+2*strideZ;				
+    		m65 = Phi[nn];					
+    		//........................................................................
+            // c66 = (-1,1,-2) = (cx,cy,cz)
+    		nn = ijk-1+strideY-2*strideZ;				
+    		m66 = Phi[nn];					
+    		//........................................................................
+            // c67 = (1,1,-2) = (cx,cy,cz)
+    		nn = ijk+1+strideY-2*strideZ;				
+    		m67 = Phi[nn];					
+    		//........................................................................
+            // c68 = (-1,-1,2) = (cx,cy,cz)
+    		nn = ijk-1-strideY+2*strideZ;				
+    		m68 = Phi[nn];					
+    		//........................................................................
+            // c69 = (-1,2,1) = (cx,cy,cz)
+    		nn = ijk-1+2*strideY+strideZ;				
+    		m69 = Phi[nn];					
+    		//........................................................................
+            // c70 = (1,-2,-1) = (cx,cy,cz)
+    		nn = ijk+1-2*strideY-strideZ;				
+    		m70 = Phi[nn];					
+    		//........................................................................
+            // c71 = (1,-2,1) = (cx,cy,cz)
+    		nn = ijk+1-2*strideY+strideZ;				
+    		m71 = Phi[nn];					
+    		//........................................................................
+            // c72 = (-1,2,-1) = (cx,cy,cz)
+    		nn = ijk-1+2*strideY-strideZ;				
+    		m72 = Phi[nn];					
+    		//........................................................................
+            // c73 = (1,2,-1) = (cx,cy,cz)
+    		nn = ijk+1+2*strideY-strideZ;				
+    		m73 = Phi[nn];					
+    		//........................................................................
+            // c74 = (-1,-2,1) = (cx,cy,cz)
+    		nn = ijk-1-2*strideY+strideZ;				
+    		m74 = Phi[nn];					
+    		//........................................................................
+            // c75 = (-2,1,1) = (cx,cy,cz)
+    		nn = ijk-2+strideY+strideZ;				
+    		m75 = Phi[nn];					
+    		//........................................................................
+            // c76 = (2,-1,-1) = (cx,cy,cz)
+    		nn = ijk+2-strideY-strideZ;				
+    		m76 = Phi[nn];					
+    		//........................................................................
+            // c77 = (2,-1,1) = (cx,cy,cz)
+    		nn = ijk+2-strideY+strideZ;				
+    		m77 = Phi[nn];					
+    		//........................................................................
+            // c78 = (-2,1,-1) = (cx,cy,cz)
+    		nn = ijk-2+strideY-strideZ;				
+    		m78 = Phi[nn];					
+    		//........................................................................
+            // c79 = (2,1,-1) = (cx,cy,cz)
+    		nn = ijk+2+strideY-strideZ;				
+    		m79 = Phi[nn];					
+    		//........................................................................
+            // c80 = (-2,-1,1) = (cx,cy,cz)
+    		nn = ijk-2-strideY+strideZ;				
+    		m80 = Phi[nn];					
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 8--- 
+            //-------------------
+            // c81 = (2,2,0) = (cx,cy,cz)
+    		nn = ijk+2+2*strideY;				
+    		m81 = Phi[nn];					
+    		//........................................................................
+            // c82 = (-2,-2,0) = (cx,cy,cz)
+    		nn = ijk-2-2*strideY;				
+    		m82 = Phi[nn];					
+    		//........................................................................
+            // c83 = (2,-2,0) = (cx,cy,cz)
+    		nn = ijk+2-2*strideY;				
+    		m83 = Phi[nn];					
+    		//........................................................................
+            // c84 = (-2,2,0) = (cx,cy,cz)
+    		nn = ijk-2+2*strideY;				
+    		m84 = Phi[nn];					
+    		//........................................................................
+            // c85 = (2,0,2) = (cx,cy,cz)
+    		nn = ijk+2+2*strideZ;				
+    		m85 = Phi[nn];					
+    		//........................................................................
+            // c86 = (-2,0,-2) = (cx,cy,cz)
+    		nn = ijk-2-2*strideZ;				
+    		m86 = Phi[nn];					
+    		//........................................................................
+            // c87 = (2,0,-2) = (cx,cy,cz)
+    		nn = ijk+2-2*strideZ;				
+    		m87 = Phi[nn];					
+    		//........................................................................
+            // c88 = (-2,0,2) = (cx,cy,cz)
+    		nn = ijk-2+2*strideZ;				
+    		m88 = Phi[nn];					
+    		//........................................................................
+            // c89 = (0,2,2) = (cx,cy,cz)
+    		nn = ijk+2*strideY+2*strideZ;				
+    		m89 = Phi[nn];					
+    		//........................................................................
+            // c90 = (0,-2,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideY-2*strideZ;				
+    		m90 = Phi[nn];					
+    		//........................................................................
+            // c91 = (0,2,-2) = (cx,cy,cz)
+    		nn = ijk+2*strideY-2*strideZ;				
+    		m91 = Phi[nn];					
+    		//........................................................................
+            // c92 = (0,-2,2) = (cx,cy,cz)
+    		nn = ijk-2*strideY+2*strideZ;				
+    		m92 = Phi[nn];					
+    		//........................................................................
+
+    		//............Compute the Color Gradient...................................
+            nx =  4.0/45.0*(m1-m2)
+                + 1.0/21.0*(m7-m8+m9-m10+m11-m12+m13-m14)
+                + 2.0/105.0*(m19-m20+m21-m22+m23-m24-m25+m26)
+                + 5.0/504.0*(m27-m28)
+                + 1.0/315.0*(m33-m34+m35-m36+m37-m38+m39-m40+m41-m42+m43-m44+m45-m46+m47-m48)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62-m63+m64+m65-m66+m67-m68-m69+m70+m71-m72+m73-m74-m75+m76+m77-m78+m79-m80)
+                + 1.0/5040.0*(m81-m82+m83-m84+m85-m86+m87-m88);
+
+            ny =  4.0/45.0*(m3-m4)
+                + 1.0/21.0*(m7-m8-m9+m10+m15-m16+m17-m18)
+                + 2.0/105.0*(m19-m20-m21+m22+m23-m24+m25-m26)
+                + 5.0/504.0*(m29-m30)
+                + 1.0/315.0*(m33-m34+m35-m36-m37+m38-m39+m40+m49-m50+m51-m52+m53-m54+m55-m56)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62+m63-m64-m65+m66+m67-m68+m69-m70-m71+m72+m73-m74+m75-m76-m77+m78+m79-m80)
+                + 1.0/5040.0*(m81-m82-m83+m84+m89-m90+m91-m92);
+
+            nz =  4.0/45.0*(m5-m6)
+                + 1.0/21.0*(m11-m12-m13+m14+m15-m16-m17+m18)
+                + 2.0/105.0*(m19-m20+m21-m22-m23+m24+m25-m26)
+                + 5.0/504.0*(m31-m32)
+                + 1.0/315.0*(m41-m42+m43-m44-m45+m46-m47+m48+m49-m50+m51-m52-m53+m54-m55+m56)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62+m63-m64+m65-m66-m67+m68+m69-m70+m71-m72-m73+m74+m75-m76+m77-m78-m79+m80)
+                + 1.0/5040.0*(m85-m86-m87+m88+m89-m90-m91+m92);
+
+    		//............Compute the Chemical Potential...............................
+            //chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
+            //chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+            chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi_temp+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi_temp));//intermediate var, i.e. the laplacian
+            chem = 4.0*beta*phi_temp*(phi_temp+1.0)*(phi_temp-1.0)-kappa*chem;
+    		
+            //de-noise color gradient and mixed gradient
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            if (C<1.0e-12) nx=ny=nz=0.0;
+            //maybe you can also de-noise chemical potential ? within the bulk phase chem should be zero
+            if (fabs(chem)<1.0e-12) chem=0.0;
+
+    		// q=0
+    		m0 = dist[n];
+    		// q=1
+    		nr1 = neighborList[n]; // neighbor 2 ( > 10Np => odd part of dist)
+    		m1 = dist[nr1]; // reading the f1 data into register fq
+
+    		nr2 = neighborList[n+Np]; // neighbor 1 ( < 10Np => even part of dist)
+    		m2 = dist[nr2];  // reading the f2 data into register fq
+
+    		// q=3
+    		nr3 = neighborList[n+2*Np]; // neighbor 4
+    		m3 = dist[nr3];
+
+    		// q = 4
+    		nr4 = neighborList[n+3*Np]; // neighbor 3
+    		m4 = dist[nr4];
+
+    		// q=5
+    		nr5 = neighborList[n+4*Np];
+    		m5 = dist[nr5];
+
+    		// q = 6
+    		nr6 = neighborList[n+5*Np];
+    		m6 = dist[nr6];
+    		
+    		// q=7
+    		nr7 = neighborList[n+6*Np];
+    		m7 = dist[nr7];
+
+    		// q = 8
+    		nr8 = neighborList[n+7*Np];
+    		m8 = dist[nr8];
+
+    		// q=9
+    		nr9 = neighborList[n+8*Np];
+    		m9 = dist[nr9];
+
+    		// q = 10
+    		nr10 = neighborList[n+9*Np];
+    		m10 = dist[nr10];
+
+    		// q=11
+    		nr11 = neighborList[n+10*Np];
+    		m11 = dist[nr11];
+
+    		// q=12
+    		nr12 = neighborList[n+11*Np];
+    		m12 = dist[nr12];
+
+    		// q=13
+    		nr13 = neighborList[n+12*Np];
+    		m13 = dist[nr13];
+
+    		// q=14
+    		nr14 = neighborList[n+13*Np];
+    		m14 = dist[nr14];
+
+    		// q=15
+    		nr15 = neighborList[n+14*Np];
+    		m15 = dist[nr15];
+
+    		// q=16
+    		nr16 = neighborList[n+15*Np];
+    		m16 = dist[nr16];
+
+    		// q=17
+    		nr17 = neighborList[n+16*Np];
+    		m17 = dist[nr17];
+
+    		// q=18
+    		nr18 = neighborList[n+17*Np];
+    		m18 = dist[nr18];
+
+            //compute fluid velocity
+            ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
+            uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
+            uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
+            //compute pressure
+            p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
+                      +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);
+
+            //compute equilibrium distributions
+                feq0 = 0.3333333333333333*p - 0.25*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) - 
+         0.16666666666666666*rho0*(ux*ux + uy*uy + uz*uz) - 0.5*(-(nx*ux) - ny*uy - nz*uz)*
+          (-0.08333333333333333*(rhoA - rhoB)*(ux*ux + uy*uy + uz*uz) + chem*(0.3333333333333333 - 0.5*(ux*ux + uy*uy + uz*uz)));
+                feq1 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-ux*ux + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) - 
+         0.125*(Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + uz*uz)) - 0.0625*(nx - nx*ux - ny*uy - nz*uz)*
+          (2*chem*ux*ux - 0.3333333333333333*((-rhoA + rhoB)*ux*ux + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz)));
+                feq2 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-ux*ux + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) - 
+         0.125*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + uz*uz)) - 0.0625*(nx + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*ux*ux + 0.1111111111111111*(-4.*chem + rhoB*(-2.*ux - 1.*ux*ux - 1.*uy*uy - 1.*uz*uz) + 
+             rhoA*(2.*ux + ux*ux + uy*uy + uz*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*ux*ux + 
+             chem*(4.*ux + 2.*ux*ux + 2.*uy*uy + 2.*uz*uz)));
+                feq3 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uy*uy + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.125*(Fx*ux + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.0625*(ny - nx*ux - ny*uy - nz*uz)*
+          (2*chem*uy*uy - 0.3333333333333333*((-rhoA + rhoB)*uy*uy + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz)));
+                feq4 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uy*uy + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.125*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.0625*(ny + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*uy*uy + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 2.*uy - 1.*uy*uy - 1.*uz*uz) + 
+             rhoA*(ux*ux + 2.*uy + uy*uy + uz*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*uy*uy + 
+             chem*(2.*ux*ux + 4.*uy + 2.*uy*uy + 2.*uz*uz))); 
+                feq5 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uz*uz + 0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.125*(Fx*ux + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + uy*uy + (-2. + uz)*uz)) - 0.0625*(nx*ux + ny*uy + nz*(-1. + uz))*
+          (-2.*chem*uz*uz + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 1.*uy*uy + (2. - 1.*uz)*uz) + 
+             rhoA*(ux*ux + uy*uy + (-2. + uz)*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*uz*uz + 
+             chem*(2.*ux*ux + 2.*uy*uy + uz*(-4. + 2.*uz)))); 
+                feq6 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uz*uz + 0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.125*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + uy*uy + uz*(2. + uz))) - 0.0625*(nz + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*uz*uz + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 1.*uy*uy + (-2. - 1.*uz)*uz) + 
+             rhoA*(ux*ux + uy*uy + uz*(2. + uz))) + 0.3333333333333333*((-1.*rhoA + rhoB)*uz*uz + 
+             chem*(2.*ux*ux + 2.*uy*uy + uz*(4. + 2.*uz)))); 
+                feq7 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uy)*(ux + uy) + 0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx*(-1. + ux) + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(-2.*ux + ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.03125*(nx + ny - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(ux + uy)*(ux + uy) + 0.3333333333333333*((rhoA - rhoB)*(ux + uy)*(ux + uy) - 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))); 
+                feq8 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uy)*(ux + uy) + 0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(2.*ux + ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.03125*(-(nx*(1 + ux)) - ny*(1 + uy) - nz*uz)*
+          (2*chem*(ux + uy)*(ux + uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux + uy)*(ux + uy)) + 
+             2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))); 
+                feq9 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uy)*(ux - uy) + 0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fy + Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(-2.*ux + ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.03125*(nx - nx*ux - ny*(1 + uy) - nz*uz)*
+          (2*chem*(ux - uy)*(ux - uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uy)*(ux - uy)) + 
+             2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))); 
+                feq10 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uy)*(ux - uy) + 0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx*(1 + ux) + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(2.*ux + ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.03125*(ny - nx*(1 + ux) - ny*uy - nz*uz)*
+          (2*chem*(ux - uy)*(ux - uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uy)*(ux - uy)) + 
+             2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))); 
+                feq11 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uz)*(ux + uz) + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*(-1. + ux) + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + (-2. + uz)*uz)) - 0.03125*(nx + nz - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(ux + uz)*(ux + uz) + 0.3333333333333333*((rhoA - rhoB)*(ux + uz)*(ux + uz) - 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))); 
+                feq12 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + uz*(2. + uz))) - 0.03125*(-(nx*(1 + ux)) - ny*uy - nz*(1 + uz))*
+          (2*chem*(ux + uz)*(ux + uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux + uz)*(ux + uz)) + 
+             2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))); 
+                feq13 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uz)*(ux - uz) + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fz + Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + uz*(2. + uz))) - 0.03125*(nx - nx*ux - ny*uy - nz*(1 + uz))*
+          (2*chem*(ux - uz)*(ux - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uz)*(ux - uz)) + 
+             2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))); 
+                feq14 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uz)*(ux - uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*(1 + ux) + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + (-2. + uz)*uz)) - 0.03125*(nz - nx*(1 + ux) - ny*uy - nz*uz)*
+          (2*chem*(ux - uz)*(ux - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uz)*(ux - uz)) + 
+             2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))); 
+                feq15 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*ux + Fy*(-1. + uy) + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uy*uy - 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + (-2. + uz)*uz)) - 0.03125*(ny + nz - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(uy + uz)*(uy + uz) + 0.3333333333333333*((rhoA - rhoB)*(uy + uz)*(uy + uz) - 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))); 
+                feq16 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy - 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + uz*(2. + uz))) - 0.03125*(-(nx*ux) - ny*(1 + uy) - nz*(1 + uz))*
+          (2*chem*(uy + uz)*(uy + uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy + uz)*(uy + uz)) + 
+             2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))); 
+                feq17 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fz + Fx*ux + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + uz*(2. + uz))) - 0.03125*(ny - nx*ux - ny*uy - nz*(1 + uz))*
+          (2*chem*(uy - uz)*(uy - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy - uz)*(uy - uz)) + 
+             2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))); 
+                feq18 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*ux + Fy*(1 + uy) + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uy*uy + 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + (-2. + uz)*uz)) - 0.03125*(nz - nx*ux - ny*(1 + uy) - nz*uz)*
+          (2*chem*(uy - uz)*(uy - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy - uz)*(uy - uz)) + 
+             2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))); 
+
+            //------------------------------------------------- BCK collison ------------------------------------------------------------//
+    		// q=0
+    		dist[n] = m0 - (m0-feq0)/tau + 0.25*(2*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) + 
+         (nx*ux + ny*uy + nz*uz)*(2*chem*(ux*ux + uy*uy + uz*uz) + 
+            0.3333333333333333*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*uz)))); 
+
+    		// q = 1
+    		dist[nr2] = m1 - (m1-feq1)/tau + 0.125*(2*(Fx*(-1 + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+         (nx*(-1 + ux) + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+            0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz))));
+
+    		// q=2
+    		dist[nr1] = m2 - (m2-feq2)/tau + 0.125*(2*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+            0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+         (nx + nx*ux + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+            0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*uz))));
+
+    		// q = 3
+    		dist[nr4] = m3 - (m3-feq3)/tau + 0.125*(2*(Fx*ux + Fy*(-1 + uy) + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+            0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*ux + ny*(-1 + uy) + nz*uz)*(-2*chem*(uy*uy) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 4
+    		dist[nr3] = m4 - (m4-feq4)/tau + 0.125*(2*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+            0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (ny + nx*ux + ny*uy + nz*uz)*(-2*chem*(uy*uy) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 5
+    		dist[nr6] = m5 - (m5-feq5)/tau + 0.125*(2*(Fx*ux + Fy*uy + Fz*(-1 + uz))*(-0.2222222222222222 - uz*uz + 
+            0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*ux + ny*uy + nz*(-1 + uz))*(-2*chem*(uz*uz) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 6
+    		dist[nr5] = m6 - (m6-feq6)/tau + 0.125*(2*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uz*uz + 
+            0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) + 
+         (nz + nx*ux + ny*uy + nz*uz)*(-2*chem*(uz*uz) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q = 7
+    		dist[nr8] = m7 - (m7-feq7)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+          (0.2222222222222222 + (ux + uy)*(ux + uy) - 
+            0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*(-1 + ux) + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 8
+    		dist[nr7] = m8 - (m8-feq8)/tau + 0.0625*(2*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux + uy)*(ux + uy) + 
+            0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (nx + ny + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 9
+    		dist[nr10] = m9 - (m9-feq9)/tau + 0.0625*(2*(Fy + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+            0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (ny + nx*(-1 + ux) + ny*uy + nz*uz)*
+          (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 10
+    		dist[nr9] = m10 - (m10-feq10)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+          (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+            0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*(1 + ux) + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 11
+    		dist[nr12] = m11 - (m11-feq11)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*uy + Fz*(-1 + uz))*
+          (0.2222222222222222 + (ux + uz)*(ux + uz) - 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*(-1 + ux) + ny*uy + nz*(-1 + uz))*
+          (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 12
+    		dist[nr11] = m12 - (m12-feq12)/tau + 0.0625*(2*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))
+           + (nx + nz + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q = 13
+    		dist[nr14] = m13 - (m13-feq13)/tau + 0.0625*(2*(Fz + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+         (nz + nx*(-1 + ux) + ny*uy + nz*uz)*
+          (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q= 14
+    		dist[nr13] = m14 - (m14-feq14)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*uy + Fz*(-1 + uz))*
+          (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+            0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*(1 + ux) + ny*uy + nz*(-1 + uz))*
+          (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 15
+    		dist[nr16] = m15 - (m15-feq15)/tau + 0.0625*(-2*(Fx*ux + Fy*(-1 + uy) + Fz*(-1 + uz))*
+          (0.2222222222222222 + (uy + uz)*(uy + uz) - 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))
+           + (nx*ux + ny*(-1 + uy) + nz*(-1 + uz))*
+          (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 16
+    		dist[nr15] = m16 - (m16-feq16)/tau + 0.0625*(2*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))
+           + (ny + nz + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))));
+
+    		// q = 17
+    		dist[nr18] = m17 - (m17-feq17)/tau + 0.0625*(2*(Fz + Fx*ux + Fy*(-1 + uy) + Fz*uz)*
+          (-0.2222222222222222 - (uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))
+           + (nz + nx*ux + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))));
+
+    		// q = 18
+    		dist[nr17] = m18 - (m18-feq18)/tau + 0.0625*(2*(Fx*ux + Fy*(1 + uy) + Fz*(-1 + uz))*
+          (-0.2222222222222222 - (uy - uz)*(uy - uz) + 
+            0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+         (nx*ux + ny*(1 + uy) + nz*(-1 + uz))*
+          (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
+            //----------------------------------------------------------------------------------------------------------------------------------------//
+
+            // ----------------------------- compute phase field evolution ----------------------------------------
+            //Normalize the Color Gradient
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            double ColorMag = C;
+            if (C==0.0) ColorMag=1.0;
+            nx = nx/ColorMag;
+            ny = ny/ColorMag;
+            nz = nz/ColorMag;		
+            //compute surface tension-related parameter
+            //theta = 4.5*M*2.0*(1-phi*phi)/W;
+            theta = 4.5*M*2.0*(1-phi_temp*phi_temp)/W;
+
+            //load distributions of phase field
+            //q=0
+            h0 = hq[n];
+            //q=1
+            h1 = hq[nr1]; 
+
+            //q=2
+            h2 = hq[nr2];  
+
+            //q=3
+            h3 = hq[nr3];
+
+            //q=4
+            h4 = hq[nr4];
+
+            //q=5
+            h5 = hq[nr5];
+
+            //q=6
+            h6 = hq[nr6];
+
+            //-------------------------------- BGK collison for phase field ---------------------------------//
+            // q = 0
+            hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
+
+            // q = 1
+            hq[nr2] = h1 - (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
+
+            // q = 2
+            hq[nr1] = h2 - (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
+
+            // q = 3
+            hq[nr4] = h3 - (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
+
+            // q = 4
+            hq[nr3] = h4 - (h4 + 0.1111111111111111*ny*theta - phi*(0.1111111111111111 - 0.5*uy))/tauM;
+
+            // q = 5
+            hq[nr6] = h5 - (h5 - 0.1111111111111111*nz*theta - phi*(0.1111111111111111 + 0.5*uz))/tauM;
+
+            // q = 6
+            hq[nr5] = h6 - (h6 + 0.1111111111111111*nz*theta - phi*(0.1111111111111111 - 0.5*uz))/tauM;
+            //........................................................................
+
+            //Update velocity on device
+    		Vel[0*Np+n] = ux;
+    		Vel[1*Np+n] = uy;
+    		Vel[2*Np+n] = uz;
+            //Update pressure on device
+            Pressure[n] = p;
+            //Update chemical potential on device
+            mu_phi[n] = chem;
+            //Update color gradient on device
+    		ColorGrad[0*Np+n] = nx;
+    		ColorGrad[1*Np+n] = ny;
+    		ColorGrad[2*Np+n] = nz;
+    	}
+    }
+}
+
+__global__ void dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+        double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+        int strideY, int strideZ, int start, int finish, int Np){
+
+	int n,nn,ijk;
+    double ux,uy,uz;//fluid velocity 
+    double p;//pressure
+    double chem;//chemical potential
+    double phi; //phase field
+    double rho0;//fluid density
+	// register variables for neighbors of phase field
+    double m0;
+    // w(|c|^2) = 1 
+	double m1,m2,m3,m4,m5,m6;
+    // w(|c|^2) = 2
+	double m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
+    // w(|c|^2) = 3
+    double m19,m20,m21,m22,m23,m24,m25,m26;
+    // w(|c|^2) = 4
+    double m27,m28,m29,m30,m31,m32;
+    // w(|c|^2) = 5
+    double m33,m34,m35,m36,m37,m38,m39,m40,m41,m42,m43,m44,m45,m46,m47,m48,m49,m50,m51,m52,m53,m54,m55,m56;
+    // w(|c|^2) = 6
+    double m57,m58,m59,m60,m61,m62,m63,m64,m65,m66,m67,m68,m69,m70,m71,m72,m73,m74,m75,m76,m77,m78,m79,m80;
+    // w(|c|^2) = 8
+    double m81,m82,m83,m84,m85,m86,m87,m88,m89,m90,m91,m92;
+	//double mm1,mm2,mm4,mm6,mm8,mm9,mm10,mm11,mm12,mm13,mm14,mm15,mm16,mm17,mm18;
+	//double mm3,mm5,mm7;
+    double feq0,feq1,feq2,feq3,feq4,feq5,feq6,feq7,feq8,feq9,feq10,feq11,feq12,feq13,feq14,feq15,feq16,feq17,feq18;
+    double nx,ny,nz;//normal color gradient
+    //double mgx,mgy,mgz;//mixed gradient reaching secondary neighbor
+
+    double h0,h1,h2,h3,h4,h5,h6;//distributions for LB phase field
+	double tau;//position dependent LB relaxation time for fluid
+    double C,theta;
+    double M = 2.0/9.0*(tauM-0.5);//diffusivity (or mobility) for the phase field D3Q7
+    double phi_temp;
+
+    int S = Np/NBLOCKS/NTHREADS + 1;
+    for (int s=0; s<S; s++){
+    	//........Get 1-D index for this thread....................
+    	n = S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
+
+    	if ( n<finish ){
+    		rho0 = Den[n];//load density
+
+    		// Get the 1D index based on regular data layout
+    		ijk = Map[n];
+            phi = Phi[ijk];// load phase field
+            phi_temp = phi;
+            if (phi>1.f) phi_temp=1.0;
+            if (phi<-1.f) phi_temp=-1.0;
+
+    		// local relaxation time
+    		tau=tauA + 0.5*(1.0-phi)*(tauB-tauA);
+
+    		//					COMPUTE THE COLOR GRADIENT
+    		//........................................................................
+    		//.................Read Phase Indicator Values............................
+    		//........................................................................
+            //-------------------
+            //--- w(|c|^2) = 1--- 
+            //-------------------
+    		nn = ijk-1;							// neighbor index (get convention)
+    		m2 = Phi[nn];						// get neighbor for phi - 1
+    		//........................................................................
+    		nn = ijk+1;							// neighbor index (get convention)
+    		m1 = Phi[nn];						// get neighbor for phi - 2
+    		//........................................................................
+    		nn = ijk-strideY;							// neighbor index (get convention)
+    		m4 = Phi[nn];					// get neighbor for phi - 3
+    		//........................................................................
+    		nn = ijk+strideY;							// neighbor index (get convention)
+    		m3 = Phi[nn];					// get neighbor for phi - 4
+    		//........................................................................
+    		nn = ijk-strideZ;						// neighbor index (get convention)
+    		m6 = Phi[nn];					// get neighbor for phi - 5
+    		//........................................................................
+    		nn = ijk+strideZ;						// neighbor index (get convention)
+    		m5 = Phi[nn];					// get neighbor for phi - 6
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 2--- 
+            //-------------------
+    		nn = ijk-strideY-1;						// neighbor index (get convention)
+    		m8 = Phi[nn];					// get neighbor for phi - 7
+    		//........................................................................
+    		nn = ijk+strideY+1;						// neighbor index (get convention)
+    		m7 = Phi[nn];					// get neighbor for phi - 8
+    		//........................................................................
+    		nn = ijk+strideY-1;						// neighbor index (get convention)
+    		m10 = Phi[nn];					// get neighbor for phi - 9
+    		//........................................................................
+    		nn = ijk-strideY+1;						// neighbor index (get convention)
+    		m9 = Phi[nn];					// get neighbor for phi - 10
+    		//........................................................................
+    		nn = ijk-strideZ-1;						// neighbor index (get convention)
+    		m12 = Phi[nn];					// get neighbor for phi - 11
+    		//........................................................................
+    		nn = ijk+strideZ+1;						// neighbor index (get convention)
+    		m11 = Phi[nn];					// get neighbor for phi - 12
+    		//........................................................................
+    		nn = ijk+strideZ-1;						// neighbor index (get convention)
+    		m14 = Phi[nn];					// get neighbor for phi - 13
+    		//........................................................................
+    		nn = ijk-strideZ+1;						// neighbor index (get convention)
+    		m13 = Phi[nn];					// get neighbor for phi - 14
+    		//........................................................................
+    		nn = ijk-strideZ-strideY;					// neighbor index (get convention)
+    		m16 = Phi[nn];					// get neighbor for phi - 15
+    		//........................................................................
+    		nn = ijk+strideZ+strideY;					// neighbor index (get convention)
+    		m15 = Phi[nn];					// get neighbor for phi - 16
+    		//........................................................................
+    		nn = ijk+strideZ-strideY;					// neighbor index (get convention)
+    		m18 = Phi[nn];					// get neighbor for phi - 17
+    		//........................................................................
+    		nn = ijk-strideZ+strideY;					// neighbor index (get convention)
+    		m17 = Phi[nn];					// get neighbor for phi - 18
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 3--- 
+            //-------------------
+            // c19 = (1,1,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+strideY+1;	
+    		m19 = Phi[nn];			
+    		//........................................................................
+            // c20 = (-1,-1,-1)
+    		nn = ijk-strideZ-strideY-1;	
+    		m20 = Phi[nn];			
+    		//........................................................................
+            // c21 = (1,-1,1)
+    		nn = ijk+strideZ-strideY+1;	
+    		m21 = Phi[nn];			
+    		//........................................................................
+            // c22 = (-1,1,-1)
+    		nn = ijk-strideZ+strideY-1;	
+    		m22 = Phi[nn];			
+    		//........................................................................
+            // c23 = (1,1,-1)
+    		nn = ijk-strideZ+strideY+1;	
+    		m23 = Phi[nn];			
+    		//........................................................................
+            // c24 = (-1,-1,1)
+    		nn = ijk+strideZ-strideY-1;	
+    		m24 = Phi[nn];			
+    		//........................................................................
+            // c25 = (-1,1,1)
+    		nn = ijk+strideZ+strideY-1;	
+    		m25 = Phi[nn];			
+    		//........................................................................
+            // c26 = (1,-1,-1)
+    		nn = ijk-strideZ-strideY+1;	
+    		m26 = Phi[nn];			
+    		//........................................................................
+            
+            //-------------------
+            //--- w(|c|^2) = 4--- 
+            //-------------------
+            // c27 = (2,0,0) = (cx,cy,cz)
+    		nn = ijk+2;		
+    		m27 = Phi[nn];			
+    		//........................................................................
+            // c28 = (-2,0,0) = (cx,cy,cz)
+    		nn = ijk-2;		
+    		m28 = Phi[nn];			
+    		//........................................................................
+            // c29 = (0,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY;		
+    		m29 = Phi[nn];			
+    		//........................................................................
+            // c30 = (0,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY;		
+    		m30 = Phi[nn];			
+    		//........................................................................
+            // c31 = (0,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ;		
+    		m31 = Phi[nn];			
+    		//........................................................................
+            // c32 = (0,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ;		
+    		m32 = Phi[nn];			
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 5--- 
+            //-------------------
+            // c33 = (1,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY+1;				
+    		m33 = Phi[nn];					
+    		//........................................................................
+            // c34 = (-1,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY-1;				
+    		m34 = Phi[nn];					
+    		//........................................................................
+            // c35 = (2,1,0) = (cx,cy,cz)
+    		nn = ijk+strideY+2;				
+    		m35 = Phi[nn];					
+    		//........................................................................
+            // c36 = (-2,-1,0) = (cx,cy,cz)
+    		nn = ijk-strideY-2;				
+    		m36 = Phi[nn];					
+    		//........................................................................
+            // c37 = (1,-2,0) = (cx,cy,cz)
+    		nn = ijk-2*strideY+1;				
+    		m37 = Phi[nn];					
+    		//........................................................................
+            // c38 = (-1,2,0) = (cx,cy,cz)
+    		nn = ijk+2*strideY-1;				
+    		m38 = Phi[nn];					
+    		//........................................................................
+            // c39 = (2,-1,0) = (cx,cy,cz)
+    		nn = ijk-strideY+2;				
+    		m39 = Phi[nn];					
+    		//........................................................................
+            // c40 = (-2,1,0) = (cx,cy,cz)
+    		nn = ijk+strideY-2;				
+    		m40 = Phi[nn];					
+    		//........................................................................
+            // c41 = (1,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ+1;				
+    		m41 = Phi[nn];					
+    		//........................................................................
+            // c42 = (-1,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ-1;				
+    		m42 = Phi[nn];					
+    		//........................................................................
+            // c43 = (2,0,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+2;				
+    		m43 = Phi[nn];					
+    		//........................................................................
+            // c44 = (-2,0,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ-2;				
+    		m44 = Phi[nn];					
+    		//........................................................................
+            // c45 = (1,0,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ+1;				
+    		m45 = Phi[nn];					
+    		//........................................................................
+            // c46 = (-1,0,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ-1;				
+    		m46 = Phi[nn];					
+    		//........................................................................
+            // c47 = (2,0,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ+2;				
+    		m47 = Phi[nn];					
+    		//........................................................................
+            // c48 = (-2,0,1) = (cx,cy,cz)
+    		nn = ijk+strideZ-2;				
+    		m48 = Phi[nn];					
+    		//........................................................................
+            // c49 = (0,1,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ+strideY;				
+    		m49 = Phi[nn];					
+    		//........................................................................
+            // c50 = (0,-1,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ-strideY;				
+    		m50 = Phi[nn];					
+    		//........................................................................
+            // c51 = (0,2,1) = (cx,cy,cz)
+    		nn = ijk+strideZ+2*strideY;				
+    		m51 = Phi[nn];					
+    		//........................................................................
+            // c52 = (0,-2,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ-2*strideY;				
+    		m52 = Phi[nn];					
+    		//........................................................................
+            // c53 = (0,1,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideZ+strideY;				
+    		m53 = Phi[nn];					
+    		//........................................................................
+            // c54 = (0,-1,2) = (cx,cy,cz)
+    		nn = ijk+2*strideZ-strideY;				
+    		m54 = Phi[nn];					
+    		//........................................................................
+            // c55 = (0,2,-1) = (cx,cy,cz)
+    		nn = ijk-strideZ+2*strideY;				
+    		m55 = Phi[nn];					
+    		//........................................................................
+            // c56 = (0,-2,1) = (cx,cy,cz)
+    		nn = ijk+strideZ-2*strideY;				
+    		m56 = Phi[nn];					
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 6--- 
+            //-------------------
+            // c57 = (1,1,2) = (cx,cy,cz)
+    		nn = ijk+1+strideY+2*strideZ;				
+    		m57 = Phi[nn];					
+    		//........................................................................
+            // c58 = (-1,-1,-2) = (cx,cy,cz)
+    		nn = ijk-1-strideY-2*strideZ;				
+    		m58 = Phi[nn];					
+    		//........................................................................
+            // c59 = (1,2,1) = (cx,cy,cz)
+    		nn = ijk+1+2*strideY+strideZ;				
+    		m59 = Phi[nn];					
+    		//........................................................................
+            // c60 = (-1,-2,-1) = (cx,cy,cz)
+    		nn = ijk-1-2*strideY-strideZ;				
+    		m60 = Phi[nn];					
+    		//........................................................................
+            // c61 = (2,1,1) = (cx,cy,cz)
+    		nn = ijk+2+strideY+strideZ;				
+    		m61 = Phi[nn];					
+    		//........................................................................
+            // c62 = (-2,-1,-1) = (cx,cy,cz)
+    		nn = ijk-2-strideY-strideZ;				
+    		m62 = Phi[nn];					
+    		//........................................................................
+            // c63 = (-1,1,2) = (cx,cy,cz)
+    		nn = ijk-1+strideY+2*strideZ;				
+    		m63 = Phi[nn];					
+    		//........................................................................
+            // c64 = (1,-1,-2) = (cx,cy,cz)
+    		nn = ijk+1-strideY-2*strideZ;				
+    		m64 = Phi[nn];					
+    		//........................................................................
+            // c65 = (1,-1,2) = (cx,cy,cz)
+    		nn = ijk+1-strideY+2*strideZ;				
+    		m65 = Phi[nn];					
+    		//........................................................................
+            // c66 = (-1,1,-2) = (cx,cy,cz)
+    		nn = ijk-1+strideY-2*strideZ;				
+    		m66 = Phi[nn];					
+    		//........................................................................
+            // c67 = (1,1,-2) = (cx,cy,cz)
+    		nn = ijk+1+strideY-2*strideZ;				
+    		m67 = Phi[nn];					
+    		//........................................................................
+            // c68 = (-1,-1,2) = (cx,cy,cz)
+    		nn = ijk-1-strideY+2*strideZ;				
+    		m68 = Phi[nn];					
+    		//........................................................................
+            // c69 = (-1,2,1) = (cx,cy,cz)
+    		nn = ijk-1+2*strideY+strideZ;				
+    		m69 = Phi[nn];					
+    		//........................................................................
+            // c70 = (1,-2,-1) = (cx,cy,cz)
+    		nn = ijk+1-2*strideY-strideZ;				
+    		m70 = Phi[nn];					
+    		//........................................................................
+            // c71 = (1,-2,1) = (cx,cy,cz)
+    		nn = ijk+1-2*strideY+strideZ;				
+    		m71 = Phi[nn];					
+    		//........................................................................
+            // c72 = (-1,2,-1) = (cx,cy,cz)
+    		nn = ijk-1+2*strideY-strideZ;				
+    		m72 = Phi[nn];					
+    		//........................................................................
+            // c73 = (1,2,-1) = (cx,cy,cz)
+    		nn = ijk+1+2*strideY-strideZ;				
+    		m73 = Phi[nn];					
+    		//........................................................................
+            // c74 = (-1,-2,1) = (cx,cy,cz)
+    		nn = ijk-1-2*strideY+strideZ;				
+    		m74 = Phi[nn];					
+    		//........................................................................
+            // c75 = (-2,1,1) = (cx,cy,cz)
+    		nn = ijk-2+strideY+strideZ;				
+    		m75 = Phi[nn];					
+    		//........................................................................
+            // c76 = (2,-1,-1) = (cx,cy,cz)
+    		nn = ijk+2-strideY-strideZ;				
+    		m76 = Phi[nn];					
+    		//........................................................................
+            // c77 = (2,-1,1) = (cx,cy,cz)
+    		nn = ijk+2-strideY+strideZ;				
+    		m77 = Phi[nn];					
+    		//........................................................................
+            // c78 = (-2,1,-1) = (cx,cy,cz)
+    		nn = ijk-2+strideY-strideZ;				
+    		m78 = Phi[nn];					
+    		//........................................................................
+            // c79 = (2,1,-1) = (cx,cy,cz)
+    		nn = ijk+2+strideY-strideZ;				
+    		m79 = Phi[nn];					
+    		//........................................................................
+            // c80 = (-2,-1,1) = (cx,cy,cz)
+    		nn = ijk-2-strideY+strideZ;				
+    		m80 = Phi[nn];					
+    		//........................................................................
+
+            //-------------------
+            //--- w(|c|^2) = 8--- 
+            //-------------------
+            // c81 = (2,2,0) = (cx,cy,cz)
+    		nn = ijk+2+2*strideY;				
+    		m81 = Phi[nn];					
+    		//........................................................................
+            // c82 = (-2,-2,0) = (cx,cy,cz)
+    		nn = ijk-2-2*strideY;				
+    		m82 = Phi[nn];					
+    		//........................................................................
+            // c83 = (2,-2,0) = (cx,cy,cz)
+    		nn = ijk+2-2*strideY;				
+    		m83 = Phi[nn];					
+    		//........................................................................
+            // c84 = (-2,2,0) = (cx,cy,cz)
+    		nn = ijk-2+2*strideY;				
+    		m84 = Phi[nn];					
+    		//........................................................................
+            // c85 = (2,0,2) = (cx,cy,cz)
+    		nn = ijk+2+2*strideZ;				
+    		m85 = Phi[nn];					
+    		//........................................................................
+            // c86 = (-2,0,-2) = (cx,cy,cz)
+    		nn = ijk-2-2*strideZ;				
+    		m86 = Phi[nn];					
+    		//........................................................................
+            // c87 = (2,0,-2) = (cx,cy,cz)
+    		nn = ijk+2-2*strideZ;				
+    		m87 = Phi[nn];					
+    		//........................................................................
+            // c88 = (-2,0,2) = (cx,cy,cz)
+    		nn = ijk-2+2*strideZ;				
+    		m88 = Phi[nn];					
+    		//........................................................................
+            // c89 = (0,2,2) = (cx,cy,cz)
+    		nn = ijk+2*strideY+2*strideZ;				
+    		m89 = Phi[nn];					
+    		//........................................................................
+            // c90 = (0,-2,-2) = (cx,cy,cz)
+    		nn = ijk-2*strideY-2*strideZ;				
+    		m90 = Phi[nn];					
+    		//........................................................................
+            // c91 = (0,2,-2) = (cx,cy,cz)
+    		nn = ijk+2*strideY-2*strideZ;				
+    		m91 = Phi[nn];					
+    		//........................................................................
+            // c92 = (0,-2,2) = (cx,cy,cz)
+    		nn = ijk-2*strideY+2*strideZ;				
+    		m92 = Phi[nn];					
+    		//........................................................................
+
+    		//............Compute the Color Gradient...................................
+            nx =  4.0/45.0*(m1-m2)
+                + 1.0/21.0*(m7-m8+m9-m10+m11-m12+m13-m14)
+                + 2.0/105.0*(m19-m20+m21-m22+m23-m24-m25+m26)
+                + 5.0/504.0*(m27-m28)
+                + 1.0/315.0*(m33-m34+m35-m36+m37-m38+m39-m40+m41-m42+m43-m44+m45-m46+m47-m48)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62-m63+m64+m65-m66+m67-m68-m69+m70+m71-m72+m73-m74-m75+m76+m77-m78+m79-m80)
+                + 1.0/5040.0*(m81-m82+m83-m84+m85-m86+m87-m88);
+
+            ny =  4.0/45.0*(m3-m4)
+                + 1.0/21.0*(m7-m8-m9+m10+m15-m16+m17-m18)
+                + 2.0/105.0*(m19-m20-m21+m22+m23-m24+m25-m26)
+                + 5.0/504.0*(m29-m30)
+                + 1.0/315.0*(m33-m34+m35-m36-m37+m38-m39+m40+m49-m50+m51-m52+m53-m54+m55-m56)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62+m63-m64-m65+m66+m67-m68+m69-m70-m71+m72+m73-m74+m75-m76-m77+m78+m79-m80)
+                + 1.0/5040.0*(m81-m82-m83+m84+m89-m90+m91-m92);
+
+            nz =  4.0/45.0*(m5-m6)
+                + 1.0/21.0*(m11-m12-m13+m14+m15-m16-m17+m18)
+                + 2.0/105.0*(m19-m20+m21-m22-m23+m24+m25-m26)
+                + 5.0/504.0*(m31-m32)
+                + 1.0/315.0*(m41-m42+m43-m44-m45+m46-m47+m48+m49-m50+m51-m52-m53+m54-m55+m56)
+                + 1.0/630.0*(m57-m58+m59-m60+m61-m62+m63-m64+m65-m66-m67+m68+m69-m70+m71-m72-m73+m74+m75-m76+m77-m78-m79+m80)
+                + 1.0/5040.0*(m85-m86-m87+m88+m89-m90-m91+m92);
+
+    		//............Compute the Chemical Potential...............................
+            //chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi));//intermediate var, i.e. the laplacian
+            //chem = 4.0*beta*phi*(phi+1.0)*(phi-1.0)-kappa*chem;
+            chem = 2.0*3.0/18.0*(m1+m2+m3+m4+m5+m6-6*phi_temp+0.5*(m7+m8+m9+m10+m11+m12+m13+m14+m15+m16+m17+m18-12*phi_temp));//intermediate var, i.e. the laplacian
+            chem = 4.0*beta*phi_temp*(phi_temp+1.0)*(phi_temp-1.0)-kappa*chem;
+
+            //de-noise color gradient and mixed gradient
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            if (C<1.0e-12) nx=ny=nz=0.0;
+            //maybe you can also de-noise chemical potential ? within the bulk phase chem should be ZERO
+            if (fabs(chem)<1.0e-12) chem=0.0;
+    		
+    		// q=0
+    		m0 = dist[n];
+    		// q=1
+    		m1 = dist[2*Np+n]; 
+
+            // q=2
+    		m2 = dist[1*Np+n];  
+
+    		// q=3
+    		m3 = dist[4*Np+n];
+
+    		// q = 4
+    		m4 = dist[3*Np+n];
+
+    		// q=5
+    		m5 = dist[6*Np+n];
+
+    		// q = 6
+    		m6 = dist[5*Np+n];
+    		
+    		// q=7
+    		m7 = dist[8*Np+n];
+
+    		// q = 8
+    		m8 = dist[7*Np+n];
+
+    		// q=9
+    		m9 = dist[10*Np+n];
+
+    		// q = 10
+    		m10 = dist[9*Np+n];
+
+    		// q=11
+    		m11 = dist[12*Np+n];
+
+    		// q=12
+    		m12 = dist[11*Np+n];
+
+    		// q=13
+    		m13 = dist[14*Np+n];
+
+    		// q=14
+    		m14 = dist[13*Np+n];
+
+    		// q=15
+    		m15 = dist[16*Np+n];
+
+    		// q=16
+    		m16 = dist[15*Np+n];
+
+    		// q=17
+    		m17 = dist[18*Np+n];
+
+    		// q=18
+    		m18 = dist[17*Np+n];
+
+            //compute fluid velocity
+            ux = 3.0/rho0*(m1-m2+m7-m8+m9-m10+m11-m12+m13-m14+0.5*(chem*nx+Fx)/3.0);
+            uy = 3.0/rho0*(m3-m4+m7-m8-m9+m10+m15-m16+m17-m18+0.5*(chem*ny+Fy)/3.0);
+            uz = 3.0/rho0*(m5-m6+m11-m12-m13+m14+m15-m16-m17+m18+0.5*(chem*nz+Fz)/3.0);
+
+            //compute pressure
+            p = (m0+m2+m1+m4+m3+m6+m5+m8+m7+m10+m9+m12+m11+m14+m13+m16+m15+m18+m17)
+                      +0.5*(rhoA-rhoB)/2.0/3.0*(ux*nx+uy*ny+uz*nz);
+
+            //compute equilibrium distributions
+                feq0 = 0.3333333333333333*p - 0.25*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) - 
+         0.16666666666666666*rho0*(ux*ux + uy*uy + uz*uz) - 0.5*(-(nx*ux) - ny*uy - nz*uz)*
+          (-0.08333333333333333*(rhoA - rhoB)*(ux*ux + uy*uy + uz*uz) + chem*(0.3333333333333333 - 0.5*(ux*ux + uy*uy + uz*uz)));
+                feq1 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-ux*ux + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) - 
+         0.125*(Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + uz*uz)) - 0.0625*(nx - nx*ux - ny*uy - nz*uz)*
+          (2*chem*ux*ux - 0.3333333333333333*((-rhoA + rhoB)*ux*ux + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz)));
+                feq2 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-ux*ux + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) - 
+         0.125*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + uz*uz)) - 0.0625*(nx + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*ux*ux + 0.1111111111111111*(-4.*chem + rhoB*(-2.*ux - 1.*ux*ux - 1.*uy*uy - 1.*uz*uz) + 
+             rhoA*(2.*ux + ux*ux + uy*uy + uz*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*ux*ux + 
+             chem*(4.*ux + 2.*ux*ux + 2.*uy*uy + 2.*uz*uz)));
+                feq3 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uy*uy + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.125*(Fx*ux + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.0625*(ny - nx*ux - ny*uy - nz*uz)*
+          (2*chem*uy*uy - 0.3333333333333333*((-rhoA + rhoB)*uy*uy + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz)));
+                feq4 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uy*uy + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.125*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.0625*(ny + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*uy*uy + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 2.*uy - 1.*uy*uy - 1.*uz*uz) + 
+             rhoA*(ux*ux + 2.*uy + uy*uy + uz*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*uy*uy + 
+             chem*(2.*ux*ux + 4.*uy + 2.*uy*uy + 2.*uz*uz))); 
+                feq5 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uz*uz + 0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.125*(Fx*ux + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + uy*uy + (-2. + uz)*uz)) - 0.0625*(nx*ux + ny*uy + nz*(-1. + uz))*
+          (-2.*chem*uz*uz + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 1.*uy*uy + (2. - 1.*uz)*uz) + 
+             rhoA*(ux*ux + uy*uy + (-2. + uz)*uz)) + 0.3333333333333333*((-1.*rhoA + rhoB)*uz*uz + 
+             chem*(2.*ux*ux + 2.*uy*uy + uz*(-4. + 2.*uz)))); 
+                feq6 = 0.05555555555555555*p - 0.08333333333333333*rho0*(-uz*uz + 0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.125*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + uy*uy + uz*(2. + uz))) - 0.0625*(nz + nx*ux + ny*uy + nz*uz)*
+          (-2.*chem*uz*uz + 0.1111111111111111*(-4.*chem + rhoB*(-1.*ux*ux - 1.*uy*uy + (-2. - 1.*uz)*uz) + 
+             rhoA*(ux*ux + uy*uy + uz*(2. + uz))) + 0.3333333333333333*((-1.*rhoA + rhoB)*uz*uz + 
+             chem*(2.*ux*ux + 2.*uy*uy + uz*(4. + 2.*uz)))); 
+                feq7 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uy)*(ux + uy) + 0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx*(-1. + ux) + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(-2.*ux + ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.03125*(nx + ny - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(ux + uy)*(ux + uy) + 0.3333333333333333*((rhoA - rhoB)*(ux + uy)*(ux + uy) - 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))); 
+                feq8 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uy)*(ux + uy) + 0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(2.*ux + ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.03125*(-(nx*(1 + ux)) - ny*(1 + uy) - nz*uz)*
+          (2*chem*(ux + uy)*(ux + uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux + uy)*(ux + uy)) + 
+             2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))); 
+                feq9 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uy)*(ux - uy) + 0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fy + Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(-2.*ux + ux*ux + 2.*uy + uy*uy + uz*uz)) - 0.03125*(nx - nx*ux - ny*(1 + uy) - nz*uz)*
+          (2*chem*(ux - uy)*(ux - uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uy)*(ux - uy)) + 
+             2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))); 
+                feq10 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uy)*(ux - uy) + 0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) - 
+         0.0625*(Fx*(1 + ux) + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uy - 1.*uy*uy + 
+           0.3333333333333333*(2.*ux + ux*ux - 2.*uy + uy*uy + uz*uz)) - 0.03125*(ny - nx*(1 + ux) - ny*uy - nz*uz)*
+          (2*chem*(ux - uy)*(ux - uy) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uy)*(ux - uy)) + 
+             2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))); 
+                feq11 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uz)*(ux + uz) + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*(-1. + ux) + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + (-2. + uz)*uz)) - 0.03125*(nx + nz - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(ux + uz)*(ux + uz) + 0.3333333333333333*((rhoA - rhoB)*(ux + uz)*(ux + uz) - 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))); 
+                feq12 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux - 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + uz*(2. + uz))) - 0.03125*(-(nx*(1 + ux)) - ny*uy - nz*(1 + uz))*
+          (2*chem*(ux + uz)*(ux + uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux + uz)*(ux + uz)) + 
+             2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))); 
+                feq13 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uz)*(ux - uz) + 0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fz + Fx*(-1. + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(-2.*ux + ux*ux + uy*uy + uz*(2. + uz))) - 0.03125*(nx - nx*ux - ny*uy - nz*(1 + uz))*
+          (2*chem*(ux - uz)*(ux - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uz)*(ux - uz)) + 
+             2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))); 
+                feq14 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(ux - uz)*(ux - uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*(1 + ux) + Fy*uy + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*ux*ux + 2.*ux*uz - 1.*uz*uz + 
+           0.3333333333333333*(2.*ux + ux*ux + uy*uy + (-2. + uz)*uz)) - 0.03125*(nz - nx*(1 + ux) - ny*uy - nz*uz)*
+          (2*chem*(ux - uz)*(ux - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(ux - uz)*(ux - uz)) + 
+             2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))); 
+                feq15 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*ux + Fy*(-1. + uy) + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uy*uy - 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + (-2. + uz)*uz)) - 0.03125*(ny + nz - nx*ux - ny*uy - nz*uz)*
+          (2*chem*(uy + uz)*(uy + uz) + 0.3333333333333333*((rhoA - rhoB)*(uy + uz)*(uy + uz) - 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+           0.1111111111111111*(4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))); 
+                feq16 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy - 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + uz*(2. + uz))) - 0.03125*(-(nx*ux) - ny*(1 + uy) - nz*(1 + uz))*
+          (2*chem*(uy + uz)*(uy + uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy + uz)*(uy + uz)) + 
+             2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))); 
+                feq17 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) - 
+         0.0625*(Fz + Fx*ux + Fy*(-1. + uy) + Fz*uz)*(-0.2222222222222222 - 1.*uy*uy + 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux - 2.*uy + uy*uy + uz*(2. + uz))) - 0.03125*(ny - nx*ux - ny*uy - nz*(1 + uz))*
+          (2*chem*(uy - uz)*(uy - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy - uz)*(uy - uz)) + 
+             2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))); 
+                feq18 = 0.027777777777777776*p - 0.041666666666666664*rho0*
+          (-(uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) - 
+         0.0625*(Fx*ux + Fy*(1 + uy) + Fz*(-1. + uz))*(-0.2222222222222222 - 1.*uy*uy + 2.*uy*uz - 1.*uz*uz + 
+           0.3333333333333333*(ux*ux + 2.*uy + uy*uy + (-2. + uz)*uz)) - 0.03125*(nz - nx*ux - ny*(1 + uy) - nz*uz)*
+          (2*chem*(uy - uz)*(uy - uz) - 0.3333333333333333*(-((rhoA - rhoB)*(uy - uz)*(uy - uz)) + 
+             2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 0.1111111111111111*
+            (4*chem - (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))); 
+
+            //------------------------------------------------- BCK collison ------------------------------------------------------------//
+    		// q=0
+    		dist[n] = m0 - (m0-feq0)/tau + 0.25*(2*(Fx*ux + Fy*uy + Fz*uz)*(-0.6666666666666666 + ux*ux + uy*uy + uz*uz) + 
+         (nx*ux + ny*uy + nz*uz)*(2*chem*(ux*ux + uy*uy + uz*uz) + 
+            0.3333333333333333*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*uz))));
+
+    		// q = 1
+    		dist[1*Np+n] = m1 - (m1-feq1)/tau + 0.125*(2*(Fx*(-1 + ux) + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+         (nx*(-1 + ux) + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+            0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*uz))));
+
+    		// q=2
+    		dist[2*Np+n] = m2 - (m2-feq2)/tau + 0.125*(2*(Fx + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - ux*ux + 
+            0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+         (nx + nx*ux + ny*uy + nz*uz)*(-2*chem*(ux*ux) + 
+            0.3333333333333333*((-rhoA + rhoB)*(ux*ux) + 2*chem*(2*ux + ux*ux + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*uz))));
+
+    		// q = 3
+    		dist[3*Np+n] = m3 - (m3-feq3)/tau + 0.125*(2*(Fx*ux + Fy*(-1 + uy) + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+            0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*ux + ny*(-1 + uy) + nz*uz)*(-2*chem*(uy*uy) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 4
+    		dist[4*Np+n] = m4 - (m4-feq4)/tau + 0.125*(2*(Fy + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uy*uy + 
+            0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (ny + nx*ux + ny*uy + nz*uz)*(-2*chem*(uy*uy) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uy*uy) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 5
+    		dist[5*Np+n] = m5 - (m5-feq5)/tau + 0.125*(2*(Fx*ux + Fy*uy + Fz*(-1 + uz))*(-0.2222222222222222 - uz*uz + 
+            0.3333333333333333*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*ux + ny*uy + nz*(-1 + uz))*(-2*chem*(uz*uz) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 6
+    		dist[6*Np+n] = m6 - (m6-feq6)/tau + 0.125*(2*(Fz + Fx*ux + Fy*uy + Fz*uz)*(-0.2222222222222222 - uz*uz + 
+            0.3333333333333333*(ux*ux + uy*uy + uz*(2 + uz))) + 
+         (nz + nx*ux + ny*uy + nz*uz)*(-2*chem*(uz*uz) + 
+            0.3333333333333333*((-rhoA + rhoB)*(uz*uz) + 2*chem*(ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q = 7
+    		dist[7*Np+n] = m7 - (m7-feq7)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+          (0.2222222222222222 + (ux + uy)*(ux + uy) - 
+            0.3333333333333333*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*(-1 + ux) + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 8
+    		dist[8*Np+n] = m8 - (m8-feq8)/tau + 0.0625*(2*(Fx + Fy + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux + uy)*(ux + uy) + 
+            0.3333333333333333*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (nx + ny + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((ux + uy)*(ux + uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uy)*(ux + uy))) + 2*chem*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 9
+    		dist[9*Np+n] = m9 - (m9-feq9)/tau + 0.0625*(2*(Fy + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+            0.3333333333333333*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+         (ny + nx*(-1 + ux) + ny*uy + nz*uz)*
+          (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + 2*uy + uy*uy + uz*uz))));
+
+    		// q = 10
+    		dist[10*Np+n] = m10 - (m10-feq10)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*(-1 + uy) + Fz*uz)*
+          (-0.2222222222222222 - (ux - uy)*(ux - uy) + 
+            0.3333333333333333*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+         (nx*(1 + ux) + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((ux - uy)*(ux - uy)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uy)*(ux - uy))) + 2*chem*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux - 2*uy + uy*uy + uz*uz))));
+
+    		// q = 11
+    		dist[11*Np+n] = m11 - (m11-feq11)/tau + 0.0625*(-2*(Fx*(-1 + ux) + Fy*uy + Fz*(-1 + uz))*
+          (0.2222222222222222 + (ux + uz)*(ux + uz) - 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*(-1 + ux) + ny*uy + nz*(-1 + uz))*
+          (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 12
+    		dist[12*Np+n] = m12 - (m12-feq12)/tau + 0.0625*(2*(Fx + Fz + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux + uz)*(ux + uz) + 0.3333333333333333*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))
+           + (nx + nz + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((ux + uz)*(ux + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux + uz)*(ux + uz))) + 2*chem*(2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q = 13
+    		dist[13*Np+n] = m13 - (m13-feq13)/tau + 0.0625*(2*(Fz + Fx*(-1 + ux) + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+            0.3333333333333333*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+         (nz + nx*(-1 + ux) + ny*uy + nz*uz)*
+          (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(-2*ux + ux*ux + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(-2*ux + ux*ux + uy*uy + uz*(2 + uz)))));
+
+    		// q= 14
+    		dist[14*Np+n] = m14 - (m14-feq14)/tau + 0.0625*(2*(Fx*(1 + ux) + Fy*uy + Fz*(-1 + uz))*
+          (-0.2222222222222222 - (ux - uz)*(ux - uz) + 
+            0.3333333333333333*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+         (nx*(1 + ux) + ny*uy + nz*(-1 + uz))*
+          (-2*chem*((ux - uz)*(ux - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((ux - uz)*(ux - uz))) + 2*chem*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(2*ux + ux*ux + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 15
+    		dist[15*Np+n] = m15 - (m15-feq15)/tau + 0.0625*(-2*(Fx*ux + Fy*(-1 + uy) + Fz*(-1 + uz))*
+          (0.2222222222222222 + (uy + uz)*(uy + uz) - 0.3333333333333333*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))
+           + (nx*ux + ny*(-1 + uy) + nz*(-1 + uz))*
+          (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + (-2 + uz)*uz))));
+
+    		// q = 16
+    		dist[16*Np+n] = m16 - (m16-feq16)/tau + 0.0625*(2*(Fy + Fz + Fx*ux + Fy*uy + Fz*uz)*
+          (-0.2222222222222222 - (uy + uz)*(uy + uz) + 0.3333333333333333*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))
+           + (ny + nz + nx*ux + ny*uy + nz*uz)*
+          (-2*chem*((uy + uz)*(uy + uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy + uz)*(uy + uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + uz*(2 + uz)))));
+
+    		// q = 17
+    		dist[17*Np+n] = m17 - (m17-feq17)/tau + 0.0625*(2*(Fz + Fx*ux + Fy*(-1 + uy) + Fz*uz)*
+          (-0.2222222222222222 - (uy - uz)*(uy - uz) + 0.3333333333333333*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))
+           + (nz + nx*ux + ny*(-1 + uy) + nz*uz)*
+          (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux - 2*uy + uy*uy + uz*(2 + uz))) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux - 2*uy + uy*uy + uz*(2 + uz)))));
+
+    		// q = 18
+    		dist[18*Np+n] = m18 - (m18-feq18)/tau + 0.0625*(2*(Fx*ux + Fy*(1 + uy) + Fz*(-1 + uz))*
+          (-0.2222222222222222 - (uy - uz)*(uy - uz) + 
+            0.3333333333333333*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+         (nx*ux + ny*(1 + uy) + nz*(-1 + uz))*
+          (-2*chem*((uy - uz)*(uy - uz)) + 0.3333333333333333*
+             (-((rhoA - rhoB)*((uy - uz)*(uy - uz))) + 2*chem*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz)) + 
+            0.1111111111111111*(-4*chem + (rhoA - rhoB)*(ux*ux + 2*uy + uy*uy + (-2 + uz)*uz))));
+            //----------------------------------------------------------------------------------------------------------------------------------------//
+
+            // ----------------------------- compute phase field evolution ----------------------------------------
+            //Normalize the Color Gradient
+            C = sqrt(nx*nx+ny*ny+nz*nz);
+            double ColorMag = C;
+            if (C==0.0) ColorMag=1.0;
+            nx = nx/ColorMag;
+            ny = ny/ColorMag;
+            nz = nz/ColorMag;		
+            //compute surface tension-related parameter
+            //theta = 4.5*M*2.0*(1-phi*phi)/W;
+            theta = 4.5*M*2.0*(1-phi_temp*phi_temp)/W;
+
+            //load distributions of phase field
+            //q=0
+            h0 = hq[n];
+            //q=1
+            h1 = hq[2*Np+n]; 
+
+            //q=2
+            h2 = hq[1*Np+n];  
+
+            //q=3
+            h3 = hq[4*Np+n];
+
+            //q=4
+            h4 = hq[3*Np+n];
+
+            //q=5
+            h5 = hq[6*Np+n];
+
+            //q=6
+            h6 = hq[5*Np+n];
+
+            //-------------------------------- BGK collison for phase field ---------------------------------//
+            // q = 0
+            hq[n] = h0 - (h0 - 0.3333333333333333*phi)/tauM;
+
+            // q = 1
+            hq[1*Np+n] = h1 - (h1 - 0.1111111111111111*nx*theta - phi*(0.1111111111111111 + 0.5*ux))/tauM;
+
+            // q = 2
+            hq[2*Np+n] = h2 - (h2 + 0.1111111111111111*nx*theta - phi*(0.1111111111111111 - 0.5*ux))/tauM;
+
+            // q = 3
+            hq[3*Np+n] = h3 - (h3 - 0.1111111111111111*ny*theta - phi*(0.1111111111111111 + 0.5*uy))/tauM;
+
+            // q = 4
+            hq[4*Np+n] = h4 - (h4 + 0.1111111111111111*ny*theta - phi*(0.1111111111111111 - 0.5*uy))/tauM;
+
+            // q = 5
+            hq[5*Np+n] = h5 - (h5 - 0.1111111111111111*nz*theta - phi*(0.1111111111111111 + 0.5*uz))/tauM;
+
+            // q = 6
+            hq[6*Np+n] = h6 - (h6 + 0.1111111111111111*nz*theta - phi*(0.1111111111111111 - 0.5*uz))/tauM;
+            //........................................................................
+
+            //Update velocity on device
+    		Vel[0*Np+n] = ux;
+    		Vel[1*Np+n] = uy;
+    		Vel[2*Np+n] = uz;
+            //Update pressure on device
+            Pressure[n] = p;
+            //Update chemical potential on device
+            mu_phi[n] = chem;
+            //Update color gradient on device
+    		ColorGrad[0*Np+n] = nx;
+    		ColorGrad[1*Np+n] = ny;
+    		ColorGrad[2*Np+n] = nz;
+
+    	}
+	}
+}
+
 __global__ void dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
 		double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
@@ -3404,7 +5192,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined(int *neighborList, int 
                                                 double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel, cudaFuncCachePreferL1);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined, cudaFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined<<<NBLOCKS,NTHREADS >>>(neighborList, Map, dist, hq, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, tauM, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
@@ -3417,12 +5205,39 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
                                                 double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel, cudaFuncCachePreferL1);
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined, cudaFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined<<<NBLOCKS,NTHREADS >>>(Map, dist, hq, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, tauM, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined: %s \n",cudaGetErrorString(err));
+	}
+	
+}
+
+extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder(int *neighborList, int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad, 
+                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+                                                int strideY, int strideZ, int start, int finish, int Np){
+	
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder<<<NBLOCKS,NTHREADS >>>(neighborList, Map, dist, hq, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
+            rhoA, rhoB, tauA, tauB, tauM, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder: %s \n",cudaGetErrorString(err));
+	}
+}	
+
+extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+                                                int strideY, int strideZ, int start, int finish, int Np){
+	
+	cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder, cudaFuncCachePreferL1);
+	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder<<<NBLOCKS,NTHREADS >>>(Map, dist, hq, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
+            rhoA, rhoB, tauA, tauB, tauM, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder: %s \n",cudaGetErrorString(err));
 	}
 	
 }
