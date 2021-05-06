@@ -16,6 +16,10 @@ Implementation of color lattice boltzmann model
 #include "ProfilerApp.h"
 #include "threadpool/thread_pool.h"
 
+
+#ifndef ScaLBL_ColorModel_INC
+#define ScaLBL_ColorModel_INC
+
 class ScaLBL_ColorModel{
 public:
 	ScaLBL_ColorModel(int RANK, int NP, const Utilities::MPI& COMM);
@@ -29,6 +33,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run();
+	double Run(int returntime);
 	void WriteDebug();
 	void getPhaseField(DoubleArray &f);
 	
@@ -99,4 +104,5 @@ private:
 	int timestep;
 	int timestep_previous;
 };
+#endif
 

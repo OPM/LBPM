@@ -27,19 +27,24 @@ int main( int argc, char **argv )
     // Initialize
     Utilities::startup( argc, argv );
 
-    // Load the input database
-    auto db = std::make_shared<Database>( argv[1] );
-
     { // Limit scope so variables that contain communicators will free before MPI_Finialize
 
         Utilities::MPI comm( MPI_COMM_WORLD );
         int rank   = comm.getRank();
         int nprocs = comm.getSize();
+        std::string SimulationMode = "production";
+        // Load the input database
+        auto db = std::make_shared<Database>( argv[1] );
+        if (argc > 2) {
+        	SimulationMode = "development";
+        }
 
         if ( rank == 0 ) {
             printf( "********************************************************\n" );
             printf( "Running Color LBM	\n" );
             printf( "********************************************************\n" );
+            if (SimulationMode == "development")
+            	printf("**** DEVELOPMENT MODE ENABLED *************\n");
         }
         // Initialize compute device
         int device = ScaLBL_SetDevice( rank );
@@ -62,8 +67,28 @@ int main( int argc, char **argv )
         ColorModel.Create();     // creating the model will create data structure to match the pore
                                  // structure and allocate variables
         ColorModel.Initialize(); // initializing the model will set initial conditions for variables
-        ColorModel.Run();
-        // ColorModel.WriteDebug();
+       
+        if (SimulationMode == "development"){
+            double MLUPS=0.0;
+            int timestep = 0;
+            int analysis_interval = ColorModel.timestepMax;
+        	if (ColorModel.analysis_db->keyExists( "" )){
+        		analysis_interval = ColorModel.analysis_db->getScalar<int>( "analysis_interval" );
+        	}
+        	FlowAdaptor Adapt(ColorModel);
+        	runAnalysis analysis(ColorModel);
+            while (ColorModel.timestep < ColorModel.timestepMax){
+            	timestep += analysis_interval;
+            	MLUPS = ColorModel.Run(timestep);
+            	if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
+            	
+            	Adapt.MoveInterface(ColorModel);
+            }
+            ColorModel.WriteDebug();
+        }            	//Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
+
+        else
+        	ColorModel.Run();        
 
         PROFILE_STOP( "Main" );
         auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );

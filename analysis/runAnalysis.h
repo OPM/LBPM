@@ -7,6 +7,7 @@
 #include "common/Communication.h"
 #include "common/ScaLBL.h"
 #include "threadpool/thread_pool.h"
+#include "models/ColorModel.h"
 #include <limits.h>
 
 
@@ -31,6 +32,8 @@ public:
     runAnalysis( std::shared_ptr<Database> db, const RankInfoStruct &rank_info,
         std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm, std::shared_ptr<Domain> dm, int Np,
         bool Regular, IntArray Map );
+    
+    runAnalysis( ScaLBL_ColorModel &ColorModel);
 
     //! Destructor
     ~runAnalysis();
