@@ -1,0 +1,30 @@
+module load cmake
+module load llvm-amdgpu
+module load hip
+
+
+export TPL_DIR=/gpfs/alpine/stf006/proj-shared/mbt/spock/install
+
+
+# configure
+rm -rf CMake*
+cmake                                           \
+    -D CMAKE_BUILD_TYPE:STRING=Release          \
+    -D CMAKE_C_COMPILER:PATH=cc                 \
+    -D CMAKE_CXX_COMPILER:PATH=CC               \
+    -D CMAKE_CXX_STANDARD=14                    \
+    -D USE_HIP=1                                \
+        -D LINK_LIBRARIES=${HIP_PATH}/lib/libamdhip64.so \
+    -D USE_CUDA=0                               \
+        -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg -lineinfo" \
+        -D CMAKE_CUDA_HOST_COMPILER="gcc"       \
+    -D USE_MPI=0                                \
+    -D USE_HDF5=1                               \
+        -D HDF5_DIRECTORY="${TPL_DIR}/hdf5"     \
+     -D USE_SILO=0                              \
+        -D SILO_DIRECTORY="${TPL_DIR}/silo"     \
+    -D USE_DOXYGEN:BOOL=false		        \
+    -D USE_TIMER=0			        \
+    ~/repos/LBPM-WIA
+
+

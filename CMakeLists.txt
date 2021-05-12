@@ -1,5 +1,6 @@
 # Set some CMake properties    
 CMAKE_MINIMUM_REQUIRED( VERSION 3.9 )
+CMAKE_POLICY( SET CMP0115 OLD )
 
 
 MESSAGE("====================")
