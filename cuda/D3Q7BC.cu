@@ -38,6 +38,56 @@ __global__ void dvc_ScaLBL_Solid_Neumann_D3Q7(double *dist, double *BoundaryValu
 	}
 }
 
+__global__ void dvc_ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                                          double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
+                                                          int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
+                                                          double *lattice_weight, float *lattice_cx, float *lattice_cy, float *lattice_cz,
+                                                          int count, int Np)
+{
+    int idx;
+    int iq,ib,ifluidBC;
+    double value_b,value_q;
+    double Ex,Ey,Ez;
+    double Etx,Ety,Etz;//tangential part of electric field
+    double nsx,nsy,nsz;//unit normal solid gradient
+    double ubx,uby,ubz;//slipping velocity at fluid boundary nodes
+    float cx,cy,cz;//lattice velocity (D3Q19)
+    double LB_weight;//lattice weighting coefficient (D3Q19)
+    double cs2_inv = 3.0;//inverse of cs^2 for D3Q19
+    double nu_LB = (tau-0.5)/cs2_inv;
+	idx = blockIdx.x*blockDim.x + threadIdx.x;
+	if (idx < count){
+		iq       = BounceBackDist_list[idx];
+        ib       = BounceBackSolid_list[idx];
+        ifluidBC = FluidBoundary_list[idx];
+		value_b = zeta_potential[ib];//get zeta potential from a solid site
+        value_q = dist[iq];
+
+        //Load electric field and compute its tangential componet
+        Ex = ElectricField[ifluidBC+0*Np]; 
+        Ey = ElectricField[ifluidBC+1*Np];
+        Ez = ElectricField[ifluidBC+2*Np];
+        nsx = SolidGrad[ifluidBC+0*Np]; 
+        nsy = SolidGrad[ifluidBC+1*Np];
+        nsz = SolidGrad[ifluidBC+2*Np];
+        E_mag_normal = Ex*nsx+Ey*nsy+Ez*nsz;//magnitude of electric field in the direction normal to solid nodes
+        //compute tangential electric field
+        Etx = Ex - E_mag_normal*nsx;
+        Ety = Ey - E_mag_normal*nsy;
+        Etz = Ez - E_mag_normal*nsz;
+        ubx = -eplison_LB*value_b*Etx/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
+        uby = -eplison_LB*value_b*Ety/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
+        ubz = -eplison_LB*value_b*Etz/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
+
+        //compute bounce-back distribution
+        LB_weight = lattice_weight[idx];
+        cx = lattice_cx[idx];
+        cy = lattice_cy[idx];
+        cz = lattice_cz[idx];
+		dist[iq] = value_q - 2.0*LB_weight*rho0*cs2_inv*(cx*ubx+cy*uby+cz*ubz);
+	}
+}
+
 __global__ void dvc_ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np)
 {
     int idx,n;
@@ -407,6 +457,23 @@ extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist, double *BoundaryValue, i
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_Solid_Neumann_D3Q7 (kernel): %s \n",cudaGetErrorString(err));
+	}
+}
+
+extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                                      double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
+                                                      int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
+                                                      double *lattice_weight, float *lattice_cx, float *lattice_cy, float *lattice_cz,
+                                                      int count, int Np){
+	int GRID = count / 512 + 1;
+	dvc_ScaLBL_Solid_SlippingVelocityBC_D3Q19<<<GRID,512>>>(dist, zeta_potential, ElectricField, SolidGrad,
+                                                            epsilon_LB, tau, rho0, den_scale, h, time_conv,
+                                                            BounceBackDist_list, BounceBackSolid_list, FluidBoundary_list,
+                                                            lattice_weight, lattice_cx, lattice_cy, lattice_cz,
+                                                            count, Np);
+	cudaError_t err = cudaGetLastError();
+	if (cudaSuccess != err){
+		printf("CUDA error in ScaLBL_Solid_SlippingVelocityBC_D3Q19 (kernel): %s \n",cudaGetErrorString(err));
 	}
 }
 

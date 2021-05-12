@@ -288,6 +288,12 @@ extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,i
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
 
+extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                               double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
+                                               int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
+                                               double *lattice_weight, float *lattice_cx, float *lattice_cy, float *lattice_cz,
+                                               int count, int Np);
+
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np);
 
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_Z(int *list, double *dist, double Vout, int count, int Np);
@@ -367,9 +373,11 @@ public:
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
-	void SetupBounceBackList(IntArray &Map, signed char *id, int Np);
+	void SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC=false);
     void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
     void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
+    void SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                      double epslion_LB, double tau, double rho0, double den_scale,double h, double time_conv);
 
     // Routines to set boundary conditions
     void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -444,6 +452,9 @@ private:
 	//......................................................................................
 	int *bb_dist;
 	int *bb_interactions;
+    int *fluid_boundary;
+    double *lattice_weight;
+    float *lattice_cx, *lattice_cy, *lattice_cz;
 	//......................................................................................
 
 };

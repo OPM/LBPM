@@ -51,6 +51,8 @@ public:
     double time_conv;
     double h;//image resolution
     double den_scale;//scale factor for density
+    double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;//Stokes solver also needs this for slipping velocity BC
+    bool UseSlippingVelBC;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -70,6 +72,7 @@ public:
     double *fq;
     double *Velocity;
     double *Pressure;
+    double *ZetaPotentialSolid;
     
     //Minkowski Morphology;
     DoubleArray Velocity_x;
