@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdio.h>
+
 #include "hip/hip_runtime.h"
+#include "hip/hip_runtime_api.h"
 
 #define STOKES
 
@@ -2034,7 +2036,7 @@ extern "C" void ScaLBL_FreeLeeModel_PhaseField_Init(int *Map, double *Phi, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
                                                           double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np)
 {
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q7_AAodd_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>(neighborList, Map, hq, Den, Phi, ColorGrad, Vel,
              rhoA,  rhoB, tauM, W, start, finish,  Np);
 	hipError_t err = hipGetLastError();
@@ -2046,7 +2048,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_FreeLee_PhaseField(int *neighborList, int *Map
 extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, double *Den, double *Phi, double *ColorGrad, double *Vel,
 		double rhoA, double rhoB, double tauM, double W, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q7_AAeven_FreeLee_PhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, ColorGrad, Vel, rhoA, rhoB, tauM, W, start, finish, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -2057,7 +2059,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_FreeLee_PhaseField( int *Map, double *hq, dou
 
 extern "C" void ScaLBL_D3Q7_ComputePhaseField(int *Map,  double *hq, double *Den, double *Phi, double rhoA, double rhoB, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q7_ComputePhaseField, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q7_ComputePhaseField, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q7_ComputePhaseField<<<NBLOCKS,NTHREADS >>>( Map, hq, Den, Phi, rhoA, rhoB, start, finish, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -2070,7 +2072,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel(int *neighborList, int *Map, dou
                                                 double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(neighborList, Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	hipError_t err = hipGetLastError();
@@ -2083,7 +2085,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
                                                 double rhoA, double rhoB, double tauA, double tauB, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np){
 	
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel<<<NBLOCKS,NTHREADS >>>(Map, dist, Den, Phi, mu_phi, Vel, Pressure,  ColorGrad, 
             rhoA, rhoB, tauA, tauB, kappa, beta, W, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
 	hipError_t err = hipGetLastError();
@@ -2096,7 +2098,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel(int *Map, double *dist, double 
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(neighborList, dist, Vel, Pressure, 
             tau, rho0, Fx, Fy, Fz, start, finish, Np);
 	hipError_t err = hipGetLastError();
@@ -2108,7 +2110,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborLis
 extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK(double *dist, double *Vel, double *Pressure, 
                                                                  double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np){
 
-	hipFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK, hipFuncCachePreferL1);
+	hipFuncSetCacheConfig((void*)dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK, hipFuncCachePreferL1);
 	dvc_ScaLBL_D3Q19_AAeven_FreeLeeModel_SingleFluid_BGK<<<NBLOCKS,NTHREADS >>>(dist, Vel, Pressure, 
             tau, rho0,  Fx, Fy, Fz, start, finish, Np);
 	hipError_t err = hipGetLastError();
