@@ -73,6 +73,7 @@ public:
     double *Velocity;
     double *Pressure;
     double *ZetaPotentialSolid;
+    double *SolidGrad;
     
     //Minkowski Morphology;
     DoubleArray Velocity_x;
@@ -91,5 +92,7 @@ private:
     void LoadParams(std::shared_ptr<Database> db0);    	
     void Velocity_LB_to_Phys(DoubleArray &Vel_reg);
     vector<double> computeElectricForceAvg(double *ChargeDensity, double *ElectricField);
+    void AssignSolidGrad(double *solid_grad);
+    void AssignZetaPotentialSolid(double *zeta_potential_solid);
 };
 #endif

@@ -95,8 +95,8 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	if (stokes_db->keyExists( "UseElectroosmoticVelocityBC" )){
 		UseSlippingVelBC = stokes_db->getScalar<bool>( "UseElectroosmoticVelocityBC" );
 	}
-	if (electric_db->keyExists( "epsilonR" )){
-		epsilonR = electric_db->getScalar<double>( "epsilonR" );
+	if (stokes_db->keyExists( "epsilonR" )){
+		epsilonR = stokes_db->getScalar<double>( "epsilonR" );
 	}
 
     // Re-calculate model parameters due to parameter read
@@ -182,8 +182,8 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	if (stokes_db->keyExists( "UseElectroosmoticVelocityBC" )){
 		UseSlippingVelBC = stokes_db->getScalar<bool>( "UseElectroosmoticVelocityBC" );
 	}
-	if (electric_db->keyExists( "epsilonR" )){
-		epsilonR = electric_db->getScalar<double>( "epsilonR" );
+	if (stokes_db->keyExists( "epsilonR" )){
+		epsilonR = stokes_db->getScalar<double>( "epsilonR" );
 	}
 
     // Re-calculate model parameters due to parameter read
@@ -282,14 +282,14 @@ void ScaLBL_StokesModel::ReadInput(){
     if (rank == 0) cout << "    Domain set." << endl;
 }
 
-void ScaLBL_IonModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
+void ScaLBL_StokesModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
 {
 	size_t NLABELS=0;
 	signed char VALUE=0;
 	double AFFINITY=0.f;
 
-	auto LabelList = ion_db->getVector<int>( "SolidLabels" );
-	auto AffinityList = ion_db->getVector<double>( "ZetaPotentialSolidList" );
+	auto LabelList = stokes_db->getVector<int>( "SolidLabels" );
+	auto AffinityList = stokes_db->getVector<double>( "ZetaPotentialSolidList" );
 
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
@@ -335,9 +335,8 @@ void ScaLBL_IonModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
 	}
 }
 
-void ScaLBL_IonModel::AssignSolidGrad(double *solid_grad)
+void ScaLBL_StokesModel::AssignSolidGrad(double *solid_grad)
 {
-    //TODO need to normalize the computed solid grad!!!
 	double *Dst;
 	Dst = new double [3*3*3];
 	for (int kk=0; kk<3; kk++){
@@ -424,9 +423,12 @@ void ScaLBL_IonModel::AssignSolidGrad(double *solid_grad)
 							}
 						}
 					}
-					solid_grad[idx+0*Np] = phi_x;
-					solid_grad[idx+1*Np] = phi_y;
-					solid_grad[idx+2*Np] = phi_z;
+                    //solid_grad normalization
+                    double phi_mag=sqrt(phi_x*phi_x+phi_y*phi_y+phi_z*phi_z);
+                    if (phi_mag==0.0) phi_mag=1.0;
+					solid_grad[idx+0*Np] = phi_x/phi_mag;
+					solid_grad[idx+1*Np] = phi_y/phi_mag;
+					solid_grad[idx+2*Np] = phi_z/phi_mag;
 				}
 			}
 		}
@@ -543,7 +545,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
 
         if (UseSlippingVelBC==true){
             ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(fq, ZetaPotentialSolid, ElectricField, SolidGrad,
-                                                      epslion_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
+                                                      epsilon_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
         }
         ScaLBL_Comm->Barrier(); comm.barrier();
 
@@ -570,7 +572,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
                                       0, ScaLBL_Comm->LastExterior(), Np);
         if (UseSlippingVelBC==true){
             ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(fq, ZetaPotentialSolid, ElectricField, SolidGrad,
-                                                      epslion_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
+                                                      epsilon_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
         }
         ScaLBL_Comm->Barrier(); comm.barrier();
         //************************************************************************/

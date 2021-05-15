@@ -973,7 +973,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 }
 
 
-void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC=false)
+void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC)
 {
 
     int idx,i,j,k;
@@ -1362,10 +1362,10 @@ void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
 }
 
 void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
-                                                       double epslion_LB, double tau, double rho0, double den_scale,double h, double time_conv){
+                                                       double epsilon_LB, double tau, double rho0, double den_scale,double h, double time_conv){
 	// fq is a D3Q19 distribution
 	// BoundaryValues is a list of values to assign at bounce-back solid sites
-    ScaLBL_Solid_SlippingVelocityBC_D3Q19(fq,zeta_potential,Electricfield,SolidGrad,epsilon_LB,tau,rho0,den_scale,h,time_conv,
+    ScaLBL_Solid_SlippingVelocityBC_D3Q19(fq,zeta_potential,ElectricField,SolidGrad,epsilon_LB,tau,rho0,den_scale,h,time_conv,
                                           bb_dist,bb_interactions,fluid_boundary,lattice_weight,lattice_cx,lattice_cy,lattice_cz,n_bb_d3q19,N);
 }
 
