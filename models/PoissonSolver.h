@@ -89,6 +89,8 @@ public:
 private:
 	Utilities::MPI comm;
 	
+	FILE *TIMELOG;
+
 	// filenames
     char LocalRankString[8];
     char LocalRankFilename[40];
