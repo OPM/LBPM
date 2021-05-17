@@ -33,7 +33,8 @@ typedef int DBfile;
 #endif
 
 
-namespace IO::silo {
+namespace IO {
+namespace silo {
 
 
 enum FileMode { READ, WRITE, CREATE };
@@ -271,7 +272,9 @@ void writeMultiVar( DBfile *fid, const std::string &varname,
     const std::vector<std::string> &subVarNames, const std::vector<int> &subVarTypes );
 
 
-}; // namespace IO::silo
+} // namespace silo
+} // namespace IO
+
 #endif
 
 #include "IO/silo.hpp"

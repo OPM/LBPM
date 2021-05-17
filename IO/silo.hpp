@@ -43,7 +43,8 @@
 #include <silo.h>
 
 
-namespace IO::silo {
+namespace IO {
+namespace silo {
 
 
 /****************************************************
@@ -443,7 +444,8 @@ Array<TYPE> readTriMeshVariable( DBfile *fid, const std::string &varname )
 }
 
 
-}; // namespace IO::silo
+} // namespace silo
+} // namespace IO
 
 
 #endif

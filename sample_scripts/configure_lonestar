@@ -1,0 +1,34 @@
+# load the module for cmake
+#module load cmake
+
+#source /gpfs/gpfs_stage1/b6p315aa/setup/setup-mpi.sh
+module load cmake gcc
+module load cuda
+
+export HDF5_DIR=$HOME/local/hdf5/1.8.12/
+export SILO_DIR=$HOME/local/silo/4.10.2/
+export NETCDF_DIR=$HOME/local/netcdf/4.6.1
+
+# configure
+rm -rf CMake*
+cmake                                       \
+    -D CMAKE_BUILD_TYPE:STRING=Release      \
+    -D CMAKE_C_COMPILER:PATH=mpicc          \
+    -D CMAKE_CXX_COMPILER:PATH=mpicxx       \
+    -D CMAKE_CXX_STANDARD=14                \
+    -D USE_CUDA=1                           \
+        -D CMAKE_CUDA_FLAGS="-arch sm_70 -Xptxas=-v -Xptxas -dlcm=cg -lineinfo" \
+        -D CMAKE_CUDA_HOST_COMPILER="/opt/apps/gcc/7.3.0/bin/gcc" \
+    -D USE_HDF5=1                        \
+        -D HDF5_DIRECTORY="$HDF5_DIR"		   \
+    	-D HDF5_LIB="$HDF5_DIR/lib/libhdf5.a"	   \
+     -D USE_SILO=1                        \
+        -D SILO_LIB="$SILO_DIR/lib/libsiloh5.a"    \
+   	-D SILO_DIRECTORY="$SILO_DIR"		     \
+    -D USE_NETCDF=0				     \
+        -D NETCDF_DIRECTORY="$NETCDF_DIR"	     \
+    -D USE_DOXYGEN:BOOL=false		        \
+    -D USE_TIMER=0			                \
+    ~/src/LBPM
+
+make VERBOSE=1 -j1 && make install
