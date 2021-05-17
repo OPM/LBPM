@@ -218,20 +218,19 @@ void ScaLBL_Poisson::ReadInput(){
 
 void ScaLBL_Poisson::AssignSolidBoundary(double *poisson_solid)
 {
-	size_t NLABELS=0;
 	signed char VALUE=0;
 	double AFFINITY=0.f;
 
 	auto LabelList = electric_db->getVector<int>( "SolidLabels" );
 	auto AffinityList = electric_db->getVector<double>( "SolidValues" );
 
-	NLABELS=LabelList.size();
+	size_t NLABELS = LabelList.size();
 	if (NLABELS != AffinityList.size()){
 		ERROR("Error: LB-Poisson Solver: SolidLabels and SolidValues must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	std::vector<double> label_count( NLABELS, 0.0 );
+	std::vector<double> label_count_global( NLABELS, 0.0 );
 	// Assign the labels
 
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -596,26 +595,25 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 
 }
 
-void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
-    if (rank==0){
-		bool WriteHeader=false;
-		TIMELOG = fopen("PoissonSolver_Convergence.csv","r");
-		if (TIMELOG != NULL)
-			fclose(TIMELOG);
-		else
-			WriteHeader=true;
 
-		TIMELOG = fopen("PoissonSolver_Convergence.csv","a+");
+static inline bool fileExists( const std::string &filename )
+{
+    std::ifstream ifile( filename.c_str() );
+    return ifile.good();
+}
+
+
+void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
+    if ( rank == 0 ) {
+		bool WriteHeader = !fileExists( "PoissonSolver_Convergence.csv" );
+
+		auto fid = fopen("PoissonSolver_Convergence.csv","a+");
 		if (WriteHeader)
-		{
-			fprintf(TIMELOG,"Timestep Error\n");				
-            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
-            fflush(TIMELOG);
-		}
-        else {
-            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
-            fflush(TIMELOG);
-        }
+			fprintf(fid,"Timestep Error\n");
+
+        fprintf(fid,"%i %.5g\n",timestep,error); 
+        fflush(fid);
+        fclose( fid );
     }
 }
 

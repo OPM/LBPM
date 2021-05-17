@@ -1,6 +1,8 @@
 # Set some CMake properties    
 CMAKE_MINIMUM_REQUIRED( VERSION 3.9 )
-CMAKE_POLICY( SET CMP0115 OLD )
+if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.20.0") 
+    CMAKE_POLICY( SET CMP0115 OLD )
+endif()
 
 
 MESSAGE("====================")

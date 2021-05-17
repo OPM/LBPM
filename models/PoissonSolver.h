@@ -94,7 +94,6 @@ private:
     char LocalRankFilename[40];
     char LocalRestartFile[40];
     char OutputFilename[200];
-	FILE *TIMELOG;
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);    	
