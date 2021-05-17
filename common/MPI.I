@@ -595,7 +595,15 @@ template<class TYPE>
 void MPI_CLASS::sendrecv( const TYPE *sendbuf, int sendcount, int dest, int sendtag, 
                           TYPE *recvbuf, int recvcount, int source, int recvtag ) const
 {
-    ERROR( "Not implimented" );
+    if ( getSize() == 1 ) {
+        ASSERT( dest == 0 );
+        ASSERT( source == 0 );
+        ASSERT( sendcount == recvcount );
+        ASSERT( sendtag == recvtag );
+        memcpy( recvbuf, sendbuf, sendcount * sizeof( TYPE ) );
+    } else {
+        ERROR( "Not implimented for " + std::string( typeid( TYPE ).name() ) );
+    }
 }
 #else
 template<class TYPE>
