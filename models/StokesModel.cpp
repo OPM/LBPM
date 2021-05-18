@@ -484,7 +484,7 @@ void ScaLBL_StokesModel::Create(){
 
         //For slipping velocity BC, need zeta potential and solid unit normal vector
 	    ScaLBL_AllocateDeviceMemory((void **) &ZetaPotentialSolid, sizeof(double)*Nx*Ny*Nz);
-	    ScaLBL_AllocateDeviceMemory((void **) &SolidGrad, sizeof(double)*Np); //unit normal vector of solid nodes
+	    ScaLBL_AllocateDeviceMemory((void **) &SolidGrad, sizeof(double)*3*Np); //unit normal vector of solid nodes
 
         double *ZetaPotentialSolid_host;
         ZetaPotentialSolid_host = new double[Nx*Ny*Nz];
