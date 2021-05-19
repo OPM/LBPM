@@ -113,6 +113,7 @@ public:
 	FlowAdaptor(ScaLBL_ColorModel &M);
 	~FlowAdaptor();
 	double MoveInterface(ScaLBL_ColorModel &M);
+	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
 	DoubleArray phi;
 	DoubleArray phi_t;
 private:
