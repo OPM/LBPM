@@ -71,21 +71,38 @@ int main( int argc, char **argv )
         if (SimulationMode == "development"){
             double MLUPS=0.0;
             int timestep = 0;
-            int analysis_interval = ColorModel.timestepMax;
-        	if (ColorModel.analysis_db->keyExists( "" )){
-        		analysis_interval = ColorModel.analysis_db->getScalar<int>( "analysis_interval" );
+            /* flow adaptor keys to control */
+            auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
+        	int MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
+        	int SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 100000 );
+
+            int ANALYSIS_INTERVAL = ColorModel.timestepMax;
+        	if (ColorModel.analysis_db->keyExists( "analysis_interval" )){
+        		ANALYSIS_INTERVAL = ColorModel.analysis_db->getScalar<int>( "analysis_interval" );
         	}
+        	/* Launch the simulation */
         	FlowAdaptor Adapt(ColorModel);
         	runAnalysis analysis(ColorModel);
+        	
             while (ColorModel.timestep < ColorModel.timestepMax){
-            	timestep += analysis_interval;
+            	/* this will run steady points */
+            	timestep += MAX_STEADY_TIME;
             	MLUPS = ColorModel.Run(timestep);
             	if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
+            	Adapt.UpdateFractionalFlow(ColorModel);
             	
-            	Adapt.MoveInterface(ColorModel);
+            	/* apply timestep skipping algorithm to accelerate steady-state */
+            	int skip_time = 0;
+            	timestep = ColorModel.timestep;
+            	while (skip_time < SKIP_TIMESTEPS){
+            		timestep += ANALYSIS_INTERVAL;
+                	MLUPS = ColorModel.Run(timestep);
+            		Adapt.MoveInterface(ColorModel);
+            		skip_time += ANALYSIS_INTERVAL;
+            	}
             }
             ColorModel.WriteDebug();
-        }            	//Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
+        }
 
         else
         	ColorModel.Run();        
