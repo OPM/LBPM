@@ -831,8 +831,8 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             if (BoundaryConditionSolid==1){
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic*Np*7], IonSolid);
-                ScaLBL_Comm->Barrier(); comm.barrier();
             }
+            ScaLBL_Comm->Barrier(); comm.barrier();
 
             // *************EVEN TIMESTEP*************//
             timestep++;
@@ -875,8 +875,8 @@ void ScaLBL_IonModel::Run(double *Velocity, double *ElectricField){
             if (BoundaryConditionSolid==1){
                 //TODO IonSolid may also be species-dependent
                 ScaLBL_Comm->SolidDirichletD3Q7(&fq[ic*Np*7], IonSolid);
-                ScaLBL_Comm->Barrier(); comm.barrier();
             }
+            ScaLBL_Comm->Barrier(); comm.barrier();
         }
     }
 

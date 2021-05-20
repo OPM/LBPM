@@ -99,7 +99,6 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	}
 
     //Re-calcualte model parameters if user updates input
-    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
 
 	if (rank==0) printf("***********************************************************************************\n");
