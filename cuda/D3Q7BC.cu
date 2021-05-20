@@ -76,9 +76,9 @@ __global__ void dvc_ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *
         Etx = Ex - E_mag_normal*nsx;
         Ety = Ey - E_mag_normal*nsy;
         Etz = Ez - E_mag_normal*nsz;
-        ubx = -epsilon_LB*value_b*Etx/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
-        uby = -epsilon_LB*value_b*Ety/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
-        ubz = -epsilon_LB*value_b*Etz/(nu_LB*rho0)*time_conv*time_conv/h/h/den_scale;                                                                                                        
+        ubx = -epsilon_LB*value_b*Etx/(nu_LB*rho0)*time_conv*time_conv/(h*h*1.0e-12)/den_scale;                                                                                                        
+        uby = -epsilon_LB*value_b*Ety/(nu_LB*rho0)*time_conv*time_conv/(h*h*1.0e-12)/den_scale;                                                                                                        
+        ubz = -epsilon_LB*value_b*Etz/(nu_LB*rho0)*time_conv*time_conv/(h*h*1.0e-12)/den_scale;                                                                                                        
 
         //compute bounce-back distribution
         LB_weight = lattice_weight[idx];
