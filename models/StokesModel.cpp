@@ -103,6 +103,7 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	mu=(tau-0.5)/3.0;
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
 }
 
@@ -190,6 +191,7 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	mu=(tau-0.5)/3.0;
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
     epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
 }
 
