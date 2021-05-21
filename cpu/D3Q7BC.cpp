@@ -49,7 +49,7 @@ extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta
     double cs2_inv = 3.0;//inverse of cs^2 for D3Q19
     double nu_LB = (tau-0.5)/cs2_inv;
 
-	for (idx=0; idx<Np; idx++){
+	for (idx=0; idx<count; idx++){
 		iq       = BounceBackDist_list[idx];
         ib       = BounceBackSolid_list[idx];
         ifluidBC = FluidBoundary_list[idx];
