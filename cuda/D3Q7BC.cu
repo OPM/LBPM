@@ -359,7 +359,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z(int *list, double *dis
         fsum_partial = f0+f1+f2+f3+f4+f5;
         uz = VelocityZ[n];
 		//...................................................
-        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)(1.0+uz); 
+        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)/(1.0+uz); 
 		dist[5*Np+n] = f6;
 	}
 }
@@ -434,7 +434,7 @@ __global__ void dvc_ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z(int *d_neighborList, in
         fsum_partial = f0+f1+f2+f3+f4+f5;
         uz = VelocityZ[n];
 		//...................................................
-        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)(1.0+uz); 
+        f6 =(FluxIn+(1.0-0.5/tau)*(f5-uz*fsum_partial))/(1.0-0.5/tau)/(1.0+uz); 
 
 		// unknown distributions
 		nr6 = d_neighborList[n+5*Np];

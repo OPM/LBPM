@@ -772,7 +772,7 @@ void ScaLBL_IonModel::Initialize(){
             case 22:
                 if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
-            case 22:
+            case 23:
                 if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective + electric flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
         }

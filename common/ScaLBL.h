@@ -400,8 +400,12 @@ public:
     void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
     void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
     void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
-    void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
-    void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_Diff_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_Diff_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvc_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvc_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvcElec_BC_z(int *neighborList,double *fq,double Cin,double tau,double *VelocityZ,double *ElectricField_Z,double Di,double zi,double Vt, int time);
+    void D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(int *neighborList,double *fq,double Cout,double tau,double *VelocityZ,double *ElectricField_Z,double Di,double zi,double Vt, int time);
     void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);
