@@ -57,6 +57,6 @@ inline std::vector<std::string> splitList( const char *line, const char token )
 }
 
 
-}; // namespace IO
+} // namespace IO
 
 #endif

@@ -1,0 +1,33 @@
+export TPL_ROOT=/ccs/home/mbt/repos
+export TPL_BUILDER=/ccs/home/mbt/repos/TPL-builder
+export TPL_WEBPAGE=http://bitbucket.org/AdvancedMultiPhysics/tpl-builder/downloads
+
+export INSTALL_DIR=/ccs/home/mbt/spock/install
+
+module load cmake
+module load llvm-amdgpu
+module load hip
+
+
+cmake                                                   \
+    -D CMAKE_BUILD_TYPE=Release                         \
+    -D CXX_STD=14                                       \
+    -D TPL_INSTALL_DIR:PATH="${INSTALL_DIR}"            \
+    -D C_COMPILER=cc                                    \
+    -D CXX_COMPILER=CC                                  \
+    -D Fortran_COMPILER=ftn                             \
+    -D FFLAGS="-fPIC"                                   \
+    -D CFLAGS="-fPIC"                                   \
+    -D CXXFLAGS="-fPIC"                                 \
+    -D LDFLAGS=""                                       \
+    -D ENABLE_STATIC:BOOL=ON                            \
+    -D ENABLE_SHARED:BOOL=OFF                           \
+    -D PROCS_INSTALL=8                                  \
+    -D TPL_LIST:STRING="TIMER;ZLIB;HDF5;SILO"           \
+    -D TIMER_URL="${TPL_ROOT}/TimerUtility"             \
+    -D ZLIB_URL="http://zlib.net/zlib-1.2.11.tar.gz"    \
+    -D HDF5_URL="${TPL_ROOT}/hdf5-1.8.12.tar.gz"        \
+        -D BUILD_TYPE=x86_64                            \
+    -D SILO_URL="${TPL_ROOT}/silo-4.10.2.tar.gz"        \
+    ${TPL_BUILDER}
+
