@@ -2158,7 +2158,7 @@ void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){
 
 double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){	
 	
-    double INTERFACE_CUTOFF = M.color_db->getWithDefault<double>( "move_interface_cutoff", 0.975 );
+    double INTERFACE_CUTOFF = M.color_db->getWithDefault<double>( "move_interface_cutoff", 0.1 );
     double MOVE_INTERFACE_FACTOR = M.color_db->getWithDefault<double>( "move_interface_factor", 10.0 );
 
     ScaLBL_CopyToHost( phi.data(), M.Phi, Nx*Ny*Nz* sizeof( double ) );

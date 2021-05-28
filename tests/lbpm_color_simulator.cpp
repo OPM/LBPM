@@ -100,7 +100,7 @@ int main( int argc, char **argv )
             		Adapt.MoveInterface(ColorModel);
             		skip_time += ANALYSIS_INTERVAL;
             	}
-            	Adapt.Flatten(ColorModel);
+            	//Adapt.Flatten(ColorModel);
 
             }
             ColorModel.WriteDebug();
