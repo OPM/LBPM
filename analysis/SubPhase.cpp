@@ -364,6 +364,7 @@ inline void InterfaceTransportMeasures( double beta, double rA, double rB, doubl
 	double A1,A2,A3,A4,A5,A6;
 	double B1,B2,B3,B4,B5,B6;
 	double nAB,delta;
+	double phi = (nA-nB)/(nA+nB);
 	// Instantiate mass transport distributions
 	// Stationary value - distribution 0
 	nAB = 1.0/(nA+nB);
@@ -402,7 +403,7 @@ inline void InterfaceTransportMeasures( double beta, double rA, double rB, doubl
 	double uwx = (B1-B2);
 	double uwy = (B3-B4);
 	double uwz = (B5-B6);
-	
+	/*
 	I.Mn += rA*nA;
 	I.Mw += rB*nB;
 	I.Pnx += rA*nA*unx;
@@ -411,6 +412,21 @@ inline void InterfaceTransportMeasures( double beta, double rA, double rB, doubl
 	I.Pwx += rB*nB*uwx;
 	I.Pwy += rB*nB*uwy;
 	I.Pwz += rB*nB*uwz;
+	I.Kn += rA*nA*(unx*unx + uny*uny + unz*unz);
+	I.Kw += rB*nB*(uwx*uwx + uwy*uwy + uwz*uwz);
+	*/
+	if (phi > 0.0){
+	  I.Mn += rA;
+	  I.Pnx += rA*ux;
+	  I.Pny += rA*uy;
+	  I.Pnz += rA*uz;
+	} 
+	else { 
+	  I.Mw += rB;
+	  I.Pwx += rB*ux;
+	  I.Pwy += rB*uy;
+	  I.Pwz += rB*uz;
+	}
 	I.Kn += rA*nA*(unx*unx + uny*uny + unz*unz);
 	I.Kw += rB*nB*(uwx*uwx + uwy*uwy + uwz*uwz);
 
@@ -606,8 +622,8 @@ void SubPhase::Full(){
 					double uy = Vel_y(n);
 					double uz = Vel_z(n);
 					
-					if (DelPhi(n) > 1e-3){
-						// interface region
+					if (DelPhi(n) > 1e-3 && SDs(n) < 3.0 ){
+						// film region
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
 						double ny = 0.5*(Phi(i,j+1,k)-Phi(i,j-1,k));
 						double nz = 0.5*(Phi(i,j,k+1)-Phi(i,j,k-1));
