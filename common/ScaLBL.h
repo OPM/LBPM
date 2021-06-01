@@ -252,6 +252,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined(int *Map, double *dist
                                                 double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
                                                 int strideY, int strideZ, int start, int finish, int Np);
 
+extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_Combined_HigherOrder(int *neighborList, int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+                                                int strideY, int strideZ, int start, int finish, int Np);
+
+extern "C" void ScaLBL_D3Q19_AAeven_FreeLeeModel_Combined_HigherOrder(int *Map, double *dist, double *hq, double *Den,	double *Phi, double *mu_phi, double *Vel, double *Pressure, double *ColorGrad,
+                                                double rhoA, double rhoB, double tauA, double tauB, double tauM, double kappa, double beta, double W, double Fx, double Fy, double Fz, 
+                                                int strideY, int strideZ, int start, int finish, int Np);
+
 extern "C" void ScaLBL_D3Q19_AAodd_FreeLeeModel_SingleFluid_BGK(int *neighborList, double *dist, double *Vel, double *Pressure,  
                                                                 double tau, double rho0, double Fx, double Fy, double Fz, int start, int finish, int Np);
 
@@ -295,6 +303,12 @@ extern "C" void ScaLBL_CopySlice_z(double *Phi, int Nx, int Ny, int Nz, int Sour
 extern "C" void ScaLBL_Solid_Dirichlet_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
 
 extern "C" void ScaLBL_Solid_Neumann_D3Q7(double *dist,double *BoundaryValue,int *BounceBackDist_list,int *BounceBackSolid_list,int N);
+
+extern "C" void ScaLBL_Solid_SlippingVelocityBC_D3Q19(double *dist, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                               double epsilon_LB, double tau, double rho0,double den_scale, double h, double time_conv,
+                                               int *BounceBackDist_list, int *BounceBackSolid_list, int *FluidBoundary_list,
+                                               double *lattice_weight, float *lattice_cx, float *lattice_cy, float *lattice_cz,
+                                               int count, int Np);
 
 extern "C" void ScaLBL_D3Q7_AAeven_Poisson_Potential_BC_z(int *list, double *dist, double Vin, int count, int Np);
 
@@ -375,9 +389,11 @@ public:
 	void RecvHalo(double *data);
 	void RecvGrad(double *Phi, double *Gradient);
 	void RegularLayout(IntArray map, const double *data, DoubleArray &regdata);
-	void SetupBounceBackList(IntArray &Map, signed char *id, int Np);
+	void SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC=false);
     void SolidDirichletD3Q7(double *fq, double *BoundaryValue);
     void SolidNeumannD3Q7(double *fq, double *BoundaryValue);
+    void SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                      double epslion_LB, double tau, double rho0, double den_scale,double h, double time_conv);
 
     // Routines to set boundary conditions
     void Color_BC_z(int *Map, double *Phi, double *Den, double vA, double vB);
@@ -452,6 +468,9 @@ private:
 	//......................................................................................
 	int *bb_dist;
 	int *bb_interactions;
+    int *fluid_boundary;
+    double *lattice_weight;
+    float *lattice_cx, *lattice_cy, *lattice_cz;
 	//......................................................................................
 
 };

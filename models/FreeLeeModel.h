@@ -84,6 +84,7 @@ public:
 	void getPhase(DoubleArray &PhaseValues);
 	void getPotential(DoubleArray &PressureValues, DoubleArray &MuValues);
 	void getVelocity(DoubleArray &Vx, DoubleArray &Vy, DoubleArray &Vz);
+    void getData_RegularLayout(const double *data, DoubleArray &regdata);
 	
 	DoubleArray SignDist;
 	

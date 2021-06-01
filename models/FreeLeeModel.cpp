@@ -59,6 +59,30 @@ void ScaLBL_FreeLeeModel::getVelocity(DoubleArray &Vel_x, DoubleArray &Vel_y, Do
     ScaLBL_Comm->Barrier(); comm.barrier();
 }
 
+void ScaLBL_FreeLeeModel::getData_RegularLayout(const double *data, DoubleArray &regdata){
+	// Gets data (in optimized layout) from the HOST and stores in regular layout
+    // Primarly for debugging
+	int i,j,k,idx;
+    int n;
+
+	// initialize the array
+	regdata.fill(0.f);
+	
+	double value;
+	for (k=0; k<Nz; k++){
+		for (j=0; j<Ny; j++){
+			for (i=0; i<Nx; i++){
+				n=k*Nx*Ny+j*Nx+i;
+				idx=Map(i,j,k);
+				if (!(idx<0)){
+					value=data[idx];
+					regdata(i,j,k)=value;
+				}
+			}
+		}
+	}
+}
+
 void ScaLBL_FreeLeeModel::ReadParams(string filename){
 	// read the input database 
 	db = std::make_shared<Database>( filename );
@@ -574,27 +598,28 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 
 	DoubleArray PhaseField(Nx,Ny,Nz);
 	FILE *OUTFILE;
-	ScaLBL_Comm->RegularLayout(Map,mu_phi_host,PhaseField);
+    
+    getData_RegularLayout(mu_phi_host,PhaseField);
 	sprintf(LocalRankFilename,"Chem_Init.%05i.raw",rank);
 	OUTFILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,OUTFILE);
 	fclose(OUTFILE);
 
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[0],PhaseField);
+	getData_RegularLayout(&ColorGrad_host[0],PhaseField);
 	FILE *CGX_FILE;
 	sprintf(LocalRankFilename,"Gradient_X_Init.%05i.raw",rank);
 	CGX_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,CGX_FILE);
 	fclose(CGX_FILE);
 
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[Np],PhaseField);
+	getData_RegularLayout(&ColorGrad_host[Np],PhaseField);
 	FILE *CGY_FILE;
 	sprintf(LocalRankFilename,"Gradient_Y_Init.%05i.raw",rank);
 	CGY_FILE = fopen(LocalRankFilename,"wb");
 	fwrite(PhaseField.data(),8,N,CGY_FILE);
 	fclose(CGY_FILE);
 
-	ScaLBL_Comm->RegularLayout(Map,&ColorGrad_host[2*Np],PhaseField);
+	getData_RegularLayout(&ColorGrad_host[2*Np],PhaseField);
 	FILE *CGZ_FILE;
 	sprintf(LocalRankFilename,"Gradient_Z_Init.%05i.raw",rank);
 	CGZ_FILE = fopen(LocalRankFilename,"wb");

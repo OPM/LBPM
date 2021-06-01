@@ -51,6 +51,8 @@ public:
     double time_conv;
     double h;//image resolution
     double den_scale;//scale factor for density
+    double epsilon0,epsilon0_LB,epsilonR,epsilon_LB;//Stokes solver also needs this for slipping velocity BC
+    bool UseSlippingVelBC;
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -70,6 +72,8 @@ public:
     double *fq;
     double *Velocity;
     double *Pressure;
+    double *ZetaPotentialSolid;
+    double *SolidGrad;
     
     //Minkowski Morphology;
     DoubleArray Velocity_x;
@@ -88,5 +92,7 @@ private:
     void LoadParams(std::shared_ptr<Database> db0);    	
     void Velocity_LB_to_Phys(DoubleArray &Vel_reg);
     vector<double> computeElectricForceAvg(double *ChargeDensity, double *ElectricField);
+    void AssignSolidGrad(double *solid_grad);
+    void AssignZetaPotentialSolid(double *zeta_potential_solid);
 };
 #endif

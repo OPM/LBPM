@@ -114,6 +114,7 @@ public:
 	~FlowAdaptor();
 	double MoveInterface(ScaLBL_ColorModel &M);
 	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
+	void Flatten(ScaLBL_ColorModel &M);
 	DoubleArray phi;
 	DoubleArray phi_t;
 private:
