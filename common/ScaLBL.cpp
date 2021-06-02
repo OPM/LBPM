@@ -973,7 +973,7 @@ int ScaLBL_Communicator::MemoryOptimizedLayoutAA(IntArray &Map, int *neighborLis
 }
 
 
-void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np)
+void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, int Np, bool SlippingVelBC)
 {
 
     int idx,i,j,k;
@@ -1051,6 +1051,23 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 	int *bb_interactions_tmp = new int [local_count];	
 	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
 	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
+    int *fluid_boundary_tmp;
+    double *lattice_weight_tmp;
+    float *lattice_cx_tmp;
+    float *lattice_cy_tmp;
+    float *lattice_cz_tmp;
+    if(SlippingVelBC==true){
+        fluid_boundary_tmp = new int [local_count];
+        lattice_weight_tmp = new double [local_count];
+        lattice_cx_tmp = new float [local_count];
+        lattice_cy_tmp = new float [local_count];
+        lattice_cz_tmp = new float [local_count];
+	    ScaLBL_AllocateDeviceMemory((void **) &fluid_boundary, sizeof(int)*local_count);
+	    ScaLBL_AllocateDeviceMemory((void **) &lattice_weight, sizeof(double)*local_count);
+	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cx, sizeof(float)*local_count);
+	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cy, sizeof(float)*local_count);
+	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cz, sizeof(float)*local_count);
+    }
 	
 	local_count=0;
 	for (k=1;k<Nz-1;k++){
@@ -1064,36 +1081,78 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 					neighbor=Map(i-1,j,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] = -1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 2*Np;
 					}
 
 					neighbor=Map(i+1,j,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] =  1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++] = idx + 1*Np;
 					}
 
 					neighbor=Map(i,j-1,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] = -1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 4*Np;
 					}
 
 					neighbor=Map(i,j+1,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] =  1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 3*Np;
 					}
 
 					neighbor=Map(i,j,k-1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k-1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] = -1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 6*Np;
 					}
 
 					neighbor=Map(i,j,k+1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j)*Nx + (k+1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/18.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] =  1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 5*Np;
 					}
 				}
@@ -1111,72 +1170,156 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 					neighbor=Map(i-1,j-1,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i-1) + (j-1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] = -1.0;
+                            lattice_cy_tmp[local_count] = -1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 8*Np;
 					}
 
 					neighbor=Map(i+1,j+1,k);
 					if (neighbor==-1)	{
 						bb_interactions_tmp[local_count] = (i+1) + (j+1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  1.0;
+                            lattice_cy_tmp[local_count] =  1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 7*Np;
 					}
 
 					neighbor=Map(i-1,j+1,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i-1) + (j+1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] = -1.0;
+                            lattice_cy_tmp[local_count] =  1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 10*Np;
 					}
 
 					neighbor=Map(i+1,j-1,k);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i+1) + (j-1)*Nx + (k)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  1.0;
+                            lattice_cy_tmp[local_count] = -1.0;
+                            lattice_cz_tmp[local_count] =  0.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 9*Np;
 					}
 
 					neighbor=Map(i-1,j,k-1);
 					if (neighbor==-1) {
 						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k-1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] = -1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] = -1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 12*Np;
 					}
 
 					neighbor=Map(i+1,j,k+1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k+1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] =  1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 11*Np;
 					}
 
 					neighbor=Map(i-1,j,k+1);
 					if (neighbor==-1) {
 						bb_interactions_tmp[local_count] = (i-1) + (j)*Nx + (k+1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] = -1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] =  1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 14*Np;
 					}
 
 					neighbor=Map(i+1,j,k-1);
 					if (neighbor==-1) {
 						bb_interactions_tmp[local_count] = (i+1) + (j)*Nx + (k-1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  1.0;
+                            lattice_cy_tmp[local_count] =  0.0;
+                            lattice_cz_tmp[local_count] = -1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 13*Np;
 					}
 
 					neighbor=Map(i,j-1,k-1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k-1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] = -1.0;
+                            lattice_cz_tmp[local_count] = -1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 16*Np;
 					}
 
 					neighbor=Map(i,j+1,k+1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k+1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] =  1.0;
+                            lattice_cz_tmp[local_count] =  1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 15*Np;
 					}
 
 					neighbor=Map(i,j-1,k+1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j-1)*Nx + (k+1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] = -1.0;
+                            lattice_cz_tmp[local_count] =  1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 18*Np;
 					}
 
 					neighbor=Map(i,j+1,k-1);
 					if (neighbor==-1){
 						bb_interactions_tmp[local_count] = (i) + (j+1)*Nx + (k-1)*Nx*Ny;
+                        if(SlippingVelBC==true){
+                            fluid_boundary_tmp[local_count] = idx;
+                            lattice_weight_tmp[local_count] = 1.0/36.0;
+                            lattice_cx_tmp[local_count] =  0.0;
+                            lattice_cy_tmp[local_count] =  1.0;
+                            lattice_cz_tmp[local_count] = -1.0;
+                        } 
 						bb_dist_tmp[local_count++]=idx + 17*Np;
 					}
 				}
@@ -1186,10 +1329,24 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 	n_bb_d3q19 = local_count; // this gives the d3q19 distributions not part of d3q7 model
 	ScaLBL_CopyToDevice(bb_dist, bb_dist_tmp, local_count*sizeof(int));
 	ScaLBL_CopyToDevice(bb_interactions, bb_interactions_tmp, local_count*sizeof(int));
+    if(SlippingVelBC==true){
+	    ScaLBL_CopyToDevice(fluid_boundary, fluid_boundary_tmp, local_count*sizeof(int));
+	    ScaLBL_CopyToDevice(lattice_weight, lattice_weight_tmp, local_count*sizeof(double));
+	    ScaLBL_CopyToDevice(lattice_cx, lattice_cx_tmp, local_count*sizeof(float));
+	    ScaLBL_CopyToDevice(lattice_cy, lattice_cy_tmp, local_count*sizeof(float));
+	    ScaLBL_CopyToDevice(lattice_cz, lattice_cz_tmp, local_count*sizeof(float));
+    }
 	ScaLBL_DeviceBarrier();
     
 	delete [] bb_dist_tmp;
 	delete [] bb_interactions_tmp;
+    if(SlippingVelBC==true){
+	    delete [] fluid_boundary_tmp;
+	    delete [] lattice_weight_tmp;
+        delete [] lattice_cx_tmp;
+        delete [] lattice_cy_tmp;
+        delete [] lattice_cz_tmp;
+    }
 }
 
 void ScaLBL_Communicator::SolidDirichletD3Q7(double *fq, double *BoundaryValue){
@@ -1202,6 +1359,14 @@ void ScaLBL_Communicator::SolidNeumannD3Q7(double *fq, double *BoundaryValue){
 	// fq is a D3Q7 distribution
 	// BoundaryValues is a list of values to assign at bounce-back solid sites
     ScaLBL_Solid_Neumann_D3Q7(fq,BoundaryValue,bb_dist,bb_interactions,n_bb_d3q7);
+}
+
+void ScaLBL_Communicator::SolidSlippingVelocityBCD3Q19(double *fq, double *zeta_potential, double *ElectricField, double *SolidGrad,
+                                                       double epsilon_LB, double tau, double rho0, double den_scale,double h, double time_conv){
+	// fq is a D3Q19 distribution
+	// BoundaryValues is a list of values to assign at bounce-back solid sites
+    ScaLBL_Solid_SlippingVelocityBC_D3Q19(fq,zeta_potential,ElectricField,SolidGrad,epsilon_LB,tau,rho0,den_scale,h,time_conv,
+                                          bb_dist,bb_interactions,fluid_boundary,lattice_weight,lattice_cx,lattice_cy,lattice_cz,n_bb_d3q19,N);
 }
 
 void ScaLBL_Communicator::SendD3Q19AA(double *dist){

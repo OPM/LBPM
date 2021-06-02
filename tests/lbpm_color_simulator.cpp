@@ -84,12 +84,11 @@ int main( int argc, char **argv )
             	
             	Adapt.MoveInterface(ColorModel);
             }
+            ColorModel.WriteDebug();
         }            	//Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
 
         else
-        	ColorModel.Run();
-        
-        ColorModel.WriteDebug();
+        	ColorModel.Run();        
 
         PROFILE_STOP( "Main" );
         auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );

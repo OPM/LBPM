@@ -166,6 +166,7 @@ public: // Public variables (need to create accessors instead)
     std::vector<signed char> id;
 
     void ReadIDs();
+    void ComputePorosity();
     void Decomp( const std::string& filename );
     void CommunicateMeshHalo(DoubleArray &Mesh);
     void CommInit(); 

@@ -8,6 +8,7 @@
 ScaLBL_StokesModel::ScaLBL_StokesModel(int RANK, int NP, const Utilities::MPI& COMM):
 rank(RANK), nprocs(NP), Restart(0),timestep(0),timestepMax(0),tau(0),
 Fx(0),Fy(0),Fz(0),flux(0),din(0),dout(0),mu(0),h(0),nu_phys(0),rho_phys(0),rho0(0),den_scale(0),time_conv(0),tolerance(0),
+epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),UseSlippingVelBC(0),
 Nx(0),Ny(0),Nz(0),N(0),Np(0),nprocx(0),nprocy(0),nprocz(0),BoundaryCondition(0),Lx(0),Ly(0),Lz(0),comm(COMM)
 {
 
@@ -38,6 +39,12 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
+    //Stokes solver also needs the following parameters for slipping velocity BC
+    epsilon0 = 8.85e-12;//electric permittivity of vaccum; unit:[C/(V*m)]
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
+    epsilonR = 78.4;//default dielectric constant of water
+    epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
+    UseSlippingVelBC = false;
     //--------------------------------------------------------------------------//
 
 	// Read domain parameters
@@ -85,12 +92,19 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 	if (stokes_db->keyExists( "flux" )){
 		flux = stokes_db->getScalar<double>( "flux" );
 	}	
+	if (stokes_db->keyExists( "UseElectroosmoticVelocityBC" )){
+		UseSlippingVelBC = stokes_db->getScalar<bool>( "UseElectroosmoticVelocityBC" );
+	}
+	if (stokes_db->keyExists( "epsilonR" )){
+		epsilonR = stokes_db->getScalar<double>( "epsilonR" );
+	}
 
     // Re-calculate model parameters due to parameter read
 	mu=(tau-0.5)/3.0;
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
-
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
+    epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
 }
 
 void ScaLBL_StokesModel::ReadParams(string filename){
@@ -100,7 +114,6 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	db = std::make_shared<Database>( filename );
 	domain_db = db->getDatabase( "Domain" );
 	stokes_db = db->getDatabase( "Stokes" );
-	
 
 	//---------------------- Default model parameters --------------------------//		
     rho_phys = 1000.0; //by default use water density; unit [kg/m^3]
@@ -114,6 +127,12 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	tolerance = 1.0e-8;
 	Fx = Fy = 0.0;
 	Fz = 1.0e-5;
+    //Stokes solver also needs the following parameters for slipping velocity BC
+    epsilon0 = 8.85e-12;//electric permittivity of vaccum; unit:[C/(V*m)]
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
+    epsilonR = 78.4;//default dielectric constant of water
+    epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
+    UseSlippingVelBC = false;
     //--------------------------------------------------------------------------//
 
 	// Read domain parameters
@@ -161,12 +180,19 @@ void ScaLBL_StokesModel::ReadParams(string filename){
 	if (stokes_db->keyExists( "flux" )){
 		flux = stokes_db->getScalar<double>( "flux" );
 	}	
+	if (stokes_db->keyExists( "UseElectroosmoticVelocityBC" )){
+		UseSlippingVelBC = stokes_db->getScalar<bool>( "UseElectroosmoticVelocityBC" );
+	}
+	if (stokes_db->keyExists( "epsilonR" )){
+		epsilonR = stokes_db->getScalar<double>( "epsilonR" );
+	}
 
     // Re-calculate model parameters due to parameter read
 	mu=(tau-0.5)/3.0;
     time_conv = (h*h*1.0e-12)*mu/nu_phys;//time conversion factor from physical to LB unit; [sec/lt]
     den_scale = rho_phys/rho0*(h*h*h*1.0e-18);//scale factor for density
-
+    epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
+    epsilon_LB = epsilon0_LB*epsilonR;//electric permittivity 
 }
 
 void ScaLBL_StokesModel::SetDomain(){
@@ -258,6 +284,159 @@ void ScaLBL_StokesModel::ReadInput(){
     if (rank == 0) cout << "    Domain set." << endl;
 }
 
+void ScaLBL_StokesModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
+{
+	size_t NLABELS=0;
+	signed char VALUE=0;
+	double AFFINITY=0.f;
+
+	auto LabelList = stokes_db->getVector<int>( "SolidLabels" );
+	auto AffinityList = stokes_db->getVector<double>( "ZetaPotentialSolidList" );
+
+	NLABELS=LabelList.size();
+	if (NLABELS != AffinityList.size()){
+		ERROR("Error: LB Stokes Solver: SolidLabels and ZetaPotentialSolidList must be the same length! \n");
+	}
+
+	double label_count[NLABELS];
+	double label_count_global[NLABELS];
+
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+
+	// Assign the labels
+	for (int k=0;k<Nz;k++){
+		for (int j=0;j<Ny;j++){
+			for (int i=0;i<Nx;i++){
+				int n = k*Nx*Ny+j*Nx+i;
+				VALUE=Mask->id[n];
+                AFFINITY=0.f;
+				// Assign the affinity from the paired list
+				for (unsigned int idx=0; idx < NLABELS; idx++){
+					if (VALUE == LabelList[idx]){
+						AFFINITY=AffinityList[idx];//no need to convert unit for zeta potential (i.e. volt)
+						label_count[idx] += 1.0;
+						idx = NLABELS;
+					}
+				}
+				zeta_potential_solid[n] = AFFINITY;
+			}
+		}
+	}
+
+	for (size_t idx=0; idx<NLABELS; idx++)
+		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
+
+	if (rank==0){
+		printf("LB Stokes Solver: number of solid labels: %lu \n",NLABELS);
+		for (unsigned int idx=0; idx<NLABELS; idx++){
+			VALUE=LabelList[idx];
+			AFFINITY=AffinityList[idx];
+			double volume_fraction  = double(label_count_global[idx])/double((Nx-2)*(Ny-2)*(Nz-2)*nprocs);
+			printf("   label=%d, zeta potential=%.3g [V], volume fraction=%.2g\n",VALUE,AFFINITY,volume_fraction); 
+		}
+	}
+}
+
+void ScaLBL_StokesModel::AssignSolidGrad(double *solid_grad)
+{
+	double *Dst;
+	Dst = new double [3*3*3];
+	for (int kk=0; kk<3; kk++){
+		for (int jj=0; jj<3; jj++){
+			for (int ii=0; ii<3; ii++){
+				int index = kk*9+jj*3+ii;
+				Dst[index] = sqrt(double(ii-1)*double(ii-1) + double(jj-1)*double(jj-1)+ double(kk-1)*double(kk-1));
+			}
+		}
+	}
+    //implement a D3Q19 lattice
+	double w_face = 1.0/18.0;
+	double w_edge = 0.5*w_face;
+	double w_corner = 0.0;
+	//local 
+	Dst[13] = 0.f;
+	//faces
+	Dst[4] = w_face;
+	Dst[10] = w_face;
+	Dst[12] = w_face;
+	Dst[14] = w_face;
+	Dst[16] = w_face;
+	Dst[22] = w_face;
+	// corners
+	Dst[0] = w_corner;
+	Dst[2] = w_corner;
+	Dst[6] = w_corner;
+	Dst[8] = w_corner;
+	Dst[18] = w_corner;
+	Dst[20] = w_corner;
+	Dst[24] = w_corner;
+	Dst[26] = w_corner;
+	// edges
+	Dst[1] = w_edge;
+	Dst[3] = w_edge;
+	Dst[5] = w_edge;
+	Dst[7] = w_edge;
+	Dst[9] = w_edge;
+	Dst[11] = w_edge;
+	Dst[15] = w_edge;
+	Dst[17] = w_edge;
+	Dst[19] = w_edge;
+	Dst[21] = w_edge;
+	Dst[23] = w_edge;
+	Dst[25] = w_edge;
+
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				int idx=Map(i,j,k);
+				if (!(idx < 0)){
+					double phi_x = 0.f;
+					double phi_y = 0.f;
+					double phi_z = 0.f;
+					for (int kk=0; kk<3; kk++){
+						for (int jj=0; jj<3; jj++){
+							for (int ii=0; ii<3; ii++){
+
+								int index = kk*9+jj*3+ii;
+								double weight= Dst[index];
+
+								int idi=i+ii-1;
+								int idj=j+jj-1;
+								int idk=k+kk-1;
+
+								if (idi < 0) idi=0;
+								if (idj < 0) idj=0;
+								if (idk < 0) idk=0;
+								if (!(idi < Nx)) idi=Nx-1;
+								if (!(idj < Ny)) idj=Ny-1;
+								if (!(idk < Nz)) idk=Nz-1;
+
+								int nn = idk*Nx*Ny + idj*Nx + idi;
+								double vec_x = double(ii-1);
+								double vec_y = double(jj-1);
+								double vec_z = double(kk-1);
+								double GWNS  = double(Mask->id[nn]);
+                                //Since the solid unit normal vector is wanted, treat
+                                //wet node as 0.0 and solid node as 1.0
+                                GWNS = (GWNS>0.0) ? 0.0:1.0;
+								phi_x += GWNS*weight*vec_x;
+								phi_y += GWNS*weight*vec_y;
+								phi_z += GWNS*weight*vec_z;
+							}
+						}
+					}
+                    //solid_grad normalization
+                    double phi_mag=sqrt(phi_x*phi_x+phi_y*phi_y+phi_z*phi_z);
+                    if (phi_mag==0.0) phi_mag=1.0;
+					solid_grad[idx+0*Np] = phi_x/phi_mag;
+					solid_grad[idx+1*Np] = phi_y/phi_mag;
+					solid_grad[idx+2*Np] = phi_z/phi_mag;
+				}
+			}
+		}
+	}
+}
+
 void ScaLBL_StokesModel::Create(){
 	/*
 	 *  This function creates the variables needed to run a LBM 
@@ -301,6 +480,26 @@ void ScaLBL_StokesModel::Create(){
 	ScaLBL_CopyToDevice(NeighborList, neighborList, neighborSize);
 	comm.barrier();
 	
+    if (UseSlippingVelBC==true){
+        ScaLBL_Comm->SetupBounceBackList(Map, Mask->id.data(), Np,1);
+        comm.barrier();
+
+        //For slipping velocity BC, need zeta potential and solid unit normal vector
+	    ScaLBL_AllocateDeviceMemory((void **) &ZetaPotentialSolid, sizeof(double)*Nx*Ny*Nz);
+	    ScaLBL_AllocateDeviceMemory((void **) &SolidGrad, sizeof(double)*3*Np); //unit normal vector of solid nodes
+
+        double *ZetaPotentialSolid_host;
+        ZetaPotentialSolid_host = new double[Nx*Ny*Nz];
+        AssignZetaPotentialSolid(ZetaPotentialSolid_host);
+        double *SolidGrad_host;
+        SolidGrad_host = new double[3*Np];
+        AssignSolidGrad(SolidGrad_host);
+        ScaLBL_CopyToDevice(ZetaPotentialSolid, ZetaPotentialSolid_host, Nx*Ny*Nz*sizeof(double));
+        ScaLBL_CopyToDevice(SolidGrad, SolidGrad_host, 3*Np*sizeof(double));
+        ScaLBL_Comm->Barrier();
+        delete [] ZetaPotentialSolid_host;
+        delete [] SolidGrad_host;
+    }
 }        
 
 void ScaLBL_StokesModel::Initialize(){
@@ -324,6 +523,7 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
     timestep = 0;
 	while (timestep < timestepMax) {
         //************************************************************************/
+        //**************ODD TIMESTEP*************//
         timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FROM NORMAL
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
@@ -344,8 +544,14 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAodd_StokesMRT(NeighborList, fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
                                      0, ScaLBL_Comm->LastExterior(), Np);
+
+        if (UseSlippingVelBC==true){
+            ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(fq, ZetaPotentialSolid, ElectricField, SolidGrad,
+                                                      epsilon_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
+        }
         ScaLBL_Comm->Barrier(); comm.barrier();
 
+        //**************EVEN TIMESTEP*************//
         timestep++;
         ScaLBL_Comm->SendD3Q19AA(fq); //READ FORM NORMAL
         ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv, 
@@ -366,6 +572,10 @@ void ScaLBL_StokesModel::Run_Lite(double *ChargeDensity, double *ElectricField){
         }
         ScaLBL_D3Q19_AAeven_StokesMRT(fq, Velocity, ChargeDensity, ElectricField, rlx_setA, rlx_setB, Fx, Fy, Fz,rho0,den_scale,h,time_conv,
                                       0, ScaLBL_Comm->LastExterior(), Np);
+        if (UseSlippingVelBC==true){
+            ScaLBL_Comm->SolidSlippingVelocityBCD3Q19(fq, ZetaPotentialSolid, ElectricField, SolidGrad,
+                                                      epsilon_LB, 1.0/rlx_setA, rho0, den_scale, h, time_conv);
+        }
         ScaLBL_Comm->Barrier(); comm.barrier();
         //************************************************************************/
     }
