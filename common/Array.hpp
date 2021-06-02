@@ -17,65 +17,46 @@
 /********************************************************
  *  External instantiations                              *
  ********************************************************/
-extern template class Array<char, FunctionTable>;
-extern template class Array<uint8_t, FunctionTable>;
-extern template class Array<uint16_t, FunctionTable>;
-extern template class Array<uint32_t, FunctionTable>;
-extern template class Array<uint64_t, FunctionTable>;
-extern template class Array<int8_t, FunctionTable>;
-extern template class Array<int16_t, FunctionTable>;
-extern template class Array<int32_t, FunctionTable>;
-extern template class Array<int64_t, FunctionTable>;
-extern template class Array<double, FunctionTable>;
-extern template class Array<float, FunctionTable>;
+extern template class Array<char>;
+extern template class Array<uint8_t>;
+extern template class Array<uint16_t>;
+extern template class Array<uint32_t>;
+extern template class Array<uint64_t>;
+extern template class Array<int8_t>;
+extern template class Array<int16_t>;
+extern template class Array<int32_t>;
+extern template class Array<int64_t>;
+extern template class Array<double>;
+extern template class Array<float>;
 
 
 /********************************************************
- *  Helper functions                                     *
+ *  Macros to help instantiate functions                 *
  ********************************************************/
-template<class TYPE>
-inline typename std::enable_if<std::is_integral<TYPE>::value, size_t>::type getRangeSize(
-    const Range<TYPE> &range )
-{
-    return ( static_cast<int64_t>( range.j ) - static_cast<int64_t>( range.i ) ) /
-           static_cast<int64_t>( range.k );
-}
-template<class TYPE>
-inline typename std::enable_if<std::is_floating_point<TYPE>::value, size_t>::type getRangeSize(
-    const Range<TYPE> &range )
-{
-    double tmp = static_cast<double>( ( range.j - range.i ) ) / static_cast<double>( range.k );
-    return static_cast<size_t>( floor( tmp + 1e-12 ) + 1 );
-}
-template<class TYPE>
-inline typename std::enable_if<std::is_same<TYPE, std::complex<float>>::value ||
-                                   std::is_same<TYPE, std::complex<double>>::value,
-    size_t>::type
-getRangeSize( const Range<TYPE> &range )
-{
-    double tmp = std::real( ( range.j - range.i ) / ( range.k ) );
-    return static_cast<size_t>( floor( tmp + 1e-12 ) + 1 );
-}
-template<class TYPE>
-inline typename std::enable_if<std::is_integral<TYPE>::value, TYPE>::type getRangeValue(
-    const Range<TYPE> &range, size_t index )
-{
-    return range.i + index * range.k;
-}
-template<class TYPE>
-inline typename std::enable_if<std::is_floating_point<TYPE>::value, TYPE>::type getRangeValue(
-    const Range<TYPE> &range, size_t index )
-{
-    return range.k * ( range.i / range.k + index );
-}
-template<class TYPE>
-inline typename std::enable_if<std::is_same<TYPE, std::complex<float>>::value ||
-                                   std::is_same<TYPE, std::complex<double>>::value,
-    TYPE>::type
-getRangeValue( const Range<TYPE> &range, size_t index )
-{
-    return range.k * ( range.i / range.k + static_cast<TYPE>( index ) );
-}
+// clang-format off
+#define instantiateArrayConstructors( TYPE )                                    \
+    template Array<TYPE>::Array();                                              \
+    template Array<TYPE>::~Array();                                             \
+    template Array<TYPE>::Array( const ArraySize & );                           \
+    template Array<TYPE>::Array( size_t );                                      \
+    template Array<TYPE>::Array( size_t, size_t );                              \
+    template Array<TYPE>::Array( size_t, size_t, size_t );                      \
+    template Array<TYPE>::Array( size_t, size_t, size_t, size_t );              \
+    template Array<TYPE>::Array( size_t, size_t, size_t, size_t, size_t );      \
+    template Array<TYPE>::Array( const std::vector<size_t> &, const TYPE * );   \
+    template Array<TYPE>::Array( std::initializer_list<TYPE> );                 \
+    template Array<TYPE>::Array( std::initializer_list<std::initializer_list<TYPE>> ); \
+    template Array<TYPE>::Array( const Array<TYPE> & );                         \
+    template Array<TYPE>::Array( Array<TYPE> && );                              \
+    template void Array<TYPE>::reshape( ArraySize const& );                     \
+    template void Array<TYPE>::squeeze();                                       \
+    template std::unique_ptr<const Array<TYPE>>                                 \
+        Array<TYPE>::constView(ArraySize const&, std::shared_ptr<TYPE const> const&); \
+    template void Array<TYPE>::viewRaw( ArraySize const&, TYPE*, bool, bool );  \
+    template void Array<TYPE>::view2(ArraySize const&, std::shared_ptr<TYPE> ); \
+    template Array<TYPE> &Array<TYPE>::operator=( const Array<TYPE> & );        \
+    template Array<TYPE> &Array<TYPE>::operator=( Array<TYPE> && );
+// clang-format on
 
 
 /********************************************************
@@ -126,19 +107,8 @@ Array<TYPE, FUN, Allocator>::Array( const std::vector<size_t> &N, const TYPE *da
     : d_isCopyable( true ), d_isFixedSize( false )
 {
     allocate( N );
-    if ( data ) {
-        for ( size_t i = 0; i < d_size.length(); i++ )
-            d_data[i] = data[i];
-    }
-}
-template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator>::Array( const Range<TYPE> &range )
-    : d_isCopyable( true ), d_isFixedSize( false )
-{
-    size_t N = getRangeSize( range );
-    allocate( { N } );
-    for ( size_t i = 0; i < N; i++ )
-        d_data[i] = getRangeValue( range, i );
+    if ( data )
+        copy( data );
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator>::Array( std::string str ) : d_isCopyable( true ), d_isFixedSize( false )
@@ -216,8 +186,12 @@ Array<TYPE, FUN, Allocator>::Array( std::string str ) : d_isCopyable( true ), d_
             i2 = str.length();
     }
     allocate( data.size() );
-    for ( size_t i = 0; i < data.size(); i++ )
-        d_data[i] = data[i];
+    if ( std::is_same<TYPE, bool>::value ) {
+        for ( size_t i = 0; i < data.size(); i++ )
+            d_data[i] = data[i];
+    } else {
+        copy( data.data() );
+    }
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator>::Array( std::initializer_list<TYPE> x )
@@ -229,19 +203,38 @@ Array<TYPE, FUN, Allocator>::Array( std::initializer_list<TYPE> x )
         d_data[i] = *it;
 }
 template<class TYPE, class FUN, class Allocator>
+Array<TYPE, FUN, Allocator>::Array( std::initializer_list<std::initializer_list<TYPE>> x )
+    : d_isCopyable( true ), d_isFixedSize( false )
+{
+    size_t Nx = x.size();
+    size_t Ny = 0;
+    for ( const auto y : x )
+        Ny = std::max<size_t>( Ny, y.size() );
+    allocate( { Nx, Ny } );
+    auto itx = x.begin();
+    for ( size_t i = 0; i < x.size(); ++i, ++itx ) {
+        auto ity = itx->begin();
+        for ( size_t j = 0; j < itx->size(); ++j, ++ity ) {
+            d_data[i + j * Nx] = *ity;
+        }
+    }
+}
+template<class TYPE, class FUN, class Allocator>
 void Array<TYPE, FUN, Allocator>::allocate( const ArraySize &N )
 {
     if ( d_isFixedSize )
         throw std::logic_error( "Array cannot be resized" );
     d_size      = N;
     auto length = d_size.length();
-    if ( length == 0 )
-        d_ptr.reset();
-    else
-        d_ptr.reset( new ( std::nothrow ) TYPE[length], []( TYPE *p ) { delete[] p; } );
-    d_data = d_ptr.get();
-    if ( length > 0 && d_data == nullptr )
-        throw std::logic_error( "Failed to allocate array" );
+    d_data      = nullptr;
+    if ( length > 0 ) {
+        try {
+            d_data = new TYPE[length];
+        } catch ( ... ) {
+            throw std::logic_error( "Failed to allocate array" );
+        }
+    }
+    d_ptr.reset( d_data, []( TYPE *p ) { delete[] p; } );
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator>::Array( const Array &rhs )
@@ -250,18 +243,19 @@ Array<TYPE, FUN, Allocator>::Array( const Array &rhs )
     if ( !rhs.d_isCopyable )
         throw std::logic_error( "Array cannot be copied" );
     allocate( rhs.size() );
-    for ( size_t i = 0; i < d_size.length(); i++ )
-        d_data[i] = rhs.d_data[i];
+    copy( rhs.d_data );
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator>::Array( Array &&rhs )
     : d_isCopyable( rhs.d_isCopyable ),
       d_isFixedSize( rhs.d_isFixedSize ),
       d_size( rhs.d_size ),
-      d_data( rhs.d_data )
+      d_data( rhs.d_data ),
+      d_ptr( std::move( rhs.d_ptr ) )
 {
+    rhs.d_size = ArraySize();
     rhs.d_data = nullptr;
-    d_ptr      = std::move( rhs.d_ptr );
+    rhs.d_ptr  = nullptr;
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator=( const Array &rhs )
@@ -270,9 +264,8 @@ Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator=( const Array
         return *this;
     if ( !rhs.d_isCopyable )
         throw std::logic_error( "Array cannot be copied" );
-    this->allocate( rhs.size() );
-    for ( size_t i = 0; i < d_size.length(); i++ )
-        this->d_data[i] = rhs.d_data[i];
+    allocate( rhs.size() );
+    copy( rhs.d_data );
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
@@ -285,15 +278,17 @@ Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator=( Array &&rhs
     d_size        = rhs.d_size;
     d_data        = rhs.d_data;
     d_ptr         = std::move( rhs.d_ptr );
+    rhs.d_size    = ArraySize();
     rhs.d_data    = nullptr;
+    rhs.d_ptr     = nullptr;
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator=( const std::vector<TYPE> &rhs )
 {
-    this->allocate( ArraySize( rhs.size() ) );
+    allocate( ArraySize( rhs.size() ) );
     for ( size_t i = 0; i < rhs.size(); i++ )
-        this->d_data[i] = rhs[i];
+        d_data[i] = rhs[i];
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
@@ -331,9 +326,9 @@ static inline void moveValues( const ArraySize &N1, const ArraySize &N2, TYPE *d
         }
     }
 }
-template<bool test, class TYPE>
-static inline typename std::enable_if<test, void>::type copyValues(
-    const ArraySize &N1, const ArraySize &N2, const TYPE *data1, TYPE *data2 )
+template<class TYPE>
+static inline void
+copyValues( const ArraySize &N1, const ArraySize &N2, const TYPE *data1, TYPE *data2 )
 {
     for ( size_t i5 = 0; i5 < std::min( N1[4], N2[4] ); i5++ ) {
         for ( size_t i4 = 0; i4 < std::min( N1[3], N2[3] ); i4++ ) {
@@ -348,12 +343,6 @@ static inline typename std::enable_if<test, void>::type copyValues(
             }
         }
     }
-}
-template<bool test, class TYPE>
-static inline typename std::enable_if<!test, void>::type copyValues(
-    const ArraySize &, const ArraySize &, const TYPE *, TYPE * )
-{
-    throw std::logic_error( "No copy constructor" );
 }
 
 
@@ -381,9 +370,11 @@ void Array<TYPE, FUN, Allocator>::resize( const ArraySize &N )
         if ( data0.use_count() <= 1 ) {
             // We own the data, use std:move
             moveValues( N0, N, data0.get(), d_data );
-        } else {
+        } else if ( std::is_copy_constructible<TYPE>::value ) {
             // We do not own the data, copy
-            copyValues<std::is_copy_constructible<TYPE>::value, TYPE>( N0, N, data0.get(), d_data );
+            copyValues( N0, N, data0.get(), d_data );
+        } else {
+            throw std::logic_error( "No copy constructor" );
         }
     }
 }
@@ -412,7 +403,7 @@ void Array<TYPE, FUN, Allocator>::resizeDim( int dim, size_t N, const TYPE &valu
 
 
 /********************************************************
- *  Reshape the array                                     *
+ *  Reshape/squeeze the array                            *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
 void Array<TYPE, FUN, Allocator>::reshape( const ArraySize &N )
@@ -421,6 +412,85 @@ void Array<TYPE, FUN, Allocator>::reshape( const ArraySize &N )
         throw std::logic_error( "reshape is not allowed to change the array size" );
     d_size = N;
 }
+template<class TYPE, class FUN, class Allocator>
+void Array<TYPE, FUN, Allocator>::squeeze()
+{
+    d_size.squeeze();
+}
+
+
+/********************************************************
+ *  Shift/permute the array                              *
+ ********************************************************/
+template<class TYPE, class FUN, class Allocator>
+Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::shiftDim( int N ) const
+{
+    if ( N > 0 )
+        N = N % d_size.ndim();
+    if ( N == 0 ) {
+        // No shift required
+        return *this;
+    } else if ( N > 0 ) {
+        // Shift to the left and wrap
+        std::vector<uint8_t> index( d_size.ndim() );
+        size_t i = 0;
+        for ( size_t j=N; j<index.size(); j++, i++)
+            index[i] = j;
+        for ( size_t j=0; i<index.size(); j++, i++)
+            index[i] = j;
+        return permute( index );
+    } else  {
+        // Shift to the right (padding with singletons)
+        N = -N;
+        ASSERT( d_size.ndim() + N < (int) ArraySize::maxDim() );
+        size_t dims[10] = { 1 };
+        for ( int i = 0; i < ndim(); i++ )
+            dims[N+i] = d_size[i];
+        auto y = *this;
+        y.reshape( ArraySize( ndim() + N, dims ) );
+        return y;
+    }
+}
+template<class TYPE, class FUN, class Allocator>
+Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::permute( const std::vector<uint8_t> &index ) const
+{
+    // Check the permutation
+    ASSERT( (int) index.size() == ndim() );
+    for ( int i=0; i < ndim(); i++) {
+        ASSERT( index[i] < ndim() );
+        for ( int j=0; j < i; j++)
+            ASSERT( index[i] != index[j] );
+    }
+    // Create the new Array
+    size_t dims[5] = { 1u, 1u, 1u, 1u, 1u };
+    for ( size_t i=0; i<index.size(); i++)
+        dims[i] = d_size[index[i]];
+    Array y( ArraySize( ndim(), dims ) );
+    y.fill( -1 );
+    ASSERT( y.length() == this->length() );
+    // Fill the data
+    size_t N[5] = { 1u, 1u, 1u, 1u, 1u };
+    for ( int i=0; i < ndim(); i++) {
+        std::array<size_t, 5> ijk = { 0, 0, 0, 0, 0 };
+        ijk[index[i]] = 1;
+        N[i] = d_size.index( ijk );
+    }
+    size_t tmp = ( dims[0] - 1 ) * N[0] + ( dims[1] - 1 ) * N[1] + ( dims[2] - 1 ) * N[2] + ( dims[3] - 1 ) * N[3] + ( dims[4] - 1 ) * N[4] + 1;
+    ASSERT( tmp == length() );
+    for ( size_t i4 = 0; i4 < dims[4]; i4++ ) {
+        for ( size_t i3 = 0; i3 < dims[3]; i3++ ) {
+            for ( size_t i2 = 0; i2 < dims[2]; i2++ ) {
+                for ( size_t i1 = 0; i1 < dims[1]; i1++ ) {
+                    for ( size_t i0 = 0; i0 < dims[0]; i0++ ) {
+                        size_t index2 = i0 * N[0] + i1 * N[1] + i2 * N[2] + i3 * N[3] + i4 * N[4];
+                        y( i0, i1, i2, i3, i4 ) = d_data[index2];
+                    }
+                }
+            }
+        }
+    }
+    return y;
+}
 
 
 /********************************************************
@@ -428,8 +498,8 @@ void Array<TYPE, FUN, Allocator>::reshape( const ArraySize &N )
  ********************************************************/
 // Helper function to check subset indices
 template<class TYPE, class FUN, class Allocator>
-inline void Array<TYPE, FUN, Allocator>::checkSubsetIndex(
-    const std::vector<Range<size_t>> &range ) const
+inline void
+Array<TYPE, FUN, Allocator>::checkSubsetIndex( const std::vector<Range<size_t>> &range ) const
 {
     bool test = (int) range.size() == d_size.ndim();
     for ( size_t d = 0; d < range.size(); d++ )
@@ -438,8 +508,8 @@ inline void Array<TYPE, FUN, Allocator>::checkSubsetIndex(
         throw std::logic_error( "indices for subset are invalid" );
 }
 template<class TYPE, class FUN, class Allocator>
-std::vector<Range<size_t>> Array<TYPE, FUN, Allocator>::convert(
-    const std::vector<size_t> &index ) const
+std::vector<Range<size_t>>
+Array<TYPE, FUN, Allocator>::convert( const std::vector<size_t> &index ) const
 {
     std::vector<Range<size_t>> range( d_size.ndim() );
     if ( index.size() % 2 != 0 || static_cast<int>( index.size() / 2 ) < d_size.ndim() )
@@ -451,8 +521,10 @@ std::vector<Range<size_t>> Array<TYPE, FUN, Allocator>::convert(
 // Helper function to return dimensions for the subset array
 template<class TYPE, class FUN, class Allocator>
 void Array<TYPE, FUN, Allocator>::getSubsetArrays( const std::vector<Range<size_t>> &index,
-    std::array<size_t, 5> &first, std::array<size_t, 5> &last, std::array<size_t, 5> &inc,
-    std::array<size_t, 5> &N )
+                                                   std::array<size_t, 5> &first,
+                                                   std::array<size_t, 5> &last,
+                                                   std::array<size_t, 5> &inc,
+                                                   std::array<size_t, 5> &N )
 {
     first.fill( 0 );
     last.fill( 0 );
@@ -467,8 +539,8 @@ void Array<TYPE, FUN, Allocator>::getSubsetArrays( const std::vector<Range<size_
     }
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::subset(
-    const std::vector<Range<size_t>> &index ) const
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::subset( const std::vector<Range<size_t>> &index ) const
 {
     // Get the subset indicies
     checkSubsetIndex( index );
@@ -476,9 +548,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::subset(
     getSubsetArrays( index, first, last, inc, N1 );
     ArraySize S1( d_size.ndim(), N1.data() );
     // Create the new array
-    Array<TYPE> subset_array( S1 );
+    Array<TYPE, FUN, Allocator> subset_array( S1 );
     // Fill the new array
-    static_assert( ArraySize::maxDim() == 5, "Not programmed for more than 5 dimensions" );
     TYPE *subset_data = subset_array.data();
     for ( size_t i4 = first[4], k1 = 0; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
@@ -495,22 +566,21 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::subset(
     return subset_array;
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::subset(
-    const std::vector<size_t> &index ) const
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::subset( const std::vector<size_t> &index ) const
 {
     auto range = convert( index );
     return subset( range );
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::copySubset(
-    const std::vector<Range<size_t>> &index, const Array<TYPE, FUN, Allocator> &subset )
+void Array<TYPE, FUN, Allocator>::copySubset( const std::vector<Range<size_t>> &index,
+                                              const Array<TYPE, FUN, Allocator> &subset )
 {
     // Get the subset indices
     checkSubsetIndex( index );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( index, first, last, inc, N1 );
     // Copy the sub-array
-    static_assert( ArraySize::maxDim() == 5, "Not programmed for more than 5 dimensions" );
     const TYPE *src_data = subset.data();
     for ( size_t i4 = first[4], k1 = 0; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
@@ -526,15 +596,14 @@ void Array<TYPE, FUN, Allocator>::copySubset(
     }
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::addSubset(
-    const std::vector<Range<size_t>> &index, const Array<TYPE, FUN, Allocator> &subset )
+void Array<TYPE, FUN, Allocator>::addSubset( const std::vector<Range<size_t>> &index,
+                                             const Array<TYPE, FUN, Allocator> &subset )
 {
     // Get the subset indices
     checkSubsetIndex( index );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( index, first, last, inc, N1 );
     // add the sub-array
-    static_assert( ArraySize::maxDim() == 5, "Not programmed for more than 5 dimensions" );
     for ( size_t i4 = first[4], k1 = 0; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
             for ( size_t i2 = first[2]; i2 <= last[2]; i2 += inc[2] ) {
@@ -549,16 +618,16 @@ void Array<TYPE, FUN, Allocator>::addSubset(
     }
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::copySubset(
-    const std::vector<size_t> &index, const Array<TYPE, FUN, Allocator> &subset )
+void Array<TYPE, FUN, Allocator>::copySubset( const std::vector<size_t> &index,
+                                              const Array<TYPE, FUN, Allocator> &subset )
 {
     auto range = convert( index );
     copySubset( range, subset );
 }
 
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::addSubset(
-    const std::vector<size_t> &index, const Array<TYPE, FUN, Allocator> &subset )
+void Array<TYPE, FUN, Allocator>::addSubset( const std::vector<size_t> &index,
+                                             const Array<TYPE, FUN, Allocator> &subset )
 {
     auto range = convert( index );
     addSubset( range, subset );
@@ -586,8 +655,8 @@ bool Array<TYPE, FUN, Allocator>::operator==( const Array &rhs ) const
  *  Get a view of an C array                             *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
-std::unique_ptr<Array<TYPE, FUN, Allocator>> Array<TYPE, FUN, Allocator>::view(
-    const ArraySize &N, std::shared_ptr<TYPE> &data )
+std::unique_ptr<Array<TYPE, FUN, Allocator>>
+Array<TYPE, FUN, Allocator>::view( const ArraySize &N, std::shared_ptr<TYPE> data )
 {
     auto array    = std::make_unique<Array<TYPE, FUN, Allocator>>();
     array->d_size = N;
@@ -596,8 +665,9 @@ std::unique_ptr<Array<TYPE, FUN, Allocator>> Array<TYPE, FUN, Allocator>::view(
     return array;
 }
 template<class TYPE, class FUN, class Allocator>
-std::unique_ptr<const Array<TYPE, FUN, Allocator>> Array<TYPE, FUN, Allocator>::constView(
-    const ArraySize &N, std::shared_ptr<const TYPE> const &data )
+std::unique_ptr<const Array<TYPE, FUN, Allocator>>
+Array<TYPE, FUN, Allocator>::constView( const ArraySize &N,
+                                        std::shared_ptr<const TYPE> const &data )
 {
     auto array    = std::make_unique<Array<TYPE, FUN, Allocator>>();
     array->d_size = N;
@@ -612,15 +682,17 @@ void Array<TYPE, FUN, Allocator>::view2( Array<TYPE, FUN, Allocator> &src )
     d_data = src.d_data;
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::view2( const ArraySize &N, std::shared_ptr<TYPE> const &data )
+void Array<TYPE, FUN, Allocator>::view2( const ArraySize &N, std::shared_ptr<TYPE> data )
 {
     d_size = N;
     d_ptr  = data;
     d_data = d_ptr.get();
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::viewRaw(
-    const ArraySize &N, TYPE *data, bool isCopyable, bool isFixedSize )
+void Array<TYPE, FUN, Allocator>::viewRaw( const ArraySize &N,
+                                           TYPE *data,
+                                           bool isCopyable,
+                                           bool isFixedSize )
 {
     d_isCopyable  = isCopyable;
     d_isFixedSize = isFixedSize;
@@ -644,20 +716,8 @@ void Array<TYPE, FUN, Allocator>::swap( Array &other )
     std::swap( d_ptr, other.d_ptr );
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::fill( const TYPE &value )
-{
-    for ( size_t i = 0; i < d_size.length(); i++ )
-        d_data[i] = value;
-}
-template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::scale( const TYPE &value )
-{
-    for ( size_t i = 0; i < d_size.length(); i++ )
-        d_data[i] *= value;
-}
-template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::pow(
-    const Array<TYPE, FUN, Allocator> &baseArray, const TYPE &exp )
+void Array<TYPE, FUN, Allocator>::pow( const Array<TYPE, FUN, Allocator> &baseArray,
+                                       const TYPE &exp )
 {
     // not insisting on the shapes being the same
     // but insisting on the total size being the same
@@ -674,8 +734,8 @@ void Array<TYPE, FUN, Allocator>::pow(
  *  Replicate the array                                  *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::repmat(
-    const std::vector<size_t> &N_rep ) const
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::repmat( const std::vector<size_t> &N_rep ) const
 {
     std::vector<size_t> N2( d_size.begin(), d_size.end() );
     if ( N2.size() < N_rep.size() )
@@ -689,7 +749,6 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::repmat(
         N2[d] *= N_rep[d];
     }
     Array<TYPE, FUN, Allocator> y( N2 );
-    static_assert( ArraySize::maxDim() <= 5, "Not programmed for dimensions > 5" );
     TYPE *y2 = y.data();
     for ( size_t i4 = 0, index = 0; i4 < N1[4]; i4++ ) {
         for ( size_t j4 = 0; j4 < Nr[4]; j4++ ) {
@@ -731,7 +790,7 @@ bool Array<TYPE, FUN, Allocator>::NaNs() const
 template<class TYPE, class FUN, class Allocator>
 TYPE Array<TYPE, FUN, Allocator>::mean( void ) const
 {
-    TYPE x = this->sum() / d_size.length();
+    TYPE x = sum() / d_size.length();
     return x;
 }
 template<class TYPE, class FUN, class Allocator>
@@ -813,7 +872,6 @@ TYPE Array<TYPE, FUN, Allocator>::min( const std::vector<Range<size_t>> &range )
     checkSubsetIndex( range );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( range, first, last, inc, N1 );
-    static_assert( ArraySize::maxDim() <= 5, "Function programmed for more than 5 dimensions" );
     TYPE x = std::numeric_limits<TYPE>::max();
     for ( size_t i4 = first[4]; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
@@ -836,7 +894,6 @@ TYPE Array<TYPE, FUN, Allocator>::max( const std::vector<Range<size_t>> &range )
     checkSubsetIndex( range );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( range, first, last, inc, N1 );
-    static_assert( ArraySize::maxDim() <= 5, "Function programmed for more than 5 dimensions" );
     TYPE x = std::numeric_limits<TYPE>::min();
     for ( size_t i4 = first[4]; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
@@ -859,7 +916,6 @@ TYPE Array<TYPE, FUN, Allocator>::sum( const std::vector<Range<size_t>> &range )
     checkSubsetIndex( range );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( range, first, last, inc, N1 );
-    static_assert( ArraySize::maxDim() <= 5, "Function programmed for more than 5 dimensions" );
     TYPE x = 0;
     for ( size_t i4 = first[4]; i4 <= last[4]; i4 += inc[4] ) {
         for ( size_t i3 = first[3]; i3 <= last[3]; i3 += inc[3] ) {
@@ -882,7 +938,6 @@ TYPE Array<TYPE, FUN, Allocator>::mean( const std::vector<Range<size_t>> &range 
     checkSubsetIndex( range );
     std::array<size_t, 5> first, last, inc, N1;
     getSubsetArrays( range, first, last, inc, N1 );
-    static_assert( ArraySize::maxDim() <= 5, "Function programmed for more than 5 dimensions" );
     size_t n = 1;
     for ( auto &d : N1 )
         n *= d;
@@ -919,8 +974,9 @@ TYPE Array<TYPE, FUN, Allocator>::mean( const std::vector<size_t> &index ) const
  *  Find all elements that match the given operation     *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
-std::vector<size_t> Array<TYPE, FUN, Allocator>::find(
-    const TYPE &value, std::function<bool( const TYPE &, const TYPE & )> compare ) const
+std::vector<size_t>
+Array<TYPE, FUN, Allocator>::find( const TYPE &value,
+                                   std::function<bool( const TYPE &, const TYPE & )> compare ) const
 {
     std::vector<size_t> result;
     result.reserve( d_size.length() );
@@ -936,8 +992,9 @@ std::vector<size_t> Array<TYPE, FUN, Allocator>::find(
  *  Print an array to an output stream                   *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::print(
-    std::ostream &os, const std::string &name, const std::string &prefix ) const
+void Array<TYPE, FUN, Allocator>::print( std::ostream &os,
+                                         const std::string &name,
+                                         const std::string &prefix ) const
 {
     if ( d_size.ndim() == 1 ) {
         for ( size_t i = 0; i < d_size[0]; i++ )
@@ -961,12 +1018,11 @@ void Array<TYPE, FUN, Allocator>::print(
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::reverseDim() const
 {
-    size_t N2[ArraySize::maxDim()];
+    size_t N2[5];
     for ( int d = 0; d < ArraySize::maxDim(); d++ )
         N2[d] = d_size[ArraySize::maxDim() - d - 1];
     ArraySize S2( ArraySize::maxDim(), N2 );
     Array<TYPE, FUN, Allocator> y( S2 );
-    static_assert( ArraySize::maxDim() == 5, "Not programmed for dimensions other than 5" );
     TYPE *y2 = y.data();
     for ( size_t i0 = 0; i0 < d_size[0]; i0++ ) {
         for ( size_t i1 = 0; i1 < d_size[1]; i1++ ) {
@@ -991,8 +1047,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::reverseDim() const
  *  Coarsen the array                                    *
  ********************************************************/
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen(
-    const Array<TYPE, FUN, Allocator> &filter ) const
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::coarsen( const Array<TYPE, FUN, Allocator> &filter ) const
 {
     auto S2 = size();
     for ( size_t i = 0; i < S2.size(); i++ ) {
@@ -1012,8 +1068,9 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen(
                 for ( size_t k2 = 0; k2 < Nh[2]; k2++ ) {
                     for ( size_t j2 = 0; j2 < Nh[1]; j2++ ) {
                         for ( size_t i2 = 0; i2 < Nh[0]; i2++ ) {
-                            tmp += filter( i2, j2, k2 ) * this->operator()( i1 *Nh[0] + i2,
-                                                              j1 * Nh[1] + j2, k1 * Nh[2] + k2 );
+                            tmp += filter( i2, j2, k2 ) * operator()( i1 *Nh[0] + i2,
+                                                                      j1 * Nh[1] + j2,
+                                                                      k1 * Nh[2] + k2 );
                         }
                     }
                 }
@@ -1024,7 +1081,8 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen(
     return y;
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen( const std::vector<size_t> &ratio,
+Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen(
+    const std::vector<size_t> &ratio,
     std::function<TYPE( const Array<TYPE, FUN, Allocator> & )> filter ) const
 {
     if ( ratio.size() != d_size.ndim() )
@@ -1045,7 +1103,7 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::coarsen( const std::vec
                 for ( size_t k2 = 0; k2 < ratio[2]; k2++ ) {
                     for ( size_t j2 = 0; j2 < ratio[1]; j2++ ) {
                         for ( size_t i2 = 0; i2 < ratio[0]; i2++ ) {
-                            tmp( i2, j2, k2 ) = this->operator()(
+                            tmp( i2, j2, k2 ) = operator()(
                                 i1 *ratio[0] + i2, j1 * ratio[1] + j2, k1 * ratio[2] + k2 );
                         }
                     }
@@ -1070,13 +1128,25 @@ void Array<TYPE, FUN, Allocator>::cat( const Array<TYPE, FUN, Allocator> &x, int
     *this = cat( tmp, dim );
 }
 template<class TYPE, class FUN, class Allocator>
+Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::initializer_list<Array> &x,
+                                                              int dim )
+{
+    return cat( x.size(), x.begin(), dim );
+}
+template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::vector<Array> &x, int dim )
 {
-    if ( x.empty() )
+    return cat( x.size(), x.data(), dim );
+}
+template<class TYPE, class FUN, class Allocator>
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::cat( size_t N_array, const Array *x, int dim )
+{
+    if ( N_array == 0 )
         return Array<TYPE, FUN, Allocator>();
     // Check that the dimensions match
     bool check = true;
-    for ( size_t i = 1; i < x.size(); i++ ) {
+    for ( size_t i = 1; i < N_array; i++ ) {
         check = check && x[i].ndim() == x[0].ndim();
         for ( int d = 0; d < x[0].ndim(); d++ )
             if ( d != dim )
@@ -1086,7 +1156,7 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::vector<
         throw std::logic_error( "Array dimensions do not match for concatenation" );
     // Create the output array
     auto size = x[0].d_size;
-    for ( size_t i = 1; i < x.size(); i++ )
+    for ( size_t i = 1; i < N_array; i++ )
         size.resize( dim, size[dim] + x[i].size( dim ) );
     Array<TYPE, FUN, Allocator> out( size );
     size_t N1 = 1;
@@ -1097,7 +1167,7 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::vector<
     for ( size_t d = dim + 1; d < size.ndim(); d++ )
         N3 *= size[d];
     TYPE *data = out.data();
-    for ( size_t i = 0, i0 = 0; i < x.size(); i++ ) {
+    for ( size_t i = 0, i0 = 0; i < N_array; i++ ) {
         const TYPE *src = x[i].data();
         size_t N22      = x[i].size( dim );
         for ( size_t j2 = 0; j2 < N3; j2++ ) {
@@ -1117,87 +1187,82 @@ Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::cat( const std::vector<
  *  Interpolate                                          *
  ********************************************************/
 template<class T>
-struct is_compatible_double
-    : std::integral_constant<bool, std::is_floating_point<T>::value || std::is_integral<T>::value> {
-};
-template<class TYPE>
-inline typename std::enable_if<is_compatible_double<TYPE>::value, TYPE>::type Array_interp_1D(
-    double x, int N, const TYPE *data )
+constexpr bool is_compatible_double()
 {
-    int i = floor( x );
-    i     = std::max( i, 0 );
-    i     = std::min( i, N - 2 );
-    return ( i + 1 - x ) * data[i] + ( x - i ) * data[i + 1];
+    return std::is_floating_point<T>::value || std::is_integral<T>::value;
 }
 template<class TYPE>
-inline typename std::enable_if<is_compatible_double<TYPE>::value, TYPE>::type Array_interp_2D(
-    double x, double y, int Nx, int Ny, const TYPE *data )
+inline TYPE Array_interp_1D( double x, int N, const TYPE *data )
 {
-    int i       = floor( x );
-    i           = std::max( i, 0 );
-    i           = std::min( i, Nx - 2 );
-    double dx   = x - i;
-    double dx2  = 1.0 - dx;
-    int j       = floor( y );
-    j           = std::max( j, 0 );
-    j           = std::min( j, Ny - 2 );
-    double dy   = y - j;
-    double dy2  = 1.0 - dy;
-    double f[4] = { (double) data[i + j * Nx], (double) data[i + 1 + j * Nx],
-        (double) data[i + ( j + 1 ) * Nx], (double) data[i + 1 + ( j + 1 ) * Nx] };
-    return ( dx * f[1] + dx2 * f[0] ) * dy2 + ( dx * f[3] + dx2 * f[2] ) * dy;
+    if ( is_compatible_double<TYPE>() ) {
+        int i = floor( x );
+        i     = std::max( i, 0 );
+        i     = std::min( i, N - 2 );
+        return ( i + 1 - x ) * data[i] + ( x - i ) * data[i + 1];
+    } else {
+        throw std::logic_error( "Invalid conversion" );
+    }
 }
 template<class TYPE>
-inline typename std::enable_if<is_compatible_double<TYPE>::value, TYPE>::type Array_interp_3D(
-    double x, double y, double z, int Nx, int Ny, int Nz, const TYPE *data )
+inline TYPE Array_interp_2D( double x, double y, int Nx, int Ny, const TYPE *data )
 {
-    int i       = floor( x );
-    i           = std::max( i, 0 );
-    i           = std::min( i, Nx - 2 );
-    double dx   = x - i;
-    double dx2  = 1.0 - dx;
-    int j       = floor( y );
-    j           = std::max( j, 0 );
-    j           = std::min( j, Ny - 2 );
-    double dy   = y - j;
-    double dy2  = 1.0 - dy;
-    int k       = floor( z );
-    k           = std::max( k, 0 );
-    k           = std::min( k, Nz - 2 );
-    double dz   = z - k;
-    double dz2  = 1.0 - dz;
-    double f[8] = { (double) data[i + j * Nx + k * Nx * Ny],
-        (double) data[i + 1 + j * Nx + k * Nx * Ny],
-        (double) data[i + ( j + 1 ) * Nx + k * Nx * Ny],
-        (double) data[i + 1 + ( j + 1 ) * Nx + k * Nx * Ny],
-        (double) data[i + j * Nx + ( k + 1 ) * Nx * Ny],
-        (double) data[i + 1 + j * Nx + ( k + 1 ) * Nx * Ny],
-        (double) data[i + ( j + 1 ) * Nx + ( k + 1 ) * Nx * Ny],
-        (double) data[i + 1 + ( j + 1 ) * Nx + ( k + 1 ) * Nx * Ny] };
-    double h0   = ( dx * f[1] + dx2 * f[0] ) * dy2 + ( dx * f[3] + dx2 * f[2] ) * dy;
-    double h1   = ( dx * f[5] + dx2 * f[4] ) * dy2 + ( dx * f[7] + dx2 * f[6] ) * dy;
-    return h0 * dz2 + h1 * dz;
+    if ( is_compatible_double<TYPE>() ) {
+        int i       = floor( x );
+        i           = std::max( i, 0 );
+        i           = std::min( i, Nx - 2 );
+        double dx   = x - i;
+        double dx2  = 1.0 - dx;
+        int j       = floor( y );
+        j           = std::max( j, 0 );
+        j           = std::min( j, Ny - 2 );
+        double dy   = y - j;
+        double dy2  = 1.0 - dy;
+        double f[4] = { (double) data[i + j * Nx],
+                        (double) data[i + 1 + j * Nx],
+                        (double) data[i + ( j + 1 ) * Nx],
+                        (double) data[i + 1 + ( j + 1 ) * Nx] };
+        return ( dx * f[1] + dx2 * f[0] ) * dy2 + ( dx * f[3] + dx2 * f[2] ) * dy;
+    } else {
+        throw std::logic_error( "Invalid conversion" );
+    }
 }
 template<class TYPE>
-inline typename std::enable_if<!is_compatible_double<TYPE>::value, TYPE>::type Array_interp_1D(
-    double, int, const TYPE * )
+inline TYPE
+Array_interp_3D( double x, double y, double z, int Nx, int Ny, int Nz, const TYPE *data )
 {
-    throw std::logic_error( "Invalid conversion" );
-}
-template<class TYPE>
-inline typename std::enable_if<!is_compatible_double<TYPE>::value, TYPE>::type Array_interp_2D(
-    double, double, int, int, const TYPE * )
-{
-    throw std::logic_error( "Invalid conversion" );
-}
-template<class TYPE>
-inline typename std::enable_if<!is_compatible_double<TYPE>::value, TYPE>::type Array_interp_3D(
-    double, double, double, int, int, int, const TYPE * )
-{
-    throw std::logic_error( "Invalid conversion" );
+    if ( is_compatible_double<TYPE>() ) {
+        int i       = floor( x );
+        i           = std::max( i, 0 );
+        i           = std::min( i, Nx - 2 );
+        double dx   = x - i;
+        double dx2  = 1.0 - dx;
+        int j       = floor( y );
+        j           = std::max( j, 0 );
+        j           = std::min( j, Ny - 2 );
+        double dy   = y - j;
+        double dy2  = 1.0 - dy;
+        int k       = floor( z );
+        k           = std::max( k, 0 );
+        k           = std::min( k, Nz - 2 );
+        double dz   = z - k;
+        double dz2  = 1.0 - dz;
+        double f[8] = { (double) data[i + j * Nx + k * Nx * Ny],
+                        (double) data[i + 1 + j * Nx + k * Nx * Ny],
+                        (double) data[i + ( j + 1 ) * Nx + k * Nx * Ny],
+                        (double) data[i + 1 + ( j + 1 ) * Nx + k * Nx * Ny],
+                        (double) data[i + j * Nx + ( k + 1 ) * Nx * Ny],
+                        (double) data[i + 1 + j * Nx + ( k + 1 ) * Nx * Ny],
+                        (double) data[i + ( j + 1 ) * Nx + ( k + 1 ) * Nx * Ny],
+                        (double) data[i + 1 + ( j + 1 ) * Nx + ( k + 1 ) * Nx * Ny] };
+        double h0   = ( dx * f[1] + dx2 * f[0] ) * dy2 + ( dx * f[3] + dx2 * f[2] ) * dy;
+        double h1   = ( dx * f[5] + dx2 * f[4] ) * dy2 + ( dx * f[7] + dx2 * f[6] ) * dy;
+        return h0 * dz2 + h1 * dz;
+    } else {
+        throw std::logic_error( "Invalid conversion" );
+    }
 }
 template<class TYPE, class FUN, class Allocator>
-TYPE Array<TYPE, FUN, Allocator>::interp( const std::vector<double> &x ) const
+TYPE Array<TYPE, FUN, Allocator>::interp( const double *x ) const
 {
     int ndim = 0, dim[5];
     double x2[5];
@@ -1233,81 +1298,75 @@ void Array<TYPE, FUN, Allocator>::rand()
     FUN::rand( *this );
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator+=(
-    const Array<TYPE, FUN, Allocator> &rhs )
+Array<TYPE, FUN, Allocator> &
+Array<TYPE, FUN, Allocator>::operator+=( const Array<TYPE, FUN, Allocator> &rhs )
 {
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a + b; };
-    FUN::transform( fun, *this, rhs, *this );
+    auto op = []( const TYPE &a, const TYPE &b ) { return a + b; };
+    FUN::transform( op, *this, rhs, *this );
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator-=(
-    const Array<TYPE, FUN, Allocator> &rhs )
+Array<TYPE, FUN, Allocator> &
+Array<TYPE, FUN, Allocator>::operator-=( const Array<TYPE, FUN, Allocator> &rhs )
 {
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a - b; };
-    FUN::transform( fun, *this, rhs, *this );
+    auto op = []( const TYPE &a, const TYPE &b ) { return a - b; };
+    FUN::transform( op, *this, rhs, *this );
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator+=( const TYPE &rhs )
 {
-    const auto &fun = [rhs]( const TYPE &x ) { return x + rhs; };
-    FUN::transform( fun, *this, *this );
+    auto op = [rhs]( const TYPE &x ) { return x + rhs; };
+    FUN::transform( op, *this, *this );
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> &Array<TYPE, FUN, Allocator>::operator-=( const TYPE &rhs )
 {
-    const auto &fun = [rhs]( const TYPE &x ) { return x - rhs; };
-    FUN::transform( fun, *this, *this );
+    auto op = [rhs]( const TYPE &x ) { return x - rhs; };
+    FUN::transform( op, *this, *this );
     return *this;
 }
 template<class TYPE, class FUN, class Allocator>
 TYPE Array<TYPE, FUN, Allocator>::min() const
 {
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a < b ? a : b; };
-    return FUN::reduce( fun, *this );
+    const auto &op = []( const TYPE &a, const TYPE &b ) { return a < b ? a : b; };
+    return FUN::reduce( op, *this, d_data[0] );
 }
 template<class TYPE, class FUN, class Allocator>
 TYPE Array<TYPE, FUN, Allocator>::max() const
 {
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a > b ? a : b; };
-    return FUN::reduce( fun, *this );
+    const auto &op = []( const TYPE &a, const TYPE &b ) { return a > b ? a : b; };
+    return FUN::reduce( op, *this, d_data[0] );
 }
 template<class TYPE, class FUN, class Allocator>
 TYPE Array<TYPE, FUN, Allocator>::sum() const
 {
-    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a + b; };
-    return FUN::reduce( fun, *this );
+    const auto &op = []( const TYPE &a, const TYPE &b ) { return a + b; };
+    return FUN::reduce( op, *this, static_cast<TYPE>( 0 ) );
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::multiply(
-    const Array<TYPE, FUN, Allocator> &a, const Array<TYPE, FUN, Allocator> &b )
+void Array<TYPE, FUN, Allocator>::axpby( const TYPE &alpha,
+                                         const Array<TYPE, FUN, Allocator> &x,
+                                         const TYPE &beta )
 {
-    Array<TYPE, FUN, Allocator> c;
-    FUN::multiply( a, b, c );
-    return c;
+    const auto &op = [alpha, beta]( const TYPE &x, const TYPE &y ) { return alpha * x + beta * y; };
+    return FUN::transform( op, x, *this, *this );
 }
 template<class TYPE, class FUN, class Allocator>
-void Array<TYPE, FUN, Allocator>::axpby(
-    const TYPE &alpha, const Array<TYPE, FUN, Allocator> &x, const TYPE &beta )
-{
-    const auto &fun = [alpha, beta](
-                          const TYPE &x, const TYPE &y ) { return alpha * x + beta * y; };
-    return FUN::transform( fun, x, *this, *this );
-}
-template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::transform(
-    std::function<TYPE( const TYPE & )> fun, const Array<TYPE, FUN, Allocator> &x )
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::transform( std::function<TYPE( const TYPE & )> fun,
+                                        const Array<TYPE, FUN, Allocator> &x )
 {
     Array<TYPE, FUN, Allocator> y;
     FUN::transform( fun, x, y );
     return y;
 }
 template<class TYPE, class FUN, class Allocator>
-Array<TYPE, FUN, Allocator> Array<TYPE, FUN, Allocator>::transform(
-    std::function<TYPE( const TYPE &, const TYPE & )> fun, const Array<TYPE, FUN, Allocator> &x,
-    const Array<TYPE, FUN, Allocator> &y )
+Array<TYPE, FUN, Allocator>
+Array<TYPE, FUN, Allocator>::transform( std::function<TYPE( const TYPE &, const TYPE & )> fun,
+                                        const Array<TYPE, FUN, Allocator> &x,
+                                        const Array<TYPE, FUN, Allocator> &y )
 {
     Array<TYPE, FUN, Allocator> z;
     FUN::transform( fun, x, y, z );
@@ -1318,5 +1377,6 @@ bool Array<TYPE, FUN, Allocator>::equals( const Array &rhs, TYPE tol ) const
 {
     return FUN::equals( *this, rhs, tol );
 }
+
 
 #endif
