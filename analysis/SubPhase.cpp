@@ -301,10 +301,15 @@ void SubPhase::Basic(){
 	gnb.Py=Dm->Comm.sumReduce(  nb.Py);
 	gnb.Pz=Dm->Comm.sumReduce(  nb.Pz);
 	
-	giwn.M=Dm->Comm.sumReduce(  iwn.M);
-	giwn.Px=Dm->Comm.sumReduce(  iwn.Px);
-	giwn.Py=Dm->Comm.sumReduce(  iwn.Py);
-	giwn.Pz=Dm->Comm.sumReduce(  iwn.Pz);
+	giwn.Mw=Dm->Comm.sumReduce(  iwn.Mw);
+	giwn.Pwx=Dm->Comm.sumReduce(  iwn.Pwx);
+	giwn.Pwy=Dm->Comm.sumReduce(  iwn.Pwy);
+	giwn.Pwz=Dm->Comm.sumReduce(  iwn.Pwz);
+	
+	giwn.Mn=Dm->Comm.sumReduce(  iwn.Mn);
+	giwn.Pnx=Dm->Comm.sumReduce(  iwn.Pnx);
+	giwn.Pny=Dm->Comm.sumReduce(  iwn.Pny);
+	giwn.Pnz=Dm->Comm.sumReduce(  iwn.Pnz);
 	
 	count_w=Dm->Comm.sumReduce(  count_w);
 	count_n=Dm->Comm.sumReduce(  count_n);
