@@ -252,19 +252,18 @@ void SubPhase::Basic(){
 							iwn.V += 1.0;
 							iwn.M += nA*rho_n;						
 							// velocity
-							iwn.Px += rho_n*nA*Vel_x(n);
-							iwn.Py += rho_n*nA*Vel_y(n);
-							iwn.Pz += rho_n*nA*Vel_z(n);
+							iwn.Pnx += rho_n*nA*Vel_x(n);
+							iwn.Pny += rho_n*nA*Vel_y(n);
+							iwn.Pnz += rho_n*nA*Vel_z(n);
 						}
 						else{
 							nB = 1.0;
 							iwn.M += nB*rho_w;
 							iwn.V += 1.0;
 
-							// velocity
-							iwn.Px += rho_w*nB*Vel_x(n);
-							iwn.Py += rho_w*nB*Vel_y(n);
-							iwn.Pz += rho_w*nB*Vel_z(n);
+							iwn.Pwx += rho_w*nB*Vel_x(n);
+							iwn.Pwy += rho_w*nB*Vel_y(n);
+							iwn.Pwz += rho_w*nB*Vel_z(n);
 						}
 					}
 				}
