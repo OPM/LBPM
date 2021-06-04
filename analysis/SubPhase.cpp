@@ -250,7 +250,7 @@ void SubPhase::Basic(){
 						if ( phi > 0.0 ){
 							nA = 1.0;
 							iwn.V += 1.0;
-							iwn.M += nA*rho_n;						
+							iwn.Mn += nA*rho_n;						
 							// velocity
 							iwn.Pnx += rho_n*nA*Vel_x(n);
 							iwn.Pny += rho_n*nA*Vel_y(n);
@@ -258,7 +258,7 @@ void SubPhase::Basic(){
 						}
 						else{
 							nB = 1.0;
-							iwn.M += nB*rho_w;
+							iwn.Mw += nB*rho_w;
 							iwn.V += 1.0;
 
 							iwn.Pwx += rho_w*nB*Vel_x(n);
