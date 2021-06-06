@@ -93,7 +93,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		{
 			// If timelog is empty, write a short header to list the averages
 			//fprintf(TIMELOG,"--------------------------------------------------------------------------------------\n");
-			fprintf(TIMELOG,"sw krw krn vw vn force pw pn wet\n");				
+			fprintf(TIMELOG,"sw krw krn krwf krnf vw vn force pw pn wet\n");				
 		}
 	}
 }
@@ -167,7 +167,7 @@ void SubPhase::Basic(){
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 	*/
-	nb.reset(); wb.reset();
+	nb.reset(); wb.reset();	iwn.reset();
 
 	double count_w = 0.0;
 	double count_n = 0.0;
@@ -245,6 +245,27 @@ void SubPhase::Basic(){
 						wb.p += Pressure(n);
 						count_w += 1.0;
 					}
+					/* compute the film contribution */
+					else if (SDs(i,j,k) < 2.0){
+						if ( phi > 0.0 ){
+							nA = 1.0;
+							iwn.V += 1.0;
+							iwn.Mn += nA*rho_n;						
+							// velocity
+							iwn.Pnx += rho_n*nA*Vel_x(n);
+							iwn.Pny += rho_n*nA*Vel_y(n);
+							iwn.Pnz += rho_n*nA*Vel_z(n);
+						}
+						else{
+							nB = 1.0;
+							iwn.Mw += nB*rho_w;
+							iwn.V += 1.0;
+
+							iwn.Pwx += rho_w*nB*Vel_x(n);
+							iwn.Pwy += rho_w*nB*Vel_y(n);
+							iwn.Pwz += rho_w*nB*Vel_z(n);
+						}
+					}
 				}
 			}
 		}
@@ -267,12 +288,6 @@ void SubPhase::Basic(){
 	//printf("wetting interaction = %f, count = %f\n",total_wetting_interaction,count_wetting_interaction);
 	total_wetting_interaction_global=Dm->Comm.sumReduce(  total_wetting_interaction);
 	count_wetting_interaction_global=Dm->Comm.sumReduce(  count_wetting_interaction);
-	/* normalize wetting interactions  <-- Don't do this if normalizing laplacian (use solid surface area)
-	if (count_wetting_interaction > 0.0)
-		total_wetting_interaction /= count_wetting_interaction;
-	if (count_wetting_interaction_global > 0.0)
-		total_wetting_interaction_global /= count_wetting_interaction_global;
-	*/
 	
 	gwb.V=Dm->Comm.sumReduce(  wb.V);
 	gnb.V=Dm->Comm.sumReduce(  nb.V);
@@ -284,6 +299,16 @@ void SubPhase::Basic(){
 	gnb.Px=Dm->Comm.sumReduce(  nb.Px);
 	gnb.Py=Dm->Comm.sumReduce(  nb.Py);
 	gnb.Pz=Dm->Comm.sumReduce(  nb.Pz);
+	
+	giwn.Mw=Dm->Comm.sumReduce(  iwn.Mw);
+	giwn.Pwx=Dm->Comm.sumReduce(  iwn.Pwx);
+	giwn.Pwy=Dm->Comm.sumReduce(  iwn.Pwy);
+	giwn.Pwz=Dm->Comm.sumReduce(  iwn.Pwz);
+	
+	giwn.Mn=Dm->Comm.sumReduce(  iwn.Mn);
+	giwn.Pnx=Dm->Comm.sumReduce(  iwn.Pnx);
+	giwn.Pny=Dm->Comm.sumReduce(  iwn.Pny);
+	giwn.Pnz=Dm->Comm.sumReduce(  iwn.Pnz);
 	
 	count_w=Dm->Comm.sumReduce(  count_w);
 	count_n=Dm->Comm.sumReduce(  count_n);
@@ -310,20 +335,21 @@ void SubPhase::Basic(){
 	if (gnb.Pz != gnb.Pz) err=true;	
 	
 	if (Dm->rank() == 0){
+	        /* align flow direction based on total mass flux */
+		double dir_x = gwb.Px + gnb.Px;
+		double dir_y = gwb.Py + gnb.Py;
+		double dir_z = gwb.Pz + gnb.Pz;
+		double flow_magnitude = dir_x*dir_x + dir_y*dir_y + dir_z*dir_z;
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-		double dir_x = 0.0;
-		double dir_y = 0.0;
-		double dir_z = 0.0;
 		if (force_mag > 0.0){
 			dir_x = Fx/force_mag;
 			dir_y = Fy/force_mag;
 			dir_z = Fz/force_mag;
 		}
 		else {
-			// default to z direction
-			dir_x = 0.0;
-			dir_y = 0.0;
-			dir_z = 1.0;
+		  	dir_x /= flow_magnitude;
+		      	dir_y /= flow_magnitude;
+			dir_z /= flow_magnitude;
 		}
 		if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 || Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4 ){
 			// compute the pressure drop
@@ -331,7 +357,7 @@ void SubPhase::Basic(){
 			double length = ((Nz-2)*Dm->nprocz());
 			force_mag -= pressure_drop/length;
 		}
-		if (force_mag == 0.0){
+		if (force_mag == 0.0 && flow_magnitude == 0.0){
 			// default to z direction
 			dir_x = 0.0;
 			dir_y = 0.0;
@@ -341,14 +367,21 @@ void SubPhase::Basic(){
 		double saturation=gwb.V/(gwb.V + gnb.V);
 		double water_flow_rate=gwb.V*(gwb.Px*dir_x + gwb.Py*dir_y + gwb.Pz*dir_z)/gwb.M / Dm->Volume;
 		double not_water_flow_rate=gnb.V*(gnb.Px*dir_x + gnb.Py*dir_y + gnb.Pz*dir_z)/gnb.M/ Dm->Volume;
+		
+		/* contribution from water films */
+		double water_film_flow_rate=gwb.V*(giwn.Pwx*dir_x + giwn.Pwy*dir_y + giwn.Pwz*dir_z)/gwb.M  / Dm->Volume;
+		double not_water_film_flow_rate=gnb.V*(giwn.Pnx*dir_x + giwn.Pny*dir_y + giwn.Pnz*dir_z)/gnb.M / Dm->Volume;
 		//double total_flow_rate = water_flow_rate + not_water_flow_rate;
 		//double fractional_flow = water_flow_rate / total_flow_rate;
 
 		double h = Dm->voxel_length;		
 		double krn = h*h*nu_n*not_water_flow_rate / force_mag ;
 		double krw = h*h*nu_w*water_flow_rate / force_mag;
+		/* not counting films */
+		double krnf = krn - h*h*nu_n*not_water_film_flow_rate / force_mag ;
+		double krwf = krw - h*h*nu_w*water_film_flow_rate / force_mag;
 		//printf("   water saturation = %f, fractional flow =%f \n",saturation,fractional_flow);
-		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,h*water_flow_rate,h*not_water_flow_rate, force_mag, gwb.p, gnb.p, total_wetting_interaction_global); 
+		fprintf(TIMELOG,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",saturation,krw,krn,krwf,krnf,h*water_flow_rate,h*not_water_flow_rate, force_mag, gwb.p, gnb.p, total_wetting_interaction_global); 
 		fflush(TIMELOG);
 	}
 	if (err==true){
