@@ -335,20 +335,21 @@ void SubPhase::Basic(){
 	if (gnb.Pz != gnb.Pz) err=true;	
 	
 	if (Dm->rank() == 0){
+	        /* align flow direction based on total mass flux */
+		double dir_x = gwb.Px + gnb.Px;
+		double dir_y = gwb.Py + gnb.Py;
+		double dir_z = gwb.Pz + gnb.Pz;
+		double flow_magnitude = dir_x*dir_x + dir_y*dir_y + dir_z*dir_z;
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-		double dir_x = 0.0;
-		double dir_y = 0.0;
-		double dir_z = 0.0;
 		if (force_mag > 0.0){
 			dir_x = Fx/force_mag;
 			dir_y = Fy/force_mag;
 			dir_z = Fz/force_mag;
 		}
 		else {
-			// default to z direction
-			dir_x = 0.0;
-			dir_y = 0.0;
-			dir_z = 1.0;
+		  	dir_x /= flow_magnitude;
+		      	dir_y /= flow_magnitude;
+			dir_z /= flow_magnitude;
 		}
 		if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 || Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4 ){
 			// compute the pressure drop
@@ -356,7 +357,7 @@ void SubPhase::Basic(){
 			double length = ((Nz-2)*Dm->nprocz());
 			force_mag -= pressure_drop/length;
 		}
-		if (force_mag == 0.0){
+		if (force_mag == 0.0 && flow_magnitude == 0.0){
 			// default to z direction
 			dir_x = 0.0;
 			dir_y = 0.0;
