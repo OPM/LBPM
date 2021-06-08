@@ -250,21 +250,20 @@ void SubPhase::Basic(){
 						if ( phi > 0.0 ){
 							nA = 1.0;
 							iwn.V += 1.0;
-							iwn.M += nA*rho_n;						
+							iwn.Mn += nA*rho_n;						
 							// velocity
-							iwn.Px += rho_n*nA*Vel_x(n);
-							iwn.Py += rho_n*nA*Vel_y(n);
-							iwn.Pz += rho_n*nA*Vel_z(n);
+							iwn.Pnx += rho_n*nA*Vel_x(n);
+							iwn.Pny += rho_n*nA*Vel_y(n);
+							iwn.Pnz += rho_n*nA*Vel_z(n);
 						}
 						else{
 							nB = 1.0;
-							iwn.M += nB*rho_w;
+							iwn.Mw += nB*rho_w;
 							iwn.V += 1.0;
 
-							// velocity
-							iwn.Px += rho_w*nB*Vel_x(n);
-							iwn.Py += rho_w*nB*Vel_y(n);
-							iwn.Pz += rho_w*nB*Vel_z(n);
+							iwn.Pwx += rho_w*nB*Vel_x(n);
+							iwn.Pwy += rho_w*nB*Vel_y(n);
+							iwn.Pwz += rho_w*nB*Vel_z(n);
 						}
 					}
 				}
@@ -301,10 +300,15 @@ void SubPhase::Basic(){
 	gnb.Py=Dm->Comm.sumReduce(  nb.Py);
 	gnb.Pz=Dm->Comm.sumReduce(  nb.Pz);
 	
-	giwn.M=Dm->Comm.sumReduce(  iwn.M);
-	giwn.Px=Dm->Comm.sumReduce(  iwn.Px);
-	giwn.Py=Dm->Comm.sumReduce(  iwn.Py);
-	giwn.Pz=Dm->Comm.sumReduce(  iwn.Pz);
+	giwn.Mw=Dm->Comm.sumReduce(  iwn.Mw);
+	giwn.Pwx=Dm->Comm.sumReduce(  iwn.Pwx);
+	giwn.Pwy=Dm->Comm.sumReduce(  iwn.Pwy);
+	giwn.Pwz=Dm->Comm.sumReduce(  iwn.Pwz);
+	
+	giwn.Mn=Dm->Comm.sumReduce(  iwn.Mn);
+	giwn.Pnx=Dm->Comm.sumReduce(  iwn.Pnx);
+	giwn.Pny=Dm->Comm.sumReduce(  iwn.Pny);
+	giwn.Pnz=Dm->Comm.sumReduce(  iwn.Pnz);
 	
 	count_w=Dm->Comm.sumReduce(  count_w);
 	count_n=Dm->Comm.sumReduce(  count_n);
@@ -331,20 +335,21 @@ void SubPhase::Basic(){
 	if (gnb.Pz != gnb.Pz) err=true;	
 	
 	if (Dm->rank() == 0){
+	        /* align flow direction based on total mass flux */
+		double dir_x = gwb.Px + gnb.Px;
+		double dir_y = gwb.Py + gnb.Py;
+		double dir_z = gwb.Pz + gnb.Pz;
+		double flow_magnitude = dir_x*dir_x + dir_y*dir_y + dir_z*dir_z;
 		double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-		double dir_x = 0.0;
-		double dir_y = 0.0;
-		double dir_z = 0.0;
 		if (force_mag > 0.0){
 			dir_x = Fx/force_mag;
 			dir_y = Fy/force_mag;
 			dir_z = Fz/force_mag;
 		}
 		else {
-			// default to z direction
-			dir_x = 0.0;
-			dir_y = 0.0;
-			dir_z = 1.0;
+		  	dir_x /= flow_magnitude;
+		      	dir_y /= flow_magnitude;
+			dir_z /= flow_magnitude;
 		}
 		if (Dm->BoundaryCondition == 1 || Dm->BoundaryCondition == 2 || Dm->BoundaryCondition == 3 || Dm->BoundaryCondition == 4 ){
 			// compute the pressure drop
@@ -352,7 +357,7 @@ void SubPhase::Basic(){
 			double length = ((Nz-2)*Dm->nprocz());
 			force_mag -= pressure_drop/length;
 		}
-		if (force_mag == 0.0){
+		if (force_mag == 0.0 && flow_magnitude == 0.0){
 			// default to z direction
 			dir_x = 0.0;
 			dir_y = 0.0;
