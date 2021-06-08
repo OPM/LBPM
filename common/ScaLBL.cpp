@@ -1046,29 +1046,28 @@ void ScaLBL_Communicator::SetupBounceBackList(IntArray &Map, signed char *id, in
 			}
 		}
 	}
-	
+
 	int *bb_dist_tmp = new int [local_count];	
 	int *bb_interactions_tmp = new int [local_count];	
 	ScaLBL_AllocateDeviceMemory((void **) &bb_dist, sizeof(int)*local_count);
 	ScaLBL_AllocateDeviceMemory((void **) &bb_interactions, sizeof(int)*local_count);
-    int *fluid_boundary_tmp;
-    double *lattice_weight_tmp;
-    float *lattice_cx_tmp;
-    float *lattice_cy_tmp;
-    float *lattice_cz_tmp;
-    if(SlippingVelBC==true){
-        fluid_boundary_tmp = new int [local_count];
-        lattice_weight_tmp = new double [local_count];
-        lattice_cx_tmp = new float [local_count];
-        lattice_cy_tmp = new float [local_count];
-        lattice_cz_tmp = new float [local_count];
-	    ScaLBL_AllocateDeviceMemory((void **) &fluid_boundary, sizeof(int)*local_count);
-	    ScaLBL_AllocateDeviceMemory((void **) &lattice_weight, sizeof(double)*local_count);
-	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cx, sizeof(float)*local_count);
-	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cy, sizeof(float)*local_count);
-	    ScaLBL_AllocateDeviceMemory((void **) &lattice_cz, sizeof(float)*local_count);
-    }
-	
+	int *fluid_boundary_tmp;
+	double *lattice_weight_tmp;
+	float *lattice_cx_tmp;
+	float *lattice_cy_tmp;
+	float *lattice_cz_tmp;
+	/* allocate memory for bounce-back sites */
+	fluid_boundary_tmp = new int [local_count];
+	lattice_weight_tmp = new double [local_count];
+	lattice_cx_tmp = new float [local_count];
+	lattice_cy_tmp = new float [local_count];
+	lattice_cz_tmp = new float [local_count];
+	ScaLBL_AllocateDeviceMemory((void **) &fluid_boundary, sizeof(int)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &lattice_weight, sizeof(double)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &lattice_cx, sizeof(float)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &lattice_cy, sizeof(float)*local_count);
+	ScaLBL_AllocateDeviceMemory((void **) &lattice_cz, sizeof(float)*local_count);
+
 	local_count=0;
 	for (k=1;k<Nz-1;k++){
 		for (j=1;j<Ny-1;j++){
