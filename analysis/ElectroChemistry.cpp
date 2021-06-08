@@ -53,17 +53,30 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 	Poisson.getElectricPotential(ElectricalPotential);
 	
 	/* local sub-domain averages */
-	double rho_avg_local[Ion.number_ion_species];
-	double rho_mu_avg_local[Ion.number_ion_species];
-	double rho_mu_fluctuation_local[Ion.number_ion_species];	
-	double rho_psi_avg_local[Ion.number_ion_species];
-	double rho_psi_fluctuation_local[Ion.number_ion_species];
+	double *rho_avg_local;
+	double *rho_mu_avg_local;
+	double *rho_mu_fluctuation_local;	
+	double *rho_psi_avg_local;
+	double *rho_psi_fluctuation_local;
 	/* global averages */
-	double rho_avg_global[Ion.number_ion_species];
-	double rho_mu_avg_global[Ion.number_ion_species];
-	double rho_mu_fluctuation_global[Ion.number_ion_species];
-	double rho_psi_avg_global[Ion.number_ion_species];
-	double rho_psi_fluctuation_global[Ion.number_ion_species];
+	double *rho_avg_global;
+	double *rho_mu_avg_global;
+	double *rho_mu_fluctuation_global;
+	double *rho_psi_avg_global;
+	double *rho_psi_fluctuation_global;
+	
+	/* local sub-domain averages */
+	rho_avg_local = new double [Ion.number_ion_species];
+	rho_mu_avg_local = new double [Ion.number_ion_species];
+	rho_mu_fluctuation_local = new double [Ion.number_ion_species];	
+	rho_psi_avg_local = new double [Ion.number_ion_species];
+	rho_psi_fluctuation_local = new double [Ion.number_ion_species];
+	/* global averages */
+	rho_avg_global = new double [Ion.number_ion_species];
+	rho_mu_avg_global = new double [Ion.number_ion_species];
+	rho_mu_fluctuation_global = new double [Ion.number_ion_species];
+	rho_psi_avg_global = new double [Ion.number_ion_species];
+	rho_psi_fluctuation_global = new double [Ion.number_ion_species];
 	
 	for (int ion=0; ion<Ion.number_ion_species; ion++){
 		rho_avg_local[ion] = 0.0;
