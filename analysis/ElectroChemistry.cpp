@@ -78,7 +78,7 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 	rho_psi_avg_global = new double [Ion.number_ion_species];
 	rho_psi_fluctuation_global = new double [Ion.number_ion_species];
 	
-	for (int ion=0; ion<Ion.number_ion_species; ion++){
+	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
 		rho_avg_local[ion] = 0.0;
 		rho_mu_avg_local[ion] = 0.0;
 		rho_psi_avg_local[ion] = 0.0;
@@ -103,7 +103,7 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 		}
 	}
 	
-	for (int ion=0; ion<Ion.number_ion_species; ion++){
+	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
 		rho_mu_fluctuation_local[ion] = 0.0;
 		rho_psi_fluctuation_local[ion] = 0.0;
 		/* Compute averages for each ion */
@@ -121,7 +121,7 @@ void ElectroChemistryAnalyzer::Basic(ScaLBL_IonModel &Ion, ScaLBL_Poisson &Poiss
 	
 	if (Dm->rank()==0){	
 		fprintf(TIMELOG,"%i ",timestep); 
-		for (int ion=0; ion<Ion.number_ion_species; ion++){
+		for (size_t ion=0; ion<Ion.number_ion_species; ion++){
 			fprintf(TIMELOG,"%.8g ",rho_avg_global[ion]);
 			fprintf(TIMELOG,"%.8g ",rho_mu_avg_global[ion]);
 			fprintf(TIMELOG,"%.8g ",rho_psi_avg_global[ion]);
@@ -160,7 +160,7 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     visData[0].mesh = std::make_shared<IO::DomainMesh>( Dm->rank_info,Dm->Nx-2,Dm->Ny-2,Dm->Nz-2,Dm->Lx,Dm->Ly,Dm->Lz );
     auto ElectricPotential = std::make_shared<IO::Variable>();
     std::vector<shared_ptr<IO::Variable>> IonConcentration;
-    for (int ion=0; ion<Ion.number_ion_species; ion++){
+    for (size_t ion=0; ion<Ion.number_ion_species; ion++){
         IonConcentration.push_back(std::make_shared<IO::Variable>());
     }
     auto VxVar = std::make_shared<IO::Variable>();
@@ -176,8 +176,8 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     }
 
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
-    	for (int ion=0; ion<Ion.number_ion_species; ion++){
-    		sprintf(VisName,"IonConcentration_%i",ion+1);
+    	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
+    		sprintf(VisName,"IonConcentration_%zu",ion+1);
     		IonConcentration[ion]->name = VisName;
     		IonConcentration[ion]->type = IO::VariableType::VolumeVariable;
     		IonConcentration[ion]->dim = 1;
@@ -212,8 +212,8 @@ void ElectroChemistryAnalyzer::WriteVis( ScaLBL_IonModel &Ion, ScaLBL_Poisson &P
     }
 
     if (vis_db->getWithDefault<bool>( "save_concentration", true )){
-    	for (int ion=0; ion<Ion.number_ion_species; ion++){
-    		sprintf(VisName,"IonConcentration_%i",ion+1);
+    	for (size_t ion=0; ion<Ion.number_ion_species; ion++){
+    		sprintf(VisName,"IonConcentration_%zu",ion+1);
     		IonConcentration[ion]->name = VisName;
     		ASSERT(visData[0].vars[1+ion]->name==VisName);
     		Array<double>& IonConcentrationData = visData[0].vars[1+ion]->data;
