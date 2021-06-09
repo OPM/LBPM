@@ -558,10 +558,12 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 		ERROR("Error: LB Ion Solver: SolidLabels and SolidValues must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
-	// Assign the labels
 
+	// Assign the labels
+	double *label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
@@ -571,7 +573,7 @@ void ScaLBL_IonModel::AssignSolidBoundary(double *ion_solid)
 				VALUE=Mask->id[n];
                 AFFINITY=0.f;
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
@@ -734,35 +736,35 @@ void ScaLBL_IonModel::Initialize(){
           break;
     }
 
-    for (int i=0; i<number_ion_species;i++){
+    for (size_t i=0; i<number_ion_species;i++){
         switch (BoundaryConditionInlet[i]){
             case 0:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is periodic \n",i+1);
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is periodic \n",i+1);
                 break;
             case 1:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is concentration = %.5g [mol/m^3] \n",i+1,Cin[i]/(h*h*h*1.0e-18));
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is concentration = %.5g [mol/m^3] \n",i+1,Cin[i]/(h*h*h*1.0e-18));
                 break;
             case 2:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec] \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec] \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
         }
         switch (BoundaryConditionOutlet[i]){
             case 0:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is periodic \n",i+1);
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is periodic \n",i+1);
                 break;
             case 1:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is concentration = %.5g [mol/m^3] \n",i+1,Cout[i]/(h*h*h*1.0e-18));
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is concentration = %.5g [mol/m^3] \n",i+1,Cout[i]/(h*h*h*1.0e-18));
                 break;
             case 2:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec] \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec] \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
         }
     }
 
 	if (rank==0) printf("*****************************************************\n");
 	if (rank==0) printf("LB Ion Transport Solver: \n");
-    for (int i=0; i<number_ion_species;i++){
-	    if (rank==0) printf("      Ion %i: LB relaxation tau = %.5g\n", i+1,tau[i]);
+    for (size_t i=0; i<number_ion_species;i++){
+	    if (rank==0) printf("      Ion %zu: LB relaxation tau = %.5g\n", i+1,tau[i]);
 	    if (rank==0) printf("              Time conversion factor: %.5g [sec/lt]\n", time_conv[i]);
 	    if (rank==0) printf("              Internal iteration: %i [lt]\n", timestepMax[i]);
     }
@@ -919,7 +921,7 @@ void ScaLBL_IonModel::getIonConcentration_debug(int timestep){
         IonConcentration_LB_to_Phys(PhaseField);
 
         FILE *OUTFILE;
-        sprintf(LocalRankFilename,"Ion%02i_Time_%i.%05i.raw",ic+1,timestep,rank);
+        sprintf(LocalRankFilename,"Ion%02zu_Time_%i.%05i.raw",ic+1,timestep,rank);
         OUTFILE = fopen(LocalRankFilename,"wb");
         fwrite(PhaseField.data(),8,N,OUTFILE);
         fclose(OUTFILE);
