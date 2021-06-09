@@ -2104,7 +2104,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){	
 	
 	  int Np = M.Np;
-	  double dA, dB, phi;
+	  double dA, dB;
 	  
 	  double *Aq_tmp, *Bq_tmp;
 	  

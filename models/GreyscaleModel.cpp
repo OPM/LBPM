@@ -150,7 +150,6 @@ void ScaLBL_GreyscaleModel::ReadInput(){
 	// Generate the signed distance map
 	// Initialize the domain and communication
 	Array<char> id_solid(Nx,Ny,Nz);
-	int count = 0;
 	// Solve for the position of the solid phase
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -167,7 +166,6 @@ void ScaLBL_GreyscaleModel::ReadInput(){
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
 			for (int i=0;i<Nx;i++){
-				int n=k*Nx*Ny+j*Nx+i;
 				// Initialize distance to +/- 1
 				SignDist(i,j,k) = 2.0*double(id_solid(i,j,k))-1.0;
 			}
@@ -199,11 +197,13 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 		ERROR("Error: ComponentLabels and PorosityList must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
 	// Assign the labels
-
-	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+	double *label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
+	
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -211,7 +211,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						POROSITY=PorosityList[idx];
@@ -242,7 +242,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 					//printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						PERMEABILITY=PermeabilityList[idx];
@@ -267,7 +267,7 @@ void ScaLBL_GreyscaleModel::AssignComponentLabels(double *Porosity, double *Perm
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
+	for (size_t idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
 	for (unsigned int idx=0; idx<NLABELS; idx++){
@@ -598,7 +598,7 @@ void ScaLBL_GreyscaleModel::Run(){
             //double mass_loc,mass_glb;
             
             //parameters for domain average
-	        int64_t i,j,k,n,imin,jmin,kmin,kmax;
+	        int64_t imin,jmin,kmin,kmax;
             // If external boundary conditions are set, do not average over the inlet and outlet
             kmin=1; kmax=Nz-1;
             //In case user forgets to specify the inlet/outlet buffer layers for BC>0
@@ -691,23 +691,22 @@ void ScaLBL_GreyscaleModel::Run(){
 			//double absperm = h*h*mu*Mask->Porosity()*flow_rate / force_mag;
 			double absperm = h*h*mu*GreyPorosity*flow_rate / force_mag;
 
-            if (rank==0){
+			if (rank==0){
 				printf("     AbsPerm = %.5g [micron^2]\n",absperm);
-                bool WriteHeader=false;
-                FILE * log_file = fopen("Permeability.csv","r");
-                if (log_file != NULL)
-                    fclose(log_file);
-                else
-                    WriteHeader=true;
-                log_file = fopen("Permeability.csv","a");
-                if (WriteHeader)
-                    fprintf(log_file,"timestep Fx Fy Fz mu Vs As Hs Xs vax vay vaz AbsPerm \n",
-                            timestep,Fx,Fy,Fz,mu,h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz,absperm);
+				bool WriteHeader=false;
+				FILE * log_file = fopen("Permeability.csv","r");
+				if (log_file != NULL)
+					fclose(log_file);
+				else
+					WriteHeader=true;
+				log_file = fopen("Permeability.csv","a");
+				if (WriteHeader)
+					fprintf(log_file,"timestep Fx Fy Fz mu Vs As Hs Xs vax vay vaz AbsPerm \n");
 
-                fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
-                        h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
-                fclose(log_file);
-            }
+				fprintf(log_file,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g\n",timestep, Fx, Fy, Fz, mu, 
+						h*h*h*Vs,h*h*As,h*Hs,Xs,vax,vay,vaz, absperm);
+				fclose(log_file);
+			}
 		}
 
 		if (timestep%visualization_interval==0){
