@@ -159,7 +159,6 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		  inletB = 0.0;
 		}
 	}
-
 	
 	// Override user-specified boundary condition for specific protocols
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
@@ -321,11 +320,12 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	if (WettingConvention == "SCAL"){
 	  for (size_t idx=0; idx<NLABELS; idx++) AffinityList[idx] *= -1.0;
 	}
-
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	
+	double * label_count;
+	double * label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
-
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
@@ -2105,11 +2105,8 @@ void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){
 	
 	  int Np = M.Np;
 	  double dA, dB, phi;
-
-	  double mass_a, mass_b, mass_a_global, mass_b_global;
 	  
 	  double *Aq_tmp, *Bq_tmp;
-	  double *Vel_x, *Vel_y, *Vel_z, *Phase;
 	  
 	  Aq_tmp = new double [7*Np];
 	  Bq_tmp = new double [7*Np];
@@ -2201,22 +2198,6 @@ double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){
     	}
 	}
     ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
-    
-    
-/*	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
-	*/
+    return total_interface_sites;
 }
 
