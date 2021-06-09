@@ -2026,7 +2026,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	   
 	   double  total_momentum_A = sqrt(vax_global*vax_global+vay_global*vay_global+vaz_global*vaz_global);
 	   double  total_momentum_B = sqrt(vbx_global*vbx_global+vby_global*vby_global+vbz_global*vbz_global);
-	   
+	   double total_momentum = total_momentum_A + total_momentum_B;
 	   /* compute the total mass change */
 	   double TOTAL_MASS_CHANGE = MASS_FRACTION_CHANGE*(mass_a_global + mass_b_global);
 	   if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_a_global )
@@ -2043,6 +2043,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 		   double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
 		   if (phi > 0.0){
 			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_A;
+			   if (fabs(LOCAL_MASS_CHANGE) > 0.1)  LOCAL_MASS_CHANGE *= 0.1/fabs(LOCAL_MASS_CHANGE);
 			   Aq_tmp[n] -= 0.3333333333333333*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+2*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
@@ -2053,6 +2054,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 		   }
 		   else{
 			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
+			   if (fabs(LOCAL_MASS_CHANGE) > 0.1)  LOCAL_MASS_CHANGE *= 0.1/fabs(LOCAL_MASS_CHANGE);
 			   Bq_tmp[n] += 0.3333333333333333*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+2*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
@@ -2113,7 +2115,6 @@ void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){
 
 	  ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
 	  ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
-
 
 	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
 		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
