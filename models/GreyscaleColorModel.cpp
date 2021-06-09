@@ -309,17 +309,25 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
     //    oil-wet   < 0
     //    neutral   = 0 (i.e. no penalty) 
 	double *GreySolidW_host  = new double [Np];
+	double *GreySn_host      = new double [Np];
+	double *GreySw_host      = new double [Np];
 
 	size_t NLABELS=0;
 	signed char VALUE=0;
 	double AFFINITY=0.f;
+    double Sn,Sw;//end-point saturation of greynodes set by users
 
 	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
 	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
+	auto SnList = greyscaleColor_db->getVector<double>( "GreySnList" );
+	auto SwList = greyscaleColor_db->getVector<double>( "GreySwList" );
 
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
 		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
+	}
+	if (NLABELS != SnList.size() || NLABELS != SwList.size()){
+		ERROR("Error: GreySolidLabels, GreySnList, and GreySwList must be the same length! \n");
 	}
 
 	for (int k=0;k<Nz;k++){
@@ -328,16 +336,22 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
+                Sn=99.0;
+                Sw=-99.0;
 				// Assign the affinity from the paired list
 				for (unsigned int idx=0; idx < NLABELS; idx++){
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
+                        Sn = SnList[idx];
+                        Sw = SwList[idx];
 						idx = NLABELS;
 					}
 				}
 				int idx = Map(i,j,k);
 				if (!(idx < 0)){
                     GreySolidW_host[idx] = AFFINITY;
+                    GreySn_host[idx]     = Sn;
+                    GreySw_host[idx]     = Sw;
                 }
 			}
 		}
@@ -348,15 +362,22 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 		for (unsigned int idx=0; idx<NLABELS; idx++){
 			VALUE=LabelList[idx];
 			AFFINITY=AffinityList[idx];
-			printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+			Sn=SnList[idx];
+			Sw=SwList[idx];
+			//printf("   grey-solid label=%d, grey-solid affinity=%f\n",VALUE,AFFINITY); 
+			printf("   grey-solid label=%d, grey-solid affinity=%.3g, grey-solid Sn=%.3g, grey-solid Sw=%.3g\n",VALUE,AFFINITY,Sn,Sw); 
 		}
 		printf("NOTE: grey-solid affinity>0: water-wet || grey-solid affinity<0: oil-wet \n");
 	}
     
     
 	ScaLBL_CopyToDevice(GreySolidW, GreySolidW_host, Np*sizeof(double));
+	ScaLBL_CopyToDevice(GreySn, GreySn_host, Np*sizeof(double));
+	ScaLBL_CopyToDevice(GreySw, GreySw_host, Np*sizeof(double));
 	ScaLBL_Comm->Barrier();
     delete [] GreySolidW_host;
+    delete [] GreySn_host;
+    delete [] GreySw_host;
 }
 ////----------------------------------------------------------------------------------------------------------//
 
@@ -598,6 +619,8 @@ void ScaLBL_GreyscaleColorModel::Create(){
     //ScaLBL_AllocateDeviceMemory((void **) &GreySolidPhi, sizeof(double)*Nx*Ny*Nz);		
     //ScaLBL_AllocateDeviceMemory((void **) &GreySolidGrad, 3*sizeof(double)*Np);		
     ScaLBL_AllocateDeviceMemory((void **) &GreySolidW, sizeof(double)*Np);		
+    ScaLBL_AllocateDeviceMemory((void **) &GreySn, sizeof(double)*Np);		
+    ScaLBL_AllocateDeviceMemory((void **) &GreySw, sizeof(double)*Np);		
     ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
     ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
 	//...........................................................................
@@ -921,7 +944,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
@@ -950,7 +973,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
@@ -983,7 +1006,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
@@ -1012,7 +1035,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
