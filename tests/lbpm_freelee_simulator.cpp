@@ -83,6 +83,7 @@ int main( int argc, char **argv )
         PROFILE_STOP("Main");
         auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_simulator" );
         auto level = db->getWithDefault<int>( "TimerLevel", 1 );
+	NULL_USE(level);
         PROFILE_SAVE( file,level );
         // ****************************************************
 
