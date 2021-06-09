@@ -145,6 +145,21 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
+	if (domain_db->keyExists( "InletLayersPhase" )){
+		int inlet_layers_phase = domain_db->getScalar<int>( "InletLayersPhase" );
+		if (inlet_layers_phase == 2 ) {
+		  inletA = 0.0;
+		  inletB = 1.0;
+		}
+	}
+	if (domain_db->keyExists( "OutletLayersPhase" )){
+		int outlet_layers_phase = domain_db->getScalar<int>( "OutletLayersPhase" );
+		if (outlet_layers_phase == 1 ) {
+		  inletA = 1.0;
+		  inletB = 0.0;
+		}
+	}
+
 	
 	// Override user-specified boundary condition for specific protocols
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
