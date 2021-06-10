@@ -1986,7 +1986,41 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	  vax = vay = vaz = 0.0;
 	  vbx = vby = vbz = 0.0;
 	  mass_a = mass_b = 0.0;
-	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
+	  
+	  double maxSpeed = 0.0;
+	  double localMaxSpeed = 0.0;
+	  for (int k=1; k<Nz-1; k++){
+		  for (int j=1; j<Ny-1; j++){
+			  for (int i=1; i<Nx-1; i++){
+				  int n=M.Map(i,j,k);
+				  double distance = M.Averages->SDs(i,j,k);
+				  if (!(n<0) ){
+					  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+					  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+					  phi = (dA - dB) / (dA + dB);
+					  Phase[n] = phi;
+					  mass_a += dA;
+					  mass_b += dB;
+					  if (phi > 0.0){
+						  vax += Vel_x[n];
+						  vay += Vel_y[n];
+						  vaz += Vel_z[n];
+					  }
+					  else {
+						  vbx += Vel_x[n];
+						  vby += Vel_y[n];
+						  vbz += Vel_z[n];
+					  }
+					  double speed =  sqrt(vax*vax + vay*vay + vaz*vaz + vbx*vbx + vby*vby + vbz*vbz);
+					  if (distance > 3.0 && speed > localMaxSpeed){
+						  localMaxSpeed = speed;
+					  }
+				  }
+			  }
+		  }
+	  }
+	  maxSpeed = M.Dm->Comm.maxReduce(localMaxSpeed);
+	  /*	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
 		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
 		  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		  phi = (dA - dB) / (dA + dB);
@@ -2022,27 +2056,65 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 				  vbz += Vel_z[n];
 			  }
 	   }
-	   mass_a_global = M.Dm->Comm.sumReduce(mass_a);
-	   mass_b_global = M.Dm->Comm.sumReduce(mass_b);
-	   vax_global = M.Dm->Comm.sumReduce(vax);
-	   vay_global = M.Dm->Comm.sumReduce(vay);
-	   vaz_global = M.Dm->Comm.sumReduce(vaz);
-	   vbx_global = M.Dm->Comm.sumReduce(vbx);
-	   vby_global = M.Dm->Comm.sumReduce(vby);
-	   vbz_global = M.Dm->Comm.sumReduce(vbz);	 
-	   
-	   double  total_momentum_A = sqrt(vax_global*vax_global+vay_global*vay_global+vaz_global*vaz_global);
-	   double  total_momentum_B = sqrt(vbx_global*vbx_global+vby_global*vby_global+vbz_global*vbz_global);
-	   double total_momentum = total_momentum_A + total_momentum_B;
-	   /* compute the total mass change */
-	   double TOTAL_MASS_CHANGE = MASS_FRACTION_CHANGE*(mass_a_global + mass_b_global);
-	   if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_a_global )
-		   TOTAL_MASS_CHANGE = 0.1*mass_a_global;
-	   if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_b_global )
-		   TOTAL_MASS_CHANGE = 0.1*mass_b_global;
-	   
-	   double LOCAL_MASS_CHANGE = 0.0;
-	   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){	    
+	   */
+	  mass_a_global = M.Dm->Comm.sumReduce(mass_a);
+	  mass_b_global = M.Dm->Comm.sumReduce(mass_b);
+	  vax_global = M.Dm->Comm.sumReduce(vax);
+	  vay_global = M.Dm->Comm.sumReduce(vay);
+	  vaz_global = M.Dm->Comm.sumReduce(vaz);
+	  vbx_global = M.Dm->Comm.sumReduce(vbx);
+	  vby_global = M.Dm->Comm.sumReduce(vby);
+	  vbz_global = M.Dm->Comm.sumReduce(vbz);	 
+
+	  double  total_momentum_A = sqrt(vax_global*vax_global+vay_global*vay_global+vaz_global*vaz_global);
+	  double  total_momentum_B = sqrt(vbx_global*vbx_global+vby_global*vby_global+vbz_global*vbz_global);
+	  /* compute the total mass change */
+	  double TOTAL_MASS_CHANGE = MASS_FRACTION_CHANGE*(mass_a_global + mass_b_global);
+	  if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_a_global )
+		  TOTAL_MASS_CHANGE = 0.1*mass_a_global;
+	  if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_b_global )
+		  TOTAL_MASS_CHANGE = 0.1*mass_b_global;
+
+	  double LOCAL_MASS_CHANGE = 0.0;
+	  for (int k=1; k<Nz-1; k++){
+		  for (int j=1; j<Ny-1; j++){
+			  for (int i=1; i<Nx-1; i++){
+				  int n=M.Map(i,j,k);
+				  if (!(n<0)){
+					  phi = Phase[n];
+					  vx = Vel_x[n];
+					  vy = Vel_y[n];
+					  vz = Vel_z[n];
+					  double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
+					  /* impose ceiling for spurious currents */
+					  if (local_momentum > maxSpeed) local_momentum =  maxSpeed;
+					  if (phi > 0.0){
+						  LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_A;
+						  Aq_tmp[n] -= 0.3333333333333333*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+2*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+3*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
+					  }
+					  else{
+						  LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
+						  Bq_tmp[n] += 0.3333333333333333*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+2*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+3*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  DebugMassB[n] = LOCAL_MASS_CHANGE;
+					  }
+				  }
+			  }
+		  }
+	  }
+/*	   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){	    
 		   phi = Phase[n];
 		   vx = Vel_x[n];
 		   vy = Vel_y[n];
@@ -2101,7 +2173,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			   DebugMassB[n] = LOCAL_MASS_CHANGE;
 		   }
 	  }
-
+ 	 */
 	  if (M.rank == 0) printf("Update Fractional Flow: change mass of fluid B by %f \n",TOTAL_MASS_CHANGE/mass_b_global);
 
 	  /* Print out debugging info with mass update  */
