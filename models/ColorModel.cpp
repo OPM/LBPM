@@ -599,7 +599,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 	if (analysis_db->keyExists( "tolerance" )){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
 	}
-
+	
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	auto t1 = std::chrono::system_clock::now();
 	int CURRENT_TIMESTEP = 0;
@@ -1045,6 +1045,12 @@ void ScaLBL_ColorModel::Run(){
 		else if (protocol == "centrifuge"){
 			printf("  using protocol =  centrifuge \n"); 
 			printf("     driving force = %f \n",Fz);
+			if (Fz < 0){
+				printf("      Component B displacing component A \n");				
+			}
+			else if (Fz > 0){
+				printf("      Component A displacing component B \n");				
+			}
 		} 
 		else if (protocol == "core flooding"){
 			printf("  using protocol = core flooding \n"); 
@@ -1162,7 +1168,7 @@ void ScaLBL_ColorModel::Run(){
 			double volB = Averages->gwb.V; 
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
-			volB /= Dm->Volume;;
+			volB /= Dm->Volume;
 			//initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
@@ -1986,12 +1992,11 @@ FlowAdaptor::~FlowAdaptor(){
 
 double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){	
 	
-  	  double MASS_FRACTION_CHANGE = 0.05;
-	  if (M.db->keyExists( "FlowAdaptor" )){
-		  auto flow_db = M.db->getDatabase( "FlowAdaptor" );
-		  MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
-	  }
-
+  	  double MASS_FRACTION_CHANGE = 0.0005;
+  	  if (M.db->keyExists( "FlowAdaptor" )){
+  		  auto flow_db = M.db->getDatabase( "FlowAdaptor" );
+  		  MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "mass_fraction_factor", 0.0005);
+  	  }
 	  int Np = M.Np;
 	  double dA, dB, phi;
 	  double vx,vy,vz;
