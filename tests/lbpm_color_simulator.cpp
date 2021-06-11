@@ -74,7 +74,7 @@ int main( int argc, char **argv )
         	/* flow adaptor keys to control */
         	int SKIP_TIMESTEPS = 0;
         	int MAX_STEADY_TIME = 1000000;
-        	double FRACTIONAL_FLOW_INCREMENT = 0.05
+        	double FRACTIONAL_FLOW_INCREMENT = 0.05;
         	if (ColorModel.db->keyExists( "FlowAdaptor" )){
         		auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
         		MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
@@ -98,15 +98,15 @@ int main( int argc, char **argv )
             	int skip_time = 0;
             	timestep = ColorModel.timestep;
     			double SaturationChange = 0.0;
-    			double volB = M.Averages->gwb.V; 
-    			double volA = M.Averages->gnb.V; 
+    			double volB = ColorModel.Averages->gwb.V; 
+    			double volA = ColorModel.Averages->gnb.V; 
     			double initialSaturation = volB/(volA + volB);
             	while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
             		timestep += ANALYSIS_INTERVAL;
                 	Adapt.UpdateFractionalFlow(ColorModel);
                 	MLUPS = ColorModel.Run(timestep);
-        			double volB = M.Averages->gwb.V; 
-        			double volA = M.Averages->gnb.V;
+        			double volB = ColorModel.Averages->gwb.V; 
+        			double volA = ColorModel.Averages->gnb.V;
         			SaturationChange = volB/(volA + volB) - initialSaturation;
             		skip_time += ANALYSIS_INTERVAL;
             	}
