@@ -190,6 +190,21 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}  	
+	else if (protocol == "centrifuge"){
+		if (BoundaryCondition != 3 ){
+			BoundaryCondition = 3;
+			if (rank==0) printf("WARNING: protocol (centrifuge) supports only constant pressure boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+	else if (protocol == "core flooding"){
+		if (BoundaryCondition != 4){
+			BoundaryCondition = 4;
+			if (rank==0) printf("WARNING: protocol (core flooding) supports only volumetric flux boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+	
 }
 
 void ScaLBL_ColorModel::SetDomain(){
@@ -893,32 +908,7 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "krA_morph_factor" )){
 		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
 	}
-	/* defaults for simulation protocols */
-	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
-	if (protocol == "image sequence"){
-		// Get the list of images
-		USE_DIRECT = true;
-		ImageList = color_db->getVector<std::string>( "image_sequence");
-		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
-		IMAGE_COUNT = ImageList.size();
-		morph_interval = 10000;
-		USE_MORPH = true;
-	}
-	else if (protocol == "seed water"){
-		morph_delta = -0.05;
-		seed_water = 0.01;
-		USE_SEED = true;
-		USE_MORPH = true;
-	}
-	else if (protocol == "open connected oil"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-		USE_MORPHOPEN_OIL = true;
-	}
-	else if (protocol == "shell aggregation"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-	}  
+
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -937,7 +927,6 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
 		if (rank == 0) printf("Seed water in oil %f (seed_water) \n",seed_water);
-		ASSERT(protocol == "seed water");
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
@@ -967,7 +956,54 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
-
+	
+	/* defaults for simulation protocols */
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
+	if (protocol == "image sequence"){
+		// Get the list of images
+		USE_DIRECT = true;
+		ImageList = color_db->getVector<std::string>( "image_sequence");
+		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		IMAGE_COUNT = ImageList.size();
+		morph_interval = 10000;
+		USE_MORPH = true;
+		USE_SEED = false;
+	}
+	else if (protocol == "seed water"){
+		morph_delta = -0.05;
+		seed_water = 0.01;
+		USE_SEED = true;
+		USE_MORPH = true;
+	}
+	else if (protocol == "open connected oil"){
+		morph_delta = -0.05;
+		USE_SEED = false;
+		USE_MORPH = true;
+		USE_MORPHOPEN_OIL = true;
+	}
+	else if (protocol == "shell aggregation"){
+		morph_delta = -0.05;
+		USE_MORPH = true;
+		USE_SEED = false;
+	}  
+	else if (protocol == "fractional flow"){
+		USE_MORPH = false;
+		USE_SEED = false;
+	}
+	else if (protocol == "centrifuge"){
+		USE_MORPH = false;
+		USE_SEED = false;
+	} 
+	else if (protocol == "core flooding"){
+		USE_MORPH = false;
+		USE_SEED = false;
+		if (SET_CAPILLARY_NUMBER){
+			double MuB = rhoB*(tauB - 0.5)/3.0;
+			double IFT = 6.0*alpha;
+			double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
+			flux = Dm->Porosity()*CrossSectionalArea*IFT*capillary_number/MuB;
+		}
+	} 
 	if (rank==0){
 		printf("********************************************************\n");
 		if (protocol == "image sequence"){
@@ -1005,7 +1041,14 @@ void ScaLBL_ColorModel::Run(){
 			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
-			printf("     morph_delta = %f \n",morph_delta);
+		} 
+		else if (protocol == "centrifuge"){
+			printf("  using protocol =  centrifuge \n"); 
+			printf("     driving force = %f \n",Fz);
+		} 
+		else if (protocol == "core flooding"){
+			printf("  using protocol = core flooding \n"); 
+			printf("     capillary number = %f \n", capillary_number);
 		} 
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
