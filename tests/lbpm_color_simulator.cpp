@@ -89,13 +89,14 @@ int main( int argc, char **argv )
         	/* Launch the simulation */
         	FlowAdaptor Adapt(ColorModel);
         	runAnalysis analysis(ColorModel);
-		if (ContinueSimulation){
+		while (ContinueSimulation){
             	    /* this will run steady points */
                     timestep += MAX_STEADY_TIME;
 		    MLUPS = ColorModel.Run(timestep);
             	    if (rank==0) printf("Lattice update rate (per MPI process)= %f MLUPS \n", MLUPS);
-            	    if (ColorModel.timestep > ColorModel.timestepMax) ContinueSimulation = false;
-		
+            	    if (ColorModel.timestep > ColorModel.timestepMax){
+		      ContinueSimulation = false;
+		    }
             	/* update the fractional flow by adding mass */
             	int skip_time = 0;
             	timestep = ColorModel.timestep;
