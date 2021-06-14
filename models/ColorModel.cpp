@@ -2025,10 +2025,10 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	  
 	  /* DEBUG STRUCTURES */
 	  int Nx = M.Nx;  int Ny = M.Ny;  int Nz = M.Nz;
-	  int N = Nx*Ny*Nz;
-	  double * DebugMassA, *DebugMassB;
-	  DebugMassA = new double[Np];
-	  DebugMassB = new double[Np];
+	  //int N = Nx*Ny*Nz;
+	  //double * DebugMassA, *DebugMassB;
+	  //DebugMassA = new double[Np];
+	  //DebugMassB = new double[Np];
 	  
 	  /* compute the total momentum */
 	  vax = vay = vaz = 0.0;
@@ -2145,7 +2145,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 						  Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 						  Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 						  Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-						  DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
+						  //DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
 					  }
 					  else{
 						  LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
@@ -2156,7 +2156,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 						  Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 						  Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 						  Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-						  DebugMassB[n] = LOCAL_MASS_CHANGE;
+						  //DebugMassB[n] = LOCAL_MASS_CHANGE;
 					  }
 				  }
 			  }
@@ -2224,7 +2224,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
  	 */
 	  if (M.rank == 0) printf("Update Fractional Flow: change mass of fluid B by %f \n",TOTAL_MASS_CHANGE/mass_b_global);
 
-	  /* Print out debugging info with mass update  */
+	  /* Print out debugging info with mass update  
 	  // initialize the array
 	  double value;
 	  char LocalRankFilename[40];
@@ -2247,7 +2247,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	  AFILE = fopen(LocalRankFilename,"wb");
 	  fwrite(regdata.data(),8,N,AFILE);
 	  fclose(AFILE);
-
+	  
 	  regdata.fill(0.f);
 	  for (int k=0; k<Nz; k++){
 		  for (int j=0; j<Ny; j++){
@@ -2265,6 +2265,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	  BFILE = fopen(LocalRankFilename,"wb");
 	  fwrite(regdata.data(),8,N,BFILE);
 	  fclose(BFILE);
+	  */
 
 	  // Need to initialize Aq, Bq, Den, Phi directly
 	  //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
