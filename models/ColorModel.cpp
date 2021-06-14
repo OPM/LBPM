@@ -161,6 +161,20 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 	else if (domain_db->keyExists( "BC" )){
 		BoundaryCondition = domain_db->getScalar<int>( "BC" );
 	}
+	if (domain_db->keyExists( "InletLayersPhase" )){
+		int inlet_layers_phase = domain_db->getScalar<int>( "InletLayersPhase" );
+		if (inlet_layers_phase == 2 ) {
+		  inletA = 0.0;
+		  inletB = 1.0;
+		}
+	}
+	if (domain_db->keyExists( "OutletLayersPhase" )){
+		int outlet_layers_phase = domain_db->getScalar<int>( "OutletLayersPhase" );
+		if (outlet_layers_phase == 1 ) {
+		  inletA = 1.0;
+		  inletB = 0.0;
+		}
+	}
 	
 	// Override user-specified boundary condition for specific protocols
 	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
@@ -192,6 +206,21 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		}
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	}  	
+	else if (protocol == "centrifuge"){
+		if (BoundaryCondition != 3 ){
+			BoundaryCondition = 3;
+			if (rank==0) printf("WARNING: protocol (centrifuge) supports only constant pressure boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+	else if (protocol == "core flooding"){
+		if (BoundaryCondition != 4){
+			BoundaryCondition = 4;
+			if (rank==0) printf("WARNING: protocol (core flooding) supports only volumetric flux boundary condition \n");
+		}
+		domain_db->putScalar<int>( "BC", BoundaryCondition );
+	} 
+	
 }
 
 void ScaLBL_ColorModel::SetDomain(){
@@ -322,11 +351,12 @@ void ScaLBL_ColorModel::AssignComponentLabels(double *phase)
 	if (WettingConvention == "SCAL"){
 	  for (size_t idx=0; idx<NLABELS; idx++) AffinityList[idx] *= -1.0;
 	}
-
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	
+	double * label_count;
+	double * label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
-
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
@@ -585,7 +615,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 	if (analysis_db->keyExists( "tolerance" )){
 		tolerance = analysis_db->getScalar<double>( "tolerance" );
 	}
-
+	
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	auto t1 = std::chrono::system_clock::now();
 	int CURRENT_TIMESTEP = 0;
@@ -894,32 +924,7 @@ void ScaLBL_ColorModel::Run(){
 	if (color_db->keyExists( "krA_morph_factor" )){
 		KRA_MORPH_FACTOR  = color_db->getScalar<double>( "krA_morph_factor" );
 	}
-	/* defaults for simulation protocols */
-	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
-	if (protocol == "image sequence"){
-		// Get the list of images
-		USE_DIRECT = true;
-		ImageList = color_db->getVector<std::string>( "image_sequence");
-		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
-		IMAGE_COUNT = ImageList.size();
-		morph_interval = 10000;
-		USE_MORPH = true;
-	}
-	else if (protocol == "seed water"){
-		morph_delta = -0.05;
-		seed_water = 0.01;
-		USE_SEED = true;
-		USE_MORPH = true;
-	}
-	else if (protocol == "open connected oil"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-		USE_MORPHOPEN_OIL = true;
-	}
-	else if (protocol == "shell aggregation"){
-		morph_delta = -0.05;
-		USE_MORPH = true;
-	}  
+
 	if (color_db->keyExists( "capillary_number" )){
 		capillary_number = color_db->getScalar<double>( "capillary_number" );
 		SET_CAPILLARY_NUMBER=true;
@@ -938,7 +943,6 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "seed_water" )){
 		seed_water = analysis_db->getScalar<double>( "seed_water" );
 		if (rank == 0) printf("Seed water in oil %f (seed_water) \n",seed_water);
-		ASSERT(protocol == "seed water");
 	}
 	if (analysis_db->keyExists( "morph_delta" )){
 		morph_delta = analysis_db->getScalar<double>( "morph_delta" );
@@ -968,7 +972,54 @@ void ScaLBL_ColorModel::Run(){
 	if (analysis_db->keyExists( "max_morph_timesteps" )){
 		MAX_MORPH_TIMESTEPS = analysis_db->getScalar<int>( "max_morph_timesteps" );
 	}
-
+	
+	/* defaults for simulation protocols */
+	auto protocol = color_db->getWithDefault<std::string>( "protocol", "none" );
+	if (protocol == "image sequence"){
+		// Get the list of images
+		USE_DIRECT = true;
+		ImageList = color_db->getVector<std::string>( "image_sequence");
+		IMAGE_INDEX = color_db->getWithDefault<int>( "image_index", 0 );
+		IMAGE_COUNT = ImageList.size();
+		morph_interval = 10000;
+		USE_MORPH = true;
+		USE_SEED = false;
+	}
+	else if (protocol == "seed water"){
+		morph_delta = -0.05;
+		seed_water = 0.01;
+		USE_SEED = true;
+		USE_MORPH = true;
+	}
+	else if (protocol == "open connected oil"){
+		morph_delta = -0.05;
+		USE_SEED = false;
+		USE_MORPH = true;
+		USE_MORPHOPEN_OIL = true;
+	}
+	else if (protocol == "shell aggregation"){
+		morph_delta = -0.05;
+		USE_MORPH = true;
+		USE_SEED = false;
+	}  
+	else if (protocol == "fractional flow"){
+		USE_MORPH = false;
+		USE_SEED = false;
+	}
+	else if (protocol == "centrifuge"){
+		USE_MORPH = false;
+		USE_SEED = false;
+	} 
+	else if (protocol == "core flooding"){
+		USE_MORPH = false;
+		USE_SEED = false;
+		if (SET_CAPILLARY_NUMBER){
+			double MuB = rhoB*(tauB - 0.5)/3.0;
+			double IFT = 6.0*alpha;
+			double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
+			flux = Dm->Porosity()*CrossSectionalArea*IFT*capillary_number/MuB;
+		}
+	} 
 	if (rank==0){
 		printf("********************************************************\n");
 		if (protocol == "image sequence"){
@@ -1006,7 +1057,20 @@ void ScaLBL_ColorModel::Run(){
 			printf("     min_steady_timesteps = %i \n",MIN_STEADY_TIMESTEPS);
 			printf("     max_steady_timesteps = %i \n",MAX_STEADY_TIMESTEPS);
 			printf("     tolerance = %f \n",tolerance);
-			printf("     morph_delta = %f \n",morph_delta);
+		} 
+		else if (protocol == "centrifuge"){
+			printf("  using protocol =  centrifuge \n"); 
+			printf("     driving force = %f \n",Fz);
+			if (Fz < 0){
+				printf("      Component B displacing component A \n");				
+			}
+			else if (Fz > 0){
+				printf("      Component A displacing component B \n");				
+			}
+		} 
+		else if (protocol == "core flooding"){
+			printf("  using protocol = core flooding \n"); 
+			printf("     capillary number = %f \n", capillary_number);
 		} 
 		printf("No. of timesteps: %i \n", timestepMax);
 		fflush(stdout);
@@ -1120,7 +1184,7 @@ void ScaLBL_ColorModel::Run(){
 			double volB = Averages->gwb.V; 
 			double volA = Averages->gnb.V; 
 			volA /= Dm->Volume;
-			volB /= Dm->Volume;;
+			volB /= Dm->Volume;
 			//initial_volume = volA*Dm->Volume;
 			double vA_x = Averages->gnb.Px/Averages->gnb.M; 
 			double vA_y = Averages->gnb.Py/Averages->gnb.M; 
@@ -1944,12 +2008,11 @@ FlowAdaptor::~FlowAdaptor(){
 
 double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){	
 	
-  	  double MASS_FRACTION_CHANGE = 0.05;
-	  if (M.db->keyExists( "FlowAdaptor" )){
-		  auto flow_db = M.db->getDatabase( "FlowAdaptor" );
-		  MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
-	  }
-
+  	  double MASS_FRACTION_CHANGE = 0.0005;
+  	  if (M.db->keyExists( "FlowAdaptor" )){
+  		  auto flow_db = M.db->getDatabase( "FlowAdaptor" );
+  		  MASS_FRACTION_CHANGE = flow_db->getWithDefault<double>( "mass_fraction_factor", 0.0005);
+  	  }
 	  int Np = M.Np;
 	  double dA, dB, phi;
 	  double vx,vy,vz;
@@ -1975,12 +2038,53 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	  ScaLBL_CopyToHost(Vel_x, &M.Velocity[0], Np*sizeof(double));
 	  ScaLBL_CopyToHost(Vel_y, &M.Velocity[Np], Np*sizeof(double));
 	  ScaLBL_CopyToHost(Vel_z, &M.Velocity[2*Np], Np*sizeof(double));
-
+	  
+	  /* DEBUG STRUCTURES */
+	  int Nx = M.Nx;  int Ny = M.Ny;  int Nz = M.Nz;
+	  int N = Nx*Ny*Nz;
+	  double * DebugMassA, *DebugMassB;
+	  DebugMassA = new double[Np];
+	  DebugMassB = new double[Np];
+	  
 	  /* compute the total momentum */
 	  vax = vay = vaz = 0.0;
 	  vbx = vby = vbz = 0.0;
 	  mass_a = mass_b = 0.0;
-	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
+	  
+	  double maxSpeed = 0.0;
+	  double localMaxSpeed = 0.0;
+	  for (int k=1; k<Nz-1; k++){
+		  for (int j=1; j<Ny-1; j++){
+			  for (int i=1; i<Nx-1; i++){
+				  int n=M.Map(i,j,k);
+				  double distance = M.Averages->SDs(i,j,k);
+				  if (!(n<0) ){
+					  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+					  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+					  phi = (dA - dB) / (dA + dB);
+					  Phase[n] = phi;
+					  mass_a += dA;
+					  mass_b += dB;
+					  if (phi > 0.0){
+						  vax += Vel_x[n];
+						  vay += Vel_y[n];
+						  vaz += Vel_z[n];
+					  }
+					  else {
+						  vbx += Vel_x[n];
+						  vby += Vel_y[n];
+						  vbz += Vel_z[n];
+					  }
+					  double speed =  sqrt(vax*vax + vay*vay + vaz*vaz + vbx*vbx + vby*vby + vbz*vbz);
+					  if (distance > 3.0 && speed > localMaxSpeed){
+						  localMaxSpeed = speed;
+					  }
+				  }
+			  }
+		  }
+	  }
+	  maxSpeed = M.Dm->Comm.maxReduce(localMaxSpeed);
+	  /*	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
 		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
 		  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
 		  phi = (dA - dB) / (dA + dB);
@@ -2016,27 +2120,65 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 				  vbz += Vel_z[n];
 			  }
 	   }
-	   mass_a_global = M.Dm->Comm.sumReduce(mass_a);
-	   mass_b_global = M.Dm->Comm.sumReduce(mass_b);
-	   vax_global = M.Dm->Comm.sumReduce(vax);
-	   vay_global = M.Dm->Comm.sumReduce(vay);
-	   vaz_global = M.Dm->Comm.sumReduce(vaz);
-	   vbx_global = M.Dm->Comm.sumReduce(vbx);
-	   vby_global = M.Dm->Comm.sumReduce(vby);
-	   vbz_global = M.Dm->Comm.sumReduce(vbz);	 
-	   
-	   double  total_momentum_A = sqrt(vax_global*vax_global+vay_global*vay_global+vaz_global*vaz_global);
-	   double  total_momentum_B = sqrt(vbx_global*vbx_global+vby_global*vby_global+vbz_global*vbz_global);
-	   
-	   /* compute the total mass change */
-	   double TOTAL_MASS_CHANGE = MASS_FRACTION_CHANGE*(mass_a_global + mass_b_global);
-	   if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_a_global )
-		   TOTAL_MASS_CHANGE = 0.1*mass_a_global;
-	   if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_b_global )
-		   TOTAL_MASS_CHANGE = 0.1*mass_b_global;
-	   
-	   double LOCAL_MASS_CHANGE = 0.0;
-	   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){	    
+	   */
+	  mass_a_global = M.Dm->Comm.sumReduce(mass_a);
+	  mass_b_global = M.Dm->Comm.sumReduce(mass_b);
+	  vax_global = M.Dm->Comm.sumReduce(vax);
+	  vay_global = M.Dm->Comm.sumReduce(vay);
+	  vaz_global = M.Dm->Comm.sumReduce(vaz);
+	  vbx_global = M.Dm->Comm.sumReduce(vbx);
+	  vby_global = M.Dm->Comm.sumReduce(vby);
+	  vbz_global = M.Dm->Comm.sumReduce(vbz);	 
+
+	  double  total_momentum_A = sqrt(vax_global*vax_global+vay_global*vay_global+vaz_global*vaz_global);
+	  double  total_momentum_B = sqrt(vbx_global*vbx_global+vby_global*vby_global+vbz_global*vbz_global);
+	  /* compute the total mass change */
+	  double TOTAL_MASS_CHANGE = MASS_FRACTION_CHANGE*(mass_a_global + mass_b_global);
+	  if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_a_global )
+		  TOTAL_MASS_CHANGE = 0.1*mass_a_global;
+	  if (fabs(TOTAL_MASS_CHANGE) > 0.1*mass_b_global )
+		  TOTAL_MASS_CHANGE = 0.1*mass_b_global;
+
+	  double LOCAL_MASS_CHANGE = 0.0;
+	  for (int k=1; k<Nz-1; k++){
+		  for (int j=1; j<Ny-1; j++){
+			  for (int i=1; i<Nx-1; i++){
+				  int n=M.Map(i,j,k);
+				  if (!(n<0)){
+					  phi = Phase[n];
+					  vx = Vel_x[n];
+					  vy = Vel_y[n];
+					  vz = Vel_z[n];
+					  double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
+					  /* impose ceiling for spurious currents */
+					  if (local_momentum > maxSpeed) local_momentum =  maxSpeed;
+					  if (phi > 0.0){
+						  LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_A;
+						  Aq_tmp[n] -= 0.3333333333333333*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+2*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+3*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
+					  }
+					  else{
+						  LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
+						  Bq_tmp[n] += 0.3333333333333333*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+2*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+3*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+						  DebugMassB[n] = LOCAL_MASS_CHANGE;
+					  }
+				  }
+			  }
+		  }
+	  }
+/*	   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){	    
 		   phi = Phase[n];
 		   vx = Vel_x[n];
 		   vy = Vel_y[n];
@@ -2051,6 +2193,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			   Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+			   DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
 		   }
 		   else{
 			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
@@ -2061,6 +2204,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			   Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+			   DebugMassB[n] = LOCAL_MASS_CHANGE;
 		   }
 	   }
 
@@ -2079,6 +2223,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			   Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
+			   DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
 		   }
 		   else{
 			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
@@ -2089,10 +2234,53 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			   Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
 			   Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
+			   DebugMassB[n] = LOCAL_MASS_CHANGE;
 		   }
 	  }
-
+ 	 */
 	  if (M.rank == 0) printf("Update Fractional Flow: change mass of fluid B by %f \n",TOTAL_MASS_CHANGE/mass_b_global);
+
+	  /* Print out debugging info with mass update  */
+	  // initialize the array
+	  double value;
+	  char LocalRankFilename[40];
+	  DoubleArray regdata(Nx,Ny,Nz);
+	  regdata.fill(0.f);
+	  for (int k=0; k<Nz; k++){
+		  for (int j=0; j<Ny; j++){
+			  for (int i=0; i<Nx; i++){
+				  int idx=M.Map(i,j,k);
+				  if (!(idx<0)){
+					  value=DebugMassA[idx];
+					  regdata(i,j,k)=value;
+				  }
+			  }
+		  }
+	  }
+	  
+	  FILE *AFILE;
+	  sprintf(LocalRankFilename,"dA.%05i.raw",M.rank);
+	  AFILE = fopen(LocalRankFilename,"wb");
+	  fwrite(regdata.data(),8,N,AFILE);
+	  fclose(AFILE);
+
+	  regdata.fill(0.f);
+	  for (int k=0; k<Nz; k++){
+		  for (int j=0; j<Ny; j++){
+			  for (int i=0; i<Nx; i++){
+				  int idx=M.Map(i,j,k);
+				  if (!(idx<0)){
+					  value=DebugMassB[idx];
+					  regdata(i,j,k)=value;
+				  }
+			  }
+		  }
+	  }
+	  FILE *BFILE;
+	  sprintf(LocalRankFilename,"dB.%05i.raw",M.rank);
+	  BFILE = fopen(LocalRankFilename,"wb");
+	  fwrite(regdata.data(),8,N,BFILE);
+	  fclose(BFILE);
 
 	  // Need to initialize Aq, Bq, Den, Phi directly
 	  //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
@@ -2105,19 +2293,15 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){	
 	
 	  int Np = M.Np;
-	  double dA, dB, phi;
-
-	  double mass_a, mass_b, mass_a_global, mass_b_global;
+	  double dA, dB;
 	  
 	  double *Aq_tmp, *Bq_tmp;
-	  double *Vel_x, *Vel_y, *Vel_z, *Phase;
 	  
 	  Aq_tmp = new double [7*Np];
 	  Bq_tmp = new double [7*Np];
 
 	  ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
 	  ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
-
 
 	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
 		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
@@ -2202,22 +2386,6 @@ double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){
     	}
 	}
     ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
-    
-    
-/*	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, 0, ScaLBL_Comm->LastExterior(), Np);
-	ScaLBL_PhaseField_Init(dvcMap, Phi, Den, Aq, Bq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
-	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
-		if (Dm->kproc()==0){
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,0);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,1);
-			ScaLBL_SetSlice_z(Phi,1.0,Nx,Ny,Nz,2);
-		}
-		if (Dm->kproc() == nprocz-1){
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-1);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-2);
-			ScaLBL_SetSlice_z(Phi,-1.0,Nx,Ny,Nz,Nz-3);
-		}
-	}
-	*/
+    return total_interface_sites;
 }
 

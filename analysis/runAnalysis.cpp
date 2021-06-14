@@ -745,7 +745,6 @@ runAnalysis::runAnalysis(  ScaLBL_ColorModel &ColorModel)
 	
 	d_comm = ColorModel.Dm->Comm.dup();
 	d_Np = ColorModel.Np;
-	bool Regular = false;
 	
 	auto input_db = ColorModel.db;
     auto db     = input_db->getDatabase( "Analysis" );

@@ -120,6 +120,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	sendtag = recvtag = 7;
 
 	int ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
@@ -128,17 +129,13 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double void_fraction_new=1.0; 
 	double void_fraction_diff_old = 1.0;
 	double void_fraction_diff_new = 1.0;
-
-	// Increase the critical radius until the target saturation is met
-	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-
-	int imin,jmin,kmin,imax,jmax,kmax;
-
 	if (ErodeLabel == 1){
 		VoidFraction = 1.0 - VoidFraction;
 	}
 
+	// Increase the critical radius until the target saturation is met
+	double deltaR=0.05; // amount to change the radius in voxel units
+	double Rcrit_old = maxdistGlobal;
 	double Rcrit_new = maxdistGlobal;
 
 	while (void_fraction_new > VoidFraction)
@@ -406,6 +403,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	sendtag = recvtag = 7;
 */
 	int ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
@@ -417,10 +415,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-
-	int imin,jmin,kmin,imax,jmax,kmax;
-
+	double Rcrit_old = maxdistGlobal;
 	double Rcrit_new = maxdistGlobal;
 	//if (argc>2){
 	//	Rcrit_new = strtod(argv[2],NULL);
@@ -457,7 +452,6 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 						for (kk=kmin; kk<kmax; kk++){
 							for (jj=jmin; jj<jmax; jj++){
 								for (ii=imin; ii<imax; ii++){
-									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
 									if (ID(ii,jj,kk) == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
 										LocalNumber+=1.0;
@@ -578,7 +572,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 						// nwp
 						phase(i,j,k) = -1.0;
 					}
-					else{
+					else{i
 						// treat solid as WP since films can connect 
 						phase(i,j,k) = 1.0;
 					}

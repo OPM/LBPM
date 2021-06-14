@@ -63,7 +63,6 @@ void ScaLBL_FreeLeeModel::getData_RegularLayout(const double *data, DoubleArray 
 	// Gets data (in optimized layout) from the HOST and stores in regular layout
     // Primarly for debugging
 	int i,j,k,idx;
-    int n;
 
 	// initialize the array
 	regdata.fill(0.f);
@@ -72,7 +71,6 @@ void ScaLBL_FreeLeeModel::getData_RegularLayout(const double *data, DoubleArray 
 	for (k=0; k<Nz; k++){
 		for (j=0; j<Ny; j++){
 			for (i=0; i<Nx; i++){
-				n=k*Nx*Ny+j*Nx+i;
 				idx=Map(i,j,k);
 				if (!(idx<0)){
 					value=data[idx];
@@ -414,8 +412,10 @@ void ScaLBL_FreeLeeModel::AssignComponentLabels_ChemPotential_ColorGrad()
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double *label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 
 	// Assign the labels
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -738,75 +738,10 @@ void ScaLBL_FreeLeeModel::Initialize_SingleFluid(){
 	if (Restart == true){
         //TODO need to revise this function
         //remove the phase-related part
-
-
-
-//		if (rank==0){
-//			printf("Reading restart file! \n");
-//		}
-//
-//		// Read in the restart file to CPU buffers
-//		int *TmpMap;
-//		TmpMap = new int[Np];
-//		
-//		double *cPhi, *cDist, *cDen;
-//		cPhi = new double[N];
-//		cDen = new double[2*Np];
-//		cDist = new double[19*Np];
-//		ScaLBL_CopyToHost(TmpMap, dvcMap, Np*sizeof(int));
-//        //ScaLBL_CopyToHost(cPhi, Phi, N*sizeof(double));
-//    	
-//		ifstream File(LocalRestartFile,ios::binary);
-//		int idx;
-//		double value,va,vb;
-//		for (int n=0; n<Np; n++){
-//			File.read((char*) &va, sizeof(va));
-//			File.read((char*) &vb, sizeof(vb));
-//			cDen[n]    = va;
-//			cDen[Np+n] = vb;
-//		}
-//		for (int n=0; n<Np; n++){
-//			// Read the distributions
-//			for (int q=0; q<19; q++){
-//				File.read((char*) &value, sizeof(value));
-//				cDist[q*Np+n] = value;
-//			}
-//		}
-//		File.close();
-//		
-//		for (int n=0; n<ScaLBL_Comm->LastExterior(); n++){
-//			va = cDen[n];
-//			vb = cDen[Np + n];
-//			value = (va-vb)/(va+vb);
-//			idx = TmpMap[n];
-//			if (!(idx < 0) && idx<N)
-//				cPhi[idx] = value;
-//		}
-//		for (int n=ScaLBL_Comm->FirstInterior(); n<ScaLBL_Comm->LastInterior(); n++){
-//		  va = cDen[n];
-//		  vb = cDen[Np + n];
-//		  	value = (va-vb)/(va+vb);
-//		  	idx = TmpMap[n];
-//		  	if (!(idx < 0) && idx<N)
-//		  		cPhi[idx] = value;
-//		}
-//		
-//		// Copy the restart data to the GPU
-//		ScaLBL_CopyToDevice(Den,cDen,2*Np*sizeof(double));
-//		ScaLBL_CopyToDevice(gqbar,cDist,19*Np*sizeof(double));
-//		ScaLBL_CopyToDevice(Phi,cPhi,N*sizeof(double));
-//		ScaLBL_Comm->Barrier();
-//		comm.barrier();
-//
-//        if (rank==0)	printf ("Initializing phase and density fields on device from Restart\n");
-//        //TODO the following function is to be updated.
-//        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, 0, ScaLBL_Comm->LastExterior(), Np);
-//        //ScaLBL_FreeLeeModel_PhaseField_InitFromRestart(Den, hq, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
 	}
 }
 
 double ScaLBL_FreeLeeModel::Run_TwoFluid(int returntime){
-	int nprocs=nprocx*nprocy*nprocz;
 	
 	int START_TIME = timestep;
 	int EXIT_TIME = min(returntime, timestepMax);

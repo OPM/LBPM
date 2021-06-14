@@ -47,8 +47,6 @@ void FreeEnergyAnalyzer::SetParams(){
 
 void FreeEnergyAnalyzer::Basic(ScaLBL_FreeLeeModel &LeeModel, int timestep){
 
-	int i,j,k;
-
 	if (Dm->rank()==0){	
 		fprintf(TIMELOG,"%i ",timestep); 
 		/*for (int ion=0; ion<Ion.number_ion_species; ion++){
@@ -78,7 +76,6 @@ void FreeEnergyAnalyzer::Basic(ScaLBL_FreeLeeModel &LeeModel, int timestep){
 void FreeEnergyAnalyzer::WriteVis( ScaLBL_FreeLeeModel &LeeModel, std::shared_ptr<Database> input_db, int timestep){
 	
 	auto vis_db =  input_db->getDatabase( "Visualization" );
-    char VisName[40];	
     
     std::vector<IO::MeshDataStruct> visData;
 	fillHalo<double> fillData(Dm->Comm,Dm->rank_info,{Dm->Nx-2,Dm->Ny-2,Dm->Nz-2},{1,1,1},0,1);
