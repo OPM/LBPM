@@ -213,7 +213,6 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		}
 		color_db->putScalar<double>( "flux", flux );
 	} 
-	
 }
 
 void ScaLBL_ColorModel::SetDomain(){
@@ -2079,12 +2078,7 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 	ScaLBL_CopyToHost(Vel_y, &M.Velocity[Np], Np*sizeof(double));
 	ScaLBL_CopyToHost(Vel_z, &M.Velocity[2*Np], Np*sizeof(double));
 
-	/* DEBUG STRUCTURES */
 	int Nx = M.Nx;  int Ny = M.Ny;  int Nz = M.Nz;
-	//int N = Nx*Ny*Nz;
-	//double * DebugMassA, *DebugMassB;
-	//DebugMassA = new double[Np];
-	//DebugMassB = new double[Np];
 
 	/* compute the total momentum */
 	vax = vay = vaz = 0.0;
@@ -2180,110 +2174,8 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 			}
 		}
 	}
-	/*	   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){	    
-		   phi = Phase[n];
-		   vx = Vel_x[n];
-		   vy = Vel_y[n];
-		   vz = Vel_z[n];
-		   double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
-		   if (phi > 0.0){
-			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_A;
-			   Aq_tmp[n] -= 0.3333333333333333*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+2*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+3*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
-		   }
-		   else{
-			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
-			   Bq_tmp[n] += 0.3333333333333333*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+2*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+3*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   DebugMassB[n] = LOCAL_MASS_CHANGE;
-		   }
-	   }
 
-	  for (int n=M.ScaLBL_Comm->FirstInterior(); n < M.ScaLBL_Comm->LastInterior(); n++){
-		   phi = Phase[n];
-		   vx = Vel_x[n];
-		   vy = Vel_y[n];
-		   vz = Vel_z[n];
-		   double local_momentum = sqrt(vx*vx+vy*vy+vz*vz);
-		   if (phi > 0.0){
-			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_A;
-			   Aq_tmp[n] -= 0.3333333333333333*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+2*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+3*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+4*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+5*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Aq_tmp[n+6*Np] -= 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   DebugMassA[n] = (-1.0)*LOCAL_MASS_CHANGE;
-		   }
-		   else{
-			   LOCAL_MASS_CHANGE = TOTAL_MASS_CHANGE*local_momentum/total_momentum_B;
-			   Bq_tmp[n] += 0.3333333333333333*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+2*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+3*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+4*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+5*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   Bq_tmp[n+6*Np] += 0.1111111111111111*LOCAL_MASS_CHANGE;
-			   DebugMassB[n] = LOCAL_MASS_CHANGE;
-		   }
-	  }
-	 */
 	if (M.rank == 0) printf("Update Fractional Flow: change mass of fluid B by %f \n",TOTAL_MASS_CHANGE/mass_b_global);
-
-	/* Print out debugging info with mass update  
-	  // initialize the array
-	  double value;
-	  char LocalRankFilename[40];
-	  DoubleArray regdata(Nx,Ny,Nz);
-	  regdata.fill(0.f);
-	  for (int k=0; k<Nz; k++){
-		  for (int j=0; j<Ny; j++){
-			  for (int i=0; i<Nx; i++){
-				  int idx=M.Map(i,j,k);
-				  if (!(idx<0)){
-					  value=DebugMassA[idx];
-					  regdata(i,j,k)=value;
-				  }
-			  }
-		  }
-	  }
-
-	  FILE *AFILE;
-	  sprintf(LocalRankFilename,"dA.%05i.raw",M.rank);
-	  AFILE = fopen(LocalRankFilename,"wb");
-	  fwrite(regdata.data(),8,N,AFILE);
-	  fclose(AFILE);
-
-	  regdata.fill(0.f);
-	  for (int k=0; k<Nz; k++){
-		  for (int j=0; j<Ny; j++){
-			  for (int i=0; i<Nx; i++){
-				  int idx=M.Map(i,j,k);
-				  if (!(idx<0)){
-					  value=DebugMassB[idx];
-					  regdata(i,j,k)=value;
-				  }
-			  }
-		  }
-	  }
-	  FILE *BFILE;
-	  sprintf(LocalRankFilename,"dB.%05i.raw",M.rank);
-	  BFILE = fopen(LocalRankFilename,"wb");
-	  fwrite(regdata.data(),8,N,BFILE);
-	  fclose(BFILE);
-	 */
 
 	// Need to initialize Aq, Bq, Den, Phi directly
 	//ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
