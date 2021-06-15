@@ -2186,101 +2186,291 @@ double FlowAdaptor::UpdateFractionalFlow(ScaLBL_ColorModel &M){
 }
 
 void FlowAdaptor::Flatten(ScaLBL_ColorModel &M){	
-	
-	  int Np = M.Np;
-	  double dA, dB;
-	  
-	  double *Aq_tmp, *Bq_tmp;
-	  
-	  Aq_tmp = new double [7*Np];
-	  Bq_tmp = new double [7*Np];
 
-	  ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
-	  ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
+	int Np = M.Np;
+	double dA, dB;
 
-	  for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
-		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
-		  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
-		  if (dA > 1.0){
-			  double mass_change = dA - 1.0;
-			  Aq_tmp[n] -= 0.333333333333333*mass_change;
-			  Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		  }
-		  if (dB > 1.0){
-			  double mass_change = dB - 1.0;
-			  Bq_tmp[n] -= 0.333333333333333*mass_change;
-			  Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		  }
-	  }
-	  for (int n=M.ScaLBL_Comm->FirstInterior(); n < M.ScaLBL_Comm->LastInterior(); n++){
-		  dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
-		  dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
-		  if (dA > 1.0){
-			  double mass_change = dA - 1.0;
-			  Aq_tmp[n] -= 0.333333333333333*mass_change;
-			  Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			  Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		  }
-		  if (dB > 1.0){
-			  double mass_change = dB - 1.0;
-			  Bq_tmp[n] -= 0.333333333333333*mass_change;
-			  Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
-			  Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
-		  }
-	   }
+	double *Aq_tmp, *Bq_tmp;
 
-	  ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7*Np*sizeof(double));
-	  ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7*Np*sizeof(double));
+	Aq_tmp = new double [7*Np];
+	Bq_tmp = new double [7*Np];
+
+	ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
+	ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
+
+	for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
+		dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		if (dA > 1.0){
+			double mass_change = dA - 1.0;
+			Aq_tmp[n] -= 0.333333333333333*mass_change;
+			Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
+		}
+		if (dB > 1.0){
+			double mass_change = dB - 1.0;
+			Bq_tmp[n] -= 0.333333333333333*mass_change;
+			Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
+		}
+	}
+	for (int n=M.ScaLBL_Comm->FirstInterior(); n < M.ScaLBL_Comm->LastInterior(); n++){
+		dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+		dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+		if (dA > 1.0){
+			double mass_change = dA - 1.0;
+			Aq_tmp[n] -= 0.333333333333333*mass_change;
+			Aq_tmp[n+Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
+			Aq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
+		}
+		if (dB > 1.0){
+			double mass_change = dB - 1.0;
+			Bq_tmp[n] -= 0.333333333333333*mass_change;
+			Bq_tmp[n+Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+2*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+3*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+4*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+5*Np] -= 0.111111111111111*mass_change;
+			Bq_tmp[n+6*Np] -= 0.111111111111111*mass_change;
+		}
+	}
+
+	ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7*Np*sizeof(double));
+	ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7*Np*sizeof(double));
 }
 
 double FlowAdaptor::MoveInterface(ScaLBL_ColorModel &M){	
-	
-    double INTERFACE_CUTOFF = M.color_db->getWithDefault<double>( "move_interface_cutoff", 0.1 );
-    double MOVE_INTERFACE_FACTOR = M.color_db->getWithDefault<double>( "move_interface_factor", 10.0 );
 
-    ScaLBL_CopyToHost( phi.data(), M.Phi, Nx*Ny*Nz* sizeof( double ) );
-    /* compute the local derivative of phase indicator field */
-    double beta = M.beta;
-    double factor = 0.5/beta;
-    double total_interface_displacement = 0.0;
-    double total_interface_sites = 0.0;
-    for (int n=0; n<Nx*Ny*Nz; n++){
-    	/* compute the distance to the interface */
-    	double value1 = M.Averages->Phi(n);
-    	double dist1 = factor*log((1.0+value1)/(1.0-value1));
-    	double value2 = phi(n);
-    	double dist2 = factor*log((1.0+value2)/(1.0-value2));
-    	phi_t(n) = value2;
-    	if (value1 < INTERFACE_CUTOFF && value1 > -1*INTERFACE_CUTOFF && value2 < INTERFACE_CUTOFF && value2 > -1*INTERFACE_CUTOFF ){
-    		/* time derivative of distance */
-    		double dxdt = 0.125*(dist2-dist1);
-    		/* extrapolate to move the distance further */
-    		double dist3 = dist2 + MOVE_INTERFACE_FACTOR*dxdt;
-    		/* compute the new phase interface */
-    		phi_t(n) = (2.f*(exp(-2.f*beta*(dist3)))/(1.f+exp(-2.f*beta*(dist3))) - 1.f);
-    		total_interface_displacement += fabs(MOVE_INTERFACE_FACTOR*dxdt);
-    		total_interface_sites += 1.0;
-    	}
+	double INTERFACE_CUTOFF = M.color_db->getWithDefault<double>( "move_interface_cutoff", 0.1 );
+	double MOVE_INTERFACE_FACTOR = M.color_db->getWithDefault<double>( "move_interface_factor", 10.0 );
+
+	ScaLBL_CopyToHost( phi.data(), M.Phi, Nx*Ny*Nz* sizeof( double ) );
+	/* compute the local derivative of phase indicator field */
+	double beta = M.beta;
+	double factor = 0.5/beta;
+	double total_interface_displacement = 0.0;
+	double total_interface_sites = 0.0;
+	for (int n=0; n<Nx*Ny*Nz; n++){
+		/* compute the distance to the interface */
+		double value1 = M.Averages->Phi(n);
+		double dist1 = factor*log((1.0+value1)/(1.0-value1));
+		double value2 = phi(n);
+		double dist2 = factor*log((1.0+value2)/(1.0-value2));
+		phi_t(n) = value2;
+		if (value1 < INTERFACE_CUTOFF && value1 > -1*INTERFACE_CUTOFF && value2 < INTERFACE_CUTOFF && value2 > -1*INTERFACE_CUTOFF ){
+			/* time derivative of distance */
+			double dxdt = 0.125*(dist2-dist1);
+			/* extrapolate to move the distance further */
+			double dist3 = dist2 + MOVE_INTERFACE_FACTOR*dxdt;
+			/* compute the new phase interface */
+			phi_t(n) = (2.f*(exp(-2.f*beta*(dist3)))/(1.f+exp(-2.f*beta*(dist3))) - 1.f);
+			total_interface_displacement += fabs(MOVE_INTERFACE_FACTOR*dxdt);
+			total_interface_sites += 1.0;
+		}
 	}
-    ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
-    return total_interface_sites;
+	ScaLBL_CopyToDevice( M.Phi, phi_t.data(), Nx*Ny*Nz* sizeof( double ) );	
+	return total_interface_sites;
+}
+
+double FlowAdaptor::ShellAggregation(ScaLBL_ColorModel &M, const double target_delta_volume){
+
+	const RankInfoStruct rank_info(M.rank,M.nprocx,M.nprocy,M.nprocz);
+	auto rank = M.rank;
+	auto Nx = M.Nx;  auto Ny = M.Ny; auto Nz = M.Nz;
+	auto N = Nx*Ny*Nz;
+	double vF = 0.f;
+	double vS = 0.f;
+	double delta_volume;
+	double WallFactor = 1.0;
+	bool USE_CONNECTED_NWP = false;
+
+	DoubleArray phase(Nx,Ny,Nz);
+	IntArray phase_label(Nx,Ny,Nz);;
+	DoubleArray phase_distance(Nx,Ny,Nz);
+	Array<char> phase_id(Nx,Ny,Nz);
+	fillHalo<double> fillDouble(M.Dm->Comm,M.Dm->rank_info,{Nx-2,Ny-2,Nz-2},{1,1,1},0,1);
+
+	// Basic algorithm to 
+	// 1. Copy phase field to CPU
+	ScaLBL_CopyToHost(phase.data(), M.Phi, N*sizeof(double));
+
+	double count = 0.f;
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				if (phase(i,j,k) > 0.f && M.Averages->SDs(i,j,k) > 0.f) count+=1.f;
+			}
+		}
+	}
+	double volume_initial = M.Dm->Comm.sumReduce(  count);
+	double PoreVolume = M.Dm->Volume*M.Dm->Porosity();
+	/*ensure target isn't an absurdly small fraction of pore volume */
+	if (volume_initial < target_delta_volume*PoreVolume){
+		volume_initial = target_delta_volume*PoreVolume;
+	}
+
+	// 2. Identify connected components of phase field -> phase_label
+
+	double volume_connected = 0.0;
+	double second_biggest = 0.0;
+	if (USE_CONNECTED_NWP){
+		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,M.Averages->SDs,vF,vS,phase_label,M.Dm->Comm);
+		M.Dm->Comm.barrier();
+
+		// only operate on component "0"
+		count = 0.0;
+
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					int label = phase_label(i,j,k);
+					if (label == 0 ){
+						phase_id(i,j,k) = 0;
+						count += 1.0;
+					}
+					else 		
+						phase_id(i,j,k) = 1;
+					if (label == 1 ){
+						second_biggest += 1.0;
+					}
+				}
+			}
+		}	
+		volume_connected = M.Dm->Comm.sumReduce(  count);
+		second_biggest = M.Dm->Comm.sumReduce(  second_biggest);
+	}
+	else {
+		// use the whole NWP 
+		for (int k=0; k<Nz; k++){
+			for (int j=0; j<Ny; j++){
+				for (int i=0; i<Nx; i++){
+					if (M.Averages->SDs(i,j,k) > 0.f){
+						if (phase(i,j,k) > 0.f ){
+							phase_id(i,j,k) = 0;
+						}
+						else {
+							phase_id(i,j,k) = 1;
+						}
+					}
+					else {
+						phase_id(i,j,k) = 1;
+					}
+				}
+			}
+		}
+	}
+
+	// 3. Generate a distance map to the largest object -> phase_distance
+	CalcDist(phase_distance,phase_id,*M.Dm);
+
+	double temp,value;
+	double factor=0.5/M.beta;
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase_distance(i,j,k) < 3.f ){
+					value = phase(i,j,k);
+					if (value > 1.f)   value=1.f;
+					if (value < -1.f)  value=-1.f;
+					// temp -- distance based on analytical form McClure, Prins et al, Comp. Phys. Comm.
+					temp = -factor*log((1.0+value)/(1.0-value));
+					/// use this approximation close to the object
+					if (fabs(value) < 0.8 && M.Averages->SDs(i,j,k) > 1.f ){
+						phase_distance(i,j,k) = temp;
+					}
+					// erase the original object
+					phase(i,j,k) = -1.0;
+				}
+			}
+		}
+	}
+
+
+	if (rank==0) printf("Pathway volume / next largest ganglion %f \n",volume_connected/second_biggest );
+
+	if (rank==0) printf("MorphGrow with target volume fraction change %f \n", target_delta_volume/volume_initial);
+	double target_delta_volume_incremental = target_delta_volume;
+	if (fabs(target_delta_volume) > 0.01*volume_initial)  
+		target_delta_volume_incremental = 0.01*volume_initial*target_delta_volume/fabs(target_delta_volume);
+	
+	delta_volume = MorphGrow(M.Averages->SDs,phase_distance,phase_id,M.Averages->Dm, target_delta_volume_incremental, WallFactor);
+
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				if (phase_distance(i,j,k) < 0.0 ) phase_id(i,j,k) = 0;
+				else 		     				  phase_id(i,j,k) = 1;
+				//if (phase_distance(i,j,k) < 0.0 ) phase(i,j,k) = 1.0;
+			}
+		}
+	}	
+
+	CalcDist(phase_distance,phase_id,*M.Dm); // re-calculate distance
+
+	// 5. Update phase indicator field based on new distnace
+	for (int k=0; k<Nz; k++){
+		for (int j=0; j<Ny; j++){
+			for (int i=0; i<Nx; i++){
+				double d = phase_distance(i,j,k);
+				if (M.Averages->SDs(i,j,k) > 0.f){
+					if (d < 3.f){
+						//phase(i,j,k) = -1.0;
+						phase(i,j,k) = (2.f*(exp(-2.f*M.beta*d))/(1.f+exp(-2.f*M.beta*d))-1.f);	
+					}
+				}
+			} 
+		}
+	}
+	fillDouble.fill(phase);
+
+	count = 0.f;
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				if (phase(i,j,k) > 0.f && M.Averages->SDs(i,j,k) > 0.f){
+					count+=1.f;
+				}
+			}
+		}
+	}
+	double volume_final= M.Dm->Comm.sumReduce(  count);
+
+	delta_volume = (volume_final-volume_initial);
+	if (rank == 0)  printf("Shell Aggregation: change fluid volume fraction by %f \n", delta_volume/volume_initial);
+	if (rank == 0)  printf("   new saturation =  %f \n", volume_final/(M.Mask->Porosity()*double((Nx-2)*(Ny-2)*(Nz-2)*M.nprocs)));
+
+	// 6. copy back to the device
+	//if (rank==0)  printf("MorphInit: copy data  back to device\n");
+	ScaLBL_CopyToDevice(M.Phi,phase.data(),N*sizeof(double));
+
+	// 7. Re-initialize phase field and density
+	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, 0, M.ScaLBL_Comm->LastExterior(), M.Np);
+	ScaLBL_PhaseField_Init(M.dvcMap, M.Phi, M.Den, M.Aq, M.Bq, M.ScaLBL_Comm->FirstInterior(), M.ScaLBL_Comm->LastInterior(), M.Np);
+	auto BoundaryCondition = M.BoundaryCondition;
+	if (BoundaryCondition == 1 || BoundaryCondition == 2 || BoundaryCondition == 3 || BoundaryCondition == 4){
+		if (M.Dm->kproc()==0){
+			ScaLBL_SetSlice_z(M.Phi,1.0,Nx,Ny,Nz,0);
+			ScaLBL_SetSlice_z(M.Phi,1.0,Nx,Ny,Nz,1);
+			ScaLBL_SetSlice_z(M.Phi,1.0,Nx,Ny,Nz,2);
+		}
+		if (M.Dm->kproc() == M.nprocz-1){
+			ScaLBL_SetSlice_z(M.Phi,-1.0,Nx,Ny,Nz,Nz-1);
+			ScaLBL_SetSlice_z(M.Phi,-1.0,Nx,Ny,Nz,Nz-2);
+			ScaLBL_SetSlice_z(M.Phi,-1.0,Nx,Ny,Nz,Nz-3);
+		}
+	}
+	return delta_volume;
 }
 

@@ -86,7 +86,7 @@ int main( int argc, char **argv )
 			if (ColorModel.db->keyExists( "FlowAdaptor" )){
 				auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
 				MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
-				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 100000 );
+				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
 				FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
 				ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
 			}
@@ -109,6 +109,7 @@ int main( int argc, char **argv )
 				/* update the fluid configuration with the flow adapter */
 				int skip_time = 0;
 				timestep = ColorModel.timestep;
+				/* get the averaged flow measures computed internally for the last simulation point*/
 				double SaturationChange = 0.0;
 				double volB = ColorModel.Averages->gwb.V; 
 				double volA = ColorModel.Averages->gnb.V; 
@@ -121,6 +122,7 @@ int main( int argc, char **argv )
 				double vB_z = ColorModel.Averages->gwb.Pz/ColorModel.Averages->gwb.M; 			
 				double speedA = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
 				double speedB = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				/* stop simulation if previous point was sufficiently close to the endpoint*/
 				if (volA*speedA < ENDPOINT_THRESHOLD*volB*speedB) ContinueSimulation = false;
 				if (ContinueSimulation){
 					while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
@@ -128,8 +130,11 @@ int main( int argc, char **argv )
 						if (PROTOCOL == "fractional flow")	{							
 							Adapt.UpdateFractionalFlow(ColorModel);
 						}
+						else if (PROTOCOL == "shell aggregation"){
+							double target_volume_change = FRACTIONAL_FLOW_INCREMENT*initialSaturation - SaturationChange;
+							Adapt.ShellAggregation(ColorModel,target_volume_change);
+						}
 						else if (PROTOCOL == "image sequence"){
-							// Use image sequence
 							IMAGE_INDEX++;
 							if (IMAGE_INDEX < IMAGE_COUNT){
 								std::string next_image = ImageList[IMAGE_INDEX];

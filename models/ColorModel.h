@@ -99,6 +99,7 @@ public:
 	~FlowAdaptor();
 	double MoveInterface(ScaLBL_ColorModel &M);
 	double ImageInit(ScaLBL_ColorModel &M, std::string Filename);
+	double ShellAggregation(ScaLBL_ColorModel &M, const double delta_volume);
 	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
 	void Flatten(ScaLBL_ColorModel &M);
 	DoubleArray phi;
