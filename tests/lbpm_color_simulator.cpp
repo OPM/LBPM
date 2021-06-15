@@ -141,6 +141,7 @@ int main( int argc, char **argv )
 								if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
 								ColorModel.color_db->putScalar<int>("image_index",IMAGE_INDEX);
 								Adapt.ImageInit(ColorModel, next_image);
+								skip_time = SKIP_TIMESTEPS;
 							}
 							else{
 								if (rank==0) printf("Finished simulating image sequence \n");
@@ -153,9 +154,11 @@ int main( int argc, char **argv )
 						SaturationChange = volB/(volA + volB) - initialSaturation;
 						skip_time += ANALYSIS_INTERVAL;
 					}
-					if (rank==0) printf("  *********************************************************************  \n");
-					if (rank==0) printf("   Updated fractional flow with saturation change = %f  \n", SaturationChange);
-					if (rank==0) printf("  *********************************************************************  \n");
+					if (PROTOCOL == "fractional flow")	{							
+						if (rank==0) printf("  *********************************************************************  \n");
+						if (rank==0) printf("   Updated fractional flow with saturation change = %f  \n", SaturationChange);
+						if (rank==0) printf("  *********************************************************************  \n");
+					}
 				}
 				/* apply timestep skipping algorithm to accelerate steady-state */
 				/* skip_time = 0;
