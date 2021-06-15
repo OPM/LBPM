@@ -106,6 +106,21 @@ int main( int argc, char **argv )
 				if (ColorModel.timestep > ColorModel.timestepMax){
 					ContinueSimulation = false;
 				}
+				
+				/* Load a new image if image sequence is specified */
+				if (PROTOCOL == "image sequence"){
+					IMAGE_INDEX++;
+					if (IMAGE_INDEX < IMAGE_COUNT){
+						std::string next_image = ImageList[IMAGE_INDEX];
+						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						ColorModel.color_db->putScalar<int>("image_index",IMAGE_INDEX);
+						Adapt.ImageInit(ColorModel, next_image);
+					}
+					else{
+						if (rank==0) printf("Finished simulating image sequence \n");
+						ColorModel.timestep =  ColorModel.timestepMax;
+					}
+				}
 				/* update the fluid configuration with the flow adapter */
 				int skip_time = 0;
 				timestep = ColorModel.timestep;
@@ -134,21 +149,9 @@ int main( int argc, char **argv )
 							double target_volume_change = FRACTIONAL_FLOW_INCREMENT*initialSaturation - SaturationChange;
 							Adapt.ShellAggregation(ColorModel,target_volume_change);
 						}
-						else if (PROTOCOL == "image sequence"){
-							IMAGE_INDEX++;
-							if (IMAGE_INDEX < IMAGE_COUNT){
-								std::string next_image = ImageList[IMAGE_INDEX];
-								if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
-								ColorModel.color_db->putScalar<int>("image_index",IMAGE_INDEX);
-								Adapt.ImageInit(ColorModel, next_image);
-								skip_time = SKIP_TIMESTEPS;
-							}
-							else{
-								if (rank==0) printf("Finished simulating image sequence \n");
-								ColorModel.timestep =  ColorModel.timestepMax;
-							}
-						}
+						/* Run some LBM timesteps to let the system relax a bit */
 						MLUPS = ColorModel.Run(timestep);
+						/* Recompute the volume fraction now that the system has adjusted */
 						double volB = ColorModel.Averages->gwb.V; 
 						double volA = ColorModel.Averages->gnb.V;
 						SaturationChange = volB/(volA + volB) - initialSaturation;
