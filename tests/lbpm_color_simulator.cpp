@@ -82,7 +82,7 @@ int main( int argc, char **argv )
 			int SKIP_TIMESTEPS = 0;
 			int MAX_STEADY_TIME = 1000000;
 			double ENDPOINT_THRESHOLD = 0.1;
-			double FRACTIONAL_FLOW_INCREMENT = 0.05;
+			double FRACTIONAL_FLOW_INCREMENT = 0.0; // this will skip the flow adaptor if not enabled
 			if (ColorModel.db->keyExists( "FlowAdaptor" )){
 				auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
 				MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
