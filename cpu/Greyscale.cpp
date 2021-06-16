@@ -2,7 +2,6 @@
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Gx, double Gy, double Gz,
                                               double *Poros,double *Perm, double *Velocity, double *Pressure){
-	int n;
 	// conserved momemnts
 	double rho,vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
@@ -247,7 +246,6 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale(double *dist, int start, int finis
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz, 
                                              double *Poros,double *Perm, double *Velocity,double *Pressure){
-	int n;
 	// conserved momemnts
 	double rho,vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
@@ -263,7 +261,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
     double mu_eff = (1.0/rlx_eff-0.5)/3.0;//kinematic viscosity
     double Fx, Fy, Fz;//The total body force including Brinkman force and user-specified (Gx,Gy,Gz)
 
-	int nread;
 	for (int n=start; n<finish; n++){
 		
 		// q=0
@@ -553,7 +550,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale(int *neighborList, double *dist, in
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz,
                                               double *Poros,double *Perm, double *Velocity, double Den,double *Pressure){
-	int n;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
     double pressure;//defined for this incompressible model
@@ -1042,7 +1038,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_IMRT(double *dist, int start, int 
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx,  double rlx_eff, double Gx, double Gy, double Gz, 
                                              double *Poros,double *Perm, double *Velocity, double Den,double *Pressure){
-	int n, nread;
+	int nread;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
     double pressure;//defined for this incompressible model
@@ -1197,6 +1193,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 
 		// q=9
 		nread = neighborList[n+8*Np];
+		
 		fq = dist[nread];
 		pressure += fq;
 		m1 += 8.0*fq;
@@ -1568,7 +1565,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_IMRT(int *neighborList, double *dis
 
 extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Gx, double Gy, double Gz,double *Poros,double *Perm, double *Velocity,double rho0,double *Pressure){
 
-	int n, nread;
+	int nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 	int nr7,nr8,nr9,nr10;
 	int nr11,nr12,nr13,nr14;
@@ -1705,6 +1702,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist
 		//nread = neighborList[n+6*Np];
 		//fq = dist[nread];
 		nr7 = neighborList[n+6*Np];
+		
 		fq = dist[nr7];
 		rho += fq;
 		m1 += 8.0*fq;
@@ -1954,6 +1952,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist
         Fz = rho0*(-porosity*mu_eff/perm*uz - porosity*GeoFun/sqrt(perm)*u_mag*uz + porosity*Gz);
         if (porosity==1.0){
             Fx=rho0*Gx;
+            
             Fy=rho0*Gy;
             Fz=rho0*Gz;
         }
@@ -2120,7 +2119,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_Greyscale_MRT(int *neighborList, double *dist
 
 extern "C" void ScaLBL_D3Q19_AAeven_Greyscale_MRT(double *dist, int start, int finish, int Np, double rlx, double rlx_eff, double Gx, double Gy, double Gz,double *Poros,double *Perm, double *Velocity,double rho0,double *Pressure){
 
-	int n;
 	double vx,vy,vz,v_mag;
     double ux,uy,uz,u_mag;
     double pressure;//defined for this incompressible model

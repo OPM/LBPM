@@ -2597,7 +2597,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_Color(int *Map, double *Aq, double *Bq, doubl
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
-	double phi;
 	// Instantiate mass transport distributions
 	// Stationary value - distribution 0
 	for (int n=start; n<finish; n++){
@@ -2764,7 +2763,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double
 
 extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
 			int start, int finish, int Np){
-	int idx,nread;
+	int idx;
 	double fq,nA,nB;
 	for (int n=start; n<finish; n++){
 		
