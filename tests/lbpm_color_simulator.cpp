@@ -83,12 +83,17 @@ int main( int argc, char **argv )
 			int MAX_STEADY_TIME = 1000000;
 			double ENDPOINT_THRESHOLD = 0.1;
 			double FRACTIONAL_FLOW_INCREMENT = 0.0; // this will skip the flow adaptor if not enabled
+			double SEED_WATER = 0.0;
 			if (ColorModel.db->keyExists( "FlowAdaptor" )){
 				auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
 				MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
 				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
-				FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
 				ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
+				/* protocol specific key values */
+				if (PROTOCOL == "fractional flow")
+					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
+				if (PROTOCOL == "seed water")
+					SEED_WATER = flow_db->getWithDefault<double>( "seed_water", 0.01);
 			}
 			/* analysis keys*/
 			int ANALYSIS_INTERVAL = ColorModel.timestepMax;
@@ -121,6 +126,7 @@ int main( int argc, char **argv )
 						ColorModel.timestep =  ColorModel.timestepMax;
 					}
 				}
+				/*********************************************************/
 				/* update the fluid configuration with the flow adapter */
 				int skip_time = 0;
 				timestep = ColorModel.timestep;
@@ -149,6 +155,9 @@ int main( int argc, char **argv )
 							double target_volume_change = FRACTIONAL_FLOW_INCREMENT*initialSaturation - SaturationChange;
 							Adapt.ShellAggregation(ColorModel,target_volume_change);
 						}
+						else if (PROTOCOL == "seed water"){
+							Adapt.SeedPhaseField(ColorModel,SEED_WATER);
+						}
 						/* Run some LBM timesteps to let the system relax a bit */
 						MLUPS = ColorModel.Run(timestep);
 						/* Recompute the volume fraction now that the system has adjusted */
@@ -157,24 +166,13 @@ int main( int argc, char **argv )
 						SaturationChange = volB/(volA + volB) - initialSaturation;
 						skip_time += ANALYSIS_INTERVAL;
 					}
-					if (PROTOCOL == "fractional flow")	{							
-						if (rank==0) printf("  *********************************************************************  \n");
-						if (rank==0) printf("   Updated fractional flow with saturation change = %f  \n", SaturationChange);
-						if (rank==0) printf("  *********************************************************************  \n");
-					}
+					if (rank==0) printf("  *********************************************************************  \n");
+					if (rank==0) printf("   Updated fractional flow with saturation change = %f  \n", SaturationChange);
+					if (rank==0) printf("   Used protocol = %s  \n", PROTOCOL.c_str());
+					if (rank==0) printf("  *********************************************************************  \n");
 				}
-				/* apply timestep skipping algorithm to accelerate steady-state */
-				/* skip_time = 0;
-            	timestep = ColorModel.timestep;
-            	while (skip_time < SKIP_TIMESTEPS){
-            		timestep += ANALYSIS_INTERVAL;
-                	MLUPS = ColorModel.Run(timestep);
-            		Adapt.MoveInterface(ColorModel);
-            		skip_time += ANALYSIS_INTERVAL;
-            	}
-				 */
+				/*********************************************************/
 			}
-			//ColorModel.WriteDebug();
 		}
 
 		else

@@ -2329,7 +2329,7 @@ double FlowAdaptor::ShellAggregation(ScaLBL_ColorModel &M, const double target_d
 		ComputeGlobalBlobIDs(Nx-2,Ny-2,Nz-2,rank_info,phase,M.Averages->SDs,vF,vS,phase_label,M.Dm->Comm);
 		M.Dm->Comm.barrier();
 
-		// only operate on component "0"
+		// only operate on component "0"ScaLBL_ColorModel &M, 
 		count = 0.0;
 
 		for (int k=0; k<Nz; k++){
@@ -2474,3 +2474,80 @@ double FlowAdaptor::ShellAggregation(ScaLBL_ColorModel &M, const double target_d
 	return delta_volume;
 }
 
+
+double FlowAdaptor::SeedPhaseField(ScaLBL_ColorModel &M, const double seed_water_in_oil){
+  srand(time(NULL));
+  auto rank = M.rank;
+  auto Np = M.Np; 
+  double mass_loss =0.f;
+  double count =0.f;
+  double *Aq_tmp, *Bq_tmp;
+  
+  Aq_tmp = new double [7*Np];
+  Bq_tmp = new double [7*Np];
+
+  ScaLBL_CopyToHost(Aq_tmp, M.Aq, 7*Np*sizeof(double));
+  ScaLBL_CopyToHost(Bq_tmp, M.Bq, 7*Np*sizeof(double));
+  
+ 
+   for (int n=0; n < M.ScaLBL_Comm->LastExterior(); n++){
+    double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+    double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+    double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+    double phase_id = (dA - dB) / (dA + dB);
+    if (phase_id > 0.0){
+      Aq_tmp[n] -= 0.3333333333333333*random_value;
+      Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+      
+      Bq_tmp[n] += 0.3333333333333333*random_value;
+      Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+    }
+    mass_loss += random_value*seed_water_in_oil;
+  }
+
+  for (int n=M.ScaLBL_Comm->FirstInterior(); n < M.ScaLBL_Comm->LastInterior(); n++){
+    double random_value = seed_water_in_oil*double(rand())/ RAND_MAX;
+    double dA = Aq_tmp[n] + Aq_tmp[n+Np]  + Aq_tmp[n+2*Np] + Aq_tmp[n+3*Np] + Aq_tmp[n+4*Np] + Aq_tmp[n+5*Np] + Aq_tmp[n+6*Np];
+    double dB = Bq_tmp[n] + Bq_tmp[n+Np]  + Bq_tmp[n+2*Np] + Bq_tmp[n+3*Np] + Bq_tmp[n+4*Np] + Bq_tmp[n+5*Np] + Bq_tmp[n+6*Np];
+    double phase_id = (dA - dB) / (dA + dB);
+    if (phase_id > 0.0){
+      Aq_tmp[n] -= 0.3333333333333333*random_value;
+      Aq_tmp[n+Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+2*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+3*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+4*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+5*Np] -= 0.1111111111111111*random_value;
+      Aq_tmp[n+6*Np] -= 0.1111111111111111*random_value;
+      
+      Bq_tmp[n] += 0.3333333333333333*random_value;
+      Bq_tmp[n+Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+2*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+3*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+4*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+5*Np] += 0.1111111111111111*random_value;
+      Bq_tmp[n+6*Np] += 0.1111111111111111*random_value;
+    }
+    mass_loss += random_value*seed_water_in_oil;
+  }
+
+  count= M.Dm->Comm.sumReduce(  count);
+  mass_loss= M.Dm->Comm.sumReduce(  mass_loss);
+  if (rank == 0) printf("Remove mass %f from %f voxels \n",mass_loss,count);
+
+  // Need to initialize Aq, Bq, Den, Phi directly
+  //ScaLBL_CopyToDevice(Phi,phase.data(),7*Np*sizeof(double));
+  ScaLBL_CopyToDevice(M.Aq, Aq_tmp, 7*Np*sizeof(double));
+  ScaLBL_CopyToDevice(M.Bq, Bq_tmp, 7*Np*sizeof(double));
+
+  return(mass_loss);
+}
