@@ -72,7 +72,7 @@ int main( int argc, char **argv )
         	Analysis.WriteVis(LeeModel,LeeModel.db, timestep);
         	timestep += visualization_time;
         }
-        //LeeModel.WriteDebug_TwoFluid();
+        LeeModel.WriteDebug_TwoFluid();
     	if (rank==0) printf("********************************************************\n");
     	if (rank==0) printf("Lattice update rate (per core)= %f MLUPS \n", MLUPS);
     	MLUPS *= nprocs;
@@ -83,6 +83,7 @@ int main( int argc, char **argv )
         PROFILE_STOP("Main");
         auto file = db->getWithDefault<std::string>( "TimerFile", "lbpm_freelee_simulator" );
         auto level = db->getWithDefault<int>( "TimerLevel", 1 );
+	NULL_USE(level);
         PROFILE_SAVE( file,level );
         // ****************************************************
 

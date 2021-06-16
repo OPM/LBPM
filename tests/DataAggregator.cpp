@@ -9,8 +9,8 @@
 using namespace std;
 
 int main(int argc, char **argv){
-	
-  printf("Aggregating block data into single file \n");
+
+	printf("Aggregating block data into single file \n");
 	unsigned int Bx,By,Bz;
 	uint64_t Nx,Ny,Nz;
 	uint64_t N;
@@ -22,25 +22,25 @@ int main(int argc, char **argv){
 
 	//Read the block size
 	if (argc>9){
-	  printf("Input arguments accepted \n");
-	Nx = atoi(argv[1]);
-	Ny = atoi(argv[2]);
-	Nz = atoi(argv[3]);
-	x0 = atoi(argv[4]);
-	y0 = atoi(argv[5]);
-	z0 = atoi(argv[6]);
-	NX = atol(argv[7]);
-	NY = atol(argv[8]);
-	NZ = atol(argv[9]);
-	printf("Size %i X %i X %i \n",NX,NY,NZ);
-	fflush(stdout);
+		printf("Input arguments accepted \n");
+		Nx = atoi(argv[1]);
+		Ny = atoi(argv[2]);
+		Nz = atoi(argv[3]);
+		x0 = atoi(argv[4]);
+		y0 = atoi(argv[5]);
+		z0 = atoi(argv[6]);
+		NX = atol(argv[7]);
+		NY = atol(argv[8]);
+		NZ = atol(argv[9]);
+		printf("Size %llu X %llu X %llu \n",(unsigned long long) NX, (unsigned long long) NY, (unsigned long long) NZ);
+		fflush(stdout);
 	}
 	else{
-	  printf("setting defaults \n");
-	  Nx=Ny=Nz=1024;
-	  x0=y0=z0=0;
-	  NX=NY=8640;
-	  NZ=6480;
+		printf("setting defaults \n");
+		Nx=Ny=Nz=1024;
+		x0=y0=z0=0;
+		NX=NY=8640;
+		NZ=6480;
 	}
 	//Bx = By = Bz = 9;
 	//Nx = Ny = Nz = 1024;
@@ -53,29 +53,28 @@ int main(int argc, char **argv){
 	if (By>8) By=8;
 	if (Bz>8) Bz=8;
 
-	printf("System size (output) is: %i x %i x %i \n",NX,NY,NZ);
-	printf("Block size (read) is: %i x %i x %i \n",Nx,Ny,Nz);
-	printf("Starting location (read) is: %i, %i, %i \n", x0,y0,z0);
-	printf("Block number (read): %i x %i x %i \n",Bx,By,Bz);
+	printf("System size (output) is: %llu x %llu x %llu \n",(unsigned long long) NX,(unsigned long long) NY, (unsigned long long) NZ);
+	printf("Block size (read) is: %llu x %llu x %llu \n",(unsigned long long) Nx,(unsigned long long) Ny,(unsigned long long) Nz);
+	printf("Starting location (read) is: %llu, %llu, %llu \n", (unsigned long long) x0,(unsigned long long) y0,(unsigned long long) z0);
+	printf("Block number (read): %llu x %llu x %llu \n",(unsigned long long) Bx,(unsigned long long) By,(unsigned long long) Bz);
 	fflush(stdout);
-	
+
 	// Filenames used
 	//char LocalRankString[8];
 	char LocalRankFilename[40];
 	char sx[2];
 	char sy[2];
 	char sz[2];
-	char tmpstr[10];
 
 	//sprintf(LocalRankString,"%05d",rank);
 	N = Nx*Ny*Nz;
 	N_full=NX*NY*NZ;
-	
+
 	char *id;
 	id = new char [N];
 	char *ID;
 	ID = new char [N_full];
-	
+
 	for (unsigned int  bz=0; bz<Bz; bz++){
 		for (unsigned int by=0; by<By; by++){
 			for (unsigned int bx=0; bx<Bx; bx++){
@@ -90,7 +89,7 @@ int main(int argc, char **argv){
 				FILE *IDFILE = fopen(LocalRankFilename,"rb");
 				readID=fread(id,1,N,IDFILE);
 				fclose(IDFILE);
-				printf("Loading data ... \n");
+				printf("Loading data: %zu bytes ... \n", readID);
 				// Unpack the data into the main array
 				for ( k=0;k<Nz;k++){
 					for ( j=0;j<Ny;j++){
@@ -99,7 +98,7 @@ int main(int argc, char **argv){
 							y = by*Ny + j;
 							z = bz*Nz + k;
 							if ( x<NX && y<NY && z<NZ){
-							  ID[z*NX*NY+y*NX+x] = id[k*Nx*Ny+j*Nx+i];
+								ID[z*NX*NY+y*NX+x] = id[k*Nx*Ny+j*Nx+i];
 							}
 						}
 					}
@@ -111,11 +110,11 @@ int main(int argc, char **argv){
 	// Compute porosity 
 	uint64_t count=0;
 	for (k=0; k<NZ; k++){
-	  for (j=0; j<NY; j++){
-	    for (i=0; i<NX; i++){
-	      if (ID[k*NX*NY+j*NX+i] < 215) count++; 
-	    }
-	  }
+		for (j=0; j<NY; j++){
+			for (i=0; i<NX; i++){
+				if (ID[k*NX*NY+j*NX+i] < 1) count++; 
+			}
+		}
 	}
 	printf("Porosity is %f \n",double(count)/double(NX*NY*NZ));
 

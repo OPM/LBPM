@@ -39,6 +39,8 @@ public:
 	double Fx,Fy,Fz,flux;
 	double din,dout,inletA,inletB,outletA,outletB;
     double GreyPorosity;
+    bool RecoloringOff;//recoloring can be turn off for grey nodes if this is true
+    //double W;//wetting strength paramter for capillary pressure penalty for grey nodes
 	
 	int Nx,Ny,Nz,N,Np;
 	int rank,nprocx,nprocy,nprocz,nprocs;
@@ -48,7 +50,7 @@ public:
 	std::shared_ptr<Domain> Mask; // this domain is for lbm
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm;
 	std::shared_ptr<ScaLBL_Communicator> ScaLBL_Comm_Regular;
-        std::shared_ptr<GreyPhaseAnalysis> Averages;
+    std::shared_ptr<GreyPhaseAnalysis> Averages;
     
     // input database
     std::shared_ptr<Database> db;
@@ -64,12 +66,16 @@ public:
 	double *fq, *Aq, *Bq;
 	double *Den, *Phi;
     //double *GreySolidPhi; //Model 2 & 3
-    double *GreySolidGrad;//Model 1 & 4
+    //double *GreySolidGrad;//Model 1 & 4
+    double *GreySolidW;
+    double *GreySn;
+    double *GreySw;
 	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
     double *Porosity_dvc;
     double *Permeability_dvc;
+    //double *Psi;
 		
 private:
 	Utilities::MPI comm;
@@ -86,6 +92,7 @@ private:
     void AssignComponentLabels();
     void AssignGreySolidLabels();
     void AssignGreyPoroPermLabels();
+    //void AssignGreyscalePotential();
     void ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);

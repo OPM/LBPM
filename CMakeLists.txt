@@ -1,6 +1,8 @@
 # Set some CMake properties    
 CMAKE_MINIMUM_REQUIRED( VERSION 3.9 )
-CMAKE_POLICY( SET CMP0115 OLD )
+if( ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.20.0") 
+    CMAKE_POLICY( SET CMP0115 OLD )
+endif()
 
 
 MESSAGE("====================")
@@ -16,8 +18,7 @@ SET( TEST_MAX_PROCS 16 )
 
 
 # Initialize the project
-PROJECT( ${PROJ} LANGUAGES CXX )
-
+PROJECT( ${PROJ} LANGUAGES CXX)
 
 # Prevent users from building in place
 IF ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}" )

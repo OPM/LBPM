@@ -137,20 +137,18 @@ inline void MorphOpen(DoubleArray SignDist, char *id, Domain &Dm, int nx, int ny
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
+	int imin,jmin,kmin,imax,jmax,kmax;
+    
 	
 	double sw_old=1.0;
 	double sw_new=1.0; 
-    double sw_diff_old = 1.0;
-    double sw_diff_new = 1.0;
+	double sw_diff_old = 1.0;
+	double sw_diff_new = 1.0;
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-	double Rcrit_new;
-
-	int imin,jmin,kmin,imax,jmax,kmax;
-    
-	Rcrit_new = maxdistGlobal;
+	double Rcrit_new = maxdistGlobal;
+	double Rcrit_old = maxdistGlobal;
     while (sw_new > SW)
     {
         sw_diff_old = sw_diff_new;

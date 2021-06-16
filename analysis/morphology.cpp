@@ -120,6 +120,7 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	sendtag = recvtag = 7;
 
 	int ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
@@ -128,17 +129,13 @@ double MorphOpen(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain>
 	double void_fraction_new=1.0; 
 	double void_fraction_diff_old = 1.0;
 	double void_fraction_diff_new = 1.0;
-
-	// Increase the critical radius until the target saturation is met
-	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-
-	int imin,jmin,kmin,imax,jmax,kmax;
-
 	if (ErodeLabel == 1){
 		VoidFraction = 1.0 - VoidFraction;
 	}
 
+	// Increase the critical radius until the target saturation is met
+	double deltaR=0.05; // amount to change the radius in voxel units
+	double Rcrit_old = maxdistGlobal;
 	double Rcrit_new = maxdistGlobal;
 
 	while (void_fraction_new > VoidFraction)
@@ -320,6 +317,8 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	
 	DoubleArray phase(nx,ny,nz);
 	IntArray phase_label(nx,ny,nz);
+	Array<char> ID(nx,ny,nz);
+	fillHalo<char> fillChar(Dm->Comm,Dm->rank_info,{nx-2,ny-2,nz-2},{1,1,1},0,1);
 
 	int n;
 	double final_void_fraction;
@@ -337,10 +336,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 					count += 1.0;
 					id[n]  = 2;
 				}
+				ID(i,j,k) = id[n];
 			}
 		}
 	}
-
+	fillChar.fill(ID);
 	Dm->Comm.barrier();
 	
 	// total Global is the number of nodes in the pore-space
@@ -351,7 +351,8 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	if (rank==0) printf("Volume fraction for morphological opening: %f \n",volume_fraction);
 	if (rank==0) printf("Maximum pore size: %f \n",maxdistGlobal);
 
-	// Communication buffers
+	
+/*	// Communication buffers
 	signed char *sendID_x, *sendID_y, *sendID_z, *sendID_X, *sendID_Y, *sendID_Z;
 	signed char *sendID_xy, *sendID_yz, *sendID_xz, *sendID_Xy, *sendID_Yz, *sendID_xZ;
 	signed char *sendID_xY, *sendID_yZ, *sendID_Xz, *sendID_XY, *sendID_YZ, *sendID_XZ;
@@ -400,8 +401,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 	//......................................................................................
 	int sendtag,recvtag;
 	sendtag = recvtag = 7;
-
+*/
 	int ii,jj,kk;
+	int imin,jmin,kmin,imax,jmax,kmax;
 	int Nx = nx;
 	int Ny = ny;
 	int Nz = nz;
@@ -413,10 +415,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 
 	// Increase the critical radius until the target saturation is met
 	double deltaR=0.05; // amount to change the radius in voxel units
-	double Rcrit_old;
-
-	int imin,jmin,kmin,imax,jmax,kmax;
-
+	double Rcrit_old = maxdistGlobal;
 	double Rcrit_new = maxdistGlobal;
 	//if (argc>2){
 	//	Rcrit_new = strtod(argv[2],NULL);
@@ -453,11 +452,11 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 						for (kk=kmin; kk<kmax; kk++){
 							for (jj=jmin; jj<jmax; jj++){
 								for (ii=imin; ii<imax; ii++){
-									int nn = kk*nx*ny+jj*nx+ii;
 									double dsq = double((ii-i)*(ii-i)+(jj-j)*(jj-j)+(kk-k)*(kk-k));
-									if (id[nn] == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
+									if (ID(ii,jj,kk) == 2 && dsq <= (Rcrit_new+1)*(Rcrit_new+1)){
 										LocalNumber+=1.0;
-										id[nn]=1;
+										//id[nn]=1;
+										ID(ii,jj,kk)=1;
 									}
 								}
 							}
@@ -468,8 +467,9 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 				}
 			}
 		}
+		fillChar.fill(ID);
 		// Pack and send the updated ID values
-		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
+/*		PackID(Dm->sendList("x"), Dm->sendCount("x") ,sendID_x, id);
 		PackID(Dm->sendList("X"), Dm->sendCount("X") ,sendID_X, id);
 		PackID(Dm->sendList("y"), Dm->sendCount("y") ,sendID_y, id);
 		PackID(Dm->sendList("Y"), Dm->sendCount("Y") ,sendID_Y, id);
@@ -527,12 +527,12 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 		UnpackID(Dm->recvList("YZ"), Dm->recvCount("YZ") ,recvID_YZ, id);
 		//......................................................................................
 		// double GlobalNumber = Dm->Comm.sumReduce( LocalNumber );
-		
+		*/
 		for (int k=0; k<nz; k++){
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
 					n=k*nx*ny+j*nx+i;
-					if (id[n] == 1){
+					if (ID(i,j,k) == 1){
 						phase(i,j,k) = 1.0;
 					}
 					else
@@ -550,9 +550,10 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 			for (int j=0; j<ny; j++){
 				for (int i=0; i<nx; i++){
 					n=k*nx*ny+j*nx+i;
-					if (id[n] == 1 && phase_label(i,j,k) > 1){
-						id[n] = 2;
+					if (ID(i,j,k) == 1 && phase_label(i,j,k) > 1){
+						ID(i,j,k) = 2;
 					}
+					id[n] = ID(i,j,k);
 				}
 			}
 		}
@@ -571,7 +572,7 @@ double MorphDrain(DoubleArray &SignDist, signed char *id, std::shared_ptr<Domain
 						// nwp
 						phase(i,j,k) = -1.0;
 					}
-					else{
+					else{i
 						// treat solid as WP since films can connect 
 						phase(i,j,k) = 1.0;
 					}

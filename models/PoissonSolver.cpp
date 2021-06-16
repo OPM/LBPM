@@ -5,19 +5,35 @@
 #include "analysis/distance.h"
 #include "common/ReadMicroCT.h"
 
-ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI& COMM):
-rank(RANK), nprocs(NP),timestep(0),timestepMax(0),tau(0),k2_inv(0),tolerance(0),h(0),
-epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),Vin(0),Vout(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),analysis_interval(0),
-chargeDen_dummy(0),WriteLog(0),nprocx(0),nprocy(0),nprocz(0),
-BoundaryConditionInlet(0),BoundaryConditionOutlet(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),
-Vin0(0),freqIn(0),t0_In(0),Vin_Type(0),Vout0(0),freqOut(0),t0_Out(0),Vout_Type(0),
-TestPeriodic(0),TestPeriodicTime(0),TestPeriodicTimeConv(0),TestPeriodicSaveInterval(0),   
-comm(COMM)
+
+static inline bool fileExists( const std::string &filename )
 {
-
+    std::ifstream ifile( filename.c_str() );
+    return ifile.good();
 }
-ScaLBL_Poisson::~ScaLBL_Poisson(){
 
+
+ScaLBL_Poisson::ScaLBL_Poisson(int RANK, int NP, const Utilities::MPI& COMM):
+    rank(RANK), TIMELOG(nullptr), nprocs(NP),timestep(0),timestepMax(0),tau(0),k2_inv(0),tolerance(0),h(0),
+    epsilon0(0),epsilon0_LB(0),epsilonR(0),epsilon_LB(0),Vin(0),Vout(0),Nx(0),Ny(0),Nz(0),N(0),Np(0),analysis_interval(0),
+    chargeDen_dummy(0),WriteLog(0),nprocx(0),nprocy(0),nprocz(0),
+    BoundaryConditionInlet(0),BoundaryConditionOutlet(0),BoundaryConditionSolid(0),Lx(0),Ly(0),Lz(0),
+    Vin0(0),freqIn(0),t0_In(0),Vin_Type(0),Vout0(0),freqOut(0),t0_Out(0),Vout_Type(0),
+    TestPeriodic(0),TestPeriodicTime(0),TestPeriodicTimeConv(0),TestPeriodicSaveInterval(0),
+    comm(COMM)
+{
+    if ( rank == 0 ) {
+	    bool WriteHeader = !fileExists( "PoissonSolver_Convergence.csv" );
+
+	    TIMELOG = fopen("PoissonSolver_Convergence.csv","a+");
+	    if (WriteHeader)
+		    fprintf(TIMELOG,"Timestep Error\n");
+    }
+}
+ScaLBL_Poisson::~ScaLBL_Poisson()
+{
+    if ( TIMELOG )
+        fclose( TIMELOG );
 }
 
 void ScaLBL_Poisson::ReadParams(string filename){
@@ -97,7 +113,6 @@ void ScaLBL_Poisson::ReadParams(string filename){
 	if (domain_db->keyExists( "voxel_length" )){//default unit: um/lu
 		h = domain_db->getScalar<double>( "voxel_length" );
 	}
-
 
     //Re-calcualte model parameters if user updates input
     epsilon0_LB = epsilon0*(h*1.0e-6);//unit:[C/(V*lu)]
@@ -218,20 +233,19 @@ void ScaLBL_Poisson::ReadInput(){
 
 void ScaLBL_Poisson::AssignSolidBoundary(double *poisson_solid)
 {
-	size_t NLABELS=0;
 	signed char VALUE=0;
 	double AFFINITY=0.f;
 
 	auto LabelList = electric_db->getVector<int>( "SolidLabels" );
 	auto AffinityList = electric_db->getVector<double>( "SolidValues" );
 
-	NLABELS=LabelList.size();
+	size_t NLABELS = LabelList.size();
 	if (NLABELS != AffinityList.size()){
 		ERROR("Error: LB-Poisson Solver: SolidLabels and SolidValues must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	std::vector<double> label_count( NLABELS, 0.0 );
+	std::vector<double> label_count_global( NLABELS, 0.0 );
 	// Assign the labels
 
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -596,26 +610,11 @@ void ScaLBL_Poisson::Run(double *ChargeDensity, int timestep_from_Study){
 
 }
 
-void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
-    if (rank==0){
-		bool WriteHeader=false;
-		TIMELOG = fopen("PoissonSolver_Convergence.csv","r");
-		if (TIMELOG != NULL)
-			fclose(TIMELOG);
-		else
-			WriteHeader=true;
 
-		TIMELOG = fopen("PoissonSolver_Convergence.csv","a+");
-		if (WriteHeader)
-		{
-			fprintf(TIMELOG,"Timestep Error\n");				
-            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
-            fflush(TIMELOG);
-		}
-        else {
-            fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
-            fflush(TIMELOG);
-        }
+void ScaLBL_Poisson::getConvergenceLog(int timestep,double error){
+    if ( rank == 0 ) {
+        fprintf(TIMELOG,"%i %.5g\n",timestep,error); 
+        fflush(TIMELOG);
     }
 }
 

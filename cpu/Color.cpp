@@ -919,17 +919,14 @@ extern "C" void ScaLBL_D3Q19_ColorCollide( char *ID, double *disteven, double *d
 extern "C" void ScaLBL_D3Q7_ColorCollideMass(char *ID, double *A_even, double *A_odd, double *B_even, double *B_odd, 
 		double *Den, double *Phi, double *ColorGrad, double *Velocity, double beta, int N, bool pBC)
 {
+	int n;
 	char id;
-
-	int idx,n,q,Cqx,Cqy,Cqz;
-	//	int sendLoc;
-
 	double f0,f1,f2,f3,f4,f5,f6;
 	double na,nb,nab;		// density values
 	double ux,uy,uz;	// flow velocity
 	double nx,ny,nz,C;	// color gradient components
 	double a1,a2,b1,b2;
-	double sp,delta;
+	double delta;
 	//double feq[6];		// equilibrium distributions
 	// Set of Discrete velocities for the D3Q19 Model
 	//int D3Q7[3][3]={{1,0,0},{0,1,0},{0,0,1}};
@@ -1255,7 +1252,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_Color(int *Map, double *dist, double *Aq, do
 		double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 
-	int ijk,nn,n;
+	int ijk,nn;
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
@@ -1838,7 +1835,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_Color(int *neighborList, int *Map, double *di
 		double *Phi, double *Vel, double rhoA, double rhoB, double tauA, double tauB, double alpha, double beta,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
 	
-	int n,nn,ijk,nread;
+	int nn,ijk,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
 	int nr7,nr8,nr9,nr10;
 	int nr11,nr12,nr13,nr14;
@@ -2498,7 +2495,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Color(int *neighborList, int *Map, double *Aq,
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
-	double phi;
 	// Instantiate mass transport distributions
 	// Stationary value - distribution 0
 	for (int n=start; n<finish; n++){
@@ -2531,7 +2527,6 @@ extern "C" void ScaLBL_D3Q7_AAodd_Color(int *neighborList, int *Map, double *Aq,
 		nB = Den[Np + n];
 
 		// compute phase indicator field
-		phi=(nA-nB)/(nA+nB);
 		nAB = 1.0/(nA+nB);
 		Aq[n] = 0.3333333333333333*nA;
 		Bq[n] = 0.3333333333333333*nB;
@@ -2602,7 +2597,6 @@ extern "C" void ScaLBL_D3Q7_AAeven_Color(int *Map, double *Aq, double *Bq, doubl
 	double a1,b1,a2,b2,nAB,delta;
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double ux,uy,uz;
-	double phi;
 	// Instantiate mass transport distributions
 	// Stationary value - distribution 0
 	for (int n=start; n<finish; n++){
@@ -2682,7 +2676,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_Color(int *Map, double *Aq, double *Bq, doubl
 extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double *Aq, double *Bq, 
 			double *Den, double *Phi, int start, int finish, int Np){
 
-	int idx,nread;
+        int idx,nread;
 	double fq,nA,nB;
 
 	for (int n=start; n<finish; n++){
@@ -2769,7 +2763,7 @@ extern "C" void ScaLBL_D3Q7_AAodd_PhaseField(int *neighborList, int *Map, double
 
 extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, double *Den, double *Phi, 
 			int start, int finish, int Np){
-	int idx,nread;
+	int idx;
 	double fq,nA,nB;
 	for (int n=start; n<finish; n++){
 		
@@ -2842,7 +2836,7 @@ extern "C" void ScaLBL_D3Q7_AAeven_PhaseField(int *Map, double *Aq, double *Bq, 
 }
 
 extern "C" void ScaLBL_D3Q19_Gradient(int *Map, double *phi, double *ColorGrad, int start, int finish, int Np, int Nx, int Ny, int Nz){
-	int idx,n,N,i,j,k,nn;
+	int idx,n,i,j,k,nn;
 	// distributions
 	double f1,f2,f3,f4,f5,f6,f7,f8,f9;
 	double f10,f11,f12,f13,f14,f15,f16,f17,f18;
