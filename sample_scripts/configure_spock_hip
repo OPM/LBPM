@@ -1,10 +1,10 @@
 module load cmake
-module load llvm-amdgpu
-module load hip
+#module load llvm-amdgpu
+#module load hip
+#module load llvm
+module load rocm/4.2.0
 
-
-export TPL_DIR=/gpfs/alpine/stf006/proj-shared/mbt/spock/install
-
+export TPL_DIR=/ccs/proj/csc380/mcclurej/spock/install
 
 # configure
 rm -rf CMake*
@@ -25,6 +25,6 @@ cmake                                           \
         -D SILO_DIRECTORY="${TPL_DIR}/silo"     \
     -D USE_DOXYGEN:BOOL=false		        \
     -D USE_TIMER=0			        \
-    ~/repos/LBPM-WIA
+    ~/LBPM-WIA
 
 
