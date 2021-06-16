@@ -66,7 +66,6 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-
 		if (SimulationMode == "development"){
 			double MLUPS=0.0;
 			int timestep = 0;
@@ -174,7 +173,6 @@ int main( int argc, char **argv )
 				/*********************************************************/
 			}
 		}
-
 		else
 			ColorModel.Run();        
 
