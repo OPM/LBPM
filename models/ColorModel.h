@@ -72,6 +72,8 @@ public:
 	double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
+
+	void AssignComponentLabels(double *phase);
 		
 private:
 	Utilities::MPI comm;
@@ -85,7 +87,6 @@ private:
    
     //int rank,nprocs;
     void LoadParams(std::shared_ptr<Database> db0);
-    void AssignComponentLabels(double *phase);
     double ImageInit(std::string filename);
     double MorphInit(const double beta, const double morph_delta);
     double SeedPhaseField(const double seed_water_in_oil);
@@ -97,7 +98,10 @@ public:
 	FlowAdaptor(ScaLBL_ColorModel &M);
 	~FlowAdaptor();
 	double MoveInterface(ScaLBL_ColorModel &M);
+	double ImageInit(ScaLBL_ColorModel &M, std::string Filename);
+	double ShellAggregation(ScaLBL_ColorModel &M, const double delta_volume);
 	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
+	double SeedPhaseField(ScaLBL_ColorModel &M, const double seed_water_in_oil);
 	void Flatten(ScaLBL_ColorModel &M);
 	DoubleArray phi;
 	DoubleArray phi_t;

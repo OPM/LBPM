@@ -1,5 +1,4 @@
 extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
-	int n;
 	// conserved momemnts
 	double rho,ux,uy,uz,uu;
 	// non-conserved moments
@@ -111,14 +110,12 @@ extern "C" void ScaLBL_D3Q19_AAeven_BGK(double *dist, int start, int finish, int
 }
 
 extern "C" void ScaLBL_D3Q19_AAodd_BGK(int *neighborList, double *dist, int start, int finish, int Np, double rlx, double Fx, double Fy, double Fz){
-	int n;
 	// conserved momemnts
 	double rho,ux,uy,uz,uu;
 	// non-conserved moments
 	double f0,f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13,f14,f15,f16,f17,f18;
 	int nr1,nr2,nr3,nr4,nr5,nr6,nr7,nr8,nr9,nr10,nr11,nr12,nr13,nr14,nr15,nr16,nr17,nr18;
 
-	int nread;
 	for (int n=start; n<finish; n++){
 		
 		// q=0

@@ -18,8 +18,7 @@ SET( TEST_MAX_PROCS 16 )
 
 
 # Initialize the project
-PROJECT( ${PROJ} LANGUAGES CXX )
-
+PROJECT( ${PROJ} LANGUAGES CXX)
 
 # Prevent users from building in place
 IF ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}" )
