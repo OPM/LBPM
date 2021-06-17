@@ -183,11 +183,12 @@ int main(int argc, char **argv)
 		int i,j,k;
 
         // Load inputs
-        auto db = loadInputs( nprocs );
-	/*		auto filename = argv[1];
-		auto input_db = std::make_shared<Database>( filename );
-		auto db = input_db->getDatabase( "Domain" );
-	*/
+	auto filename = argv[1];
+	auto input_db = std::make_shared<Database>( filename );
+	auto db = input_db->getDatabase( "Domain" );
+	//else {
+        //   auto db = loadInputs( nprocs );
+	//}
         int Nx = db->getVector<int>( "n" )[0];
         int Ny = db->getVector<int>( "n" )[1];
         int Nz = db->getVector<int>( "n" )[2];
