@@ -2,9 +2,16 @@ module load cmake
 #module load llvm-amdgpu
 #module load hip
 #module load llvm
+#module load rocm/4.2.0
+
+module load craype-accel-amd-gfx908
+module load PrgEnv-cray
 module load rocm/4.2.0
 
 export TPL_DIR=/ccs/proj/csc380/mcclurej/spock/install
+
+#export PE_MPICH_GTL_DIR_amd_gfx908="-L/opt/cray/pe/mpich/8.1.4/gtl/lib"
+#export PE_MPICH_GTL_LIBS_amd_gfx908="-lmpi_gtl_hsa"
 
 # configure
 rm -rf CMake*
@@ -13,6 +20,7 @@ cmake                                           \
     -D CMAKE_C_COMPILER:PATH=cc                 \
     -D CMAKE_CXX_COMPILER:PATH=CC               \
     -D CMAKE_CXX_STANDARD=14                    \
+    -D CMAKE_CXX_FLAGS="-I${ROCM_PATH}/include -L${ROCM_PATH}/lib -lamdhip64 -lhsa-runtime64 -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.4/gtl/lib -lmpi_gtl_hsa" \
     -D USE_HIP=1                                \
         -D LINK_LIBRARIES=${HIP_PATH}/lib/libamdhip64.so \
     -D USE_CUDA=0                               \
