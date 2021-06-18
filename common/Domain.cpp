@@ -383,7 +383,7 @@ void Domain::Decomp( const std::string& Filename )
 				for (int i = 0; i<global_Nx; i++){
 					n = k*global_Nx*global_Ny+j*global_Nx+i;
 					//char locval = loc_id[n];
-					char locval = SegData[n];
+					signed char locval = SegData[n];
 					for (size_t idx=0; idx<ReadValues.size(); idx++){
 						signed char oldvalue=ReadValues[idx];
 						signed char newvalue=WriteValues[idx];
