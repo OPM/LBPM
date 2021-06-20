@@ -70,10 +70,12 @@ public:
 	// local entities
 	phase wc,wd,wb,nc,nd,nb,solid;
 	interface iwn,iwnc;
+	interface ifs;
 	
 	// global entities
 	phase gwc,gwd,gwb,gnc,gnd,gnb,gsolid;
 	interface giwn,giwnc;
+	interface gifs;
 	/* fluid-solid wetting interaction */
 	double total_wetting_interaction, count_wetting_interaction;
 	double total_wetting_interaction_global, count_wetting_interaction_global;

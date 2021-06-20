@@ -42,10 +42,10 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
 			fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 			fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
-			fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
-			fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
-			fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y ");			
-			fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
+			fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni Msw Msn ");				// mass 
+			fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x Psw_x Psn_x ");	// momentum 
+			fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y Psw_y Psn_y ");			
+			fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z Psw_z Psn_z ");			
 			fprintf(SUBPHASE,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 			fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 			fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
@@ -67,10 +67,10 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		//fprintf(SUBPHASE,"--------------------------------------------------------------------------------------\n");
 		fprintf(SUBPHASE,"time rn rw nun nuw Fx Fy Fz iftwn wet ");				
 		fprintf(SUBPHASE,"pwc pwd pnc pnd ");						// pressures 
-		fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni ");				// mass 
-		fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x ");	// momentum 
-		fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y ");			
-		fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z ");			
+		fprintf(SUBPHASE,"Mwc Mwd Mwi Mnc Mnd Mni Msw Msn ");				// mass 
+		fprintf(SUBPHASE,"Pwc_x Pwd_x Pwi_x Pnc_x Pnd_x Pni_x Psw_x Psn_x ");	// momentum 
+		fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y Psw_y Psn_y ");			
+		fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z Psw_z Psn_z ");				
 		fprintf(SUBPHASE,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
 		fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 		fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
@@ -111,10 +111,10 @@ void SubPhase::Write(int timestep)
 	if (Dm->rank()==0){
 		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction_global); 
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.p, gwd.p, gnc.p, gnd.p);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.M, gwd.M, giwn.Mw, gnc.M, gnd.M, giwn.Mn, gifs.Mw, gifs.Mn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Px, gwd.Px, giwn.Pwx, gnc.Px, gnd.Px, giwn.Pnx, gifs.Pwx, gifs.Pnx);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny, gifs.Pwy, gifs.Pny);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz, gifs.Pwz, gifs.Pnz);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.V, gwc.A, gwc.H, gwc.X);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
@@ -127,10 +127,10 @@ void SubPhase::Write(int timestep)
 	else{
 		fprintf(SUBPHASE,"%i %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",timestep,rho_n,rho_w,nu_n,nu_w,Fx,Fy,Fz,gamma_wn,total_wetting_interaction);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.p, wd.p, nc.p, nd.p);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny);
-		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.M, wd.M, iwn.Mw, nc.M, nd.M, iwn.Mn, ifs.Mw, ifs.Mn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.Px, wd.Px, iwn.Pwx, nc.Px, nd.Px, iwn.Pnx, ifs.Pwx, ifs.Pnx);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny, ifs.Pwy, ifs.Pny);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz, ifs.Pwz, ifs.Pnz);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.V, wc.A, wc.H, wc.X);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
@@ -481,7 +481,7 @@ void SubPhase::Full(){
 	if (Dm->inlet_layers_z > 0 && Dm->kproc() == 0) kmin += Dm->inlet_layers_z; 
 	if (Dm->outlet_layers_z > 0 && Dm->kproc() == Dm->nprocz()-1) kmax -= Dm->outlet_layers_z; 
 	*/
-	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset();	iwnc.reset();
+	nd.reset();	nc.reset(); wd.reset();	wc.reset();	iwn.reset(); iwnc.reset(); ifs.reset();
 
  	Dm->CommunicateMeshHalo(Phi);
 	for (int k=1; k<Nz-1; k++){
@@ -654,13 +654,32 @@ void SubPhase::Full(){
 					double ux = Vel_x(n);
 					double uy = Vel_y(n);
 					double uz = Vel_z(n);
-					
-					if (DelPhi(n) > 1e-3 && SDs(n) < 3.0 ){
-						// film region
+
+					if (DelPhi(n) > 1e-3 ){
+						// get the normal vector 
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
 						double ny = 0.5*(Phi(i,j+1,k)-Phi(i,j-1,k));
 						double nz = 0.5*(Phi(i,j,k+1)-Phi(i,j,k-1));
-						InterfaceTransportMeasures(  beta,  rho_w,  rho_n,  nA, nB, nx, ny, nz, ux, uy, uz, iwn);
+						if (SDs(n) > 2.5){
+							// not a film region
+							InterfaceTransportMeasures(  beta,  rho_w,  rho_n,  nA, nB, nx, ny, nz, ux, uy, uz, iwn);
+						}
+						else{
+							// films that are close to the wetting fluid
+							if ( morph_w->distance(i,j,k) < 2.5 && phi > 0.0){
+								ifs.Mw += rho_w;
+								ifs.Pwx += rho_w*ux;
+								ifs.Pwy += rho_w*uy;
+								ifs.Pwz += rho_w*uz;
+							}
+							// films that are close to the NWP 
+							if ( morph_n->distance(i,j,k) < 2.5 && phi < 0.0){
+								ifs.Mn += rho_n;
+								ifs.Pnx += rho_n*ux;
+								ifs.Pny += rho_n*uy;
+								ifs.Pnz += rho_n*uz;
+							}
+						}
 					}
 					else if ( phi > 0.0){
 						if (morph_n->label(i,j,k) > 0 ){
@@ -759,6 +778,15 @@ void SubPhase::Full(){
 	giwn.Pwy=Dm->Comm.sumReduce(  iwn.Pwy);
 	giwn.Pwz=Dm->Comm.sumReduce(  iwn.Pwz);
 	giwn.Kw=Dm->Comm.sumReduce(  iwn.Kw);
+	
+	gifs.Mn= Dm->Comm.sumReduce(  ifs.Mn);
+	gifs.Pnx=Dm->Comm.sumReduce(  ifs.Pnx);
+	gifs.Pny=Dm->Comm.sumReduce(  ifs.Pny);
+	gifs.Pnz=Dm->Comm.sumReduce(  ifs.Pnz);
+	gifs.Mw= Dm->Comm.sumReduce(  ifs.Mw);
+	gifs.Pwx=Dm->Comm.sumReduce(  ifs.Pwx);
+	gifs.Pwy=Dm->Comm.sumReduce(  ifs.Pwy);
+	gifs.Pwz=Dm->Comm.sumReduce(  ifs.Pwz);	
 	
 	// pressure averaging
 	gnc.p=Dm->Comm.sumReduce(  nc.p);
