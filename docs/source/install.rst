@@ -55,7 +55,7 @@ Building Dependencies
    cd ../silo-4.10.2
 
    CC=$MPI_DIR/bin/mpicc  CXX=$MPI_DIR/bin/mpicxx CXXFLAGS="-fPIC -O3 -std=c++14" \
-   ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib --enable-static \\
+   ./configure --prefix=$LBPM_SILO_DIR -with-hdf5=$LBPM_HDF5_DIR/include,$LBPM_HDF5_DIR/lib --enable-static 
     make && make install
  
 *************************
