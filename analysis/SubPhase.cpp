@@ -23,6 +23,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 	Vel_x.resize(Nx,Ny,Nz);         Vel_x.fill(0);	    // Gradient of the phase indicator field
 	Vel_y.resize(Nx,Ny,Nz);         Vel_y.fill(0);
 	Vel_z.resize(Nx,Ny,Nz);         Vel_z.fill(0);
+	Dissipation.resize(Nx,Ny,Nz);   Dissipation.fill(0);
 	SDs.resize(Nx,Ny,Nz);         	SDs.fill(0);
 	//.........................................
 
@@ -47,6 +48,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 			fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y Psw_y Psn_y ");			
 			fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z Psw_z Psn_z ");			
 			fprintf(SUBPHASE,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
+			fprintf(SUBPHASE,"Dwc Dwd Dnc Dnd ");						// viscous dissipation
 			fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 			fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 			fprintf(SUBPHASE,"Vnc Anc Hnc Xnc ");					 	// nc region
@@ -72,6 +74,7 @@ SubPhase::SubPhase(std::shared_ptr <Domain> dm):
 		fprintf(SUBPHASE,"Pwc_y Pwd_y Pwi_y Pnc_y Pnd_y Pni_y Psw_y Psn_y ");			
 		fprintf(SUBPHASE,"Pwc_z Pwd_z Pwi_z Pnc_z Pnd_z Pni_z Psw_z Psn_z ");				
 		fprintf(SUBPHASE,"Kwc Kwd Kwi Knc Knd Kni ");				// kinetic energy
+		fprintf(SUBPHASE,"Dwc Dwd Dnc Dnd ");						// viscous dissipation		
 		fprintf(SUBPHASE,"Vwc Awc Hwc Xwc ");					 	// wc region 
 		fprintf(SUBPHASE,"Vwd Awd Hwd Xwd Nwd ");					// wd region
 		fprintf(SUBPHASE,"Vnc Anc Hnc Xnc ");					 	// nc region
@@ -116,6 +119,7 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Py, gwd.Py, giwn.Pwy, gnc.Py, gnd.Py, giwn.Pny, gifs.Pwy, gifs.Pny);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",gwc.Pz, gwd.Pz, giwn.Pwz, gnc.Pz, gnd.Pz, giwn.Pnz, gifs.Pwz, gifs.Pnz);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",gwc.K, gwd.K, giwn.Kw, gnc.K, gnd.K, giwn.Kn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.visc, gwd.visc, gnc.visc, gnd.visc);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gwc.V, gwc.A, gwc.H, gwc.X);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",gwd.V, gwd.A, gwd.H, gwd.X, gwd.Nc);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",gnc.V, gnc.A, gnc.H, gnc.X);
@@ -132,6 +136,7 @@ void SubPhase::Write(int timestep)
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.Py, wd.Py, iwn.Pwy, nc.Py, nd.Py, iwn.Pny, ifs.Pwy, ifs.Pny);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",wc.Pz, wd.Pz, iwn.Pwz, nc.Pz, nd.Pz, iwn.Pnz, ifs.Pwz, ifs.Pnz);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %.8g %.8g ",wc.K, wd.K, iwn.Kw, nc.K, nd.K, iwn.Kn);
+		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.visc, wd.visc, nc.visc, nd.visc);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",wc.V, wc.A, wc.H, wc.X);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g %i ",wd.V, wd.A, wd.H, wd.X, wd.Nc);
 		fprintf(SUBPHASE,"%.8g %.8g %.8g %.8g ",nc.V, nc.A, nc.H, nc.X);
@@ -496,6 +501,31 @@ void SubPhase::Full(){
 		}
 	}
  	Dm->CommunicateMeshHalo(DelPhi);
+ 	
+ 	
+ 	Dm->CommunicateMeshHalo(Vel_x);
+ 	Dm->CommunicateMeshHalo(Vel_y);
+ 	Dm->CommunicateMeshHalo(Vel_z);
+	for (int k=1; k<Nz-1; k++){
+		for (int j=1; j<Ny-1; j++){
+			for (int i=1; i<Nx-1; i++){
+				// Compute velocity gradients using finite differences
+				double phi = Phi(i,j,k);
+				double nu = nu_n + 0.5*(1.0-phi)*(nu_w-nu_n);
+				double rho = rho_n + 0.5*(1.0-phi)*(rho_w-rho_n);
+				double ux = 0.5*(Vel_x(i+1,j,k) - Vel_x(i-1,j,k));
+				double uy = 0.5*(Vel_x(i,j+1,k) - Vel_x(i,j-1,k));
+				double uz = 0.5*(Vel_x(i,j,k+1) - Vel_x(i,j,k-1));
+				double vx = 0.5*(Vel_y(i+1,j,k) - Vel_y(i-1,j,k));
+				double vy = 0.5*(Vel_y(i,j+1,k) - Vel_y(i,j-1,k));
+				double vz = 0.5*(Vel_y(i,j,k+1) - Vel_y(i,j,k-1));
+				double wx = 0.5*(Vel_z(i+1,j,k) - Vel_z(i-1,j,k));
+				double wy = 0.5*(Vel_z(i,j+1,k) - Vel_z(i,j-1,k));
+				double wz = 0.5*(Vel_z(i,j,k+1) - Vel_z(i,j,k-1));				
+				Dissipation(i,j,k) = 2*rho*nu*( ux*ux + vy*vy + wz*wz + 0.5*(vx + uy)*(vx + uy)+ 0.5*(vz + wy)*(vz + wy)+ 0.5*(uz + wx)*(uz + wx));
+			}
+		}
+	}
 
  	/*  Set up geometric analysis of each region */
 	
@@ -654,7 +684,8 @@ void SubPhase::Full(){
 					double ux = Vel_x(n);
 					double uy = Vel_y(n);
 					double uz = Vel_z(n);
-
+					double visc = Dissipation(n);
+					
 					if (DelPhi(n) > 1e-3 ){
 						// get the normal vector 
 						double nx = 0.5*(Phi(i+1,j,k)-Phi(i-1,j,k));
@@ -710,6 +741,7 @@ void SubPhase::Full(){
 							nd.Py += nA*rho_n*uy;
 							nd.Pz += nA*rho_n*uz;
 							nd.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
+							nd.visc += visc;
 						}
 						else{
 							nA = 1.0;
@@ -718,6 +750,7 @@ void SubPhase::Full(){
 							nc.Py += nA*rho_n*uy;
 							nc.Pz += nA*rho_n*uz;
 							nc.K += nA*rho_n*(ux*ux + uy*uy + uz*uz);
+							nc.visc += visc;
 						}
 					}
 					else{
@@ -729,6 +762,7 @@ void SubPhase::Full(){
 							wd.Py += nB*rho_w*uy;
 							wd.Pz += nB*rho_w*uz;
 							wd.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
+							wd.visc += visc;
 						}
 						else{
 							nB = 1.0;
@@ -737,6 +771,7 @@ void SubPhase::Full(){
 							wc.Py += nB*rho_w*uy;
 							wc.Pz += nB*rho_w*uz;
 							wc.K += nB*rho_w*(ux*ux + uy*uy + uz*uz);
+							wc.visc += visc;
 						}
 					}
 				}
@@ -749,25 +784,29 @@ void SubPhase::Full(){
 	gnd.Py=Dm->Comm.sumReduce(  nd.Py);
 	gnd.Pz=Dm->Comm.sumReduce(  nd.Pz);
 	gnd.K=Dm->Comm.sumReduce(  nd.K);
+	gnd.visc=Dm->Comm.sumReduce(  nd.visc);
 
 	gwd.M=Dm->Comm.sumReduce(  wd.M);
 	gwd.Px=Dm->Comm.sumReduce(  wd.Px);
 	gwd.Py=Dm->Comm.sumReduce(  wd.Py);
 	gwd.Pz=Dm->Comm.sumReduce(  wd.Pz);
 	gwd.K=Dm->Comm.sumReduce(  wd.K);
+	gwd.visc=Dm->Comm.sumReduce(  wd.visc);
 	
 	gnc.M=Dm->Comm.sumReduce(  nc.M);
 	gnc.Px=Dm->Comm.sumReduce(  nc.Px);
 	gnc.Py=Dm->Comm.sumReduce(  nc.Py);
 	gnc.Pz=Dm->Comm.sumReduce(  nc.Pz);
 	gnc.K=Dm->Comm.sumReduce(  nc.K);
+	gnc.visc=Dm->Comm.sumReduce(  nc.visc);
 
 	gwc.M=Dm->Comm.sumReduce(  wc.M);
 	gwc.Px=Dm->Comm.sumReduce(  wc.Px);
 	gwc.Py=Dm->Comm.sumReduce(  wc.Py);
 	gwc.Pz=Dm->Comm.sumReduce(  wc.Pz);
 	gwc.K=Dm->Comm.sumReduce(  wc.K);
-	
+	gwc.visc=Dm->Comm.sumReduce(  wc.visc);
+
 	giwn.Mn=Dm->Comm.sumReduce(  iwn.Mn);
 	giwn.Pnx=Dm->Comm.sumReduce(  iwn.Pnx);
 	giwn.Pny=Dm->Comm.sumReduce(  iwn.Pny);
