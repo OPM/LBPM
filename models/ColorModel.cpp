@@ -792,12 +792,21 @@ double ScaLBL_ColorModel::Run(int returntime){
 					double vBd_x = Averages->gwd.Px/Mass_w; 
 					double vBd_y = Averages->gwd.Py/Mass_w; 
 					double vBd_z = Averages->gwd.Pz/Mass_w;
-
+					// film contribution
+					double mfn = Averages->gifs.Mn; 
+					double mfw = Averages->gifs.Mw; 
+					double vfn_x = Averages->gifs.Pnx; 
+					double vfn_y = Averages->gifs.Pny; 
+					double vfn_z = Averages->gifs.Pnz; 
+					double vfw_x = Averages->gifs.Pwx; 
+					double vfw_y = Averages->gifs.Pwy; 
+					double vfw_z = Averages->gifs.Pwz;
+					
 					double flow_rate_A_connected = Vol_nc*(vAc_x*dir_x + vAc_y*dir_y + vAc_z*dir_z);
 					double flow_rate_B_connected = Vol_wc*(vBc_x*dir_x + vBc_y*dir_y + vBc_z*dir_z);
 					double flow_rate_A_disconnected = (Vol_nd)*(vAd_x*dir_x + vAd_y*dir_y + vAd_z*dir_z);
 					double flow_rate_B_disconnected = (Vol_wd)*(vBd_x*dir_x + vBd_y*dir_y + vBd_z*dir_z);
-
+					
 					double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
 					double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
 
