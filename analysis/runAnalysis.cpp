@@ -296,15 +296,21 @@ public:
             fillData.copy( Averages.Vel_z, VelzData );
         }
 
+        if ( vis_db->getWithDefault<bool>( "save_dissipation", false ) ) {
+            ASSERT( visData[0].vars[5]->name == "ViscousDissipation" );
+            Array<double> &ViscousDissipation = visData[0].vars[5]->data;
+            fillData.copy( Averages.Dissipation, ViscousDissipation );
+        }
+
         if ( vis_db->getWithDefault<bool>( "save_distance", false ) ) {
             ASSERT( visData[0].vars[5]->name == "SignDist" );
-            Array<double> &SignData = visData[0].vars[5]->data;
+            Array<double> &SignData = visData[0].vars[6]->data;
             fillData.copy( Averages.SDs, SignData );
         }
 
         if ( vis_db->getWithDefault<bool>( "save_connected_components", false ) ) {
             ASSERT( visData[0].vars[6]->name == "BlobID" );
-            Array<double> &BlobData = visData[0].vars[6]->data;
+            Array<double> &BlobData = visData[0].vars[7]->data;
             fillData.copy( Averages.morph_n->label, BlobData );
         }
 
