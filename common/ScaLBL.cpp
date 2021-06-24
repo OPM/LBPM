@@ -1373,8 +1373,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	else{
 		Lock=true;
 	}
-	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 19;
+	// assign tag of 130 to D3Q19 communication
+	sendtag = recvtag = 130;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
@@ -1384,8 +1384,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(12,dvcSendList_x,3*sendCount_x,sendCount_x,sendbuf_x,dist,N);
 	ScaLBL_D3Q19_Pack(14,dvcSendList_x,4*sendCount_x,sendCount_x,sendbuf_x,dist,N);
 	
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 5*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 5*recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 5*sendCount_x,rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 5*recvCount_X,rank_X,recvtag+0);
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,dist,N);
 	ScaLBL_D3Q19_Pack(7,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,dist,N);
@@ -1393,8 +1393,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(11,dvcSendList_X,3*sendCount_X,sendCount_X,sendbuf_X,dist,N);
 	ScaLBL_D3Q19_Pack(13,dvcSendList_X,4*sendCount_X,sendCount_X,sendbuf_X,dist,N);
 	
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 5*sendCount_X,rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 5*recvCount_x,rank_x,recvtag+1);
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,dist,N);
 	ScaLBL_D3Q19_Pack(8,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,dist,N);
@@ -1402,8 +1402,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(16,dvcSendList_y,3*sendCount_y,sendCount_y,sendbuf_y,dist,N);
 	ScaLBL_D3Q19_Pack(18,dvcSendList_y,4*sendCount_y,sendCount_y,sendbuf_y,dist,N);
 	
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 5*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 5*recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 5*sendCount_y,rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 5*recvCount_Y,rank_Y,recvtag+2);
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,dist,N);
 	ScaLBL_D3Q19_Pack(7,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
@@ -1411,8 +1411,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(15,dvcSendList_Y,3*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
 	ScaLBL_D3Q19_Pack(17,dvcSendList_Y,4*sendCount_Y,sendCount_Y,sendbuf_Y,dist,N);
 	
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 5*sendCount_Y,rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 5*recvCount_y,rank_y,recvtag+3);
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(12,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,dist,N);
@@ -1420,8 +1420,8 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(16,dvcSendList_z,3*sendCount_z,sendCount_z,sendbuf_z,dist,N);
 	ScaLBL_D3Q19_Pack(17,dvcSendList_z,4*sendCount_z,sendCount_z,sendbuf_z,dist,N);
 	
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 5*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 5*recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 5*sendCount_z,rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 5*recvCount_Z,rank_Z,recvtag+4);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,dist,N);
@@ -1430,57 +1430,57 @@ void ScaLBL_Communicator::SendD3Q19AA(double *dist){
 	ScaLBL_D3Q19_Pack(15,dvcSendList_Z,3*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
 	ScaLBL_D3Q19_Pack(18,dvcSendList_Z,4*sendCount_Z,sendCount_Z,sendbuf_Z,dist,N);
 	
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 5*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 5*recvCount_z,rank_z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 5*sendCount_Z,rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 5*recvCount_z,rank_z,recvtag+5);
 	
 	//...Pack the xy edge (8)................................
 	ScaLBL_D3Q19_Pack(8,dvcSendList_xy,0,sendCount_xy,sendbuf_xy,dist,N);
-	req1[6] = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-	req2[6] = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
+	req1[6] = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag+6);
+	req2[6] = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag+6);
 	//...Pack the Xy edge (9)................................
 	ScaLBL_D3Q19_Pack(9,dvcSendList_Xy,0,sendCount_Xy,sendbuf_Xy,dist,N);
-	req1[8] = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-	req2[8] = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
+	req1[8] = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag+8);
+	req2[8] = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag+8);
 	//...Pack the xY edge (10)................................
 	ScaLBL_D3Q19_Pack(10,dvcSendList_xY,0,sendCount_xY,sendbuf_xY,dist,N);
-	req1[9] = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-	req2[9] = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
+	req1[9] = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag+9);
+	req2[9] = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag+9);
 	//...Pack the XY edge (7)................................
 	ScaLBL_D3Q19_Pack(7,dvcSendList_XY,0,sendCount_XY,sendbuf_XY,dist,N);
-	req1[7] = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-	req2[7] = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
+	req1[7] = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag+7);
+	req2[7] = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag+7);
 	//...Pack the xz edge (12)................................
 	ScaLBL_D3Q19_Pack(12,dvcSendList_xz,0,sendCount_xz,sendbuf_xz,dist,N);
-	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
+	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag+10);
+	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag+10);
 	//...Pack the xZ edge (14)................................
 	ScaLBL_D3Q19_Pack(14,dvcSendList_xZ,0,sendCount_xZ,sendbuf_xZ,dist,N);
-	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
+	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag+13);
+	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag+13);
 	//...Pack the Xz edge (13)................................
 	ScaLBL_D3Q19_Pack(13,dvcSendList_Xz,0,sendCount_Xz,sendbuf_Xz,dist,N);
-	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
+	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag+12);
+	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag+12);
 	//...Pack the XZ edge (11)................................
 	ScaLBL_D3Q19_Pack(11,dvcSendList_XZ,0,sendCount_XZ,sendbuf_XZ,dist,N);
-	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
+	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag+11);
+	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag+11);
 	//...Pack the yz edge (16)................................
 	ScaLBL_D3Q19_Pack(16,dvcSendList_yz,0,sendCount_yz,sendbuf_yz,dist,N);
-	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
+	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag+14);
+	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag+14);
 	//...Pack the yZ edge (18)................................
 	ScaLBL_D3Q19_Pack(18,dvcSendList_yZ,0,sendCount_yZ,sendbuf_yZ,dist,N);
-	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag+17);
+	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag+17);
 	//...Pack the Yz edge (17)................................
 	ScaLBL_D3Q19_Pack(17,dvcSendList_Yz,0,sendCount_Yz,sendbuf_Yz,dist,N);
-	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
+	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag+16);
+	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag+16);
 	//...Pack the YZ edge (15)................................
 	ScaLBL_D3Q19_Pack(15,dvcSendList_YZ,0,sendCount_YZ,sendbuf_YZ,dist,N);
-	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
+	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag+15);
+	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag+15);
 	//...................................................................................
 
 }
@@ -1661,43 +1661,43 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 		Lock=true;
 	}
 	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 14;
+	sendtag = recvtag = 148;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,Aq,N);
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,sendCount_x,sendCount_x,sendbuf_x,Bq,N);
 
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 2*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 2*recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 2*sendCount_x,rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 2*recvCount_X,rank_X,recvtag+0);
 	
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,Aq,N);
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,sendCount_X,sendCount_X,sendbuf_X,Bq,N);
 	
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 2*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 2*recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 2*sendCount_X,rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 2*recvCount_x,rank_x,recvtag+1);
 
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,Aq,N);
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,sendCount_y,sendCount_y,sendbuf_y,Bq,N);
 
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 2*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 2*recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 2*sendCount_y,rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 2*recvCount_Y,rank_Y,recvtag+2);
 	
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,Aq,N);
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,sendCount_Y,sendCount_Y,sendbuf_Y,Bq,N);
 
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 2*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 2*recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 2*sendCount_Y,rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 2*recvCount_y,rank_y,recvtag+3);
 	
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,Aq,N);
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,sendCount_z,sendCount_z,sendbuf_z,Bq,N);
 	
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 2*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 2*recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 2*sendCount_z,rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 2*recvCount_Z,rank_Z,recvtag+4);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,Aq,N);
@@ -1705,8 +1705,8 @@ void ScaLBL_Communicator::BiSendD3Q7AA(double *Aq, double *Bq){
 
 	//...................................................................................
 	// Send all the distributions
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 2*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 2*recvCount_z,rank_z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 2*sendCount_Z,rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 2*recvCount_z,rank_z,recvtag+5);
 
 }
 
@@ -1777,39 +1777,39 @@ void ScaLBL_Communicator::SendD3Q7AA(double *Aq, int Component){
 	else{
 		Lock=true;
 	}
-	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 7;
+	// assign tag of 154 to D3Q19 communication
+	sendtag = recvtag = 154;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
 	ScaLBL_D3Q19_Pack(2,dvcSendList_x,0,sendCount_x,sendbuf_x,&Aq[Component*7*N],N);
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag+0);
 	
 	//...Packing for X face(1,7,9,11,13)................................
 	ScaLBL_D3Q19_Pack(1,dvcSendList_X,0,sendCount_X,sendbuf_X,&Aq[Component*7*N],N);
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag+1);
 	
 	//...Packing for y face(4,8,9,16,18).................................
 	ScaLBL_D3Q19_Pack(4,dvcSendList_y,0,sendCount_y,sendbuf_y,&Aq[Component*7*N],N);
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag+2);
 	
 	//...Packing for Y face(3,7,10,15,17).................................
 	ScaLBL_D3Q19_Pack(3,dvcSendList_Y,0,sendCount_Y,sendbuf_Y,&Aq[Component*7*N],N);
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag+3);
 	
 	//...Packing for z face(6,12,13,16,17)................................
 	ScaLBL_D3Q19_Pack(6,dvcSendList_z,0,sendCount_z,sendbuf_z,&Aq[Component*7*N],N);
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag+4);
 	
 	//...Packing for Z face(5,11,14,15,18)................................
 	ScaLBL_D3Q19_Pack(5,dvcSendList_Z,0,sendCount_Z,sendbuf_Z,&Aq[Component*7*N],N);
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag+5);
 }
 
 
@@ -1872,7 +1872,7 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 		Lock=true;
 	}
 	// assign tag of 19 to D3Q19 communication
-	sendtag = recvtag = 15;
+	sendtag = recvtag = 162;
 	ScaLBL_DeviceBarrier();
 	// Pack the distributions
 	//...Packing for x face(2,8,10,12,14)................................
@@ -1902,18 +1902,18 @@ void ScaLBL_Communicator::TriSendD3Q7AA(double *Aq, double *Bq, double *Cq){
 
 	//...................................................................................
 	// Send all the distributions
-	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 3*sendCount_x,rank_x,sendtag);
-	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 3*recvCount_X,rank_X,recvtag);
-	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 3*sendCount_X,rank_X,sendtag);
-	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 3*recvCount_x,rank_x,recvtag);
-	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 3*sendCount_y,rank_y,sendtag);
-	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 3*recvCount_Y,rank_Y,recvtag);
-	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 3*sendCount_Y,rank_Y,sendtag);
-	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 3*recvCount_y,rank_y,recvtag);
-	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 3*sendCount_z,rank_z,sendtag);
-	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 3*recvCount_Z,rank_Z,recvtag);
-	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 3*sendCount_Z,rank_Z,sendtag);
-	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 3*recvCount_z,rank_z,recvtag);
+	req1[0] = MPI_COMM_SCALBL.Isend(sendbuf_x, 3*sendCount_x,rank_x,sendtag+0);
+	req2[0] = MPI_COMM_SCALBL.Irecv(recvbuf_X, 3*recvCount_X,rank_X,recvtag+0);
+	req1[1] = MPI_COMM_SCALBL.Isend(sendbuf_X, 3*sendCount_X,rank_X,sendtag+1);
+	req2[1] = MPI_COMM_SCALBL.Irecv(recvbuf_x, 3*recvCount_x,rank_x,recvtag+1);
+	req1[2] = MPI_COMM_SCALBL.Isend(sendbuf_y, 3*sendCount_y,rank_y,sendtag+2);
+	req2[2] = MPI_COMM_SCALBL.Irecv(recvbuf_Y, 3*recvCount_Y,rank_Y,recvtag+2);
+	req1[3] = MPI_COMM_SCALBL.Isend(sendbuf_Y, 3*sendCount_Y,rank_Y,sendtag+3);
+	req2[3] = MPI_COMM_SCALBL.Irecv(recvbuf_y, 3*recvCount_y,rank_y,recvtag+3);
+	req1[4] = MPI_COMM_SCALBL.Isend(sendbuf_z, 3*sendCount_z,rank_z,sendtag+4);
+	req2[4] = MPI_COMM_SCALBL.Irecv(recvbuf_Z, 3*recvCount_Z,rank_Z,recvtag+4);
+	req1[5] = MPI_COMM_SCALBL.Isend(sendbuf_Z, 3*sendCount_Z,rank_Z,sendtag+5);
+	req2[5] = MPI_COMM_SCALBL.Irecv(recvbuf_z, 3*recvCount_z,rank_z,recvtag+5);
 
 }
 
@@ -1994,7 +1994,7 @@ void ScaLBL_Communicator::SendHalo(double *data){
 	}
 	ScaLBL_DeviceBarrier();
 	//...................................................................................
-	sendtag = recvtag = 1;
+	sendtag = recvtag = 168;
 	//...................................................................................
 	ScaLBL_Scalar_Pack(dvcSendList_x, sendCount_x,sendbuf_x, data, N);
 	ScaLBL_Scalar_Pack(dvcSendList_y, sendCount_y,sendbuf_y, data, N);
@@ -2018,42 +2018,42 @@ void ScaLBL_Communicator::SendHalo(double *data){
 	// Send / Recv all the phase indcator field values
 	//...................................................................................
 
-	req1[0]  = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag);
-	req2[0]  = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag);
-	req1[1]  = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag);
-	req2[1]  = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag);
-	req1[2]  = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag);
-	req2[2]  = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag);
-	req1[3]  = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag);
-	req2[3]  = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag);
-	req1[4]  = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag);
-	req2[4]  = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag);
-	req1[5]  = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag);
-	req2[5]  = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag);
-	req1[6]  = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag);
-	req2[6]  = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag);
-	req1[7]  = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag);
-	req2[7]  = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag);
-	req1[8]  = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag);
-	req2[8]  = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag);
-	req1[9]  = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag);
-	req2[9]  = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag);
-	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag);
-	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag);
-	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag);
-	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag);
-	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag);
-	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag);
-	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag);
-	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag);
-	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag);
-	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag);
-	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag);
-	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag);
-	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag);
-	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag);
-	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag);
-	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag);
+	req1[0]  = MPI_COMM_SCALBL.Isend(sendbuf_x, sendCount_x,rank_x,sendtag+0);
+	req2[0]  = MPI_COMM_SCALBL.Irecv(recvbuf_X, recvCount_X,rank_X,recvtag+0);
+	req1[1]  = MPI_COMM_SCALBL.Isend(sendbuf_X, sendCount_X,rank_X,sendtag+1);
+	req2[1]  = MPI_COMM_SCALBL.Irecv(recvbuf_x, recvCount_x,rank_x,recvtag+1);
+	req1[2]  = MPI_COMM_SCALBL.Isend(sendbuf_y, sendCount_y,rank_y,sendtag+2);
+	req2[2]  = MPI_COMM_SCALBL.Irecv(recvbuf_Y, recvCount_Y,rank_Y,recvtag+2);
+	req1[3]  = MPI_COMM_SCALBL.Isend(sendbuf_Y, sendCount_Y,rank_Y,sendtag+3);
+	req2[3]  = MPI_COMM_SCALBL.Irecv(recvbuf_y, recvCount_y,rank_y,recvtag+3);
+	req1[4]  = MPI_COMM_SCALBL.Isend(sendbuf_z, sendCount_z,rank_z,sendtag+4);
+	req2[4]  = MPI_COMM_SCALBL.Irecv(recvbuf_Z, recvCount_Z,rank_Z,recvtag+4);
+	req1[5]  = MPI_COMM_SCALBL.Isend(sendbuf_Z, sendCount_Z,rank_Z,sendtag+5);
+	req2[5]  = MPI_COMM_SCALBL.Irecv(recvbuf_z, recvCount_z,rank_z,recvtag+5);
+	req1[6]  = MPI_COMM_SCALBL.Isend(sendbuf_xy, sendCount_xy,rank_xy,sendtag+6);
+	req2[6]  = MPI_COMM_SCALBL.Irecv(recvbuf_XY, recvCount_XY,rank_XY,recvtag+6);
+	req1[7]  = MPI_COMM_SCALBL.Isend(sendbuf_XY, sendCount_XY,rank_XY,sendtag+7);
+	req2[7]  = MPI_COMM_SCALBL.Irecv(recvbuf_xy, recvCount_xy,rank_xy,recvtag+7);
+	req1[8]  = MPI_COMM_SCALBL.Isend(sendbuf_Xy, sendCount_Xy,rank_Xy,sendtag+8);
+	req2[8]  = MPI_COMM_SCALBL.Irecv(recvbuf_xY, recvCount_xY,rank_xY,recvtag+8);
+	req1[9]  = MPI_COMM_SCALBL.Isend(sendbuf_xY, sendCount_xY,rank_xY,sendtag+9);
+	req2[9]  = MPI_COMM_SCALBL.Irecv(recvbuf_Xy, recvCount_Xy,rank_Xy,recvtag+9);
+	req1[10] = MPI_COMM_SCALBL.Isend(sendbuf_xz, sendCount_xz,rank_xz,sendtag+10);
+	req2[10] = MPI_COMM_SCALBL.Irecv(recvbuf_XZ, recvCount_XZ,rank_XZ,recvtag+10);
+	req1[11] = MPI_COMM_SCALBL.Isend(sendbuf_XZ, sendCount_XZ,rank_XZ,sendtag+11);
+	req2[11] = MPI_COMM_SCALBL.Irecv(recvbuf_xz, recvCount_xz,rank_xz,recvtag+11);
+	req1[12] = MPI_COMM_SCALBL.Isend(sendbuf_Xz, sendCount_Xz,rank_Xz,sendtag+12);
+	req2[12] = MPI_COMM_SCALBL.Irecv(recvbuf_xZ, recvCount_xZ,rank_xZ,recvtag+12);
+	req1[13] = MPI_COMM_SCALBL.Isend(sendbuf_xZ, sendCount_xZ,rank_xZ,sendtag+13);
+	req2[13] = MPI_COMM_SCALBL.Irecv(recvbuf_Xz, recvCount_Xz,rank_Xz,recvtag+13);
+	req1[14] = MPI_COMM_SCALBL.Isend(sendbuf_yz, sendCount_yz,rank_yz,sendtag+14);
+	req2[14] = MPI_COMM_SCALBL.Irecv(recvbuf_YZ, recvCount_YZ,rank_YZ,recvtag+14);
+	req1[15] = MPI_COMM_SCALBL.Isend(sendbuf_YZ, sendCount_YZ,rank_YZ,sendtag+15);
+	req2[15] = MPI_COMM_SCALBL.Irecv(recvbuf_yz, recvCount_yz,rank_yz,recvtag+15);
+	req1[16] = MPI_COMM_SCALBL.Isend(sendbuf_Yz, sendCount_Yz,rank_Yz,sendtag+16);
+	req2[16] = MPI_COMM_SCALBL.Irecv(recvbuf_yZ, recvCount_yZ,rank_yZ,recvtag+16);
+	req1[17] = MPI_COMM_SCALBL.Isend(sendbuf_yZ, sendCount_yZ,rank_yZ,sendtag+17);
+	req2[17] = MPI_COMM_SCALBL.Irecv(recvbuf_Yz, recvCount_Yz,rank_Yz,recvtag+17);
 	//...................................................................................
 }
 void ScaLBL_Communicator::RecvHalo(double *data){

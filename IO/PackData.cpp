@@ -1,6 +1,6 @@
 #include "IO/PackData.h"
 
-#include <string.h>
+#include <string>
 
 
 /********************************************************
