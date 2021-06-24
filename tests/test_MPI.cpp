@@ -10,6 +10,7 @@
 #include "common/UnitTest.h"
 #include "common/Utilities.h"
 #include "common/Utilities.hpp"
+#include "common/ScaLBL.h"
 #include "ProfilerApp.h"
 
 
@@ -19,7 +20,6 @@
 #else
 #include <sched.h>
 #endif
-
 
 #undef MPI_CLASS
 #define MPI_CLASS Utilities::MPI
@@ -1196,6 +1196,65 @@ void testCommDup( UnitTest *ut )
 }
 
 
+// Test GPU aware MPI
+void test_GPU_aware( UnitTest *ut )
+{
+    size_t N = 1024*1024;
+    bool test = true;
+    // Get the comm to use
+    MPI_CLASS comm( MPI_COMM_WORLD );
+    int rank = comm.getRank();
+    int size = comm.getSize();
+    try {
+        // Initialize the device
+        int device = ScaLBL_SetDevice(rank); 
+        // Allocate buffers
+        size_t bytes = N*sizeof(double);
+        double *device_send = nullptr, *device_recv = nullptr;
+        ScaLBL_AllocateDeviceMemory((void**)&device_send,bytes);
+        ScaLBL_AllocateDeviceMemory((void**)&device_recv,bytes);
+        auto host_send = new double[N];
+        auto host_recv = new double[N];
+        // Initialize the data
+        for ( size_t i=0; i<N; i++ ) {
+            host_send[i] = 10000 * rank + i;
+            host_recv[i] = 0;
+        }
+        ScaLBL_CopyToDevice(device_send,host_send,bytes);
+        ScaLBL_CopyToDevice(device_recv,host_recv,bytes);
+        ScaLBL_DeviceBarrier();
+        // Send/recieve the data
+        int rank_send = ( rank + 1 ) % size;
+        int rank_recv = ( rank - 1 + size ) % size;
+        auto req1 = comm.Isend( device_send, N, rank_send, 1 );
+        auto req2 = comm.Irecv( device_recv, N, rank_recv, 1 );
+        comm.wait(req1);
+        comm.wait(req2);
+        // Check the data
+        ScaLBL_CopyToHost(host_send,device_send,bytes);
+        ScaLBL_CopyToHost(host_recv,device_recv,bytes);
+        ScaLBL_DeviceBarrier();
+        for ( size_t i=0; i<N; i++ )
+            test = test && host_recv[i] == 10000 * rank_recv + i;
+        // Free buffers
+        ScaLBL_FreeDeviceMemory(device_send);
+        ScaLBL_FreeDeviceMemory(device_recv);
+        delete [] host_send;
+        delete [] host_recv;
+    } catch ( ... ) {
+        test = false;
+    }
+    comm.barrier();
+    if ( test ) {
+        std::cout << "MPI is GPU aware" << std::endl;
+        ut->passes("GPU aware MPI" );
+    } else {
+        std::cout << "MPI is NOT GPU aware" << std::endl;
+        ut->failure("GPU aware MPI" );
+    }
+}
+
+
 //  This test will test the MPI class
 int main( int argc, char *argv[] )
 {
@@ -1512,6 +1571,9 @@ int main( int argc, char *argv[] )
                 ut.failure( "time and tick" );
             std::cout << std::endl;
         }
+
+        // Test GPU aware MPI
+        test_GPU_aware( &ut );
 
     } // Limit the scope so objects are destroyed
 
