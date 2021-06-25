@@ -521,8 +521,10 @@ void SubPhase::Full(){
 				double vz = 0.5*(Vel_y(i,j,k+1) - Vel_y(i,j,k-1));
 				double wx = 0.5*(Vel_z(i+1,j,k) - Vel_z(i-1,j,k));
 				double wy = 0.5*(Vel_z(i,j+1,k) - Vel_z(i,j-1,k));
-				double wz = 0.5*(Vel_z(i,j,k+1) - Vel_z(i,j,k-1));				
-				Dissipation(i,j,k) = 2*rho*nu*( ux*ux + vy*vy + wz*wz + 0.5*(vx + uy)*(vx + uy)+ 0.5*(vz + wy)*(vz + wy)+ 0.5*(uz + wx)*(uz + wx));
+				double wz = 0.5*(Vel_z(i,j,k+1) - Vel_z(i,j,k-1));
+				if (SDs(i,j,k) > 2.0){
+					Dissipation(i,j,k) = 2*rho*nu*( ux*ux + vy*vy + wz*wz + 0.5*(vx + uy)*(vx + uy)+ 0.5*(vz + wy)*(vz + wy)+ 0.5*(uz + wx)*(uz + wx));					
+				}
 			}
 		}
 	}
