@@ -3,8 +3,10 @@
 
 
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <initializer_list>
+#include <stdexcept>
 #include <vector>
 
 

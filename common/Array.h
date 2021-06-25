@@ -4,10 +4,12 @@
 #include "common/ArraySize.h"
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <memory>
+#include <stdint.h>
 #include <vector>
 
 
