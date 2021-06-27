@@ -138,5 +138,7 @@ void write( int fid, const std::string &var, const std::vector<int> &dimids,
     const Array<TYPE> &data, const RankInfoStruct &rank_info );
 
 
-}; // namespace netcdf
+} // namespace netcdf
+
+
 #endif
