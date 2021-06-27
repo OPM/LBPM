@@ -1450,9 +1450,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure,
+		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
 	int n,nn,ijk,nread;
 	int nr1,nr2,nr3,nr4,nr5,nr6;
@@ -1462,8 +1462,6 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
-	//double vx,vy,vz,v_mag;
-    //double ux,uy,uz,u_mag;
     double ux,uy,uz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
@@ -1473,18 +1471,14 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
 
-    //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
-    //double c0, c1; //Guo's model parameters
     double tau_eff;
     double mu_eff;//kinematic viscosity
-    double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
-    double nx_phase,ny_phase,nz_phase,C_phase;
     double Fx,Fy,Fz;
-	double gp1,gp2,gp4,gp6,gp8,gp9,gp10,gp11,gp12,gp13,gp14,gp15,gp16,gp17,gp18;
-	double gp3,gp5,gp7;
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
+    double W;//greyscale wetting strength
+    double Sn_grey,Sw_grey;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1510,9 +1504,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 
             porosity = Poros[n];
             perm = Perm[n];
-            nx_gs = GreySolidGrad[n+0*Np];
-            ny_gs = GreySolidGrad[n+1*Np];
-            nz_gs = GreySolidGrad[n+2*Np];
+            W = GreySolidW[n];
+            Sn_grey = GreySn[n];
+            Sw_grey = GreySw[n];
 
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
@@ -1534,98 +1528,61 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			//........................................................................
 			nn = ijk-1;							// neighbor index (get convention)
 			m1 = Phi[nn];						// get neighbor for phi - 1
-            gp1 = Psi[nn];
 			//........................................................................
 			nn = ijk+1;							// neighbor index (get convention)
 			m2 = Phi[nn];						// get neighbor for phi - 2
-            gp2 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY;							// neighbor index (get convention)
 			m3 = Phi[nn];					// get neighbor for phi - 3
-            gp3 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY;							// neighbor index (get convention)
 			m4 = Phi[nn];					// get neighbor for phi - 4
-            gp4 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ;						// neighbor index (get convention)
 			m5 = Phi[nn];					// get neighbor for phi - 5
-            gp5 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ;						// neighbor index (get convention)
 			m6 = Phi[nn];					// get neighbor for phi - 6
-            gp6 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY-1;						// neighbor index (get convention)
 			m7 = Phi[nn];					// get neighbor for phi - 7
-            gp7 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY+1;						// neighbor index (get convention)
 			m8 = Phi[nn];					// get neighbor for phi - 8
-            gp8 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY-1;						// neighbor index (get convention)
 			m9 = Phi[nn];					// get neighbor for phi - 9
-            gp9 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY+1;						// neighbor index (get convention)
 			m10 = Phi[nn];					// get neighbor for phi - 10
-            gp10 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ-1;						// neighbor index (get convention)
 			m11 = Phi[nn];					// get neighbor for phi - 11
-            gp11 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ+1;						// neighbor index (get convention)
 			m12 = Phi[nn];					// get neighbor for phi - 12
-            gp12 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ-1;						// neighbor index (get convention)
 			m13 = Phi[nn];					// get neighbor for phi - 13
-            gp13 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ+1;						// neighbor index (get convention)
 			m14 = Phi[nn];					// get neighbor for phi - 14
-            gp14 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ-strideY;					// neighbor index (get convention)
 			m15 = Phi[nn];					// get neighbor for phi - 15
-            gp15 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ+strideY;					// neighbor index (get convention)
 			m16 = Phi[nn];					// get neighbor for phi - 16
-            gp16 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ-strideY;					// neighbor index (get convention)
 			m17 = Phi[nn];					// get neighbor for phi - 17
-            gp17 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
-            gp18 = Psi[nn];
 			//............Compute the Color Gradient...................................
-			nx_phase = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny_phase = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz_phase = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
-
-            //correct the normal color gradient by considering the effect of grey solid
-            nx = nx_phase + (1.0-porosity)*nx_gs; 
-            ny = ny_phase + (1.0-porosity)*ny_gs; 
-            nz = nz_phase + (1.0-porosity)*nz_gs; 
-            if (C_phase==0.0){
-                nx = nx_phase; 
-                ny = ny_phase;
-                nz = nz_phase;
-            }
-
-			//...........Normalize the Color Gradient.................................
-			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
+			nx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 
 			//............Compute the Greyscale Potential Gradient.....................
 //			Fcpx = 0.0;
@@ -1648,13 +1605,23 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 //                //ny = Fcpy/Fcp_mag;
 //                //nz = Fcpz/Fcp_mag;
 //            }
-            Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-            Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-            Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            Fcpx = nx;
+            Fcpy = ny;
+            Fcpz = nz;
+            double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
             //NOTE for open node (porosity=1.0),Fcp=0.0
             Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
+
+			//...........Normalize the Color Gradient.................................
+			C = sqrt(nx*nx+ny*ny+nz*nz);
+			double ColorMag = C;
+			if (C==0.0) ColorMag=1.0;
+			nx = nx/ColorMag;
+			ny = ny/ColorMag;
+			nz = nz/ColorMag;		
 
 			// q=0
 			fq = dist[n];
@@ -2201,6 +2168,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -2220,6 +2191,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -2240,6 +2215,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -2262,15 +2241,13 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm, double *Velocity, double *Pressure, 
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Gx, double Gy, double Gz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
 	double fq;
 	// conserved momemnts
 	double rho,jx,jy,jz;
-	//double vx,vy,vz,v_mag;
-    //double ux,uy,uz,u_mag;
     double ux,uy,uz;
 	// non-conserved moments
 	double m1,m2,m4,m6,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18;
@@ -2280,18 +2257,14 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 	double C,nx,ny,nz; //color gradient magnitude and direction
 	double phi,tau,rho0,rlx_setA,rlx_setB;
 
-    //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
-    //double c0, c1; //Guo's model parameters
     double tau_eff;
     double mu_eff;//kinematic viscosity
-    double nx_gs,ny_gs,nz_gs;//grey-solid color gradient
-    double nx_phase,ny_phase,nz_phase,C_phase;
     double Fx,Fy,Fz;
-	double gp1,gp2,gp4,gp6,gp8,gp9,gp10,gp11,gp12,gp13,gp14,gp15,gp16,gp17,gp18;
-	double gp3,gp5,gp7;
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
+    double W;//greyscale wetting strength
+    double Sn_grey,Sw_grey;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -2315,11 +2288,12 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
+
             porosity = Poros[n];
             perm = Perm[n];
-            nx_gs = GreySolidGrad[n+0*Np];
-            ny_gs = GreySolidGrad[n+1*Np];
-            nz_gs = GreySolidGrad[n+2*Np];
+            W = GreySolidW[n];
+            Sn_grey = GreySn[n];
+            Sw_grey = GreySw[n];
 
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
@@ -2341,98 +2315,61 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			//........................................................................
 			nn = ijk-1;							// neighbor index (get convention)
 			m1 = Phi[nn];						// get neighbor for phi - 1
-            gp1 = Psi[nn];
 			//........................................................................
 			nn = ijk+1;							// neighbor index (get convention)
 			m2 = Phi[nn];						// get neighbor for phi - 2
-            gp2 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY;							// neighbor index (get convention)
 			m3 = Phi[nn];					// get neighbor for phi - 3
-            gp3 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY;							// neighbor index (get convention)
 			m4 = Phi[nn];					// get neighbor for phi - 4
-            gp4 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ;						// neighbor index (get convention)
 			m5 = Phi[nn];					// get neighbor for phi - 5
-            gp5 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ;						// neighbor index (get convention)
 			m6 = Phi[nn];					// get neighbor for phi - 6
-            gp6 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY-1;						// neighbor index (get convention)
 			m7 = Phi[nn];					// get neighbor for phi - 7
-            gp7 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY+1;						// neighbor index (get convention)
 			m8 = Phi[nn];					// get neighbor for phi - 8
-            gp8 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideY-1;						// neighbor index (get convention)
 			m9 = Phi[nn];					// get neighbor for phi - 9
-            gp9 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideY+1;						// neighbor index (get convention)
 			m10 = Phi[nn];					// get neighbor for phi - 10
-            gp10 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ-1;						// neighbor index (get convention)
 			m11 = Phi[nn];					// get neighbor for phi - 11
-            gp11 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ+1;						// neighbor index (get convention)
 			m12 = Phi[nn];					// get neighbor for phi - 12
-            gp12 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ-1;						// neighbor index (get convention)
 			m13 = Phi[nn];					// get neighbor for phi - 13
-            gp13 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ+1;						// neighbor index (get convention)
 			m14 = Phi[nn];					// get neighbor for phi - 14
-            gp14 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ-strideY;					// neighbor index (get convention)
 			m15 = Phi[nn];					// get neighbor for phi - 15
-            gp15 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ+strideY;					// neighbor index (get convention)
 			m16 = Phi[nn];					// get neighbor for phi - 16
-            gp16 = Psi[nn];
 			//........................................................................
 			nn = ijk+strideZ-strideY;					// neighbor index (get convention)
 			m17 = Phi[nn];					// get neighbor for phi - 17
-            gp17 = Psi[nn];
 			//........................................................................
 			nn = ijk-strideZ+strideY;					// neighbor index (get convention)
 			m18 = Phi[nn];					// get neighbor for phi - 18
-            gp18 = Psi[nn];
 			//............Compute the Color Gradient...................................
-			nx_phase = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-			ny_phase = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-			nz_phase = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-			C_phase = sqrt(nx_phase*nx_phase+ny_phase*ny_phase+nz_phase*nz_phase);
-
-            //correct the normal color gradient by considering the effect of grey solid
-            nx = nx_phase + (1.0-porosity)*nx_gs; 
-            ny = ny_phase + (1.0-porosity)*ny_gs; 
-            nz = nz_phase + (1.0-porosity)*nz_gs; 
-            if (C_phase==0.0){
-                nx = nx_phase; 
-                ny = ny_phase;
-                nz = nz_phase;
-            }
-
-			//...........Normalize the Color Gradient.................................
-			C = sqrt(nx*nx+ny*ny+nz*nz);
-			double ColorMag = C;
-			if (C==0.0) ColorMag=1.0;
-			nx = nx/ColorMag;
-			ny = ny/ColorMag;
-			nz = nz/ColorMag;		
+			nx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+			ny = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+			nz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 
 			//............Compute the Greyscale Potential Gradient.....................
 //			Fcpx = 0.0;
@@ -2455,14 +2392,23 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 //                ny = Fcpy/Fcp_mag;
 //                nz = Fcpz/Fcp_mag;
 //            }
-            Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-            Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-            Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+            Fcpx = nx; 
+            Fcpy = ny; 
+            Fcpz = nz; 
+            double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
             //NOTE for open node (porosity=1.0),Fcp=0.0
             Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
 
+			//...........Normalize the Color Gradient.................................
+			C = sqrt(nx*nx+ny*ny+nz*nz);
+			double ColorMag = C;
+			if (C==0.0) ColorMag=1.0;
+			nx = nx/ColorMag;
+			ny = ny/ColorMag;
+			nz = nz/ColorMag;		
 
 			// q=0
 			fq = dist[n];
@@ -2942,6 +2888,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -2958,6 +2908,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -2973,6 +2927,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -2988,6 +2946,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 		}
 	}
 }
+
 
 __global__ void dvc_ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, double *Bq, int start, int finish, int Np){
 	int idx;
@@ -4572,12 +4531,12 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi,double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm, Vel, Pressure,
-            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm, Vel, Pressure,
+            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
 		printf("hip error in ScaLBL_D3Q19_AAeven_GreyscaleColor_CP: %s \n",hipGetErrorString(err));
@@ -4587,12 +4546,12 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *Psi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
-		double Fx, double Fy, double Fz, bool RecoloringOff, double W, int strideY, int strideZ, int start, int finish, int Np){
+		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, Psi, GreySolidGrad, Poros, Perm,Vel,Pressure,
-			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, W, strideY, strideZ, start, finish, Np);
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm,Vel,Pressure,
+			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 
 	hipError_t err = hipGetLastError();
 	if (hipSuccess != err){
@@ -4600,51 +4559,3 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *M
 	}
 }
 
-//extern "C" void ScaLBL_Update_GreyscalePotential(int *Map, double *Phi, double *Psi, double *Poro, double *Perm, double alpha, double W, 
-//		int start, int finish, int Np){
-//
-//	dvc_ScaLBL_Update_GreyscalePotential<<<NBLOCKS,NTHREADS >>>(Map, Phi, Psi, Poro, Perm, alpha, W, start, finish, Np);
-//
-//	hipError_t err = hipGetLastError();
-//	if (hipSuccess != err){
-//		printf("hip error in ScaLBL_Update_GreyscalePotential: %s \n",hipGetErrorString(err));
-//	}
-//}
-
-////Model-2&3
-//extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-//        double *Phi,double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
-//        double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
-//
-//	//cudaProfilerStart();
-//	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor, cudaFuncCachePreferL1);
-//
-//	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidGrad, Poros, Perm, Vel, 
-//            rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
-//	hipError_t err = hipGetLastError();
-//	if (hipSuccess != err){
-//		printf("hip error in ScaLBL_D3Q19_AAeven_GreyscaleColor: %s \n",hipGetErrorString(err));
-//	}
-//	//cudaProfilerStop();
-//
-//}
-//
-////Model-2&3
-//extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-//		double *Phi, double *GreySolidGrad, double *Poros,double *Perm,double *Vel, 
-//        double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
-//		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np){
-//
-//	//cudaProfilerStart();
-//	//cudaFuncSetCacheConfig(dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor, cudaFuncCachePreferL1);
-//	
-//	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi,  GreySolidGrad, Poros, Perm,Vel, 
-//			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, strideY, strideZ, start, finish, Np);
-//
-//	hipError_t err = hipGetLastError();
-//	if (hipSuccess != err){
-//		printf("hip error in ScaLBL_D3Q19_AAodd_GreyscaleColor: %s \n",hipGetErrorString(err));
-//	}
-//	//cudaProfilerStop();
-//}

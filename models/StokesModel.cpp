@@ -59,6 +59,7 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
     BoundaryCondition = 0;
 	if (stokes_db->keyExists( "BC" )){
 		BoundaryCondition = stokes_db->getScalar<int>( "BC" );
+
 	}
 	if (stokes_db->keyExists( "tolerance" )){
 		tolerance = stokes_db->getScalar<double>( "tolerance" );
@@ -109,6 +110,7 @@ void ScaLBL_StokesModel::ReadParams(string filename,int num_iter){
 
 void ScaLBL_StokesModel::ReadParams(string filename){
     //NOTE the max time step is left unspecified
+
 
 	// read the input database 
 	db = std::make_shared<Database>( filename );
@@ -298,8 +300,10 @@ void ScaLBL_StokesModel::AssignZetaPotentialSolid(double *zeta_potential_solid)
 		ERROR("Error: LB Single-Fluid Solver: SolidLabels and ZetaPotentialSolidList must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double *label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 

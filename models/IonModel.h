@@ -34,7 +34,7 @@ public:
 	void Create();
 	void Initialize();
 	void Run(double *Velocity, double *ElectricField);
-    void getIonConcentration(DoubleArray &IonConcentration, const int ic);
+    void getIonConcentration(DoubleArray &IonConcentration, const size_t ic);
     void getIonConcentration_debug(int timestep);
     void DummyFluidVelocity();
     void DummyElectricField();
@@ -51,7 +51,7 @@ public:
     double fluidVelx_dummy,fluidVely_dummy,fluidVelz_dummy;
     double Ex_dummy,Ey_dummy,Ez_dummy;
 	
-	int number_ion_species;
+	size_t number_ion_species;
 	vector<int> BoundaryConditionInlet;
 	vector<int> BoundaryConditionOutlet;
     vector<double> IonDiffusivity;//User input unit [m^2/sec]

@@ -68,6 +68,8 @@ public:
     //double *GreySolidPhi; //Model 2 & 3
     //double *GreySolidGrad;//Model 1 & 4
     double *GreySolidW;
+    double *GreySn;
+    double *GreySw;
 	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
