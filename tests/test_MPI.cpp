@@ -1199,7 +1199,8 @@ void testCommDup( UnitTest *ut )
 // Test GPU aware MPI
 void test_GPU_aware( UnitTest *ut )
 {
-    size_t N = 1024*1024;
+    constexpr size_t N = 1024*1024;
+    constexpr size_t N_msg = 64;
     bool test = true;
     // Get the comm to use
     MPI_CLASS comm( MPI_COMM_WORLD );
@@ -1208,39 +1209,55 @@ void test_GPU_aware( UnitTest *ut )
     try {
         // Initialize the device
         int device = ScaLBL_SetDevice(rank); 
-        // Allocate buffers
+        // Allocate and initialize the buffers
         size_t bytes = N*sizeof(double);
-        double *device_send = nullptr, *device_recv = nullptr;
-        ScaLBL_AllocateDeviceMemory((void**)&device_send,bytes);
-        ScaLBL_AllocateDeviceMemory((void**)&device_recv,bytes);
-        auto host_send = new double[N];
-        auto host_recv = new double[N];
-        // Initialize the data
-        for ( size_t i=0; i<N; i++ ) {
-            host_send[i] = 10000 * rank + i;
-            host_recv[i] = 0;
+        double *device_send[N_msg] = { nullptr };
+        double *device_recv[N_msg] = { nullptr };
+        double *host_send[N_msg] = { nullptr };
+        double *host_recv[N_msg] = { nullptr };
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_AllocateDeviceMemory((void**)&device_send[k],bytes);
+            ScaLBL_AllocateDeviceMemory((void**)&device_recv[k],bytes);
+            host_send[k] = new double[N];
+            host_recv[k] = new double[N];
+            // Initialize the data
+            for ( size_t i=0; i<N; i++ ) {
+                host_send[k][i] = 1000 * k * rank + i;
+                host_recv[k][i] = 0;
+            }
+            ScaLBL_CopyToDevice(device_send[k],host_send[k],bytes);
+            ScaLBL_CopyToDevice(device_recv[k],host_recv[k],bytes);
         }
-        ScaLBL_CopyToDevice(device_send,host_send,bytes);
-        ScaLBL_CopyToDevice(device_recv,host_recv,bytes);
         ScaLBL_DeviceBarrier();
         // Send/recieve the data
         int rank_send = ( rank + 1 ) % size;
         int rank_recv = ( rank - 1 + size ) % size;
-        auto req1 = comm.Isend( device_send, N, rank_send, 1 );
-        auto req2 = comm.Irecv( device_recv, N, rank_recv, 1 );
-        comm.wait(req1);
-        comm.wait(req2);
-        // Check the data
-        ScaLBL_CopyToHost(host_send,device_send,bytes);
-        ScaLBL_CopyToHost(host_recv,device_recv,bytes);
+        MPI_Request req1[N_msg];
+        MPI_Request req2[N_msg];
+        for ( size_t k=0; k<N_msg; k++ ) {
+            req1[k] = comm.Isend( device_send[k], N, rank_send, k );
+            req2[k] = comm.Irecv( device_recv[k], N, rank_recv, k );
+        }
+        comm.waitAll(N_msg,req1);
+        comm.waitAll(N_msg,req2);
+        // Copy
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_CopyToHost(host_send[k],device_send[k],bytes);
+            ScaLBL_CopyToHost(host_recv[k],device_recv[k],bytes);
+        }
         ScaLBL_DeviceBarrier();
-        for ( size_t i=0; i<N; i++ )
-            test = test && host_recv[i] == 10000 * rank_recv + i;
+        // Check the data
+        for ( size_t k=0; k<N_msg; k++ ) {
+            for ( size_t i=0; i<N; i++ )
+                test = test && host_recv[k][i] == 1000 * k * rank_recv + i;
+        }
         // Free buffers
-        ScaLBL_FreeDeviceMemory(device_send);
-        ScaLBL_FreeDeviceMemory(device_recv);
-        delete [] host_send;
-        delete [] host_recv;
+        for ( size_t k=0; k<N_msg; k++ ) {
+            ScaLBL_FreeDeviceMemory(device_send[k]);
+            ScaLBL_FreeDeviceMemory(device_recv[k]);
+            delete [] host_send[k];
+            delete [] host_recv[k];
+        }
     } catch ( ... ) {
         test = false;
     }
