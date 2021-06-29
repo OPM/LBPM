@@ -22,10 +22,11 @@ class phase{
 public:
 	int Nc;
 	double p;
-	double M,Px,Py,Pz,K;
+	double M,Px,Py,Pz,K,visc;
 	double V,A,H,X;
 	void reset(){
 		p=M=Px=Py=Pz=K=0.0;
+		visc=0.0;
 		V=A=H=X=0.0;
 		Nc=1;
 	}
@@ -70,10 +71,12 @@ public:
 	// local entities
 	phase wc,wd,wb,nc,nd,nb,solid;
 	interface iwn,iwnc;
+	interface ifs;
 	
 	// global entities
 	phase gwc,gwd,gwb,gnc,gnd,gnb,gsolid;
 	interface giwn,giwnc;
+	interface gifs;
 	/* fluid-solid wetting interaction */
 	double total_wetting_interaction, count_wetting_interaction;
 	double total_wetting_interaction_global, count_wetting_interaction_global;
@@ -92,6 +95,7 @@ public:
 	DoubleArray Vel_x;		// velocity field
 	DoubleArray Vel_y;
 	DoubleArray Vel_z;
+	DoubleArray Dissipation;
 	DoubleArray SDs;
 
 	std::shared_ptr<Minkowski> morph_w;

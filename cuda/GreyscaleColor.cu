@@ -1450,7 +1450,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *GreySolidW, double *Poros,double *Perm, double *Velocity, double *Pressure,
+		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -1478,6 +1478,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
     double Fx,Fy,Fz;
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
     double W;//greyscale wetting strength
+    double Sn_grey,Sw_grey;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1504,6 +1505,8 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
             porosity = Poros[n];
             perm = Perm[n];
             W = GreySolidW[n];
+            Sn_grey = GreySn[n];
+            Sw_grey = GreySw[n];
 
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
@@ -2165,6 +2168,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -2184,6 +2191,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -2204,6 +2215,10 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -2226,7 +2241,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *Poros,double *Perm, double *Velocity, double *Pressure, 
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -2249,6 +2264,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
     double Fx,Fy,Fz;
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
     double W;//greyscale wetting strength
+    double Sn_grey,Sw_grey;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -2276,6 +2292,8 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
             porosity = Poros[n];
             perm = Perm[n];
             W = GreySolidW[n];
+            Sn_grey = GreySn[n];
+            Sw_grey = GreySw[n];
 
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
@@ -2870,6 +2888,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
@@ -2886,6 +2908,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,1,0}
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
@@ -2901,6 +2927,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			// Cq = {0,0,1}
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
+            //----------------newly added for better control of recoloring---------------//
+            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+            //---------------------------------------------------------------------------//
             if (RecoloringOff==true && porosity !=1.0) delta=0;
 			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
 			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
@@ -4500,12 +4530,13 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidW, Poros, Perm, Vel, Pressure,
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm, Vel, Pressure,
             rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
+	
 	cudaError_t err = cudaGetLastError();
 	if (cudaSuccess != err){
 		printf("CUDA error in ScaLBL_D3Q19_AAeven_GreyscaleColor_CP: %s \n",cudaGetErrorString(err));
@@ -4515,11 +4546,11 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidW, double *Poros,double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, GreySolidW, Poros, Perm,Vel,Pressure,
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm,Vel,Pressure,
 			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();

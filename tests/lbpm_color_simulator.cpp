@@ -66,7 +66,6 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-
 		if (SimulationMode == "development"){
 			double MLUPS=0.0;
 			int timestep = 0;
@@ -82,13 +81,18 @@ int main( int argc, char **argv )
 			int SKIP_TIMESTEPS = 0;
 			int MAX_STEADY_TIME = 1000000;
 			double ENDPOINT_THRESHOLD = 0.1;
-			double FRACTIONAL_FLOW_INCREMENT = 0.05;
+			double FRACTIONAL_FLOW_INCREMENT = 0.0; // this will skip the flow adaptor if not enabled
+			double SEED_WATER = 0.0;
 			if (ColorModel.db->keyExists( "FlowAdaptor" )){
 				auto flow_db = ColorModel.db->getDatabase( "FlowAdaptor" );
 				MAX_STEADY_TIME = flow_db->getWithDefault<int>( "max_steady_timesteps", 1000000 );
-				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 100000 );
-				FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
+				SKIP_TIMESTEPS = flow_db->getWithDefault<int>( "skip_timesteps", 50000 );
 				ENDPOINT_THRESHOLD = flow_db->getWithDefault<double>( "endpoint_threshold", 0.1);
+				/* protocol specific key values */
+				if (PROTOCOL == "fractional flow")
+					FRACTIONAL_FLOW_INCREMENT = flow_db->getWithDefault<double>( "fractional_flow_increment", 0.05);
+				if (PROTOCOL == "seed water")
+					SEED_WATER = flow_db->getWithDefault<double>( "seed_water", 0.01);
 			}
 			/* analysis keys*/
 			int ANALYSIS_INTERVAL = ColorModel.timestepMax;
@@ -106,9 +110,26 @@ int main( int argc, char **argv )
 				if (ColorModel.timestep > ColorModel.timestepMax){
 					ContinueSimulation = false;
 				}
+				
+				/* Load a new image if image sequence is specified */
+				if (PROTOCOL == "image sequence"){
+					IMAGE_INDEX++;
+					if (IMAGE_INDEX < IMAGE_COUNT){
+						std::string next_image = ImageList[IMAGE_INDEX];
+						if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
+						ColorModel.color_db->putScalar<int>("image_index",IMAGE_INDEX);
+						Adapt.ImageInit(ColorModel, next_image);
+					}
+					else{
+						if (rank==0) printf("Finished simulating image sequence \n");
+						ColorModel.timestep =  ColorModel.timestepMax;
+					}
+				}
+				/*********************************************************/
 				/* update the fluid configuration with the flow adapter */
 				int skip_time = 0;
 				timestep = ColorModel.timestep;
+				/* get the averaged flow measures computed internally for the last simulation point*/
 				double SaturationChange = 0.0;
 				double volB = ColorModel.Averages->gwb.V; 
 				double volA = ColorModel.Averages->gnb.V; 
@@ -121,6 +142,7 @@ int main( int argc, char **argv )
 				double vB_z = ColorModel.Averages->gwb.Pz/ColorModel.Averages->gwb.M; 			
 				double speedA = sqrt(vA_x*vA_x + vA_y*vA_y + vA_z*vA_z);
 				double speedB = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
+				/* stop simulation if previous point was sufficiently close to the endpoint*/
 				if (volA*speedA < ENDPOINT_THRESHOLD*volB*speedB) ContinueSimulation = false;
 				if (ContinueSimulation){
 					while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
@@ -128,21 +150,16 @@ int main( int argc, char **argv )
 						if (PROTOCOL == "fractional flow")	{							
 							Adapt.UpdateFractionalFlow(ColorModel);
 						}
-						else if (PROTOCOL == "image sequence"){
-							// Use image sequence
-							IMAGE_INDEX++;
-							if (IMAGE_INDEX < IMAGE_COUNT){
-								std::string next_image = ImageList[IMAGE_INDEX];
-								if (rank==0) printf("***Loading next image in sequence (%i) ***\n",IMAGE_INDEX);
-								ColorModel.color_db->putScalar<int>("image_index",IMAGE_INDEX);
-								Adapt.ImageInit(ColorModel, next_image);
-							}
-							else{
-								if (rank==0) printf("Finished simulating image sequence \n");
-								ColorModel.timestep =  ColorModel.timestepMax;
-							}
+						else if (PROTOCOL == "shell aggregation"){
+							double target_volume_change = FRACTIONAL_FLOW_INCREMENT*initialSaturation - SaturationChange;
+							Adapt.ShellAggregation(ColorModel,target_volume_change);
 						}
+						else if (PROTOCOL == "seed water"){
+							Adapt.SeedPhaseField(ColorModel,SEED_WATER);
+						}
+						/* Run some LBM timesteps to let the system relax a bit */
 						MLUPS = ColorModel.Run(timestep);
+						/* Recompute the volume fraction now that the system has adjusted */
 						double volB = ColorModel.Averages->gwb.V; 
 						double volA = ColorModel.Averages->gnb.V;
 						SaturationChange = volB/(volA + volB) - initialSaturation;
@@ -150,22 +167,12 @@ int main( int argc, char **argv )
 					}
 					if (rank==0) printf("  *********************************************************************  \n");
 					if (rank==0) printf("   Updated fractional flow with saturation change = %f  \n", SaturationChange);
+					if (rank==0) printf("   Used protocol = %s  \n", PROTOCOL.c_str());
 					if (rank==0) printf("  *********************************************************************  \n");
 				}
-				/* apply timestep skipping algorithm to accelerate steady-state */
-				/* skip_time = 0;
-            	timestep = ColorModel.timestep;
-            	while (skip_time < SKIP_TIMESTEPS){
-            		timestep += ANALYSIS_INTERVAL;
-                	MLUPS = ColorModel.Run(timestep);
-            		Adapt.MoveInterface(ColorModel);
-            		skip_time += ANALYSIS_INTERVAL;
-            	}
-				 */
+				/*********************************************************/
 			}
-			//ColorModel.WriteDebug();
 		}
-
 		else
 			ColorModel.Run();        
 

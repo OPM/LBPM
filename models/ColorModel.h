@@ -115,7 +115,9 @@ public:
 	~FlowAdaptor();
 	double MoveInterface(ScaLBL_ColorModel &M);
 	double ImageInit(ScaLBL_ColorModel &M, std::string Filename);
+	double ShellAggregation(ScaLBL_ColorModel &M, const double delta_volume);
 	double UpdateFractionalFlow(ScaLBL_ColorModel &M);
+	double SeedPhaseField(ScaLBL_ColorModel &M, const double seed_water_in_oil);
 	void Flatten(ScaLBL_ColorModel &M);
 	DoubleArray phi;
 	DoubleArray phi_t;
