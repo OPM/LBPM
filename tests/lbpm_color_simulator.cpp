@@ -34,15 +34,15 @@ int main( int argc, char **argv )
 		// Load the input database
 		auto db = std::make_shared<Database>( argv[1] );
 		if (argc > 2) {
-			SimulationMode = "development";
+			SimulationMode = "legacy";
 		}
 
 		if ( rank == 0 ) {
 			printf( "********************************************************\n" );
 			printf( "Running Color LBM	\n" );
 			printf( "********************************************************\n" );
-			if (SimulationMode == "development")
-				printf("**** DEVELOPMENT MODE ENABLED *************\n");
+			if (SimulationMode == "legacy")
+				printf("**** LEGACY MODE ENABLED *************\n");
 		}
 		// Initialize compute device
 		int device = ScaLBL_SetDevice( rank );
@@ -66,7 +66,10 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-		if (SimulationMode == "development"){
+		if (SimulationMode == "legacy"){
+			ColorModel.Run();        
+		}
+		else {
 			double MLUPS=0.0;
 			int timestep = 0;
 			bool ContinueSimulation = true;
@@ -174,9 +177,8 @@ int main( int argc, char **argv )
 				/*********************************************************/
 			}
 		}
-		else
-			ColorModel.Run();        
-
+		
+		
 		PROFILE_STOP( "Main" );
 		auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
 		auto level = db->getWithDefault<int>( "TimerLevel", 1 );
