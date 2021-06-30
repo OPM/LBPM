@@ -72,7 +72,7 @@ int main( int argc, char **argv )
 			bool ContinueSimulation = true;
 			
 			/* Variables for simulation protocols */
-			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "none" );
+			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
 			/* image sequence protocol */
 			int IMAGE_INDEX = 0;
 			int IMAGE_COUNT = 0;
@@ -123,6 +123,7 @@ int main( int argc, char **argv )
 					else{
 						if (rank==0) printf("Finished simulating image sequence \n");
 						ColorModel.timestep =  ColorModel.timestepMax;
+						ContinueSimulation = false;
 					}
 				}
 				/*********************************************************/
@@ -144,7 +145,7 @@ int main( int argc, char **argv )
 				double speedB = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				/* stop simulation if previous point was sufficiently close to the endpoint*/
 				if (volA*speedA < ENDPOINT_THRESHOLD*volB*speedB) ContinueSimulation = false;
-				if (ContinueSimulation){
+				if (ContinueSimulation && SKIP_TIMESTEPS > 0 ){
 					while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
 						timestep += ANALYSIS_INTERVAL;
 						if (PROTOCOL == "fractional flow")	{							
