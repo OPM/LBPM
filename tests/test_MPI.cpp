@@ -1195,6 +1195,48 @@ void testCommDup( UnitTest *ut )
 #endif
 }
 
+class gpuWrapper{
+	gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE);
+	~gpuWrapper();
+	void Send(double *values);
+	void Recv(double *values);
+	double *sendbuf, *recvbuf;
+private:
+	MPI_Request req1[1],req2[1];
+	MPI_CLASS comm;
+	int sendCount;
+	int recvCount;
+	int rank, rank_x, rank_X, nprocs;
+	int sendtag, recvtag;
+};
+
+gpuWrapper::gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE){
+    comm = MPI_COMM.dup();
+    rank = comm.getRank();
+    nprocs = comm.getSize();
+	sendCount=MSG_SIZE;
+	recvCount=MSG_SIZE;
+	ScaLBL_AllocateZeroCopy((void **) &sendbuf, sendCount*sizeof(double));	// Allocate device memory
+	ScaLBL_AllocateZeroCopy((void **) &recvbuf, sendCount*sizeof(double));	// Allocate device memory
+	rank_X = rank+1;
+	rank_x = rank-1;
+	if (rank_x < 0)          rank_x = nprocs-1;
+	if (!(rank_X < nprocs))  rank_X = 0;
+}
+
+void gpuWrapper::Send(double *values){
+	sendtag = recvtag = 130;
+    ScaLBL_CopyToDevice(sendbuf,values,sendCount*sizeof(double));
+	req1[0] = comm.Isend(sendbuf,sendCount,rank_x,sendtag+0);
+	req2[0] = comm.Irecv(recvbuf,recvCount,rank_X,recvtag+0);
+}
+
+void gpuWrapper::Recv(double *values){
+	comm.waitAll(1,req1);
+	comm.waitAll(1,req2);
+	ScaLBL_DeviceBarrier();
+    ScaLBL_CopyToHost(values,recvbuf,recvCount*sizeof(double));
+}
 
 // Test GPU aware MPI
 void test_GPU_aware( UnitTest *ut )
@@ -1209,6 +1251,8 @@ void test_GPU_aware( UnitTest *ut )
     try {
         // Initialize the device
         int device = ScaLBL_SetDevice(rank); 
+        // create wrapper for communications
+        gpuWrapper gpuComm(comm, N); 
         // Allocate and initialize the buffers
         size_t bytes = N*sizeof(double);
         double *device_send[N_msg] = { nullptr };
@@ -1251,6 +1295,17 @@ void test_GPU_aware( UnitTest *ut )
             for ( size_t i=0; i<N; i++ )
                 test = test && host_recv[k][i] == 1000 * k * rank_recv + i;
         }
+        // Check the gpu wrapper communications the same way
+        for ( size_t k=0; k<N_msg; k++ ) {
+        	gpuComm.Send(host_send[k]);
+        	gpuComm.Recv(host_recv[k]);
+        }
+        // Check the data
+        for ( size_t k=0; k<N_msg; k++ ) {
+            for ( size_t i=0; i<N; i++ )
+                test = test && host_recv[k][i] == 1000 * k * rank_recv + i;
+        }
+        
         // Free buffers
         for ( size_t k=0; k<N_msg; k++ ) {
             ScaLBL_FreeDeviceMemory(device_send[k]);
