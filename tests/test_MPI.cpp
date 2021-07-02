@@ -1196,6 +1196,7 @@ void testCommDup( UnitTest *ut )
 }
 
 class gpuWrapper{
+public:
 	gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE);
 	~gpuWrapper();
 	void Send(double *values);
@@ -1222,6 +1223,11 @@ gpuWrapper::gpuWrapper(MPI_CLASS MPI_COMM, int MSG_SIZE){
 	rank_x = rank-1;
 	if (rank_x < 0)          rank_x = nprocs-1;
 	if (!(rank_X < nprocs))  rank_X = 0;
+}
+
+gpuWrapper::~gpuWrapper(){
+	ScaLBL_FreeDeviceMemory(sendbuf);
+	ScaLBL_FreeDeviceMemory(recvbuf);
 }
 
 void gpuWrapper::Send(double *values){
