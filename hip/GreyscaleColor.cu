@@ -1610,7 +1610,9 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
             Fcpy = ny;
             Fcpz = nz;
             double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
+            if (Fcp_mag==0.0) {
+                 Fcpx=Fcpy=Fcpz=0.0;
+            }
             //NOTE for open node (porosity=1.0),Fcp=0.0
             Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
@@ -2397,7 +2399,9 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
             Fcpy = ny; 
             Fcpz = nz; 
             double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
+            if (Fcp_mag==0.0) {
+                Fcpx=Fcpy=Fcpz=0.0;
+            }
             //NOTE for open node (porosity=1.0),Fcp=0.0
             Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
             Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 

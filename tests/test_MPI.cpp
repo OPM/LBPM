@@ -1257,6 +1257,7 @@ void test_GPU_aware( UnitTest *ut )
     try {
         // Initialize the device
         int device = ScaLBL_SetDevice(rank); 
+        NULL_USE( device );
         // create wrapper for communications
         gpuWrapper gpuComm(comm, N); 
         // Allocate and initialize the buffers

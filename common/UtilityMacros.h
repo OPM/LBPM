@@ -165,8 +165,7 @@
         _Pragma( "GCC diagnostic ignored \"-Wunused-local-typedefs\"" )     \
         _Pragma( "GCC diagnostic ignored \"-Woverloaded-virtual\"" )        \
         _Pragma( "GCC diagnostic ignored \"-Wunused-parameter\"" )          \
-        _Pragma( "GCC diagnostic ignored \"-Warray-bounds\"" )              \
-        _Pragma( "GCC diagnostic ignored \"-Wterminate\"" )
+        _Pragma( "GCC diagnostic ignored \"-Warray-bounds\"" )
     #define ENABLE_WARNINGS _Pragma( "GCC diagnostic pop" )
 #else
     #define DISABLE_WARNINGS
