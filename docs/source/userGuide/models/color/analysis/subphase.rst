@@ -39,14 +39,3 @@ phase indicator field, :math:`\Omega_w:\phi<0`
 * ``krwf`` -- non-wetting fluid effective permeability
 * ``krnf`` -- non-wetting fluid effective permeability
 
-  
-More comprehensive analysis is performed in the ``subphase`` analysis module. 
-
-.. code-block:: bash
-
-Analysis {
-    analysis_interval = 1000
-    subphase_analysis_interval = 5000
-    visualization_interval = 20000
- }
-
