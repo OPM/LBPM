@@ -31,7 +31,7 @@ constructed by running a connected components algorithm on the set. This is done
 separate the connected part of the phase from the disconnected part. This subset operation
 is performed by identifying the largest connected component (based on volume)
 and denoting this as the connected part of that region. The remaining portion of the
-phase is lumped into a disconnecte sub-entity. Subphase analysis is therefore performed
+phase is lumped into a disconnected sub-entity. Subphase analysis is therefore performed
 for the following six entities
 
 * ``wc`` -- connected part of phase w
