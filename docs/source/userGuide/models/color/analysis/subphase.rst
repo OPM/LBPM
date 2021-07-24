@@ -10,6 +10,7 @@ to perform between analyses. The subphase analys routine performs the following 
 
 * analyzes the connectivity of fluid phases using a connected components algorithm
 * constructs iso-surfaces to represent interfaces within the system
+* computes averages of physical quantities based on the defined entities
 
 Since it is more computationally expensive to carry out these operations compared to the
 basic analysis, it may be useful to choose ``subphase_analysis_interval`` to be larger than
