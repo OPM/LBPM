@@ -25,14 +25,14 @@ phase indicator field, :math:`\Omega_w:\phi<0`
 * ``krn`` -- non-wetting fluid effective permeability
 * ``krwf`` -- non-wetting fluid effective permeability
 * ``krnf`` -- non-wetting fluid effective permeability
+* ``vw`` -- speed for the non-wetting fluid
+* ``vn`` -- speed for the wetting fluid
+* ``force`` -- magnitude for effective driving force
+* ``pw`` -- average pressure for fluid w
+* ``pn`` -- average pressure for fluid n
+* ``wet`` -- total solid wetting energy
 
   
 More comprehensive analysis is performed in the ``subphase`` analysis module. 
 
-.. code-block:: bash
-
-Analysis {
-    analysis_interval = 1000
-    visualization_interval = 20000
- }
 
