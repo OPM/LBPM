@@ -62,11 +62,11 @@ an isosurface is constructed to approximate the boundary of the region,
       
 * Pressure -- :math:`p_k=\frac{1}{V_k}\int_{\Omega_k} p dV`
 * Solid wetting energy -- :math:`\gamma_s=\int_{\Gamma_s}\gamma dS`
-* Viscous dissipation -- :math:`\Phi_k=\int_{\Omega_k} \nabla \mathbf{u} : \mathbf{\sigma} dV`
+* Viscous dissipation -- :math:`\Phi_k=\int_{\Omega_k} \nabla \mathbf{u} : \mathbf{\tau} dV`
 
 The total solid wetting energy is determined by integrating the interfacial stresses in the
-immediate vicinity of the solid surface :math:`\Gamma_s`. The integral of the viscous
-dissipation function is determined based on the stress tensor, denoted by :math:`\mathbf{\sigma}`.
+immediate vicinity of the solid surface :math:`\Gamma_s`. The integral of the
+dissipation function is determined based on the viscous stress tensor, denoted by :math:`\mathbf{\tau`.
 
 
 The full list of measures are associated with the labels in ``subphase.csv``
