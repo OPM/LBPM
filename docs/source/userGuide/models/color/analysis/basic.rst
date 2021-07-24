@@ -21,10 +21,10 @@ phase indicator field, :math:`\Omega_w:\phi<0`
 
 * ``sw`` -- water saturation (fluid component 2)
 * ``krw`` -- water effective permeability 
-* ``krn`` -- non-wetting fluid effective permeability
-* ``krn`` -- non-wetting fluid effective permeability
-* ``krwf`` -- non-wetting fluid effective permeability
-* ``krnf`` -- non-wetting fluid effective permeability
+* ``krw`` -- effective permeability for fluid w
+* ``krn`` -- effective permeability for fluid n
+* ``krwf`` -- effective permeability for fluid w (with film uncertainty estimate)
+* ``krnf`` -- effective permeability for fluid n (with film uncertainty estimate)
 * ``vw`` -- speed for the non-wetting fluid
 * ``vn`` -- speed for the wetting fluid
 * ``force`` -- magnitude for effective driving force
