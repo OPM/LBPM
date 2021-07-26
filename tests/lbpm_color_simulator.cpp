@@ -34,15 +34,15 @@ int main( int argc, char **argv )
 		// Load the input database
 		auto db = std::make_shared<Database>( argv[1] );
 		if (argc > 2) {
-			SimulationMode = "development";
+			SimulationMode = "legacy";
 		}
 
 		if ( rank == 0 ) {
 			printf( "********************************************************\n" );
 			printf( "Running Color LBM	\n" );
 			printf( "********************************************************\n" );
-			if (SimulationMode == "development")
-				printf("**** DEVELOPMENT MODE ENABLED *************\n");
+			if (SimulationMode == "legacy")
+				printf("**** LEGACY MODE ENABLED *************\n");
 		}
 		// Initialize compute device
 		int device = ScaLBL_SetDevice( rank );
@@ -66,13 +66,16 @@ int main( int argc, char **argv )
 		// structure and allocate variables
 		ColorModel.Initialize(); // initializing the model will set initial conditions for variables
 
-		if (SimulationMode == "development"){
+		if (SimulationMode == "legacy"){
+			ColorModel.Run();        
+		}
+		else {
 			double MLUPS=0.0;
 			int timestep = 0;
 			bool ContinueSimulation = true;
 			
 			/* Variables for simulation protocols */
-			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "none" );
+			auto PROTOCOL = ColorModel.color_db->getWithDefault<std::string>( "protocol", "default" );
 			/* image sequence protocol */
 			int IMAGE_INDEX = 0;
 			int IMAGE_COUNT = 0;
@@ -123,6 +126,7 @@ int main( int argc, char **argv )
 					else{
 						if (rank==0) printf("Finished simulating image sequence \n");
 						ColorModel.timestep =  ColorModel.timestepMax;
+						ContinueSimulation = false;
 					}
 				}
 				/*********************************************************/
@@ -144,7 +148,7 @@ int main( int argc, char **argv )
 				double speedB = sqrt(vB_x*vB_x + vB_y*vB_y + vB_z*vB_z);
 				/* stop simulation if previous point was sufficiently close to the endpoint*/
 				if (volA*speedA < ENDPOINT_THRESHOLD*volB*speedB) ContinueSimulation = false;
-				if (ContinueSimulation){
+				if (ContinueSimulation && SKIP_TIMESTEPS > 0 ){
 					while (skip_time < SKIP_TIMESTEPS && fabs(SaturationChange) < fabs(FRACTIONAL_FLOW_INCREMENT) ){
 						timestep += ANALYSIS_INTERVAL;
 						if (PROTOCOL == "fractional flow")	{							
@@ -173,9 +177,8 @@ int main( int argc, char **argv )
 				/*********************************************************/
 			}
 		}
-		else
-			ColorModel.Run();        
-
+		
+		
 		PROFILE_STOP( "Main" );
 		auto file  = db->getWithDefault<std::string>( "TimerFile", "lbpm_color_simulator" );
 		auto level = db->getWithDefault<int>( "TimerLevel", 1 );
