@@ -2358,12 +2358,12 @@ __global__ void dvc_ScaLBL_D3Q19_Init_Simple(char *ID, double *f_even, double *f
 
 extern "C" void ScaLBL_D3Q19_Pack(int q, int *list, int start, int count, double *sendbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_Pack <<<GRID,512 >>>(q, list, start, count, sendbuf, dist, N);
+	dvc_ScaLBL_D3Q19_Pack <<<NBLOCKS,NTHREADS >>>(q, list, start, count, sendbuf, dist, N);
 }
 
 extern "C" void ScaLBL_D3Q19_Unpack(int q, int *list,  int start, int count, double *recvbuf, double *dist, int N){
 	int GRID = count / 512 + 1;
-	dvc_ScaLBL_D3Q19_Unpack <<<GRID,512 >>>(q, list, start, count, recvbuf, dist, N);
+	dvc_ScaLBL_D3Q19_Unpack <<<NBLOCKS,NTHREADS >>>(q, list, start, count, recvbuf, dist, N);
 }
 //*************************************************************************
 
