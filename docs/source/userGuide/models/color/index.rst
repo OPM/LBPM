@@ -37,6 +37,16 @@ that can be over-ridden to develop customized simulations.
 
    protocols/*
 
+****************************
+Analysis capabilities
+****************************
+   
+.. toctree::
+   :glob:
+   :maxdepth: 2
+
+   analysis/*
+
 
 ***************************
 Model parameters
@@ -44,10 +54,12 @@ Model parameters
 
 The essential model parameters for the color model are
 
-- :math:`\alpha` -- control the interfacial tension between fluids with key ``alpha``
-- :math:`\beta`  -- control the width of the interface with key ``beta``
-- :math:`\tau_A` -- control the viscosity of fluid A with key ``tauA``
-- :math:`\tau_B` -- control the viscosity of fluid B with key ``tauB``
+- ``alpha`` -- control the interfacial tension between fluids with :math:`0 < \alpha < 0.01`
+- ``beta`` -- control the width of the interface with key :math:`\beta < 1`
+- ``tauA`` -- control the viscosity of fluid A with :math:`0.7 < \tau_A < 1.5`
+- ``tauB`` -- control the viscosity of fluid B with :math:`0.7 < \tau_B < 1.5`
+- ``rhoA`` -- control the viscosity of fluid A with :math:`0.05 < \rho_A < 1.0`
+- ``rhoB`` -- control the viscosity of fluid B with :math:`0.05 < \rho_B < 1.0`
 
 ****************************
 Model Formulation
