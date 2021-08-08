@@ -1375,6 +1375,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
     double W;//greyscale wetting strength
     double Sn_grey,Sw_grey;
 
+    /* Corey model parameters */
+    double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
+    
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
 	const double mrt_V3=0.04761904761904762;
@@ -1401,7 +1404,6 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 
 		// compute phase indicator field
 		phi=(nA-nB)/(nA+nB);
-
 		// local density
 		rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
 		// local relaxation time
@@ -1411,6 +1413,15 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 		
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+        	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
+        	Krn_grey = perm*0.5*(W+1.2)*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krw_grey = perm*0.5*(1.2-W)*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	// recompute the effective permeability
+        	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
+        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+        }
+        		        		
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT
@@ -2053,21 +2064,27 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		nAB = 1.0/(nA+nB);
 		Aq[n] = 0.3333333333333333*nA;
 		Bq[n] = 0.3333333333333333*nB;
-
+		
 		//...............................................
 		// q = 0,2,4
 		// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+		jA = nA*ux;
+		jB = nB*ux;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		// q = 1
 		//nread = neighborList[n+Np];
@@ -2080,17 +2097,23 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 
 		//...............................................
 		// Cq = {0,1,0}
+		jA = nA*uy;
+		jB = nB*uy;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		// q = 3
 		//nread = neighborList[n+3*Np];
@@ -2104,17 +2127,24 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		//...............................................
 		// q = 4
 		// Cq = {0,0,1}
+		jA = nA*uz;
+		jB = nB*uz;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		// q = 5
 		//nread = neighborList[n+5*Np];
@@ -2151,6 +2181,9 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 	double phi,tau,rho0,rlx_setA,rlx_setB;
     double W;//greyscale wetting strength
     double Sn_grey,Sw_grey;
+    
+    /* Corey model parameters */
+     double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
     
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
@@ -2197,6 +2230,15 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+        	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
+        	Krn_grey = perm*0.5*(W+1.2)*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krw_grey = perm*0.5*(1.2-W)*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	// recompute the effective permeability
+        	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
+        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+        }
+        		
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT
@@ -2772,21 +2814,27 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		nAB = 1.0/(nA+nB);
 		Aq[n] = 0.3333333333333333*nA;
 		Bq[n] = 0.3333333333333333*nB;
-
+		
 		//...............................................
 		// q = 0,2,4
 		// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+		jA = nA*ux;
+		jB = nB*ux;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		Aq[1*Np+n] = a1;
 		Bq[1*Np+n] = b1;
@@ -2794,38 +2842,51 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		Bq[2*Np+n] = b2;
 
 		//...............................................
-		// q = 2
 		// Cq = {0,1,0}
+		jA = nA*uy;
+		jB = nB*uy;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		Aq[3*Np+n] = a1;
 		Bq[3*Np+n] = b1;
 		Aq[4*Np+n] = a2;
 		Bq[4*Np+n] = b2;
+
 		//...............................................
 		// q = 4
 		// Cq = {0,0,1}
+		jA = nA*uz;
+		jB = nB*uz;		
 		delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
+        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+        	delta = 0.0; 
+    		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
+    		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
+        }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
         //---------------------------------------------------------------------------//
         if (RecoloringOff==true && porosity !=1.0) delta=0;
-		a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
-		b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
-		a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
-		b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+
+		a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+		b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+		a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+		b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 		Aq[5*Np+n] = a1;
 		Bq[5*Np+n] = b1;
