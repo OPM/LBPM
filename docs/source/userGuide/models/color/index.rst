@@ -54,12 +54,12 @@ Model parameters
 
 The essential model parameters for the color model are
 
-- ``alpha`` -- control the interfacial tension between fluids with :math:`0 < \alpha < 0.01`
-- ``beta`` -- control the width of the interface with key :math:`\beta < 1`
-- ``tauA`` -- control the viscosity of fluid A with :math:`0.7 < \tau_A < 1.5`
-- ``tauB`` -- control the viscosity of fluid B with :math:`0.7 < \tau_B < 1.5`
-- ``rhoA`` -- control the viscosity of fluid A with :math:`0.05 < \rho_A < 1.0`
-- ``rhoB`` -- control the viscosity of fluid B with :math:`0.05 < \rho_B < 1.0`
+- ``alpha`` -- control the interfacial tension between fluids -- :math:`0 < \alpha < 0.01`
+- ``beta`` -- control the width of the interface -- :math:`\beta < 1`
+- ``tauA`` -- control the viscosity of fluid A -- :math:`0.7 < \tau_A < 1.5`
+- ``tauB`` -- control the viscosity of fluid B -- :math:`0.7 < \tau_B < 1.5`
+- ``rhoA`` -- control the viscosity of fluid A -- :math:`0.05 < \rho_A < 1.0`
+- ``rhoB`` -- control the viscosity of fluid B -- :math:`0.05 < \rho_B < 1.0`
 
 ****************************
 Model Formulation

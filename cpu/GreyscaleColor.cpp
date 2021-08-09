@@ -1341,7 +1341,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, doubl
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure,
+		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm, double *Velocity, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -1376,6 +1376,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
     double Sn_grey,Sw_grey;
 
     /* Corey model parameters */
+    double Kn_grey,Kw_grey;    
     double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
     
 	const double mrt_V1=0.05263157894736842;
@@ -1397,11 +1398,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		nB = Den[Np + n];
 
         porosity = Poros[n];
-        perm = Perm[n];
+        //perm = Perm[n];
+        perm = 1.0;
         W = GreySolidW[n];
         Sn_grey = GreySn[n];
         Sw_grey = GreySw[n];
-
+        Kn_grey = GreyKn[n];
+        Kw_grey = GreyKw[n];
+        
 		// compute phase indicator field
 		phi=(nA-nB)/(nA+nB);
 		// local density
@@ -1413,15 +1417,22 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 		
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+        if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
+        	perm = Kw_grey;
+        	Swn = 0.0;
+        }
+        else if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
         	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
-        	Krn_grey = perm*0.5*(W+1.2)*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
-        	Krw_grey = perm*0.5*(1.2-W)*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krn_grey = Kn_grey*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
         	// recompute the effective permeability
         	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
         	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
         }
-        		        		
+        else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
+        	perm = Kn_grey;
+        	Swn = 1.0;
+        }	        		
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT
@@ -2161,7 +2172,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -2183,7 +2194,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
     double Sn_grey,Sw_grey;
     
     /* Corey model parameters */
-     double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
+    double Kn_grey,Kw_grey;
+    double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
     
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
@@ -2213,11 +2225,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		nB = Den[Np + n];
 
         porosity = Poros[n];
-        perm = Perm[n];
+        //perm = Perm[n];
+        perm = 1.0;
         W = GreySolidW[n];
         Sn_grey = GreySn[n];
         Sw_grey = GreySw[n];
-
+        Kn_grey = GreyKn[n];
+        Kw_grey = GreyKw[n];
+        
 		// compute phase indicator field
 		phi=(nA-nB)/(nA+nB);
 
@@ -2229,16 +2244,23 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		rlx_setA = 1.f/tau;
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
-
-        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+	
+        if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
+        	perm = Kw_grey;
+        	Swn = 0.0;
+        }
+        else if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
         	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
-        	Krn_grey = perm*0.5*(W+1.2)*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
-        	Krw_grey = perm*0.5*(1.2-W)*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krn_grey = Kn_grey*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+        	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
         	// recompute the effective permeability
         	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
         	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
         }
-        		
+        else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
+        	perm = Kn_grey;
+        	Swn = 1.0;
+        }	
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT
