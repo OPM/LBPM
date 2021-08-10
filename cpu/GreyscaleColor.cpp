@@ -1378,6 +1378,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
     /* Corey model parameters */
     double Kn_grey,Kw_grey;    
     double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
+    double GreyDiff; // grey diffusion
     
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -1398,7 +1399,7 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		nB = Den[Np + n];
 
         porosity = Poros[n];
-        //perm = Perm[n];
+        GreyDiff = Perm[n];
         perm = 1.0;
         W = GreySolidW[n];
         Sn_grey = GreySn[n];
@@ -2085,8 +2086,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
-    		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*nx;
+        	jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
         }
         if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
@@ -2114,7 +2116,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*ny;
     		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
         }
@@ -2144,7 +2147,8 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*nz;
     		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
         }
@@ -2196,7 +2200,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
     /* Corey model parameters */
     double Kn_grey,Kw_grey;
     double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
-    
+    double GreyDiff; // grey diffusion
+
     //double GeoFun=0.0;//geometric function from Guo's PRE 66, 036304 (2002)
     double porosity;
     double perm;//voxel permeability
@@ -2225,7 +2230,7 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		nB = Den[Np + n];
 
         porosity = Poros[n];
-        //perm = Perm[n];
+        GreyDiff = Perm[n];
         perm = 1.0;
         W = GreySolidW[n];
         Sn_grey = GreySn[n];
@@ -2846,7 +2851,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*nx;
     		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
         }
@@ -2871,7 +2877,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*ny;
     		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
         }
@@ -2897,7 +2904,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		if (!(nA*nB*nAB>0)) delta=0;
         //----------------newly added for better control of recoloring---------------//
         if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
-        	delta = 0.0; 
+        	//delta = 0.0; 
+        	delta = 0.111111111111111*C*W*GreyDiff*nA*nB*nAB*nz;
     		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
     		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
         }
