@@ -825,16 +825,29 @@ double ScaLBL_ColorModel::Run(int returntime){
 					double kAeff_connected = h*h*muA*flow_rate_A_connected/(force_mag);
 					double kBeff_connected = h*h*muB*flow_rate_B_connected/(force_mag);
 
+					// Saturation normalized effective permeability to account for decoupled phases and 
+					// effective porosity.
+					double kAeff_connected_low = (1.0 - current_saturation)*h*h*muA*flow_rate_A_connected/(force_mag);
+					double kBeff_connected_low = current_saturation*h*h*muB*flow_rate_B_connected/(force_mag);
+
+
 					double kAeff_disconnected = h*h*muA*flow_rate_A_disconnected/(force_mag);
 					double kBeff_disconnected = h*h*muB*flow_rate_B_disconnected/(force_mag);
 
 					double kAeff = h*h*muA*(flow_rate_A)/(force_mag);
 					double kBeff = h*h*muB*(flow_rate_B)/(force_mag);
 
+					// Saturation normalized effective permeability to account for decoupled phases and 
+					// effective porosity.
+					double kAeff_low = (1.0 - current_saturation)*h*h*muA*(flow_rate_A)/(force_mag);
+					double kBeff_low = current_saturation*h*h*muB*(flow_rate_B)/(force_mag);
+
 					/* flow rate = [volume of fluid] x [momentum of fluid] / [mass of fluid] */
 					/* fluid A eats the films */
-					double flow_rate_A_filmA = (flow_rate_A*Averages->gnb.M + volA*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gnb.M + Mfn);
-					double flow_rate_B_filmA = (flow_rate_B*Averages->gwb.M - volB*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gwb.M - (rhoB/rhoA)*Mfn);
+					double flow_rate_A_filmA = (flow_rate_A*Averages->gnb.M + 
+								    volA*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gnb.M + Mfn);
+					double flow_rate_B_filmA = (flow_rate_B*Averages->gwb.M - 
+								    volB*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gwb.M - (rhoB/rhoA)*Mfn);
 					/* fluid B eats the films */
 					double flow_rate_A_filmB = (flow_rate_A*Averages->gnb.M - volA*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gnb.M - (rhoA/rhoB)*Mfw);
 					double flow_rate_B_filmB = (flow_rate_B*Averages->gwb.M + volB*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gwb.M + Mfw);
@@ -855,13 +868,22 @@ double ScaLBL_ColorModel::Run(int returntime){
 						WriteHeader=true;
 					kr_log_file = fopen("relperm.csv","a");
 					if (WriteHeader){
-						fprintf(kr_log_file,"timesteps sat.water eff.perm.oil eff.perm.water eff.perm.oil.connected eff.perm.water.connected eff.perm.oil.disconnected eff.perm.water.disconnected ");
-						fprintf(kr_log_file,"eff.perm.oil.upper.bound eff.perm.water.lower.bound eff.perm.oil.lower.bound eff.perm.water.upper.bound ");
-						fprintf(kr_log_file,"cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+					  fprintf(kr_log_file, "timesteps sat.water ");
+					  fprintf(kr_log_file, "eff.perm.oil.upper.bound eff.perm.water.upper.bound ");
+					  fprintf(kr_log_file, "eff.perm.oil.lower.bound eff.perm.water.lower.bound ");
+					  fprintf(kr_log_file, "eff.perm.oil.connected.upper.bound eff.perm.water.connected.upper.bound ");
+					  fprintf(kr_log_file, "eff.perm.oil.connected.lower.bound eff.perm.water.connected.lower.bound ");
+					  fprintf(kr_log_file, "eff.perm.oil.disconnected eff.perm.water.disconnected ");
+					  fprintf(kr_log_file, "cap.pressure cap.pressure.connected pressure.drop Ca M\n");
+
 					}
-					fprintf(kr_log_file,"%i %.5g %.5g %.5g %.5g %.5g %.5g %.5g ",CURRENT_TIMESTEP,current_saturation,kAeff,kBeff,kAeff_connected,kBeff_connected,kAeff_disconnected,kBeff_disconnected);
-					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g ",kAeff_filmA, kBeff_filmA, kAeff_filmB,kBeff_filmB);
-					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g\n",pAB,pAB_connected,viscous_pressure_drop,Ca,Mobility);
+					fprintf(kr_log_file,"%i %.5g ", CURRENT_TIMESTEP,current_saturation);
+					fprintf(kr_log_file,"%.5g %.5g ", kAeff, kBeff);
+					fprintf(kr_log_file,"%.5g %.5g ", kAeff_low, kBeff_low);
+					fprintf(kr_log_file,"%.5g %.5g ", kAeff_connected, kBeff_connected);
+					fprintf(kr_log_file,"%.5g %.5g ", kAeff_connected_low, kBeff_connected_low);
+					fprintf(kr_log_file,"%.5g %.5g ", kAeff_disconnected, kBeff_disconnected);
+					fprintf(kr_log_file,"%.5g %.5g %.5g %.5g %.5g\n", pAB, pAB_connected, viscous_pressure_drop, Ca, Mobility);
 					fclose(kr_log_file);
 
 					printf("  Measured capillary number %f \n ",Ca);
