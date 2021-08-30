@@ -95,6 +95,7 @@ def segmentGrid32to8bit(inputFileName, outputFileName):
         
     value_new.tofile(outputFileName)
 
+
 def addVoidLayers(inputFileName, outputFileName, nx, ny, nz, layers):
     inputFile=open(inputFileName, 'r')
     value=np.fromfile(inputFile,dtype=np.uint8)
@@ -108,7 +109,7 @@ def addVoidLayers(inputFileName, outputFileName, nx, ny, nz, layers):
 
     value_3D.tofile(outputFileName)
 
-
+# from and including -- to and including
 def crop(inputFileName, outputFileName, nx, ny, nz, x1, x2, y1, y2, z1, z2):
     inputFile=open(inputFileName, 'r')
     value=np.fromfile(inputFile,dtype=np.uint8)
