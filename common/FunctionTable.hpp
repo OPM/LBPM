@@ -2,7 +2,7 @@
 #define included_FunctionTable_hpp
 
 #include "common/FunctionTable.h"
-#include "common/Utilities.h"
+#include "common/UtilityMacros.h"
 
 #include <algorithm>
 #include <cstring>
@@ -10,33 +10,16 @@
 #include <random>
 
 
+
 /********************************************************
  *  Random number initialization                         *
  ********************************************************/
-template<class TYPE>
-static inline typename std::enable_if<std::is_integral<TYPE>::value>::type genRand(
-    size_t N, TYPE* x )
-{
-    std::random_device rd;
-    std::mt19937 gen( rd() );
-    std::uniform_int_distribution<TYPE> dis;
-    for ( size_t i = 0; i < N; i++ )
-        x[i] = dis( gen );
-}
-template<class TYPE>
-static inline typename std::enable_if<std::is_floating_point<TYPE>::value>::type genRand(
-    size_t N, TYPE* x )
-{
-    std::random_device rd;
-    std::mt19937 gen( rd() );
-    std::uniform_real_distribution<TYPE> dis( 0, 1 );
-    for ( size_t i = 0; i < N; i++ )
-        x[i] = dis( gen );
-}
+template<class TYPE> TYPE genRand();
 template<class TYPE, class FUN>
-inline void FunctionTable::rand( Array<TYPE, FUN>& x )
+inline void FunctionTable::rand( Array<TYPE, FUN> &x )
 {
-    genRand<TYPE>( x.length(), x.data() );
+    for ( size_t i = 0; i < x.length(); i++ )
+        x( i ) = genRand<TYPE>();
 }
 
 
@@ -44,16 +27,31 @@ inline void FunctionTable::rand( Array<TYPE, FUN>& x )
  *  Reduction                                            *
  ********************************************************/
 template<class TYPE, class FUN, typename LAMBDA>
-inline TYPE FunctionTable::reduce( LAMBDA& op, const Array<TYPE, FUN>& A )
+inline TYPE FunctionTable::reduce( LAMBDA &op, const Array<TYPE, FUN> &A, const TYPE &initialValue )
 {
     if ( A.length() == 0 )
         return TYPE();
-    const TYPE* x  = A.data();
-    TYPE y         = x[0];
-    const size_t N = A.length();
-    for ( size_t i = 1; i < N; i++ )
+    const TYPE *x = A.data();
+    TYPE y        = initialValue;
+    for ( size_t i = 0; i < A.length(); i++ )
         y = op( x[i], y );
     return y;
+}
+template<class TYPE, class FUN, typename LAMBDA>
+inline TYPE FunctionTable::reduce( LAMBDA &op,
+                                   const Array<TYPE, FUN> &A,
+                                   const Array<TYPE, FUN> &B,
+                                   const TYPE &initialValue )
+{
+    ARRAY_ASSERT( A.length() == B.length() );
+    if ( A.length() == 0 )
+        return TYPE();
+    const TYPE *x = A.data();
+    const TYPE *y = B.data();
+    TYPE z        = initialValue;
+    for ( size_t i = 0; i < A.length(); i++ )
+        z = op( x[i], y[i], z );
+    return z;
 }
 
 
@@ -61,7 +59,7 @@ inline TYPE FunctionTable::reduce( LAMBDA& op, const Array<TYPE, FUN>& A )
  *  Unary transformation                                 *
  ********************************************************/
 template<class TYPE, class FUN, typename LAMBDA>
-inline void FunctionTable::transform( LAMBDA& fun, const Array<TYPE, FUN>& x, Array<TYPE, FUN>& y )
+inline void FunctionTable::transform( LAMBDA &fun, const Array<TYPE, FUN> &x, Array<TYPE, FUN> &y )
 {
     y.resize( x.size() );
     const size_t N = x.length();
@@ -69,8 +67,10 @@ inline void FunctionTable::transform( LAMBDA& fun, const Array<TYPE, FUN>& x, Ar
         y( i ) = fun( x( i ) );
 }
 template<class TYPE, class FUN, typename LAMBDA>
-inline void FunctionTable::transform(
-    LAMBDA& fun, const Array<TYPE, FUN>& x, const Array<TYPE, FUN>& y, Array<TYPE, FUN>& z )
+inline void FunctionTable::transform( LAMBDA &fun,
+                                      const Array<TYPE, FUN> &x,
+                                      const Array<TYPE, FUN> &y,
+                                      Array<TYPE, FUN> &z )
 {
     if ( x.size() != y.size() )
         throw std::logic_error( "Sizes of x and y do not match" );
@@ -85,25 +85,19 @@ inline void FunctionTable::transform(
  *  axpy                                                 *
  ********************************************************/
 template<class TYPE>
-inline void call_axpy( size_t N, const TYPE alpha, const TYPE* x, TYPE* y );
+void call_axpy( size_t N, const TYPE alpha, const TYPE *x, TYPE *y );
 template<>
-inline void call_axpy<float>( size_t, const float, const float*, float* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_axpy<float>( size_t N, const float alpha, const float *x, float *y );
 template<>
-inline void call_axpy<double>( size_t, const double, const double*, double* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_axpy<double>( size_t N, const double alpha, const double *x, double *y );
 template<class TYPE>
-inline void call_axpy( size_t N, const TYPE alpha, const TYPE* x, TYPE* y )
+void call_axpy( size_t N, const TYPE alpha, const TYPE *x, TYPE *y )
 {
     for ( size_t i = 0; i < N; i++ )
         y[i] += alpha * x[i];
 }
 template<class TYPE, class FUN>
-void FunctionTable::axpy( const TYPE alpha, const Array<TYPE, FUN>& x, Array<TYPE, FUN>& y )
+void FunctionTable::axpy( const TYPE alpha, const Array<TYPE, FUN> &x, Array<TYPE, FUN> &y )
 {
     if ( x.size() != y.size() )
         throw std::logic_error( "Array sizes do not match" );
@@ -115,21 +109,15 @@ void FunctionTable::axpy( const TYPE alpha, const Array<TYPE, FUN>& x, Array<TYP
  *  Multiply two arrays                                  *
  ********************************************************/
 template<class TYPE>
-inline void call_gemv( size_t M, size_t N, TYPE alpha, TYPE beta, const TYPE* A, const TYPE* x, TYPE* y );
+void call_gemv( size_t M, size_t N, TYPE alpha, TYPE beta, const TYPE *A, const TYPE *x, TYPE *y );
 template<>
-inline void call_gemv<double>(
-    size_t, size_t, double, double, const double*, const double*, double* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_gemv<double>(
+    size_t M, size_t N, double alpha, double beta, const double *A, const double *x, double *y );
 template<>
-inline void call_gemv<float>( size_t, size_t, float, float, const float*, const float*, float* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_gemv<float>(
+    size_t M, size_t N, float alpha, float beta, const float *A, const float *x, float *y );
 template<class TYPE>
-inline void call_gemv(
-    size_t M, size_t N, TYPE alpha, TYPE beta, const TYPE* A, const TYPE* x, TYPE* y )
+void call_gemv( size_t M, size_t N, TYPE alpha, TYPE beta, const TYPE *A, const TYPE *x, TYPE *y )
 {
     for ( size_t i = 0; i < M; i++ )
         y[i] = beta * y[i];
@@ -139,21 +127,29 @@ inline void call_gemv(
     }
 }
 template<class TYPE>
-inline void call_gemm(
-    size_t M, size_t N, size_t K, TYPE alpha, TYPE beta, const TYPE* A, const TYPE* B, TYPE* C );
+void call_gemm(
+    size_t M, size_t N, size_t K, TYPE alpha, TYPE beta, const TYPE *A, const TYPE *B, TYPE *C );
 template<>
-inline void call_gemm<double>( size_t, size_t, size_t, double, double, const double*, const double*, double* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_gemm<double>( size_t M,
+                        size_t N,
+                        size_t K,
+                        double alpha,
+                        double beta,
+                        const double *A,
+                        const double *B,
+                        double *C );
 template<>
-inline void call_gemm<float>( size_t, size_t, size_t, float, float, const float*, const float*, float* )
-{
-    throw std::logic_error( "LapackWrappers not configured" );
-}
+void call_gemm<float>( size_t M,
+                       size_t N,
+                       size_t K,
+                       float alpha,
+                       float beta,
+                       const float *A,
+                       const float *B,
+                       float *C );
 template<class TYPE>
-inline void call_gemm(
-    size_t M, size_t N, size_t K, TYPE alpha, TYPE beta, const TYPE* A, const TYPE* B, TYPE* C )
+void call_gemm(
+    size_t M, size_t N, size_t K, TYPE alpha, TYPE beta, const TYPE *A, const TYPE *B, TYPE *C )
 {
     for ( size_t i = 0; i < K * M; i++ )
         C[i] = beta * C[i];
@@ -165,16 +161,17 @@ inline void call_gemm(
     }
 }
 template<class TYPE, class FUN>
-void FunctionTable::gemm( const TYPE alpha, const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b,
-    const TYPE beta, Array<TYPE, FUN>& c )
+void FunctionTable::gemm( const TYPE alpha,
+                          const Array<TYPE, FUN> &a,
+                          const Array<TYPE, FUN> &b,
+                          const TYPE beta,
+                          Array<TYPE, FUN> &c )
 {
+    if ( a.size( 1 ) != b.size( 0 ) )
+        throw std::logic_error( "Inner dimensions must match" );
     if ( a.ndim() == 2 && b.ndim() == 1 ) {
-        if ( a.size( 1 ) != b.size( 0 ) )
-            throw std::logic_error( "Inner dimensions must match" );
         call_gemv<TYPE>( a.size( 0 ), a.size( 1 ), alpha, beta, a.data(), b.data(), c.data() );
     } else if ( a.ndim() <= 2 && b.ndim() <= 2 ) {
-        if ( a.size( 1 ) != b.size( 0 ) )
-            throw std::logic_error( "Inner dimensions must match" );
         call_gemm<TYPE>(
             a.size( 0 ), a.size( 1 ), b.size( 1 ), alpha, beta, a.data(), b.data(), c.data() );
     } else {
@@ -182,17 +179,16 @@ void FunctionTable::gemm( const TYPE alpha, const Array<TYPE, FUN>& a, const Arr
     }
 }
 template<class TYPE, class FUN>
-void FunctionTable::multiply(
-    const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, Array<TYPE, FUN>& c )
+void FunctionTable::multiply( const Array<TYPE, FUN> &a,
+                              const Array<TYPE, FUN> &b,
+                              Array<TYPE, FUN> &c )
 {
+    if ( a.size( 1 ) != b.size( 0 ) )
+        throw std::logic_error( "Inner dimensions must match" );
     if ( a.ndim() == 2 && b.ndim() == 1 ) {
-        if ( a.size( 1 ) != b.size( 0 ) )
-            throw std::logic_error( "Inner dimensions must match" );
         c.resize( a.size( 0 ) );
         call_gemv<TYPE>( a.size( 0 ), a.size( 1 ), 1, 0, a.data(), b.data(), c.data() );
     } else if ( a.ndim() <= 2 && b.ndim() <= 2 ) {
-        if ( a.size( 1 ) != b.size( 0 ) )
-            throw std::logic_error( "Inner dimensions must match" );
         c.resize( a.size( 0 ), b.size( 1 ) );
         call_gemm<TYPE>(
             a.size( 0 ), a.size( 1 ), b.size( 1 ), 1, 0, a.data(), b.data(), c.data() );
@@ -206,8 +202,8 @@ void FunctionTable::multiply(
  *  Check if two arrays are equal                        *
  ********************************************************/
 template<class TYPE, class FUN>
-inline typename std::enable_if<!std::is_floating_point<TYPE>::value, bool>::type
-FunctionTableCompare( const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, TYPE )
+inline typename std::enable_if<std::is_integral<TYPE>::value, bool>::type
+FunctionTableCompare( const Array<TYPE, FUN> &a, const Array<TYPE, FUN> &b, TYPE )
 {
     bool pass = true;
     if ( a.size() != b.size() )
@@ -218,7 +214,7 @@ FunctionTableCompare( const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, TYPE
 }
 template<class TYPE, class FUN>
 inline typename std::enable_if<std::is_floating_point<TYPE>::value, bool>::type
-FunctionTableCompare( const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, TYPE tol )
+FunctionTableCompare( const Array<TYPE, FUN> &a, const Array<TYPE, FUN> &b, TYPE tol )
 {
     bool pass = true;
     if ( a.size() != b.size() )
@@ -228,9 +224,88 @@ FunctionTableCompare( const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, TYPE
     return pass;
 }
 template<class TYPE, class FUN>
-bool FunctionTable::equals( const Array<TYPE, FUN>& a, const Array<TYPE, FUN>& b, TYPE tol )
+bool FunctionTable::equals( const Array<TYPE, FUN> &a, const Array<TYPE, FUN> &b, TYPE tol )
 {
     return FunctionTableCompare( a, b, tol );
+}
+
+
+/********************************************************
+ *  Specialized Functions                                *
+ ********************************************************/
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformReLU( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B )
+{
+    const auto &fun = []( const TYPE &a ) { return std::max( a, static_cast<TYPE>( 0 ) ); };
+    transform( fun, A, B );
+}
+
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformAbs( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B )
+{
+    B.resize( A.size() );
+    const auto &fun = []( const TYPE &a ) { return std::abs( a ); };
+    transform( fun, A, B );
+}
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformTanh( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B )
+{
+    B.resize( A.size() );
+    const auto &fun = []( const TYPE &a ) { return tanh( a ); };
+    transform( fun, A, B );
+}
+
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformHardTanh( const Array<TYPE, FUN, ALLOC> &A,
+                                       Array<TYPE, FUN, ALLOC> &B )
+{
+    B.resize( A.size() );
+    const auto &fun = []( const TYPE &a ) {
+        return std::max( -static_cast<TYPE>( 1.0 ), std::min( static_cast<TYPE>( 1.0 ), a ) );
+    };
+    transform( fun, A, B );
+}
+
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformSigmoid( const Array<TYPE, FUN, ALLOC> &A, Array<TYPE, FUN, ALLOC> &B )
+{
+    B.resize( A.size() );
+    const auto &fun = []( const TYPE &a ) { return 1.0 / ( 1.0 + exp( -a ) ); };
+    transform( fun, A, B );
+}
+
+template<class TYPE, class FUN, class ALLOC>
+void FunctionTable::transformSoftPlus( const Array<TYPE, FUN, ALLOC> &A,
+                                       Array<TYPE, FUN, ALLOC> &B )
+{
+    B.resize( A.size() );
+    const auto &fun = []( const TYPE &a ) { return log1p( exp( a ) ); };
+    transform( fun, A, B );
+}
+
+template<class TYPE, class FUN, class ALLOC>
+TYPE FunctionTable::sum( const Array<TYPE, FUN, ALLOC> &A )
+{
+    const auto &fun = []( const TYPE &a, const TYPE &b ) { return a + b; };
+    return reduce( fun, A, (TYPE) 0 );
+}
+
+template<class TYPE>
+inline void FunctionTable::gemmWrapper( char TRANSA,
+                                        char TRANSB,
+                                        int M,
+                                        int N,
+                                        int K,
+                                        TYPE alpha,
+                                        const TYPE *A,
+                                        int LDA,
+                                        const TYPE *B,
+                                        int LDB,
+                                        TYPE beta,
+                                        TYPE *C,
+                                        int LDC )
+{
+    ERROR("Not finished");
 }
 
 

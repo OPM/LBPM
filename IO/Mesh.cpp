@@ -133,7 +133,7 @@ size_t PointList::numberPointsVar( VariableType type ) const
 }
 std::pair<size_t, void *> PointList::pack( int level ) const
 {
-    std::pair<size_t, void *> data_out( 0, NULL );
+    std::pair<size_t, void *> data_out( 0, nullptr );
     if ( level == 0 ) {
         data_out.first     = ( 2 + 3 * points.size() ) * sizeof( double );
         double *data_ptr   = new double[2 + 3 * points.size()];
@@ -596,6 +596,8 @@ std::string getString( FileFormat type )
         return "new(single)";
     else if ( type == FileFormat::SILO )
         return "silo";
+    else if ( type == FileFormat::HDF5 )
+        return "hdf5";
     else
         ERROR( "Invalid type" );
     return "";
@@ -611,6 +613,8 @@ FileFormat getFileFormat( const std::string &type_in )
         return FileFormat::NEW_SINGLE;
     else if ( type == "silo" || type == "4" )
         return FileFormat::SILO;
+    else if ( type == "hdf5" || type == "5" )
+        return FileFormat::HDF5;
     else
         ERROR( "Invalid type: " + type );
     return FileFormat::SILO;
