@@ -246,8 +246,10 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double * label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
 
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -258,7 +260,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
@@ -346,6 +348,8 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
                 Sn=99.0;
                 Sw=-99.0;
+                Kn = 0.0;
+                Kw = 0.0;
 				// Assign the affinity from the paired list
 				for (unsigned int idx=0; idx < NLABELS; idx++){
 					if (VALUE == LabelList[idx]){
@@ -416,11 +420,13 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 		ERROR("Error: GreySolidLabels and PorosityList must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double * label_count;
+	double * label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
 
-	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -429,7 +435,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 				VALUE=id[n];
                 POROSITY=1.f;//default: label 1 or 2, i.e. open nodes and porosity=1.0
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						POROSITY=PorosityList[idx];
@@ -486,7 +492,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
+	for (size_t idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
@@ -790,7 +796,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	bool USE_MORPH = false;
 	bool USE_SEED = false;
 	bool USE_DIRECT = false;
-	bool USE_MORPHOPEN_OIL = false;
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
@@ -931,7 +936,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
-	bool Regular = false;
 	auto current_db = db->cloneDatabase();
 	//runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
@@ -1133,14 +1137,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			double muA = rhoA*(tauA-0.5)/3.f; 
 			double muB = rhoB*(tauB-0.5)/3.f;				
 			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-			double dir_x = Fx/force_mag;
-			double dir_y = Fy/force_mag;
-			double dir_z = Fz/force_mag;
 			if (force_mag == 0.0){
-				// default to z direction
-				dir_x = 0.0;
-				dir_y = 0.0;
-				dir_z = 1.0;
 				force_mag = 1.0;
 			}
 			double current_saturation = Averages->saturation;
