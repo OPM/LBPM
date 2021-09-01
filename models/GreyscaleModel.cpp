@@ -442,16 +442,21 @@ void ScaLBL_GreyscaleModel::Initialize(){
 		if (rank==0){
 			printf("Initializing distributions from Restart! \n");
 		}
-		// Read in the restart file to CPU buffers
-        std::shared_ptr<double> cfq;
-        cfq = std::shared_ptr<double>(new double[19*Np],DeleteArray<double>);
-        FILE *File;
-        File=fopen(LocalRestartFile,"rb");
-        fread(cfq.get(),sizeof(double),19*Np,File);
-        fclose(File);
+		double value;
+        double *cfq;
+        cfq = new double[19*Np];
+		ifstream File(LocalRestartFile,ios::binary);
+		for (int n=0; n<Np; n++){
+			// Read the distributions
+			for (int q=0; q<19; q++){
+				File.read((char*) &value, sizeof(value));
+				cfq[q*Np+n] = value;
+			}
+		}
+		File.close();
 
 		// Copy the restart data to the GPU
-		ScaLBL_CopyToDevice(fq,cfq.get(),19*Np*sizeof(double));
+		ScaLBL_CopyToDevice(fq,cfq,19*Np*sizeof(double));
 		ScaLBL_DeviceBarrier();
 
 		comm.barrier();

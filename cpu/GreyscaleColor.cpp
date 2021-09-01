@@ -1418,6 +1418,9 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 		
+        mobility_ratio = 1.0;
+        Krn_grey = 0.0;
+        Krw_grey = 0.0;
         if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
         	perm = Kw_grey;
         	Swn = 0.0;
@@ -1428,12 +1431,14 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map
         	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
         	// recompute the effective permeability
         	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
-        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+        	//mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
         }
         else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
         	perm = Kn_grey;
         	Swn = 1.0;
         }	        		
+    	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT
@@ -2250,6 +2255,8 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 		rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
         mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 	
+        Krn_grey = 0.0;
+        Krw_grey = 0.0;
         if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
         	perm = Kw_grey;
         	Swn = 0.0;
@@ -2260,12 +2267,14 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
         	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
         	// recompute the effective permeability
         	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
-        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+        	//mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
         }
         else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
         	perm = Kn_grey;
         	Swn = 1.0;
         }	
+    	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+
 		// Get the 1D index based on regular data layout
 		ijk = Map[n];
 		//					COMPUTE THE COLOR GRADIENT

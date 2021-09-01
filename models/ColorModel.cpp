@@ -613,7 +613,6 @@ double ScaLBL_ColorModel::Run(int returntime){
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	auto t1 = std::chrono::system_clock::now();
 	int CURRENT_TIMESTEP = 0;
-	int START_TIMESTEP = timestep;
 	int EXIT_TIMESTEP = min(timestepMax,returntime);
 	while (timestep < EXIT_TIMESTEP ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -882,7 +881,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 	//************************************************************************
 	// Compute the walltime per timestep
 	auto t2 = std::chrono::system_clock::now();
-	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / (timestep - START_TIMESTEP);
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / CURRENT_TIMESTEP;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 
