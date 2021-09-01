@@ -645,7 +645,8 @@ void Domain::ComputePorosity(){
 	double sum;
 	double sum_local=0.0;
 	double iVol_global = 1.0/(1.0*(Nx-2)*(Ny-2)*(Nz-2)*nprocx()*nprocy()*nprocz());
-	if (BoundaryCondition > 0 && BoundaryCondition !=5) iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-6));
+	if (BoundaryCondition > 0 && BoundaryCondition !=5) 
+		iVol_global = 1.0/(1.0*(Nx-2)*nprocx()*(Ny-2)*nprocy()*((Nz-2)*nprocz()-inlet_layers_z - outlet_layers_z));
 	//.........................................................
     for (int k=inlet_layers_z+1; k<Nz-outlet_layers_z-1;k++){
         for (int j=1;j<Ny-1;j++){
