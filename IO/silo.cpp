@@ -25,7 +25,8 @@
 #include <silo.h>
 
 
-namespace IO::silo {
+namespace IO {
+namespace silo {
 
 
 /****************************************************
@@ -114,7 +115,8 @@ void writeMultiVar( DBfile *fid, const std::string &varname,
 }
 
 
-}; // namespace IO::silo
+} // namespace silo
+} // namespace IO
 
 
 #else

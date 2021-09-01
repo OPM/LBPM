@@ -14,15 +14,12 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "IO/Reader.h"
+#include "IO/HDF5_IO.h"
 #include "IO/IOHelpers.h"
 #include "IO/Mesh.h"
 #include "IO/MeshDatabase.h"
-#include "common/Utilities.h"
-
-#ifdef USE_SILO
 #include "IO/silo.h"
-#endif
-
+#include "common/Utilities.h"
 
 #include <ProfilerApp.h>
 #include <cstdio>
@@ -77,14 +74,16 @@ std::vector<std::string> IO::readTimesteps( const std::string &path, const std::
         filename += "summary.LBM";
     } else if ( format == "silo" ) {
         filename += "LBM.visit";
+    } else if ( format == "hdf5" ) {
+        filename += "LBM.visit";
     } else if ( format == "auto" ) {
-        bool test_old  = fileExists( path + "/summary.LBM" );
-        bool test_silo = fileExists( path + "/LBM.visit" );
-        if ( test_old && test_silo ) {
+        bool test_old = fileExists( path + "/summary.LBM" );
+        bool test_new = fileExists( path + "/LBM.visit" );
+        if ( test_old && test_new ) {
             ERROR( "Unable to determine format (both summary.LBM and LBM.visit exist)" );
         } else if ( test_old ) {
             filename += "summary.LBM";
-        } else if ( test_silo ) {
+        } else if ( test_new ) {
             filename += "LBM.visit";
         } else {
             ERROR( "Unable to determine format (neither summary.LBM or LBM.visit exist)" );
@@ -103,6 +102,9 @@ std::vector<std::string> IO::readTimesteps( const std::string &path, const std::
         std::string line( buf );
         line.resize( line.size() - 1 );
         auto pos = line.find( "summary.silo" );
+        if ( pos != std::string::npos )
+            line.resize( pos );
+        pos = line.find( "summary.xmf" );
         if ( pos != std::string::npos )
             line.resize( pos );
         if ( line.empty() )
@@ -185,8 +187,8 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
         if ( count % 3 != 0 )
             ERROR( "Error reading file" );
         if ( meshDatabase.type == IO::MeshType::PointMesh ) {
-            size_t N = count / 3;
-            std::shared_ptr<PointList> pointlist( new PointList( N ) );
+            size_t N              = count / 3;
+            auto pointlist        = std::make_shared<PointList>( N );
             std::vector<Point> &P = pointlist->points;
             for ( size_t i = 0; i < N; i++ ) {
                 P[i].x = data[3 * i + 0];
@@ -197,8 +199,8 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
         } else if ( meshDatabase.type == IO::MeshType::SurfaceMesh ) {
             if ( count % 9 != 0 )
                 ERROR( "Error reading file (2)" );
-            size_t N_tri = count / 9;
-            std::shared_ptr<TriList> trilist( new TriList( N_tri ) );
+            size_t N_tri          = count / 9;
+            auto trilist          = std::make_shared<TriList>( N_tri );
             std::vector<Point> &A = trilist->A;
             std::vector<Point> &B = trilist->B;
             std::vector<Point> &C = trilist->C;
@@ -216,7 +218,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
             mesh = trilist;
         } else if ( meshDatabase.type == IO::MeshType::VolumeMesh ) {
             // this was never supported in the old format
-            mesh = std::shared_ptr<DomainMesh>( new DomainMesh() );
+            mesh = std::make_shared<DomainMesh>();
         } else {
             ERROR( "Unknown mesh type" );
         }
@@ -237,13 +239,13 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
         fclose( fid );
         ASSERT( count == bytes );
         if ( meshDatabase.meshClass == "PointList" ) {
-            mesh.reset( new IO::PointList() );
+            mesh = std::make_shared<IO::PointList>();
         } else if ( meshDatabase.meshClass == "TriMesh" ) {
-            mesh.reset( new IO::TriMesh() );
+            mesh = std::make_shared<IO::TriMesh>();
         } else if ( meshDatabase.meshClass == "TriList" ) {
-            mesh.reset( new IO::TriList() );
+            mesh = std::make_shared<IO::TriList>();
         } else if ( meshDatabase.meshClass == "DomainMesh" ) {
-            mesh.reset( new IO::DomainMesh() );
+            mesh = std::make_shared<IO::DomainMesh>();
         } else {
             ERROR( "Unknown mesh class" );
         }
@@ -258,7 +260,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
         if ( meshDatabase.meshClass == "PointList" ) {
             Array<double> coords = silo::readPointMesh<double>( fid, database.name );
             ASSERT( coords.size( 1 ) == 3 );
-            std::shared_ptr<IO::PointList> mesh2( new IO::PointList( coords.size( 0 ) ) );
+            auto mesh2 = std::make_shared<IO::PointList>( coords.size( 0 ) );
             for ( size_t i = 0; i < coords.size( 1 ); i++ ) {
                 mesh2->points[i].x = coords( i, 0 );
                 mesh2->points[i].y = coords( i, 1 );
@@ -272,7 +274,7 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
             ASSERT( tri.size( 1 ) == 3 && coords.size( 1 ) == 3 );
             int N_tri   = tri.size( 0 );
             int N_point = coords.size( 0 );
-            std::shared_ptr<IO::TriMesh> mesh2( new IO::TriMesh( N_tri, N_point ) );
+            auto mesh2  = std::make_shared<IO::TriMesh>( N_tri, N_point );
             for ( int i = 0; i < N_point; i++ ) {
                 mesh2->vertices->points[i].x = coords( i, 0 );
                 mesh2->vertices->points[i].y = coords( i, 1 );
@@ -295,14 +297,81 @@ std::shared_ptr<IO::Mesh> IO::getMesh( const std::string &path, const std::strin
             silo::readUniformMesh( fid, database.name, range, N );
             auto rankinfo = silo::read<int>( fid, database.name + "_rankinfo" );
             RankInfoStruct rank_data( rankinfo[0], rankinfo[1], rankinfo[2], rankinfo[3] );
-            mesh.reset( new IO::DomainMesh( rank_data, N[0], N[1], N[2], range[1] - range[0],
-                range[3] - range[2], range[5] - range[4] ) );
+            mesh = std::make_shared<IO::DomainMesh>( rank_data, N[0], N[1], N[2],
+                range[1] - range[0], range[3] - range[2], range[5] - range[4] );
         } else {
             ERROR( "Unknown mesh class" );
         }
         silo::close( fid );
 #else
         ERROR( "Build without silo support" );
+#endif
+    } else if ( meshDatabase.format == FileFormat::HDF5 ) {
+        // Reading an hdf5 file
+#ifdef USE_HDF5
+        auto &database = meshDatabase.domains[domain];
+        auto filename  = path + "/" + timestep + "/" + database.file;
+        auto fid       = IO::HDF5::openHDF5( filename, "r" );
+        auto gid       = IO::HDF5::openGroup( fid, database.name );
+        if ( meshDatabase.meshClass == "PointList" ) {
+            std::vector<double> x, y, z;
+            IO::HDF5::readHDF5( gid, "x", x );
+            IO::HDF5::readHDF5( gid, "y", y );
+            IO::HDF5::readHDF5( gid, "z", z );
+            ASSERT( y.size() == x.size() && z.size() == x.size() );
+            auto mesh2 = std::make_shared<IO::PointList>( x.size() );
+            for ( size_t i = 0; i < x.size(); i++ ) {
+                mesh2->points[i].x = x[i];
+                mesh2->points[i].y = y[i];
+                mesh2->points[i].z = z[i];
+            }
+            mesh = mesh2;
+        } else if ( meshDatabase.meshClass == "TriMesh" || meshDatabase.meshClass == "TriList" ) {
+            // Read the points
+            std::vector<double> x, y, z;
+            IO::HDF5::readHDF5( gid, "x", x );
+            IO::HDF5::readHDF5( gid, "y", y );
+            IO::HDF5::readHDF5( gid, "z", z );
+            // Read the triangles
+            Array<int> tri;
+            IO::HDF5::readHDF5( gid, "tri", tri );
+            ASSERT( tri.size( 0 ) == 3 );
+            size_t N_tri   = tri.size( 1 );
+            size_t N_point = x.size();
+            auto mesh2     = std::make_shared<IO::TriMesh>( N_tri, N_point );
+            for ( size_t i = 0; i < N_point; i++ ) {
+                mesh2->vertices->points[i].x = x[i];
+                mesh2->vertices->points[i].y = y[i];
+                mesh2->vertices->points[i].z = z[i];
+            }
+            for ( size_t i = 0; i < N_tri; i++ ) {
+                mesh2->A[i] = tri( 0, i );
+                mesh2->B[i] = tri( 1, i );
+                mesh2->C[i] = tri( 2, i );
+            }
+            if ( meshDatabase.meshClass == "TriMesh" ) {
+                mesh = mesh2;
+            } else if ( meshDatabase.meshClass == "TriList" ) {
+                auto trilist = IO::getTriList( std::dynamic_pointer_cast<IO::Mesh>( mesh2 ) );
+                mesh         = trilist;
+            }
+        } else if ( meshDatabase.meshClass == "DomainMesh" ) {
+            std::vector<double> range;
+            std::vector<int> N;
+            std::vector<int> rankinfo;
+            IO::HDF5::readHDF5( gid, "range", range );
+            IO::HDF5::readHDF5( gid, "N", N );
+            IO::HDF5::readHDF5( gid, "rankinfo", rankinfo );
+            RankInfoStruct rank_data( rankinfo[0], rankinfo[1], rankinfo[2], rankinfo[3] );
+            mesh = std::make_shared<IO::DomainMesh>( rank_data, N[0], N[1], N[2],
+                range[1] - range[0], range[3] - range[2], range[5] - range[4] );
+        } else {
+            ERROR( "Unknown mesh class" );
+        }
+        IO::HDF5::closeGroup( gid );
+        IO::HDF5::closeHDF5( fid );
+#else
+        ERROR( "Build without hdf5 support" );
 #endif
     } else {
         ERROR( "Unknown format" );
@@ -337,7 +406,7 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
         size_t N              = atol( values[2].c_str() );
         size_t bytes          = atol( values[3].c_str() );
         std::string precision = values[4];
-        var                   = std::shared_ptr<IO::Variable>( new IO::Variable() );
+        var                   = std::make_shared<IO::Variable>();
         var->dim              = dim;
         var->type             = getVariableType( type );
         var->name             = variable;
@@ -356,7 +425,7 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
         auto variableDatabase = meshDatabase.getVariableDatabase( variable );
         std::string filename  = path + "/" + timestep + "/" + database.file;
         auto fid              = silo::open( filename, silo::READ );
-        var.reset( new Variable( variableDatabase.dim, variableDatabase.type, variable ) );
+        var = std::make_shared<Variable>( variableDatabase.dim, variableDatabase.type, variable );
         if ( meshDatabase.meshClass == "PointList" ) {
             var->data = silo::readPointMeshVariable<double>( fid, variable );
         } else if ( meshDatabase.meshClass == "TriMesh" || meshDatabase.meshClass == "TriList" ) {
@@ -370,7 +439,30 @@ std::shared_ptr<IO::Variable> IO::getVariable( const std::string &path, const st
 #else
         ERROR( "Build without silo support" );
 #endif
-
+    } else if ( meshDatabase.format == FileFormat::HDF5 ) {
+        // Reading an hdf5 file
+#ifdef USE_HDF5
+        auto &database   = meshDatabase.domains[domain];
+        auto varDatabase = meshDatabase.getVariableDatabase( variable );
+        auto filename    = path + "/" + timestep + "/" + database.file;
+        var      = std::make_shared<Variable>( varDatabase.dim, varDatabase.type, variable );
+        auto fid = IO::HDF5::openHDF5( filename, "r" );
+        auto gid = IO::HDF5::openGroup( fid, database.name );
+        IO::HDF5::readHDF5( gid, var->name, var->data );
+        IO::HDF5::closeHDF5( fid );
+        if ( meshDatabase.meshClass == "PointList" || meshDatabase.meshClass == "TriMesh" ||
+             meshDatabase.meshClass == "TriList" ) {
+            if ( var->data.ndim() == 2 && var->data.size( 0 ) == 3 )
+                var->data = var->data.permute( { 1, 0 } );
+        } else if ( meshDatabase.meshClass == "DomainMesh" ) {
+            if ( var->data.ndim() == 4 && var->data.size( 0 ) == 3 )
+                var->data = var->data.permute( { 1, 2, 3, 0 } );
+        } else {
+            ERROR( "Unknown mesh class" );
+        }
+#else
+        ERROR( "Build without silo support" );
+#endif
     } else {
         ERROR( "Unknown format" );
     }

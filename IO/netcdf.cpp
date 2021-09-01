@@ -511,7 +511,7 @@ template void write<double>( int fid, const std::string &var, const std::vector<
     const Array<double> &data, const RankInfoStruct &info );
 
 
-}; // namespace netcdf
+} // namespace netcdf
 
 #else
 

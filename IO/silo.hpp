@@ -275,11 +275,11 @@ Array<TYPE> readUniformMeshVariable( DBfile *fid, const std::string &varname )
         copyData<TYPE>( data2, type, var->vals[i] );
         memcpy( &data( 0, i ), data2.data(), var->nels * sizeof( TYPE ) );
     }
-    DBFreeQuadvar( var );
     std::vector<size_t> dims( var->ndims + 1, var->nvals );
     for ( int d = 0; d < var->ndims; d++ )
         dims[d] = var->dims[d];
     data.reshape( dims );
+    DBFreeQuadvar( var );
     return data;
 }
 

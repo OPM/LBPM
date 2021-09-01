@@ -246,8 +246,10 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 		ERROR("Error: ComponentLabels and ComponentAffinity must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double * label_count;
+	double *label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
 
 	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
@@ -258,7 +260,7 @@ void ScaLBL_GreyscaleColorModel::AssignComponentLabels()
 				int n = k*Nx*Ny+j*Nx+i;
 				VALUE=id[n];
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
@@ -311,23 +313,31 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 	double *GreySolidW_host  = new double [Np];
 	double *GreySn_host      = new double [Np];
 	double *GreySw_host      = new double [Np];
-
+	double *GreyKn_host      = new double [Np];
+	double *GreyKw_host      = new double [Np];
+	
 	size_t NLABELS=0;
 	signed char VALUE=0;
 	double AFFINITY=0.f;
     double Sn,Sw;//end-point saturation of greynodes set by users
+    double Kn,Kw; // endpoint effective permeability
 
 	auto LabelList = greyscaleColor_db->getVector<int>( "GreySolidLabels" );
 	auto AffinityList = greyscaleColor_db->getVector<double>( "GreySolidAffinity" );
-	auto SnList = greyscaleColor_db->getVector<double>( "GreySnList" );
-	auto SwList = greyscaleColor_db->getVector<double>( "GreySwList" );
-
+	auto SnList = greyscaleColor_db->getVector<double>( "grey_endpoint_A" );
+	auto SwList = greyscaleColor_db->getVector<double>( "grey_endpoint_B" );
+	auto KnList = greyscaleColor_db->getVector<double>( "grey_endpoint_permeability_A" );
+	auto KwList = greyscaleColor_db->getVector<double>( "grey_endpoint_permeability_B" );
+	
 	NLABELS=LabelList.size();
 	if (NLABELS != AffinityList.size()){
 		ERROR("Error: GreySolidLabels and GreySolidAffinity must be the same length! \n");
 	}
 	if (NLABELS != SnList.size() || NLABELS != SwList.size()){
-		ERROR("Error: GreySolidLabels, GreySnList, and GreySwList must be the same length! \n");
+		ERROR("Error: GreySolidLabels, grey_endpoint_A, and grey_endpoint_B must be the same length! \n");
+	}
+	if (NLABELS != KnList.size() || NLABELS != KwList.size()){
+		ERROR("Error: GreySolidLabels, grey_endpoint_permeability_A, and grey_endpoint_permeability_B must be the same length! \n");
 	}
 
 	for (int k=0;k<Nz;k++){
@@ -338,12 +348,16 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 	            AFFINITY=0.f;//all nodes except the specified grey nodes have grey-solid affinity = 0.0
                 Sn=99.0;
                 Sw=-99.0;
+                Kn = 0.0;
+                Kw = 0.0;
 				// Assign the affinity from the paired list
 				for (unsigned int idx=0; idx < NLABELS; idx++){
 					if (VALUE == LabelList[idx]){
 						AFFINITY=AffinityList[idx];
                         Sn = SnList[idx];
                         Sw = SwList[idx];
+                        Kn = SnList[idx];
+                        Kw = SwList[idx];
 						idx = NLABELS;
 					}
 				}
@@ -352,6 +366,8 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
                     GreySolidW_host[idx] = AFFINITY;
                     GreySn_host[idx]     = Sn;
                     GreySw_host[idx]     = Sw;
+                    GreyKn_host[idx]     = Kn;
+                    GreyKw_host[idx]     = Kw;
                 }
 			}
 		}
@@ -374,6 +390,8 @@ void ScaLBL_GreyscaleColorModel::AssignGreySolidLabels()//apply capillary penalt
 	ScaLBL_CopyToDevice(GreySolidW, GreySolidW_host, Np*sizeof(double));
 	ScaLBL_CopyToDevice(GreySn, GreySn_host, Np*sizeof(double));
 	ScaLBL_CopyToDevice(GreySw, GreySw_host, Np*sizeof(double));
+	ScaLBL_CopyToDevice(GreyKn, GreySn_host, Np*sizeof(double));
+	ScaLBL_CopyToDevice(GreyKw, GreySw_host, Np*sizeof(double));
 	ScaLBL_Comm->Barrier();
     delete [] GreySolidW_host;
     delete [] GreySn_host;
@@ -402,11 +420,13 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 		ERROR("Error: GreySolidLabels and PorosityList must be the same length! \n");
 	}
 
-	double label_count[NLABELS];
-	double label_count_global[NLABELS];
+	double * label_count;
+	double * label_count_global;
+	label_count = new double [NLABELS];
+	label_count_global = new double [NLABELS];
 	// Assign the labels
 
-	for (int idx=0; idx<NLABELS; idx++) label_count[idx]=0;
+	for (size_t idx=0; idx<NLABELS; idx++) label_count[idx]=0;
 
 	for (int k=0;k<Nz;k++){
 		for (int j=0;j<Ny;j++){
@@ -415,7 +435,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 				VALUE=id[n];
                 POROSITY=1.f;//default: label 1 or 2, i.e. open nodes and porosity=1.0
 				// Assign the affinity from the paired list
-				for (unsigned int idx=0; idx < NLABELS; idx++){
+				for (size_t idx=0; idx < NLABELS; idx++){
 				      //printf("idx=%i, value=%i, %i, \n",idx, VALUE,LabelList[idx]);
 					if (VALUE == LabelList[idx]){
 						POROSITY=PorosityList[idx];
@@ -472,7 +492,7 @@ void ScaLBL_GreyscaleColorModel::AssignGreyPoroPermLabels()
 	// Set Dm to match Mask
 	for (int i=0; i<Nx*Ny*Nz; i++) Dm->id[i] = Mask->id[i]; 
 	
-	for (int idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
+	for (size_t idx=0; idx<NLABELS; idx++)		label_count_global[idx]=Dm->Comm.sumReduce(  label_count[idx]);
 
     //Initialize a weighted porosity after considering grey voxels
     GreyPorosity=0.0;
@@ -620,7 +640,9 @@ void ScaLBL_GreyscaleColorModel::Create(){
     //ScaLBL_AllocateDeviceMemory((void **) &GreySolidGrad, 3*sizeof(double)*Np);		
     ScaLBL_AllocateDeviceMemory((void **) &GreySolidW, sizeof(double)*Np);		
     ScaLBL_AllocateDeviceMemory((void **) &GreySn, sizeof(double)*Np);		
-    ScaLBL_AllocateDeviceMemory((void **) &GreySw, sizeof(double)*Np);		
+    ScaLBL_AllocateDeviceMemory((void **) &GreySw, sizeof(double)*Np);	
+    ScaLBL_AllocateDeviceMemory((void **) &GreyKn, sizeof(double)*Np);		
+    ScaLBL_AllocateDeviceMemory((void **) &GreyKw, sizeof(double)*Np);	
     ScaLBL_AllocateDeviceMemory((void **) &Porosity_dvc, sizeof(double)*Np);
     ScaLBL_AllocateDeviceMemory((void **) &Permeability_dvc, sizeof(double)*Np);
 	//...........................................................................
@@ -774,7 +796,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	bool USE_MORPH = false;
 	bool USE_SEED = false;
 	bool USE_DIRECT = false;
-	bool USE_MORPHOPEN_OIL = false;
 	int MAX_MORPH_TIMESTEPS = 50000; // maximum number of LBM timesteps to spend in morphological adaptation routine
 	int MIN_STEADY_TIMESTEPS = 100000;
 	int MAX_STEADY_TIMESTEPS = 200000;
@@ -915,7 +936,6 @@ void ScaLBL_GreyscaleColorModel::Run(){
 	//************ MAIN ITERATION LOOP ***************************************/
 	PROFILE_START("Loop");
     //std::shared_ptr<Database> analysis_db;
-	bool Regular = false;
 	auto current_db = db->cloneDatabase();
 	//runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	//analysis.createThreads( analysis_method, 4 );
@@ -944,7 +964,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		// Halo exchange for phase field
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,GreyKn,GreyKw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff, 
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
@@ -973,7 +993,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(NeighborList, dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,GreyKn,GreyKw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
@@ -1006,7 +1026,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 		ScaLBL_Comm_Regular->SendHalo(Phi);
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,GreyKn,GreyKw,Porosity_dvc,Permeability_dvc,Velocity,Pressure, 
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, ScaLBL_Comm->FirstInterior(), ScaLBL_Comm->LastInterior(), Np);
         //Model-1&4
@@ -1035,7 +1055,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 		}
 
         //Model-1&4 with capillary pressure penalty for grey nodes
-        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
+        ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(dvcMap, fq, Aq, Bq, Den, Phi, GreySolidW,GreySn,GreySw,GreyKn,GreyKw,Porosity_dvc,Permeability_dvc,Velocity,Pressure,
                 rhoA, rhoB, tauA, tauB,tauA_eff, tauB_eff,
                 alpha, beta, Fx, Fy, Fz, RecoloringOff, Nx, Nx*Ny, 0, ScaLBL_Comm->LastExterior(), Np);
         //Model-1&4
@@ -1117,14 +1137,7 @@ void ScaLBL_GreyscaleColorModel::Run(){
 			double muA = rhoA*(tauA-0.5)/3.f; 
 			double muB = rhoB*(tauB-0.5)/3.f;				
 			double force_mag = sqrt(Fx*Fx+Fy*Fy+Fz*Fz);
-			double dir_x = Fx/force_mag;
-			double dir_y = Fy/force_mag;
-			double dir_z = Fz/force_mag;
 			if (force_mag == 0.0){
-				// default to z direction
-				dir_x = 0.0;
-				dir_y = 0.0;
-				dir_z = 1.0;
 				force_mag = 1.0;
 			}
 			double current_saturation = Averages->saturation;
