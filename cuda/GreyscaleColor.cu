@@ -1450,7 +1450,7 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor(int *Map, double *dist, 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den,
-		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure,
+		 double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm, double *Velocity, double *Pressure,
          double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff,double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
@@ -1479,7 +1479,11 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
     double W;//greyscale wetting strength
     double Sn_grey,Sw_grey;
-
+    
+    /* Corey model parameters */
+    double Kn_grey,Kw_grey;    
+    double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
+    
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
 	const double mrt_V3=0.04761904761904762;
@@ -1502,15 +1506,17 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nA = Den[n];
 			nB = Den[Np + n];
 
-            porosity = Poros[n];
-            perm = Perm[n];
-            W = GreySolidW[n];
-            Sn_grey = GreySn[n];
-            Sw_grey = GreySw[n];
-
+	        porosity = Poros[n];
+	        //perm = Perm[n];
+	        perm = 1.0;
+	        W = GreySolidW[n];
+	        Sn_grey = GreySn[n];
+	        Sw_grey = GreySw[n];
+	        Kn_grey = GreyKn[n];
+	        Kw_grey = GreyKw[n];
+	        
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
-
 			// local density
 			rho0=rhoA + 0.5*(1.0-phi)*(rhoB-rhoA);
 			// local relaxation time
@@ -1518,8 +1524,24 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			tau_eff=tauA_eff + 0.5*(1.0-phi)*(tauB_eff-tauA_eff);
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
-            mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
+	        mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
 			
+	        if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
+	        	perm = Kw_grey;
+	        	Swn = 0.0;
+	        }
+	        else if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+	        	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
+	        	Krn_grey = Kn_grey*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+	        	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+	        	// recompute the effective permeability
+	        	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
+	        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+	        }
+	        else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
+	        	perm = Kn_grey;
+	        	Swn = 1.0;
+	        }	        		
 			// Get the 1D index based on regular data layout
 			ijk = Map[n];
 			//					COMPUTE THE COLOR GRADIENT
@@ -1585,35 +1607,35 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 
 			//............Compute the Greyscale Potential Gradient.....................
-//			Fcpx = 0.0;
-//			Fcpy = 0.0;
-//			Fcpz = 0.0;
-//            if (porosity!=1.0){
-//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
-//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-//                Fcpx *= alpha*W/sqrt(perm); 
-//                Fcpy *= alpha*W/sqrt(perm); 
-//                Fcpz *= alpha*W/sqrt(perm); 
-//                //double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-//                //double Fcp_mag = Fcp_mag_temp;
-//                //if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
-//                //nx = Fcpx/Fcp_mag;
-//                //ny = Fcpy/Fcp_mag;
-//                //nz = Fcpz/Fcp_mag;
-//            }
-            Fcpx = nx;
-            Fcpy = ny;
-            Fcpz = nz;
-            double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
-            //NOTE for open node (porosity=1.0),Fcp=0.0
-            Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
-            Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
-            Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	//			Fcpx = 0.0;
+	//			Fcpy = 0.0;
+	//			Fcpz = 0.0;
+	//            if (porosity!=1.0){
+	//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+	//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+	//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+	//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+	//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+	//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+	//                Fcpx *= alpha*W/sqrt(perm); 
+	//                Fcpy *= alpha*W/sqrt(perm); 
+	//                Fcpz *= alpha*W/sqrt(perm); 
+	//                //double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+	//                //double Fcp_mag = Fcp_mag_temp;
+	//                //if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
+	//                //nx = Fcpx/Fcp_mag;
+	//                //ny = Fcpy/Fcp_mag;
+	//                //nz = Fcpz/Fcp_mag;
+	//            }
+	        Fcpx = nx;
+	        Fcpy = ny;
+	        Fcpz = nz;
+	        double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+	        if (Fcp_mag==0.0) Fcpx=Fcpy=Fcpz=0.0;
+	        //NOTE for open node (porosity=1.0),Fcp=0.0
+	        Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	        Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	        Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
@@ -1944,98 +1966,98 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			m17 -= fq;
 			m18 -= fq;
 			
-            // Compute greyscale related parameters
-            ux = (jx/rho0+0.5*porosity*Gx+0.5*Fcpx/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uy = (jy/rho0+0.5*porosity*Gy+0.5*Fcpy/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uz = (jz/rho0+0.5*porosity*Gz+0.5*Fcpz/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            if (porosity==1.0){//i.e. open nodes
-                ux = (jx/rho0+0.5*porosity*Gx);
-                uy = (jy/rho0+0.5*porosity*Gy);
-                uz = (jz/rho0+0.5*porosity*Gz);
-            }
+	        // Compute greyscale related parameters
+	        ux = (jx/rho0+0.5*porosity*Gx+0.5*Fcpx/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        uy = (jy/rho0+0.5*porosity*Gy+0.5*Fcpy/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        uz = (jz/rho0+0.5*porosity*Gz+0.5*Fcpz/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        if (porosity==1.0){//i.e. open nodes
+	            ux = (jx/rho0+0.5*porosity*Gx);
+	            uy = (jy/rho0+0.5*porosity*Gy);
+	            uz = (jz/rho0+0.5*porosity*Gz);
+	        }
 
-            //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx)+Fcpx;
-            Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy)+Fcpy;
-            Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz)+Fcpz;
-            if (porosity==1.0){
-                Fx=rho0*(porosity*Gx);
-                Fy=rho0*(porosity*Gy);
-                Fz=rho0*(porosity*Gz);
-            }
+	        //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
+	        Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx)+Fcpx;
+	        Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy)+Fcpy;
+	        Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz)+Fcpz;
+	        if (porosity==1.0){
+	            Fx=rho0*(porosity*Gx);
+	            Fy=rho0*(porosity*Gy);
+	            Fz=rho0*(porosity*Gz);
+	        }
 
 			// write the velocity 
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
-            //Pressure[n] = rho/3.f/porosity;
-            Pressure[n] = rho/3.f;
+	        //Pressure[n] = rho/3.f/porosity;
+	        Pressure[n] = rho/3.f;
 
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
-            //---------------- NO higher-order force -------------------------------//
+	        //---------------- NO higher-order force -------------------------------//
 			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2);
-            jx = jx + Fx;
+	        jx = jx + Fx;
 			m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
-            jy = jy + Fy;
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+	        jy = jy + Fy;
 			m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
-            jz = jz + Fz;
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+	        jz = jz + Fz;
 			m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
 			m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
+	        //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
 			m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12);
+	        //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12);
 			m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
 			m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
 			m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
-            //----------------------------------------------------------------------//
+	        //----------------------------------------------------------------------//
 
-            //----------------With higher-order force ------------------------------//
+	        //----------------With higher-order force ------------------------------//
 			//if (C == 0.0)	nx = ny = nz = 0.0;
 			//m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1)
-            //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+	        //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
 			//m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2)
-            //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
-            //jx = jx + Fx;
+	        //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+	        //jx = jx + Fx;
 			//m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
-            //jy = jy + Fy;
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+	        //jy = jy + Fy;
 			//m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
-            //jz = jz + Fz;
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+	        //jz = jz + Fz;
 			//m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
 			//m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9)
-            //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+	        //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
 			////m10 = m10 + rlx_setA*( - m10);
-            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
-            //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+	        //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+	        //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
 			//m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11)
-            //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
 			////m12 = m12 + rlx_setA*( - m12);
-            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
-            //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+	        //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
+	        //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
 			//m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
-            //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
 			//m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
-            //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
 			//m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
-            //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
 			//m16 = m16 + rlx_setB*( - m16);
 			//m17 = m17 + rlx_setB*( - m17);
 			//m18 = m18 + rlx_setB*( - m18);
-            //----------------------------------------------------------------------//
+	        //----------------------------------------------------------------------//
 
 			//.................inverse transformation......................................................
 			// q=0
@@ -2162,21 +2184,27 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			nAB = 1.0/(nA+nB);
 			Aq[n] = 0.3333333333333333*nA;
 			Bq[n] = 0.3333333333333333*nB;
-
+			
 			//...............................................
 			// q = 0,2,4
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+			jA = nA*ux;
+			jB = nB*ux;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			// q = 1
 			//nread = neighborList[n+Np];
@@ -2189,17 +2217,23 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 
 			//...............................................
 			// Cq = {0,1,0}
+			jA = nA*uy;
+			jB = nB*uy;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			// q = 3
 			//nread = neighborList[n+3*Np];
@@ -2213,17 +2247,24 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 			//...............................................
 			// q = 4
 			// Cq = {0,0,1}
+			jA = nA*uz;
+			jB = nB*uz;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			// q = 5
 			//nread = neighborList[n+5*Np];
@@ -2241,7 +2282,7 @@ __global__ void dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *neighborList, int 
 //CP: capillary penalty
 // also turn off recoloring for grey nodes
 __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm, double *Velocity, double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Gx, double Gy, double Gz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 	int ijk,nn,n;
@@ -2265,6 +2306,10 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
     double Fcpx,Fcpy,Fcpz;//capillary penalty force
     double W;//greyscale wetting strength
     double Sn_grey,Sw_grey;
+    
+    /* Corey model parameters */
+    double Kn_grey,Kw_grey;    
+    double Swn,Krn_grey,Krw_grey,mobility_ratio,jA,jB;
 
 	const double mrt_V1=0.05263157894736842;
 	const double mrt_V2=0.012531328320802;
@@ -2284,17 +2329,18 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 		//........Get 1-D index for this thread....................
 		n =  S*blockIdx.x*blockDim.x + s*blockDim.x + threadIdx.x + start;
 		if (n<finish) {
-
-			// read the component number densities
 			nA = Den[n];
 			nB = Den[Np + n];
 
-            porosity = Poros[n];
-            perm = Perm[n];
-            W = GreySolidW[n];
-            Sn_grey = GreySn[n];
-            Sw_grey = GreySw[n];
-
+	        porosity = Poros[n];
+	        //perm = Perm[n];
+	        perm = 1.0;
+	        W = GreySolidW[n];
+	        Sn_grey = GreySn[n];
+	        Sw_grey = GreySw[n];
+	        Kn_grey = GreyKn[n];
+	        Kw_grey = GreyKw[n];
+	        
 			// compute phase indicator field
 			phi=(nA-nB)/(nA+nB);
 
@@ -2305,8 +2351,24 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			tau_eff=tauA_eff + 0.5*(1.0-phi)*(tauB_eff-tauA_eff);
 			rlx_setA = 1.f/tau;
 			rlx_setB = 8.f*(2.f-rlx_setA)/(8.f-rlx_setA);
-            mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
-
+	        mu_eff = (tau_eff-0.5)/3.0;//kinematic viscosity
+		
+	        if (nA/(nA+nB)<Sn_grey && porosity !=1.0){
+	        	perm = Kw_grey;
+	        	Swn = 0.0;
+	        }
+	        else if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){ 
+	        	Swn = (nA/(nA+nB) - Sn_grey) /(Sw_grey - Sn_grey);
+	        	Krn_grey = Kn_grey*Swn*Swn; // Corey model with exponent = 2, make sure that W cannot shift to zero
+	        	Krw_grey = Kw_grey*(1.0-Swn)*(1.0-Swn); // Corey model with exponent = 2, make sure that W cannot shift to zero
+	        	// recompute the effective permeability
+	        	perm = mu_eff*(Krn_grey*3.0/(tauA-0.5) + Krw_grey*3.0/(tauA-0.5));
+	        	mobility_ratio =(nA*Krn_grey*3.0/(tauA-0.5) - nB*Krw_grey*3.0/(tauB-0.5))/(nA*Krn_grey*3.0/(tauA-0.5) + nB*Krw_grey*3.0/(tauB-0.5));
+	        }
+	        else if (nA/(nA+nB)>Sw_grey && porosity !=1.0){
+	        	perm = Kn_grey;
+	        	Swn = 1.0;
+	        }	
 			// Get the 1D index based on regular data layout
 			ijk = Map[n];
 			//					COMPUTE THE COLOR GRADIENT
@@ -2372,35 +2434,35 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			nz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
 
 			//............Compute the Greyscale Potential Gradient.....................
-//			Fcpx = 0.0;
-//			Fcpy = 0.0;
-//			Fcpz = 0.0;
-//            if (porosity!=1.0){
-//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
-//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
-//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
-//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
-//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
-//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
-//                Fcpx *= alpha*W/sqrt(perm); 
-//                Fcpy *= alpha*W/sqrt(perm); 
-//                Fcpz *= alpha*W/sqrt(perm); 
-//                double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-//                double Fcp_mag = Fcp_mag_temp;
-//                if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
-//                nx = Fcpx/Fcp_mag;
-//                ny = Fcpy/Fcp_mag;
-//                nz = Fcpz/Fcp_mag;
-//            }
-            Fcpx = nx; 
-            Fcpy = ny; 
-            Fcpz = nz; 
-            double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
-            if (Fcp_mag==0.0); Fcpx=Fcpy=Fcpz=0.0;
-            //NOTE for open node (porosity=1.0),Fcp=0.0
-            Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
-            Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
-            Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	//			Fcpx = 0.0;
+	//			Fcpy = 0.0;
+	//			Fcpz = 0.0;
+	//            if (porosity!=1.0){
+	//                //Fcpx = -3.0/18.0*(gp1-gp2+0.5*(gp7-gp8+gp9-gp10+gp11-gp12+gp13-gp14));
+	//                //Fcpy = -3.0/18.0*(gp3-gp4+0.5*(gp7-gp8-gp9+gp10+gp15-gp16+gp17-gp18));
+	//                //Fcpz = -3.0/18.0*(gp5-gp6+0.5*(gp11-gp12-gp13+gp14+gp15-gp16-gp17+gp18));
+	//                Fcpx = -3.0/18.0*(m1-m2+0.5*(m7-m8+m9-m10+m11-m12+m13-m14));
+	//                Fcpy = -3.0/18.0*(m3-m4+0.5*(m7-m8-m9+m10+m15-m16+m17-m18));
+	//                Fcpz = -3.0/18.0*(m5-m6+0.5*(m11-m12-m13+m14+m15-m16-m17+m18));
+	//                Fcpx *= alpha*W/sqrt(perm); 
+	//                Fcpy *= alpha*W/sqrt(perm); 
+	//                Fcpz *= alpha*W/sqrt(perm); 
+	//                double Fcp_mag_temp = sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+	//                double Fcp_mag = Fcp_mag_temp;
+	//                if (Fcp_mag_temp==0.0) Fcp_mag=1.0;
+	//                nx = Fcpx/Fcp_mag;
+	//                ny = Fcpy/Fcp_mag;
+	//                nz = Fcpz/Fcp_mag;
+	//            }
+	        Fcpx = nx; 
+	        Fcpy = ny; 
+	        Fcpz = nz; 
+	        double Fcp_mag=sqrt(Fcpx*Fcpx+Fcpy*Fcpy+Fcpz*Fcpz);
+	        if (Fcp_mag==0.0) Fcpx=Fcpy=Fcpz=0.0;
+	        //NOTE for open node (porosity=1.0),Fcp=0.0
+	        Fcpx *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	        Fcpy *= alpha*W*(1.0-porosity)/sqrt(perm); 
+	        Fcpz *= alpha*W*(1.0-porosity)/sqrt(perm); 
 
 			//...........Normalize the Color Gradient.................................
 			C = sqrt(nx*nx+ny*ny+nz*nz);
@@ -2680,98 +2742,98 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			m17 -= fq;
 			m18 -= fq;
 
-            // Compute greyscale related parameters
-            ux = (jx/rho0+0.5*porosity*Gx+0.5*Fcpx/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uy = (jy/rho0+0.5*porosity*Gy+0.5*Fcpy/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            uz = (jz/rho0+0.5*porosity*Gz+0.5*Fcpz/rho0)/(1.0+0.5*porosity*mu_eff/perm);
-            if (porosity==1.0){//i.e. open nodes
-                ux = (jx/rho0+0.5*porosity*Gx);
-                uy = (jy/rho0+0.5*porosity*Gy);
-                uz = (jz/rho0+0.5*porosity*Gz);
-            }
+	        // Compute greyscale related parameters
+	        ux = (jx/rho0+0.5*porosity*Gx+0.5*Fcpx/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        uy = (jy/rho0+0.5*porosity*Gy+0.5*Fcpy/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        uz = (jz/rho0+0.5*porosity*Gz+0.5*Fcpz/rho0)/(1.0+0.5*porosity*mu_eff/perm);
+	        if (porosity==1.0){//i.e. open nodes
+	            ux = (jx/rho0+0.5*porosity*Gx);
+	            uy = (jy/rho0+0.5*porosity*Gy);
+	            uz = (jz/rho0+0.5*porosity*Gz);
+	        }
 
-            //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
-            Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx)+Fcpx;
-            Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy)+Fcpy;
-            Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz)+Fcpz;
-            if (porosity==1.0){
-                Fx=rho0*(porosity*Gx);
-                Fy=rho0*(porosity*Gy);
-                Fz=rho0*(porosity*Gz);
-            }
+	        //Update the total force to include linear (Darcy) and nonlinear (Forchheimer) drags due to the porous medium
+	        Fx = rho0*(-porosity*mu_eff/perm*ux + porosity*Gx)+Fcpx;
+	        Fy = rho0*(-porosity*mu_eff/perm*uy + porosity*Gy)+Fcpy;
+	        Fz = rho0*(-porosity*mu_eff/perm*uz + porosity*Gz)+Fcpz;
+	        if (porosity==1.0){
+	            Fx=rho0*(porosity*Gx);
+	            Fy=rho0*(porosity*Gy);
+	            Fz=rho0*(porosity*Gz);
+	        }
 
 			// write the velocity 
 			Velocity[n] = ux;
 			Velocity[Np+n] = uy;
 			Velocity[2*Np+n] = uz;
-            //Pressure[n] = rho/3.f/porosity;
-            Pressure[n] = rho/3.f;
+	        //Pressure[n] = rho/3.f/porosity;
+	        Pressure[n] = rho/3.f;
 
 			//........................................................................
 			//..............carry out relaxation process..............................
 			//..........Toelke, Fruediger et. al. 2006................................
-            //---------------- NO higher-order force -------------------------------//
+	        //---------------- NO higher-order force -------------------------------//
 			if (C == 0.0)	nx = ny = nz = 0.0;
 			m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1);
 			m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2);
-            jx = jx + Fx;
+	        jx = jx + Fx;
 			m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
-            jy = jy + Fy;
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+	        jy = jy + Fy;
 			m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
-            jz = jz + Fz;
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+	        jz = jz + Fz;
 			m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
-                    + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+	                + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
 			m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9);
 			m10 = m10 + rlx_setA*( - m10);
-            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
+	        //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10);
 			m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11);
 			m12 = m12 + rlx_setA*( - m12);
-            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12);
+	        //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12);
 			m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
 			m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
 			m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
 			m16 = m16 + rlx_setB*( - m16);
 			m17 = m17 + rlx_setB*( - m17);
 			m18 = m18 + rlx_setB*( - m18);
-            //----------------------------------------------------------------------//
+	        //----------------------------------------------------------------------//
 
-            //----------------With higher-order force ------------------------------//
+	        //----------------With higher-order force ------------------------------//
 			//if (C == 0.0)	nx = ny = nz = 0.0;
 			//m1 = m1 + rlx_setA*((19*(ux*ux+uy*uy+uz*uz)*rho0/porosity - 11*rho) -19*alpha*C - m1)
-            //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
+	        //        + (1-0.5*rlx_setA)*38*(Fx*ux+Fy*uy+Fz*uz)/porosity;
 			//m2 = m2 + rlx_setA*((3*rho - 5.5*(ux*ux+uy*uy+uz*uz)*rho0/porosity)- m2)
-            //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
-            //jx = jx + Fx;
+	        //        + (1-0.5*rlx_setA)*11*(-Fx*ux-Fy*uy-Fz*uz)/porosity;
+	        //jx = jx + Fx;
 			//m4 = m4 + rlx_setB*((-0.6666666666666666*ux*rho0)- m4)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
-            //jy = jy + Fy;
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fx);
+	        //jy = jy + Fy;
 			//m6 = m6 + rlx_setB*((-0.6666666666666666*uy*rho0)- m6)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
-            //jz = jz + Fz;
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fy);
+	        //jz = jz + Fz;
 			//m8 = m8 + rlx_setB*((-0.6666666666666666*uz*rho0)- m8)
-            //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
+	        //        + (1-0.5*rlx_setB)*(-0.6666666666666666*Fz);
 			//m9 = m9 + rlx_setA*(((2*ux*ux-uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(2*nx*nx-ny*ny-nz*nz) - m9)
-            //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
+	        //        + (1-0.5*rlx_setA)*(4*Fx*ux-2*Fy*uy-2*Fz*uz)/porosity;
 			////m10 = m10 + rlx_setA*( - m10);
-            //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
-            //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
+	        //m10 = m10 + rlx_setA*(-0.5*rho0*((2*ux*ux-uy*uy-uz*uz)/porosity)- m10)
+	        //          + (1-0.5*rlx_setA)*(-2*Fx*ux+Fy*uy+Fz*uz)/porosity;
 			//m11 = m11 + rlx_setA*(((uy*uy-uz*uz)*rho0/porosity) + 0.5*alpha*C*(ny*ny-nz*nz)- m11)
-            //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(2*Fy*uy-2*Fz*uz)/porosity;
 			////m12 = m12 + rlx_setA*( - m12);
-            //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
-            //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
+	        //m12 = m12 + rlx_setA*(-0.5*(rho0*(uy*uy-uz*uz)/porosity)- m12)
+	        //          + (1-0.5*rlx_setA)*(-Fy*uy+Fz*uz)/porosity;
 			//m13 = m13 + rlx_setA*( (ux*uy*rho0/porosity) + 0.5*alpha*C*nx*ny - m13);
-            //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fy*ux+Fx*uy)/porosity;
 			//m14 = m14 + rlx_setA*( (uy*uz*rho0/porosity) + 0.5*alpha*C*ny*nz - m14);
-            //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fz*uy+Fy*uz)/porosity;
 			//m15 = m15 + rlx_setA*( (ux*uz*rho0/porosity) + 0.5*alpha*C*nx*nz - m15);
-            //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
+	        //          + (1-0.5*rlx_setA)*(Fz*ux+Fx*uz)/porosity;
 			//m16 = m16 + rlx_setB*( - m16);
 			//m17 = m17 + rlx_setB*( - m17);
 			//m18 = m18 + rlx_setB*( - m18);
-            //----------------------------------------------------------------------//
+	        //----------------------------------------------------------------------//
 
 			//.................inverse transformation......................................................
 			// q=0
@@ -2882,21 +2944,27 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			nAB = 1.0/(nA+nB);
 			Aq[n] = 0.3333333333333333*nA;
 			Bq[n] = 0.3333333333333333*nB;
-
+			
 			//...............................................
 			// q = 0,2,4
 			// Cq = {1,0,0}, {0,1,0}, {0,0,1}
+			jA = nA*ux;
+			jB = nB*ux;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*nx;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*ux))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*ux))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*ux))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*ux))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*ux*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*ux*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			Aq[1*Np+n] = a1;
 			Bq[1*Np+n] = b1;
@@ -2904,45 +2972,57 @@ __global__  void dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dis
 			Bq[2*Np+n] = b2;
 
 			//...............................................
-			// q = 2
 			// Cq = {0,1,0}
+			jA = nA*uy;
+			jB = nB*uy;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*ny;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*uy))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*uy))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*uy))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*uy))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*uy*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*uy*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			Aq[3*Np+n] = a1;
 			Bq[3*Np+n] = b1;
 			Aq[4*Np+n] = a2;
 			Bq[4*Np+n] = b2;
+
 			//...............................................
 			// q = 4
 			// Cq = {0,0,1}
+			jA = nA*uz;
+			jB = nB*uz;		
 			delta = beta*nA*nB*nAB*0.1111111111111111*nz;
 			if (!(nA*nB*nAB>0)) delta=0;
-            //----------------newly added for better control of recoloring---------------//
-            if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0) delta = 0.0; 
-            if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
-            //---------------------------------------------------------------------------//
-            if (RecoloringOff==true && porosity !=1.0) delta=0;
-			a1 = nA*(0.1111111111111111*(1+4.5*uz))+delta;
-			b1 = nB*(0.1111111111111111*(1+4.5*uz))-delta;
-			a2 = nA*(0.1111111111111111*(1-4.5*uz))-delta;
-			b2 = nB*(0.1111111111111111*(1-4.5*uz))+delta;
+	        //----------------newly added for better control of recoloring---------------//
+	        if (nA/(nA+nB)>=Sn_grey && nA/(nA+nB) <= Sw_grey && porosity !=1.0){
+	        	delta = 0.0; 
+	    		jA = 0.5*uz*(nA+nB)*(1.0+mobility_ratio);
+	    		jB = 0.5*uz*(nA+nB)*(1.0-mobility_ratio);
+	        }
+	        if (nA/(nA+nB)>Sw_grey && porosity !=1.0) delta = -1.0*delta; 
+	        //---------------------------------------------------------------------------//
+	        if (RecoloringOff==true && porosity !=1.0) delta=0;
+
+			a1 = (0.1111111111111111*(nA+4.5*jA))+delta;
+			b1 = (0.1111111111111111*(nB+4.5*jB))-delta;
+			a2 = (0.1111111111111111*(nA-4.5*jA))-delta;
+			b2 = (0.1111111111111111*(nB-4.5*jB))+delta;
 
 			Aq[5*Np+n] = a1;
 			Bq[5*Np+n] = b1;
 			Aq[6*Np+n] = a2;
 			Bq[6*Np+n] = b2;
 			//...............................................
-
 		}
 	}
 }
@@ -4530,11 +4610,11 @@ extern "C" void ScaLBL_PhaseField_InitFromRestart(double *Den, double *Aq, doubl
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw,  double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm, Vel, Pressure,
+	dvc_ScaLBL_D3Q19_AAeven_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, GreyKn, GreyKw, Poros, Perm, Vel, Pressure,
             rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff, alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 	
 	cudaError_t err = cudaGetLastError();
@@ -4546,11 +4626,11 @@ extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, do
 
 //Model-1 & 4 with capillary pressure penalty
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np){
 
-	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, Poros, Perm,Vel,Pressure,
+	dvc_ScaLBL_D3Q19_AAodd_GreyscaleColor_CP<<<NBLOCKS,NTHREADS >>>(d_neighborList, Map, dist, Aq, Bq, Den, Phi, GreySolidW, GreySn, GreySw, GreyKn, GreyKw, Poros, Perm,Vel,Pressure,
 			rhoA, rhoB, tauA, tauB, tauA_eff, tauB_eff,alpha, beta, Fx, Fy, Fz, RecoloringOff, strideY, strideZ, start, finish, Np);
 
 	cudaError_t err = cudaGetLastError();

@@ -198,6 +198,7 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 	} 
 	else if (protocol == "core flooding"){
+	        if (rank == 0) printf("Using core flooding protocol \n");
 		if (BoundaryCondition != 4){
 			BoundaryCondition = 4;
 			if (rank==0) printf("WARNING: protocol (core flooding) supports only volumetric flux boundary condition \n");
@@ -205,11 +206,12 @@ void ScaLBL_ColorModel::ReadParams(string filename){
 		domain_db->putScalar<int>( "BC", BoundaryCondition );
 		if (color_db->keyExists( "capillary_number" )){
 			double capillary_number = color_db->getScalar<double>( "capillary_number" );
+			if (rank==0) printf("   set flux to achieve Ca=%f \n", capillary_number);
 			double MuB = rhoB*(tauB - 0.5)/3.0;
 			double IFT = 6.0*alpha;
-			double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
-			flux = Dm->Porosity()*CrossSectionalArea*IFT*capillary_number/MuB;
-			if (rank==0) printf("  protocol (core flooding): set flux=%f to achieve Ca=%f \n",flux, capillary_number);
+			//double CrossSectionalArea = (double) (nprocx*(Nx-2)*nprocy*(Ny-2));
+			flux = Dm->Porosity()*nprocx*(Nx-2)*nprocy*(Ny-2)*IFT*capillary_number/MuB;
+			if (rank==0) printf("  flux=%f \n",flux);
 		}
 		color_db->putScalar<double>( "flux", flux );
 	} 
@@ -611,7 +613,6 @@ double ScaLBL_ColorModel::Run(int returntime){
 	runAnalysis analysis( current_db, rank_info, ScaLBL_Comm, Dm, Np, Regular, Map );
 	auto t1 = std::chrono::system_clock::now();
 	int CURRENT_TIMESTEP = 0;
-	int START_TIMESTEP = timestep;
 	int EXIT_TIMESTEP = min(timestepMax,returntime);
 	while (timestep < EXIT_TIMESTEP ) {
 		//if ( rank==0 ) { printf("Running timestep %i (%i MB)\n",timestep+1,(int)(Utilities::getMemoryUsage()/1048576)); }
@@ -880,7 +881,7 @@ double ScaLBL_ColorModel::Run(int returntime){
 	//************************************************************************
 	// Compute the walltime per timestep
 	auto t2 = std::chrono::system_clock::now();
-	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / (timestep - START_TIMESTEP);
+	double cputime = std::chrono::duration<double>( t2 - t1 ).count() / CURRENT_TIMESTEP;
 	// Performance obtained from each node
 	double MLUPS = double(Np)/cputime/1000000;
 

@@ -88,12 +88,12 @@ extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor(int *d_neighborList, int *Map,
 		double Fx, double Fy, double Fz, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAeven_GreyscaleColor_CP(int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel, double *Pressure,
+        double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros,double *Perm,double *Vel, double *Pressure,
         double rhoA, double rhoB, double tauA, double tauB,double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np);
 
 extern "C" void ScaLBL_D3Q19_AAodd_GreyscaleColor_CP(int *d_neighborList, int *Map, double *dist, double *Aq, double *Bq, double *Den, 
-		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *Poros,double *Perm,double *Vel,double *Pressure, 
+		double *Phi, double *GreySolidW, double *GreySn, double *GreySw, double *GreyKn, double *GreyKw, double *Poros, double *Perm,double *Vel,double *Pressure, 
         double rhoA, double rhoB, double tauA, double tauB, double tauA_eff,double tauB_eff, double alpha, double beta,
 		double Fx, double Fy, double Fz, bool RecoloringOff, int strideY, int strideZ, int start, int finish, int Np);
 
@@ -314,13 +314,20 @@ extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_z(int *d_neighborList, in
 
 extern "C" void ScaLBL_D3Q7_AAodd_Ion_Concentration_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_Diff_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_Diff_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvc_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvc_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
 
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ, int count, int Np);
-
-extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_z(int *list, double *dist, double Cin, double tau, double *VelocityZ,double *ElectricField,double Di,double zi,double Vt,int count,int Np);
+extern "C" void ScaLBL_D3Q7_AAeven_Ion_Flux_DiffAdvcElec_BC_Z(int *list, double *dist, double Cout, double tau, double *VelocityZ,double *ElectricField,double Di,double zi,double Vt,int count,int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_z(int *d_neighborList, int *list, double *dist, double Cin, double tau, double *VelocityZ,double *ElectricField,double Di,double zi,double Vt, int count, int Np);
+extern "C" void ScaLBL_D3Q7_AAodd_Ion_Flux_DiffAdvcElec_BC_Z(int *d_neighborList, int *list, double *dist, double Cout, double tau, double *VelocityZ,double *ElectricField,double Di,double zi,double Vt, int count, int Np);
 
 class ScaLBL_Communicator{
 public:
@@ -393,8 +400,12 @@ public:
     void Poisson_D3Q7_BC_Z(int *Map, double *Psi, double Vout);
     void D3Q7_Ion_Concentration_BC_z(int *neighborList, double *fq, double Cin, int time);
     void D3Q7_Ion_Concentration_BC_Z(int *neighborList, double *fq, double Cout, int time);
-    void D3Q7_Ion_Flux_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
-    void D3Q7_Ion_Flux_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_Diff_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_Diff_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvc_BC_z(int *neighborList, double *fq, double Cin, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvc_BC_Z(int *neighborList, double *fq, double Cout, double tau, double *VelocityZ, int time);
+    void D3Q7_Ion_Flux_DiffAdvcElec_BC_z(int *neighborList,double *fq,double Cin,double tau,double *VelocityZ,double *ElectricField_Z,double Di,double zi,double Vt, int time);
+    void D3Q7_Ion_Flux_DiffAdvcElec_BC_Z(int *neighborList,double *fq,double Cout,double tau,double *VelocityZ,double *ElectricField_Z,double Di,double zi,double Vt, int time);
     void GreyscaleSC_BC_z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_BC_Z(int *Map, double *DenA, double *DenB, double vA, double vB);
     void GreyscaleSC_Pressure_BC_z(int *neighborList, double *fqA, double *fqB, double dinA, double dinB, int time);

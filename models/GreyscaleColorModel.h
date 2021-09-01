@@ -70,6 +70,8 @@ public:
     double *GreySolidW;
     double *GreySn;
     double *GreySw;
+    double *GreyKn;
+    double *GreyKw;
 	//double *ColorGrad;
 	double *Velocity;
 	double *Pressure;
