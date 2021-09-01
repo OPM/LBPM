@@ -769,13 +769,13 @@ void ScaLBL_IonModel::Initialize(){
                 if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is concentration = %.5g [mol/m^3] \n",i+1,Cin[i]/(h*h*h*1.0e-18));
                 break;
             case 21:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
             case 22:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
             case 23:
-                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective + electric flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: inlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective + electric flux. \n",i+1,Cin[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
         }
         switch (BoundaryConditionOutlet[i]){
@@ -786,13 +786,13 @@ void ScaLBL_IonModel::Initialize(){
                 if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is concentration = %.5g [mol/m^3] \n",i+1,Cout[i]/(h*h*h*1.0e-18));
                 break;
             case 21:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive flux only. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
             case 22:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective flux. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
             case 23:
-                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %i is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective + electric flux. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
+                if (rank==0) printf("LB Ion Solver: outlet boundary for Ion %zu is (inward) flux = %.5g [mol/m^2/sec]; Diffusive + advective + electric flux. \n",i+1,Cout[i]/(h*h*1.0e-12)/time_conv[i]);
                 break;
         }
     }
