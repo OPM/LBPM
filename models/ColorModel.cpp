@@ -845,18 +845,18 @@ double ScaLBL_ColorModel::Run(int returntime){
 
 					/* flow rate = [volume of fluid] x [momentum of fluid] / [mass of fluid] */
 					/* fluid A eats the films */
-					double flow_rate_A_filmA = (flow_rate_A*Averages->gnb.M + 
-								    volA*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gnb.M + Mfn);
-					double flow_rate_B_filmA = (flow_rate_B*Averages->gwb.M - 
-								    volB*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gwb.M - (rhoB/rhoA)*Mfn);
+					//double flow_rate_A_filmA = (flow_rate_A*Averages->gnb.M + 
+					//			    volA*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gnb.M + Mfn);
+					//double flow_rate_B_filmA = (flow_rate_B*Averages->gwb.M - 
+					//			    volB*(vfn_x*dir_x + vfn_y*dir_y + vfn_z*dir_z))/(Averages->gwb.M - (rhoB/rhoA)*Mfn);
 					/* fluid B eats the films */
-					double flow_rate_A_filmB = (flow_rate_A*Averages->gnb.M - volA*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gnb.M - (rhoA/rhoB)*Mfw);
-					double flow_rate_B_filmB = (flow_rate_B*Averages->gwb.M + volB*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gwb.M + Mfw);
+					//double flow_rate_A_filmB = (flow_rate_A*Averages->gnb.M - volA*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gnb.M - (rhoA/rhoB)*Mfw);
+					//double flow_rate_B_filmB = (flow_rate_B*Averages->gwb.M + volB*(vfw_x*dir_x + vfw_y*dir_y + vfw_z*dir_z))/(Averages->gwb.M + Mfw);
 					/* effective permeability uncertainty limits */
-					double kAeff_filmA = h*h*muA*(flow_rate_A_filmA)/(force_mag);
-					double kBeff_filmA = h*h*muB*(flow_rate_B_filmA)/(force_mag);
-					double kAeff_filmB = h*h*muA*(flow_rate_A_filmB)/(force_mag);
-					double kBeff_filmB = h*h*muB*(flow_rate_B_filmB)/(force_mag);
+					//double kAeff_filmA = h*h*muA*(flow_rate_A_filmA)/(force_mag);
+					//double kBeff_filmA = h*h*muB*(flow_rate_B_filmA)/(force_mag);
+					//double kAeff_filmB = h*h*muA*(flow_rate_A_filmB)/(force_mag);
+					//double kBeff_filmB = h*h*muB*(flow_rate_B_filmB)/(force_mag);
 					
 					double viscous_pressure_drop = (rhoA*volA + rhoB*volB)*force_mag;
 					double Mobility = muA/muB;
