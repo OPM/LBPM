@@ -66,10 +66,89 @@ Model Formulation
 ****************************
 
 
-The relaxation parameters are determined from the relaxation time:
+Two LBEs are constructed to model the mass transport, incorporating the anti-diffusion
 .. math::
    :nowrap:
 
+   $$
+   \\begin{eqnarray}
+     A_q(\bm{x} + \bm{\xi}_q \delta t, t+\delta t) &=& w_q N_a \Big[1 + \frac{\bm{u} \cdot \bm{\xi}_q}{c_s^2} 
+       + \beta  \frac{N_b}{N_a+N_b} \bm{n} \cdot \bm{\xi}_q\Big] \;
+     \\
+     B_q(\bm{x} + \bm{\xi}_q \delta t, t+\delta t) &=& 
+       w_q N_b \Big[1 + \frac{\bm{u} \cdot \bm{\xi}_q}{c_s^2}
+       - \beta  \frac{N_a}{N_a+N_b} \bm{n} \cdot \bm{\xi}_q\Big]\;, 
+   \\end{eqnarray}
+   $$
+
+The number density is obtained directly for each fluid as the sum of the mass transport distributions
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+   N_a = \sum_q A_q\;, \quad    N_b = \sum_q B_q\; 
+   \\end{equation}
+   $$
+
+   
+The phase indicator field is then defined as 
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+   \phi = \frac{N_a-N_b}{N_a+N_b}
+   \\end{equation}
+   $$
+
+The local fluid viscosity and density are determined based on linear interpolation
+
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+    \nu = \frac{(1+\phi) \nu_n}{2}+\frac{(1-\phi) \nu_w}{2} \;,
+   \\end{equation}
+   $$
+
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+    \rho_0 = \frac{(1+\phi) \rho_n}{2}+ \frac{(1-\phi) \rho_w}{2} \;,
+   \\end{equation}
+   $$
+
+These values are then used to model the momentum transport.
+The LBE governing momentum transport is defined based on a MRT relaxation process with additional
+terms to account for the interfacial stresses
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+      f_q(\bm{x}_i + \bm{\xi}_q \delta t,t + \delta t) - f_q(\bm{x}_i,t) = \sum^{Q-1}_{k=0} M^{-1}_{qk} \lambda_{k} (m_k^{eq}-m_k) + t_q \bm{\xi}_q \cdot \frac{\bm{F}}{c_s^2} \;,
+   \\end{equation}
+   $$
+
+
+The moments are linearly indepdendent 
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+      m_k = \sum_{q=0}^{18} M_{qk} f_q\;.
+   \\end{equation}
+   $$
+
+   
+The relaxation parameters are determined from the relaxation time:
+.. math::
+   :nowrap:
 
    $$
    \\begin{eqnarray}
@@ -94,7 +173,25 @@ The non-zero equilibrium moments are defined as
    \\end{eqnarray}
    $$
 
+where the color gradient is determined from the phase indicator field
+.. math::
+   :nowrap:
 
+   $$
+   \\begin{equation}
+   \textbf{C}=\nabla \phi\;.
+   \\end{equation}
+   $$
+
+and the unit normal vector is
+.. math::
+   :nowrap:
+
+   $$
+   \\begin{equation}
+     \bm{n} = \frac{\textbf{C}}{|\textbf{C}|}\;.
+   \\end{equation}
+   $$
    
 ****************************
 Boundary Conditions
