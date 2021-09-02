@@ -1292,11 +1292,12 @@ TYPE Array<TYPE, FUN, Allocator>::interp( const double *x ) const
 /********************************************************
  *  Math operations (should call the Math class)         *
  ********************************************************/
-template<class TYPE, class FUN, class Allocator>
+/*template<class TYPE, class FUN, class Allocator>
 void Array<TYPE, FUN, Allocator>::rand()
 {
     FUN::rand( *this );
 }
+*/
 template<class TYPE, class FUN, class Allocator>
 Array<TYPE, FUN, Allocator> &
 Array<TYPE, FUN, Allocator>::operator+=( const Array<TYPE, FUN, Allocator> &rhs )
